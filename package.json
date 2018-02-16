@@ -2,7 +2,11 @@
   "name": "xunion",
   "version": "1.0.0-alpha.1",
   "description": "Exchange Union node",
-  "main": "xunion.js",
+  "main": "lib/xunion.js",
+  "bin": {
+    "xunion": "./bin/xunion",
+    "xucli": "./bin/xucli"
+  },
   "scripts": {
     "test": "mocha --reporter spec --exit"
   },
@@ -33,13 +37,17 @@
   "homepage": "https://github.com/ExchangeUnion/xunion#readme",
   "dependencies": {
     "grpc": "^1.9.0",
-    "mysql": "^2.15.0",
+    "http-jsonrpc-server": "^1.0.0-alpha.2",
+    "promise-mysql": "^3.2.0",
     "secp256k1": "^3.5.0",
-    "socket.io": "^2.0.4",
+    "toml": "^2.3.3",
     "winston": "^2.4.0"
   },
   "devDependencies": {
-    "mocha": "^5.0.0"
+    "eslint": "^4.17.0",
+    "eslint-config-airbnb-base": "^12.1.0",
+    "eslint-plugin-import": "^2.8.0",
+    "mocha": "^5.0.1"
   },
   "engines": {
     "node": ">=7.6.0"
