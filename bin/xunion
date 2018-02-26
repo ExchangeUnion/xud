@@ -1,3 +1,7 @@
 #!/usr/bin/env node
 
-require('../lib/xunion.js');
+const XUnion = require('../lib/xunion');
+
+const xUnion = new XUnion();
+
+xUnion.start();
