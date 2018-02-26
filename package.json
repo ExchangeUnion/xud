@@ -17,6 +17,7 @@
   "keywords": [
     "Exchange Union",
     "XU",
+    "xunion",
     "bitcoin",
     "litecoin",
     "ethereum",
@@ -27,7 +28,8 @@
     "DEX",
     "decentralized exchange",
     "payment channels",
-    "atomic swaps"
+    "atomic swaps",
+    "cross-chain"
   ],
   "author": "Daniel McNally",
   "license": "AGPL-3.0",
@@ -37,7 +39,7 @@
   "homepage": "https://github.com/ExchangeUnion/xunion#readme",
   "dependencies": {
     "grpc": "^1.9.1",
-    "http-jsonrpc-server": "^1.0.0-alpha.3",
+    "http-jsonrpc-server": "^1.0.0-alpha.4",
     "promise-mysql": "^3.2.1",
     "secp256k1": "^3.5.0",
     "toml": "^2.3.3",
