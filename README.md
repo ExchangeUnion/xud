@@ -29,3 +29,22 @@ XUnion uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). 
 cd bin
 ./xunion
 ```
+
+## Configuration
+
+The configuration file uses [TOML](https://github.com/toml-lang/toml) and by default is located at  `~/.xunion/xunion.conf` on Linux or `AppData\Local\XUnion\xunion.conf` on Windows. Default settings which can be overridden are shown below.
+
+```toml
+lndDir = "~/.lnd"
+rpcPort = 8886
+
+[db]
+user = "xunion"
+password = ""
+database = "xunion"
+port = 3306
+
+[p2p]
+listen = true
+port = 8885
+```
