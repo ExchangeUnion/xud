@@ -8,7 +8,8 @@
     "xucli": "./bin/xucli"
   },
   "scripts": {
-    "test": "mocha --reporter spec --exit"
+    "test": "mocha --reporter spec",
+    "start": "node lib/xunion.js"
   },
   "repository": {
     "type": "git",
@@ -39,7 +40,7 @@
   "homepage": "https://github.com/ExchangeUnion/xunion#readme",
   "dependencies": {
     "grpc": "^1.9.1",
-    "http-jsonrpc-server": "^1.0.0-alpha.4",
+    "http-jsonrpc-server": "^1.0.0-beta.2",
     "promise-mysql": "^3.2.1",
     "secp256k1": "^3.5.0",
     "toml": "^2.3.3",
