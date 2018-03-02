@@ -39,6 +39,7 @@
   },
   "homepage": "https://github.com/ExchangeUnion/xunion#readme",
   "dependencies": {
+    "command-line-args": "^5.0.2",
     "grpc": "^1.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
     "promise-mysql": "^3.2.1",

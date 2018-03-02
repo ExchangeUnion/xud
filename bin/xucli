@@ -1,1 +1,42 @@
 #!/usr/bin/env node
+/* eslint-disable no-console */
+
+const XUClient = require('../lib/xuclient/xuclient');
+const commandLineArgs = require('command-line-args');
+
+const argDefinitions = [
+  { name: 'port', alias: 'p', type: Number },
+  { name: 'call', type: String, defaultOption: true },
+  { name: 'quantity', type: Number },
+  { name: 'price', type: Number },
+];
+const args = commandLineArgs(argDefinitions);
+
+const port = args.port || 8886;
+const xuClient = new XUClient(port);
+
+let promise;
+switch (args.call) {
+  case 'getinfo':
+    promise = xuClient.getInfo();
+    break;
+  case 'getorders':
+    promise = xuClient.getOrders();
+    break;
+  case 'placeorder': {
+    const order = {
+      price: args.price,
+      quantity: args.quantity,
+    };
+    promise = xuClient.placeOrder(order);
+    break;
+  }
+  default:
+    console.error(`${args.call} not recognized as a call`);
+}
+
+if (promise) {
+  promise.then((result) => {
+    console.log(JSON.stringify(result));
+  });
+}
