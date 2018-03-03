@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 
 const XUnion = require('../lib/xunion');
+const commandLineArgs = require('command-line-args');
 
-const xUnion = new XUnion();
+const argDefinitions = [
+  { name: 'peerport', type: Number },
+  { name: 'rpcport', type: Number },
+  { name: 'database', type: String },
+  { name: 'xudir', type: String },
+  { name: 'lnddir', type: String },
+];
+const args = commandLineArgs(argDefinitions);
+
+const xUnion = new XUnion(args);
 
 xUnion.start();
