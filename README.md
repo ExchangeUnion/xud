@@ -52,7 +52,7 @@ lndDir = "~/.lnd"
 rpcPort = 8886
 
 [db]
-user = "xunion"
+username = "xunion"
 password = ""
 database = "xunion"
 port = 3306

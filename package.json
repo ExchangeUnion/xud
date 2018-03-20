@@ -42,8 +42,9 @@
     "command-line-args": "^5.0.2",
     "grpc": "^1.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
-    "promise-mysql": "^3.2.1",
+    "mysql2": "^1.5.3",
     "secp256k1": "^3.5.0",
+    "sequelize": "^4.37.3",
     "toml": "^2.3.3",
     "winston": "^2.4.0"
   },
