@@ -38,5 +38,7 @@ switch (args.call) {
 if (promise) {
   promise.then((result) => {
     console.log(JSON.stringify(result));
+  }).catch((err) => {
+    console.error(err);
   });
 }
