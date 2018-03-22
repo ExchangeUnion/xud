@@ -2,16 +2,18 @@
 
 const XUnion = require('../lib/xunion');
 const commandLineArgs = require('command-line-args');
+const util = require('../lib/utils/util');
 
 const argDefinitions = [
-  { name: 'peerport', type: Number },
-  { name: 'rpcport', type: Number },
-  { name: 'database', type: String },
+  { name: 'p2p.port', type: Number },
+  { name: 'rpcPort', type: Number },
+  { name: 'db.database', type: String },
   { name: 'xudir', type: String },
   { name: 'lnddir', type: String },
 ];
 const args = commandLineArgs(argDefinitions);
 
-const xUnion = new XUnion(args);
+const modifiedArgs = util.modifyArgs(args);
+const xUnion = new XUnion(modifiedArgs);
 
 xUnion.start();
