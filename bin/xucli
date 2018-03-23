@@ -5,15 +5,16 @@ const XUClient = require('../lib/xuclient/xuclient');
 const commandLineArgs = require('command-line-args');
 
 const argDefinitions = [
-  { name: 'port', alias: 'p', type: Number },
+  { name: 'rpcport', alias: 'r', type: Number, defaultValue: 8886 },
   { name: 'call', type: String, defaultOption: true },
   { name: 'quantity', type: Number },
   { name: 'price', type: Number },
+  { name: 'host', type: String },
+  { name: 'port', type: Number },
 ];
 const args = commandLineArgs(argDefinitions);
 
-const port = args.port || 8886;
-const xuClient = new XUClient(port);
+const xuClient = new XUClient(args.rpcport);
 
 let promise;
 switch (args.call) {
@@ -29,6 +30,10 @@ switch (args.call) {
       quantity: args.quantity,
     };
     promise = xuClient.placeOrder(order);
+    break;
+  }
+  case 'connect': {
+    promise = xuClient.connect(args.host, args.port);
     break;
   }
   default:

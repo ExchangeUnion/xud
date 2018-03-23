@@ -10,7 +10,8 @@
   "scripts": {
     "test": "mocha --reporter spec",
     "start": "node lib/xunion.js",
-    "dev": "nodemon lib/xunion.js"
+    "dev": "nodemon lib/xunion.js",
+    "lint": "./node_modules/.bin/eslint . ./**/*.js"
   },
   "repository": {
     "type": "git",
