@@ -9,7 +9,9 @@
   },
   "scripts": {
     "test": "mocha --reporter spec",
-    "start": "node lib/xunion.js"
+    "start": "node lib/xunion.js",
+    "dev": "nodemon lib/xunion.js",
+    "lint": "./node_modules/.bin/eslint . ./**/*.js"
   },
   "repository": {
     "type": "git",
@@ -52,7 +54,8 @@
     "eslint": "^4.18.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.9.0",
-    "mocha": "^5.0.1"
+    "mocha": "^5.0.1",
+    "nodemon": "^1.17.2"
   },
   "engines": {
     "node": ">=7.6.0"

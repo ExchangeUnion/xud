@@ -59,3 +59,7 @@ typings/
 
 # Visual Studio Code config
 .vscode/
+
+#  Webstorm config
+.idea/
+
