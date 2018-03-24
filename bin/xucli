@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-const XUClient = require('../lib/xuclient/xuclient');
+const XUClient = require('../lib/xuclient/XUClient');
 const commandLineArgs = require('command-line-args');
 
 const argDefinitions = [
