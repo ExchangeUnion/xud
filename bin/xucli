@@ -5,7 +5,9 @@ const XUClient = require('../lib/xuclient/xuclient');
 const commandLineArgs = require('command-line-args');
 
 const argDefinitions = [
-  { name: 'rpcport', alias: 'r', type: Number, defaultValue: 8886 },
+  {
+    name: 'rpcport', alias: 'r', type: Number, defaultValue: 8886,
+  },
   { name: 'call', type: String, defaultOption: true },
   { name: 'quantity', type: Number },
   { name: 'price', type: Number },
