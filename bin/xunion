@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const XUnion = require('../lib/xunion');
+const XUnion = require('../lib/XUnion');
 const commandLineArgs = require('command-line-args');
-const util = require('../lib/utils/util');
+const util = require('../lib/utils/utils');
 
 const argDefinitions = [
   { name: 'p2p.port', type: Number },
@@ -13,7 +13,7 @@ const argDefinitions = [
 ];
 const args = commandLineArgs(argDefinitions);
 
-const modifiedArgs = util.modifyArgs(args);
-const xUnion = new XUnion(modifiedArgs);
+const nestedArgs = util.nestObject(args);
+const xUnion = new XUnion(nestedArgs);
 
 xUnion.start();
