@@ -2,15 +2,16 @@
   "name": "xunion",
   "version": "1.0.0-alpha.1",
   "description": "Exchange Union node",
-  "main": "lib/xunion.js",
+  "main": "lib/XUnion.js",
   "bin": {
     "xunion": "./bin/xunion",
     "xucli": "./bin/xucli"
   },
   "scripts": {
     "test": "mocha --reporter spec",
-    "start": "node lib/xunion.js",
-    "dev": "nodemon lib/xunion.js"
+    "start": "node lib/XUnion.js",
+    "dev": "nodemon lib/XUnion.js",
+    "lint": "./node_modules/.bin/eslint . ./**/*.js"
   },
   "repository": {
     "type": "git",
