@@ -43,8 +43,10 @@
   "dependencies": {
     "command-line-args": "^5.0.2",
     "grpc": "^1.9.1",
+    "gulp": "^3.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
     "mysql2": "^1.5.3",
+    "run-sequence": "^2.2.1",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
     "toml": "^2.3.3",
@@ -54,8 +56,8 @@
     "eslint": "^4.18.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.9.0",
-    "mocha": "^5.0.1",
-    "nodemon": "^1.17.2"
+    "nodemon": "^1.17.2",
+    "require-dir": "^1.0.0"
   },
   "engines": {
     "node": ">=7.6.0"
