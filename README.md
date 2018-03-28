@@ -37,9 +37,9 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 ## Command-Line Interface
 
 ```bash
-~/xud/bin $ ./xucli placeorder --price 0.12 --quantity 5
+~/xud/bin $ ./xudcli placeorder --price 0.12 --quantity 5
 {"fieldCount":0,"affectedRows":1,"insertId":1,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
-~/xud/bin $ ./xucli getorders
+~/xud/bin $ ./xudcli getorders
 {"bids":[{"price":0.12,"quantity":5}],"asks":[]}
 ```
 

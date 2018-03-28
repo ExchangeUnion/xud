@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable no-console */
 
-const XUClient = require('../lib/xuclient/XUClient');
+const XudClient = require('../lib/xudclient/XudClient');
 const commandLineArgs = require('command-line-args');
 
 const argDefinitions = [
@@ -16,26 +16,26 @@ const argDefinitions = [
 ];
 const args = commandLineArgs(argDefinitions);
 
-const xuClient = new XUClient(args.rpcport);
+const xudClient = new XudClient(args.rpcport);
 
 let promise;
 switch (args.call) {
   case 'getinfo':
-    promise = xuClient.getInfo();
+    promise = xudClient.getInfo();
     break;
   case 'getorders':
-    promise = xuClient.getOrders();
+    promise = xudClient.getOrders();
     break;
   case 'placeorder': {
     const order = {
       price: args.price,
       quantity: args.quantity,
     };
-    promise = xuClient.placeOrder(order);
+    promise = xudClient.placeOrder(order);
     break;
   }
   case 'connect': {
-    promise = xuClient.connect(args.host, args.port);
+    promise = xudClient.connect(args.host, args.port);
     break;
   }
   default:
