@@ -27,7 +27,7 @@ gulp.task('db.data.populate', async () => {
   await Promise.all([
     db.Order.bulkCreate([
       {
-        pairId: 'BTC/LTC', makerPeerId: 1, side: enums.orderSides.BUY, quantity: 10.01, price: 59.9679,
+        pairId: 'BTC/LTC', peerId: 1, side: enums.orderSides.BUY, quantity: 10.01, price: 59.9679,
       },
     ]),
   ]);
