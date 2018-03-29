@@ -5,7 +5,7 @@
   "main": "lib/Xud.js",
   "bin": {
     "xud": "./bin/xud",
-    "xudcli": "./bin/xudcli"
+    "xucli": "./bin/xucli"
   },
   "scripts": {
     "test": "mocha --reporter spec",
