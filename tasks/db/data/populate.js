@@ -1,7 +1,7 @@
 const gulp = require('gulp');
 const Config = require('../../../lib/Config');
 const DB = require('../../../lib/db/DB');
-const enums = require('../../../lib/enums');
+const enums = require('../../../lib/constants/enums');
 
 gulp.task('db.data.populate', async () => {
   const config = new Config();
