@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const XUnion = require('../lib/XUnion');
+const Xud = require('../lib/Xud');
 const commandLineArgs = require('command-line-args');
 const util = require('../lib/utils/utils');
 
@@ -14,6 +14,6 @@ const argDefinitions = [
 const args = commandLineArgs(argDefinitions);
 
 const nestedArgs = util.nestObject(args);
-const xUnion = new XUnion(nestedArgs);
+const xud = new Xud(nestedArgs);
 
-xUnion.start();
+xud.start();
