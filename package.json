@@ -1,26 +1,26 @@
 {
-  "name": "xunion",
+  "name": "xud",
   "version": "1.0.0-alpha.1",
-  "description": "Exchange Union node",
-  "main": "lib/XUnion.js",
+  "description": "Exchange Union Daemon",
+  "main": "lib/Xud.js",
   "bin": {
-    "xunion": "./bin/xunion",
+    "xud": "./bin/xud",
     "xucli": "./bin/xucli"
   },
   "scripts": {
     "test": "mocha --reporter spec",
-    "start": "node lib/XUnion.js",
-    "dev": "nodemon lib/XUnion.js",
+    "start": "node lib/Xud.js",
+    "dev": "nodemon lib/Xud.js",
     "lint": "./node_modules/.bin/eslint . ./**/*.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ExchangeUnion/xunion.git"
+    "url": "git+https://github.com/ExchangeUnion/xud.git"
   },
   "keywords": [
     "Exchange Union",
     "XU",
-    "xunion",
+    "xud",
     "bitcoin",
     "litecoin",
     "ethereum",
@@ -37,9 +37,9 @@
   "author": "Daniel McNally",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/ExchangeUnion/xunion/issues"
+    "url": "https://github.com/ExchangeUnion/xud/issues"
   },
-  "homepage": "https://github.com/ExchangeUnion/xunion#readme",
+  "homepage": "https://github.com/ExchangeUnion/xud#readme",
   "dependencies": {
     "command-line-args": "^5.0.2",
     "grpc": "^1.9.1",
