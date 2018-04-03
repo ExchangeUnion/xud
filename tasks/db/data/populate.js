@@ -2,35 +2,40 @@ const gulp = require('gulp');
 const Config = require('../../../lib/Config');
 const DB = require('../../../lib/db/DB');
 const enums = require('../../../lib/constants/enums');
+const OrderBookRepository = require('../../../lib/orderbook/OrderBookRepository');
+const P2PRepository = require('../../../lib/p2p/P2PRepository');
 
 gulp.task('db.data.populate', async () => {
   const config = new Config();
   const db = new DB(config.db);
   await db.init();
 
+  const orderBookRepository = new OrderBookRepository(db);
+  const p2pRepository = new P2PRepository(db);
+
+
   await Promise.all([
-    db.Peer.bulkCreate([
+    p2pRepository.addPeers([
       { nodeKey: '/xud/0.0.1', ipv4: '127.0.0.1', port: '3000' },
     ]),
-    db.Currency.bulkCreate([
+    orderBookRepository.addCurrencies([
       { id: 'BTC' },
       { id: 'LTC' },
       { id: 'ZRX' },
       { id: 'GNT' },
     ]),
-    db.Pair.bulkCreate([
+    orderBookRepository.addPairs([
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
       { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: enums.swapProtocols.RAIDEN },
     ]),
   ]);
 
-  await Promise.all([
-    db.Order.bulkCreate([
-      {
-        pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679,
-      },
-    ]),
+  await orderBookRepository.addOrders([
+    {
+      pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679,
+    },
   ]);
+
 
   db.close();
 });
