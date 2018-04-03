@@ -38,6 +38,10 @@ switch (args.call) {
     promise = xuClient.connect(args.host, args.port);
     break;
   }
+  case 'shutdown': {
+    promise = xuClient.shutdown();
+    break;
+  }
   default:
     console.error(`${args.call} not recognized as a call`);
 }
