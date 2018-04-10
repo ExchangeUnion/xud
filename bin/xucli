@@ -13,6 +13,13 @@ const argDefinitions = [
   { name: 'price', type: Number },
   { name: 'host', type: String },
   { name: 'port', type: Number },
+  { name: 'target_address', type: String },
+  { name: 'role', type: String },
+  { name: 'sending_amount', type: Number },
+  { name: 'sending_token', type: String },
+  { name: 'receiving_amount', type: Number },
+  { name: 'receiving_token', type: String },
+  { name: 'identifier', type: String },
 ];
 const args = commandLineArgs(argDefinitions);
 
@@ -36,6 +43,17 @@ switch (args.call) {
   }
   case 'connect': {
     promise = xuClient.connect(args.host, args.port);
+    break;
+  }
+  case 'tokenswap': {
+    const payload = {
+      role: args.role,
+      sending_amount: args.sending_amount,
+      sending_token: args.sending_token,
+      receiving_amount: args.receiving_amount,
+      receiving_token: args.receiving_token,
+    };
+    promise = xuClient.tokenSwap(args.target_address, payload, args.identifier);
     break;
   }
   case 'shutdown': {
