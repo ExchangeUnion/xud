@@ -68,8 +68,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
     const comparator = MatchingEngine
       .getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
     expect(comparator(
-      { price: 10, localId: 1 },
-      { price: 10, localId: 2 },
+      { price: 10, createdAt: 1 },
+      { price: 10, createdAt: 2 },
     )).to.be.true;
   });
 
@@ -77,8 +77,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
     const comparator = MatchingEngine
       .getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
     expect(comparator(
-      { price: 10, localId: 1 },
-      { price: 10, localId: 2 },
+      { price: 10, createdAt: 1 },
+      { price: 10, createdAt: 2 },
     )).to.be.true;
   });
 });
