@@ -5,4 +5,4 @@ node_js:
 
 script:
   - npm run lint
-  - npm test:unit
+  - npm run test:unit
