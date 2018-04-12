@@ -2,10 +2,10 @@
 const path = require('path');
 const GulpRunner = require('gulp-runner');
 const { expect } = require('chai');
+const uuidv1 = require('uuid/v1');
 const Config = require('../../lib/Config');
 const DB = require('../../lib/db/DB');
 const OrderBook = require('../../lib/orderbook/OrderBook');
-const utils = require('../../lib/utils/utils');
 
 const gulpfile = path.resolve(__dirname, '../../gulpfile.js');
 const gulp = new GulpRunner(gulpfile);
@@ -35,7 +35,7 @@ describe('OrderBook', () => {
 
   it('should append new order', async () => {
     await orderBook.addOrder({
-      id: utils.getGuid(), pairId: 'BTC/LTC', peerId: 1, quantity: 5, price: 55,
+      id: uuidv1(), pairId: 'BTC/LTC', peerId: 1, quantity: 5, price: 55,
     });
   });
 

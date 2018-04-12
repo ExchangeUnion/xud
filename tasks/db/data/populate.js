@@ -1,5 +1,6 @@
 const gulp = require('gulp');
 const { argv } = require('yargs');
+const uuidv1 = require('uuid/v1');
 const Config = require('../../../lib/Config');
 const DB = require('../../../lib/db/DB');
 const enums = require('../../../lib/constants/enums');
@@ -43,16 +44,16 @@ gulp.task('db.data.populate', async () => {
 
   await orderBookRepository.addOrders([
     {
-      id: utils.getGuid(), pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679, createdAt: new Date(),
+      id: uuidv1(), pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679, createdAt: new Date(),
     },
     {
-      id: utils.getGuid(), pairId: 'BTC/LTC', peerId: 2, quantity: -2, price: 60, createdAt: new Date(),
+      id: uuidv1(), pairId: 'BTC/LTC', peerId: 2, quantity: -2, price: 60, createdAt: new Date(),
     },
     {
-      id: utils.getGuid(), pairId: 'BTC/LTC', peerId: 3, quantity: 3, price: 60, createdAt: new Date(),
+      id: uuidv1(), pairId: 'BTC/LTC', peerId: 3, quantity: 3, price: 60, createdAt: new Date(),
     },
     {
-      id: utils.getGuid(), pairId: 'BTC/LTC', peerId: 4, quantity: -8.5, price: 66, createdAt: new Date(),
+      id: uuidv1(), pairId: 'BTC/LTC', peerId: 4, quantity: -8.5, price: 66, createdAt: new Date(),
     },
   ]);
 
