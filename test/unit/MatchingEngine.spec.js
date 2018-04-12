@@ -1,4 +1,6 @@
 /* eslint-env mocha */
+/* eslint-disable no-unused-expressions */
+
 const { expect } = require('chai');
 const MatchingEngine = require('../../lib/orderbook/MatchingEngine');
 const enums = require('../../lib/constants/enums');
