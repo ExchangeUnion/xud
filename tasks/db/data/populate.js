@@ -6,7 +6,6 @@ const DB = require('../../../lib/db/DB');
 const enums = require('../../../lib/constants/enums');
 const OrderBookRepository = require('../../../lib/orderbook/OrderBookRepository');
 const P2PRepository = require('../../../lib/p2p/P2PRepository');
-const utils = require('../../../lib/utils/utils');
 
 gulp.task('db.data.populate', async () => {
   const config = new Config();
