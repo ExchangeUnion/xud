@@ -8,7 +8,9 @@
     "xucli": "./bin/xucli"
   },
   "scripts": {
-    "test": "mocha --reporter spec",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "mocha test/unit --reporter spec",
+    "test:integration": "mocha test/integration --reporter spec",
     "start": "node lib/Xud.js",
     "dev": "nodemon lib/Xud.js",
     "lint": "./node_modules/.bin/eslint . ./**/*.js"
@@ -42,6 +44,7 @@
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
   "dependencies": {
     "command-line-args": "^5.0.2",
+    "fastpriorityqueue": "^0.3.1",
     "grpc": "^1.9.1",
     "gulp": "^3.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
@@ -50,12 +53,16 @@
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
     "toml": "^2.3.3",
-    "winston": "^3.0.0-rc3"
+    "uuid": "^3.2.1",
+    "winston": "^3.0.0-rc3",
+    "yargs": "^11.0.0"
   },
   "devDependencies": {
+    "chai": "^4.1.2",
     "eslint": "^4.18.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.9.0",
+    "gulp-runner": "^1.1.0",
     "mocha": "^5.0.5",
     "nodemon": "^1.17.2",
     "require-dir": "^1.0.0"
