@@ -1,6 +1,6 @@
-[![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
-
 # Exchange Union
+
+[![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
 
 [Exchange Union](https://www.exchangeunion.com/) (XU) is a decentralized exchange layer built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable trustless and instant cryptocurrency swaps and order fulfillment between exchanges.
 
@@ -39,10 +39,23 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 ## Command-Line Interface
 
 ```bash
-~/xud/bin $ ./xucli placeorder --price 0.12 --quantity 5
-{"fieldCount":0,"affectedRows":1,"insertId":1,"serverStatus":2,"warningCount":0,"message":"","protocol41":true,"changedRows":0}
-~/xud/bin $ ./xucli getorders
-{"bids":[{"price":0.12,"quantity":5}],"asks":[]}
+~/xud/bin $ ./xucli --help
+xucli [command]
+
+Commands:
+  xucli connect <host> [port]               connect to an xu node
+  xucli getinfo                             get general info from the xud node
+  xucli getorders                           get orders from the orderbook
+  xucli placeorder <price> <quantity>       place an order
+  xucli shutdown                            gracefully shutdown the xud node
+  xucli tokenswap <identifier> <role>       perform a raiden token swap
+  <sending_amount> <sending_token>
+  <receiving_amount> <receiving_token>
+
+Options:
+  --version      Show version number                                   [boolean]
+  --help         Show help                                             [boolean]
+  -r, --rpcport                                         [number] [default: 8886]
 ```
 
 ## Configuration

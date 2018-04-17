@@ -1,19 +1,20 @@
 #!/usr/bin/env node
 
 const Xud = require('../lib/Xud');
-const commandLineArgs = require('command-line-args');
-const util = require('../lib/utils/utils');
+const { argv } = require('yargs')
+  .number(['p2p.port', 'rpcPort', 'db.port', 'db.pool.max', 'raiden.port'])
+  .boolean(['db.operatorsAliases', 'p2p.listen'])
+  .default({
+    'db.operatorsAliases': undefined,
+    'p2p.listen': undefined,
+  });
 
-const argDefinitions = [
-  { name: 'p2p.port', type: Number },
-  { name: 'rpcPort', type: Number },
-  { name: 'db.database', type: String },
-  { name: 'xudir', type: String },
-  { name: 'lnddir', type: String },
-];
-const args = commandLineArgs(argDefinitions);
+// delete non-config keys from argv
+delete argv._;
+delete argv.version;
+delete argv.help;
+delete argv.$0;
 
-const nestedArgs = util.nestObject(args);
-const xud = new Xud(nestedArgs);
+const xud = new Xud(argv);
 
 xud.start();

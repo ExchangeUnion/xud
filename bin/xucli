@@ -1,73 +1,10 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
+/* eslint-disable no-unused-expressions */
 
-const XUClient = require('../lib/xuclient/XUClient');
-const commandLineArgs = require('command-line-args');
-
-const argDefinitions = [
-  {
-    name: 'rpcport', alias: 'r', type: Number, defaultValue: 8886,
-  },
-  { name: 'call', type: String, defaultOption: true },
-  { name: 'quantity', type: Number },
-  { name: 'price', type: Number },
-  { name: 'host', type: String },
-  { name: 'port', type: Number },
-  { name: 'target_address', type: String },
-  { name: 'role', type: String },
-  { name: 'sending_amount', type: Number },
-  { name: 'sending_token', type: String },
-  { name: 'receiving_amount', type: Number },
-  { name: 'receiving_token', type: String },
-  { name: 'identifier', type: String },
-];
-const args = commandLineArgs(argDefinitions);
-
-const xuClient = new XUClient(args.rpcport);
-
-let promise;
-switch (args.call) {
-  case 'getinfo':
-    promise = xuClient.getInfo();
-    break;
-  case 'getorders':
-    promise = xuClient.getOrders();
-    break;
-  case 'placeorder': {
-    const order = {
-      price: args.price,
-      quantity: args.quantity,
-    };
-    promise = xuClient.placeOrder(order);
-    break;
-  }
-  case 'connect': {
-    promise = xuClient.connect(args.host, args.port);
-    break;
-  }
-  case 'tokenswap': {
-    const payload = {
-      role: args.role,
-      sending_amount: args.sending_amount,
-      sending_token: args.sending_token,
-      receiving_amount: args.receiving_amount,
-      receiving_token: args.receiving_token,
-    };
-    promise = xuClient.tokenSwap(args.target_address, payload, args.identifier);
-    break;
-  }
-  case 'shutdown': {
-    promise = xuClient.shutdown();
-    break;
-  }
-  default:
-    console.error(`${args.call} not recognized as a call`);
-}
-
-if (promise) {
-  promise.then((result) => {
-    console.log(JSON.stringify(result));
-  }).catch((err) => {
-    console.error(err);
-  });
-}
+require('yargs')
+  .number('rpcport')
+  .alias('r', 'rpcport')
+  .default('rpcport', 8886)
+  .commandDir('../lib/cli/commands')
+  .help()
+  .argv; // we must read the argv property for the command line args to initialize properly
