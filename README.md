@@ -76,4 +76,12 @@ host = "localhost"
 [p2p]
 listen = true
 port = 8885
+
+[swapProtocols.LND]
+disable = false
+rpcProtoPath = "lndrpc.proto"
+
+[swapProtocols.RAIDEN]
+disable = false
+port = 5001
 ```
