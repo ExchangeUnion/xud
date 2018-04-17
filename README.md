@@ -77,11 +77,11 @@ host = "localhost"
 listen = true
 port = 8885
 
-[swapProtocols.LND]
+[lnd]
 disable = false
 rpcProtoPath = "lndrpc.proto"
 
-[swapProtocols.RAIDEN]
+[raiden]
 disable = false
 port = 5001
 ```
