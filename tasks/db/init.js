@@ -1,20 +1,21 @@
 const gulp = require('gulp');
 const { argv } = require('yargs');
 const uuidv1 = require('uuid/v1');
-const Config = require('../../../lib/Config');
-const DB = require('../../../lib/db/DB');
-const enums = require('../../../lib/constants/enums');
-const OrderBookRepository = require('../../../lib/orderbook/OrderBookRepository');
-const P2PRepository = require('../../../lib/p2p/P2PRepository');
+const Config = require('../../lib/Config');
+const DB = require('../../lib/db/DB');
+const enums = require('../../lib/constants/enums');
+const OrderBookRepository = require('../../lib/orderbook/OrderBookRepository');
+const P2PRepository = require('../../lib/p2p/P2PRepository');
 
-gulp.task('db.data.populate', async () => {
+gulp.task('db.init', async () => {
   const config = new Config();
+  await config.load();
+
   const db = new DB(argv.testDb ? config.testDb : config.db);
   await db.init();
 
   const orderBookRepository = new OrderBookRepository(db);
   const p2pRepository = new P2PRepository(db);
-
 
   await Promise.all([
     p2pRepository.addPeers([

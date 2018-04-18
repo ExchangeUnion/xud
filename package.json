@@ -13,7 +13,8 @@
     "test:integration": "mocha test/integration --reporter spec",
     "start": "node lib/Xud.js",
     "dev": "nodemon lib/Xud.js",
-    "lint": "./node_modules/.bin/eslint . ./**/*.js"
+    "lint": "./node_modules/.bin/eslint . ./**/*.js",
+    "db:init": "gulp db.init"
   },
   "repository": {
     "type": "git",

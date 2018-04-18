@@ -43,12 +43,12 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 xucli [command]
 
 Commands:
-  xucli connect <host> [port]               connect to an xu node
-  xucli getinfo                             get general info from the xud node
-  xucli getorders                           get orders from the orderbook
-  xucli placeorder <price> <quantity>       place an order
-  xucli shutdown                            gracefully shutdown the xud node
-  xucli tokenswap <identifier> <role>       perform a raiden token swap
+  xucli connect <host> [port]                   connect to an xu node
+  xucli getinfo                                 get general info from the xud node
+  xucli getorders                               get orders from the orderbook
+  xucli placeorder <pairId> <price> <quantity>  place an order
+  xucli shutdown                                gracefully shutdown the xud node
+  xucli tokenswap <identifier> <role>           perform a raiden token swap
   <sending_amount> <sending_token>
   <receiving_amount> <receiving_token>
 
@@ -84,4 +84,13 @@ rpcProtoPath = "lndrpc.proto"
 [raiden]
 disable = false
 port = 5001
+```
+
+
+## Database Initialization
+
+To initialize the database with default testing data, run the following command:
+
+```bash
+npm run db:init
 ```
