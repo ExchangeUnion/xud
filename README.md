@@ -46,6 +46,7 @@ Commands:
   xucli connect <host> [port]                   connect to an xu node
   xucli getinfo                                 get general info from the xud node
   xucli getorders                               get orders from the orderbook
+  xucli getpairs                                get orderbook's available pairs
   xucli placeorder <pairId> <price> <quantity>  place an order
   xucli shutdown                                gracefully shutdown the xud node
   xucli tokenswap <identifier> <role>           perform a raiden token swap
