@@ -80,7 +80,7 @@ port = 8885
 
 [lnd]
 disable = false
-rpcProtoPath = "lndrpc.proto"
+rpcprotopath = "lndrpc.proto"
 
 [raiden]
 disable = false
