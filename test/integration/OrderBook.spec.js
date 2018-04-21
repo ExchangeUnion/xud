@@ -15,13 +15,17 @@ describe('OrderBook', () => {
   let orderBook;
 
   before((done) => {
-    gulp.on('log', log => console.log(log.toString())); // eslint-disable-line no-console
-    gulp.run('db.tables.restart', { testDb: true }, async () => {
+    gulp.on('log', log => console.log(`[GULP]: ${log.toString()}`)); // eslint-disable-line no-console
+    gulp.run('db.restart', { testDb: true }, async () => {
       const config = new Config();
+      await config.load();
+
       db = new DB(config.testDb);
       await db.init();
+
       orderBook = new OrderBook(db);
       await orderBook.init();
+
       done();
     });
   });
