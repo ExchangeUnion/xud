@@ -2,12 +2,14 @@
 
 const Xud = require('../lib/Xud');
 const { argv } = require('yargs')
-  .number(['p2p.port', 'rpcPort', 'db.port', 'db.pool.max', 'raiden.port'])
+  .number(['p2p.port', 'rpc.port', 'db.port', 'raiden.port'])
   .boolean(['db.operatorsAliases', 'p2p.listen'])
   .default({
     'db.operatorsAliases': undefined,
     'p2p.listen': undefined,
-  });
+  })
+  .alias('r', 'rpc.port')
+  .alias('p', 'p2p.port');
 
 // delete non-config keys from argv
 delete argv._;
