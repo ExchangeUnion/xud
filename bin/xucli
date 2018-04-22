@@ -2,9 +2,9 @@
 /* eslint-disable no-unused-expressions */
 
 require('yargs')
-  .number('rpcport')
-  .alias('r', 'rpcport')
-  .default('rpcport', 8886)
+  .number('rpc.port')
+  .alias('r', 'rpc.port')
+  .default('rpc.port', 8886)
   .commandDir('../lib/cli/commands')
   .help()
   .argv; // we must read the argv property for the command line args to initialize properly
