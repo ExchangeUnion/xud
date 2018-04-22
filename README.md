@@ -53,13 +53,13 @@ Interacting with an `xud` process, identified by his rpc port
 xucli [command]
 
 Commands:
-  xucli connect <p2p.host> [p2p.port]           connect to an xu node
-  xucli getinfo                                 get general info from the xud node
-  xucli getorders                               get orders from the orderbook
-  xucli getpairs                                get orderbook's available pairs
-  xucli placeorder <pairId> <price> <quantity>  place an order
-  xucli shutdown                                gracefully shutdown the xud node
-  xucli tokenswap <identifier> <role>           perform a raiden token swap
+  xucli connect <p2p_host> [p2p_port]            connect to an xu node
+  xucli getinfo                                  get general info from the xud node
+  xucli getorders                                get orders from the orderbook
+  xucli getpairs                                 get orderbook's available pairs
+  xucli placeorder <pair_id> <price> <quantity>  place an order
+  xucli shutdown                                 gracefully shutdown the xud node
+  xucli tokenswap <identifier> <role>            perform a raiden token swap
   <sending_amount> <sending_token>
   <receiving_amount> <receiving_token>
 
