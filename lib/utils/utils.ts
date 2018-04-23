@@ -1,10 +1,10 @@
-const utils = exports;
+const utils : any = {};
 
 /**
  * Check whether a variable is a non-array object
  * @returns {boolean}
  */
-function isObject(val: object) : boolean {
+function isObject(val: any) : boolean {
   return (val && typeof val === 'object' && !Array.isArray(val));
 }
 
@@ -64,3 +64,5 @@ utils.groupBy = (arr: object[], keyGetter: (item: object) => string | number) : 
   });
   return ret;
 };
+
+export default utils;

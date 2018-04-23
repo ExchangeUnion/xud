@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-unused-expressions */
 
 require('yargs')
   .number('rpc.port')
