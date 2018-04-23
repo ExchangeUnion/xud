@@ -4,14 +4,14 @@ const utils = exports;
  * Check whether a variable is a non-array object
  * @returns {boolean}
  */
-function isObject(val) {
+function isObject(val: object) : boolean {
   return (val && typeof val === 'object' && !Array.isArray(val));
 }
 
 /** Get the current date in the LocaleString format.
  * @returns {string}
  */
-utils.getTsString = () => (new Date()).toLocaleString();
+utils.getTsString = () : string => (new Date()).toLocaleString();
 
 /**
  * Recursively merge properties from different sources into a target object, overriding any
@@ -19,7 +19,7 @@ utils.getTsString = () => (new Date()).toLocaleString();
  * @param {object} target - The destination object to merge into.
  * @param {object} sources - The sources objects to copy from.
  */
-utils.deepMerge = (target, ...sources) => {
+utils.deepMerge = (target: any, ...sources : any[]) : object => {
   if (!sources.length) return target;
   const source = sources.shift();
 
@@ -40,8 +40,8 @@ utils.deepMerge = (target, ...sources) => {
 /** Get all methods from an object whose name doesn't start with an underscore.
  * @returns {object}
 */
-utils.getPublicMethods = (obj) => {
-  const ret = {};
+utils.getPublicMethods = (obj: any) : object => {
+  const ret: any = {};
   Object.getOwnPropertyNames(Object.getPrototypeOf(obj)).forEach((name) => {
     const func = obj[name];
     if ((func instanceof Function) && name !== 'constructor' && !name.startsWith('_')) {
@@ -51,8 +51,8 @@ utils.getPublicMethods = (obj) => {
   return ret;
 };
 
-utils.groupBy = (arr, keyGetter) => {
-  const ret = {};
+utils.groupBy = (arr: object[], keyGetter: (item: object) => string | number) : object => {
+  const ret : any = {};
   arr.forEach((item) => {
     const key = keyGetter(item);
     const group = ret[key];
