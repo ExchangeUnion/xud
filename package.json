@@ -13,8 +13,9 @@
     "test:integration": "mocha test/integration --reporter spec",
     "start": "node lib/Xud.js",
     "dev": "nodemon lib/Xud.js",
-    "lint": "./node_modules/.bin/eslint . ./**/*.js",
-    "db:init": "gulp db.init"
+    "lint": "eslint . ./**/*.js",
+    "db:init": "gulp db.init",
+    "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md"
   },
   "repository": {
     "type": "git",
@@ -63,6 +64,7 @@
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.9.0",
     "gulp-runner": "^1.1.0",
+    "jsdoc-to-markdown": "^4.0.1",
     "mocha": "^5.0.5",
     "nodemon": "^1.17.2",
     "require-dir": "^1.0.0"
