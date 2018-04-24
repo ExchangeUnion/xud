@@ -6,12 +6,7 @@ services:
       context: .
     volumes:
       - ./:/opt/xud
-    environment:
-      DB_HOST: "db"
-      DB_PORT: 3306
-      DB_USER: "root"
-      DB_PASSWORD: ""
-      DB_NAME: "xud"
+      - ./xud.conf:/home/node/.xud
     ports:
       - "8885"
       - "8886"
