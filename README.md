@@ -38,7 +38,7 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 
 ## Command-Line Interface
 
-Spawning a new `xud` process
+Spawn a new `xud` process
 
 ```bash
 ~/xud/bin $ ./xud 
@@ -47,13 +47,13 @@ Options:
   -p, --p2p.port                                        [number] [default: 8885] 
 ```
 
-Interacting with an `xud` process, identified by his rpc port
+Interact with an `xud` process, identified by his `rpc` port
 ```bash
 ~/xud/bin $ ./xucli --help
 xucli [command]
 
 Commands:
-  xucli connect <p2p_host> [p2p_port]            connect to an xu node
+  xucli connect <host> [port]                    connect to an xu node
   xucli getinfo                                  get general info from the xud node
   xucli getorders                                get orders from the orderbook
   xucli getpairs                                 get orderbook's available pairs
