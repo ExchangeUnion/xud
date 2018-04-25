@@ -105,3 +105,7 @@ To initialize the database with default testing data, run the following command:
 ```bash
 npm run db:init
 ```
+
+## Documentation
+
+[Read the JSDoc here](doc/jsdoc.md).
