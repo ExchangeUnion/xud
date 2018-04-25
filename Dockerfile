@@ -25,4 +25,4 @@ WORKDIR $HOME/.xud
 WORKDIR /opt/xud
 
 # Start Exchange Union Daemon
-ENTRYPOINT ["bin/xud"] 
+ENTRYPOINT ["bin/xud"]

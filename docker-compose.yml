@@ -32,3 +32,4 @@ volumes:
 
 networks:
   xud:
+  
