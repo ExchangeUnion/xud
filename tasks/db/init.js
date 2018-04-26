@@ -19,16 +19,16 @@ gulp.task('db.init', async () => {
 
   await Promise.all([
     p2pRepository.addPeers([
-      { nodeKey: '/xud/0.0.1', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.2', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.3', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.4', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.5', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.6', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.7', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.8', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.9', ipv4: '127.0.0.1', port: '8885' },
-      { nodeKey: '/xud/0.0.10', ipv4: '127.0.0.1', port: '8885' },
+      { address: '127.0.0.1', port: '8885' },
+      { address: '127.0.0.2', port: '8885' },
+      { address: '127.0.0.3', port: '8885' },
+      { address: '127.0.0.4', port: '8885' },
+      { address: '127.0.0.5', port: '8885' },
+      { address: '127.0.0.1', port: '9885' },
+      { address: '127.0.0.2', port: '9885' },
+      { address: '127.0.0.3', port: '9885' },
+      { address: '127.0.0.4', port: '9885' },
+      { address: '127.0.0.5', port: '9885' },
     ]),
     orderBookRepository.addCurrencies([
       { id: 'BTC' },
