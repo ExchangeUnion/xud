@@ -1,0 +1,35 @@
+version: '3.3'
+services:
+  xu:
+    image: exchangeunion
+    build:
+      context: .
+    volumes:
+      - ./:/opt/xud
+      - ./xud.conf:/home/node/.xud
+    ports:
+      - "8885"
+      - "8886"
+    networks:
+      - xud
+    depends_on:
+      - "db"
+    command: "gulp db.init && npm run dev"
+  db:
+    image: mysql:5.7
+    restart: always
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "3306"
+    networks:
+      - xud
+
+volumes:
+  db-data:
+
+networks:
+  xud:
+  
