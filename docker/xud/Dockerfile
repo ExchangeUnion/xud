@@ -1,12 +1,12 @@
 FROM node:8
 
-WORKDIR /opt/xud
+WORKDIR /opt
 RUN mkdir logs
 
 # Install Deps
 RUN npm install -g gulp nodemon
-RUN git clone https://github.com/ExchangeUnion/xud .
-RUN npm install
+RUN git clone https://github.com/ExchangeUnion/xud
+RUN cd xud && npm install
 
 # Expose P2P & RPC ports
 EXPOSE 8885 
