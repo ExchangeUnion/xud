@@ -5,11 +5,8 @@ RUN mkdir logs
 
 # Install Deps
 RUN npm install -g gulp nodemon
-COPY package*.json ./
+RUN git clone https://github.com/ExchangeUnion/xud .
 RUN npm install
-
-# Copy code
-COPY . .
 
 # Expose P2P & RPC ports
 EXPOSE 8885 
