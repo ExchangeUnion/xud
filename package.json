@@ -16,7 +16,7 @@
     "compile": "rm -rf ./dist && tsc",
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
-    "lint": "./node_modules/.bin/tslint ./lib/**/*.ts ./bin/*",
+    "lint": "tslint ./lib/**/*.ts ./bin/*",
     "db:init": "gulp db.init",
     "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md"
   },
