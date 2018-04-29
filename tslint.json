@@ -6,6 +6,7 @@
     "max-line-length": [true, 150],
     "no-else-after-return": false,
     "function-name": false,
-    "no-this-assignment": [true, {"allow-destructuring": true}]
+    "no-this-assignment": [true, {"allow-destructuring": true}],
+    "align": false
   }
 }

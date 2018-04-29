@@ -8,7 +8,7 @@ export default (sequelize, DataTypes) => {
     swapProtocol: {
       type: DataTypes.ENUM, values: Object.values(enums.swapProtocols), allowNull: true,
     },
-  }, { // tslint:disable align
+  }, {
     tableName: 'pairs',
   });
 

@@ -33,7 +33,7 @@ class XUClient {
           'Content-Length': postData.length,
         },
         method: 'POST',
-      },                       (res) => {
+      }, (res) => {
         res.setEncoding('utf8');
         let body = '';
         res.on('data', (chunk) => {

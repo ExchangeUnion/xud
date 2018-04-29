@@ -90,7 +90,7 @@ class LndClient {
       this.lightning.addInvoice({
         value,
         memo: 'XU',
-      },                        this.meta, (err, response) => {
+      }, this.meta, (err, response) => {
         if (err) {
           reject(err);
         } else {

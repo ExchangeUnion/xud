@@ -6,7 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     quantity: DataTypes.DECIMAL(14, 8),
     price: DataTypes.DECIMAL(14, 8),
     createdAt: DataTypes.DATE,
-  },                             {
+  }, {
     tableName: 'orders',
     timestamps: false,
   });

@@ -4,7 +4,7 @@ export default (sequelize, DataTypes) => {
     address: { type: DataTypes.STRING(39), allowNull: false },
     port: { type: DataTypes.INTEGER, allowNull: false },
     pubKey: { type: DataTypes.STRING, allowNull: true, unique: true },
-  },                            {
+  }, {
     tableName: 'peers',
     indexes: [{
       unique: true,
