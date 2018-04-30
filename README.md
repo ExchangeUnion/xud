@@ -108,4 +108,4 @@ npm run db:init
 
 ## Documentation
 
-[Read the JSDoc here](doc/jsdoc.md).
+[Read the TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).

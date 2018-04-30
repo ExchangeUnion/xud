@@ -63,3 +63,5 @@ dist/
 #  Webstorm config
 .idea/
 
+# typedoc
+typedoc/
