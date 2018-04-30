@@ -1,11 +1,11 @@
 import uuidv1 from 'uuid/v1';
 
-import Logger from 'lib/Logger';
-import OrderBookRepository from 'lib/orderbook/OrderBookRepository';
-import MatchingEngine from 'lib/orderbook/MatchingEngine';
-import MatchesProcessor from 'lib/orderbook/MatchesProcessor';
-import errors from 'lib/orderbook/errors';
 import utils from 'lib/utils/utils';
+import Logger from 'lib/Logger';
+import OrderBookRepository from './OrderBookRepository';
+import MatchingEngine from './MatchingEngine';
+import MatchesProcessor from './MatchesProcessor';
+import errors from './errors';
 
 class OrderBook {
   logger: any;

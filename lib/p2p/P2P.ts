@@ -4,8 +4,8 @@ import { EventEmitter } from 'events';
 import assert from 'assert';
 import dns from 'dns';
 
-import Peer from 'lib/p2p/Peer';
-import P2PRepository from 'lib/p2p/P2PRepository';
+import Peer from './Peer';
+import P2PRepository from './P2PRepository';
 import Logger from 'lib/Logger';
 
 const nodePubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
