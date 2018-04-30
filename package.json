@@ -15,7 +15,7 @@
     "dev": "npm-run-all -p compile:watch nodemon:watch",
     "compile": "rm -rf ./dist && tsc",
     "compile:watch": "tsc -w",
-    "nodemon:watch": "nodemon --watch NODE_PATH=./dist dist -e js dist/lib/Xud.js",
+    "nodemon:watch": "NODE_PATH=./dist nodemon --watch -e js dist/lib/Xud.js",
     "lint": "tslint ./lib/**/*.ts ./bin/*",
     "db:init": "gulp db.init",
     "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md"
