@@ -9,13 +9,13 @@
   },
   "scripts": {
     "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "npm run compile && mocha dist/test/unit --reporter spec",
-    "test:integration": "npm run compile && mocha dist/test/integration --reporter spec",
-    "start": "npm run compile && node dist/lib/Xud.js",
+    "test:unit": "npm run compile && NODE_PATH=./dist mocha dist/test/unit --reporter spec",
+    "test:integration": "npm run compile && NODE_PATH=./dist mocha dist/test/integration --reporter spec",
+    "start": "npm run compile && NODE_PATH=./dist node dist/lib/Xud.js",
     "dev": "npm-run-all -p compile:watch nodemon:watch",
     "compile": "rm -rf ./dist && tsc",
     "compile:watch": "tsc -w",
-    "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
+    "nodemon:watch": "nodemon --watch NODE_PATH=./dist dist -e js dist/lib/Xud.js",
     "lint": "tslint ./lib/**/*.ts ./bin/*",
     "db:init": "gulp db.init",
     "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md"
