@@ -1,8 +1,9 @@
 import HttpJsonRpcServer from 'http-jsonrpc-server';
-import Logger from '../Logger';
 import assert from 'assert';
+
+import Logger from 'lib/Logger';
+import utils from 'lib/utils/utils';
 import RpcMethods from './RpcMethods';
-import utils from '../utils/utils';
 
 /** Class representing an Exchange Union RPC Server. */
 class RpcServer {

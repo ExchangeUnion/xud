@@ -1,6 +1,7 @@
 import FastPriorityQueue from 'fastpriorityqueue';
-import enums from '../constants/enums';
-import Logger from '../Logger';
+
+import enums from 'lib/constants/enums';
+import Logger from 'lib/Logger';
 
 class MatchingEngine {
   pairId: any;

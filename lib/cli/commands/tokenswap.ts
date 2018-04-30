@@ -1,4 +1,4 @@
-import command from '../command';
+import command from 'lib/cli/command';
 
 exports.command = 'tokenswap <identifier> <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
 

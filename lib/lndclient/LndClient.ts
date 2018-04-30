@@ -1,7 +1,8 @@
 import grpc from 'grpc';
 import fs from 'fs';
 import assert from 'assert';
-import Logger from '../Logger';
+
+import Logger from 'lib/Logger';
 import errors from './errors';
 
 /** A class representing a client to interact with a running lnd instance. */

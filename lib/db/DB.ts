@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import assert from 'assert';
 import Sequelize from 'sequelize';
-import Logger from '../Logger';
+
+import Logger from 'lib/Logger';
 
 class DB {
   models: any;

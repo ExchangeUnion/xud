@@ -1,4 +1,4 @@
-import XUClient from '../xuclient/XUClient';
+import XUClient from 'lib/xuclient/XUClient';
 
 /**
  * A generic function to instantiate an XU client, perform a command, and output the result to the

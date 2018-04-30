@@ -1,7 +1,8 @@
 import http from 'http';
 import assert from 'assert';
+
+import Logger from 'lib/Logger';
 import errors from './errors';
-import Logger from '../Logger';
 
 class RaidenClient {
   static statuses = {
