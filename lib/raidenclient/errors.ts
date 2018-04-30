@@ -1,4 +1,4 @@
-import errorCodesPrefix from '../constants/errorCodesPrefix';
+import errorCodesPrefix from 'lib/constants/errorCodesPrefix';
 
 const codesPrefix = errorCodesPrefix.RAIDEN;
 const errors : any = {};

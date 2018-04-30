@@ -1,4 +1,4 @@
-import command from '../command';
+import command from 'lib/cli/command';
 
 exports.command = 'shutdown';
 

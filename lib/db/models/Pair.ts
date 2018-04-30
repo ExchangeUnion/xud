@@ -1,4 +1,4 @@
-import enums from'../../constants/enums';
+import enums from 'lib/constants/enums';
 
 export default (sequelize, DataTypes) => {
   const Pair = sequelize.define('Pair', {

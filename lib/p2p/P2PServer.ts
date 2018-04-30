@@ -1,8 +1,9 @@
 const Peer: any = require('./Peer');
 
 import net from 'net';
-import Logger from '../Logger';
 import assert from 'assert';
+
+import Logger from 'lib/Logger';
 
 /** Class representing a server that accepts incoming peer connections */
 class P2PServer {
