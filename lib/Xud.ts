@@ -1,12 +1,12 @@
-import Logger from 'lib/Logger';
-import Config from 'lib/Config';
-import DB from 'lib/db/DB';
-import OrderBook from 'lib/orderbook/OrderBook';
-import LndClient from 'lib/lndclient/LndClient';
-import RaidenClient from 'lib/raidenclient/RaidenClient';
-import RpcServer from 'lib/rpc/RpcServer';
-import P2P from 'lib/p2p/P2P';
-import P2PServer from 'lib/p2p/P2PServer';
+import Logger from './Logger';
+import Config from './Config';
+import DB from './db/DB';
+import OrderBook from './orderbook/OrderBook';
+import LndClient from './lndclient/LndClient';
+import RaidenClient from './raidenclient/RaidenClient';
+import RpcServer from './rpc/RpcServer';
+import P2P from './p2p/P2P';
+import P2PServer from './p2p/P2PServer';
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {

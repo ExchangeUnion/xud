@@ -6,7 +6,7 @@ import dns from 'dns';
 
 import Peer from './Peer';
 import P2PRepository from './P2PRepository';
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 const nodePubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
 

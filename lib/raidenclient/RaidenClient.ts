@@ -1,7 +1,7 @@
 import http from 'http';
 import assert from 'assert';
 
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 import errors from './errors';
 
 class RaidenClient {

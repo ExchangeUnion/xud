@@ -1,4 +1,4 @@
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 class MatchesProcessor {
   buffer: any[];

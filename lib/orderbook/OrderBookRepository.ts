@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 
-import Logger from 'lib/Logger';
-import baseRepository from 'lib/db/baseRepository';
+import Logger from '../Logger';
+import baseRepository from '../db/baseRepository';
 
 class OrderbookRepository {
   logger: any;

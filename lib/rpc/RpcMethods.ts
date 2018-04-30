@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 /** Class containing the available RPC methods for Exchange Union */
 class RpcMethods {

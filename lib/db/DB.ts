@@ -3,7 +3,7 @@ import path from 'path';
 import assert from 'assert';
 import Sequelize from 'sequelize';
 
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 class DB {
   models: any;

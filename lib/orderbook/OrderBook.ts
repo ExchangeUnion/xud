@@ -1,7 +1,7 @@
 import uuidv1 from 'uuid/v1';
 
-import utils from 'lib/utils/utils';
-import Logger from 'lib/Logger';
+import utils from '../utils/utils';
+import Logger from '../Logger';
 import OrderBookRepository from './OrderBookRepository';
 import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import toml from 'toml';
-import utils from 'lib/utils/utils';
+import utils from './utils/utils';
 
 class Config {
   args: any;

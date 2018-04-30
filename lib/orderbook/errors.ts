@@ -1,4 +1,4 @@
-import errorCodesPrefix from 'lib/constants/errorCodesPrefix';
+import errorCodesPrefix from '../constants/errorCodesPrefix';
 
 const codesPrefix = errorCodesPrefix.ORDERBOOK;
 const errors: any = {};

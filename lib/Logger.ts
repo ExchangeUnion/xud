@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import winston from 'winston';
 
-import utils from 'lib/utils/utils';
+import utils from './utils/utils';
 
 class Logger {
   static levels = {

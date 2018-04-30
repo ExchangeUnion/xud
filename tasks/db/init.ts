@@ -2,11 +2,11 @@ import gulp from 'gulp';
 import { argv } from 'yargs';
 import uuidv1 from 'uuid/v1';
 
-import Config from 'lib/Config';
-import DB from 'lib/db/DB';
-import enums from 'lib/constants/enums';
-import OrderBookRepository from 'lib/orderbook/OrderBookRepository';
-import P2PRepository from 'lib/p2p/P2PRepository';
+import Config from '../../lib/Config';
+import DB from '../../lib/db/DB';
+import enums from '../../lib/constants/enums';
+import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
+import P2PRepository from '../../lib/p2p/P2PRepository';
 
 gulp.task('db.init', async () => {
   const config = new Config(null);

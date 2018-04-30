@@ -10,10 +10,10 @@
   "scripts": {
     "start": "npm run compile && npm run run",
     "compile": "rm -rf ./dist && tsc",
-    "run": "NODE_PATH=./dist node dist/lib/Xud.js",
-    "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon\"",
+    "run": "node dist/lib/Xud.js",
+    "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
-    "nodemon": "NODE_PATH=./dist nodemon --watch dist -e js dist/lib/Xud.js",
+    "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
     "lint": "tslint ./lib/**/*.ts ./bin/*",
     "db:init": "gulp db.init",
     "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md",

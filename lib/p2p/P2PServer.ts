@@ -3,7 +3,7 @@ const Peer: any = require('./Peer');
 import net from 'net';
 import assert from 'assert';
 
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 /** Class representing a server that accepts incoming peer connections */
 class P2PServer {
