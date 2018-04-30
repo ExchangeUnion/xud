@@ -42,6 +42,9 @@
     "cross-chain"
   ],
   "author": "Daniel McNally",
+  "contributors": [
+    "Moshe Shababo"
+  ],
   "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/ExchangeUnion/xud/issues"
