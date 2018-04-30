@@ -41,13 +41,14 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 Spawn a new `xud` process
 
 ```bash
-~/xud/bin $ ./xud 
+~/xud/bin $ ./xud
 Options:
   -r, --rpc.port                                        [number] [default: 8886]
-  -p, --p2p.port                                        [number] [default: 8885] 
+  -p, --p2p.port                                        [number] [default: 8885]
 ```
 
-Interact with an `xud` process, identified by his `rpc` port
+Interact with an `xud` process, identified by its `rpc` port
+
 ```bash
 ~/xud/bin $ ./xucli --help
 xucli [command]
@@ -96,7 +97,6 @@ rpcprotopath = "lndrpc.proto"
 disable = false
 port = 5001
 ```
-
 
 ## Database Initialization
 
