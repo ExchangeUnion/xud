@@ -18,9 +18,11 @@
     "lint": "tslint ./lib/**/*.ts ./bin/*",
     "db:init": "gulp db.init",
     "doc": "jsdoc2md -f lib/**/*.js > doc/jsdoc.md",
-    "test": "npm run test:unit && npm run test:integration",
-    "test:unit": "npm run compile && NODE_PATH=./dist mocha dist/test/unit --reporter spec",
-    "test:integration": "npm run compile && NODE_PATH=./dist mocha dist/test/integration --reporter spec"
+    "test": "npm run test:unit && npm run test:int",
+    "test:unit": "mocha -r ts-node/register test/unit/*",
+    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
+    "test:int": "mocha -r ts-node/register test/integration/*",
+    "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts"
   },
   "repository": {
     "type": "git",
@@ -77,6 +79,7 @@
     "mocha": "^5.0.5",
     "nodemon": "^1.17.2",
     "require-dir": "^1.0.0",
+    "ts-node": "^6.0.2",
     "tslint": "^5.9.1",
     "tslint-config-airbnb": "^5.8.0"
   },
