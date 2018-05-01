@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const Xud = require('../lib/Xud');
+const Xud = require('../dist/lib/Xud').default;
+
 const { argv } = require('yargs')
   .number(['p2p.port', 'rpc.port', 'db.port', 'raiden.port'])
   .boolean(['db.operatorsAliases', 'p2p.listen'])

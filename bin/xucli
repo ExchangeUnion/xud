@@ -4,6 +4,6 @@ require('yargs')
   .number('rpc.port')
   .alias('r', 'rpc.port')
   .default('rpc.port', 8886)
-  .commandDir('../lib/cli/commands')
+  .commandDir('../dist/lib/cli/commands')
   .help()
   .argv; // we must read the argv property for the command line args to initialize properly
