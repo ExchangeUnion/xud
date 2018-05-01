@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import MatchingEngine from 'lib/orderbook/MatchingEngine';
-import enums from 'lib/constants/enums';
+import MatchingEngine from '../../lib/orderbook/MatchingEngine';
+import enums from '../../lib/constants/enums';
 
 describe('MatchingEngine.match', () => {
   it('should not match buy order which is smaller then a sell order', () => {

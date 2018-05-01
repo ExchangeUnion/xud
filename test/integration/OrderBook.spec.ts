@@ -3,11 +3,11 @@ import GulpRunner from 'gulp-runner';
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 
-import Config from 'lib/Config';
-import DB from 'lib/db/DB';
-import OrderBook from 'lib/orderbook/OrderBook';
+import Config from '../../lib/Config';
+import DB from '../../lib/db/DB';
+import OrderBook from '../../lib/orderbook/OrderBook';
 
-const gulpfile = path.resolve(__dirname, 'gulpfile.ts');
+const gulpfile = path.resolve(__dirname, '../../dist/gulpfile.js');
 const gulp = new GulpRunner(gulpfile);
 
 describe('OrderBook', () => {
