@@ -23,7 +23,7 @@ describe('OrderBook', () => {
       db = new DB(config.testDb);
       await db.init();
 
-      orderBook = new OrderBook(db, null);
+      orderBook = new OrderBook(db, undefined);
       await orderBook.init();
 
       done();
@@ -47,4 +47,3 @@ describe('OrderBook', () => {
     await db.close();
   });
 });
-
