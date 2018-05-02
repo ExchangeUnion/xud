@@ -62,15 +62,15 @@ class XUClient {
   }
 
   getInfo() {
-    return this.callRpc('getInfo', null);
+    return this.callRpc('getInfo', undefined);
   }
 
   getOrders() {
-    return this.callRpc('getOrders', null);
+    return this.callRpc('getOrders', undefined);
   }
 
   getPairs() {
-    return this.callRpc('getPairs', null);
+    return this.callRpc('getPairs', undefined);
   }
 
   placeOrder(order) {
@@ -95,7 +95,7 @@ class XUClient {
   }
 
   shutdown() {
-    return this.callRpc('shutdown', null);
+    return this.callRpc('shutdown', undefined);
   }
 }
 

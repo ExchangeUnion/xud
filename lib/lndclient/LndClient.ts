@@ -1,39 +1,35 @@
-import grpc from 'grpc';
+import grpc, { Metadata } from 'grpc';
 import fs from 'fs';
-import assert from 'assert';
 
 import Logger from '../Logger';
+import BaseClient, { ClientStatus } from'../BaseClient';
 import errors from './errors';
 
+interface LndClientConfig {
+  disable: boolean;
+  datadir: string;
+  rpcprotopath: string;
+}
+
 /** A class representing a client to interact with a running lnd instance. */
-class LndClient {
-
-  static statuses = {
-    DISABLED: 'DISABLED',
-    CONNECTION_VERIFIED: 'CONNECTION_VERIFIED', // assuming connection does not remain open
-  };
-
-  logger: any;
+class LndClient extends BaseClient{
   lightning: any;
-  meta: any;
-  status: any;
+  meta: Metadata | undefined;
 
   /**
    * Create an lnd client.
-   * @param {Object} options - The lnd configuration
+   * @param config - The lnd configuration
    */
-  constructor(options) {
-    const { disable, datadir, rpcprotopath } = options;
-    assert(typeof disable === 'boolean', 'disable must be a boolean');
-    assert(typeof datadir === 'string', 'datadir must be a string');
-    assert(typeof rpcprotopath === 'string', 'rpcprotopath must be a string');
+  constructor(config: LndClientConfig) {
+    super();
+    const { disable, datadir, rpcprotopath } = config;
 
     this.logger = Logger.global;
     if (disable) {
-      this.setStatus(LndClient.statuses.DISABLED);
+      this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(`${datadir}tls.cert`)) {
-      this.logger.error('could not find tls.cert in the lnd datadir, is lnd installed?');
-      this.setStatus(LndClient.statuses.DISABLED);
+      this.logger.error('could not find tls.cert in the lnd datadir, is lnd installed?', undefined);
+      this.setStatus(ClientStatus.DISABLED);
     } else {
       const lndCert = fs.readFileSync(`${datadir}tls.cert`);
       const credentials = grpc.credentials.createSsl(lndCert);
@@ -44,17 +40,8 @@ class LndClient {
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
-      this.setStatus(LndClient.statuses.CONNECTION_VERIFIED); // TODO: verify connection
+      this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
     }
-  }
-
-  isDisabled() {
-    return this.status === LndClient.statuses.DISABLED;
-  }
-
-  setStatus(val) {
-    this.logger.info(`lndClient status: ${val}`);
-    this.status = val;
   }
 
   /**
@@ -62,7 +49,7 @@ class LndClient {
    * alias, the chains it is connected to, and information concerning the number of
    * open+pending channels.
    */
-  getInfo() {
+  getInfo(): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
@@ -80,9 +67,9 @@ class LndClient {
 
   /**
    * Attempt to add a new invoice to the lnd invoice database.
-   * @param {number} value - The value of this invoice in satoshis
+   * @param value - The value of this invoice in satoshis
    */
-  addInvoice(value) {
+  addInvoice(value: number): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
@@ -103,9 +90,9 @@ class LndClient {
 
   /**
    * Pay an invoice through the Lightning Network.
-   * @param {string} payment_request - An invoice for a payment within the Lightning Network.
+   * @param payment_request - An invoice for a payment within the Lightning Network.
    */
-  payInvoice(payment_request) {
+  payInvoice(payment_request: string): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
