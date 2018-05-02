@@ -79,7 +79,6 @@ class MatchingEngine {
     }
   }
 
-
   addPeerBuyOrder(order) {
     return this.getMatchesOrAdd({
       order,
@@ -136,6 +135,5 @@ class MatchingEngine {
     });
   }
 }
-
 
 export default MatchingEngine;

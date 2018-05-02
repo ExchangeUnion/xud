@@ -1,4 +1,4 @@
-const baseRepository : any = {};
+const baseRepository: any = {};
 
 baseRepository.addOne = async (model, payload) => model.create(payload);
 

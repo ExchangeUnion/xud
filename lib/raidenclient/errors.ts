@@ -1,7 +1,7 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
 
 const codesPrefix = errorCodesPrefix.RAIDEN;
-const errors : any = {};
+const errors: any = {};
 
 errors.RAIDEN_IS_DISABLED = {
   message: 'raiden is disabled',

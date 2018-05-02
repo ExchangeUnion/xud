@@ -39,7 +39,7 @@ class RaidenClient {
     if (this.isDisabled()) {
       throw errors.RAIDEN_IS_DISABLED;
     }
-    const options : any = {
+    const options: any = {
       method,
       hostname: '127.0.0.1',
       port: this.port,
@@ -98,7 +98,7 @@ class RaidenClient {
       endpoint += `/${identifier}`;
     }
 
-    const res : any = await this.sendRequest(endpoint, 'PUT', payload);
+    const res: any = await this.sendRequest(endpoint, 'PUT', payload);
     if (res.statusCode === 201) {
       return 'swap created';
     } else {
@@ -110,7 +110,7 @@ class RaidenClient {
     assert(typeof channel_address === 'string', 'channel_address must be a string');
 
     const endpoint = `channels/${channel_address}`;
-    const res : any = await this.sendRequest(endpoint, 'GET', null);
+    const res: any = await this.sendRequest(endpoint, 'GET', null);
 
     res.setEncoding('utf8');
 

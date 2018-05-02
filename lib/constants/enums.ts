@@ -1,4 +1,4 @@
-const enums : any = {};
+const enums: any = {};
 
 enums.swapProtocols = {
   LND: 'LND',
