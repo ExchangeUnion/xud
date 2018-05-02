@@ -5,4 +5,3 @@ export default {
   LND: '4',
   RAIDEN: '5',
 };
-

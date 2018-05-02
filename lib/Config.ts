@@ -74,7 +74,7 @@ class Config {
     if (!fs.existsSync(this.xuDir)) {
       fs.mkdirSync(this.xuDir);
     } else if (fs.existsSync(`${this.xuDir}xud.conf`)) {
-      const configText : any = fs.readFileSync(`${this.xuDir}xud.conf`);
+      const configText: any = fs.readFileSync(`${this.xuDir}xud.conf`);
       try {
         const props = toml.parse(configText);
 

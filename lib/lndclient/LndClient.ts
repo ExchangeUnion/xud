@@ -37,7 +37,7 @@ class LndClient {
     } else {
       const lndCert = fs.readFileSync(`${datadir}tls.cert`);
       const credentials = grpc.credentials.createSsl(lndCert);
-      const lnrpcDescriptor : any = grpc.load(rpcprotopath);
+      const lnrpcDescriptor: any = grpc.load(rpcprotopath);
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning('127.0.0.1:10009', credentials);
 
       const adminMacaroon = fs.readFileSync(`${datadir}admin.macaroon`);
@@ -121,6 +121,5 @@ class LndClient {
     });
   }
 }
-
 
 export default LndClient;

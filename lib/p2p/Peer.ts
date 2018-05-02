@@ -5,16 +5,16 @@ function Peer({
   this.address = address;
   this.port = port;
 }
-  
+
 Peer.prototype.getKey = function getKey() {
   return `${this.address}:${this.port}`;
 };
-  
+
 Peer.prototype.toString = function toString() {
   const { host, address, port } = this;
   return !host || address === host
       ? `${address}:${port}`
       : `${host}[${address}]:${port}`;
 };
-  
+
 export default Peer;
