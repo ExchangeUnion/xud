@@ -7,6 +7,19 @@ import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 
+type Order = {
+  price: number;
+  quantity: number;
+  pairId: string;
+  peerId: any;
+  invoice: string;
+};
+
+type Orders = {
+  buyOrders: Order[];
+  sellOrders: Order[];
+};
+
 class OrderBook {
   logger: any;
   repository: OrderBookRepository;
@@ -39,10 +52,10 @@ class OrderBook {
       this.repository.getOwnOrders(),
     ]);
 
-    const buyOrdersByPairs = utils.groupBy(orders.buy, order => order.pairId);
-    const ownBuyOrdersByPairs = utils.groupBy(ownOrders.buy, order => order.pairId);
-    const sellOrdersByPairs = utils.groupBy(orders.sell, order => order.pairId);
-    const ownSellOrdersByPairs = utils.groupBy(ownOrders.sell, order => order.pairId);
+    const buyOrdersByPairs = utils.groupBy(orders.buyOrders, order => order.pairId);
+    const ownBuyOrdersByPairs = utils.groupBy(ownOrders.buyOrders, order => order.pairId);
+    const sellOrdersByPairs = utils.groupBy(orders.sellOrders, order => order.pairId);
+    const ownSellOrdersByPairs = utils.groupBy(ownOrders.sellOrders, order => order.pairId);
 
     this.matchingEngines = {};
     pairs.forEach((pair) => {
@@ -62,7 +75,10 @@ class OrderBook {
     return this.repository.getPairs();
   }
 
-  getOrders() {
+  /**
+   * Returns lists of buy and sell orders sorted by price.
+   */
+  getOrders(): Promise<Orders> {
     return this.repository.getOrders();
   }
 
@@ -99,3 +115,4 @@ class OrderBook {
 }
 
 export default OrderBook;
+export { Order, Orders };

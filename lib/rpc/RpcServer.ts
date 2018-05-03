@@ -4,34 +4,34 @@ import assert from 'assert';
 import Logger from '../Logger';
 import utils from '../utils/utils';
 import RpcMethods from './RpcMethods';
+import OrderBook from '../orderbook/OrderBook';
+import LndClient from '../lndclient/LndClient';
+import RaidenClient from '../raidenclient/RaidenClient';
+import P2P from '../p2p/P2P';
+
+/**
+ * The components required by the RPC server.
+ */
+type RpcComponents = {
+  orderBook: OrderBook;
+  lndClient: LndClient;
+  raidenClient: RaidenClient;
+  p2p: P2P;
+  /** The function to be called to shutdown the parent process */
+  shutdown: Function;
+};
 
 /** Class representing an Exchange Union RPC Server. */
 class RpcServer {
-  server: any;
-  logger: any;
+  server: HttpJsonRpcServer;
+  logger: Logger;
 
   /**
    * Create an RPC server.
-   * @param {OrderBook} $0.orderBook
-   * @param {LndClient} $0.lndClient
-   * @param {RaidenClient} $0.raidenClient
-   * @param {P2P} $0.p2p
-   * @param {function} $0.shutdown - The function to be called to shutdown the parent process
    */
-  constructor({
-    orderBook,
-    lndClient,
-    raidenClient,
-    p2p,
-    shutdown,
-  }) {
-    const rpcMethods = new RpcMethods({
-      orderBook,
-      lndClient,
-      raidenClient,
-      p2p,
-      shutdown,
-    });
+  constructor(components: RpcComponents) {
+    const rpcMethods = new RpcMethods(components);
+
     this.server = new HttpJsonRpcServer({
       onRequest: (request) => {
         this.logger.debug(`RPC server request: ${JSON.stringify(request)}`);
@@ -67,3 +67,4 @@ class RpcServer {
 }
 
 export default RpcServer;
+export { RpcComponents };

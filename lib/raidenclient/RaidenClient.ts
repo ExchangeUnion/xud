@@ -4,18 +4,18 @@ import assert from 'assert';
 import BaseClient, { ClientStatus } from'../BaseClient';
 import errors from './errors';
 
-interface RaidenClientConfig {
+type RaidenClientConfig = {
   disable: boolean;
   port: number;
-}
+};
 
-interface TokenSwapPayload {
+type TokenSwapPayload = {
   role: string;
   sending_amount: number;
   sending_token: string;
   receiving_amount: number;
   receiving_token: string;
-}
+};
 
 class RaidenClient extends BaseClient {
   port: number;
@@ -115,3 +115,4 @@ class RaidenClient extends BaseClient {
 }
 
 export default RaidenClient;
+export { RaidenClientConfig, TokenSwapPayload };
