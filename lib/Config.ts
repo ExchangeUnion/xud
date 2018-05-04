@@ -2,20 +2,22 @@ import fs from 'fs';
 import os from 'os';
 import toml from 'toml';
 import utils from './utils/utils';
+import { LndClientConfig } from './lndclient/LndClient';
+import { RaidenClientConfig } from './raidenclient/RaidenClient';
+import { DBConfig } from './db/DB';
 
 class Config {
-  args: any;
-  xuDir: any;
+  args?: object;
+  xuDir: string;
   p2p: any;
-  db: any;
+  db: DBConfig;
   testDb: any;
   rpc: any;
-  lnd: any;
-  raiden: any;
-  props: any;
+  lnd: LndClientConfig;
+  raiden: RaidenClientConfig;
 
   constructor(args) {
-    this.args = args || null;
+    this.args = args || undefined;
     const platform = os.platform();
     let lndDatadir;
     switch (platform) {
@@ -48,7 +50,7 @@ class Config {
       host: 'localhost',
       port: 3306,
       username: 'xud',
-      password: null,
+      password: undefined,
       database: 'xud',
       dialect: 'mysql',
     };
@@ -89,12 +91,8 @@ class Config {
     if (this.args) {
       // override our config file with command line arguments
       utils.deepMerge(this, this.args);
-      this.args = null;
+      this.args = undefined;
     }
-  }
-
-  get(key) {
-    return this.props[key];
   }
 }
 

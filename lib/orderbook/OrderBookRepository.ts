@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 
 import Logger from '../Logger';
 import baseRepository from '../db/baseRepository';
+import { Orders } from './OrderBook';
 
 class OrderbookRepository {
   logger: any;
@@ -16,8 +17,8 @@ class OrderbookRepository {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  async getOrders() {
-    const [buy, sell] = await Promise.all([
+  async getOrders(): Promise<Orders> {
+    const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
         order: [['price', 'DESC']],
@@ -30,13 +31,13 @@ class OrderbookRepository {
       }),
     ]);
     return {
-      buy,
-      sell,
+      buyOrders,
+      sellOrders,
     };
   }
 
   async getOwnOrders() {
-    const [buy, sell] = await Promise.all([
+    const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },
         order: [['price', 'DESC']],
@@ -49,8 +50,8 @@ class OrderbookRepository {
       }),
     ]);
     return {
-      buy,
-      sell,
+      buyOrders,
+      sellOrders,
     };
   }
 

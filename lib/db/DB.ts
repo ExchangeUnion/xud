@@ -5,20 +5,26 @@ import Sequelize from 'sequelize';
 
 import Logger from '../Logger';
 
+type DBConfig = {
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  database: string;
+  dialect: string;
+};
+
 class DB {
   models: any;
   logger: any;
   sequelize: Sequelize;
 
-  constructor(options) {
-    assert(typeof options.database === 'string', 'database name must be a string');
-    assert(typeof options.username === 'string', 'username name must be a string');
-    assert(typeof options.host === 'string', 'host name must be a string');
-    assert(Number.isInteger(options.port) && options.port > 1023 && options.port < 65536, 'port must be an integer between 1024 and 65535');
+  constructor(config: DBConfig) {
+    assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.logger = Logger.global;
     this.sequelize = new Sequelize({
-      ...options,
+      ...config,
       operatorsAliases: false,
       dialectOptions: {
         multipleStatements: true,
@@ -100,3 +106,4 @@ class DB {
 }
 
 export default DB;
+export { DBConfig };

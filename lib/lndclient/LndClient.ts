@@ -5,11 +5,11 @@ import Logger from '../Logger';
 import BaseClient, { ClientStatus } from'../BaseClient';
 import errors from './errors';
 
-interface LndClientConfig {
+type LndClientConfig = {
   disable: boolean;
   datadir: string;
   rpcprotopath: string;
-}
+};
 
 /** A class representing a client to interact with a running lnd instance. */
 class LndClient extends BaseClient{
@@ -110,3 +110,4 @@ class LndClient extends BaseClient{
 }
 
 export default LndClient;
+export { LndClientConfig };

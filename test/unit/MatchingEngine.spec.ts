@@ -25,7 +25,6 @@ describe('MatchingEngine.match', () => {
   });
 });
 
-
 describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
     const comparator = MatchingEngine
