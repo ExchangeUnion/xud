@@ -8,7 +8,6 @@ import Pool from '../p2p/Pool';
 import utils from '../utils/utils';
 import Logger from '../Logger';
 
-
 type Order = {
   price: number;
   quantity: number;

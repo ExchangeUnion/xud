@@ -1,19 +1,19 @@
 import assert from 'assert';
-import net, {Socket} from 'net';
-import {EventEmitter} from 'events';
+import net, { Socket } from 'net';
+import { EventEmitter } from 'events';
 import NetAddress from './NetAddress';
-import Parser, {ParserError, ParserErrorType} from './Parser';
+import Parser, { ParserError, ParserErrorType } from './Parser';
 import Logger from '../Logger';
 
 const pubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
 
 enum ConnectionDirection {
   INBOUND,
-  OUTBOUND
+  OUTBOUND,
 }
 
 /** Represents a remote XU peer */
- class Peer extends EventEmitter {
+class Peer extends EventEmitter {
   public address!: NetAddress;
   private logger: Logger;
   private connected: boolean;
@@ -31,7 +31,7 @@ enum ConnectionDirection {
   get id(): string {
     assert(this.address);
     return this.address.hostname;
-  };
+  }
 
   get statusString(): string {
     if (this.connected) {
@@ -76,11 +76,12 @@ enum ConnectionDirection {
     // handshake process here
 
     this.emit('open');
-  };
+  }
 
   public destroy = (): void => {
-    if (this.destroyed)
+    if (this.destroyed) {
       return;
+    }
 
     this.destroyed = true;
     this.connected = false;
@@ -89,30 +90,31 @@ enum ConnectionDirection {
       this.socket.destroy();
       delete this.socket;
     }
-  };
+  }
 
   public sendOrder = (order: any) => { // TODO: change to Order type
     this.send('order', { order, pubKey });
-  };
+  }
 
   private send = (packetType: string, payload: any) => { // TODO: change packetType to enum, perhaps make a payload base class / dummy interface
     this.lastSend = Date.now();
     this.socket.write(`${packetType} ${JSON.stringify(payload)}\r\n`);
-  };
+  }
 
   private _init = () => {
     this.parser.on('packet', async (packet) => {
 
       // handle packet in the Peer level here, if necessary.
 
-      this.emit('packet', packet)
+      this.emit('packet', packet);
     });
 
     this.parser.on('error', (err: ParserError) => {
-      if (this.destroyed)
+      if (this.destroyed) {
         return;
+      }
 
-      switch(err.type) {
+      switch (err.type) {
         case ParserErrorType.UNPARSABLE_MESSAGE: {
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
           this.error(err);
@@ -126,7 +128,7 @@ enum ConnectionDirection {
         }
       }
     });
-  };
+  }
 
   private increaseBan = (score): boolean => {
     this.banScore += score;
@@ -138,7 +140,7 @@ enum ConnectionDirection {
     }
 
     return false;
-  };
+  }
 
   private initConnection = (): Promise<void> => {
     assert(this.socket);
@@ -181,7 +183,7 @@ enum ConnectionDirection {
         reject(new Error('Connection timed out.'));
       }, 10000);
     });
-  };
+  }
 
   private connect = (address: NetAddress): void => {
     assert(!this.socket);
@@ -193,7 +195,7 @@ enum ConnectionDirection {
     this.connected = false;
 
     this.bind(socket);
-  };
+  }
 
   private accept = (socket: Socket): void => {
     assert(!this.socket);
@@ -203,7 +205,7 @@ enum ConnectionDirection {
     this.connected = true;
 
     this.bind(socket);
-  };
+  }
 
   private bind = (socket: Socket) => {
     assert(!this.socket);
@@ -211,8 +213,9 @@ enum ConnectionDirection {
     this.socket = socket;
 
     this.socket.once('error', (err) => {
-      if (!this.connected)
+      if (!this.connected) {
         return;
+      }
 
       this.error(err);
       this.destroy();
@@ -230,18 +233,19 @@ enum ConnectionDirection {
     });
 
     this.socket.setNoDelay(true);
-  };
+  }
 
   private error = (err): void => {
-    if (this.destroyed)
+    if (this.destroyed) {
       return;
+    }
 
     // TODO: construct a proper error object
     const msg = `Socket Error (${this.id}): ${JSON.stringify(err)}`;
     this.logger.debug(msg);
 
-    this.emit('error', {msg, err});
-  };
+    this.emit('error', { msg, err });
+  }
 }
 
 export default Peer;

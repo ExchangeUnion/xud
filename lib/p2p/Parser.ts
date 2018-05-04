@@ -1,4 +1,4 @@
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 
 class ParserError {
   constructor(public type: ParserErrorType, public payload: string) {}
@@ -19,7 +19,7 @@ class Parser extends EventEmitter {
 
       switch (packetType) {
         case 'order': {
-          this.emit('packet', {packetType, payload});
+          this.emit('packet', { packetType, payload });
           break;
         }
         default:
@@ -32,4 +32,4 @@ class Parser extends EventEmitter {
 }
 
 export default Parser;
-export {ParserError, ParserErrorType}
+export { ParserError, ParserErrorType };

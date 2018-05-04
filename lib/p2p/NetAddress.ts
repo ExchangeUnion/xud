@@ -1,4 +1,4 @@
-import {Socket} from 'net';
+import { Socket } from 'net';
 
 /** Represents a network address */
 class NetAddress {
@@ -9,7 +9,7 @@ class NetAddress {
   constructor(public host, public port) {}
 
   static fromSocket(socket: Socket) {
-    const {remoteAddress: host, remotePort: port} = socket;
+    const { remoteAddress: host, remotePort: port } = socket;
     return new NetAddress(host, port);
   }
 }
