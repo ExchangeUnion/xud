@@ -58,8 +58,8 @@ class P2P extends EventEmitter {
           return;
         }
 
-        const peer = new Peer({ host, address, port });
-        if (this.peers[peer.getKey()]) {
+        const peer = new Peer();
+        if (this.peers[peer.id]) {
           resolve(`peer ${peer.toString()} is already connected`);
           return;
         }

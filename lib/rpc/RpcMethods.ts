@@ -1,17 +1,17 @@
 import assert from 'assert';
 import { RpcComponents } from './RpcServer';
 import Logger from '../Logger';
+import Pool from '../p2p/Pool';
 import OrderBook, { Order } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
-import P2P from '../p2p/P2P';
 
 /** Class containing the available RPC methods for Exchange Union */
 class RpcMethods implements RpcComponents {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
-  p2p: P2P;
+  pool: Pool;
   shutdown: Function;
   logger: Logger;
 
@@ -20,7 +20,7 @@ class RpcMethods implements RpcComponents {
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;
-    this.p2p = components.p2p;
+    this.pool = components.pool;
     this.shutdown = components.shutdown;
 
     this.logger = Logger.global;
@@ -75,10 +75,11 @@ class RpcMethods implements RpcComponents {
   }
 
   /**
-   * Connect to an XU node on a given host and port. See [[P2P.connect]]
+   * Connect to an XU node on a given host and port. See [[Pool.addOutbound]]
    */
-  connect({ host, port }: {host: string, port: number}) {
-    return this.p2p.connect(host, port);
+  async connect(params) {
+     const peer = await this.pool.addOutbound(params.host, params.port);
+     return peer.statusString;
   }
 
   /**

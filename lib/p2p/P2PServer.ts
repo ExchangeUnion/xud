@@ -1,8 +1,8 @@
-const Peer: any = require('./Peer');
 
 import net from 'net';
 import assert from 'assert';
 
+import Peer from './Peer';
 import Logger from '../Logger';
 
 /** Class representing a server that accepts incoming peer connections */
@@ -16,7 +16,7 @@ class P2PServer {
     this.logger = Logger.global;
     this.p2p = p2p;
     this.server = net.createServer(async (socket) => {
-      const peer = new Peer({ address: socket.remoteAddress, port: socket.remotePort });
+      const peer = new Peer();
       await p2p.addPeer(peer, socket);
       this.logger.debug(`peer ${peer.toString()} connected`);
     });
