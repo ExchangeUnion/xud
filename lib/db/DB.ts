@@ -53,6 +53,11 @@ class DB {
 
   async init() {
     try {
+      const initSequelize = new Sequelize('', this.sequelize.options.username, this.sequelize.options.password, this.sequelize.options);
+      await initSequelize.authenticate();
+      await initSequelize.query(`CREATE DATABASE IF NOT EXISTS ${this.sequelize.options.database};`);
+      await initSequelize.query(`GRANT ALL PRIVILEGES ON ${this.sequelize.options.database}.* TO '${this.sequelize.options.username}'@'%'`);
+      await initSequelize.close();
       await this.sequelize.authenticate();
       const { host, port, database } = this.sequelize.config;
       const { dialectName } = this.sequelize.connectionManager;
