@@ -5,7 +5,7 @@ import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import RpcServer from './rpc/RpcServer';
-import Pool from './P2P/Pool'
+import Pool from './p2p/Pool';
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
