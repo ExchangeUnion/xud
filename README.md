@@ -91,11 +91,14 @@ port = 8885
 
 [lnd]
 disable = false
+port = 10009
+host = "localhost"
 rpcprotopath = "lndrpc.proto"
 
 [raiden]
 disable = false
 port = 5001
+host = "localhost"
 ```
 
 ## Database Initialization

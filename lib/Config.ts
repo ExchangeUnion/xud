@@ -64,10 +64,13 @@ class Config {
     this.lnd = {
       disable: false,
       datadir: lndDatadir,
+      host: 'localhost',
+      port: 10009,
       rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {
       disable: false,
+      host: 'localhost',
       port: 5001,
     };
   }
