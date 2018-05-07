@@ -53,18 +53,27 @@ class DB {
 
   async init() {
     try {
-      const initSequelize = new Sequelize('', this.sequelize.options.username, this.sequelize.options.password, this.sequelize.options);
-      await initSequelize.authenticate();
-      await initSequelize.query(`CREATE DATABASE IF NOT EXISTS ${this.sequelize.options.database};`);
-      await initSequelize.query(`GRANT ALL PRIVILEGES ON ${this.sequelize.options.database}.* TO '${this.sequelize.options.username}'@'%'`);
-      await initSequelize.close();
       await this.sequelize.authenticate();
       const { host, port, database } = this.sequelize.config;
       const { dialectName } = this.sequelize.connectionManager;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database} dialect:${dialectName}`);
     } catch (err) {
-      this.logger.error('unable to connect to the database', err);
-      throw err;
+      if (err instanceof Sequelize.InvalidConnectionError) {
+        try {
+          const initSequelize = new Sequelize('', this.sequelize.options.username, this.sequelize.options.password, this.sequelize.options);
+          await initSequelize.authenticate();
+          await initSequelize.query(`CREATE DATABASE IF NOT EXISTS ${this.sequelize.options.database};`);
+          await initSequelize.query(`GRANT ALL PRIVILEGES ON ${this.sequelize.options.database}.* TO '${this.sequelize.options.username}'@'%'`);
+          await initSequelize.close();
+          await this.sequelize.authenticate();
+        } catch (err) {
+          this.logger.error('unable to connect to the database', err);
+          throw err;
+        }
+      } else {
+        this.logger.error('unable to connect to the database', err);
+        throw err;
+      }
     }
     const {
       Peer, Currency, Pair, Order,

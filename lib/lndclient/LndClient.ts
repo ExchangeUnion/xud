@@ -17,8 +17,6 @@ type LndClientConfig = {
 class LndClient extends BaseClient {
   lightning: any;
   meta: Metadata | undefined;
-  port: number;
-  host: string;
 
   /**
    * Create an lnd client.
@@ -29,8 +27,7 @@ class LndClient extends BaseClient {
     const { disable, datadir, host, port, rpcprotopath } = config;
 
     this.logger = Logger.global;
-    this.port = port;
-    this.host = host;
+
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(`${datadir}tls.cert`)) {
@@ -40,7 +37,7 @@ class LndClient extends BaseClient {
       const lndCert = fs.readFileSync(`${datadir}tls.cert`);
       const credentials = grpc.credentials.createSsl(lndCert);
       const lnrpcDescriptor: any = grpc.load(rpcprotopath);
-      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(this.host + ':' + this.port, credentials);
+      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
       const adminMacaroon = fs.readFileSync(`${datadir}admin.macaroon`);
       this.meta = new grpc.Metadata();

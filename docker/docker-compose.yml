@@ -22,6 +22,8 @@ services:
     image: mysql:5.7
     restart: always
     environment:
+      MYSQL_DATABASE: "xud"
+      MYSQL_USER: "xud"
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
     volumes:
       - db-data:/var/lib/mysql
@@ -121,3 +123,4 @@ volumes:
 
 networks:
   xud:
+
