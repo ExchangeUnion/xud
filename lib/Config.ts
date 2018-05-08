@@ -13,6 +13,7 @@ class Config {
   db: DBConfig;
   testDb: any;
   rpc: any;
+  api: any;
   lnd: LndClientConfig;
   raiden: RaidenClientConfig;
 
@@ -48,9 +49,9 @@ class Config {
     };
     this.db = {
       host: 'localhost',
-      port: 33006,
-      username: 'root',
-      password: undefined,
+      port: 32768,
+      username: 'xud',
+      password: 'xud',
       database: 'xud',
       dialect: 'mysql',
     };
@@ -60,6 +61,10 @@ class Config {
     };
     this.rpc = {
       port: 8886,
+    };
+    this.api = {
+      listen: false,
+      port: 8887,
     };
     this.lnd = {
       disable: false,

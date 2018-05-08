@@ -7,6 +7,7 @@ import RaidenClient from './raidenclient/RaidenClient';
 import P2P from './p2p/P2P';
 import P2PServer from './p2p/P2PServer';
 import GrpcServer from './grpc/GrpcServer';
+import GrpcWebAPIProxy from './grpc/GrpcWebProxy';
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
@@ -19,6 +20,7 @@ class Xud {
   p2pServer: any;
   orderBook: any;
   rpcServer: any;
+  grpcAPIProxy: any;
 
   /**
    * Create an Exchange Union daemon.
@@ -62,6 +64,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       await this.rpcServer.listen(this.config.rpc.port);
+
+      if (this.config.api.listen) {
+        this.grpcAPIProxy = new GrpcWebAPIProxy();
+        await this.grpcAPIProxy.listen(this.config.api.port, this.config.rpc.port);
+      }
     } catch (err) {
       this.logger.error(err);
     }
@@ -76,14 +83,15 @@ class Xud {
       this.p2pServer.close();
     }
     this.p2p.closeAllConnections();
-
     // TODO: ensure we are not in the middle of executing any trades
-
     const msg = 'XUD shutdown gracefully';
     (async () => {
       // we use an immediately invoked function here to close rpcServer and exit process AFTER the
       // shutdown method returns a response.
       await this.rpcServer.close();
+      if (this.grpcAPIProxy) {
+        await this.grpcAPIProxy.close();
+      }
       this.logger.info(msg);
       this.db.close();
     })();

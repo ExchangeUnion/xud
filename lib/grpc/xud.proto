@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-//import "google/api/annotations.proto";
+import "google/api/annotations.proto";
 
 package xudrpc;
 
@@ -8,7 +8,7 @@ service XUDService {
   /**
    * Placeholder for a method to return general information about an Exchange Union node.
    */
- rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+ rpc GetInfo(Empty) returns (GetInfoResponse) {
     option (google.api.http) = {
         get: "/v1/getinfo"
     };
@@ -19,25 +19,25 @@ service XUDService {
    * Get the list of the orderbook's available pairs. See [[OrderBook.getPairs]].
    * @returns A list of available trading pairs
    */
- rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
+ rpc GetPairs(Empty) returns (GetPairsResponse) {
     option (google.api.http) = {
         get: "/v1/getpairs"
     };
   }
 
   /**
-   * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
+   * Get a list of standing orders from the orderbook.
    */
-  rpc GetOrders(OrdersRequest) returns (OrdersResponse) {
+  rpc GetOrders(Empty) returns (GetOrdersResponse) {
     option (google.api.http) = {
         get: "/v1/orders"
     };
   }
 
   /**
-   * Add an order to the orderbook. See [[OrderBook.addOrder()]].
+   * Add an order to the orderbook.
    */
-  rpc PlaceOrder(OrderRequest) returns (OrderResponse) {
+  rpc PlaceOrder(Order) returns (Order) {
     option (google.api.http) = {
         post: "/v1/orders"
         body: "*"
@@ -45,7 +45,7 @@ service XUDService {
   }
 
   /**
-   * Connect to an XU node on a given host and port. See [[P2P.connect]]
+   * Connect to an XU node on a given host and port.
    */
  rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
@@ -55,7 +55,7 @@ service XUDService {
   }
 
   /**
-   * Demo method to execute a Raiden Token Swap through XUD. See [[RaidenClient.tokenSwap]]
+   * Demo method to execute a Raiden Token Swap through XUD. 
   */
   rpc TokenSwap(TokenSwapRequest) returns (TokenSwapResponse) {
     option (google.api.http) = {
@@ -65,62 +65,81 @@ service XUDService {
   }
 }
 
-message GetInfoRequest {}
-
 message GetInfoResponse {
   /// The identity pubkey of the current node.
   string identity_pubkey = 1 [json_name = "identity_pubkey"];
-
   /// If applicable, the alias of the current node, e.g. "bob"
   string alias = 2 [json_name = "alias"];
-
   /// Number of pending channels
   uint32 num_pending_channels = 3 [json_name = "num_pending_channels"];
-
   /// Number of active channels
   uint32 num_active_channels = 4 [json_name = "num_active_channels"];
-
   /// Number of peers
   uint32 num_peers = 5 [json_name = "num_peers"];
-
   /// The node's current view of the height of the best block
   uint32 block_height = 6 [json_name = "block_height"];
-
   /// The node's current view of the hash of the best block
   string block_hash = 8 [json_name = "block_hash"];
-
   /// Whether the wallet's view is synced to the main chain
   bool synced_to_chain = 9 [json_name = "synced_to_chain"];
-
   /// Whether the current node is connected to testnet
   bool testnet = 10 [json_name = "testnet"];
-
   /// A list of active chains the node is connected to
   repeated string chains = 11 [json_name = "chains"];
-
   /// The URIs of the current node.
   repeated string uris = 12 [json_name = "uris"];
 }
 
-message OrderRequest {}
-
-message OrderResponse {}
-
-message GetPairsRequest {}
-
-message GetPairsResponse {}
-
-message TokenSwapRequest {}
-
-message TokenSwapResponse {}
-
-message ConnectRequest {
-  string host = 1;
-  uint32 port = 2;
+message Order {
+  uint32 price = 1 [json_name = "price"];
+  uint32 quantity = 2 [json_name = "quantity"];
+  string pair_id = 3 [json_name = "pair_id"];
+  string peer_id = 4 [json_name = "peer_id"];
+  string invoice = 5 [json_name = "invoice"];
 }
 
-message ConnectResponse {}
+message GetPairsResponse {
+  repeated Pair pairs =1 [json_name = "pairs"];
+}
 
-message OrdersRequest {}
+message Pair {
+  string id =1 [json_name = "id"];
+  string base_currency=2 [json_name = "base_currency"];
+  string quote_currency=3 [json_name = "quote_currency"];
+  string swap_protocol=4 [json_name = "swap_protocol"];
+}
 
-message OrdersResponse {}
+message TokenSwapRequest {
+  string target_address = 1 [json_name = "target_address"];
+  string identifier = 2 [json_name = "identifier"];
+  SwapPayload payload = 3 [json_name = "payload"];
+}
+
+message SwapPayload {
+  string role = 1 [json_name = "role"];
+  uint32 sending_amount = 2 [json_name = "sending_amount"];
+  string sending_token = 3 [json_name = "sending_token"];
+  uint32 receiving_amount = 4 [json_name = "receiving_amount"];
+  string receiving_token = 5 [json_name = "receiving_token"];
+}
+
+message TokenSwapResponse {
+  string result = 1 [json_name = "result"];
+}
+
+message ConnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+
+message ConnectResponse {
+  string result = 1 [json_name = "result"];
+}
+
+message GetOrdersResponse {
+  repeated Order buy_orders = 1 [json_name = "buy_orders"];
+  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+}
+
+message Empty {
+}
