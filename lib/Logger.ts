@@ -4,48 +4,40 @@ import winston from 'winston';
 
 import utils from './utils/utils';
 
+enum Level {
+  ERROR = 'error',
+  WARN = 'warn',
+  INFO = 'info',
+  VERBOSE = 'verbose',
+  DEBUG = 'debug',
+}
+
+enum Context {
+  GLOBAL,
+}
+
+const contextFileMap = {
+  [Context.GLOBAL]: 'xud.log',
+};
+
 class Logger {
-  static levels = {
-    ERROR: 0,
-    WARN: 1,
-    INFO: 2,
-    VERBOSE: 3,
-    DEBUG: 4,
-  };
-
-  static levelsVal = {
-    [Logger.levels.ERROR]: 'error',
-    [Logger.levels.WARN]: 'warn',
-    [Logger.levels.INFO]: 'info',
-    [Logger.levels.VERBOSE]: 'verbose',
-    [Logger.levels.DEBUG]: 'debug',
-  };
-
-  static contexts = {
-    GLOBAL: 0,
-  };
-
-  static contextsFilename = {
-    [Logger.contexts.GLOBAL]: 'xud.log',
-  };
+  level: string;
+  logDir: string;
+  context: Context;
+  logger: any;
 
   static defaultLogDir = 'logs';
 
   static defaultLevel = process.env.NODE_ENV === 'production'
-  ? Logger.levelsVal[Logger.levels.INFO]
-  : Logger.levelsVal[Logger.levels.DEBUG];
+  ? Level.INFO
+  : Level.DEBUG;
 
-  static global = new Logger({ context: Logger.contexts.GLOBAL, logDir: null, level: null });
+  static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
 
-  level: number;
-  logDir: string;
-  context: any;
-  logger: any;
-
-  constructor({ level, logDir, context }) {
+  constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
-    this.context = context || Logger.contexts.GLOBAL;
+    this.context = context || Context.GLOBAL;
 
     const { format } = winston;
     const logFormat = format.printf(
@@ -60,50 +52,43 @@ class Logger {
       transports: [
         new winston.transports.Console({ format: format.combine(format.colorize(), logFormat) }),
         new winston.transports.File({
-          filename: path.join(this.logDir, Logger.contextsFilename[this.context]),
+          filename: path.join(this.logDir, contextFileMap[this.context]),
         }),
       ],
     });
-
-    this.error = this.error.bind(this);
-    this.warn = this.warn.bind(this);
-    this.info = this.info.bind(this);
-    this.verbose = this.verbose.bind(this);
-    this.debug = this.debug.bind(this);
   }
 
-  log(level, msg) {
+  log = (level: string, msg: string) => {
     this.logger.log(level, msg);
   }
 
-  error(msg, err) {
-    let errMsg;
-    if (typeof msg === 'object') {
+  error = (msg: Error | string, err?: Error) => {
+    let errMsg: string;
+    if (msg instanceof Error) {
       // treat msg as an error object
-      errMsg = msg.stack;
+      errMsg = msg.stack ? msg.stack : '';
     } else if (err) {
       errMsg = `${msg} ${err.stack}`;
     } else {
       errMsg = msg;
     }
-    this.log(Logger.levelsVal[Logger.levels.ERROR], errMsg);
+    this.log(Level.ERROR, errMsg);
   }
 
-  warn(msg) {
-    this.log(Logger.levelsVal[Logger.levels.WARN], msg);
+  warn = (msg: string) => {
+    this.log(Level.WARN, msg);
   }
 
-  info(msg) {
-    this.log(Logger.levelsVal[Logger.levels.INFO], msg);
+  info = (msg: string) => {
+    this.log(Level.INFO, msg);
   }
 
-  verbose(msg) {
-    this.log(Logger.levelsVal[Logger.levels.VERBOSE], msg);
+  verbose = (msg: string) => {
+    this.log(Level.VERBOSE, msg);
   }
 
-  debug(msg) {
-    this.log(Logger.levelsVal[Logger.levels.DEBUG], msg);
+  debug = (msg: string) => {
+    this.log(Level.DEBUG, msg);
   }
 }
-
 export default Logger;

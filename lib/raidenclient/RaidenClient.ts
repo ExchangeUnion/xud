@@ -56,7 +56,7 @@ class RaidenClient extends BaseClient {
       });
 
       req.on('error', (err) => {
-        this.logger.error(err, undefined);
+        this.logger.error(err);
         reject(err);
       });
 
