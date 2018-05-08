@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { RpcComponents } from './RpcServer';
+import { GrpcComponents } from './GrpcServer';
 import Logger from '../Logger';
 import OrderBook, { Order } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
@@ -7,7 +7,7 @@ import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import P2P from '../p2p/P2P';
 
 /** Class containing the available RPC methods for Exchange Union */
-class RpcMethods implements RpcComponents {
+class GrpcMethods implements GrpcComponents {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
@@ -16,7 +16,7 @@ class RpcMethods implements RpcComponents {
   logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: RpcComponents) {
+  constructor(components: GrpcComponents) {
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;
@@ -89,4 +89,4 @@ class RpcMethods implements RpcComponents {
   }
 }
 
-export default RpcMethods;
+export default GrpcMethods;

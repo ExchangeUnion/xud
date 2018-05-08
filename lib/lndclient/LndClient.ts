@@ -2,17 +2,19 @@ import grpc, { Metadata } from 'grpc';
 import fs from 'fs';
 
 import Logger from '../Logger';
-import BaseClient, { ClientStatus } from'../BaseClient';
+import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 
 type LndClientConfig = {
   disable: boolean;
   datadir: string;
+  host: string;
+  port: number;
   rpcprotopath: string;
 };
 
 /** A class representing a client to interact with a running lnd instance. */
-class LndClient extends BaseClient{
+class LndClient extends BaseClient {
   lightning: any;
   meta: Metadata | undefined;
 
@@ -22,9 +24,10 @@ class LndClient extends BaseClient{
    */
   constructor(config: LndClientConfig) {
     super();
-    const { disable, datadir, rpcprotopath } = config;
+    const { disable, datadir, host, port, rpcprotopath } = config;
 
     this.logger = Logger.global;
+
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(`${datadir}tls.cert`)) {
@@ -34,7 +37,7 @@ class LndClient extends BaseClient{
       const lndCert = fs.readFileSync(`${datadir}tls.cert`);
       const credentials = grpc.credentials.createSsl(lndCert);
       const lnrpcDescriptor: any = grpc.load(rpcprotopath);
-      this.lightning = new lnrpcDescriptor.lnrpc.Lightning('127.0.0.1:10009', credentials);
+      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
       const adminMacaroon = fs.readFileSync(`${datadir}admin.macaroon`);
       this.meta = new grpc.Metadata();

@@ -4,9 +4,9 @@ import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
-import RpcServer from './rpc/RpcServer';
 import P2P from './p2p/P2P';
 import P2PServer from './p2p/P2PServer';
+import GrpcServer from './grpc/GrpcServer';
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
@@ -54,7 +54,7 @@ class Xud {
       this.orderBook = new OrderBook(this.db, this.p2p);
       await this.orderBook.init();
 
-      this.rpcServer = new RpcServer({
+      this.rpcServer = new GrpcServer({
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,

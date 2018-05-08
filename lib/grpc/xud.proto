@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+//import "google/api/annotations.proto";
+
+package xudrpc;
+
+service XUDService {
+  /**
+   * Placeholder for a method to return general information about an Exchange Union node.
+   */
+ rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+    option (google.api.http) = {
+        get: "/v1/getinfo"
+    };
+  }
+
+
+  /**
+   * Get the list of the orderbook's available pairs. See [[OrderBook.getPairs]].
+   * @returns A list of available trading pairs
+   */
+ rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
+    option (google.api.http) = {
+        get: "/v1/getpairs"
+    };
+  }
+
+  /**
+   * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
+   */
+  rpc GetOrders(OrdersRequest) returns (OrdersResponse) {
+    option (google.api.http) = {
+        get: "/v1/orders"
+    };
+  }
+
+  /**
+   * Add an order to the orderbook. See [[OrderBook.addOrder()]].
+   */
+  rpc PlaceOrder(OrderRequest) returns (OrderResponse) {
+    option (google.api.http) = {
+        post: "/v1/orders"
+        body: "*"
+    };
+  }
+
+  /**
+   * Connect to an XU node on a given host and port. See [[P2P.connect]]
+   */
+ rpc Connect(ConnectRequest) returns (ConnectResponse) {
+    option (google.api.http) = {
+        post: "/v1/connect"
+        body: "*"
+    };
+  }
+
+  /**
+   * Demo method to execute a Raiden Token Swap through XUD. See [[RaidenClient.tokenSwap]]
+  */
+  rpc TokenSwap(TokenSwapRequest) returns (TokenSwapResponse) {
+    option (google.api.http) = {
+        post: "/v1/tokenswap"
+        body: "*"
+    };
+  }
+}
+
+message GetInfoRequest {}
+
+message GetInfoResponse {
+  /// The identity pubkey of the current node.
+  string identity_pubkey = 1 [json_name = "identity_pubkey"];
+
+  /// If applicable, the alias of the current node, e.g. "bob"
+  string alias = 2 [json_name = "alias"];
+
+  /// Number of pending channels
+  uint32 num_pending_channels = 3 [json_name = "num_pending_channels"];
+
+  /// Number of active channels
+  uint32 num_active_channels = 4 [json_name = "num_active_channels"];
+
+  /// Number of peers
+  uint32 num_peers = 5 [json_name = "num_peers"];
+
+  /// The node's current view of the height of the best block
+  uint32 block_height = 6 [json_name = "block_height"];
+
+  /// The node's current view of the hash of the best block
+  string block_hash = 8 [json_name = "block_hash"];
+
+  /// Whether the wallet's view is synced to the main chain
+  bool synced_to_chain = 9 [json_name = "synced_to_chain"];
+
+  /// Whether the current node is connected to testnet
+  bool testnet = 10 [json_name = "testnet"];
+
+  /// A list of active chains the node is connected to
+  repeated string chains = 11 [json_name = "chains"];
+
+  /// The URIs of the current node.
+  repeated string uris = 12 [json_name = "uris"];
+}
+
+message OrderRequest {}
+
+message OrderResponse {}
+
+message GetPairsRequest {}
+
+message GetPairsResponse {}
+
+message TokenSwapRequest {}
+
+message TokenSwapResponse {}
+
+message ConnectRequest {
+  string host = 1;
+  uint32 port = 2;
+}
+
+message ConnectResponse {}
+
+message OrdersRequest {}
+
+message OrdersResponse {}

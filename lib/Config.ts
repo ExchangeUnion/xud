@@ -48,8 +48,8 @@ class Config {
     };
     this.db = {
       host: 'localhost',
-      port: 3306,
-      username: 'xud',
+      port: 33006,
+      username: 'root',
       password: undefined,
       database: 'xud',
       dialect: 'mysql',
@@ -64,10 +64,13 @@ class Config {
     this.lnd = {
       disable: false,
       datadir: lndDatadir,
+      host: 'localhost',
+      port: 10009,
       rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {
       disable: false,
+      host: 'localhost',
       port: 5001,
     };
   }

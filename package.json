@@ -10,7 +10,7 @@
   "scripts": {
     "postinstall": "npm run compile",
     "start": "npm run compile && npm run run",
-    "compile": "rm -rf ./dist && tsc",
+    "compile": "rm -rf ./dist && tsc && cp ./lib/grpc/xud.proto ./dist/lib/grpc/",
     "run": "node dist/lib/Xud.js",
     "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
@@ -55,8 +55,10 @@
   },
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
   "dependencies": {
+    "@types/google-protobuf": "^3.2.6",
     "fastpriorityqueue": "^0.3.1",
-    "grpc": "^1.9.1",
+    "google-protobuf": "^3.2.5",
+    "grpc": "^1.11.3",
     "gulp": "^3.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
     "mysql2": "^1.5.3",
