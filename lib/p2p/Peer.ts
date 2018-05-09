@@ -15,18 +15,18 @@ enum ConnectionDirection {
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   public address!: SocketAddress;
-  private logger: Logger;
-  private connected: boolean;
-  private opened: boolean;
+  private logger: Logger = Logger.global;
+  private connected: boolean = false;
+  private opened: boolean = false;
   private direction?: ConnectionDirection;
   private socket!: Socket;
-  private parser: Parser;
-  private destroyed: boolean;
+  private parser: Parser = new Parser();
+  private destroyed: boolean = false;
   private connectTimeout?: NodeJS.Timer;
-  private connectTime: number;
-  private banScore: number;
-  private lastRecv: number;
-  private lastSend: number;
+  private connectTime: number = 0;
+  private banScore: number = 0;
+  private lastRecv: number = 0;
+  private lastSend: number = 0;
 
   get id(): string {
     assert(this.address);
@@ -43,16 +43,6 @@ class Peer extends EventEmitter {
 
   constructor() {
     super();
-
-    this.logger = Logger.global;
-    this.connected = false;
-    this.opened = false;
-    this.parser = new Parser();
-    this.destroyed = false;
-    this.connectTime = 0;
-    this.banScore = 0;
-    this.lastRecv = 0;
-    this.lastSend = 0;
 
     this._init();
   }

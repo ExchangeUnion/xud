@@ -12,19 +12,14 @@ type PoolConfig = {
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
-  private peers: { [ key: string ]: Peer };
-  private server: Server;
-  private logger: Logger;
-  private connected: boolean;
-  private hosts: Hosts;
+  private peers: { [ key: string ]: Peer } = {};
+  private server: Server = net.createServer();
+  private logger: Logger = Logger.global;
+  private connected: boolean = false;
+  private hosts: Hosts = new Hosts();
 
   constructor(private config: PoolConfig) {
     super();
-    this.peers = {};
-    this.logger = Logger.global;
-    this.server = net.createServer();
-    this.hosts = new Hosts();
-    this.connected = false;
 
     this._init();
   }
