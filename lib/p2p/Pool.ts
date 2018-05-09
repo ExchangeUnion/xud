@@ -2,7 +2,7 @@ import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import Peer from './Peer';
 import Hosts from './Hosts';
-import NetAddress from './NetAddress';
+import NetAddress from './SocketAddress';
 import Logger from '../Logger';
 
 interface PoolConfig {

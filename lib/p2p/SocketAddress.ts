@@ -1,17 +1,17 @@
 import { Socket } from 'net';
 
 /** Represents a network address */
-class NetAddress {
-  get hostname(): string {
-    return `${this.host}:${this.port}`;
-  }
-
+class SocketAddress {
   constructor(public host, public port) {}
 
   static fromSocket(socket: Socket) {
     const { remoteAddress: host, remotePort: port } = socket;
-    return new NetAddress(host, port);
+    return new SocketAddress(host, port);
+  }
+
+  toString(): string {
+    return `${this.host}:${this.port}`;
   }
 }
 
-export default NetAddress;
+export default SocketAddress;

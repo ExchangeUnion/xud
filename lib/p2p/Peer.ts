@@ -1,7 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import NetAddress from './NetAddress';
+import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import Logger from '../Logger';
 
@@ -14,7 +14,7 @@ enum ConnectionDirection {
 
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
-  public address!: NetAddress;
+  public address!: SocketAddress;
   private logger: Logger;
   private connected: boolean;
   private opened: boolean;
@@ -30,7 +30,7 @@ class Peer extends EventEmitter {
 
   get id(): string {
     assert(this.address);
-    return this.address.hostname;
+    return this.address.toString();
   }
 
   get statusString(): string {
@@ -57,7 +57,7 @@ class Peer extends EventEmitter {
     this._init();
   }
 
-  static fromOutbound(address: NetAddress): Peer {
+  static fromOutbound(address: SocketAddress): Peer {
     const peer = new Peer();
     peer.connect(address);
     return peer;
@@ -185,7 +185,7 @@ class Peer extends EventEmitter {
     });
   }
 
-  private connect = (address: NetAddress): void => {
+  private connect = (address: SocketAddress): void => {
     assert(!this.socket);
 
     const socket = net.connect(address.port, address.host);
@@ -200,7 +200,7 @@ class Peer extends EventEmitter {
   private accept = (socket: Socket): void => {
     assert(!this.socket);
 
-    this.address = NetAddress.fromSocket(socket);
+    this.address = SocketAddress.fromSocket(socket);
     this.direction = ConnectionDirection.INBOUND;
     this.connected = true;
 
