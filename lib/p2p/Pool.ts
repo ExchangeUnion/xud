@@ -74,7 +74,7 @@ class Pool extends EventEmitter {
   }
 
   private handleSocket = (socket: Socket) => {
-    if (!socket.remoteAddress) {
+    if (!socket.remoteAddress) { // client disconnected, socket is destroyed
       this.logger.debug('Ignoring disconnected peer');
       socket.destroy();
       return;
