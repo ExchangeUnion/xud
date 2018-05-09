@@ -8,7 +8,7 @@ import { Arguments } from 'yargs';
  * @param callback The callback function to perform a command
  */
 export default (argv: Arguments, callback: (XUClient, Arguments) => Promise<any>) => {
-  const xuClient = new XUClient(argv.rpc.port);
+  const xuClient = new XUClient(argv.rpc.port, argv.rpc.host);
 
   const promise = callback(xuClient, argv);
 
