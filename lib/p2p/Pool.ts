@@ -51,13 +51,14 @@ class Pool extends EventEmitter {
   public addOutbound = async (host: string, port: number): Promise<Peer> => {
     const address = new NetAddress(host, port);
     const peer = Peer.fromOutbound(address);
+    await this.connectPeer(peer);
+    return peer;
+  }
 
+  private connectPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
-
     await peer.open();
     this.addPeer(peer);
-
-    return peer;
   }
 
   public broadcastOrder = (order: any) => {
@@ -68,12 +69,7 @@ class Pool extends EventEmitter {
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
     const peer = Peer.fromInbound(socket);
-
-    this.bindPeer(peer);
-
-    await peer.open();
-    this.addPeer(peer);
-
+    await this.connectPeer(peer);
     return peer;
   }
 
