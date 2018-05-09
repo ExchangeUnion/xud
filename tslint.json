@@ -20,5 +20,10 @@
         "variable-declaration": "nospace"
       }
     ]
+  },
+  "linterOptions": {
+    "exclude": [
+        "lib/lndclient/lndrpc_pb.d.ts"
+    ]
   }
 }
