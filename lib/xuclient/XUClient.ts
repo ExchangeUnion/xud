@@ -2,21 +2,22 @@ import http from 'http';
 import assert from 'assert';
 
 class XUClient {
-  port: number;
-  id: number;
+  port: number = 8886;
+  id: number = 1;
+  host: string = 'localhost';
 
-  constructor(port) {
+  constructor(port: number, host?: string) {
     if (port) {
-      assert(typeof port === 'number', 'port must be a number');
       assert(port > 1023 && port < 65536, 'port must be between 1024 and 65535');
+      this.port = port;
     }
-    this.port = port || 8886;
-
-    this.id = 1;
+    if (host) {
+      this.host = host;
+    }
   }
 
   callRpc(method, params) {
-    const { port, id } = this;
+    const { port, id, host } = this;
     this.id += 1;
     return new Promise((resolve, reject) => {
       const postData = JSON.stringify({
@@ -25,6 +26,7 @@ class XUClient {
         id,
         jsonrpc: '2.0',
       });
+
       const req = http.request({
         port,
         headers: {
@@ -33,6 +35,7 @@ class XUClient {
           'Content-Length': postData.length,
         },
         method: 'POST',
+        hostname: host,
       }, (res) => {
         res.setEncoding('utf8');
         let body = '';
