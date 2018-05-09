@@ -5,7 +5,7 @@ import Hosts from './Hosts';
 import NetAddress from './SocketAddress';
 import Logger from '../Logger';
 
-interface PoolConfig {
+type PoolConfig = {
   listen: boolean;
   port: number;
 }
@@ -170,3 +170,4 @@ class Pool extends EventEmitter {
 }
 
 export default Pool;
+export { PoolConfig }

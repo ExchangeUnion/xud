@@ -2,6 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import toml from 'toml';
 import utils from './utils/utils';
+import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
@@ -9,7 +10,7 @@ import { DBConfig } from './db/DB';
 class Config {
   args?: object;
   xuDir: string;
-  p2p: any;
+  p2p: PoolConfig;
   db: DBConfig;
   testDb: any;
   rpc: any;
