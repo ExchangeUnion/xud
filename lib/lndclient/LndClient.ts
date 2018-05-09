@@ -28,7 +28,7 @@ class LndClient extends BaseClient{
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(`${datadir}tls.cert`)) {
-      this.logger.error('could not find tls.cert in the lnd datadir, is lnd installed?', undefined);
+      this.logger.error('could not find tls.cert in the lnd datadir, is lnd installed?');
       this.setStatus(ClientStatus.DISABLED);
     } else {
       const lndCert = fs.readFileSync(`${datadir}tls.cert`);
