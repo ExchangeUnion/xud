@@ -1,13 +1,15 @@
-import command from '../command';
+import callback from '../command';
+import XUClient from '../../xuclient/XUClient';
+import { Arguments } from 'yargs';
 
-exports.command = 'getpairs';
+export const command = 'getpairs';
 
-exports.describe = 'get orderbook\'s available pairs';
+export const describe = 'get orderbook\'s available pairs';
 
-function callHandler(xuClient) {
+const callHandler = (xuClient: XUClient) => {
   return xuClient.getPairs();
-}
+};
 
-exports.handler = (argv) => {
-  command(argv, callHandler);
+export const handler = (argv: Arguments) => {
+  callback(argv, callHandler);
 };

@@ -1,10 +1,12 @@
-import command from '../command';
+import callback from '../command';
+import XUClient from '../../xuclient/XUClient';
+import { Arguments } from 'yargs';
 
-exports.command = 'connect <host> [port]';
+export const command = 'connect <host> [port]';
 
-exports.describe = 'connect to an xu node';
+export const describe = 'connect to an xu node';
 
-exports.builder = {
+export const builder = {
   host: {
     description: 'target p2p server host',
     type: 'string',
@@ -16,10 +18,10 @@ exports.builder = {
   },
 };
 
-function callHandler(xuClient, argv) {
+const callHandler = (xuClient: XUClient, argv: Arguments) => {
   return xuClient.connect(argv.host, argv.port);
-}
+};
 
-exports.handler = (argv) => {
-  command(argv, callHandler);
+export const handler = (argv: Arguments) => {
+  callback(argv, callHandler);
 };
