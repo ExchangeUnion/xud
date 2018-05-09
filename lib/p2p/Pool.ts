@@ -8,7 +8,7 @@ import Logger from '../Logger';
 type PoolConfig = {
   listen: boolean;
   port: number;
-}
+};
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
@@ -170,4 +170,4 @@ class Pool extends EventEmitter {
 }
 
 export default Pool;
-export { PoolConfig }
+export { PoolConfig };

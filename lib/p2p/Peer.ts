@@ -83,7 +83,7 @@ class Peer extends EventEmitter {
       delete this.socket;
     }
 
-    this.emit('close')
+    this.emit('close');
   }
 
   public sendOrder = (order: any): void => { // TODO: change to Order type
