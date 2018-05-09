@@ -60,11 +60,13 @@ class Peer extends EventEmitter {
   }
 
   public open = async (): Promise<void> => {
+    assert(!this.opened);
     this.opened = true;
 
     await this.initConnection();
-    // handshake process here
+    // TODO: handshake process here
 
+    // let the pool know that this peer is ready to go
     this.emit('open');
   }
 
@@ -80,6 +82,8 @@ class Peer extends EventEmitter {
       this.socket.destroy();
       delete this.socket;
     }
+
+    this.emit('close')
   }
 
   public sendOrder = (order: any): void => { // TODO: change to Order type
@@ -212,13 +216,11 @@ class Peer extends EventEmitter {
       switch (err.type) {
         case ParserErrorType.UNPARSABLE_MESSAGE: {
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.error(err);
           this.increaseBan(10);
           break;
         }
         case ParserErrorType.UNKNOWN_PACKET_TYPE: {
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
-          this.error(err);
           this.increaseBan(20);
         }
       }

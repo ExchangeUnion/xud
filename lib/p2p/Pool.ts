@@ -31,7 +31,7 @@ class Pool extends EventEmitter {
 
     await this.hosts.init();
 
-    // p2p bootstrap process here
+    // TODO: p2p bootstrap process here
 
     this.listen();
     this.connected = true;
@@ -96,9 +96,13 @@ class Pool extends EventEmitter {
 
   private handlePacket = (packet) => {
     // TODO: handle
-    console.log('packet: ' + JSON.stringify(packet));
+    console.log('handlePacket: ' + JSON.stringify(packet));
   }
 
+  private handleOpen = (peer: Peer) => {
+    // TODO: do post-handshake stuff here
+    console.log('handleOpen: ' + peer.id);
+  }
 
   private bindServer = (server: Server) => {
     server.on('error', (err) => {
@@ -122,6 +126,10 @@ class Pool extends EventEmitter {
 
     peer.on('error', (err) => {
       this.logger.error('peer error', err);
+    });
+
+    peer.once('open', () => {
+      this.handleOpen(peer);
     });
 
     peer.once('close', () => {
