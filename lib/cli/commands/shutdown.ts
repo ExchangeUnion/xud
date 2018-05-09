@@ -1,13 +1,15 @@
-import command from '../command';
+import callback from '../command';
+import XUClient from '../../xuclient/XUClient';
+import { Arguments } from 'yargs';
 
-exports.command = 'shutdown';
+export const command = 'shutdown';
 
-exports.describe = 'gracefully shutdown the xud node';
+export const describe = 'gracefully shutdown the xud node';
 
-function callHandler(xuClient) {
+const callHandler = (xuClient: XUClient) => {
   return xuClient.shutdown();
-}
+};
 
-exports.handler = (argv) => {
-  command(argv, callHandler);
+export const handler = (argv: Arguments) => {
+  callback(argv, callHandler);
 };
