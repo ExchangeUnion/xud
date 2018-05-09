@@ -44,7 +44,7 @@ class Peer extends EventEmitter {
   constructor() {
     super();
 
-    this._init();
+    this.bindParser(this.parser);
   }
 
   static fromOutbound(address: SocketAddress): Peer {
@@ -82,42 +82,13 @@ class Peer extends EventEmitter {
     }
   }
 
-  public sendOrder = (order: any) => { // TODO: change to Order type
+  public sendOrder = (order: any): void => { // TODO: change to Order type
     this.send('order', { order, pubKey });
   }
 
   private send = (packetType: string, payload: any) => { // TODO: change packetType to enum, perhaps make a payload base class / dummy interface
     this.lastSend = Date.now();
     this.socket.write(`${packetType} ${JSON.stringify(payload)}\r\n`);
-  }
-
-  private _init = () => {
-    this.parser.on('packet', async (packet) => {
-
-      // handle packet in the Peer level here, if necessary.
-
-      this.emit('packet', packet);
-    });
-
-    this.parser.on('error', (err: ParserError) => {
-      if (this.destroyed) {
-        return;
-      }
-
-      switch (err.type) {
-        case ParserErrorType.UNPARSABLE_MESSAGE: {
-          this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.error(err);
-          this.increaseBan(10);
-          break;
-        }
-        case ParserErrorType.UNKNOWN_PACKET_TYPE: {
-          this.logger.warn(`Unknown peer message type: ${err.payload}`);
-          this.error(err);
-          this.increaseBan(20);
-        }
-      }
-    });
   }
 
   private increaseBan = (score): boolean => {
@@ -184,7 +155,7 @@ class Peer extends EventEmitter {
     this.direction = ConnectionDirection.OUTBOUND;
     this.connected = false;
 
-    this.bind(socket);
+    this.bindSocket(socket);
   }
 
   private accept = (socket: Socket): void => {
@@ -194,10 +165,10 @@ class Peer extends EventEmitter {
     this.direction = ConnectionDirection.INBOUND;
     this.connected = true;
 
-    this.bind(socket);
+    this.bindSocket(socket);
   }
 
-  private bind = (socket: Socket) => {
+  private bindSocket = (socket: Socket) => {
     assert(!this.socket);
 
     this.socket = socket;
@@ -223,6 +194,35 @@ class Peer extends EventEmitter {
     });
 
     this.socket.setNoDelay(true);
+  }
+
+  private bindParser = (parser: Parser): void => {
+    parser.on('packet', async (packet) => {
+
+      // handle packet in the Peer level here, if necessary.
+
+      this.emit('packet', packet);
+    });
+
+    parser.on('error', (err: ParserError) => {
+      if (this.destroyed) {
+        return;
+      }
+
+      switch (err.type) {
+        case ParserErrorType.UNPARSABLE_MESSAGE: {
+          this.logger.warn(`Unparsable peer message: ${err.payload}`);
+          this.error(err);
+          this.increaseBan(10);
+          break;
+        }
+        case ParserErrorType.UNKNOWN_PACKET_TYPE: {
+          this.logger.warn(`Unknown peer message type: ${err.payload}`);
+          this.error(err);
+          this.increaseBan(20);
+        }
+      }
+    });
   }
 
   private error = (err): void => {

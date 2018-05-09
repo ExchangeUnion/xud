@@ -21,7 +21,7 @@ class Pool extends EventEmitter {
   constructor(private config: PoolConfig) {
     super();
 
-    this._init();
+    this.bindServer(this.server);
   }
 
   public connect = async (): Promise<void> => {
@@ -66,21 +66,6 @@ class Pool extends EventEmitter {
     });
   }
 
-  private _init = () => {
-    this.server.on('error', (err) => {
-      console.log('err: ' + err);
-    });
-
-    this.server.on('connection', (socket: Socket) => {
-      this.handleSocket(socket);
-    });
-
-    this.server.on('listening', () => {
-      const { address, port } = this.server.address();
-      this.logger.info(`pool server listening on ${address}:${port}`);
-    });
-  }
-
   private addInbound = async (socket: Socket): Promise<Peer> => {
     const peer = Peer.fromInbound(socket);
 
@@ -112,6 +97,22 @@ class Pool extends EventEmitter {
   private handlePacket = (packet) => {
     // TODO: handle
     console.log('packet: ' + JSON.stringify(packet));
+  }
+
+
+  private bindServer = (server: Server) => {
+    server.on('error', (err) => {
+      console.log('err: ' + err);
+    });
+
+    server.on('connection', (socket: Socket) => {
+      this.handleSocket(socket);
+    });
+
+    server.on('listening', () => {
+      const { address, port } = this.server.address();
+      this.logger.info(`pool server listening on ${address}:${port}`);
+    });
   }
 
   private bindPeer = (peer: Peer) => {
