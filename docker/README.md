@@ -1,10 +1,10 @@
 This document is written for people who are eager to do something with 
 the Exchange Union Daemon (`xud`). This folder uses `docker-compose` to
-package `xud` and `mysql` together to make deploying the two services as easy as
-typing a few commands. All configuration between `xud` and `mysql` are handled
+package `xud`, `mysql`, `lnd` & `btcd` together to make deploying the two services as easy as
+typing a few commands. All configuration between `xud`, `mysql` and other containers are handled
 automatically by their `docker-compose` config file.
 
-The goal of this is `docker-compose` to be able to spin up / lauch `xud` along with `lnd` & `Raiden` networks.
+The goal of this is that `docker-compose` to be able to spin up / lauch `xud` along with `lnd` & `Raiden` networks.
 
 ### Prerequisites
 * docker-compose 
@@ -23,7 +23,7 @@ Start Containers:
 ```bash
 $ docker-compose up -d
 ```
-Above command should create and launch both `xud` and  `mysql` containers as per the config in docker-compose.yml
+Above command should create and launch both `xud` and other required containers as per the config in docker-compose.yml
 
 Stopping Containers:
 ```bash
