@@ -12,7 +12,6 @@ services:
     ports:
       - "8885"
       - "8886"
-      - "8887"
     networks:
       - xud
     depends_on:
