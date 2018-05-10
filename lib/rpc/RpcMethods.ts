@@ -69,7 +69,7 @@ class RpcMethods implements RpcComponents {
     if (!this.lndClient.isDisabled()) {
       // temporary simple invoices until swaps are operational
       const invoice = await this.lndClient.addInvoice(order.price * order.quantity);
-      order.invoice = invoice.payment_request;
+      order.invoice = invoice.paymentRequest;
     }
     return this.orderBook.addOrder(order);
   }

@@ -54,20 +54,22 @@ Interact with an `xud` process, identified by its `rpc` port
 xucli [command]
 
 Commands:
-  xucli connect <host> [port]                    connect to an xu node
-  xucli getinfo                                  get general info from the xud node
-  xucli getorders                                get orders from the orderbook
-  xucli getpairs                                 get orderbook's available pairs
-  xucli placeorder <pair_id> <price> <quantity>  place an order
-  xucli shutdown                                 gracefully shutdown the xud node
-  xucli tokenswap <identifier> <role>            perform a raiden token swap
+  xucli connect <host> [port]               connect to an xu node
+  xucli getinfo                             get general info from the xud node
+  xucli getorders                           get orders from the orderbook
+  xucli getpairs                            get orderbook's available pairs
+  xucli placeorder <pair_id> <price>        place an order
+  <quantity>
+  xucli shutdown                            gracefully shutdown the xud node
+  xucli tokenswap <identifier> <role>       perform a raiden token swap
   <sending_amount> <sending_token>
   <receiving_amount> <receiving_token>
 
 Options:
-  --version      Show version number                                   [boolean]
-  --help         Show help                                             [boolean]
-  -r, --rpc.port                                        [number] [default: 8886]
+  --help          Show help                                            [boolean]
+  --version       Show version number                                  [boolean]
+  --rpc.port, -p  The RPC service port                  [number] [default: 8886]
+  --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
 ```
 
 ## Configuration
@@ -77,6 +79,7 @@ The configuration file uses [TOML](https://github.com/toml-lang/toml) and by def
 ```toml
 [rpc]
 port = 8886
+host = "localhost"
 
 [db]
 username = "xud"
