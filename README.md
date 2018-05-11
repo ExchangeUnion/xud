@@ -27,6 +27,8 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 
 ## Starting the Daemon
 
+Launch a new `xud` process
+
 ```bash
 ~/xud $ cd bin
 ~/xud/bin $ ./xud
@@ -36,16 +38,30 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 2018-3-2 11:36:06 - info: RPC server listening on port 8886
 ```
 
-## Command-Line Interface
-
-Spawn a new `xud` process
+Optional command line arguments
 
 ```bash
-~/xud/bin $ ./xud
+~/xud/bin $ ./xud --help
 Options:
-  -r, --rpc.port                                        [number] [default: 8886]
-  -p, --p2p.port                                        [number] [default: 8885]
+  --help              Show help                                        [boolean]
+  --version           Show version number                              [boolean]
+  --rpc.port, -r      RPC service port                                  [number]
+  --p2p.port, -p      Port to listen for incoming peers                 [number]
+  --p2p.listen        Listen for incoming peers                        [boolean]
+  --xudir, -x         Data directory for xud                            [string]
+  --db.host           Hostname for SQL database                         [string]
+  --db.port           Port for SQL database                             [number]
+  --db.username       User for SQL database                             [string]
+  --db.database       SQL database name                                 [string]
+  --db.dialect        SQL database dialect                              [string]
+  --lnd.disable       Disable lnd integration                          [boolean]
+  --lnd.datadir       Data directory for lnd                            [string]
+  --lnd.rpcprotopath  Path to lndrpc.proto file                         [string]
+  --raiden.disable    Disable raiden integration                       [boolean]
+  --raiden.port       Port for raiden REST service                      [number]
 ```
+
+## Command-Line Interface
 
 Interact with an `xud` process, identified by its `rpc` port
 
@@ -79,7 +95,6 @@ The configuration file uses [TOML](https://github.com/toml-lang/toml) and by def
 ```toml
 [rpc]
 port = 8886
-host = "localhost"
 
 [db]
 username = "xud"
@@ -94,6 +109,7 @@ port = 8885
 
 [lnd]
 disable = false
+datadir = "~/.lnd"
 rpcprotopath = "lndrpc.proto"
 
 [raiden]
