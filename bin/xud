@@ -3,14 +3,70 @@
 const Xud = require('../dist/lib/Xud').default;
 
 const { argv } = require('yargs')
-  .number(['p2p.port', 'rpc.port', 'db.port', 'raiden.port'])
-  .boolean(['db.operatorsAliases', 'p2p.listen'])
-  .default({
-    'db.operatorsAliases': undefined,
-    'p2p.listen': undefined,
-  })
-  .alias('r', 'rpc.port')
-  .alias('p', 'p2p.port');
+  .options({
+    'rpc.port': {
+      describe: 'RPC service port',
+      type: 'number',
+      alias: 'r',
+    },
+    'p2p.port': {
+      describe: 'Port to listen for incoming peers',
+      type: 'number',
+      alias: 'p',
+    },
+    'p2p.listen': {
+      describe: 'Listen for incoming peers',
+      type: 'boolean',
+      default: undefined,
+    },
+    xudir: {
+      describe: 'Data directory for xud',
+      type: 'string',
+      alias: 'x',
+    },
+    'db.host': {
+      describe: 'Hostname for SQL database',
+      type: 'string',
+    },
+    'db.port': {
+      describe: 'Port for SQL database',
+      type: 'number',
+    },
+    'db.username': {
+      describe: 'User for SQL database ',
+      type: 'string',
+    },
+    'db.database': {
+      describe: 'SQL database name',
+      type: 'string',
+    },
+    'db.dialect': {
+      describe: 'SQL database dialect',
+      type: 'string',
+    },
+    'lnd.disable': {
+      describe: 'Disable lnd integration',
+      type: 'boolean',
+      default: undefined,
+    },
+    'lnd.datadir': {
+      describe: 'Data directory for lnd',
+      type: 'string',
+    },
+    'lnd.rpcprotopath': {
+      describe: 'Path to lndrpc.proto file',
+      type: 'string',
+    },
+    'raiden.disable': {
+      describe: 'Disable raiden integration',
+      type: 'boolean',
+      default: undefined,
+    },
+    'raiden.port': {
+      describe: 'Port for raiden REST service',
+      type: 'number',
+    },
+  });
 
 // delete non-config keys from argv
 delete argv._;

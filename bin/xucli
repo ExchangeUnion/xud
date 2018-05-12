@@ -5,13 +5,13 @@ require('yargs')
     'rpc.port': {
       alias: 'p',
       default: 8886,
-      describe: 'The RPC service port',
+      describe: 'RPC service port',
       type: 'number',
     },
     'rpc.host': {
       alias: 'h',
       default: 'localhost',
-      describe: 'The RPC service hostname',
+      describe: 'RPC service hostname',
       type: 'string',
     },
   })

@@ -25,7 +25,38 @@ npm install
 
 Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user and database grant all permissions for the new database to the new user.
 
+## Configuration
+
+An optional configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows. Default settings which can be overridden are shown below.
+
+```toml
+[rpc]
+port = 8886
+
+[db]
+username = "xud"
+password = null
+database = "xud"
+port = 3306
+host = "localhost"
+
+[p2p]
+listen = true
+port = 8885
+
+[lnd]
+disable = false
+datadir = "~/.lnd"
+rpcprotopath = "lndrpc.proto"
+
+[raiden]
+disable = false
+port = 5001
+```
+
 ## Starting the Daemon
+
+Launch a new `xud` process
 
 ```bash
 ~/xud $ cd bin
@@ -36,18 +67,32 @@ Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You
 2018-3-2 11:36:06 - info: RPC server listening on port 8886
 ```
 
-## Command-Line Interface
-
-Spawn a new `xud` process
+Optional command line arguments to override defaults and settings in the [Configuration](#configuration) file for a specific `xud` instance
 
 ```bash
-~/xud/bin $ ./xud
+~/xud/bin $ ./xud --help
 Options:
-  -r, --rpc.port                                        [number] [default: 8886]
-  -p, --p2p.port                                        [number] [default: 8885]
+  --help              Show help                                        [boolean]
+  --version           Show version number                              [boolean]
+  --rpc.port, -r      RPC service port                                  [number]
+  --p2p.port, -p      Port to listen for incoming peers                 [number]
+  --p2p.listen        Listen for incoming peers                        [boolean]
+  --xudir, -x         Data directory for xud                            [string]
+  --db.host           Hostname for SQL database                         [string]
+  --db.port           Port for SQL database                             [number]
+  --db.username       User for SQL database                             [string]
+  --db.database       SQL database name                                 [string]
+  --db.dialect        SQL database dialect                              [string]
+  --lnd.disable       Disable lnd integration                          [boolean]
+  --lnd.datadir       Data directory for lnd                            [string]
+  --lnd.rpcprotopath  Path to lndrpc.proto file                         [string]
+  --raiden.disable    Disable raiden integration                       [boolean]
+  --raiden.port       Port for raiden REST service                      [number]
 ```
 
-Interact with an `xud` process, identified by its `rpc` port
+## Command-Line Interface
+
+Interact with an `xud` process, identified by its `rpc` host and port
 
 ```bash
 ~/xud/bin $ ./xucli --help
@@ -70,35 +115,6 @@ Options:
   --version       Show version number                                  [boolean]
   --rpc.port, -p  The RPC service port                  [number] [default: 8886]
   --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
-```
-
-## Configuration
-
-The configuration file uses [TOML](https://github.com/toml-lang/toml) and by default is located at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows. Default settings which can be overridden are shown below.
-
-```toml
-[rpc]
-port = 8886
-host = "localhost"
-
-[db]
-username = "xud"
-password = null
-database = "xud"
-port = 3306
-host = "localhost"
-
-[p2p]
-listen = true
-port = 8885
-
-[lnd]
-disable = false
-rpcprotopath = "lndrpc.proto"
-
-[raiden]
-disable = false
-port = 5001
 ```
 
 ## Database Initialization
