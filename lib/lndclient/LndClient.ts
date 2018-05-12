@@ -6,6 +6,9 @@ import BaseClient, { ClientStatus } from'../BaseClient';
 import errors from './errors';
 import * as lndrpc from './lndrpc_pb';
 
+/** Fixes a SSL issue with newer versions of LND */
+process.env.GRPC_SSL_CIPHER_SUITES = 'HIGH+ECDSA';
+
 /**
  * The configurable options for the lnd client.
  */
