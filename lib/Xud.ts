@@ -6,6 +6,10 @@ import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import RpcServer from './rpc/RpcServer';
 import Pool from './p2p/Pool';
+import dotenv from 'dotenv';
+
+/** Loads environment variables from the file .env */
+dotenv.config();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
