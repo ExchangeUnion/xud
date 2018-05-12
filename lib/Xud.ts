@@ -9,6 +9,9 @@ import P2P from './p2p/P2P';
 import P2PServer from './p2p/P2PServer';
 import dotenv from 'dotenv';
 
+/** Loads environment variables from the file .env */
+dotenv.config();
+
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
   logger: any;
@@ -38,9 +41,6 @@ class Xud {
   async start() {
     await this.config.load();
     this.logger.info('config loaded');
-
-    /** Loads environment variables from the file .env */
-    dotenv.config();
 
     try {
       this.db = new DB(this.config.db);
