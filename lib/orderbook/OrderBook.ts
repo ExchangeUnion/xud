@@ -1,11 +1,12 @@
 import uuidv1 from 'uuid/v1';
 
-import utils from '../utils/utils';
-import Logger from '../Logger';
 import OrderBookRepository from './OrderBookRepository';
 import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
+import Pool from '../p2p/Pool';
+import utils from '../utils/utils';
+import Logger from '../Logger';
 
 type Order = {
   price: number;
@@ -26,18 +27,17 @@ class OrderBook {
   matchesProcessor: MatchesProcessor;
   pairs: any;
   matchingEngines: any;
-  p2p: any;
 
-  constructor(db, p2p) {
+  constructor(db, private pool: Pool) {
     this.logger = Logger.global;
     this.repository = new OrderBookRepository(db);
     this.matchesProcessor = new MatchesProcessor();
     this.pairs = null;
     this.matchingEngines = null;
 
-    if (p2p) {
-      this.p2p = p2p;
-      this.p2p.on('neworder', this.addOrder);
+    if (pool) {
+      this.pool = pool;
+      this.pool.on('neworder', this.addOrder);
     }
 
     this.getOrders = this.getOrders.bind(this);
@@ -103,8 +103,8 @@ class OrderBook {
   }
 
   broadcastOrder(order) {
-    if (this.p2p) {
-      this.p2p.broadcastOrder(order);
+    if (this.pool) {
+      this.pool.broadcastOrder(order);
     }
   }
 
