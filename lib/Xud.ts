@@ -7,6 +7,7 @@ import RaidenClient from './raidenclient/RaidenClient';
 import RpcServer from './rpc/RpcServer';
 import P2P from './p2p/P2P';
 import P2PServer from './p2p/P2PServer';
+import dotenv from 'dotenv';
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
@@ -37,6 +38,9 @@ class Xud {
   async start() {
     await this.config.load();
     this.logger.info('config loaded');
+
+    /** Loads environment variables from the file .env */
+    dotenv.config();
 
     try {
       this.db = new DB(this.config.db);
