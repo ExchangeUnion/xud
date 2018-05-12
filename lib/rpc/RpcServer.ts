@@ -7,7 +7,7 @@ import RpcMethods from './RpcMethods';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient from '../raidenclient/RaidenClient';
-import P2P from '../p2p/P2P';
+import Pool from '../p2p/Pool';
 
 /**
  * The components required by the RPC server.
@@ -16,7 +16,7 @@ type RpcComponents = {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
-  p2p: P2P;
+  pool: Pool;
   /** The function to be called to shutdown the parent process */
   shutdown: Function;
 };
