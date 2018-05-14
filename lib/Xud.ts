@@ -50,7 +50,7 @@ class Xud {
       this.pool = new Pool(this.config.p2p);
       this.pool.connect();
 
-      this.orderBook = new OrderBook(this.db, this.pool);
+      this.orderBook = new OrderBook(this.db, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.rpcServer = new RpcServer({

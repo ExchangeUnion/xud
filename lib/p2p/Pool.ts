@@ -1,8 +1,12 @@
+import assert from 'assert';
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import Peer from './Peer';
 import Hosts from './Hosts';
 import NetAddress from './SocketAddress';
+import Packet from './packets/Packet';
+import packets, { PacketType, OrderPacket } from './packets';
+import { OutgoingOrder, PeerOrder } from '../types';
 import Logger from '../Logger';
 
 type PoolConfig = {
@@ -61,9 +65,10 @@ class Pool extends EventEmitter {
     this.addPeer(peer);
   }
 
-  public broadcastOrder = (order: any) => {
+  public broadcastOrder = (order: OutgoingOrder) => {
+    const orderPacket = OrderPacket.fromOutgoingOrder(order);
     Object.keys(this.peers).map((key) => {
-      this.peers[key].sendOrder(order);
+      this.peers[key].sendPacket(orderPacket);
     });
   }
 
@@ -90,9 +95,17 @@ class Pool extends EventEmitter {
     this.addInbound(socket);
   }
 
-  private handlePacket = (packet) => {
-    // TODO: handle
-    console.log('handlePacket: ' + JSON.stringify(packet));
+  private handlePacket = (peer: Peer, packet: Packet) => {
+    switch (packet.type) {
+      case PacketType.ORDER: {
+        const order: PeerOrder = { ...packet.body, peerId: peer.id };
+        this.emit('packet.order', order);
+        break;
+      }
+      default:
+        assert(false, `invalid packet type: ${packet.type}`);
+        break;
+    }
   }
 
   private handleOpen = (peer: Peer) => {
@@ -117,7 +130,7 @@ class Pool extends EventEmitter {
 
   private bindPeer = (peer: Peer) => {
     peer.on('packet', (packet) => {
-      this.handlePacket(packet);
+      this.handlePacket(peer, packet);
     });
 
     peer.on('error', (err) => {
