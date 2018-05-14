@@ -1,5 +1,6 @@
 import fs from 'fs';
 import os from 'os';
+import path from 'path';
 import toml from 'toml';
 import utils from './utils/utils';
 import { PoolConfig } from './p2p/Pool';
@@ -64,6 +65,9 @@ class Config {
     this.lnd = {
       disable: false,
       datadir: lndDatadir,
+      certificate: path.join(lndDatadir, 'tls.cert'),
+      host: '127.0.0.1:10009',
+      macaroon: path.join(lndDatadir, 'admin.macaroon'),
       rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {

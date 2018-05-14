@@ -53,6 +53,18 @@ const { argv } = require('yargs')
       describe: 'Data directory for lnd',
       type: 'string',
     },
+    'lnd.certificate': {
+      describe: 'Certificate for lnd',
+      type: 'string',
+    },
+    'lnd.host': {
+      describe: 'Host of the lnd gRPC interface',
+      type: 'string',
+    },
+    'lnd.macaroon': {
+      describe: 'Macaroon file for lnd',
+      type: 'string',
+    },
     'lnd.rpcprotopath': {
       describe: 'Path to lndrpc.proto file',
       type: 'string',
