@@ -115,7 +115,7 @@ class DB {
       await this.sequelize.query(`CREATE DATABASE ${this.sequelize.options.database};`);
       await this.sequelize.query(`USE ${this.sequelize.options.database}`);
     } catch (err) {
-      this.logger.error('unable to connect to the database', err);
+      this.logger.error('unable to create the database', err);
       throw err;
     }
   }
