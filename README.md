@@ -48,9 +48,11 @@ port = 8885
 disable = false
 datadir = "~/.lnd"
 rpcprotopath = "lndrpc.proto"
+host = "localhost"
 
 [raiden]
 disable = false
+host = "localhost"
 port = 5001
 ```
 

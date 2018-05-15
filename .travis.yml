@@ -1,8 +1,16 @@
 language: node_js
+sudo: required
 node_js:
   - "node"
   - "8"
 
+services:
+  - docker
+  - mysql
+
 script:
   - npm run lint
   - npm run test:unit
+  - cd docker/xud && docker build -t exchangeunion/xud .
+
+  
