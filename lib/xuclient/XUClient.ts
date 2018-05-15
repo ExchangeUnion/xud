@@ -1,9 +1,9 @@
-import http from 'http';
 import assert from 'assert';
+import grpc from 'grpc';
 
 class XUClient {
   port: number;
-  id: number;
+  grpcClient: any;
 
   constructor(port) {
     if (port) {
@@ -11,91 +11,94 @@ class XUClient {
       assert(port > 1023 && port < 65536, 'port must be between 1024 and 65535');
     }
     this.port = port || 8886;
-
-    this.id = 1;
+    const xurpc: any = grpc.load(__dirname + '/xud.proto', 'proto');
+    this.grpcClient = new xurpc.xudrpc.XUDService(`localhost:${port}`, grpc.credentials.createInsecure());
   }
 
-  callRpc(method, params) {
-    const { port, id } = this;
-    this.id += 1;
+  getInfo(): Promise<any> {
     return new Promise((resolve, reject) => {
-      const postData = JSON.stringify({
-        params,
-        method,
-        id,
-        jsonrpc: '2.0',
+      return this.grpcClient.getInfo({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
-      const req = http.request({
-        port,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'Content-Length': postData.length,
-        },
-        method: 'POST',
-      }, (res) => {
-        res.setEncoding('utf8');
-        let body = '';
-        res.on('data', (chunk) => {
-          body += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(body);
-          if (response.jsonrpc !== '2.0' || parseInt(response.id, 10) !== id) {
-            reject(new Error('unexpected response'));
-          }
-          if (response.error) {
-            reject(response.error);
-          } else {
-            resolve(response.result);
-          }
-        });
+    });
+  }
+
+  getOrders(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.getOrders({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
+    });
+  }
 
-      req.on('error', (err) => {
-        reject(err);
+  getPairs(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.getPairs({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
+    });
 
-      req.write(postData);
-      req.end();
+  }
+
+  placeOrder(order): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.placeOrder({ order }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
   }
 
-  getInfo() {
-    return this.callRpc('getInfo', undefined);
+  connect(host, port): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.connect({ host, port }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+
   }
 
-  getOrders() {
-    return this.callRpc('getOrders', undefined);
-  }
-
-  getPairs() {
-    return this.callRpc('getPairs', undefined);
-  }
-
-  placeOrder(order) {
-    return this.callRpc('placeOrder', {
-      order,
+  tokenSwap(target_address, payload, identifier): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.tokenSwap({ target_address, payload, identifier }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
   }
 
-  connect(host, port) {
-    return this.callRpc('connect', {
-      host,
-      port,
+  shutdown(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.shutdown({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
-  }
-
-  tokenSwap(target_address, payload, identifier) {
-    return this.callRpc('tokenSwap', {
-      target_address,
-      payload,
-      identifier,
-    });
-  }
-
-  shutdown() {
-    return this.callRpc('shutdown', undefined);
   }
 }
 
