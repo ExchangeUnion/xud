@@ -5,7 +5,7 @@ import GrpcMethods from './GrpcMethods';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient from '../raidenclient/RaidenClient';
-import P2P from '../p2p/P2P';
+import Pool from '../p2p/Pool';
 
 /**
  * The components required by the RPC server.
@@ -14,8 +14,8 @@ type GrpcComponents = {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
-  p2p: P2P;
-    /** The function to be called to shutdown the parent process */
+  pool: Pool;
+  /** The function to be called to shutdown the parent process */
   shutdown: Function;
 };
 
@@ -29,7 +29,7 @@ class GrpcServer {
     this.rpcMethods = new GrpcMethods(components);
     this.logger = Logger.global;
     const PROTO_PATH = __dirname + '/xud.proto';
-    const protoDescriptor = grpc.load(PROTO_PATH , 'proto');
+    const protoDescriptor = grpc.load(PROTO_PATH, 'proto');
     this.xudrpc = protoDescriptor.xudrpc;
     this.server = new grpc.Server();
   }
@@ -49,9 +49,13 @@ class GrpcServer {
       connect: this.rpcMethods.connect,
       tokenSwap: this.rpcMethods.tokenSwap,
     });
-    await this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
-    await this.server.start();
-    this.logger.info(`GRPC server listening on port ${port}`);
+    try {
+      await this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
+      await this.server.start();
+      this.logger.info(`GRPC server listening on port ${port}`);
+    } catch (error) {
+      throw error;
+    }
   }
 
   /**

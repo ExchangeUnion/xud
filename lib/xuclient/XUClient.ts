@@ -4,11 +4,15 @@ import grpc from 'grpc';
 class XUClient {
   port: number;
   grpcClient: any;
+  host: string = 'localhost';
 
-  constructor(port) {
+  constructor(port: number, host?: string) {
     if (port) {
-      assert(typeof port === 'number', 'port must be a number');
       assert(port > 1023 && port < 65536, 'port must be between 1024 and 65535');
+      this.port = port;
+    }
+    if (host) {
+      this.host = host;
     }
     this.port = port || 8886;
     const xurpc: any = grpc.load(__dirname + '/xud.proto', 'proto');

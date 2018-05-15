@@ -58,8 +58,12 @@ class DB {
       const { dialectName } = this.sequelize.connectionManager;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database} dialect:${dialectName}`);
     } catch (err) {
-      this.logger.error('unable to connect to the database', err);
-      throw err;
+      if (err instanceof Sequelize.ConnectionError) {
+        await this.dbCreate();
+      } else {
+        this.logger.error('unable to connect to the database', err);
+        throw err;
+      }
     }
     const {
       Peer, Currency, Pair, Order,
@@ -102,6 +106,18 @@ class DB {
       await this.sequelize.query('truncate table peers', null, options);
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null, options);
     });
+  }
+
+  async dbCreate() {
+    try {
+      this.sequelize = new Sequelize('', this.sequelize.options.username, this.sequelize.options.password, this.sequelize.options);
+      await this.sequelize.authenticate();
+      await this.sequelize.query(`CREATE DATABASE ${this.sequelize.options.database};`);
+      await this.sequelize.query(`USE ${this.sequelize.options.database}`);
+    } catch (err) {
+      this.logger.error('unable to connect to the database', err);
+      throw err;
+    }
   }
 }
 

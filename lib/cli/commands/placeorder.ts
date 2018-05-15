@@ -1,10 +1,12 @@
-import command from '../command';
+import callback from '../command';
+import XUClient from '../../xuclient/XUClient';
+import { Arguments } from 'yargs';
 
-exports.command = 'placeorder <pair_id> <price> <quantity>';
+export const command = 'placeorder <pair_id> <price> <quantity>';
 
-exports.describe = 'place an order';
+export const describe = 'place an order';
 
-exports.builder = {
+export const builder = {
   price: {
     type: 'number',
   },
@@ -16,15 +18,15 @@ exports.builder = {
   },
 };
 
-function callHandler(xuClient, argv) {
+const callHandler = (xuClient: XUClient, argv: Arguments) => {
   const order = {
     price: argv.price,
     quantity: argv.quantity,
     pairId: argv.pair_id,
   };
   return xuClient.placeOrder(order);
-}
+};
 
-exports.handler = (argv) => {
-  command(argv, callHandler);
+export const handler = (argv: Arguments) => {
+  callback(argv, callHandler);
 };

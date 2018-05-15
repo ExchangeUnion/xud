@@ -1,9 +1,19 @@
 #!/usr/bin/env node
 
 require('yargs')
-  .number('rpc.port')
-  .alias('r', 'rpc.port')
-  .default('rpc.port', 8886)
+  .options({
+    'rpc.port': {
+      alias: 'p',
+      default: 8886,
+      describe: 'RPC service port',
+      type: 'number',
+    },
+    'rpc.host': {
+      alias: 'h',
+      default: 'localhost',
+      describe: 'RPC service hostname',
+      type: 'string',
+    },
+  })
   .commandDir('../dist/lib/cli/commands')
-  .help()
   .argv; // we must read the argv property for the command line args to initialize properly

@@ -1,10 +1,12 @@
-import command from '../command';
+import callback from '../command';
+import XUClient from '../../xuclient/XUClient';
+import { Arguments } from 'yargs';
 
-exports.command = 'tokenswap <identifier> <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
+export const command = 'tokenswap <identifier> <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
 
-exports.describe = 'perform a raiden token swap';
+export const describe = 'perform a raiden token swap';
 
-exports.builder = {
+export const builder = {
   sending_amount: {
     type: 'number',
   },
@@ -13,7 +15,7 @@ exports.builder = {
   },
 };
 
-function callHandler(xuClient, argv) {
+function callHandler(xuClient: XUClient, argv: Arguments) {
   const payload = {
     role: argv.role,
     sending_amount: argv.sending_amount,
@@ -24,6 +26,6 @@ function callHandler(xuClient, argv) {
   return xuClient.tokenSwap(argv.target_address, payload, argv.identifier);
 }
 
-exports.handler = (argv) => {
-  command(argv, callHandler);
+export const handler = (argv: Arguments) => {
+  callback(argv, callHandler);
 };

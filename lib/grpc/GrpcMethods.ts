@@ -1,17 +1,17 @@
 import assert from 'assert';
 import { GrpcComponents } from './GrpcServer';
 import Logger from '../Logger';
-import OrderBook from '../orderbook/OrderBook';
+import Pool from '../p2p/Pool';
+import OrderBook, { Order } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
-import RaidenClient from '../raidenclient/RaidenClient';
-import P2P from '../p2p/P2P';
+import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
 /** Class containing the available RPC methods for Exchange Union */
 class GrpcMethods implements GrpcComponents {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
-  p2p: P2P;
+  pool: Pool;
   shutdown: Function;
   logger: Logger;
 
@@ -20,7 +20,7 @@ class GrpcMethods implements GrpcComponents {
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;
-    this.p2p = components.p2p;
+    this.pool = components.pool;
     this.shutdown = components.shutdown;
     this.logger = Logger.global;
     this.getInfo = this.getInfo.bind(this);
@@ -67,7 +67,7 @@ class GrpcMethods implements GrpcComponents {
     if (!this.lndClient.isDisabled()) {
       // temporary simple invoices until swaps are operational
       const invoice = await this.lndClient.addInvoice(order.price * order.quantity);
-      order.invoice = invoice.payment_request;
+      order.invoice = invoice.paymentRequest;
     }
     callback(null, this.orderBook.addOrder(order));
   }
@@ -75,10 +75,11 @@ class GrpcMethods implements GrpcComponents {
   /**
    * Connect to an XU node on a given host and port.
    */
-  connect(call, callback) {
+  async connect(call, callback) {
     const host = call.request.host;
     const port = call.request.port;
-    callback(null, this.p2p.connect(host, port));
+    const peer = await this.pool.addOutbound(host, port);
+    callback(null, peer.statusString);
   }
 
   /**
