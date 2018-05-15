@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
@@ -5,24 +6,28 @@ import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import RpcServer from './rpc/RpcServer';
-import P2P from './p2p/P2P';
-import P2PServer from './p2p/P2PServer';
+import Pool from './p2p/Pool';
+import NodeKey from './nodekey/NodeKey';
+import dotenv from 'dotenv';
+
+/** Loads environment variables from the file .env */
+dotenv.config();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
   logger: any;
-  config: any;
+  config: Config;
   db: any;
   lndClient: any;
   raidenClient: any;
-  p2p: any;
-  p2pServer: any;
+  pool?: Pool;
   orderBook: any;
   rpcServer: any;
+  nodeKey!: NodeKey;
 
   /**
    * Create an Exchange Union daemon.
-   * @param {Object} args - Optional command line arguments to override configuration parameters.
+   * @param args Optional command line arguments to override configuration parameters.
    */
   constructor(args) {
     this.logger = Logger.global;
@@ -39,26 +44,26 @@ class Xud {
     this.logger.info('config loaded');
 
     try {
+      // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
+      this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
+
       this.db = new DB(this.config.db);
       await this.db.init();
 
       this.lndClient = new LndClient(this.config.lnd);
       this.raidenClient = new RaidenClient(this.config.raiden);
 
-      this.p2p = new P2P(this.db);
-      if (this.config.p2p.listen) {
-        this.p2pServer = new P2PServer(this.p2p);
-        await this.p2pServer.listen(this.config.p2p.port);
-      }
+      this.pool = new Pool(this.config.p2p);
+      this.pool.connect();
 
-      this.orderBook = new OrderBook(this.db, this.p2p);
+      this.orderBook = new OrderBook(this.db, this.pool);
       await this.orderBook.init();
 
       this.rpcServer = new RpcServer({
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,
-        p2p: this.p2p,
+        pool: this.pool,
         shutdown: this.shutdown,
       });
       await this.rpcServer.listen(this.config.rpc.port);
@@ -72,10 +77,9 @@ class Xud {
    */
   async shutdown() {
     // ensure we stop listening for new peers before disconnecting from peers
-    if (this.p2pServer) {
-      this.p2pServer.close();
+    if (this.pool) {
+      await this.pool.disconnect();
     }
-    this.p2p.closeAllConnections();
 
     // TODO: ensure we are not in the middle of executing any trades
 

@@ -44,7 +44,7 @@ class LndClient extends BaseClient{
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
       const adminMacaroon: Buffer = fs.readFileSync(`${datadir}admin.macaroon`);
-      this.meta = new Metadata();
+      this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
       this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection

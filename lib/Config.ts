@@ -2,14 +2,15 @@ import fs from 'fs';
 import os from 'os';
 import toml from 'toml';
 import utils from './utils/utils';
+import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
 
 class Config {
   args?: object;
-  xuDir: string;
-  p2p: any;
+  p2p: PoolConfig;
+  xudir: string;
   db: DBConfig;
   testDb: any;
   rpc: any;
@@ -23,19 +24,19 @@ class Config {
     switch (platform) {
       case 'win32': { // windows
         const homeDir = process.env.LOCALAPPDATA;
-        this.xuDir = `${homeDir}/Xud/`;
+        this.xudir = `${homeDir}/Xud/`;
         lndDatadir = `${homeDir}/Lnd/`; // default lnd directory location
         break;
       }
       case 'darwin': { // mac
         const homeDir = process.env.HOME;
-        this.xuDir = `${homeDir}/.xud/`;
+        this.xudir = `${homeDir}/.xud/`;
         lndDatadir = `${homeDir}/Library/Application Support/Lnd/`;
         break;
       }
       default: { // linux
         const homeDir = process.env.HOME;
-        this.xuDir = `${homeDir}/.xud/`;
+        this.xudir = `${homeDir}/.xud/`;
         lndDatadir = `${homeDir}/.lnd/`;
         break;
       }
@@ -50,7 +51,6 @@ class Config {
       host: 'localhost',
       port: 3306,
       username: 'xud',
-      password: undefined,
       database: 'xud',
       dialect: 'mysql',
     };
@@ -76,10 +76,10 @@ class Config {
   }
 
   async load() {
-    if (!fs.existsSync(this.xuDir)) {
-      fs.mkdirSync(this.xuDir);
-    } else if (fs.existsSync(`${this.xuDir}xud.conf`)) {
-      const configText: any = fs.readFileSync(`${this.xuDir}xud.conf`);
+    if (!fs.existsSync(this.xudir)) {
+      fs.mkdirSync(this.xudir);
+    } else if (fs.existsSync(`${this.xudir}xud.conf`)) {
+      const configText: any = fs.readFileSync(`${this.xudir}xud.conf`);
       try {
         const props = toml.parse(configText);
 
