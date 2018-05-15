@@ -65,9 +65,10 @@ class Config {
     this.lnd = {
       disable: false,
       datadir: lndDatadir,
-      certificate: path.join(lndDatadir, 'tls.cert'),
-      host: '127.0.0.1:10009',
-      macaroon: path.join(lndDatadir, 'admin.macaroon'),
+      certpath: path.join(lndDatadir, 'tls.cert'),
+      host: '127.0.0.1',
+      port: 10009,
+      macaroonpath: path.join(lndDatadir, 'admin.macaroon'),
       rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {

@@ -12,9 +12,10 @@ import * as lndrpc from './lndrpc_pb';
 type LndClientConfig = {
   disable: boolean;
   datadir: string;
-  certificate: string;
+  certpath: string;
   host: string;
-  macaroon: string;
+  port: number;
+  macaroonpath: string;
   rpcprotopath: string;
 };
 
@@ -29,21 +30,21 @@ class LndClient extends BaseClient{
    */
   constructor(config: LndClientConfig) {
     super();
-    const { disable, datadir, certificate, host, macaroon, rpcprotopath } = config;
+    const { disable, datadir, certpath, host, port, macaroonpath, rpcprotopath } = config;
 
     this.logger = Logger.global;
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
-    } else if (!fs.existsSync(certificate)) {
+    } else if (!fs.existsSync(certpath)) {
       this.logger.error('could not find certificate in the lnd datadir, is lnd installed?');
       this.setStatus(ClientStatus.DISABLED);
     } else {
-      const lndCert: Buffer = fs.readFileSync(certificate);
+      const lndCert: Buffer = fs.readFileSync(certpath);
       const credentials: ChannelCredentials = grpc.credentials.createSsl(lndCert);
       const lnrpcDescriptor: any = grpc.load(rpcprotopath);
-      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(host, credentials);
+      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
-      const adminMacaroon: Buffer = fs.readFileSync(macaroon);
+      const adminMacaroon: Buffer = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
