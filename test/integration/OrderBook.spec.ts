@@ -6,9 +6,11 @@ import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
+import Pool, { PoolConfig } from '../../lib/p2p/Pool';
 
 const gulpfile = path.resolve(__dirname, '../../dist/gulpfile.js');
 const gulp = new GulpRunner(gulpfile);
+let poolconfig:PoolConfig;
 
 describe('OrderBook', () => {
   let db;
@@ -22,8 +24,12 @@ describe('OrderBook', () => {
 
       db = new DB(config.testDb);
       await db.init();
-
-      orderBook = new OrderBook(db, undefined);
+      poolconfig = {
+        listen:false,
+        port:1234,
+      };
+      const pool = new Pool(poolconfig);
+      orderBook = new OrderBook(db, pool);
       await orderBook.init();
 
       done();
