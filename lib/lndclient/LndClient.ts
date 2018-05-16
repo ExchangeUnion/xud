@@ -2,7 +2,7 @@ import grpc, { Metadata, ChannelCredentials, StatusObject } from 'grpc';
 import fs from 'fs';
 
 import Logger from '../Logger';
-import BaseClient, { ClientStatus } from'../BaseClient';
+import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import * as lndrpc from './lndrpc_pb';
 
@@ -13,9 +13,9 @@ type LndClientConfig = {
   disable: boolean;
   datadir: string;
   certpath: string;
+  macaroonpath: string;
   host: string;
   port: number;
-  macaroonpath: string;
   rpcprotopath: string;
 };
 
@@ -33,6 +33,7 @@ class LndClient extends BaseClient{
     const { disable, datadir, certpath, host, port, macaroonpath, rpcprotopath } = config;
 
     this.logger = Logger.global;
+
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(certpath)) {

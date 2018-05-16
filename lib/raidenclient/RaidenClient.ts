@@ -9,6 +9,7 @@ import errors from './errors';
  */
 type RaidenClientConfig = {
   disable: boolean;
+  host: string;
   port: number;
 };
 
@@ -40,15 +41,17 @@ type ChannelInfo = {
  */
 class RaidenClient extends BaseClient {
   port: number;
+  host: string;
 
   /**
    * Create a raiden client.
    */
   constructor(config: RaidenClientConfig) {
     super();
-    const { disable, port } = config;
+    const { disable, host, port } = config;
 
     this.port = port;
+    this.host = host;
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     }
@@ -66,7 +69,7 @@ class RaidenClient extends BaseClient {
     }
     const options: http.RequestOptions = {
       method,
-      hostname: '127.0.0.1',
+      hostname: this.host,
       port: this.port,
       path: `/api/1/${endpoint}`,
     };

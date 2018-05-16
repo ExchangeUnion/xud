@@ -66,13 +66,14 @@ class Config {
       disable: false,
       datadir: lndDatadir,
       certpath: path.join(lndDatadir, 'tls.cert'),
-      host: '127.0.0.1',
-      port: 10009,
       macaroonpath: path.join(lndDatadir, 'admin.macaroon'),
+      host: 'localhost',
+      port: 10009,
       rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {
       disable: false,
+      host: 'localhost',
       port: 5001,
     };
   }

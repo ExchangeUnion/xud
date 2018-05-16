@@ -1,8 +1,20 @@
 language: node_js
+sudo: required
 node_js:
   - "node"
   - "8"
 
+services:
+  - docker
+  - mysql
+
 script:
   - npm run lint
   - npm run test:unit
+  - cd docker/xud && docker build -t exchangeunion/xud .
+
+before_install:
+  - mysql -e 'CREATE USER 'xud'@'localhost'';
+  - mysql -e 'GRANT ALL PRIVILEGES ON `xud\_%`.* TO `xud`@`%`;'
+
+  
