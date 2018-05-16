@@ -10,7 +10,8 @@
   "scripts": {
     "postinstall": "npm run compile",
     "start": "npm run compile && npm run run",
-    "compile": "rm -rf ./dist && tsc",
+    "compile": "rm -rf ./dist && tsc && npm run copy:protobufs",
+    "copy:protobufs": "cp ./lib/grpc/*.proto ./dist/lib/grpc/ && cp -R ./lib/grpc/google/ ./dist/lib/grpc/google/",
     "run": "node dist/lib/Xud.js",
     "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
@@ -55,10 +56,14 @@
   },
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
   "dependencies": {
+    "body-parser": "^1.18.2",
+    "express": "^4.16.3",
     "dotenv": "^5.0.1",
     "crypto-js": "^3.1.9-1",
     "fastpriorityqueue": "^0.3.1",
-    "grpc": "^1.9.1",
+    "google-protobuf": "^3.2.5",
+    "grpc": "^1.11.3",
+    "grpc-dynamic-gateway": "^0.3.4",
     "gulp": "^3.9.1",
     "http-jsonrpc-server": "^1.0.0-beta.2",
     "mysql2": "^1.5.3",
@@ -73,6 +78,8 @@
     "yargs": "^11.0.0"
   },
   "devDependencies": {
+    "@types/express": "^4.11.1",
+    "@types/google-protobuf": "^3.2.6",
     "@types/mocha": "^5.2.0",
     "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",

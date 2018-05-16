@@ -5,7 +5,8 @@ import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
-import RpcServer from './rpc/RpcServer';
+import GrpcServer from './grpc/GrpcServer';
+import GrpcWebAPIProxy from './grpc/GrpcWebProxy';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import dotenv from 'dotenv';
@@ -23,6 +24,7 @@ class Xud {
   pool?: Pool;
   orderBook: any;
   rpcServer: any;
+  grpcAPIProxy: any;
   nodeKey!: NodeKey;
 
   /**
@@ -59,7 +61,7 @@ class Xud {
       this.orderBook = new OrderBook(this.db, this.pool);
       await this.orderBook.init();
 
-      this.rpcServer = new RpcServer({
+      this.rpcServer = new GrpcServer({
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,
@@ -67,6 +69,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       await this.rpcServer.listen(this.config.rpc.port);
+
+      if (this.config.api.listen) {
+        this.grpcAPIProxy = new GrpcWebAPIProxy();
+        await this.grpcAPIProxy.listen(this.config.api.port, this.config.rpc.port);
+      }
     } catch (err) {
       this.logger.error(err);
     }
@@ -80,14 +87,15 @@ class Xud {
     if (this.pool) {
       await this.pool.disconnect();
     }
-
     // TODO: ensure we are not in the middle of executing any trades
-
     const msg = 'XUD shutdown gracefully';
     (async () => {
       // we use an immediately invoked function here to close rpcServer and exit process AFTER the
       // shutdown method returns a response.
       await this.rpcServer.close();
+      if (this.grpcAPIProxy) {
+        await this.grpcAPIProxy.close();
+      }
       this.logger.info(msg);
       this.db.close();
     })();

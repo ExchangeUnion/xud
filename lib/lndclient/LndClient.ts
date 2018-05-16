@@ -19,8 +19,8 @@ type LndClientConfig = {
   rpcprotopath: string;
 };
 
-/** A class representing a client to interact with lnd. */
-class LndClient extends BaseClient{
+/** A class representing a client to interact with a running lnd instance. */
+class LndClient extends BaseClient {
   lightning: any;
   meta?: Metadata;
 
