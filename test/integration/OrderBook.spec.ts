@@ -19,13 +19,8 @@ describe('OrderBook', () => {
   before((done) => {
     gulp.on('log', log => console.log(`[GULP]: ${log.toString()}`));
     gulp.run('db.restart', { testDb: true }, async () => {
-
-      console.log('DEBUG: 0');
-
       const config = new Config(null);
       await config.load();
-
-      console.log('DEBUG: 1');
 
       db = new DB(config.testDb);
       await db.init();
@@ -33,21 +28,11 @@ describe('OrderBook', () => {
         listen:false,
         port:1234,
       };
-
-      console.log('DEBUG: 2');
-
-
       const pool = new Pool(poolconfig);
       orderBook = new OrderBook(db, pool);
       await orderBook.init();
 
-      console.log('DEBUG: 3');
-
-
       done();
-
-      console.log('DEBUG: 4');
-
     });
   });
 
