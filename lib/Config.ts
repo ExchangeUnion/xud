@@ -61,6 +61,7 @@ class Config {
     };
     this.rpc = {
       port: 8886,
+      defaultOrderAmount: 100,
     };
     this.lnd = {
       disable: false,

@@ -17,14 +17,17 @@ class OrderbookRepository {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  async getOrders(): Promise<Orders> {
+  // Type any for maxResults for beeing able to set it to 'undefined' which will return all orders
+  async getOrders(maxResults: any): Promise<Orders> {
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
+        limit: maxResults,
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.models.Order.findAll({
+        limit: maxResults,
         where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } },
         order: [['price', 'ASC']],
         raw: true,
@@ -36,14 +39,16 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders() {
+  async getOwnOrders(maxResults: any) {
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
+        limit: maxResults,
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.models.Order.findAll({
+        limit: maxResults,
         where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } },
         order: [['price', 'ASC']],
         raw: true,

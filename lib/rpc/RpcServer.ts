@@ -8,11 +8,13 @@ import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient from '../raidenclient/RaidenClient';
 import Pool from '../p2p/Pool';
+import Config from '../Config';
 
 /**
  * The components required by the RPC server.
  */
 type RpcComponents = {
+  config: Config;
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;

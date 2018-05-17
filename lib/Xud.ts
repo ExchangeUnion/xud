@@ -60,6 +60,7 @@ class Xud {
       await this.orderBook.init();
 
       this.rpcServer = new RpcServer({
+        config: this.config,
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,

@@ -68,8 +68,10 @@ class XUClient {
     return this.callRpc('getInfo', undefined);
   }
 
-  getOrders() {
-    return this.callRpc('getOrders', undefined);
+  getOrders(maxResults: number) {
+    return this.callRpc('getOrders', {
+      maxResults,
+    });
   }
 
   getPairs() {

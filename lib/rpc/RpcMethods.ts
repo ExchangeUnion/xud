@@ -5,9 +5,11 @@ import Pool from '../p2p/Pool';
 import OrderBook, { Order } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import Config from '../Config';
 
 /** Class containing the available RPC methods for Exchange Union */
 class RpcMethods implements RpcComponents {
+  config: Config;
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
@@ -17,6 +19,7 @@ class RpcMethods implements RpcComponents {
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: RpcComponents) {
+    this.config = components.config;
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;
@@ -52,8 +55,17 @@ class RpcMethods implements RpcComponents {
   /**
    * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
    */
-  getOrders() {
-    return this.orderBook.getOrders();
+  getOrders(params) {
+    let maxResults = params.maxResults;
+
+    if (maxResults === undefined) {
+      maxResults = this.config.rpc.defaultOrderAmount;
+    } else if (maxResults === 0) {
+      // Return all orders
+      maxResults = undefined;
+    }
+
+    return this.orderBook.getOrders(maxResults);
   }
 
   /**
