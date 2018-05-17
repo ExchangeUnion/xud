@@ -17,18 +17,26 @@ class OrderbookRepository {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  // Type any for maxResults for beeing able to set it to 'undefined' which will return all orders
-  async getOrders(maxResults: any): Promise<Orders> {
+  // Type any for 'maxResults' and 'pairId' for beeing able to set it to 'undefined' which will return all orders
+  async getOrders(maxResults: any, pairId: any): Promise<Orders> {
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
+
+    if (pairId !== undefined && pairId !== '') {
+      whereClauseBuy.pairId = { [Op.eq]: pairId };
+      whereClauseSell.pairId = { [Op.eq]: pairId };
+    }
+
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         limit: maxResults,
-        where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
+        where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.models.Order.findAll({
         limit: maxResults,
-        where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } },
+        where: whereClauseSell,
         order: [['price', 'ASC']],
         raw: true,
       }),
@@ -39,17 +47,25 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders(maxResults: any) {
+  async getOwnOrders(maxResults: any, pairId: any) {
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
+
+    if (pairId !== undefined && pairId !== '') {
+      whereClauseBuy.pairId = { [Op.eq]: pairId };
+      whereClauseSell.pairId = { [Op.eq]: pairId };
+    }
+
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         limit: maxResults,
-        where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },
+        where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.models.Order.findAll({
         limit: maxResults,
-        where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } },
+        where: whereClauseSell,
         order: [['price', 'ASC']],
         raw: true,
       }),

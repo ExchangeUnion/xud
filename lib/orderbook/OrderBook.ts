@@ -48,8 +48,8 @@ class OrderBook {
   async init() {
     const [pairs, orders, ownOrders] = await Promise.all([
       this.repository.getPairs(),
-      this.repository.getOrders(undefined),
-      this.repository.getOwnOrders(undefined),
+      this.repository.getOrders(undefined, undefined),
+      this.repository.getOwnOrders(undefined, undefined),
     ]);
 
     const buyOrdersByPairs = utils.groupBy(orders.buyOrders, order => order.pairId);
@@ -78,8 +78,8 @@ class OrderBook {
   /**
    * Returns lists of buy and sell orders sorted by price.
    */
-  getOrders(maxResults: number): Promise<Orders> {
-    return this.repository.getOrders(maxResults);
+  getOrders(maxResults: number, pairId: string): Promise<Orders> {
+    return this.repository.getOrders(maxResults, pairId);
   }
 
   async addOrder(order) {
