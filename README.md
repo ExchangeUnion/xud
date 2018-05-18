@@ -35,7 +35,7 @@ port = 8886
 
 [db]
 username = "xud"
-password = null
+password = ""
 database = "xud"
 port = 3306
 host = "localhost"
