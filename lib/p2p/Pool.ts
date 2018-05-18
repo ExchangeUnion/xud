@@ -1,8 +1,10 @@
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
+import errors from './errors';
 import Peer from './Peer';
 import Hosts from './Hosts';
 import NetAddress from './SocketAddress';
+import PeerList from './PeerList';
 import Logger from '../Logger';
 
 type PoolConfig = {
@@ -12,7 +14,7 @@ type PoolConfig = {
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
-  private peers: { [ key: string ]: Peer } = {};
+  private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
   private logger: Logger = Logger.global;
   private connected: boolean = false;
@@ -50,6 +52,12 @@ class Pool extends EventEmitter {
 
   public addOutbound = async (host: string, port: number): Promise<Peer> => {
     const address = new NetAddress(host, port);
+    if (this.peers.has(address)) {
+      const err = errors.ADDRESS_ALREADY_CONNECTED(address.toString());
+      this.logger.info(err.message);
+      throw err;
+    }
+
     const peer = Peer.fromOutbound(address);
     await this.connectPeer(peer);
     return peer;
@@ -58,7 +66,7 @@ class Pool extends EventEmitter {
   private connectPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
     await peer.open();
-    this.addPeer(peer);
+    this.peers.add(peer);
   }
 
   public broadcastOrder = (order: any) => {
@@ -129,7 +137,7 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', () => {
-      this.removePeer(peer);
+      this.peers.remove(peer);
     });
 
     peer.once('ban', () => {
@@ -140,18 +148,6 @@ class Pool extends EventEmitter {
         peer.destroy();
       }
     });
-  }
-
-  private addPeer = (peer: Peer): void => {
-    if (this.peers[peer.id]) {
-      this.logger.info(`Peer (${peer.id}) already exists`);
-      return;
-    }
-    this.peers[peer.id] = peer;
-  }
-
-  private removePeer = (peer: Peer): void => {
-    delete this.peers[peer.id];
   }
 
   private destroyPeers = (): void => {
