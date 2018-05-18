@@ -6,7 +6,7 @@ import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import GrpcServer from './grpc/GrpcServer';
-import GrpcWebAPIProxy from './grpc/GrpcWebProxy';
+import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import dotenv from 'dotenv';
@@ -70,9 +70,9 @@ class Xud {
       });
       await this.rpcServer.listen(this.config.rpc.port);
 
-      if (this.config.api.listen) {
-        this.grpcAPIProxy = new GrpcWebAPIProxy();
-        await this.grpcAPIProxy.listen(this.config.api.port, this.config.rpc.port);
+      if (!this.config.webproxy.disable) {
+        this.grpcAPIProxy = new GrpcWebProxyServer();
+        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port);
       }
     } catch (err) {
       this.logger.error(err);

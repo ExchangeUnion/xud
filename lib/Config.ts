@@ -14,7 +14,7 @@ class Config {
   db: DBConfig;
   testDb: any;
   rpc: any;
-  api: any;
+  webproxy: any;
   lnd: LndClientConfig;
   raiden: RaidenClientConfig;
 
@@ -63,8 +63,8 @@ class Config {
     this.rpc = {
       port: 8886,
     };
-    this.api = {
-      listen: false,
+    this.webproxy = {
+      disable: true,
       port: 8887,
     };
     this.lnd = {

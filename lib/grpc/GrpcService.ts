@@ -7,7 +7,7 @@ import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
 /** Class containing the available RPC methods for Exchange Union */
-class GrpcMethods implements GrpcComponents {
+class GrpcService implements GrpcComponents {
   orderBook: OrderBook;
   lndClient: LndClient;
   raidenClient: RaidenClient;
@@ -76,8 +76,7 @@ class GrpcMethods implements GrpcComponents {
    * Connect to an XU node on a given host and port.
    */
   async connect(call, callback) {
-    const host = call.request.host;
-    const port = call.request.port;
+    const { host, port } = call.request;
     const peer = await this.pool.addOutbound(host, port);
     callback(null, peer.statusString);
   }
@@ -86,11 +85,9 @@ class GrpcMethods implements GrpcComponents {
    * Demo method to execute a Raiden Token Swap through XUD.
   */
   tokenSwap(call, callback) {
-    const target_address = call.request.target_address;
-    const payload = call.request.payload;
-    const identifier = call.request.identifier;
+    const { target_address, payload, identifier } = call.request;
     callback(null, this.raidenClient.tokenSwap(target_address, payload, identifier));
   }
 }
 
-export default GrpcMethods;
+export default GrpcService;

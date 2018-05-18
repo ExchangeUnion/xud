@@ -1,7 +1,7 @@
 import grpc, { Server } from 'grpc';
 import assert from 'assert';
 import Logger from '../Logger';
-import GrpcMethods from './GrpcMethods';
+import GrpcService from './GrpcService';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient from '../raidenclient/RaidenClient';
@@ -22,11 +22,11 @@ type GrpcComponents = {
 class GrpcServer {
   server: Server;
   logger: Logger;
-  rpcMethods: GrpcMethods;
+  rpcMethods: GrpcService;
   xudrpc: any;
 
   constructor(components: GrpcComponents) {
-    this.rpcMethods = new GrpcMethods(components);
+    this.rpcMethods = new GrpcService(components);
     this.logger = Logger.global;
     const PROTO_PATH = __dirname + '/xud.proto';
     const protoDescriptor = grpc.load(PROTO_PATH, 'proto');

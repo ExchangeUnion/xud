@@ -2,9 +2,9 @@ import grpcGateway from 'grpc-dynamic-gateway';
 import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import Logger from '../Logger';
+import Logger from '../../Logger';
 
-class GrpcWebAPIProxy {
+class GrpcWebProxyServer {
   logger: Logger;
   server: any;
 
@@ -38,4 +38,4 @@ class GrpcWebAPIProxy {
   }
 }
 
-export default GrpcWebAPIProxy;
+export default GrpcWebProxyServer;
