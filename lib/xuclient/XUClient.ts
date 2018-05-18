@@ -16,7 +16,7 @@ class XUClient {
     }
     this.port = port || 8886;
     const xurpc: any = grpc.load(__dirname + '/xud.proto', 'proto');
-    this.grpcClient = new xurpc.xudrpc.XUDService(`localhost:${port}`, grpc.credentials.createInsecure());
+    this.grpcClient = new xurpc.xudrpc.XUDService(`${this.host}:${this.port}`, grpc.credentials.createInsecure());
   }
 
   getInfo(): Promise<any> {
@@ -78,7 +78,6 @@ class XUClient {
         }
       });
     });
-
   }
 
   tokenSwap(target_address, payload, identifier): Promise<any> {

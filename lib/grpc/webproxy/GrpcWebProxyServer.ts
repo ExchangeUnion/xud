@@ -22,7 +22,7 @@ class GrpcWebProxyServer {
    */
   async listen(proxyPort, grpcPort) {
     // Load the proxy on / URL
-    await this.server.use('/api/', grpcGateway(['xud.proto'], `0.0.0.0:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
+    await this.server.use('/api/', grpcGateway(['xud.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
     await this.server.listen(proxyPort, () => {
       this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);
     });
