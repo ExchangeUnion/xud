@@ -35,7 +35,7 @@ port = 8886
 
 [db]
 username = "xud"
-password = null
+password = ""
 database = "xud"
 port = 3306
 host = "localhost"
@@ -48,9 +48,11 @@ port = 8885
 disable = false
 datadir = "~/.lnd"
 rpcprotopath = "lndrpc.proto"
+host = "localhost"
 
 [raiden]
 disable = false
+host = "localhost"
 port = 5001
 ```
 

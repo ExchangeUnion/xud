@@ -74,8 +74,12 @@ class RpcMethods implements RpcComponents {
    * Connect to an XU node on a given host and port. See [[Pool.addOutbound]]
    */
   async connect(params) {
-    const peer = await this.pool.addOutbound(params.host, params.port);
-    return peer.statusString;
+    try {
+      const peer = await this.pool.addOutbound(params.host, params.port);
+      return peer.statusString;
+    } catch (err) {
+      return err;
+    }
   }
 
   /**

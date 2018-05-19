@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
@@ -6,6 +7,7 @@ import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import RpcServer from './rpc/RpcServer';
 import Pool from './p2p/Pool';
+import NodeKey from './nodekey/NodeKey';
 import dotenv from 'dotenv';
 
 /** Loads environment variables from the file .env */
@@ -14,17 +16,18 @@ dotenv.config();
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
   logger: any;
-  config: any;
+  config: Config;
   db: any;
   lndClient: any;
   raidenClient: any;
   pool?: Pool;
   orderBook: any;
   rpcServer: any;
+  nodeKey!: NodeKey;
 
   /**
    * Create an Exchange Union daemon.
-   * @param {Object} args - Optional command line arguments to override configuration parameters.
+   * @param args Optional command line arguments to override configuration parameters.
    */
   constructor(args) {
     this.logger = Logger.global;
@@ -41,6 +44,9 @@ class Xud {
     this.logger.info('config loaded');
 
     try {
+      // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
+      this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
+
       this.db = new DB(this.config.db);
       await this.db.init();
 
