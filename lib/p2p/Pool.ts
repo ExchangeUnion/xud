@@ -1,3 +1,4 @@
+import assert from 'assert';
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
@@ -6,7 +7,7 @@ import Hosts from './Hosts';
 import NetAddress from './SocketAddress';
 import PeerList from './PeerList';
 import Packet from './packets/Packet';
-import packets, { PacketType, OrderPacket } from './packets';
+import { PacketType, OrderPacket } from './packets';
 import { OutgoingOrder, PeerOrder } from '../types';
 import Logger from '../Logger';
 

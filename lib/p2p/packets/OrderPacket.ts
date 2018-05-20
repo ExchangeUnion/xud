@@ -1,4 +1,4 @@
-import Packet from './Packet'
+import Packet from './Packet';
 import PacketType from './PacketType';
 import { OutgoingOrder } from '../../types';
 
@@ -8,7 +8,7 @@ type OrderPacketBody = {
   quantity: number;
   price: number;
   invoice: string;
-}
+};
 
 class OrderPacket extends Packet {
   public type: PacketType = PacketType.ORDER;
@@ -19,7 +19,7 @@ class OrderPacket extends Packet {
 
   static fromOutgoingOrder(order: OutgoingOrder) {
     const { id, pairId, quantity, price, invoice } = order;
-    return new OrderPacket({ id, pairId, quantity, price, invoice } );
+    return new OrderPacket({ id, pairId, quantity, price, invoice });
   }
 
   static fromRaw(body: string): OrderPacket {
