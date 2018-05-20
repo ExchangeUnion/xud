@@ -58,7 +58,5 @@ gulp.task('db.init', async () => {
     },
   ]);
 
-
   db.close();
 });
-

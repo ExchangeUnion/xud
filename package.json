@@ -15,7 +15,7 @@
     "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
-    "lint": "tslint ./lib/**/*.ts ./bin/*",
+    "lint": "tslint ./lib/**/*.ts ./bin/* ./tasks/**/*.ts",
     "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "test": "npm run test:unit && npm run test:int",
