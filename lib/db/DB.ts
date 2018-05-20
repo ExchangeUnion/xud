@@ -112,7 +112,7 @@ class DB {
     try {
       this.sequelize = new Sequelize('', this.sequelize.options.username, this.sequelize.options.password, this.sequelize.options);
       await this.sequelize.authenticate();
-      await this.sequelize.query(`CREATE DATABASE ${this.sequelize.options.database};`);
+      await this.sequelize.query(`CREATE DATABASE ${this.sequelize.options.database} CHARACTER SET utf8 COLLATE utf8_general_ci;`);
       await this.sequelize.query(`USE ${this.sequelize.options.database}`);
     } catch (err) {
       this.logger.error('unable to create the database', err);
