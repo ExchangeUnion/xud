@@ -18,13 +18,20 @@ class DB {
   models: any;
   logger: any;
   sequelize: Sequelize;
+  config: DBConfig;
 
   constructor(config: DBConfig) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.logger = Logger.global;
+    this.config = config;
+
+    this.initSequelize();
+  }
+
+  initSequelize() {
     this.sequelize = new Sequelize({
-      ...config,
+      ...this.config,
       operatorsAliases: false,
       dialectOptions: {
         multipleStatements: true,
@@ -114,6 +121,11 @@ class DB {
       await this.sequelize.authenticate();
       await this.sequelize.query(`CREATE DATABASE ${this.sequelize.options.database} CHARACTER SET utf8 COLLATE utf8_general_ci;`);
       await this.sequelize.query(`USE ${this.sequelize.options.database}`);
+      this.close();
+
+      // If the models aren't reinitialized the integration test fails
+      this.initSequelize();
+
     } catch (err) {
       this.logger.error('unable to create the database', err);
       throw err;
