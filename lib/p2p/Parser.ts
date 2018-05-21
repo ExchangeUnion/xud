@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import packets from './packets/packets';
+import { packetUtils } from './packets';
 
 class ParserError {
   constructor(public type: ParserErrorType, public payload: string) {}
@@ -17,7 +17,7 @@ class Parser extends EventEmitter {
     const type = dataStr.split(' ', 1)[0];
     const body = dataStr.substring(type.length + 1);
     try {
-      const packet = packets.fromRaw(type, body);
+      const packet = packetUtils.fromRaw(type, body);
       if (packet) {
         this.emit('packet', packet);
       } else {
