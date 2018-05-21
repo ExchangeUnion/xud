@@ -13,4 +13,4 @@ const fromRaw = (type:string, body:string): Packet|void => {
 
 export default {
   fromRaw,
-}
+};
