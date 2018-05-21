@@ -48,8 +48,8 @@ class OrderBook {
   async init() {
     const [pairs, orders, ownOrders] = await Promise.all([
       this.repository.getPairs(),
-      this.repository.getOrders(undefined, undefined),
-      this.repository.getOwnOrders(undefined, undefined),
+      this.repository.getOrders(),
+      this.repository.getOwnOrders(),
     ]);
 
     const buyOrdersByPairs = utils.groupBy(orders.buyOrders, order => order.pairId);

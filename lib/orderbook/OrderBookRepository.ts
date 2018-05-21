@@ -17,8 +17,7 @@ class OrderbookRepository {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  // Type any for 'maxResults' and 'pairId' for beeing able to set it to 'undefined' which will return all orders
-  async getOrders(maxResults: any, pairId: any): Promise<Orders> {
+  async getOrders(maxResults?: number, pairId?: string): Promise<Orders> {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
 
@@ -47,7 +46,7 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders(maxResults: any, pairId: any) {
+  async getOwnOrders(maxResults?: number, pairId?: string) {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
 
