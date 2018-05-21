@@ -15,13 +15,13 @@ dotenv.config();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
-  logger: any;
+  logger: Logger = Logger.global;
   config: Config;
   db: any;
   lndClient: any;
   raidenClient: any;
   pool?: Pool;
-  orderBook: any;
+  orderBook?: OrderBook;
   rpcServer: any;
   nodeKey!: NodeKey;
 
@@ -30,16 +30,13 @@ class Xud {
    * @param args Optional command line arguments to override configuration parameters.
    */
   constructor(args) {
-    this.logger = Logger.global;
     this.config = new Config(args);
-
-    this.shutdown = this.shutdown.bind(this);
-  }
+    }
 
   /**
    * Start all processes necessary for the operation of an Exchange Union node.
    */
-  async start() {
+  start = async () => {
     await this.config.load();
     this.logger.info('config loaded');
 
@@ -56,7 +53,7 @@ class Xud {
       this.pool = new Pool(this.config.p2p);
       this.pool.connect();
 
-      this.orderBook = new OrderBook(this.db, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.config.orderbook, this.db, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.rpcServer = new RpcServer({
@@ -75,7 +72,7 @@ class Xud {
   /**
    * Gracefully end all running processes and disconnects from peers.
    */
-  async shutdown() {
+  shutdown = async () => {
     // ensure we stop listening for new peers before disconnecting from peers
     if (this.pool) {
       await this.pool.disconnect();
