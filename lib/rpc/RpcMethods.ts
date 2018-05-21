@@ -2,7 +2,8 @@ import assert from 'assert';
 import { RpcComponents } from './RpcServer';
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
-import OrderBook, { Order } from '../orderbook/OrderBook';
+import OrderBook from '../orderbook/OrderBook';
+import { OwnOrder } from '../types';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
@@ -59,19 +60,14 @@ class RpcMethods implements RpcComponents {
   /**
    * Add an order to the orderbook. See [[OrderBook.addOrder()]].
    */
-  async placeOrder({ order }: {order: Order}) {
+  async placeOrder({ order }: {order: OwnOrder}) {
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
     assert(typeof order.quantity === 'number', 'quantity must be a number');
     assert(order.quantity !== 0, 'quantity must not equal 0');
     assert(typeof order.pairId === 'string', 'pairId name must be a string');
 
-    if (!this.lndClient.isDisabled()) {
-      // temporary simple invoices until swaps are operational
-      const invoice = await this.lndClient.addInvoice(order.price * order.quantity);
-      order.invoice = invoice.paymentRequest;
-    }
-    return this.orderBook.addOrder(order);
+    return this.orderBook.addOwnOrder(order);
   }
 
   /**

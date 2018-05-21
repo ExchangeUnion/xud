@@ -1,8 +1,13 @@
 import { Op } from 'sequelize';
 
+import { dbOrder } from '../types';
 import Logger from '../Logger';
 import baseRepository from '../db/baseRepository';
-import { Orders } from './OrderBook';
+
+type Orders = {
+  buyOrders: dbOrder[];
+  sellOrders: dbOrder[];
+};
 
 class OrderbookRepository {
   logger: any;
@@ -73,3 +78,4 @@ class OrderbookRepository {
 }
 
 export default OrderbookRepository;
+export { Orders };
