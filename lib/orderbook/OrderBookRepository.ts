@@ -21,7 +21,7 @@ class OrderbookRepository {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
 
-    if (pairId !== undefined && pairId !== '') {
+    if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };
       whereClauseSell.pairId = { [Op.eq]: pairId };
     }
@@ -50,7 +50,7 @@ class OrderbookRepository {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
 
-    if (pairId !== undefined && pairId !== '') {
+    if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };
       whereClauseSell.pairId = { [Op.eq]: pairId };
     }
