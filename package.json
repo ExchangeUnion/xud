@@ -15,7 +15,7 @@
     "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
-    "lint": "tslint ./lib/**/*.ts ./bin/*",
+    "lint": "tslint 'lib/**/*.ts' 'bin/*'",
     "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "test": "npm run test:unit && npm run test:int",
@@ -91,8 +91,8 @@
     "require-dir": "^1.0.0",
     "ts-node": "^6.0.2",
     "ts-protoc-gen": "^0.6.0",
-    "tslint": "^5.9.1",
-    "tslint-config-airbnb": "^5.8.0",
+    "tslint": "^5.10.0",
+    "tslint-config-airbnb": "^5.9.2",
     "typedoc": "^0.11.1"
   },
   "engines": {
