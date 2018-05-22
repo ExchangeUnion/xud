@@ -3,6 +3,7 @@ import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
+import { Packet } from './packets';
 import Logger from '../Logger';
 
 const pubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
@@ -86,13 +87,15 @@ class Peer extends EventEmitter {
     this.emit('close');
   }
 
-  public sendOrder = (order: any): void => { // TODO: change to Order type
-    this.send('order', { order, pubKey });
+  public sendPacket = (packet: Packet): void => {
+    this.sendRaw(packet.type, packet.toRaw());
   }
 
-  private send = (packetType: string, payload: any) => { // TODO: change packetType to enum, perhaps make a payload base class / dummy interface
+  private sendRaw = (type, body) => {
+    const payload = `${type} ${body}\r\n`;
+    this.socket.write(payload);
+
     this.lastSend = Date.now();
-    this.socket.write(`${packetType} ${JSON.stringify(payload)}\r\n`);
   }
 
   private increaseBan = (score): boolean => {
@@ -201,10 +204,8 @@ class Peer extends EventEmitter {
   }
 
   private bindParser = (parser: Parser): void => {
-    parser.on('packet', async (packet) => {
-
+    parser.on('packet', (packet) => {
       // handle packet in the Peer level here, if necessary.
-
       this.emit('packet', packet);
     });
 
