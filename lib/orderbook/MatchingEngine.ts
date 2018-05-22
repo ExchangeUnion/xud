@@ -87,13 +87,13 @@ class MatchingEngine {
     if (isBuyOrder) {
       matchAgainst.push(this.priorityQueues.peerSellOrders);
       if (this.internalMatching) {
-        matchAgainst.push(this.priorityQueues.ownSellOrders);
+        matchAgainst.unshift(this.priorityQueues.ownSellOrders);
         addTo = this.priorityQueues.ownBuyOrders;
       }
     } else {
       matchAgainst.push(this.priorityQueues.peerBuyOrders);
       if (this.internalMatching) {
-        matchAgainst.push(this.priorityQueues.ownBuyOrders);
+        matchAgainst.unshift(this.priorityQueues.ownBuyOrders);
         addTo = this.priorityQueues.ownSellOrders;
       }
     }

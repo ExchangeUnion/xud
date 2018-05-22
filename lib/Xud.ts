@@ -21,7 +21,7 @@ class Xud {
   lndClient: any;
   raidenClient: any;
   pool?: Pool;
-  orderBook?: OrderBook;
+  orderBook!: OrderBook;
   rpcServer: any;
   nodeKey!: NodeKey;
 
@@ -29,9 +29,9 @@ class Xud {
    * Create an Exchange Union daemon.
    * @param args Optional command line arguments to override configuration parameters.
    */
-  constructor(args) {
+  constructor(args)  {
     this.config = new Config(args);
-    }
+  }
 
   /**
    * Start all processes necessary for the operation of an Exchange Union node.
