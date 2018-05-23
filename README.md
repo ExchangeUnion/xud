@@ -6,7 +6,6 @@
 
 [Exchange Union](https://www.exchangeunion.com/) (XU) is a decentralized exchange layer built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable trustless and instant cryptocurrency swaps and order fulfillment between exchanges.
 
-
 This repo contains the early stages of the Exchange Union Daemon ("xud") which encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
@@ -50,7 +49,6 @@ port = 8885
 [lnd]
 disable = false
 datadir = "~/.lnd"
-rpcprotopath = "lndrpc.proto"
 host = "localhost"
 
 [raiden]
@@ -97,7 +95,6 @@ Options:
   --lnd.host                    Host of the lnd gRPC interface          [string]
   --lnd.port                    Port of the lnd gRPC interface          [number]
   --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
-  --lnd.rpcprotopath            Path to lndrpc.proto file               [string]
   --raiden.disable              Disable raiden integration             [boolean]
   --raiden.port                 Port for raiden REST service            [number]
   --orderbook.internalmatching  OrderBook Internal Matching            [boolean]

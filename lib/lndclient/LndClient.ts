@@ -1,5 +1,6 @@
 import grpc, { Metadata, ChannelCredentials, StatusObject } from 'grpc';
 import fs from 'fs';
+import path from 'path';
 
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
@@ -16,7 +17,6 @@ type LndClientConfig = {
   macaroonpath: string;
   host: string;
   port: number;
-  rpcprotopath: string;
 };
 
 /** A class representing a client to interact with lnd. */
@@ -30,7 +30,7 @@ class LndClient extends BaseClient{
    */
   constructor(config: LndClientConfig) {
     super();
-    const { disable, datadir, certpath, host, port, macaroonpath, rpcprotopath } = config;
+    const { disable, datadir, certpath, host, port, macaroonpath } = config;
 
     this.logger = Logger.global;
 
@@ -42,6 +42,7 @@ class LndClient extends BaseClient{
     } else {
       const lndCert: Buffer = fs.readFileSync(certpath);
       const credentials: ChannelCredentials = grpc.credentials.createSsl(lndCert);
+      const rpcprotopath = path.join(__dirname, '..', '..', '..', 'lndrpc.proto');
       const lnrpcDescriptor: any = grpc.load(rpcprotopath);
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 

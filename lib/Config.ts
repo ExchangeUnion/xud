@@ -71,7 +71,6 @@ class Config {
       macaroonpath: path.join(lndDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
-      rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {
       disable: false,
