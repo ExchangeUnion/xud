@@ -6,15 +6,14 @@ import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
-import Pool, { PoolConfig } from '../../lib/p2p/Pool';
+import { orders } from '../../lib/types';
 
 const gulpfile = path.resolve(__dirname, '../../dist/gulpfile.js');
 const gulp = new GulpRunner(gulpfile);
-let poolconfig:PoolConfig;
 
 describe('OrderBook', () => {
-  let db;
-  let orderBook;
+  let db: DB;
+  let orderBook: OrderBook;
 
   before((done) => {
     gulp.on('log', log => console.log(`[GULP]: ${log.toString()}`));
@@ -24,12 +23,8 @@ describe('OrderBook', () => {
 
       db = new DB(config.testDb);
       await db.init();
-      poolconfig = {
-        listen:false,
-        port:1234,
-      };
-      const pool = new Pool(poolconfig);
-      orderBook = new OrderBook(db, pool);
+
+      orderBook = new OrderBook({ internalmatching: false }, db);
       await orderBook.init();
 
       done();
@@ -43,10 +38,14 @@ describe('OrderBook', () => {
     });
   });
 
-  it('should append new order', async () => {
-    await orderBook.addOrder({
-      id: uuidv1(), pairId: 'BTC/LTC', peerId: 1, quantity: 5, price: 55,
-    });
+  it('should append new ownOrder', async () => {
+    const order: orders.OwnOrder = { pairId: 'BTC/LTC',  quantity: 5, price: 55 };
+    await orderBook.addOwnOrder(order);
+  });
+
+  it('should append new peerOrder', async () => {
+    const order: orders.PeerOrder = { id: uuidv1(), pairId: 'BTC/LTC',  quantity: 5, price: 55, peerId: 1, invoice: 'dummyInvoice' };
+    await orderBook.addPeerOrder(order);
   });
 
   after(async () => {

@@ -6,9 +6,8 @@ import Peer from './Peer';
 import Hosts from './Hosts';
 import NetAddress from './SocketAddress';
 import PeerList from './PeerList';
-import Packet from './packets/Packet';
-import { PacketType, OrderPacket } from './packets';
-import { OutgoingOrder, PeerOrder } from '../types';
+import { Packet, PacketType, OrderPacket } from './packets';
+import { orders } from '../types';
 import Logger from '../Logger';
 
 type PoolConfig = {
@@ -73,11 +72,9 @@ class Pool extends EventEmitter {
     this.peers.add(peer);
   }
 
-  public broadcastOrder = (order: OutgoingOrder) => {
+  public broadcastOrder = (order: orders.OutgoingOrder) => {
     const orderPacket = OrderPacket.fromOutgoingOrder(order);
-    Object.keys(this.peers).map((key) => {
-      this.peers[key].sendOrder(order);
-    });
+    this.peers.forEach(peer => peer.sendPacket(orderPacket));
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
@@ -106,7 +103,7 @@ class Pool extends EventEmitter {
   private handlePacket = (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order: PeerOrder = { ...packet.body, peerId: peer.id };
+        const order: orders.PeerOrder = { ...packet.body, peerId: peer.id };
         this.emit('packet.order', order);
         break;
       }

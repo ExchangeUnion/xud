@@ -21,18 +21,15 @@ class MatchesProcessor {
     }
   }
 
-  notifyPeer(args) {
-    console.log(args);
+  notifyPeer(_args) {
     // TODO: notify the peer to trigger swap execution from his side
   }
 
-  notifyClient(args) {
-    console.log(args);
+  notifyClient(_args) {
     // TODO: notify the local exchange client on the match
   }
 
-  executeSwap(args) {
-    console.log(args);
+  executeSwap(_args) {
     // TODO: execute the swap procedure
   }
 }
