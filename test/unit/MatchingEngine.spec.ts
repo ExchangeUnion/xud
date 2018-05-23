@@ -13,7 +13,7 @@ const createOrder = (price: number, quantity: number, createdAt?: Date): orders.
   createdAt: createdAt || new Date(),
 });
 
-describe('MatchingEngine.match', () => {
+describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
       createOrder(5, 10),
