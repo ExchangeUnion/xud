@@ -1,35 +1,51 @@
+import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
+import { orders, matchingEngine } from '../types';
 import enums from '../constants/enums';
 import Logger from '../Logger';
 
-class MatchingEngine {
-  pairId: any;
-  priorityQueues: any;
-  logger: any;
-  isMatching: any;
+type PriorityQueue = {
+  add: Function;
+  heapify: Function;
+  peek: Function;
+  poll: Function;
+  trim: Function;
+  isEmpty: Function;
+  has: Function;
+};
 
-  constructor(pairId, buyOrders = [], ownBuyOrders = [], sellOrders = [], ownSellOrders = []) {
-    this.pairId = pairId;
+type PriorityQueues = {
+  peerBuyOrders: PriorityQueue;
+  peerSellOrders: PriorityQueue;
+  ownBuyOrders: PriorityQueue;
+  ownSellOrders: PriorityQueue;
+};
+
+type SplitOrder = {
+  target: orders.StampedOrder;
+  remaining: orders.StampedOrder;
+};
+
+class MatchingEngine {
+  priorityQueues: PriorityQueues;
+  logger: Logger = Logger.global;
+
+  constructor(public pairId: string,
+              private internalMatching: boolean,
+              peerBuyOrders: orders.dbOrder[] = [],
+              peerSellOrders: orders.dbOrder[] = [],
+              ownBuyOrders: orders.dbOrder[] = [],
+              ownSellOrders: orders.dbOrder[] = []) {
     this.priorityQueues = {
-      peersBuyOrders: MatchingEngine.initPriorityQueue(buyOrders, enums.orderingDirections.DESC),
+      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, enums.orderingDirections.DESC),
+      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, enums.orderingDirections.ASC),
       ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, enums.orderingDirections.DESC),
-      peersSellOrders: MatchingEngine.initPriorityQueue(sellOrders, enums.orderingDirections.ASC),
       ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, enums.orderingDirections.ASC),
     };
-
-    this.logger = Logger.global;
-
-    this.addOrder = this.addOrder.bind(this);
-    this.getAddOrderMethod = this.getAddOrderMethod.bind(this);
-    this.addPeerBuyOrder = this.addPeerBuyOrder.bind(this);
-    this.addPeerSellOrder = this.addPeerSellOrder.bind(this);
-    this.addOwnBuyOrder = this.addOwnBuyOrder.bind(this);
-    this.addOwnSellOrder = this.addOwnSellOrder.bind(this);
-    this.getMatchesOrAdd = this.getMatchesOrAdd.bind(this);
   }
 
-  static initPriorityQueue(orders, orderingDirection) {
+  static initPriorityQueue(orders, orderingDirection): PriorityQueue {
     const priorityQueue = this.createPriorityQueue(orderingDirection);
     orders.forEach((order) => {
       priorityQueue.add(order);
@@ -37,12 +53,12 @@ class MatchingEngine {
     return priorityQueue;
   }
 
-  static createPriorityQueue(orderingDirection) {
+  static createPriorityQueue(orderingDirection): PriorityQueue {
     const comparator = this.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   }
 
-  static getOrdersPriorityQueueComparator(orderingDirection) {
+  static getOrdersPriorityQueueComparator(orderingDirection): Function {
     const directionComparator = orderingDirection === enums.orderingDirections.ASC
       ? (a, b) => a < b
       : (a, b) => a > b;
@@ -56,83 +72,106 @@ class MatchingEngine {
     };
   }
 
-  static isMatching({ buyOrder, sellOrder }) {
-    // TODO: verify quantities
-    return buyOrder.price >= sellOrder.price;
-  }
-
-  addOrder(order) {
-    return this.getAddOrderMethod(order)(order);
-  }
-
-  getAddOrderMethod(order) {
-    if (order.peerId === null) {
-      if (order.quantity > 0) {
-        return this.addOwnBuyOrder;
-      } else {
-        return this.addOwnSellOrder;
-      }
-    } else if (order.quantity > 0) {
-      return this.addPeerBuyOrder;
+  static getMatchingQuantity = (buyOrder: orders.StampedOrder, sellOrder: orders.StampedOrder): number => {
+    if (buyOrder.price >= sellOrder.price) {
+      return Math.min(buyOrder.quantity, sellOrder.quantity * -1);
     } else {
-      return this.addPeerSellOrder;
+      return 0;
     }
   }
 
-  addPeerBuyOrder(order) {
-    return this.getMatchesOrAdd({
-      order,
-      matchAgainst: [this.priorityQueues.ownSellOrders],
-      addTo: this.priorityQueues.peersBuyOrders,
-    });
+  static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
+    const { quantity } =  order;
+    const absQuantity = Math.abs(quantity);
+    assert(absQuantity > targetQuantity, 'order abs quantity should be higher than targetQuantity');
+
+    const direction = quantity / absQuantity;
+    return {
+      target: { ...order, quantity: targetQuantity * direction },
+      remaining: { ...order, quantity: quantity - (targetQuantity * direction) },
+    };
   }
 
-  addPeerSellOrder(order) {
-    return this.getMatchesOrAdd({
-      order,
-      matchAgainst: [this.priorityQueues.ownBuyOrders],
-      addTo: this.priorityQueues.peersSellOrders,
-    });
-  }
+  static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
+    const isBuyOrder = order.quantity > 0;
+    const matches: matchingEngine.OrderMatch[] = [];
+    let remainingOrder: orders.StampedOrder|null = { ...order };
 
-  addOwnBuyOrder(order) {
-    return this.getMatchesOrAdd({
-      order,
-      matchAgainst: [this.priorityQueues.peersSellOrders, this.priorityQueues.ownSellOrders],
-      addTo: this.priorityQueues.ownBuyOrders,
-    });
-  }
+    const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
+      ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
+      : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
 
-  addOwnSellOrder(order) {
-    return this.getMatchesOrAdd({
-      order,
-      matchAgainst: [this.priorityQueues.peersBuyOrders, this.priorityQueues.ownBuyOrders],
-      addTo: this.priorityQueues.ownSellOrders,
-    });
-  }
-
-  getMatchesOrAdd({
-    order, matchAgainst, addTo,
-  }) {
-    // just a dummy solution for now. will be adjusted after further discussions
-    const matches: any = [];
     matchAgainst.forEach((priorityQueue) => {
-      if (!priorityQueue.isEmpty &&
-        this.isMatching({
-          [order.quantity > 0 ? 'buyOrder' : 'sellOrder']: order,
-          [order.quantity > 0 ? 'sellOrder' : 'buyOrder']: priorityQueue.peek(),
-        })
-      ) {
-        matches.push({ maker: matchAgainst.poll(), taker: order });
-      }
+      while (remainingOrder && !priorityQueue.isEmpty()) {
+        const oppositeOrder = priorityQueue.peek();
+        const matchingQuantity = getMatchingQuantity(remainingOrder, oppositeOrder);
+        if (matchingQuantity <= 0) {
+          break;
+        } else {
+          const oppositeOrder = priorityQueue.poll();
+          const oppositeOrderAbsQuantity = Math.abs(oppositeOrder.quantity);
+          const remainingOrderAbsQuantity = Math.abs(remainingOrder.quantity);
 
-      if (matches.size > 0) {
-        return matches;
-      } else {
-        addTo.add(order);
-        return null;
+          if (
+            oppositeOrderAbsQuantity === matchingQuantity &&
+            remainingOrderAbsQuantity === matchingQuantity
+          ) { // order quantities are fully matching
+            matches.push({ maker: oppositeOrder, taker: remainingOrder });
+            remainingOrder = null;
+          } else if (remainingOrderAbsQuantity === matchingQuantity) {  // maker order quantity is not sufficient. taker order will split
+            const splitOrder = this.splitOrderByQuantity(oppositeOrder, matchingQuantity);
+            matches.push({ maker: splitOrder.target, taker: remainingOrder });
+            priorityQueue.add(splitOrder.remaining);
+            remainingOrder = null;
+          } else if (oppositeOrderAbsQuantity === matchingQuantity) { // taker order quantity is not sufficient. maker order will split
+            const splitOrder = this.splitOrderByQuantity(remainingOrder, matchingQuantity);
+            matches.push({ maker: oppositeOrder, taker: splitOrder.target });
+            remainingOrder = splitOrder.remaining;
+          } else {
+            assert(false, 'matchingQuantity should not be lower than both orders quantity values');
+          }
+        }
       }
     });
+
+    return {
+      matches,
+      remainingOrder,
+    };
+  }
+
+  public addPeerOrder = (order: orders.StampedPeerOrder): void => {
+    (order.quantity > 0
+      ? this.priorityQueues.peerBuyOrders
+      : this.priorityQueues.peerSellOrders
+    ).add(order);
+  }
+
+  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
+    const isBuyOrder = order.quantity > 0;
+    const matchAgainst: PriorityQueue[] = [];
+    let addTo: PriorityQueue|null = null;
+
+    if (isBuyOrder) {
+      matchAgainst.push(this.priorityQueues.peerSellOrders);
+      if (this.internalMatching) {
+        matchAgainst.unshift(this.priorityQueues.ownSellOrders);
+        addTo = this.priorityQueues.ownBuyOrders;
+      }
+    } else {
+      matchAgainst.push(this.priorityQueues.peerBuyOrders);
+      if (this.internalMatching) {
+        matchAgainst.unshift(this.priorityQueues.ownBuyOrders);
+        addTo = this.priorityQueues.ownSellOrders;
+      }
+    }
+
+    const matchingResult = MatchingEngine.match(order, matchAgainst);
+    if (matchingResult.remainingOrder && addTo) {
+      addTo.add(matchingResult.remainingOrder);
+    }
+
+    return matchingResult;
   }
 }
 

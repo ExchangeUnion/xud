@@ -1,16 +1,16 @@
 import { Op } from 'sequelize';
 
-import { dbOrder } from '../types';
+import { orders, pairs } from '../types';
 import Logger from '../Logger';
 import baseRepository from '../db/baseRepository';
 
 type Orders = {
-  buyOrders: dbOrder[];
-  sellOrders: dbOrder[];
+  buyOrders: orders.dbOrder[];
+  sellOrders: orders.dbOrder[];
 };
 
 class OrderbookRepository {
-  logger: any;
+  logger: Logger = Logger.global;
   models: any;
 
   constructor(db) {
@@ -18,11 +18,11 @@ class OrderbookRepository {
     this.models = db.getModels();
   }
 
-  getPairs() {
+  async getPairs(): Promise<pairs.dbPair[]> {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  async getOrders(): Promise<Orders> {
+  async getPeerOrders(): Promise<Orders> {
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
@@ -41,7 +41,7 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders() {
+  async getOwnOrders(): Promise<Orders> {
     const [buyOrders, sellOrders] = await Promise.all([
       this.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },

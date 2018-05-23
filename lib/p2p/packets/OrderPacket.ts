@@ -1,6 +1,6 @@
 import Packet from './Packet';
 import PacketType from './PacketType';
-import { OutgoingOrder } from '../../types';
+import { orders } from '../../types';
 
 type OrderPacketBody = {
   id: string;
@@ -17,7 +17,7 @@ class OrderPacket extends Packet {
     super();
   }
 
-  static fromOutgoingOrder(order: OutgoingOrder) {
+  static fromOutgoingOrder(order: orders.OutgoingOrder) {
     const { id, pairId, quantity, price, invoice } = order;
     return new OrderPacket({ id, pairId, quantity, price, invoice });
   }

@@ -3,7 +3,7 @@ import { RpcComponents } from './RpcServer';
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
-import { OwnOrder } from '../types';
+import { orders, matchingEngine } from '../types';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
@@ -58,9 +58,9 @@ class RpcMethods implements RpcComponents {
   }
 
   /**
-   * Add an order to the orderbook. See [[OrderBook.addOrder()]].
+   * Add an order to the orderbook. See [[OrderBook.addOwnOrder()]].
    */
-  async placeOrder({ order }: {order: OwnOrder}) {
+  async placeOrder({ order }: {order: orders.OwnOrder}): Promise<matchingEngine.MatchingResult> {
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
     assert(typeof order.quantity === 'number', 'quantity must be a number');

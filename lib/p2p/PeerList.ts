@@ -23,6 +23,10 @@ class PeerList {
     const key = address.toString();
     return !!this.peers[key];
   }
+
+  public forEach(cb: (peer: Peer) => void) {
+    Object.keys(this.peers).map(key => cb(this.peers[key]));
+  }
 }
 
 export default PeerList;
