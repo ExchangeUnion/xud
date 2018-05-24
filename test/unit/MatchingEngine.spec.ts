@@ -5,11 +5,11 @@ import { orders } from '../../lib/types';
 import enums from '../../lib/constants/enums';
 
 const createOrder = (price: number, quantity: number, createdAt?: Date): orders.StampedOrder => ({
+  quantity,
+  price,
   id: uuidv1(),
   pairId: 'BTC/LTC',
   peerId: 1,
-  quantity,
-  price,
   createdAt: createdAt || new Date(),
 });
 
@@ -17,16 +17,15 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
       createOrder(5, 10),
-      createOrder(5.5, -10)
+      createOrder(5.5, -10),
     );
     expect(res).to.be.equal(0);
   });
 
-
   it('should match buy order with a higher then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
       createOrder(5.5, 10),
-      createOrder(5, -10)
+      createOrder(5, -10),
     );
     expect(res).to.be.equal(10);
   });
@@ -34,7 +33,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   it('should match buy order with an equal price to a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
       createOrder(5, 10),
-      createOrder(5, -10)
+      createOrder(5, -10),
     );
     expect(res).to.be.equal(10);
   });
@@ -44,7 +43,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
       const res = comparator(
         createOrder(5, 10),
-        createOrder(5.5, -10)
+        createOrder(5.5, -10),
       );
       expect(res).to.be.true;
     });
@@ -53,7 +52,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
       const res = comparator(
         createOrder(5.5, 10),
-        createOrder(5, -10)
+        createOrder(5, -10),
       );
       expect(res).to.be.false;
     });
@@ -62,7 +61,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
       const res = comparator(
         createOrder(5.5, 10),
-        createOrder(5, -10)
+        createOrder(5, -10),
       );
       expect(res).to.be.true;
     });
@@ -71,7 +70,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
       const res = comparator(
         createOrder(5, 10),
-        createOrder(5.5, -10)
+        createOrder(5.5, -10),
       );
       expect(res).to.be.false;
     });
@@ -80,7 +79,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
       const res = comparator(
         createOrder(5, 10, new Date(1)),
-        createOrder(5, -10, new Date(2))
+        createOrder(5, -10, new Date(2)),
       );
       expect(res).to.be.true;
     });
@@ -89,10 +88,9 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
       const res = comparator(
         createOrder(5, 10, new Date(1)),
-        createOrder(5, -10, new Date(2))
+        createOrder(5, -10, new Date(2)),
       );
       expect(res).to.be.true;
     });
-  })
+  });
 });
-
