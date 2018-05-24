@@ -5,7 +5,6 @@ import Pool from '../p2p/Pool';
 import OrderBook, { Order } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
-import Config from '../Config';
 
 /** Class containing the available RPC methods for Exchange Union */
 class RpcMethods implements RpcComponents {
