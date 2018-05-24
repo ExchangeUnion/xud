@@ -14,4 +14,3 @@ gulp.task('db.dropTables', async () => {
   await db.dropTables();
   db.close();
 });
-

@@ -1,11 +1,16 @@
 import { Op } from 'sequelize';
 
+import { orders, pairs } from '../types';
 import Logger from '../Logger';
 import baseRepository from '../db/baseRepository';
-import { Orders } from './OrderBook';
+
+type Orders = {
+  buyOrders: orders.dbOrder[];
+  sellOrders: orders.dbOrder[];
+};
 
 class OrderbookRepository {
-  logger: any;
+  logger: Logger = Logger.global;
   models: any;
 
   constructor(db) {
@@ -13,11 +18,11 @@ class OrderbookRepository {
     this.models = db.getModels();
   }
 
-  getPairs() {
+  async getPairs(): Promise<pairs.dbPair[]> {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  async getOrders(pairId?: string, maxResults?: number): Promise<Orders> {
+  async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
 
@@ -46,7 +51,7 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders(pairId?: string, maxResults?: number) {
+  async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
 
@@ -93,3 +98,4 @@ class OrderbookRepository {
 }
 
 export default OrderbookRepository;
+export { Orders };

@@ -2,7 +2,8 @@ import assert from 'assert';
 import { RpcComponents } from './RpcServer';
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
-import OrderBook, { Order } from '../orderbook/OrderBook';
+import OrderBook from '../orderbook/OrderBook';
+import { orders, matchingEngine } from '../types';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
@@ -66,29 +67,28 @@ class RpcMethods implements RpcComponents {
   }
 
   /**
-   * Add an order to the orderbook. See [[OrderBook.addOrder()]].
+   * Add an order to the orderbook. See [[OrderBook.addOwnOrder()]].
    */
-  async placeOrder({ order }: {order: Order}) {
+  async placeOrder({ order }: {order: orders.OwnOrder}): Promise<matchingEngine.MatchingResult> {
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
     assert(typeof order.quantity === 'number', 'quantity must be a number');
     assert(order.quantity !== 0, 'quantity must not equal 0');
     assert(typeof order.pairId === 'string', 'pairId name must be a string');
 
-    if (!this.lndClient.isDisabled()) {
-      // temporary simple invoices until swaps are operational
-      const invoice = await this.lndClient.addInvoice(order.price * order.quantity);
-      order.invoice = invoice.paymentRequest;
-    }
-    return this.orderBook.addOrder(order);
+    return this.orderBook.addOwnOrder(order);
   }
 
   /**
    * Connect to an XU node on a given host and port. See [[Pool.addOutbound]]
    */
   async connect(params) {
-    const peer = await this.pool.addOutbound(params.host, params.port);
-    return peer.statusString;
+    try {
+      const peer = await this.pool.addOutbound(params.host, params.port);
+      return peer.statusString;
+    } catch (err) {
+      return err;
+    }
   }
 
   /**

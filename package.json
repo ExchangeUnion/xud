@@ -10,12 +10,12 @@
   "scripts": {
     "postinstall": "npm run compile",
     "start": "npm run compile && npm run run",
-    "compile": "rm -rf ./dist && tsc",
+    "compile": "cross-os compile",
     "run": "node dist/lib/Xud.js",
     "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
-    "lint": "tslint ./lib/**/*.ts ./bin/*",
+    "lint": "tslint 'lib/**/*.ts' 'bin/*'",
     "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "test": "npm run test:unit && npm run test:int",
@@ -23,6 +23,13 @@
     "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
     "test:int": "mocha -r ts-node/register test/integration/*",
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts"
+  },
+  "cross-os": {
+    "compile": {
+      "linux": "rm -rf ./dist && tsc",
+      "darwin": "rm -rf ./dist && tsc",
+      "win32": "rd /q /s dist && tsc"
+    }
   },
   "repository": {
     "type": "git",
@@ -77,14 +84,15 @@
     "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",
     "concurrently": "^3.5.1",
+    "cross-os": "^1.3.0",
     "gulp-runner": "^1.1.0",
     "mocha": "^5.0.5",
     "nodemon": "^1.17.2",
     "require-dir": "^1.0.0",
     "ts-node": "^6.0.2",
     "ts-protoc-gen": "^0.6.0",
-    "tslint": "^5.9.1",
-    "tslint-config-airbnb": "^5.8.0",
+    "tslint": "^5.10.0",
+    "tslint-config-airbnb": "^5.9.2",
     "typedoc": "^0.11.1"
   },
   "engines": {

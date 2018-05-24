@@ -7,6 +7,7 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
+import { OrderBookConfig } from './orderbook/OrderBook';
 
 class Config {
   args?: object;
@@ -17,6 +18,7 @@ class Config {
   rpc: any;
   lnd: LndClientConfig;
   raiden: RaidenClientConfig;
+  orderbook: OrderBookConfig;
 
   constructor(args) {
     this.args = args || undefined;
@@ -69,12 +71,14 @@ class Config {
       macaroonpath: path.join(lndDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
-      rpcprotopath: 'lndrpc.proto',
     };
     this.raiden = {
       disable: false,
       host: 'localhost',
       port: 5001,
+    };
+    this.orderbook = {
+      internalmatching: true,
     };
   }
 

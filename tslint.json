@@ -8,9 +8,6 @@
     "function-name": false,
     "no-this-assignment": [true, {"allow-destructuring": true}],
     "align": false,
-    "no-consecutive-blank-lines": true,
-    "no-trailing-whitespace": true,
-    "whitespace": [true, "check-separator", "check-branch", "check-decl", "check-operator", "check-preblock"],
     "typedef-whitespace": [
       true, {
         "call-signature": "nospace",

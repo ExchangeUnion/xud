@@ -69,10 +69,6 @@ const { argv } = require('yargs')
       describe: 'Path of the admin macaroon for lnd',
       type: 'string',
     },
-    'lnd.rpcprotopath': {
-      describe: 'Path to lndrpc.proto file',
-      type: 'string',
-    },
     'raiden.disable': {
       describe: 'Disable raiden integration',
       type: 'boolean',
@@ -81,6 +77,11 @@ const { argv } = require('yargs')
     'raiden.port': {
       describe: 'Port for raiden REST service',
       type: 'number',
+    },
+    'orderbook.internalmatching': {
+      describe: 'OrderBook Internal Matching',
+      type: 'boolean',
+      default: undefined,
     },
   });
 

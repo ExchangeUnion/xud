@@ -1,6 +1,8 @@
 # Exchange Union
 
-[![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud) [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
+[![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
+[![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 
 [Exchange Union](https://www.exchangeunion.com/) (XU) is a decentralized exchange layer built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable trustless and instant cryptocurrency swaps and order fulfillment between exchanges.
 
@@ -35,7 +37,7 @@ port = 8886
 
 [db]
 username = "xud"
-password = null
+password = ""
 database = "xud"
 port = 3306
 host = "localhost"
@@ -47,13 +49,15 @@ port = 8885
 [lnd]
 disable = false
 datadir = "~/.lnd"
-rpcprotopath = "lndrpc.proto"
 host = "localhost"
 
 [raiden]
 disable = false
 host = "localhost"
 port = 5001
+
+[orderbook]
+internalmatching = true
 ```
 
 ## Starting the Daemon
@@ -74,22 +78,26 @@ Optional command line arguments to override defaults and settings in the [Config
 ```bash
 ~/xud/bin $ ./xud --help
 Options:
-  --help              Show help                                        [boolean]
-  --version           Show version number                              [boolean]
-  --rpc.port, -r      RPC service port                                  [number]
-  --p2p.port, -p      Port to listen for incoming peers                 [number]
-  --p2p.listen        Listen for incoming peers                        [boolean]
-  --xudir, -x         Data directory for xud                            [string]
-  --db.host           Hostname for SQL database                         [string]
-  --db.port           Port for SQL database                             [number]
-  --db.username       User for SQL database                             [string]
-  --db.database       SQL database name                                 [string]
-  --db.dialect        SQL database dialect                              [string]
-  --lnd.disable       Disable lnd integration                          [boolean]
-  --lnd.datadir       Data directory for lnd                            [string]
-  --lnd.rpcprotopath  Path to lndrpc.proto file                         [string]
-  --raiden.disable    Disable raiden integration                       [boolean]
-  --raiden.port       Port for raiden REST service                      [number]
+  --help                        Show help                              [boolean]
+  --version                     Show version number                    [boolean]
+  --rpc.port, -r                RPC service port                        [number]
+  --p2p.port, -p                Port to listen for incoming peers       [number]
+  --p2p.listen                  Listen for incoming peers              [boolean]
+  --xudir, -x                   Data directory for xud                  [string]
+  --db.host                     Hostname for SQL database               [string]
+  --db.port                     Port for SQL database                   [number]
+  --db.username                 User for SQL database                   [string]
+  --db.database                 SQL database name                       [string]
+  --db.dialect                  SQL database dialect                    [string]
+  --lnd.disable                 Disable lnd integration                [boolean]
+  --lnd.datadir                 Data directory for lnd                  [string]
+  --lnd.certpath                Path to the SSL certificate for lnd     [string]
+  --lnd.host                    Host of the lnd gRPC interface          [string]
+  --lnd.port                    Port of the lnd gRPC interface          [number]
+  --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
+  --raiden.disable              Disable raiden integration             [boolean]
+  --raiden.port                 Port for raiden REST service            [number]
+  --orderbook.internalmatching  OrderBook Internal Matching            [boolean]
 ```
 
 ## Command-Line Interface
