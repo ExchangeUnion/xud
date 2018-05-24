@@ -5,14 +5,15 @@ WORKDIR /opt
 # Install Deps
 RUN npm install -g gulp nodemon typescript --quiet
 RUN git clone https://github.com/ExchangeUnion/xud
-RUN cd xud && npm install --quiet
+WORKDIR xud
+RUN npm install --quiet
 
 # Expose P2P & RPC ports
 EXPOSE 8885 
 EXPOSE 8886
 
 # Compile TypeScript to JS
-RUN cd xud/ && npm run compile
+RUN npm run compile
 
 # Create .xud directory for config volume flexibility
 WORKDIR $HOME/.xud
