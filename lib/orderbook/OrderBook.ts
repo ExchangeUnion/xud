@@ -78,8 +78,8 @@ class OrderBook {
   /**
    * Returns lists of buy and sell orders sorted by price.
    */
-  getOrders(maxResults: number, pairId: string): Promise<Orders> {
-    return this.repository.getOrders(maxResults, pairId);
+  getOrders(pairId: string, maxResults: number): Promise<Orders> {
+    return this.repository.getOrders(pairId, maxResults);
   }
 
   async addOrder(order) {

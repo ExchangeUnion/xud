@@ -63,7 +63,7 @@ class RpcMethods implements RpcComponents {
       maxResults = undefined;
     }
 
-    return this.orderBook.getOrders(maxResults, params.pairId);
+    return this.orderBook.getOrders(params.pairId, maxResults);
   }
 
   /**
