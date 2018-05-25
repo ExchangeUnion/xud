@@ -5,7 +5,7 @@ WORKDIR /opt
 # Install Deps
 RUN npm install -g gulp nodemon typescript --quiet
 RUN git clone https://github.com/ExchangeUnion/xud
-WORKDIR xud
+WORKDIR /opt/xud
 RUN npm install --quiet
 
 # Expose P2P & RPC ports
