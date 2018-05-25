@@ -1,35 +1,34 @@
 import { Op } from 'sequelize';
 
-import { orders, pairs } from '../types';
+import { db } from '../types';
 import Logger from '../Logger';
-import baseRepository from '../db/baseRepository';
+import DB from '../db/DB';
+import Bluebird from 'bluebird';
 
 type Orders = {
-  buyOrders: orders.dbOrder[];
-  sellOrders: orders.dbOrder[];
+  buyOrders: db.OrderInstance[];
+  sellOrders: db.OrderInstance[];
 };
 
 class OrderbookRepository {
   logger: Logger = Logger.global;
-  models: any;
 
-  constructor(db) {
+  constructor(private db: DB) {
     this.logger = Logger.global;
-    this.models = db.getModels();
   }
 
-  async getPairs(): Promise<pairs.dbPair[]> {
-    return this.models.Pair.findAll({ raw: true });
+  async getPairs(): Promise<db.PairInstance[]> {
+    return this.db.models.Pair.findAll({ raw: true });
   }
 
   async getPeerOrders(): Promise<Orders> {
     const [buyOrders, sellOrders] = await Promise.all([
-      this.models.Order.findAll({
+      this.db.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
         order: [['price', 'DESC']],
         raw: true,
       }),
-      this.models.Order.findAll({
+      this.db.models.Order.findAll({
         where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } },
         order: [['price', 'ASC']],
         raw: true,
@@ -43,12 +42,12 @@ class OrderbookRepository {
 
   async getOwnOrders(): Promise<Orders> {
     const [buyOrders, sellOrders] = await Promise.all([
-      this.models.Order.findAll({
+      this.db.models.Order.findAll({
         where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },
         order: [['price', 'DESC']],
         raw: true,
       }),
-      this.models.Order.findAll({
+      this.db.models.Order.findAll({
         where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } },
         order: [['price', 'ASC']],
         raw: true,
@@ -60,20 +59,20 @@ class OrderbookRepository {
     };
   }
 
-  addOrder(order) {
-    return baseRepository.addOne(this.models.Order, order);
+  public addOrder = (order: db.OrderFactory): Bluebird<db.OrderInstance> => {
+    return this.db.models.Order.create(<db.OrderAttributes>order);
   }
 
-  addOrders(orders) {
-    return baseRepository.addMany(this.models.Order, orders);
+  public addOrders = (orders: db.OrderFactory[]): Bluebird<db.OrderInstance[]> => {
+    return this.db.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
   }
 
-  addCurrencies(currencies) {
-    return baseRepository.addMany(this.models.Currency, currencies);
+  public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {
+    return this.db.models.Currency.bulkCreate(<db.CurrencyAttributes[]>currencies);
   }
 
-  addPairs(pairs) {
-    return baseRepository.addMany(this.models.Pair, pairs);
+  public addPairs(pairs: db.PairFactory[]): Bluebird<db.PairInstance[]> {
+    return this.db.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   }
 }
 

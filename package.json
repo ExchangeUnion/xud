@@ -62,8 +62,10 @@
   },
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
   "dependencies": {
-    "dotenv": "^5.0.1",
+    "@types/bluebird": "^3.5.20",
+    "@types/sequelize": "^4.27.20",
     "crypto-js": "^3.1.9-1",
+    "dotenv": "^5.0.1",
     "fastpriorityqueue": "^0.3.1",
     "grpc": "^1.9.1",
     "gulp": "^3.9.1",
