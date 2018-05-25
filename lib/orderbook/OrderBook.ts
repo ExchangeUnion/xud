@@ -86,7 +86,7 @@ class OrderBook {
       this.broadcastOrder(remainingOrder);
 
       if (this.config.internalmatching) {
-        const dbOrder = await this.repository.addOrder(<db.OrderAttributes>stampedOrder);
+        const dbOrder = await this.repository.addOrder(<db.OrderFactory>stampedOrder);
         this.logger.debug(`order added: ${JSON.stringify(dbOrder)}`);
       }
     }
