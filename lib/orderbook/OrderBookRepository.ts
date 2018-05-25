@@ -21,15 +21,25 @@ class OrderbookRepository {
     return this.db.models.Pair.findAll({ raw: true });
   }
 
-  async getPeerOrders(): Promise<Orders> {
+  async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
+
+    if (pairId) {
+      whereClauseBuy.pairId = { [Op.eq]: pairId };
+      whereClauseSell.pairId = { [Op.eq]: pairId };
+    }
+
     const [buyOrders, sellOrders] = await Promise.all([
       this.db.models.Order.findAll({
-        where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } },
+        limit: maxResults,
+        where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.db.models.Order.findAll({
-        where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } },
+        limit: maxResults,
+        where: whereClauseSell,
         order: [['price', 'ASC']],
         raw: true,
       }),
@@ -40,15 +50,25 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders(): Promise<Orders> {
+  async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
+
+    if (pairId) {
+      whereClauseBuy.pairId = { [Op.eq]: pairId };
+      whereClauseSell.pairId = { [Op.eq]: pairId };
+    }
+
     const [buyOrders, sellOrders] = await Promise.all([
       this.db.models.Order.findAll({
-        where: { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } },
+        limit: maxResults,
+        where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
       this.db.models.Order.findAll({
-        where: { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } },
+        limit: maxResults,
+        where: whereClauseSell,
         order: [['price', 'ASC']],
         raw: true,
       }),

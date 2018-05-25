@@ -65,8 +65,8 @@ class OrderBook {
   /**
    * Returns lists of buy and sell orders sorted by price.
    */
-  public getOrders(): Promise<Orders> {
-    return this.repository.getPeerOrders();
+  public getOrders(pairId: string, maxResults: number): Promise<Orders> {
+    return this.repository.getPeerOrders(pairId, maxResults);
   }
 
   public addOwnOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
