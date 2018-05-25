@@ -11,7 +11,7 @@ export type CurrencyFactory = {
 
 export type CurrencyAttributes = CurrencyFactory;
 
-export type CurrencyInstance = Sequelize.Instance<db.CurrencyAttributes> & db.CurrencyAttributes;
+export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
 export type PeerFactory = {
   address: string;
@@ -23,7 +23,7 @@ export type PeerAttributes = PeerFactory & {
   pubKey: string;
 };
 
-export type PeerInstance = Sequelize.Instance<db.PeerAttributes> & db.PeerAttributes;
+export type PeerInstance = PeerAttributes & Sequelize.Instance<PeerAttributes>;
 
 export type OrderFactory = {
   id: string;
@@ -38,7 +38,7 @@ export type OrderAttributes = OrderFactory & {
   createdAt: Date;
 };
 
-export type OrderInstance = Sequelize.Instance<db.OrderAttributes> & db.OrderAttributes;
+export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes>;
 
 export type PairFactory = {
   baseCurrency: string;
@@ -50,4 +50,4 @@ export type PairAttributes = PairFactory & {
   id: string;
 };
 
-export type PairInstance = Sequelize.Instance<db.PairAttributes> & db.PairAttributes;
+export type PairInstance = PairAttributes & Sequelize.Instance<PairAttributes>;
