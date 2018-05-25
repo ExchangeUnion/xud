@@ -53,8 +53,17 @@ class RpcMethods implements RpcComponents {
   /**
    * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
    */
-  getOrders() {
-    return this.orderBook.getOrders();
+  getOrders(params) {
+    let maxResults = params.maxResults;
+
+    if (maxResults === undefined) {
+      maxResults = 100;
+    } else if (maxResults === 0) {
+      // Return all orders
+      maxResults = undefined;
+    }
+
+    return this.orderBook.getOrders(params.pairId, maxResults);
   }
 
   /**

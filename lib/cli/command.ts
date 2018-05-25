@@ -14,7 +14,7 @@ export default (argv: Arguments, callback: (XUClient, Arguments) => Promise<any>
 
   if (promise) {
     promise.then((result) => {
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(result, null, 2));
     }).catch((err) => {
       console.error(err);
     });

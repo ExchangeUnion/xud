@@ -111,7 +111,7 @@ xucli [command]
 Commands:
   xucli connect <host> [port]               connect to an xu node
   xucli getinfo                             get general info from the xud node
-  xucli getorders                           get orders from the orderbook
+  xucli getorders [pair_id] [max_results]   get orders from the orderbook
   xucli getpairs                            get orderbook's available pairs
   xucli placeorder <pair_id> <price>        place an order
   <quantity>
