@@ -25,7 +25,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 10),
       createOrder(5.5, -10),
     );
-    expect(res).to.be.equal(0);
+    expect(res).to.equal(0);
   });
 
   it('should match buy order with a higher then a sell order', () => {
@@ -33,7 +33,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5.5, 10),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(10);
+    expect(res).to.equal(10);
   });
 
   it('should match buy order with an equal price to a sell order', () => {
@@ -41,7 +41,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 10),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(10);
+    expect(res).to.equal(10);
   });
 
   it('should match with lowest quantity of both orders', () => {
@@ -49,7 +49,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 5),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(5);
+    expect(res).to.equal(5);
   });
 });
 
@@ -117,8 +117,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
       createOrder(5, orderQuantity),
       targetQuantity,
     );
-    expect(target.quantity).to.be.equal(targetQuantity);
-    expect(remaining.quantity).to.be.equal(orderQuantity - targetQuantity);
+    expect(target.quantity).to.equal(targetQuantity);
+    expect(remaining.quantity).to.equal(orderQuantity - targetQuantity);
   });
 
   it('should split sell orders properly', () => {
@@ -128,8 +128,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
       createOrder(5, orderQuantity),
       targetQuantity,
     );
-    expect(target.quantity).to.be.equal(targetQuantity * -1);
-    expect(remaining.quantity).to.be.equal(orderQuantity + targetQuantity);
+    expect(target.quantity).to.equal(targetQuantity * -1);
+    expect(remaining.quantity).to.equal(orderQuantity + targetQuantity);
   });
 
   it('should not work when targetQuantity higher than quantity of order', () => {
@@ -164,7 +164,7 @@ describe('MatchingEngine.match', () => {
       createOrder(5, 10),
       matchAgainst,
     );
-    expect(remainingOrder.quantity).to.be.equal(1);
+    expect(remainingOrder.quantity).to.equal(1);
   });
 
   it('should split one maker order when taker is insufficient', () => {
@@ -179,7 +179,7 @@ describe('MatchingEngine.match', () => {
     );
     expect(remainingOrder).to.be.null;
     matches.forEach((match) => {
-      expect(match.maker.quantity).to.be.equal(-5);
+      expect(match.maker.quantity).to.equal(-5);
     });
     expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.equal(-1);
   });
