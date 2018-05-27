@@ -39,7 +39,7 @@ class DB {
     this.models = this.loadModels();
   }
 
-  static isDbDoesNotExistsError(err: Error): boolean {
+  static isDbDoesNotExistError(err: Error): boolean {
     return err instanceof Sequelize.ConnectionError && (<any>err).original.code === 'ER_BAD_DB_ERROR';
   }
 
@@ -49,7 +49,7 @@ class DB {
       const { host, port, database, dialect } = this.config;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database} dialect:${dialect}`);
     } catch (err) {
-      if (DB.isDbDoesNotExistsError(err)) {
+      if (DB.isDbDoesNotExistError(err)) {
         await this.createDatabase();
       } else {
         this.logger.error('unable to connect to the database', err);
