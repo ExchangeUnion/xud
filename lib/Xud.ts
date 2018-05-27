@@ -51,7 +51,7 @@ class Xud {
       this.raidenClient = new RaidenClient(this.config.raiden);
 
       this.pool = new Pool(this.config.p2p);
-      this.pool.connect();
+      this.pool.connect()
 
       this.orderBook = new OrderBook(this.config.orderbook, this.db, this.pool, this.lndClient);
       await this.orderBook.init();

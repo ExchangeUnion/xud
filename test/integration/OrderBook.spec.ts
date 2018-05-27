@@ -19,7 +19,7 @@ describe('OrderBook', () => {
     db = new DB(config.testDb);
     await db.init();
 
-    orderBook = new OrderBook({internalmatching: false}, db);
+    orderBook = new OrderBook({ internalmatching: false }, db);
     await orderBook.init();
 
   });
