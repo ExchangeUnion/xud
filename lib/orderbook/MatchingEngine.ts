@@ -1,7 +1,7 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
-import { orders, matchingEngine } from '../types';
+import { orders, matchingEngine, db } from '../types';
 import enums from '../constants/enums';
 import Logger from '../Logger';
 
@@ -33,10 +33,10 @@ class MatchingEngine {
 
   constructor(public pairId: string,
               private internalMatching: boolean,
-              peerBuyOrders: orders.dbOrder[] = [],
-              peerSellOrders: orders.dbOrder[] = [],
-              ownBuyOrders: orders.dbOrder[] = [],
-              ownSellOrders: orders.dbOrder[] = []) {
+              peerBuyOrders: db.OrderInstance[] = [],
+              peerSellOrders: db.OrderInstance[] = [],
+              ownBuyOrders: db.OrderInstance[] = [],
+              ownSellOrders: db.OrderInstance[] = []) {
     this.priorityQueues = {
       peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, enums.orderingDirections.DESC),
       peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, enums.orderingDirections.ASC),

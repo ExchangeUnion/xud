@@ -27,9 +27,3 @@ export type OutgoingOrder = BaseOrder & {
   id: string;
   invoice: string;
 };
-
-export type dbOrder = BaseOrder & {
-  id: string;
-  peerId: number;
-  createdAt: Date;
-};

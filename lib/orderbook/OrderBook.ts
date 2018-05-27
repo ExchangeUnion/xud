@@ -5,7 +5,7 @@ import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
-import { orders, pairs, matchingEngine } from '../types';
+import { orders, matchingEngine, db } from '../types';
 import DB from '../db/DB';
 import utils from '../utils/utils';
 import Logger from '../Logger';
@@ -19,7 +19,7 @@ class OrderBook {
   logger: Logger = Logger.global;
   repository: OrderBookRepository;
   matchesProcessor: MatchesProcessor = new MatchesProcessor();
-  pairs: pairs.dbPair[] = [];
+  pairs: db.PairInstance[] = [];
   matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
@@ -58,7 +58,7 @@ class OrderBook {
   /**
    * Returns the list of available trading pairs.
    */
-  public getPairs(): Promise<pairs.dbPair[]> {
+  public getPairs(): Promise<db.PairInstance[]> {
     return this.repository.getPairs();
   }
 
@@ -86,7 +86,7 @@ class OrderBook {
       this.broadcastOrder(remainingOrder);
 
       if (this.config.internalmatching) {
-        const dbOrder = await this.repository.addOrder(stampedOrder);
+        const dbOrder = await this.repository.addOrder(<db.OrderFactory>stampedOrder);
         this.logger.debug(`order added: ${JSON.stringify(dbOrder)}`);
       }
     }

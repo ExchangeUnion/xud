@@ -1,25 +1,24 @@
 import Logger from '../Logger';
-import baseRepository from '../db/baseRepository';
+import DB, { Models } from '../db/DB';
+import { db } from '../types';
 
 class P2PRepository {
-  logger: any;
-  db: any;
-  models: any;
-  constructor(db) {
-    this.logger = Logger.global;
-    this.db = db;
-    this.models = db.getModels();
+  private logger: Logger = Logger.global;
+  private models: Models;
+
+  constructor(private db: DB) {
+    this.models = db.models;
   }
 
-  addPeer(peer) {
-    return baseRepository.addOne(this.models.Peer, peer);
+  public addPeer = async (peer: db.PeerFactory): Promise<db.PeerInstance> => {
+    return this.models.Peer.create(<db.PeerAttributes>peer);
   }
 
-  addPeers(peers) {
-    return baseRepository.addMany(this.models.Peer, peers);
+  public addPeers = async (peers: db.PeerFactory[]): Promise<db.PeerInstance[]> => {
+    return this.models.Peer.bulkCreate(<db.PeerAttributes[]>peers);
   }
 
-  async getOrAddPeer(address, port) {
+  public getOrAddPeer = async(address, port): Promise<db.PeerInstance> => {
     const results = await this.db.sequelize.query(`
       INSERT IGNORE INTO peers (address, port, createdAt, updatedAt) VALUES ('${address}', ${port}, NOW(), NOW());
       SELECT * FROM peers WHERE address = '${address}' and port = ${port};
