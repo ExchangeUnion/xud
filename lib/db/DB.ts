@@ -7,13 +7,17 @@ import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import { db } from '../types';
 
-type DBConfig = {
+type SequelizeConfig = {
   host: string;
   port: number;
   username: string;
   password?: string;
-  database: string;
+  database?: string;
   dialect: string;
+}
+
+type DBConfig = SequelizeConfig & {
+  database: string;
 };
 
 type Models = {
@@ -88,7 +92,7 @@ class DB {
     });
   }
 
-  private createSequelizeInstance = (config: DBConfig|any): Sequelize.Sequelize => {
+  private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
     return new Sequelize({
       ...config,
       operatorsAliases: false,
