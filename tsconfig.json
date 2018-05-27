@@ -1,12 +1,14 @@
 {
   "exclude": [
-    "test/*"
+    "test/*",
+    "tasks/*",
+    "gulpfile.ts"
   ],
   "compilerOptions": {
     "target": "ES2016",                       /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */
     "module": "commonjs",                     /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */
     "allowJs": true,                          /* Allow javascript files to be compiled. */
-    "outDir": "./dist",                       /* Redirect output structure to the directory. */
+    "outDir": "./dist/lib",                   /* Redirect output structure to the directory. */
     "strict": true,                           /* Enable all strict type-checking options. */
     "noEmitOnError": false,
     "noImplicitAny": false,                   /* Raise error on expressions and declarations with an implied 'any' type. */

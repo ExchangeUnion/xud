@@ -1,6 +1,7 @@
-import gulp from 'gulp';
-import runSequence from 'run-sequence';
+import dropTables from './dropTables';
+import init from './init';
 
-gulp.task('db.restart', (done) => {
-  runSequence('db.dropTables', 'db.init', done);
-});
+export default async (testDb?: boolean) => {
+  await dropTables(testDb);
+  await init(testDb);
+}
