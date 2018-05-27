@@ -4,13 +4,13 @@ import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders } from '../../lib/types';
 import enums from '../../lib/constants/enums';
 
-const pairId = 'BTC/LTC';
+const PAIR_ID = 'BTC/LTC';
 
 const createOrder = (price: number, quantity: number, createdAt?: Date): orders.StampedOrder => ({
   quantity,
   price,
   id: uuidv1(),
-  pairId: this.pairId,
+  pairId: PAIR_ID,
   peerId: 1,
   createdAt: createdAt || new Date(),
 });
@@ -142,7 +142,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(pairId, true, [], [
+    const engine = new MatchingEngine(PAIR_ID, true, [], [
       createDbOrder(5, -5),
       createDbOrder(5, -5),
     ], [], []);
@@ -151,11 +151,11 @@ describe('MatchingEngine.match', () => {
       createOrder(5, 10),
       matchAgainst,
     );
-    expect(remainingOrder).to.be.equal(null);
+    expect(remainingOrder).to.be.null;
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(pairId, true, [], [
+    const engine = new MatchingEngine(PAIR_ID, true, [], [
       createDbOrder(5, -5),
       createDbOrder(5, -4),
     ], [], []);
@@ -168,7 +168,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(pairId, true, [], [
+    const engine = new MatchingEngine(PAIR_ID, true, [], [
       createDbOrder(5, -5),
       createDbOrder(5, -6),
     ], [], []);
@@ -177,10 +177,10 @@ describe('MatchingEngine.match', () => {
       createOrder(5, 10),
       matchAgainst,
     );
-    expect(remainingOrder).to.be.equal(null);
+    expect(remainingOrder).to.be.null;
     matches.forEach((match) => {
       expect(match.maker.quantity).to.be.equal(-5);
     });
+    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.be.equal(-1);
   });
-
 });
