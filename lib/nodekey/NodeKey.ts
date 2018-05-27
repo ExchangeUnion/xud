@@ -18,7 +18,7 @@ class NodeKey {
   /**
    * Generate a random NodeKey.
    */
-  static generate = (): NodeKey => {
+  private static generate = (): NodeKey => {
     let privKey: Buffer;
     do {
       privKey = randomBytes(32);
@@ -33,7 +33,7 @@ class NodeKey {
    * @param password An optional password to decrypt the file
    * @returns A NodeKey if a file containing a valid ECDSA private key exists at the given path
    */
-  static fromFile = (path: string, password?: string): NodeKey => {
+  private static fromFile = (path: string, password?: string): NodeKey => {
     let buf: Buffer;
     if (password) {
       const encryptedString: string = fs.readFileSync(path, 'utf8');
@@ -53,7 +53,7 @@ class NodeKey {
   /**
    * Load a node key from a file or create one if none exists. See [[fromFile]] and [[generate]].
    */
-  static load = (path: string): NodeKey => {
+  public static load = (path: string): NodeKey => {
     let nodeKey: NodeKey;
     if (fs.existsSync(path)) {
       nodeKey = NodeKey.fromFile(path);
@@ -69,14 +69,14 @@ class NodeKey {
    * @param msg The data to sign
    * @returns The signature
    */
-  sign = (msg: Buffer): Buffer => {
+  public sign = (msg: Buffer): Buffer => {
     return secp256k1.sign(msg, this.privKey).signature;
   }
 
   /**
    * Return the public key in hex format
    */
-  toString = (): string => {
+  public toString = (): string => {
     return this.pubKeyStr;
   }
 
@@ -85,7 +85,7 @@ class NodeKey {
    * @param path The path at which to save the file
    * @param password An optional password parameter for encrypting the private key
    */
-  toFile = (path, password?: string): void => {
+  private toFile = (path, password?: string): void => {
     let buf: Buffer;
     if (password) {
       const wa = CryptoJS.lib.WordArray.create(this.privKey.buffer);

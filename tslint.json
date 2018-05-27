@@ -16,7 +16,8 @@
         "property-declaration": "nospace",
         "variable-declaration": "nospace"
       }
-    ]
+    ],
+    "member-access": true
   },
   "linterOptions": {
     "exclude": [

@@ -8,13 +8,13 @@ import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
 /** Class containing the available RPC methods for Exchange Union */
-class RpcMethods implements RpcComponents {
-  orderBook: OrderBook;
-  lndClient: LndClient;
-  raidenClient: RaidenClient;
-  pool: Pool;
-  shutdown: Function;
-  logger: Logger;
+class RpcMethods {
+  private orderBook: OrderBook;
+  private lndClient: LndClient;
+  private raidenClient: RaidenClient;
+  private pool: Pool;
+  private shutdown: Function;
+  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: RpcComponents) {
@@ -38,7 +38,7 @@ class RpcMethods implements RpcComponents {
   /**
    * Placeholder for a method to return general information about an Exchange Union node.
    */
-  getInfo() {
+  public getInfo() {
     return this.lndClient.getInfo();
   }
 
@@ -46,14 +46,14 @@ class RpcMethods implements RpcComponents {
    * Get the list of the orderbook's available pairs. See [[OrderBook.getPairs]].
    * @returns A list of available trading pairs
    */
-  getPairs() {
+  public getPairs() {
     return this.orderBook.getPairs();
   }
 
   /**
    * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
    */
-  getOrders(params) {
+  public getOrders(params) {
     let maxResults = params.maxResults;
 
     if (maxResults === undefined) {
@@ -69,7 +69,7 @@ class RpcMethods implements RpcComponents {
   /**
    * Add an order to the orderbook. See [[OrderBook.addOwnOrder()]].
    */
-  async placeOrder({ order }: {order: orders.OwnOrder}): Promise<matchingEngine.MatchingResult> {
+  public async placeOrder({ order }: {order: orders.OwnOrder}): Promise<matchingEngine.MatchingResult> {
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
     assert(typeof order.quantity === 'number', 'quantity must be a number');
@@ -82,7 +82,7 @@ class RpcMethods implements RpcComponents {
   /**
    * Connect to an XU node on a given host and port. See [[Pool.addOutbound]]
    */
-  async connect(params) {
+  public async connect(params) {
     try {
       const peer = await this.pool.addOutbound(params.host, params.port);
       return peer.statusString;
@@ -94,7 +94,7 @@ class RpcMethods implements RpcComponents {
   /**
    * Demo method to execute a Raiden Token Swap through XUD. See [[RaidenClient.tokenSwap]]
   */
-  tokenSwap({ target_address, payload, identifier }: {target_address: string, payload: TokenSwapPayload, identifier: string}) {
+  public tokenSwap({ target_address, payload, identifier }: {target_address: string, payload: TokenSwapPayload, identifier: string}) {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
 }

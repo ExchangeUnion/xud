@@ -2,11 +2,10 @@ import http from 'http';
 import assert from 'assert';
 
 class XUClient {
-  port: number = 8886;
-  id: number = 1;
-  host: string = 'localhost';
+  private port: number = 8886;
+  private id: number = 1;
 
-  constructor(port: number, host?: string) {
+  constructor(port?: number, private host: string = 'localhost') {
     if (port) {
       assert(port > 1023 && port < 65536, 'port must be between 1024 and 65535');
       this.port = port;
@@ -16,7 +15,7 @@ class XUClient {
     }
   }
 
-  callRpc(method, params) {
+  private callRpc(method, params) {
     const { port, id, host } = this;
     this.id += 1;
     return new Promise((resolve, reject) => {
@@ -64,35 +63,35 @@ class XUClient {
     });
   }
 
-  getInfo() {
+  public getInfo() {
     return this.callRpc('getInfo', undefined);
   }
 
-  getOrders(pairId: string, maxResults: number) {
+  public getOrders(pairId: string, maxResults: number) {
     return this.callRpc('getOrders', {
       pairId,
       maxResults,
     });
   }
 
-  getPairs() {
+  public getPairs() {
     return this.callRpc('getPairs', undefined);
   }
 
-  placeOrder(order) {
+  public placeOrder(order) {
     return this.callRpc('placeOrder', {
       order,
     });
   }
 
-  connect(host, port) {
+  public connect(host, port) {
     return this.callRpc('connect', {
       host,
       port,
     });
   }
 
-  tokenSwap(target_address, payload, identifier) {
+  public tokenSwap(target_address, payload, identifier) {
     return this.callRpc('tokenSwap', {
       target_address,
       payload,
@@ -100,7 +99,7 @@ class XUClient {
     });
   }
 
-  shutdown() {
+  public shutdown() {
     return this.callRpc('shutdown', undefined);
   }
 }

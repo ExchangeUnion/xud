@@ -9,7 +9,7 @@ import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 
 gulp.task('db.init', async () => {
-  const config = new Config(null);
+  const config = new Config();
   await config.load();
 
   const db = new DB(argv.testDb ? config.testDb : config.db);

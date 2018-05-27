@@ -18,11 +18,11 @@ class OrderbookRepository {
     this.models = db.models;
   }
 
-  async getPairs(): Promise<db.PairInstance[]> {
+  public async getPairs(): Promise<db.PairInstance[]> {
     return this.models.Pair.findAll({ raw: true });
   }
 
-  async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
+  public async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
 
@@ -51,7 +51,7 @@ class OrderbookRepository {
     };
   }
 
-  async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
+  public async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
     const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
     const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
 

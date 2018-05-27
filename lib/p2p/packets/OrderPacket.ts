@@ -17,12 +17,12 @@ class OrderPacket extends Packet {
     super();
   }
 
-  static fromOutgoingOrder(order: orders.OutgoingOrder) {
+  public static fromOutgoingOrder(order: orders.OutgoingOrder) {
     const { id, pairId, quantity, price, invoice } = order;
     return new OrderPacket({ id, pairId, quantity, price, invoice });
   }
 
-  static fromRaw(body: string): OrderPacket {
+  public static fromRaw(body: string): OrderPacket {
     const bodyObject = JSON.parse(body);
     return new OrderPacket(bodyObject);
   }

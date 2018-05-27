@@ -18,7 +18,7 @@ describe('OrderBook', () => {
   before((done) => {
     gulp.on('log', log => console.log(`[GULP]: ${log.toString()}`));
     gulp.run('db.restart', { testDb: true }, async () => {
-      const config = new Config(null);
+      const config = new Config();
       await config.load();
 
       db = new DB(config.testDb);

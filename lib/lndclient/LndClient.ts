@@ -21,8 +21,8 @@ type LndClientConfig = {
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient{
-  lightning: any;
-  meta?: Metadata;
+  private lightning: any;
+  private meta?: Metadata;
 
   /**
    * Create an lnd client.
@@ -59,7 +59,7 @@ class LndClient extends BaseClient{
    * alias, the chains it is connected to, and information concerning the number of
    * open+pending channels.
    */
-  getInfo(): Promise<lndrpc.GetInfoResponse.AsObject> {
+  public getInfo(): Promise<lndrpc.GetInfoResponse.AsObject> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
@@ -79,7 +79,7 @@ class LndClient extends BaseClient{
    * Attempt to add a new invoice to the lnd invoice database.
    * @param value The value of this invoice in satoshis
    */
-  addInvoice(value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> {
+  public addInvoice(value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
@@ -102,7 +102,7 @@ class LndClient extends BaseClient{
    * Pay an invoice through the Lightning Network.
    * @param payment_request An invoice for a payment within the Lightning Network.
    */
-  payInvoice(payment_request: string): Promise<lndrpc.SendResponse.AsObject> {
+  public payInvoice(payment_request: string): Promise<lndrpc.SendResponse.AsObject> {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
