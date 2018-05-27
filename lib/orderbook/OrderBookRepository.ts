@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 
 import { db } from '../types';
 import Logger from '../Logger';
-import DB from '../db/DB';
+import DB, { Models } from '../db/DB';
 import Bluebird from 'bluebird';
 
 type Orders = {
@@ -11,14 +11,15 @@ type Orders = {
 };
 
 class OrderbookRepository {
-  logger: Logger = Logger.global;
+  private logger: Logger = Logger.global;
+  private models: Models;
 
-  constructor(private db: DB) {
-    this.logger = Logger.global;
+  constructor(db: DB) {
+    this.models = db.models;
   }
 
   async getPairs(): Promise<db.PairInstance[]> {
-    return this.db.models.Pair.findAll({ raw: true });
+    return this.models.Pair.findAll({ raw: true });
   }
 
   async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
@@ -31,13 +32,13 @@ class OrderbookRepository {
     }
 
     const [buyOrders, sellOrders] = await Promise.all([
-      this.db.models.Order.findAll({
+      this.models.Order.findAll({
         limit: maxResults,
         where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
-      this.db.models.Order.findAll({
+      this.models.Order.findAll({
         limit: maxResults,
         where: whereClauseSell,
         order: [['price', 'ASC']],
@@ -60,13 +61,13 @@ class OrderbookRepository {
     }
 
     const [buyOrders, sellOrders] = await Promise.all([
-      this.db.models.Order.findAll({
+      this.models.Order.findAll({
         limit: maxResults,
         where: whereClauseBuy,
         order: [['price', 'DESC']],
         raw: true,
       }),
-      this.db.models.Order.findAll({
+      this.models.Order.findAll({
         limit: maxResults,
         where: whereClauseSell,
         order: [['price', 'ASC']],
@@ -80,19 +81,19 @@ class OrderbookRepository {
   }
 
   public addOrder = (order: db.OrderFactory): Bluebird<db.OrderInstance> => {
-    return this.db.models.Order.create(<db.OrderAttributes>order);
+    return this.models.Order.create(<db.OrderAttributes>order);
   }
 
   public addOrders = (orders: db.OrderFactory[]): Bluebird<db.OrderInstance[]> => {
-    return this.db.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
+    return this.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {
-    return this.db.models.Currency.bulkCreate(<db.CurrencyAttributes[]>currencies);
+    return this.models.Currency.bulkCreate(<db.CurrencyAttributes[]>currencies);
   }
 
   public addPairs(pairs: db.PairFactory[]): Bluebird<db.PairInstance[]> {
-    return this.db.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
+    return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   }
 }
 

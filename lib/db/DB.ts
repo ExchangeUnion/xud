@@ -14,7 +14,7 @@ type SequelizeConfig = {
   password?: string;
   database?: string;
   dialect: string;
-}
+};
 
 type DBConfig = SequelizeConfig & {
   database: string;
@@ -137,4 +137,4 @@ class DB {
 }
 
 export default DB;
-export { DBConfig };
+export { DBConfig, Models };

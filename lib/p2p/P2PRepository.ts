@@ -1,18 +1,21 @@
 import Logger from '../Logger';
-import DB from '../db/DB';
+import DB, { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
   private logger: Logger = Logger.global;
+  private models: Models;
 
-  constructor(private db: DB) {}
+  constructor(private db: DB) {
+    this.models = db.models;
+  }
 
   public addPeer = async (peer: db.PeerFactory): Promise<db.PeerInstance> => {
-    return this.db.models.Peer.create(<db.PeerAttributes>peer);
+    return this.models.Peer.create(<db.PeerAttributes>peer);
   }
 
   public addPeers = async (peers: db.PeerFactory[]): Promise<db.PeerInstance[]> => {
-    return this.db.models.Peer.bulkCreate(<db.PeerAttributes[]>peers);
+    return this.models.Peer.bulkCreate(<db.PeerAttributes[]>peers);
   }
 
   public getOrAddPeer = async(address, port): Promise<db.PeerInstance> => {
