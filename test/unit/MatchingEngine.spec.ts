@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
-import { orders } from '../../lib/types';
+import { orders, db } from '../../lib/types';
 import enums from '../../lib/constants/enums';
 
 const PAIR_ID = 'BTC/LTC';
@@ -15,8 +15,8 @@ const createOrder = (price: number, quantity: number, createdAt?: Date): orders.
   createdAt: createdAt || new Date(),
 });
 
-const createDbOrder = (price: number, quantity: number) => {
-  return createOrder(price, quantity) as orders.dbOrder;
+const createOrderInstance = (price: number, quantity: number) => {
+  return createOrder(price, quantity) as db.OrderInstance;
 };
 
 describe('MatchingEngine.getMatchingQuantity', () => {
@@ -143,8 +143,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -5),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -5),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { remainingOrder } = MatchingEngine.match(
@@ -156,8 +156,8 @@ describe('MatchingEngine.match', () => {
 
   it('should split taker order when makers are insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -4),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -4),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { remainingOrder } = MatchingEngine.match(
@@ -169,8 +169,8 @@ describe('MatchingEngine.match', () => {
 
   it('should split one maker order when taker is insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -6),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -6),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
@@ -181,6 +181,6 @@ describe('MatchingEngine.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.be.equal(-5);
     });
-    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.be.equal(-1);
+    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.equal(-1);
   });
 });
