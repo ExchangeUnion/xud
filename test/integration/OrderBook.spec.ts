@@ -13,7 +13,7 @@ describe('OrderBook', () => {
   before(async () => {
     await tasks.db.restart(true);
 
-    const config = new Config(null);
+    const config = new Config();
     await config.load();
 
     db = new DB(config.testDb);
@@ -27,7 +27,7 @@ describe('OrderBook', () => {
   it('should have pairs and matchingEngines equivalent loaded', () => {
     expect(orderBook.pairs).to.be.an('array');
     orderBook.pairs.forEach((pair) => {
-      expect(orderBook.matchingEngines).to.have.own.property(pair.id);
+      expect(orderBook.matchingEngines).to.have.ownProperty(pair.id);
     });
   });
 
