@@ -23,8 +23,8 @@ type RpcComponents = {
 
 /** Class representing an Exchange Union RPC Server. */
 class RpcServer {
-  server: HttpJsonRpcServer;
-  logger: Logger;
+  private server: HttpJsonRpcServer;
+  private logger: Logger;
 
   /**
    * Create an RPC server.
@@ -51,7 +51,7 @@ class RpcServer {
    * Starts the server and begins listening on the provided port
    * @param {number} port
    */
-  async listen(port) {
+  public async listen(port) {
     assert(port && Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
     await this.server.listen(port);
     this.logger.info(`RPC server listening on port ${port}`);
@@ -60,7 +60,7 @@ class RpcServer {
   /**
    * Closes the server and stops listening
    */
-  async close() {
+  public async close() {
     await this.server.close();
     this.logger.info('RPC server stopped listening');
   }

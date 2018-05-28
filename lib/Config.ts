@@ -10,18 +10,16 @@ import { DBConfig } from './db/DB';
 import { OrderBookConfig } from './orderbook/OrderBook';
 
 class Config {
-  args?: object;
-  p2p: PoolConfig;
-  xudir: string;
-  db: DBConfig;
-  testDb: any;
-  rpc: any;
-  lnd: LndClientConfig;
-  raiden: RaidenClientConfig;
-  orderbook: OrderBookConfig;
+  public p2p: PoolConfig;
+  public xudir: string;
+  public db: DBConfig;
+  public testDb: DBConfig;
+  public rpc: any;
+  public lnd: LndClientConfig;
+  public raiden: RaidenClientConfig;
+  public orderbook: OrderBookConfig;
 
-  constructor(args) {
-    this.args = args || undefined;
+  constructor(private args?: object) {
     const platform = os.platform();
     let lndDatadir;
     switch (platform) {
@@ -82,7 +80,7 @@ class Config {
     };
   }
 
-  async load() {
+  public async load() {
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(`${this.xudir}xud.conf`)) {

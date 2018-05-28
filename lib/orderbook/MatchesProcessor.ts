@@ -1,15 +1,15 @@
 import Logger from '../Logger';
 
 class MatchesProcessor {
-  buffer: any[];
-  logger: any;
+  private buffer: any[];
+  private logger: Logger;
 
   constructor() {
     this.buffer = [];
     this.logger = Logger.global;
   }
 
-  add(match) {
+  public add(match) {
     this.buffer.push(match);
 
     if (match.maker.peerId) {
@@ -21,15 +21,15 @@ class MatchesProcessor {
     }
   }
 
-  notifyPeer(_args) {
+  public notifyPeer(_args) {
     // TODO: notify the peer to trigger swap execution from his side
   }
 
-  notifyClient(_args) {
+  public notifyClient(_args) {
     // TODO: notify the local exchange client on the match
   }
 
-  executeSwap(_args) {
+  public executeSwap(_args) {
     // TODO: execute the swap procedure
   }
 }

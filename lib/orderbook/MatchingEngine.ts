@@ -28,8 +28,8 @@ type SplitOrder = {
 };
 
 class MatchingEngine {
-  priorityQueues: PriorityQueues;
-  logger: Logger = Logger.global;
+  public priorityQueues: PriorityQueues;
+  private logger: Logger = Logger.global;
 
   constructor(public pairId: string,
               private internalMatching: boolean,
@@ -45,7 +45,7 @@ class MatchingEngine {
     };
   }
 
-  static initPriorityQueue(orders, orderingDirection): PriorityQueue {
+  private static initPriorityQueue(orders, orderingDirection): PriorityQueue {
     const priorityQueue = this.createPriorityQueue(orderingDirection);
     orders.forEach((order) => {
       priorityQueue.add(order);
@@ -53,12 +53,12 @@ class MatchingEngine {
     return priorityQueue;
   }
 
-  static createPriorityQueue(orderingDirection): PriorityQueue {
+  private static createPriorityQueue(orderingDirection): PriorityQueue {
     const comparator = this.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   }
 
-  static getOrdersPriorityQueueComparator(orderingDirection): Function {
+  public static getOrdersPriorityQueueComparator(orderingDirection): Function {
     const directionComparator = orderingDirection === enums.orderingDirections.ASC
       ? (a, b) => a < b
       : (a, b) => a > b;
@@ -72,7 +72,7 @@ class MatchingEngine {
     };
   }
 
-  static getMatchingQuantity = (buyOrder: orders.StampedOrder, sellOrder: orders.StampedOrder): number => {
+  public static getMatchingQuantity = (buyOrder: orders.StampedOrder, sellOrder: orders.StampedOrder): number => {
     if (buyOrder.price >= sellOrder.price) {
       return Math.min(buyOrder.quantity, sellOrder.quantity * -1);
     } else {
@@ -80,7 +80,7 @@ class MatchingEngine {
     }
   }
 
-  static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
+  public static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
     const { quantity } =  order;
     const absQuantity = Math.abs(quantity);
     assert(absQuantity > targetQuantity, 'order abs quantity should be higher than targetQuantity');
@@ -92,7 +92,7 @@ class MatchingEngine {
     };
   }
 
-  static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
+  public static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
     let remainingOrder: orders.StampedOrder|null = { ...order };

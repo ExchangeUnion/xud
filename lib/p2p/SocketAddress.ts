@@ -4,12 +4,12 @@ import { Socket } from 'net';
 class SocketAddress {
   constructor(public host, public port) {}
 
-  static fromSocket(socket: Socket) {
+  public static fromSocket(socket: Socket) {
     const { remoteAddress: host, remotePort: port } = socket;
     return new SocketAddress(host, port);
   }
 
-  toString(): string {
+  public toString(): string {
     return `${this.host}:${this.port}`;
   }
 }

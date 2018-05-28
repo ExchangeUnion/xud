@@ -21,18 +21,18 @@ const contextFileMap = {
 };
 
 class Logger {
-  level: string;
-  logDir: string;
-  context: Context;
-  logger: any;
+  private level: string;
+  private logDir: string;
+  private context: Context;
+  private logger: any;
 
-  static defaultLogDir = 'logs';
+  private static defaultLogDir = 'logs';
 
-  static defaultLevel = process.env.NODE_ENV === 'production'
+  private static defaultLevel = process.env.NODE_ENV === 'production'
   ? Level.INFO
   : Level.DEBUG;
 
-  static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
+  public static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
 
   constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
@@ -58,11 +58,11 @@ class Logger {
     });
   }
 
-  log = (level: string, msg: string) => {
+  private log = (level: string, msg: string) => {
     this.logger.log(level, msg);
   }
 
-  error = (msg: Error | string, err?: Error) => {
+  public error = (msg: Error | string, err?: Error) => {
     let errMsg: string;
     if (msg instanceof Error) {
       // treat msg as an error object
@@ -75,19 +75,19 @@ class Logger {
     this.log(Level.ERROR, errMsg);
   }
 
-  warn = (msg: string) => {
+  public warn = (msg: string) => {
     this.log(Level.WARN, msg);
   }
 
-  info = (msg: string) => {
+  public info = (msg: string) => {
     this.log(Level.INFO, msg);
   }
 
-  verbose = (msg: string) => {
+  public verbose = (msg: string) => {
     this.log(Level.VERBOSE, msg);
   }
 
-  debug = (msg: string) => {
+  public debug = (msg: string) => {
     this.log(Level.DEBUG, msg);
   }
 }
