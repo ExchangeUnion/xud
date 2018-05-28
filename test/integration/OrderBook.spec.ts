@@ -1,34 +1,27 @@
-import path from 'path';
-import GulpRunner from 'gulp-runner';
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
-
+import tasks from '../../tasks';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import { orders } from '../../lib/types';
 
-const gulpfile = path.resolve(__dirname, '../../dist/gulpfile.js');
-const gulp = new GulpRunner(gulpfile);
-
 describe('OrderBook', () => {
   let db: DB;
   let orderBook: OrderBook;
 
-  before((done) => {
-    gulp.on('log', log => console.log(`[GULP]: ${log.toString()}`));
-    gulp.run('db.restart', { testDb: true }, async () => {
-      const config = new Config();
-      await config.load();
+  before(async () => {
+    await tasks.db.restart(true);
 
-      db = new DB(config.testDb);
-      await db.init();
+    const config = new Config(null);
+    await config.load();
 
-      orderBook = new OrderBook({ internalmatching: false }, db);
-      await orderBook.init();
+    db = new DB(config.testDb);
+    await db.init();
 
-      done();
-    });
+    orderBook = new OrderBook({ internalmatching: false }, db);
+    await orderBook.init();
+
   });
 
   it('should have pairs and matchingEngines equivalent loaded', () => {

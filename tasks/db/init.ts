@@ -1,18 +1,15 @@
-import gulp from 'gulp';
-import { argv } from 'yargs';
 import uuidv1 from 'uuid/v1';
-
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import enums from '../../lib/constants/enums';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 
-gulp.task('db.init', async () => {
+export default async (testDb?: boolean) => {
   const config = new Config();
   await config.load();
 
-  const db = new DB(argv.testDb ? config.testDb : config.db);
+  const db = new DB(testDb ? config.testDb : config.db);
   await db.init();
 
   const orderBookRepository = new OrderBookRepository(db);
@@ -59,4 +56,4 @@ gulp.task('db.init', async () => {
   ]);
 
   db.close();
-});
+};
