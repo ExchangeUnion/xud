@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
-import { orders } from '../../lib/types';
+import { orders, db } from '../../lib/types';
 import enums from '../../lib/constants/enums';
 
 const PAIR_ID = 'BTC/LTC';
@@ -15,8 +15,8 @@ const createOrder = (price: number, quantity: number, createdAt?: Date): orders.
   createdAt: createdAt || new Date(),
 });
 
-const createDbOrder = (price: number, quantity: number) => {
-  return createOrder(price, quantity) as orders.dbOrder;
+const createOrderInstance = (price: number, quantity: number) => {
+  return createOrder(price, quantity) as db.OrderInstance;
 };
 
 describe('MatchingEngine.getMatchingQuantity', () => {
@@ -25,7 +25,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 10),
       createOrder(5.5, -10),
     );
-    expect(res).to.be.equal(0);
+    expect(res).to.equal(0);
   });
 
   it('should match buy order with a higher then a sell order', () => {
@@ -33,7 +33,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5.5, 10),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(10);
+    expect(res).to.equal(10);
   });
 
   it('should match buy order with an equal price to a sell order', () => {
@@ -41,7 +41,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 10),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(10);
+    expect(res).to.equal(10);
   });
 
   it('should match with lowest quantity of both orders', () => {
@@ -49,7 +49,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
       createOrder(5, 5),
       createOrder(5, -10),
     );
-    expect(res).to.be.equal(5);
+    expect(res).to.equal(5);
   });
 });
 
@@ -117,8 +117,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
       createOrder(5, orderQuantity),
       targetQuantity,
     );
-    expect(target.quantity).to.be.equal(targetQuantity);
-    expect(remaining.quantity).to.be.equal(orderQuantity - targetQuantity);
+    expect(target.quantity).to.equal(targetQuantity);
+    expect(remaining.quantity).to.equal(orderQuantity - targetQuantity);
   });
 
   it('should split sell orders properly', () => {
@@ -128,8 +128,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
       createOrder(5, orderQuantity),
       targetQuantity,
     );
-    expect(target.quantity).to.be.equal(targetQuantity * -1);
-    expect(remaining.quantity).to.be.equal(orderQuantity + targetQuantity);
+    expect(target.quantity).to.equal(targetQuantity * -1);
+    expect(remaining.quantity).to.equal(orderQuantity + targetQuantity);
   });
 
   it('should not work when targetQuantity higher than quantity of order', () => {
@@ -143,8 +143,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -5),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -5),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { remainingOrder } = MatchingEngine.match(
@@ -156,21 +156,21 @@ describe('MatchingEngine.match', () => {
 
   it('should split taker order when makers are insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -4),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -4),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
     );
-    expect(remainingOrder.quantity).to.be.equal(1);
+    expect(remainingOrder.quantity).to.equal(1);
   });
 
   it('should split one maker order when taker is insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createDbOrder(5, -5),
-      createDbOrder(5, -6),
+      createOrderInstance(5, -5),
+      createOrderInstance(5, -6),
     ], [], []);
     const matchAgainst = [engine.priorityQueues.peerSellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
@@ -179,8 +179,8 @@ describe('MatchingEngine.match', () => {
     );
     expect(remainingOrder).to.be.null;
     matches.forEach((match) => {
-      expect(match.maker.quantity).to.be.equal(-5);
+      expect(match.maker.quantity).to.equal(-5);
     });
-    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.be.equal(-1);
+    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.equal(-1);
   });
 });
