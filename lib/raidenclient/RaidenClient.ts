@@ -5,6 +5,25 @@ import BaseClient, { ClientStatus } from'../BaseClient';
 import errors from './errors';
 
 /**
+ * A utility function to parse the payload from an http response.
+ */
+async function parseResponseBody(res: http.IncomingMessage): Promise<any> {
+  res.setEncoding('utf8');
+  return new Promise<object>((resolve, reject) => {
+    let body: string = '';
+    res.on('data', (chunk) => {
+      body += chunk;
+    });
+    res.on('end', () => {
+      resolve(JSON.parse(body));
+    });
+    res.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+/**
  * The configurable options for the raiden client.
  */
 type RaidenClientConfig = {
@@ -17,23 +36,34 @@ type RaidenClientConfig = {
  * The payload for the [[tokenSwap]] call.
  */
 type TokenSwapPayload = {
+  /** Either "maker" for initiating a swap or "taker" for filling one */
   role: string;
+  /** The amount being sent */
   sending_amount: number;
+  /** The identifier for the token being sent */
   sending_token: string;
+  /** The amount being received */
   receiving_amount: number;
+  /** The identifier for the token being received */
   receiving_token: string;
 };
 
 /**
- * Information about a raiden payment channel.
+ * The payload for the [[openChannel]] call.
  */
-type ChannelInfo = {
-  channel_address: string;
+type OpenChannelPayload = {
   partner_address: string;
   token_address: string;
   balance: number;
+  settle_timeout: 100;
+};
+
+/**
+ * A raiden payment channel.
+ */
+type Channel = OpenChannelPayload & {
+  channel_address: string;
   state: string;
-  settle_timeout: number;
 };
 
 /**
@@ -103,51 +133,86 @@ class RaidenClient extends BaseClient {
   /**
    * Initiates or completes a Raiden token swap
    * @param target_address The address of the intended swap counterparty
-   * @param payload.role Either "maker" for initiating a swap or "taker" for filling one
-   * @param payload.sending_amount The amount being sent
-   * @param payload.sending_token The identifier for the token being sent
-   * @param payload.receiving_amount The amount being received
-   * @param payload.receiving_token The identifier for the token being received
+   * @param payload The token swap payload
    * @param identifier An identification number for this swap
    */
-  public async tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<string> {
-    let endpoint: string = `token_swaps/${target_address}`;
+  public async tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<void> {
+    let endpoint = `token_swaps/${target_address}`;
     if (identifier) {
       endpoint += `/${identifier}`;
     }
 
-    const res: any = await this.sendRequest(endpoint, 'PUT', payload);
-    if (res.statusCode === 201) {
-      return 'swap created';
-    } else {
-      throw new Error(`${res.statusCode}: ${res.statusMessage}`);
-    }
+    const res = await this.sendRequest(endpoint, 'PUT', payload);
+    assert(res.statusCode === 201, `${res.statusCode}: ${res.statusMessage}`);
   }
 
   /**
    * Get info about a given raiden payment channel.
+   * @param channel_address The address of the channel to query
    */
-  public async getChannelInfo(channel_address: string): Promise<ChannelInfo> {
-    assert(typeof channel_address === 'string', 'channel_address must be a string');
+  public getChannel = async (channel_address: string): Promise<Channel> => {
+    const endpoint = `channels/${channel_address}`;
+    const res = await this.sendRequest(endpoint, 'GET');
+    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
+    return parseResponseBody(res);
+  }
 
-    const endpoint: string = `channels/${channel_address}`;
-    const res: any = await this.sendRequest(endpoint, 'GET', undefined);
+  /**
+   * Get info about all non-settled channels.
+   */
+  public getChannels = async (): Promise<[Channel]> => {
+    const endpoint = 'channels';
+    const res = await this.sendRequest(endpoint, 'GET');
+    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
+    return parseResponseBody(res);
+  }
 
-    res.setEncoding('utf8');
-    return new Promise<ChannelInfo>((resolve, reject) => {
-      let body: string = '';
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-      res.on('end', () => {
-        resolve(JSON.parse(body));
-      });
-      res.on('error', (err) => {
-        reject(err);
-      });
-    });
+  /**
+   * Create a payment channel.
+   * @returns The channel_address for the newly created channel.
+   */
+  public openChannel = async (payload: OpenChannelPayload): Promise<string> => {
+    const endpoint = 'channels';
+    const res = await this.sendRequest(endpoint, 'PUT', payload);
+
+    assert(res.statusCode === 201, `${res.statusCode}: ${res.statusMessage}`);
+    const body = await parseResponseBody(res);
+    return body.channel_address;
+  }
+
+  /**
+   * Close a payment channel.
+   * @param channel_address The address of the channel to close
+   */
+  public closeChannel = async (channel_address: string): Promise<void> => {
+    const endpoint = `channels/${channel_address}`;
+    const res = await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
+    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
+  }
+
+  /**
+   * Deposit more of a token to an existing channel
+   * @param channel_address The address of the channel to deposit to
+   * @param balance The amount to deposit to the channel
+   */
+  public depositToChannel = async(channel_address: string, balance: number): Promise<void> => {
+    const endpoint = `channels/${channel_address}`;
+    const res = await this.sendRequest(endpoint, 'PATCH', { balance });
+    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
+  }
+
+  /**
+   * Get the account address for the raiden node.
+   */
+  public getAddress = async (): Promise<string> => {
+    const endpoint = `address`;
+    const res = await this.sendRequest(endpoint, 'GET');
+
+    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
+    const body = await parseResponseBody(res);
+    return body.our_address;
   }
 }
 
 export default RaidenClient;
-export { RaidenClientConfig, TokenSwapPayload };
+export { RaidenClientConfig, TokenSwapPayload, OpenChannelPayload };
