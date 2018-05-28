@@ -16,11 +16,11 @@ type OrderBookConfig = {
 };
 
 class OrderBook {
-  logger: Logger = Logger.global;
-  repository: OrderBookRepository;
-  matchesProcessor: MatchesProcessor = new MatchesProcessor();
-  pairs: db.PairInstance[] = [];
-  matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
+  private logger: Logger = Logger.global;
+  private repository: OrderBookRepository;
+  private matchesProcessor: MatchesProcessor = new MatchesProcessor();
+  public pairs: db.PairInstance[] = [];
+  public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
     this.repository = new OrderBookRepository(db);
@@ -29,7 +29,7 @@ class OrderBook {
     }
   }
 
-  async init() {
+  public async init() {
     const [pairs, peerOrders, ownOrders] = await Promise.all([
       this.repository.getPairs(),
       this.repository.getPeerOrders(),

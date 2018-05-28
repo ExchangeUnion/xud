@@ -40,8 +40,8 @@ type ChannelInfo = {
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
-  port: number;
-  host: string;
+  private port: number;
+  private host: string;
 
   /**
    * Create a raiden client.
@@ -63,7 +63,7 @@ class RaidenClient extends BaseClient {
    * @param method An HTTP request method
    * @param payload The request payload
    */
-  sendRequest(endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> {
+  private sendRequest(endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> {
     if (this.isDisabled()) {
       throw errors.RAIDEN_IS_DISABLED;
     }
@@ -110,7 +110,7 @@ class RaidenClient extends BaseClient {
    * @param payload.receiving_token The identifier for the token being received
    * @param identifier An identification number for this swap
    */
-  async tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<string> {
+  public async tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<string> {
     let endpoint: string = `token_swaps/${target_address}`;
     if (identifier) {
       endpoint += `/${identifier}`;
@@ -127,7 +127,7 @@ class RaidenClient extends BaseClient {
   /**
    * Get info about a given raiden payment channel.
    */
-  async getChannelInfo(channel_address: string): Promise<ChannelInfo> {
+  public async getChannelInfo(channel_address: string): Promise<ChannelInfo> {
     assert(typeof channel_address === 'string', 'channel_address must be a string');
 
     const endpoint: string = `channels/${channel_address}`;

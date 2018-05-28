@@ -6,19 +6,19 @@ enum ClientStatus {
 }
 
 abstract class BaseClient {
-  logger: Logger;
-  status!: ClientStatus;
+  protected logger: Logger;
+  protected status!: ClientStatus;
 
   constructor() {
     this.logger = Logger.global;
   }
 
-  setStatus(val: ClientStatus): void {
+  protected setStatus(val: ClientStatus): void {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[val]}`);
     this.status = val;
   }
 
-  isDisabled(): boolean {
+  public isDisabled(): boolean {
     return this.status === ClientStatus.DISABLED;
   }
 }

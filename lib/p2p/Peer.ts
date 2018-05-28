@@ -48,13 +48,13 @@ class Peer extends EventEmitter {
     this.bindParser(this.parser);
   }
 
-  static fromOutbound(address: SocketAddress): Peer {
+  public static fromOutbound(address: SocketAddress): Peer {
     const peer = new Peer();
     peer.connect(address);
     return peer;
   }
 
-  static fromInbound(socket: Socket): Peer {
+  public static fromInbound(socket: Socket): Peer {
     const peer = new Peer();
     peer.accept(socket);
     return peer;

@@ -39,7 +39,7 @@ class DB {
     this.models = this.loadModels();
   }
 
-  static isDbDoesNotExistError(err: Error): boolean {
+  private static isDbDoesNotExistError(err: Error): boolean {
     return err instanceof Sequelize.ConnectionError && (<any>err).original.code === 'ER_BAD_DB_ERROR';
   }
 
