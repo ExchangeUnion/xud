@@ -9,13 +9,14 @@
   },
   "scripts": {
     "postinstall": "npm run compile",
-    "start": "npm run compile && npm run run",
+    "start": "node dist/Xud.js",
+    "stop": "cross-os stop",
     "compile": "cross-os compile",
-    "run": "node dist/lib/Xud.js",
-    "dev": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
+    "dev": "npm run compile && npm start",
+    "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/lib/Xud.js",
-    "lint": "tslint --project tsconfig.json 'lib/**/*.ts' 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
+    "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "test": "npm run test:unit && npm run test:int",
@@ -25,6 +26,11 @@
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts"
   },
   "cross-os": {
+    "stop": {
+      "linux": "./bin/xucli shutdown",
+      "darwin": "./bin/xucli shutdown",
+      "win32": "node bin\\xucli shutdown"
+    },
     "compile": {
       "linux": "rm -rf ./dist && tsc",
       "darwin": "rm -rf ./dist && tsc",
