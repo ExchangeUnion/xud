@@ -1,15 +1,14 @@
 import http from 'http';
-import assert from 'assert';
 
 import BaseClient, { ClientStatus } from'../BaseClient';
-import errors from './errors';
+import * as errors from './errors';
 
 /**
  * A utility function to parse the payload from an http response.
  */
-async function parseResponseBody(res: http.IncomingMessage): Promise<any> {
+async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
   res.setEncoding('utf8');
-  return new Promise<object>((resolve, reject) => {
+  return new Promise<T>((resolve, reject) => {
     let body: string = '';
     res.on('data', (chunk) => {
       body += chunk;
@@ -93,29 +92,53 @@ class RaidenClient extends BaseClient {
    * @param method An HTTP request method
    * @param payload The request payload
    */
-  private sendRequest(endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> {
-    if (this.isDisabled()) {
-      throw errors.RAIDEN_IS_DISABLED;
-    }
-    const options: http.RequestOptions = {
-      method,
-      hostname: this.host,
-      port: this.port,
-      path: `/api/1/${endpoint}`,
-    };
-
-    let payloadStr: string;
-    if (payload) {
-      payloadStr = JSON.stringify(payload);
-      options.headers = {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payloadStr),
-      };
-    }
-
+  private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
     return new Promise((resolve, reject) => {
-      const req: http.ClientRequest = http.request(options, (res) => {
-        resolve(res);
+      if (this.isDisabled()) {
+        reject(errors.RAIDEN_IS_DISABLED);
+      }
+
+      const options: http.RequestOptions = {
+        method,
+        hostname: this.host,
+        port: this.port,
+        path: `/api/1/${endpoint}`,
+      };
+
+      let payloadStr: string | undefined;
+      if (payload) {
+        payloadStr = JSON.stringify(payload);
+        options.headers = {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payloadStr),
+        };
+      }
+
+      const req = http.request(options, (res) => {
+        switch (res.statusCode) {
+          case 200:
+          case 201:
+          case 204:
+            resolve(res);
+            break;
+          case 402:
+            reject(errors.INSUFFICIENT_BALANCE);
+            break;
+          case 408:
+            reject(errors.TIMEOUT);
+            break;
+          case 409:
+            reject(errors.INVALID);
+            break;
+          case 500:
+            this.logger.error(`raiden server error ${res.statusCode}: ${res.statusMessage}`);
+            reject(errors.SERVER_ERROR);
+            break;
+          default:
+            this.logger.error(`unexpected raiden status ${res.statusCode}: ${res.statusMessage}`);
+            reject(errors.UNEXPECTED);
+            break;
+        }
       });
 
       req.on('error', (err) => {
@@ -136,14 +159,13 @@ class RaidenClient extends BaseClient {
    * @param payload The token swap payload
    * @param identifier An identification number for this swap
    */
-  public async tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<void> {
+  public tokenSwap = async (target_address: string, payload: TokenSwapPayload, identifier: string): Promise<void> => {
     let endpoint = `token_swaps/${target_address}`;
     if (identifier) {
       endpoint += `/${identifier}`;
     }
 
     const res = await this.sendRequest(endpoint, 'PUT', payload);
-    assert(res.statusCode === 201, `${res.statusCode}: ${res.statusMessage}`);
   }
 
   /**
@@ -153,8 +175,7 @@ class RaidenClient extends BaseClient {
   public getChannel = async (channel_address: string): Promise<Channel> => {
     const endpoint = `channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
-    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
-    return parseResponseBody(res);
+    return parseResponseBody<Channel>(res);
   }
 
   /**
@@ -163,8 +184,7 @@ class RaidenClient extends BaseClient {
   public getChannels = async (): Promise<[Channel]> => {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'GET');
-    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
-    return parseResponseBody(res);
+    return parseResponseBody<[Channel]>(res);
   }
 
   /**
@@ -175,8 +195,7 @@ class RaidenClient extends BaseClient {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'PUT', payload);
 
-    assert(res.statusCode === 201, `${res.statusCode}: ${res.statusMessage}`);
-    const body = await parseResponseBody(res);
+    const body = await parseResponseBody<{ channel_address }>(res);
     return body.channel_address;
   }
 
@@ -187,7 +206,6 @@ class RaidenClient extends BaseClient {
   public closeChannel = async (channel_address: string): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
-    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
   }
 
   /**
@@ -198,7 +216,6 @@ class RaidenClient extends BaseClient {
   public depositToChannel = async(channel_address: string, balance: number): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'PATCH', { balance });
-    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
   }
 
   /**
@@ -208,8 +225,7 @@ class RaidenClient extends BaseClient {
     const endpoint = `address`;
     const res = await this.sendRequest(endpoint, 'GET');
 
-    assert(res.statusCode === 200, `${res.statusCode}: ${res.statusMessage}`);
-    const body = await parseResponseBody(res);
+    const body = await parseResponseBody<{ our_address }>(res);
     return body.our_address;
   }
 }
