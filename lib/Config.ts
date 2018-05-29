@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
-import utils from './utils/utils';
+import { deepMerge } from './utils/utils';
 import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
@@ -89,7 +89,7 @@ class Config {
         const props = toml.parse(configText);
 
         // merge parsed json properties from config file to this config object
-        utils.deepMerge(this, props);
+        deepMerge(this, props);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column
         }: ${e.message}`);
@@ -98,7 +98,7 @@ class Config {
 
     if (this.args) {
       // override our config file with command line arguments
-      utils.deepMerge(this, this.args);
+      deepMerge(this, this.args);
       this.args = undefined;
     }
   }

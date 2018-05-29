@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import winston from 'winston';
 
-import utils from './utils/utils';
+import { getTsString } from './utils/utils';
 
 enum Level {
   ERROR = 'error',
@@ -41,7 +41,7 @@ class Logger {
 
     const { format } = winston;
     const logFormat = format.printf(
-        info => `${utils.getTsString(info.timestamp)} ${info.level}: ${info.message}`);
+        info => `${getTsString()} ${info.level}: ${info.message}`);
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);

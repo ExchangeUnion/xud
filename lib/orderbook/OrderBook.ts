@@ -7,7 +7,7 @@ import errors from './errors';
 import Pool from '../p2p/Pool';
 import { orders, matchingEngine, db } from '../types';
 import DB from '../db/DB';
-import utils from '../utils/utils';
+import { groupBy } from '../utils/utils';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 
@@ -36,10 +36,10 @@ class OrderBook {
       this.repository.getOwnOrders(),
     ]);
 
-    const peerBuyOrdersByPairs = utils.groupBy(peerOrders.buyOrders, order => order.pairId);
-    const peerSellOrdersByPairs = utils.groupBy(peerOrders.sellOrders, order => order.pairId);
-    const ownBuyOrdersByPairs = utils.groupBy(ownOrders.buyOrders, order => order.pairId);
-    const ownSellOrdersByPairs = utils.groupBy(ownOrders.sellOrders, order => order.pairId);
+    const peerBuyOrdersByPairs = groupBy(peerOrders.buyOrders, order => order.pairId);
+    const peerSellOrdersByPairs = groupBy(peerOrders.sellOrders, order => order.pairId);
+    const ownBuyOrdersByPairs = groupBy(ownOrders.buyOrders, order => order.pairId);
+    const ownSellOrdersByPairs = groupBy(ownOrders.sellOrders, order => order.pairId);
 
     pairs.forEach((pair) => {
       this.matchingEngines[pair.id] = new MatchingEngine(

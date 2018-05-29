@@ -2,7 +2,7 @@ import HttpJsonRpcServer from 'http-jsonrpc-server';
 import assert from 'assert';
 
 import Logger from '../Logger';
-import utils from '../utils/utils';
+import { getPublicMethods } from '../utils/utils';
 import RpcMethods from './RpcMethods';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
@@ -42,7 +42,7 @@ class RpcServer {
       onServerError: (err) => {
         this.logger.error('RPC server error', err);
       },
-      methods: utils.getPublicMethods(rpcMethods),
+      methods: getPublicMethods(rpcMethods),
     });
     this.logger = Logger.global;
   }
