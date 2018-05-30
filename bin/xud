@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const Xud = require('../dist/lib/Xud').default;
+const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
