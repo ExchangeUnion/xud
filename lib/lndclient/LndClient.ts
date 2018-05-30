@@ -1,4 +1,4 @@
-import grpc, { Metadata, ChannelCredentials, StatusObject } from 'grpc';
+import grpc from 'grpc';
 import fs from 'fs';
 import path from 'path';
 
@@ -22,7 +22,7 @@ type LndClientConfig = {
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient{
   private lightning: any;
-  private meta?: Metadata;
+  private meta?: grpc.Metadata;
 
   /**
    * Create an lnd client.
@@ -47,7 +47,7 @@ class LndClient extends BaseClient{
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
       const adminMacaroon = fs.readFileSync(macaroonpath);
-      this.meta = new Metadata();
+      this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
       this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
@@ -60,7 +60,7 @@ class LndClient extends BaseClient{
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      method(params, this.meta, (err: StatusObject, response: T) => {
+      method(params, this.meta, (err: grpc.StatusObject, response: T) => {
         if (err) {
           reject(err.details);
         } else {
