@@ -6,7 +6,7 @@ class MatchesProcessor {
 
   constructor() {
     this.buffer = [];
-    this.logger = Logger.global;
+    this.logger = Logger.orderbook;
   }
 
   public add(match) {

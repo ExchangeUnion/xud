@@ -19,7 +19,7 @@ type PoolConfig = {
 class Pool extends EventEmitter {
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.p2p;
   private connected: boolean = false;
   private hosts: Hosts = new Hosts();
 
