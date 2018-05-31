@@ -24,6 +24,12 @@ enum Context {
 
 const contextFileMap = {
   [Context.GLOBAL]: 'xud.log',
+  [Context.DB]: 'xud.log',
+  [Context.RPC]: 'xud.log',
+  [Context.P2P]: 'xud.log',
+  [Context.ORDERBOOK]: 'xud.log',
+  [Context.LND]: 'xud.log',
+  [Context.RAIDEN]: 'xud.log',
 };
 
 class Logger {
@@ -64,7 +70,7 @@ class Logger {
       transports: [
         new winston.transports.Console({ format: format.combine(format.colorize(), logFormat) }),
         new winston.transports.File({
-          filename: path.join(this.logDir, contextFileMap[Context.GLOBAL]),
+          filename: path.join(this.logDir, contextFileMap[this.context]),
         }),
       ],
     });
