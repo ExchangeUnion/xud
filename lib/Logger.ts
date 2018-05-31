@@ -13,7 +13,13 @@ enum Level {
 }
 
 enum Context {
-  GLOBAL,
+  GLOBAL = 'GLOBAL',
+  DB = 'DB',
+  RPC = 'RPC',
+  P2P = 'P2P',
+  ORDERBOOK = 'ORDERBOOK',
+  LND = 'LND',
+  RAIDEN = 'RAIDEN',
 }
 
 const contextFileMap = {
@@ -33,6 +39,12 @@ class Logger {
   : Level.DEBUG;
 
   public static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
+  public static db = new Logger({ context: Context.DB, logDir: undefined, level: undefined });
+  public static rpc = new Logger({ context: Context.RPC, logDir: undefined, level: undefined });
+  public static p2p = new Logger({ context: Context.P2P, logDir: undefined, level: undefined });
+  public static orderbook = new Logger({ context: Context.ORDERBOOK, logDir: undefined, level: undefined });
+  public static lnd = new Logger({ context: Context.LND, logDir: undefined, level: undefined });
+  public static raiden = new Logger({ context: Context.RAIDEN, logDir: undefined, level: undefined });
 
   constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
@@ -41,7 +53,7 @@ class Logger {
 
     const { format } = winston;
     const logFormat = format.printf(
-        info => `${getTsString()} ${info.level}: ${info.message}`);
+        info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
@@ -52,7 +64,7 @@ class Logger {
       transports: [
         new winston.transports.Console({ format: format.combine(format.colorize(), logFormat) }),
         new winston.transports.File({
-          filename: path.join(this.logDir, contextFileMap[this.context]),
+          filename: path.join(this.logDir, contextFileMap[Context.GLOBAL]),
         }),
       ],
     });

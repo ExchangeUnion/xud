@@ -24,7 +24,7 @@ type RpcComponents = {
 /** Class representing an Exchange Union RPC Server. */
 class RpcServer {
   private server: HttpJsonRpcServer;
-  private logger: Logger;
+  private logger: Logger = Logger.rpc;
 
   /**
    * Create an RPC server.
@@ -44,7 +44,6 @@ class RpcServer {
       },
       methods: getPublicMethods(rpcMethods),
     });
-    this.logger = Logger.global;
   }
 
   /**
