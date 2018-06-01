@@ -16,18 +16,6 @@ export default async (testDb?: boolean) => {
   const p2pRepository = new P2PRepository(db);
 
   await Promise.all([
-    p2pRepository.addPeers([
-      { address: '127.0.0.1', port: 8885 },
-      { address: '127.0.0.2', port: 8885 },
-      { address: '127.0.0.3', port: 8885 },
-      { address: '127.0.0.4', port: 8885 },
-      { address: '127.0.0.5', port: 8885 },
-      { address: '127.0.0.1', port: 9885 },
-      { address: '127.0.0.2', port: 9885 },
-      { address: '127.0.0.3', port: 9885 },
-      { address: '127.0.0.4', port: 9885 },
-      { address: '127.0.0.5', port: 9885 },
-    ]),
     orderBookRepository.addCurrencies([
       { id: 'BTC' },
       { id: 'LTC' },

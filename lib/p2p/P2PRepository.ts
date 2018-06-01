@@ -10,21 +10,24 @@ class P2PRepository {
     this.models = db.models;
   }
 
-  public addPeer = async (peer: db.PeerFactory): Promise<db.PeerInstance> => {
-    return this.models.Peer.create(<db.PeerAttributes>peer);
+  public getHosts = async (): Promise<db.HostInstance[]> => {
+    return this.models.Host.findAll();
   }
 
-  public addPeers = async (peers: db.PeerFactory[]): Promise<db.PeerInstance[]> => {
-    return this.models.Peer.bulkCreate(<db.PeerAttributes[]>peers);
+  public getBannedHosts = async (): Promise<db.BannedHostInstance[]> => {
+    return this.models.BannedHost.findAll();
   }
 
-  public getOrAddPeer = async(address, port): Promise<db.PeerInstance> => {
-    const results = await this.db.sequelize.query(`
-      INSERT IGNORE INTO peers (address, port, createdAt, updatedAt) VALUES ('${address}', ${port}, NOW(), NOW());
-      SELECT * FROM peers WHERE address = '${address}' and port = ${port};
-    `);
+  public addHost = async (host: db.HostFactory): Promise<db.HostInstance> => {
+    return this.models.Host.create(<db.HostAttributes>host);
+  }
 
-    return results[0][1][0];
+  public addHosts = async (hosts: db.HostFactory[]): Promise<db.HostInstance[]> => {
+    return this.models.Host.bulkCreate(<db.HostAttributes[]>hosts);
+  }
+
+  public addBannedHost = async (host: db.BannedHostFactory): Promise<db.BannedHostInstance> => {
+    return this.models.BannedHost.create(<db.BannedHostAttributes>host);
   }
 }
 

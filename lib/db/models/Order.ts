@@ -22,8 +22,8 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     models.Order.belongsTo(models.Pair, {
       foreignKey: 'pairId',
     });
-    models.Order.belongsTo(models.Peer, {
-      foreignKey: 'peerId',
+    models.Order.belongsTo(models.Host, {
+      foreignKey: 'hostId',
     });
   };
 

@@ -2,12 +2,14 @@ import assert from 'assert';
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import Peer from './Peer';
-import Hosts from './Hosts';
-import NetAddress from './SocketAddress';
+import Peer, { ConnectionDirection, HandshakeState } from './Peer';
+import HostList from './HostList';
+import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
+import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket } from './packets';
 import { orders } from '../types';
+import DB from '../db/DB';
 import Logger from '../Logger';
 
 type PoolConfig = {
@@ -17,15 +19,16 @@ type PoolConfig = {
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
+  private hosts: HostList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
   private logger: Logger = Logger.global;
   private connected: boolean = false;
-  private hosts: Hosts = new Hosts();
 
-  constructor(private config: PoolConfig) {
+  constructor(private config: PoolConfig, db: DB) {
     super();
 
+    this.hosts = new HostList(new P2PRepository(db));
     this.bindServer(this.server);
   }
 
@@ -34,9 +37,9 @@ class Pool extends EventEmitter {
       return;
     }
 
-    await this.hosts.init();
-
-    // TODO: p2p bootstrap process here
+    for (const host of await this.hosts.get()) {
+      this.addOutbound(host.socketAddress.address, host.socketAddress.port);
+    }
 
     this.listen();
     this.connected = true;
@@ -53,15 +56,15 @@ class Pool extends EventEmitter {
     this.connected = false;
   }
 
-  public addOutbound = async (host: string, port: number): Promise<Peer> => {
-    const address = new NetAddress(host, port);
-    if (this.peers.has(address)) {
+  public addOutbound = async (address: string, port: number): Promise<Peer> => {
+    const socketAddress = new SocketAddress(address, port);
+    if (this.peers.has(socketAddress)) {
       const err = errors.ADDRESS_ALREADY_CONNECTED(address.toString());
       this.logger.info(err.message);
       throw err;
     }
 
-    const peer = Peer.fromOutbound(address);
+    const peer = Peer.fromOutbound(socketAddress);
     await this.connectPeer(peer);
     return peer;
   }
@@ -90,9 +93,8 @@ class Pool extends EventEmitter {
       return;
     }
 
-    const host = socket.remoteAddress;
-    if (this.hosts.isBanned(host)) {
-      this.logger.debug(`Ignoring banned peer (${host})`);
+    if (this.hosts.isBanned(socket.remoteAddress)) {
+      this.logger.debug(`Ignoring banned peer (${socket.remoteAddress})`);
       socket.destroy();
       return;
     }
@@ -113,9 +115,20 @@ class Pool extends EventEmitter {
     }
   }
 
-  private handleOpen = (peer: Peer) => {
-    // TODO: do post-handshake stuff here
-    console.log('handleOpen: ' + peer.id);
+  /** post-handshake stuff */
+  private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
+    this.setPeerHost(peer, handshakeState.listenPort);
+  }
+
+  private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
+    if (peer.direction === ConnectionDirection.OUTBOUND) {
+      const host = await this.hosts.getOrCreate(peer.socketAddress);
+      peer.setHost(host);
+    } else if (peer.direction === ConnectionDirection.INBOUND && listenPort) {
+      const socketAddress = new SocketAddress(peer.socketAddress.address, listenPort);
+      const host = await this.hosts.getOrCreate(socketAddress);
+      peer.setHost(host);
+    }
   }
 
   private bindServer = (server: Server) => {
@@ -142,8 +155,8 @@ class Pool extends EventEmitter {
       this.logger.error('peer error', err);
     });
 
-    peer.once('open', () => {
-      this.handleOpen(peer);
+    peer.once('open', (handshakeState: HandshakeState) => {
+      this.handleOpen(peer, handshakeState);
     });
 
     peer.once('close', () => {
@@ -152,7 +165,7 @@ class Pool extends EventEmitter {
 
     peer.once('ban', () => {
       this.logger.debug(`Banning peer (${peer.id})`);
-      this.hosts.ban(peer.address.host);
+      this.hosts.ban(peer.socketAddress.address);
 
       if (peer) {
         peer.destroy();
