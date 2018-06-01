@@ -16,7 +16,7 @@ enum ConnectionDirection {
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   public address!: SocketAddress;
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.p2p;
   private connected: boolean = false;
   private opened: boolean = false;
   private direction?: ConnectionDirection;

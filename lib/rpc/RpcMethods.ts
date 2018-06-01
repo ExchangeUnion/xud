@@ -24,7 +24,7 @@ class RpcMethods {
     this.pool = components.pool;
     this.shutdown = components.shutdown;
 
-    this.logger = Logger.global;
+    this.logger = Logger.rpc;
 
     this.getInfo = this.getInfo.bind(this);
     this.getPairs = this.getPairs.bind(this);

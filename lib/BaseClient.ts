@@ -9,8 +9,8 @@ abstract class BaseClient {
   protected logger: Logger;
   protected status!: ClientStatus;
 
-  constructor() {
-    this.logger = Logger.global;
+  constructor(logger: Logger) {
+    this.logger = logger;
   }
 
   protected setStatus(val: ClientStatus): void {

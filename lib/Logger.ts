@@ -13,11 +13,23 @@ enum Level {
 }
 
 enum Context {
-  GLOBAL,
+  GLOBAL = 'GLOBAL',
+  DB = 'DB',
+  RPC = 'RPC',
+  P2P = 'P2P',
+  ORDERBOOK = 'ORDERBOOK',
+  LND = 'LND',
+  RAIDEN = 'RAIDEN',
 }
 
 const contextFileMap = {
   [Context.GLOBAL]: 'xud.log',
+  [Context.DB]: 'xud.log',
+  [Context.RPC]: 'xud.log',
+  [Context.P2P]: 'xud.log',
+  [Context.ORDERBOOK]: 'xud.log',
+  [Context.LND]: 'xud.log',
+  [Context.RAIDEN]: 'xud.log',
 };
 
 class Logger {
@@ -32,7 +44,13 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
+  public static global = new Logger({ context: Context.GLOBAL });
+  public static db = new Logger({ context: Context.DB });
+  public static rpc = new Logger({ context: Context.RPC });
+  public static p2p = new Logger({ context: Context.P2P });
+  public static orderbook = new Logger({ context: Context.ORDERBOOK  });
+  public static lnd = new Logger({ context: Context.LND });
+  public static raiden = new Logger({ context: Context.RAIDEN });
 
   constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
@@ -41,7 +59,7 @@ class Logger {
 
     const { format } = winston;
     const logFormat = format.printf(
-        info => `${getTsString()} ${info.level}: ${info.message}`);
+        info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
