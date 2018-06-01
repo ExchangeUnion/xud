@@ -44,13 +44,13 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public static global = new Logger({ context: Context.GLOBAL, logDir: undefined, level: undefined });
-  public static db = new Logger({ context: Context.DB, logDir: undefined, level: undefined });
-  public static rpc = new Logger({ context: Context.RPC, logDir: undefined, level: undefined });
-  public static p2p = new Logger({ context: Context.P2P, logDir: undefined, level: undefined });
-  public static orderbook = new Logger({ context: Context.ORDERBOOK, logDir: undefined, level: undefined });
-  public static lnd = new Logger({ context: Context.LND, logDir: undefined, level: undefined });
-  public static raiden = new Logger({ context: Context.RAIDEN, logDir: undefined, level: undefined });
+  public static global = new Logger({ context: Context.GLOBAL });
+  public static db = new Logger({ context: Context.DB });
+  public static rpc = new Logger({ context: Context.RPC });
+  public static p2p = new Logger({ context: Context.P2P });
+  public static orderbook = new Logger({ context: Context.ORDERBOOK  });
+  public static lnd = new Logger({ context: Context.LND });
+  public static raiden = new Logger({ context: Context.RAIDEN });
 
   constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
