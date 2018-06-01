@@ -48,7 +48,7 @@ class Logger {
   public static db = new Logger({ context: Context.DB });
   public static rpc = new Logger({ context: Context.RPC });
   public static p2p = new Logger({ context: Context.P2P });
-  public static orderbook = new Logger({ context: Context.ORDERBOOK  });
+  public static orderbook = new Logger({ context: Context.ORDERBOOK });
   public static lnd = new Logger({ context: Context.LND });
   public static raiden = new Logger({ context: Context.RAIDEN });
 

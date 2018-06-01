@@ -80,7 +80,18 @@ class OrderBook {
     const { matches, remainingOrder } = matchingResult;
 
     if (matches.length > 0) {
-      matches.forEach(this.handleMatch);
+      for (const [index, match] of matches.entries()) {
+        const { maker, taker } = match;
+        this.handleMatch({ maker, taker });
+
+        // Maker is fully matched if it is not the last
+        if ((matches.length - index) > 1) {
+          await this.repository.updateOrder(maker, 0);
+        } else {
+          const initialQuantity = await this.repository.getOrderQuantity(maker);
+          await this.repository.updateOrder(maker, initialQuantity - maker.quantity);
+        }
+      }
     }
     if (remainingOrder) {
       this.broadcastOrder(remainingOrder);
@@ -123,6 +134,7 @@ class OrderBook {
   private handleMatch = ({ maker, taker }): void => {
     this.logger.debug(`order match: ${JSON.stringify({ maker, taker })}`);
     this.matchesProcessor.add({ maker, taker });
+
   }
 
   private getInvoice = async (order: orders.StampedOwnOrder): Promise<string|void> => {

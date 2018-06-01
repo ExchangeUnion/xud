@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
 
-import { db } from '../types';
+import { db, orders } from '../types';
 import Logger from '../Logger';
 import DB, { Models } from '../db/DB';
 import Bluebird from 'bluebird';
@@ -86,6 +86,15 @@ class OrderbookRepository {
 
   public addOrders = (orders: db.OrderFactory[]): Bluebird<db.OrderInstance[]> => {
     return this.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
+  }
+
+  public updateOrder = async (orders: orders.StampedOrder, quantityLeft: number) => {
+    await this.models.Order.update({ quantity: quantityLeft }, { where: { id: orders.id } });
+  }
+
+  public getOrderQuantity = async (order: orders.StampedOrder): Promise<number> => {
+    const result = await this.models.Order.find({ where: { id: order.id }, attributes: ['quantity'] }) as db.OrderInstance;
+    return result.quantity as number;
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {

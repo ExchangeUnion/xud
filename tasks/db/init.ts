@@ -1,4 +1,4 @@
-import uuidv1 from 'uuid/v1';
+import uuidv4 from 'uuid/v4';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import enums from '../../lib/constants/enums';
@@ -42,16 +42,16 @@ export default async (testDb?: boolean) => {
 
   await orderBookRepository.addOrders([
     {
-      id: uuidv1(), pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679, createdAt: new Date(),
+      id: uuidv4(), pairId: 'BTC/LTC', peerId: 1, quantity: 10.01, price: 59.9679, createdAt: new Date(),
     },
     {
-      id: uuidv1(), pairId: 'BTC/LTC', peerId: 2, quantity: -2, price: 60, createdAt: new Date(),
+      id: uuidv4(), pairId: 'BTC/LTC', peerId: 2, quantity: -2, price: 60, createdAt: new Date(),
     },
     {
-      id: uuidv1(), pairId: 'BTC/LTC', peerId: 3, quantity: 3, price: 60, createdAt: new Date(),
+      id: uuidv4(), pairId: 'BTC/LTC', peerId: 3, quantity: 3, price: 60, createdAt: new Date(),
     },
     {
-      id: uuidv1(), pairId: 'BTC/LTC', peerId: 4, quantity: -8.5, price: 66, createdAt: new Date(),
+      id: uuidv4(), pairId: 'BTC/LTC', peerId: 4, quantity: -8.5, price: 66, createdAt: new Date(),
     },
   ]);
 
