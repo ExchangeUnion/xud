@@ -16,7 +16,7 @@ type OrderBookConfig = {
 };
 
 class OrderBook {
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
   public pairs: db.PairInstance[] = [];

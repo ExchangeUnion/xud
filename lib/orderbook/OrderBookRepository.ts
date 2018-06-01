@@ -11,7 +11,7 @@ type Orders = {
 };
 
 class OrderbookRepository {
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.orderbook;
   private models: Models;
 
   constructor(db: DB) {

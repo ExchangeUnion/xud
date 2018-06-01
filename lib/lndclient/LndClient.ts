@@ -29,10 +29,8 @@ class LndClient extends BaseClient{
    * @param config The lnd configuration
    */
   constructor(config: LndClientConfig) {
-    super();
+    super(Logger.lnd);
     const { disable, datadir, certpath, host, port, macaroonpath } = config;
-
-    this.logger = Logger.global;
 
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);

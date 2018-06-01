@@ -29,7 +29,7 @@ type SplitOrder = {
 
 class MatchingEngine {
   public priorityQueues: PriorityQueues;
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.orderbook;
 
   constructor(public pairId: string,
               private internalMatching: boolean,

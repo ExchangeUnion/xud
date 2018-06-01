@@ -31,7 +31,7 @@ type Models = {
 class DB {
   public sequelize!: Sequelize.Sequelize;
   public models!: Models;
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.db;
 
   constructor(private config: DBConfig) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');

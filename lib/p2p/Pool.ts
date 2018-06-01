@@ -22,7 +22,7 @@ class Pool extends EventEmitter {
   private hosts: HostList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private logger: Logger = Logger.global;
+  private logger: Logger = Logger.p2p;
   private connected: boolean = false;
 
   constructor(private config: PoolConfig, db: DB) {
