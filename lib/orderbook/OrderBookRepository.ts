@@ -93,8 +93,12 @@ class OrderbookRepository {
   }
 
   public getOrderQuantity = async (order: orders.StampedOrder): Promise<number> => {
-    const result = await this.models.Order.find({ where: { id: order.id }, attributes: ['quantity'] }) as db.OrderInstance;
-    return result.quantity as number;
+    const result = await this.models.Order.find({
+      where: { id: order.id },
+      raw: true,
+      attributes: ['quantity'],
+    }) as db.OrderInstance;
+    return Number(result.quantity);
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {

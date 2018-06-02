@@ -48,11 +48,10 @@ describe('OrderBook', () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: 5, price: 100 };
     const matches = await orderBook.addOwnOrder(order);
     expect(matches.remainingOrder).to.be.null;
-    // TODO: find out why this is a string
     const firstMakerLeft = await orderBookRepository.getOrderQuantity(matches.matches[0].maker);
-    expect(firstMakerLeft).to.be.equal('0.00000000');
+    expect(firstMakerLeft).to.be.equal(0);
     const secondMakerLeft = await orderBookRepository.getOrderQuantity(matches.matches[1].maker);
-    expect(secondMakerLeft).to.be.equal('-5.50000000');
+    expect(secondMakerLeft).to.be.equal(-5.5);
   });
 
   after(async () => {
