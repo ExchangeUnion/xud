@@ -134,7 +134,6 @@ class OrderBook {
   private handleMatch = ({ maker, taker }): void => {
     this.logger.debug(`order match: ${JSON.stringify({ maker, taker })}`);
     this.matchesProcessor.add({ maker, taker });
-
   }
 
   private getInvoice = async (order: orders.StampedOwnOrder): Promise<string|void> => {
