@@ -5,7 +5,8 @@ import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
-import RpcServer from './rpc/RpcServer';
+import GrpcServer from './grpc/GrpcServer';
+import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import dotenv from 'dotenv';
@@ -24,6 +25,7 @@ class Xud {
   private orderBook!: OrderBook;
   private rpcServer: any;
   private nodeKey!: NodeKey;
+  private grpcAPIProxy: any;
 
   /**
    * Create an Exchange Union daemon.
@@ -56,7 +58,7 @@ class Xud {
       this.orderBook = new OrderBook(this.config.orderbook, this.db, this.pool, this.lndClient);
       await this.orderBook.init();
 
-      this.rpcServer = new RpcServer({
+      this.rpcServer = new GrpcServer({
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,
@@ -64,6 +66,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       await this.rpcServer.listen(this.config.rpc.port);
+
+      if (!this.config.webproxy.disable) {
+        this.grpcAPIProxy = new GrpcWebProxyServer();
+        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port);
+      }
     } catch (err) {
       this.logger.error(err);
     }
@@ -77,14 +84,15 @@ class Xud {
     if (this.pool) {
       await this.pool.disconnect();
     }
-
     // TODO: ensure we are not in the middle of executing any trades
-
     const msg = 'XUD shutdown gracefully';
     (async () => {
       // we use an immediately invoked function here to close rpcServer and exit process AFTER the
       // shutdown method returns a response.
       await this.rpcServer.close();
+      if (this.grpcAPIProxy) {
+        await this.grpcAPIProxy.close();
+      }
       this.logger.info(msg);
       this.db.close();
     })();

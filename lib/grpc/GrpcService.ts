@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { RpcComponents } from './RpcServer';
+import { GrpcComponents } from './GrpcServer';
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
@@ -8,7 +8,7 @@ import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 
 /** Class containing the available RPC methods for Exchange Union */
-class RpcMethods {
+class GrpcService {
   private orderBook: OrderBook;
   private lndClient: LndClient;
   private raidenClient: RaidenClient;
@@ -17,7 +17,7 @@ class RpcMethods {
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: RpcComponents) {
+  constructor(components: GrpcComponents) {
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;
@@ -38,23 +38,23 @@ class RpcMethods {
   /**
    * Placeholder for a method to return general information about an Exchange Union node.
    */
-  public getInfo() {
-    return this.lndClient.getInfo();
+  public getInfo(_call, callback) {
+    callback(null, this.lndClient.getInfo());
   }
 
   /**
-   * Get the list of the orderbook's available pairs. See [[OrderBook.getPairs]].
+   * Get the list of the orderbook's available pairs.
    * @returns A list of available trading pairs
    */
-  public getPairs() {
-    return this.orderBook.getPairs();
+  public getPairs(_call, callback) {
+    callback(null, this.orderBook.getPairs());
   }
 
   /**
-   * Get a list of standing orders from the orderbook. See [[OrderBook.getOrders]].
+   * Get a list of standing orders from the orderbook.
    */
-  public getOrders(params) {
-    let maxResults = params.maxResults;
+  public getOrders(_call, callback) {
+    let maxResults = _call.request.maxResults;
 
     if (maxResults === undefined) {
       maxResults = 100;
@@ -63,13 +63,14 @@ class RpcMethods {
       maxResults = undefined;
     }
 
-    return this.orderBook.getOrders(params.pairId, maxResults);
+    return callback(null, this.orderBook.getOrders(_call.request.pairId, maxResults));
   }
 
   /**
-   * Add an order to the orderbook. See [[OrderBook.addOwnOrder()]].
+   * Add an order to the orderbook.
    */
-  public async placeOrder({ order }: {order: orders.OwnOrder}): Promise<matchingEngine.MatchingResult> {
+  public async placeOrder(call, callback) {
+    const order = call.request;
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
     assert(typeof order.quantity === 'number', 'quantity must be a number');
@@ -80,23 +81,25 @@ class RpcMethods {
   }
 
   /**
-   * Connect to an XU node on a given host and port. See [[Pool.addOutbound]]
+   * Connect to an XU node on a given host and port.
    */
-  public async connect(params) {
+  public async connect(call, callback) {
+    const { host, port } = call.request;
     try {
-      const peer = await this.pool.addOutbound(params.host, params.port);
-      return peer.statusString;
+      const peer = await this.pool.addOutbound(host, port);
+      callback(null, peer.statusString);
     } catch (err) {
       return err;
     }
   }
 
   /**
-   * Demo method to execute a Raiden Token Swap through XUD. See [[RaidenClient.tokenSwap]]
+   * Demo method to execute a Raiden Token Swap through XUD.
   */
-  public tokenSwap({ target_address, payload, identifier }: {target_address: string, payload: TokenSwapPayload, identifier: string}) {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  public tokenSwap(call, callback) {
+    const { target_address, payload, identifier } = call.request;
+    callback(null, this.raidenClient.tokenSwap(target_address, payload, identifier));
   }
 }
 
-export default RpcMethods;
+export default GrpcService;

@@ -18,6 +18,7 @@ class Config {
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
+  public webproxy: any;
 
   constructor(private args?: object) {
     const platform = os.platform();
@@ -52,6 +53,7 @@ class Config {
       host: 'localhost',
       port: 3306,
       username: 'xud',
+      password: undefined,
       database: 'xud',
       dialect: 'mysql',
     };
@@ -61,6 +63,10 @@ class Config {
     };
     this.rpc = {
       port: 8886,
+    };
+    this.webproxy = {
+      disable: true,
+      port: 8887,
     };
     this.lnd = {
       disable: false,
