@@ -80,7 +80,6 @@
     "grpc": "^1.12.2",
     "grpc-dynamic-gateway": "^0.3.4",
     "gulp": "^3.9.1",
-    "http-jsonrpc-server": "^1.0.0-beta.2",
     "mysql2": "^1.5.3",
     "protobufjs": "^6.8.6",
     "secp256k1": "^3.5.0",
