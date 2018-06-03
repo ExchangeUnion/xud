@@ -20,9 +20,10 @@ type LndClientConfig = {
 };
 
 /** A class representing a client to interact with lnd. */
-class LndClient extends BaseClient{
+class LndClient extends BaseClient {
   private lightning: any;
   private meta?: grpc.Metadata;
+  private boundMethods: any;
 
   /**
    * Create an lnd client.
@@ -48,17 +49,29 @@ class LndClient extends BaseClient{
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
+      this.boundMethods = {
+        getInfo: this.lightning.getInfo.bind(this.lightning),
+        addInvoice: this.lightning.addInvoice.bind(this.lightning),
+        sendPaymentSync: this.lightning.sendPaymentSync.bind(this.lightning),
+        newAddress: this.lightning.newAddress.bind(this.lightning),
+        channelBalance: this.lightning.channelBalance.bind(this.lightning),
+        walletBalance: this.lightning.walletBalance.bind(this.lightning),
+        connectPeer: this.lightning.connectPeer.bind(this.lightning),
+        openChannel: this.lightning.openChannel.bind(this.lightning),
+        listChannels: this.lightning.listChannels.bind(this.lightning),
+      };
+
       this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
     }
   }
 
-  private unaryCall = <T>(method: Function, params: any): Promise<T> => {
+  private unaryCall = <T>(methodName: string, params: any): Promise<T> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      method(params, this.meta, (err: grpc.StatusObject, response: T) => {
+      this.boundMethods[methodName](params, this.meta, (err: grpc.StatusObject, response: T) => {
         if (err) {
           reject(err.details);
         } else {
@@ -73,7 +86,7 @@ class LndClient extends BaseClient{
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
-    return this.unaryCall<lndrpc.GetInfoResponse.AsObject>(this.lightning.getInfo, {});
+    return this.unaryCall<lndrpc.GetInfoResponse.AsObject>('getInfo', {});
   }
 
   /**
@@ -81,7 +94,7 @@ class LndClient extends BaseClient{
    * @param value The value of this invoice in satoshis
    */
   public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.AddInvoiceResponse.AsObject>(this.lightning.addInvoice, { value, memo: 'XU' });
+    return this.unaryCall<lndrpc.AddInvoiceResponse.AsObject>('addInvoice', { value, memo: 'XU' });
   }
 
   /**
@@ -89,49 +102,49 @@ class LndClient extends BaseClient{
    * @param payment_request An invoice for a payment within the Lightning Network.
    */
   public payInvoice = (payment_request: string): Promise<lndrpc.SendResponse.AsObject> => {
-    return this.unaryCall<lndrpc.SendResponse.AsObject>(this.lightning.sendPaymentSync, { payment_request });
+    return this.unaryCall<lndrpc.SendResponse.AsObject>('sendPaymentSync', { payment_request });
   }
 
   /**
    * Get a new address for the internal lnd wallet.
    */
   public newAddress = (address_type: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
-    return this.unaryCall<lndrpc.NewAddressResponse.AsObject>(this.lightning.newAddress, { address_type });
+    return this.unaryCall<lndrpc.NewAddressResponse.AsObject>('newAddress', { address_type });
   }
 
   /**
    * Return the total of unspent outputs for the internal lnd wallet.
    */
   public walletBalance = (): Promise<lndrpc.WalletBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.WalletBalanceResponse.AsObject>(this.lightning.walletBalance, {});
+    return this.unaryCall<lndrpc.WalletBalanceResponse.AsObject>('walletBalance', {});
   }
 
   /**
    * Return the total funds available across all channels.
    */
   public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ChannelBalanceResponse.AsObject>(this.lightning.channelBalance, {});
+    return this.unaryCall<lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', {});
   }
 
   /**
    * Connect to another lnd node.
    */
   public connectPeer = (addr: lndrpc.LightningAddress): Promise<lndrpc.ConnectPeerResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ConnectPeerResponse.AsObject>(this.lightning.connectPeer, { addr });
+    return this.unaryCall<lndrpc.ConnectPeerResponse.AsObject>('connectPeer', { addr });
   }
 
   /**
    * Open a channel with a connected lnd node.
    */
   public openChannel = (node_pubkey_string: string, local_funding_amount: string): Promise<lndrpc.ChannelPoint.AsObject> => {
-    return this.unaryCall<lndrpc.ChannelPoint.AsObject>(this.lightning.openChannel, { node_pubkey_string, local_funding_amount });
+    return this.unaryCall<lndrpc.ChannelPoint.AsObject>('openChannel', { node_pubkey_string, local_funding_amount });
   }
 
   /**
    * List all open channels for this node.
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ListChannelsResponse.AsObject>(this.lightning.listChannels, {});
+    return this.unaryCall<lndrpc.ListChannelsResponse.AsObject>('listChannels', {});
   }
 
   /**
