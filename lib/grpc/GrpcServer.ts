@@ -36,12 +36,12 @@ class GrpcServer {
 
   /**
    * Starts the server and begins listening on the provided port
-   * @param {number} port
+   * @param port
    */
-  public async listen(port) {
-    assert(port && Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
+  public listen(port: number) {
+    assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
-    await this.server.addService(this.xudrpc.XUDService.service, {
+    this.server.addService(this.xudrpc.XUDService.service, {
       getInfo: this.rpcMethods.getInfo,
       getPairs: this.rpcMethods.getPairs,
       getOrders: this.rpcMethods.getOrders,
@@ -50,8 +50,8 @@ class GrpcServer {
       tokenSwap: this.rpcMethods.tokenSwap,
     });
     try {
-      await this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
-      await this.server.start();
+      this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
+      this.server.start();
       this.logger.info(`GRPC server listening on port ${port}`);
     } catch (error) {
       throw error;
@@ -59,11 +59,14 @@ class GrpcServer {
   }
 
   /**
-   * Closes the server and stops listening
+   * Stops listening for requests
    */
-  public async close() {
-    await this.server.tryShutdown(() => {
-      this.logger.info('GRPC server stopped listening');
+  public close(): Promise<void> {
+    return new Promise((resolve) => {
+      this.server.tryShutdown(() => {
+        this.logger.info('GRPC server stopped listening');
+        resolve();
+      });
     });
   }
 }

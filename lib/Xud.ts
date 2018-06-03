@@ -18,14 +18,14 @@ dotenv.config();
 class Xud {
   private logger: Logger = Logger.global;
   private config: Config;
-  private db: any;
-  private lndClient: any;
-  private raidenClient: any;
+  private db!: DB;
+  private lndClient!: LndClient;
+  private raidenClient!: RaidenClient;
   private pool?: Pool;
   private orderBook!: OrderBook;
-  private rpcServer: any;
+  private rpcServer!: GrpcServer;
   private nodeKey!: NodeKey;
-  private grpcAPIProxy: any;
+  private grpcAPIProxy?: GrpcWebProxyServer;
 
   /**
    * Create an Exchange Union daemon.

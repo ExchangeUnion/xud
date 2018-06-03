@@ -1,5 +1,7 @@
 import assert from 'assert';
 import grpc from 'grpc';
+import { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import { OwnOrder } from '../types/orders';
 
 class XUClient {
   private port: number = 8886;
@@ -56,7 +58,7 @@ class XUClient {
 
   }
 
-  public placeOrder(order): Promise<any> {
+  public placeOrder(order: OwnOrder): Promise<any> {
     return new Promise((resolve, reject) => {
       return this.grpcClient.placeOrder({ order }, (err, response) => {
         if (err) {
@@ -68,7 +70,7 @@ class XUClient {
     });
   }
 
-  public connect(host, port): Promise<any> {
+  public connect(host: number, port: number): Promise<any> {
     return new Promise((resolve, reject) => {
       return this.grpcClient.connect({ host, port }, (err, response) => {
         if (err) {
@@ -80,7 +82,7 @@ class XUClient {
     });
   }
 
-  public tokenSwap(target_address, payload, identifier): Promise<any> {
+  public tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<any> {
     return new Promise((resolve, reject) => {
       return this.grpcClient.tokenSwap({ target_address, payload, identifier }, (err, response) => {
         if (err) {

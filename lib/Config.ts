@@ -14,11 +14,11 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: any;
+  public rpc: { port: number };
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
-  public webproxy: any;
+  public webproxy: { port: number, disable: boolean };
 
   constructor(private args?: object) {
     const platform = os.platform();

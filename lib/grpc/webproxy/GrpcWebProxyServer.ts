@@ -3,37 +3,51 @@ import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import Logger from '../../Logger';
+import { Server } from 'net';
 
 class GrpcWebProxyServer {
   private logger: Logger;
-  private server: any;
+  private app: express.Application;
+  private server?: Server;
 
   constructor() {
     this.logger = Logger.global;
-    this.server = express();
-    this.server.use(bodyParser.json());
-    this.server.use(bodyParser.urlencoded({ extended: false }));
+    this.app = express();
+    this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({ extended: false }));
   }
 
   /**
-   * Starts the server and begins listening on the provided port
-   * @param {number} proxyPort
-   * @param {number} grpcPort
+   * Starts the server and begins listening on the specified proxy port
    */
-  public async listen(proxyPort, grpcPort) {
+  public listen(proxyPort: number, grpcPort: number): Promise<void> {
     // Load the proxy on / URL
-    await this.server.use('/api/', grpcGateway(['xud.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
-    await this.server.listen(proxyPort, () => {
-      this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);
+    this.app.use('/api/', grpcGateway(['xud.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
+    return new Promise((resolve) => {
+      this.server = this.app.listen(proxyPort, () => {
+        this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);
+        resolve();
+      });
     });
   }
 
   /**
-   * Closes the server and stops listening
+   * Stops listening for requests
    */
-  public async close() {
-    await this.server.close(() => {
-      this.logger.info('GRPC Web API proxy stopped listening');
+  public close(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.server) {
+        this.server.close(() => {
+          this.logger.info('GRPC Web API proxy stopped listening');
+          resolve();
+        }).once('error', (err) => {
+          this.logger.error(err);
+          reject(err);
+        });
+      } else {
+        // there is already no server listening
+        resolve();
+      }
     });
   }
 }
