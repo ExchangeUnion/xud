@@ -1,6 +1,6 @@
 import Sequelize from 'sequelize';
 import { db } from '../../types';
-import enums from '../../constants/enums';
+import { SwapProtocol } from '../../types/enums';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.PairAttributes> = {
@@ -8,7 +8,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     baseCurrency: { type: DataTypes.STRING, allowNull: false },
     quoteCurrency: { type: DataTypes.STRING, allowNull: false },
     swapProtocol: {
-      type: DataTypes.ENUM, values: Object.values(enums.swapProtocols), allowNull: true,
+      type: DataTypes.ENUM, values: Object.values(SwapProtocol), allowNull: true,
     },
   };
 

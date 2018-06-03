@@ -1,7 +1,7 @@
 import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
-import enums from '../../lib/constants/enums';
+import { SwapProtocol } from '../../lib/types/enums';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 
@@ -35,8 +35,8 @@ export default async (testDb?: boolean) => {
       { id: 'GNT' },
     ]),
     orderBookRepository.addPairs([
-      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
-      { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: enums.swapProtocols.RAIDEN },
+      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+      { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
     ]),
   ]);
 
