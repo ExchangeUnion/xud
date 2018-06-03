@@ -3,6 +3,7 @@ import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import Logger from '../../Logger';
+import path from 'path';
 import { Server } from 'net';
 
 class GrpcWebProxyServer {
@@ -22,7 +23,8 @@ class GrpcWebProxyServer {
    */
   public listen = (proxyPort: number, grpcPort: number): Promise<void> => {
     // Load the proxy on / URL
-    this.app.use('/api/', grpcGateway(['xud.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
+    const xudrpcProtoPath = path.join(__dirname, '..', '..', '..', 'proto', 'xudrpc.proto');
+    this.app.use('/api/', grpcGateway([xudrpcProtoPath], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
     return new Promise((resolve) => {
       this.server = this.app.listen(proxyPort, () => {
         this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);

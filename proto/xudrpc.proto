@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-//import "google/api/annotations.proto";
+import "annotations.proto";
+import "lndrpc.proto";
 
 package xudrpc;
 
@@ -16,8 +17,7 @@ service XUDService {
 
 
   /**
-   * Get the list of the orderbook's available pairs. See [[OrderBook.getPairs]].
-   * @returns A list of available trading pairs
+   * Get the list of the orderbook's available pairs.
    */
  rpc GetPairs(Empty) returns (GetPairsResponse) {
     option (google.api.http) = {
@@ -28,7 +28,7 @@ service XUDService {
   /**
    * Get a list of standing orders from the orderbook.
    */
-  rpc GetOrders(Empty) returns (GetOrdersResponse) {
+  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
         get: "/v1/orders"
     };
@@ -37,7 +37,7 @@ service XUDService {
   /**
    * Add an order to the orderbook.
    */
-  rpc PlaceOrder(Order) returns (Order) {
+  rpc PlaceOrder(Order) returns (MatchingResult) {
     option (google.api.http) = {
         post: "/v1/orders"
         body: "*"
@@ -66,36 +66,16 @@ service XUDService {
 }
 
 message GetInfoResponse {
-  /// The identity pubkey of the current node.
-  string identity_pubkey = 1 [json_name = "identity_pubkey"];
-  /// If applicable, the alias of the current node, e.g. "bob"
-  string alias = 2 [json_name = "alias"];
-  /// Number of pending channels
-  uint32 num_pending_channels = 3 [json_name = "num_pending_channels"];
-  /// Number of active channels
-  uint32 num_active_channels = 4 [json_name = "num_active_channels"];
-  /// Number of peers
-  uint32 num_peers = 5 [json_name = "num_peers"];
-  /// The node's current view of the height of the best block
-  uint32 block_height = 6 [json_name = "block_height"];
-  /// The node's current view of the hash of the best block
-  string block_hash = 8 [json_name = "block_hash"];
-  /// Whether the wallet's view is synced to the main chain
-  bool synced_to_chain = 9 [json_name = "synced_to_chain"];
-  /// Whether the current node is connected to testnet
-  bool testnet = 10 [json_name = "testnet"];
-  /// A list of active chains the node is connected to
-  repeated string chains = 11 [json_name = "chains"];
-  /// The URIs of the current node.
-  repeated string uris = 12 [json_name = "uris"];
+  lnrpc.GetInfoResponse lnd = 1 [json_name = "lnd"];
 }
 
 message Order {
-  uint32 price = 1 [json_name = "price"];
-  uint32 quantity = 2 [json_name = "quantity"];
+  string price = 1 [json_name = "price"];
+  string quantity = 2 [json_name = "quantity"];
   string pair_id = 3 [json_name = "pair_id"];
   string peer_id = 4 [json_name = "peer_id"];
-  string invoice = 5 [json_name = "invoice"];
+  string id = 5 [json_name = "id"];
+  int64 created_at = 6 [json_name = "created_at"];
 }
 
 message GetPairsResponse {
@@ -117,14 +97,24 @@ message TokenSwapRequest {
 
 message SwapPayload {
   string role = 1 [json_name = "role"];
-  uint32 sending_amount = 2 [json_name = "sending_amount"];
+  uint64 sending_amount = 2 [json_name = "sending_amount"];
   string sending_token = 3 [json_name = "sending_token"];
-  uint32 receiving_amount = 4 [json_name = "receiving_amount"];
+  uint64 receiving_amount = 4 [json_name = "receiving_amount"];
   string receiving_token = 5 [json_name = "receiving_token"];
 }
 
 message TokenSwapResponse {
   string result = 1 [json_name = "result"];
+}
+
+message OrderMatch {
+  Order maker = 1 [json_name = "maker"];
+  Order taker = 2 [json_name = "taker"];
+}
+
+message MatchingResult {
+  repeated OrderMatch matches = 1 [json_name = "matches"];
+  Order remaining_order = 2 [json_name= "remaining_order"];
 }
 
 message ConnectRequest {
@@ -136,10 +126,14 @@ message ConnectResponse {
   string result = 1 [json_name = "result"];
 }
 
+message GetOrdersRequest {
+  string pair_id = 1 [json_name = "pair_id"];
+  uint32 max_results = 2 [json_name = "max_results"];
+}
+
 message GetOrdersResponse {
   repeated Order buy_orders = 1 [json_name = "buy_orders"];
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
 
-message Empty {
-}
+message Empty {}

@@ -1,5 +1,6 @@
 import grpc, { Server } from 'grpc';
 import assert from 'assert';
+import path from 'path';
 import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import OrderBook from '../orderbook/OrderBook';
@@ -28,7 +29,7 @@ class GrpcServer {
   constructor(components: GrpcComponents) {
     this.grpcService = new GrpcService(components);
     this.logger = Logger.global;
-    const PROTO_PATH = __dirname + '/xud.proto';
+    const PROTO_PATH = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(PROTO_PATH, 'proto');
     this.xudrpc = protoDescriptor.xudrpc;
     this.server = new grpc.Server();

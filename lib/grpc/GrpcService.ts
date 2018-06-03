@@ -30,8 +30,8 @@ class GrpcService {
   /**
    * Placeholder for a method to return general information about an Exchange Union node.
    */
-  public getInfo = (_call, callback) => {
-    callback(null, this.lndClient.getInfo());
+  public getInfo = async (_call, callback) => {
+    callback(null, { lnd: await this.lndClient.getInfo() });
   }
 
   /**

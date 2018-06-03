@@ -40,7 +40,7 @@ class LndClient extends BaseClient{
     } else {
       const lndCert = fs.readFileSync(certpath);
       const credentials = grpc.credentials.createSsl(lndCert);
-      const rpcprotopath = path.join(__dirname, '..', '..', 'lndrpc.proto');
+      const rpcprotopath = path.join(__dirname, '..', '..', 'proto', 'lndrpc.proto');
       const lnrpcDescriptor: any = grpc.load(rpcprotopath);
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 

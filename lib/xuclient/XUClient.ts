@@ -1,5 +1,6 @@
 import assert from 'assert';
 import grpc from 'grpc';
+import path from 'path';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 
@@ -17,7 +18,8 @@ class XUClient {
       this.host = host;
     }
     this.port = port || 8886;
-    const xurpc: any = grpc.load(__dirname + '/xud.proto', 'proto');
+    const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
+    const xurpc: any = grpc.load(xudrpcProtoPath, 'proto');
     this.grpcClient = new xurpc.xudrpc.XUDService(`${this.host}:${this.port}`, grpc.credentials.createInsecure());
   }
 

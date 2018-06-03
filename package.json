@@ -17,7 +17,6 @@
     "compile:watch": "tsc -w",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
-    "copy:protobufs": "cp ./lib/grpc/*.proto ./dist/lib/grpc/ && cp -R ./lib/grpc/google/ ./dist/lib/grpc/google/",
     "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "test": "npm run test:unit && npm run test:int",
@@ -33,9 +32,9 @@
       "win32": "node bin\\xucli shutdown"
     },
     "compile": {
-      "linux": "rm -rf ./dist && tsc && npm run copy:protobufs",
-      "darwin": "rm -rf ./dist && tsc && npm run copy:protobufs",
-      "win32": "rd /q /s dist && tsc && npm run copy:protobufs"
+      "linux": "rm -rf ./dist && tsc && cross-os copy:protobufs",
+      "darwin": "rm -rf ./dist && tsc && cross-os copy:protobufs",
+      "win32": "rd /q /s dist && tsc"
     }
   },
   "repository": {
