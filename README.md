@@ -79,26 +79,29 @@ Optional command line arguments to override defaults and settings in the [Config
 ```bash
 ~/xud/bin $ ./xud --help
 Options:
+Options:
   --help                        Show help                              [boolean]
   --version                     Show version number                    [boolean]
-  --rpc.port, -r                RPC service port                        [number]
-  --p2p.port, -p                Port to listen for incoming peers       [number]
-  --p2p.listen                  Listen for incoming peers              [boolean]
   --xudir, -x                   Data directory for xud                  [string]
+  --db.database                 SQL database name                       [string]
+  --db.dialect                  SQL database dialect                    [string]
   --db.host                     Hostname for SQL database               [string]
   --db.port                     Port for SQL database                   [number]
   --db.username                 User for SQL database                   [string]
-  --db.database                 SQL database name                       [string]
-  --db.dialect                  SQL database dialect                    [string]
-  --lnd.disable                 Disable lnd integration                [boolean]
-  --lnd.datadir                 Data directory for lnd                  [string]
   --lnd.certpath                Path to the SSL certificate for lnd     [string]
+  --lnd.datadir                 Data directory for lnd                  [string]
+  --lnd.disable                 Disable lnd integration                [boolean]
   --lnd.host                    Host of the lnd gRPC interface          [string]
-  --lnd.port                    Port of the lnd gRPC interface          [number]
   --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
+  --lnd.port                    Port of the lnd gRPC interface          [number]
+  --orderbook.internalmatching  OrderBook Internal Matching            [boolean]
+  --p2p.listen                  Listen for incoming peers              [boolean]
+  --p2p.port, -p                Port to listen for incoming peers       [number]
   --raiden.disable              Disable raiden integration             [boolean]
   --raiden.port                 Port for raiden REST service            [number]
-  --orderbook.internalmatching  OrderBook Internal Matching            [boolean]
+  --rpc.port, -r                RPC service port                        [number]
+  --webproxy.disable            Disable web proxy server               [boolean]
+  --webproxy.port               Port for web proxy server               [number]
 ```
 
 ## Command-Line Interface

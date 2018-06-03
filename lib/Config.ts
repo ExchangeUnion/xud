@@ -53,7 +53,6 @@ class Config {
       host: 'localhost',
       port: 3306,
       username: 'xud',
-      password: undefined,
       database: 'xud',
       dialect: 'mysql',
     };

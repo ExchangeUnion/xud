@@ -4,25 +4,18 @@ const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
-    'rpc.port': {
-      describe: 'RPC service port',
-      type: 'number',
-      alias: 'r',
-    },
-    'p2p.port': {
-      describe: 'Port to listen for incoming peers',
-      type: 'number',
-      alias: 'p',
-    },
-    'p2p.listen': {
-      describe: 'Listen for incoming peers',
-      type: 'boolean',
-      default: undefined,
-    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
       alias: 'x',
+    },
+    'db.database': {
+      describe: 'SQL database name',
+      type: 'string',
+    },
+    'db.dialect': {
+      describe: 'SQL database dialect',
+      type: 'string',
     },
     'db.host': {
       describe: 'Hostname for SQL database',
@@ -36,12 +29,12 @@ const { argv } = require('yargs')
       describe: 'User for SQL database ',
       type: 'string',
     },
-    'db.database': {
-      describe: 'SQL database name',
+    'lnd.certpath': {
+      describe: 'Path to the SSL certificate for lnd',
       type: 'string',
     },
-    'db.dialect': {
-      describe: 'SQL database dialect',
+    'lnd.datadir': {
+      describe: 'Data directory for lnd',
       type: 'string',
     },
     'lnd.disable': {
@@ -49,25 +42,32 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
-    'lnd.datadir': {
-      describe: 'Data directory for lnd',
-      type: 'string',
-    },
-    'lnd.certpath': {
-      describe: 'Path to the SSL certificate for lnd',
-      type: 'string',
-    },
     'lnd.host': {
       describe: 'Host of the lnd gRPC interface',
+      type: 'string',
+    },
+    'lnd.macaroonpath': {
+      describe: 'Path of the admin macaroon for lnd',
       type: 'string',
     },
     'lnd.port': {
       describe: 'Port of the lnd gRPC interface',
       type: 'number',
     },
-    'lnd.macaroonpath': {
-      describe: 'Path of the admin macaroon for lnd',
-      type: 'string',
+    'orderbook.internalmatching': {
+      describe: 'OrderBook Internal Matching',
+      type: 'boolean',
+      default: undefined,
+    },
+    'p2p.listen': {
+      describe: 'Listen for incoming peers',
+      type: 'boolean',
+      default: undefined,
+    },
+    'p2p.port': {
+      describe: 'Port to listen for incoming peers',
+      type: 'number',
+      alias: 'p',
     },
     'raiden.disable': {
       describe: 'Disable raiden integration',
@@ -78,10 +78,19 @@ const { argv } = require('yargs')
       describe: 'Port for raiden REST service',
       type: 'number',
     },
-    'orderbook.internalmatching': {
-      describe: 'OrderBook Internal Matching',
+    'rpc.port': {
+      describe: 'RPC service port',
+      type: 'number',
+      alias: 'r',
+    },
+    'webproxy.disable': {
+      describe: 'Disable web proxy server',
       type: 'boolean',
       default: undefined,
+    },
+    'webproxy.port': {
+      describe: 'Port for web proxy server',
+      type: 'number',
     },
   });
 
