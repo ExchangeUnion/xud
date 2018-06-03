@@ -83,14 +83,7 @@ class OrderBook {
       for (const [index, match] of matches.entries()) {
         const { maker, taker } = match;
         this.handleMatch({ maker, taker });
-
-        // Maker is fully matched if it is not the last
-        if ((matches.length - index) > 1) {
-          await this.repository.updateOrder(maker, 0);
-        } else {
-          const initialQuantity = await this.repository.getOrderQuantity(maker);
-          await this.repository.updateOrder(maker, initialQuantity - maker.quantity);
-        }
+        await this.repository.updateOrderQuantity(maker.id, maker.quantity);
       }
     }
     if (remainingOrder) {

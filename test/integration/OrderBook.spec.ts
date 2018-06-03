@@ -5,7 +5,7 @@ import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
-import { orders } from '../../lib/types';
+import { db, orders } from '../../lib/types';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -26,6 +26,15 @@ describe('OrderBook', () => {
     orderBook = new OrderBook({ internalmatching: false }, db);
     await orderBook.init();
   });
+
+  async function getOrderQuantity(orderId: string): Promise<number> {
+    const result = await db.models.Order.find({
+      where: { id: orderId },
+      raw: true,
+      attributes: ['quantity'],
+    }) as db.OrderInstance;
+    return Number(result.quantity);
+  }
 
   it('should have pairs and matchingEngines equivalent loaded', () => {
     expect(orderBook.pairs).to.be.an('array');
@@ -48,9 +57,9 @@ describe('OrderBook', () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: 5, price: 100 };
     const matches = await orderBook.addOwnOrder(order);
     expect(matches.remainingOrder).to.be.null;
-    const firstMakerLeft = await orderBookRepository.getOrderQuantity(matches.matches[0].maker);
+    const firstMakerLeft = await getOrderQuantity(matches.matches[0].maker.id);
     expect(firstMakerLeft).to.be.equal(0);
-    const secondMakerLeft = await orderBookRepository.getOrderQuantity(matches.matches[1].maker);
+    const secondMakerLeft = await getOrderQuantity(matches.matches[1].maker.id);
     expect(secondMakerLeft).to.be.equal(-5.5);
   });
 

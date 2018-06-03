@@ -38,7 +38,7 @@ export type OrderFactory = {
   id: string;
   pairId: string;
   peerId: number;
-  quantity: number;
+  quantity: number | Sequelize.literal;
   price: number;
   createdAt?: Date;
 };

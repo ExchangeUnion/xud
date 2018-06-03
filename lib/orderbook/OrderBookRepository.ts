@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { default as Sequelize, Op } from 'sequelize';
 
 import { db, orders } from '../types';
 import Logger from '../Logger';
@@ -13,9 +13,11 @@ type Orders = {
 class OrderbookRepository {
   private logger: Logger = Logger.orderbook;
   private models: Models;
+  private sequelize: Sequelize.Sequelize;
 
   constructor(db: DB) {
     this.models = db.models;
+    this.sequelize = db.sequelize;
   }
 
   public async getPairs(): Promise<db.PairInstance[]> {
@@ -88,17 +90,8 @@ class OrderbookRepository {
     return this.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
   }
 
-  public updateOrder = async (orders: orders.StampedOrder, quantityLeft: number) => {
-    await this.models.Order.update({ quantity: quantityLeft }, { where: { id: orders.id } });
-  }
-
-  public getOrderQuantity = async (order: orders.StampedOrder): Promise<number> => {
-    const result = await this.models.Order.find({
-      where: { id: order.id },
-      raw: true,
-      attributes: ['quantity'],
-    }) as db.OrderInstance;
-    return Number(result.quantity);
+  public updateOrderQuantity = async (orderId: string, usedQuantity: number) => {
+    await this.models.Order.update({ quantity: this.sequelize.literal(`quantity - ${usedQuantity}`) }, { where: { id: orderId } });
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {
