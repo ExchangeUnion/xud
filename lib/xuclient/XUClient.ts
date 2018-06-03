@@ -21,7 +21,7 @@ class XUClient {
     this.grpcClient = new xurpc.xudrpc.XUDService(`${this.host}:${this.port}`, grpc.credentials.createInsecure());
   }
 
-  public getInfo(): Promise<any> {
+  public getInfo = (): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.getInfo({}, (err, response) => {
         if (err) {
@@ -33,7 +33,7 @@ class XUClient {
     });
   }
 
-  public getOrders(pairId: string, maxResults: number): Promise<any> {
+  public getOrders = (pairId: string, maxResults: number): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.getOrders({ pairId, maxResults }, (err, response) => {
         if (err) {
@@ -45,7 +45,7 @@ class XUClient {
     });
   }
 
-  public getPairs(): Promise<any> {
+  public getPairs = (): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.getPairs({}, (err, response) => {
         if (err) {
@@ -58,7 +58,7 @@ class XUClient {
 
   }
 
-  public placeOrder(order: OwnOrder): Promise<any> {
+  public placeOrder = (order: OwnOrder): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.placeOrder({ order }, (err, response) => {
         if (err) {
@@ -70,7 +70,7 @@ class XUClient {
     });
   }
 
-  public connect(host: number, port: number): Promise<any> {
+  public connect = (host: number, port: number): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.connect({ host, port }, (err, response) => {
         if (err) {
@@ -82,7 +82,7 @@ class XUClient {
     });
   }
 
-  public tokenSwap(target_address: string, payload: TokenSwapPayload, identifier: string): Promise<any> {
+  public tokenSwap = (target_address: string, payload: TokenSwapPayload, identifier: string): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.tokenSwap({ target_address, payload, identifier }, (err, response) => {
         if (err) {
@@ -94,7 +94,7 @@ class XUClient {
     });
   }
 
-  public shutdown(): Promise<any> {
+  public shutdown = (): Promise<any> => {
     return new Promise((resolve, reject) => {
       return this.grpcClient.shutdown({}, (err, response) => {
         if (err) {

@@ -22,11 +22,11 @@ type GrpcComponents = {
 class GrpcServer {
   private server: Server;
   private logger: Logger;
-  private rpcMethods: GrpcService;
+  private grpcService: GrpcService;
   private xudrpc: any;
 
   constructor(components: GrpcComponents) {
-    this.rpcMethods = new GrpcService(components);
+    this.grpcService = new GrpcService(components);
     this.logger = Logger.global;
     const PROTO_PATH = __dirname + '/xud.proto';
     const protoDescriptor = grpc.load(PROTO_PATH, 'proto');
@@ -38,17 +38,18 @@ class GrpcServer {
    * Starts the server and begins listening on the provided port
    * @param port
    */
-  public listen(port: number) {
+  public listen = (port: number) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.server.addService(this.xudrpc.XUDService.service, {
-      getInfo: this.rpcMethods.getInfo,
-      getPairs: this.rpcMethods.getPairs,
-      getOrders: this.rpcMethods.getOrders,
-      placeOrder: this.rpcMethods.placeOrder,
-      connect: this.rpcMethods.connect,
-      tokenSwap: this.rpcMethods.tokenSwap,
+      getInfo: this.grpcService.getInfo,
+      getPairs: this.grpcService.getPairs,
+      getOrders: this.grpcService.getOrders,
+      placeOrder: this.grpcService.placeOrder,
+      connect: this.grpcService.connect,
+      tokenSwap: this.grpcService.tokenSwap,
     });
+
     try {
       this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
       this.server.start();
@@ -61,7 +62,7 @@ class GrpcServer {
   /**
    * Stops listening for requests
    */
-  public close(): Promise<void> {
+  public close = (): Promise<void> => {
     return new Promise((resolve) => {
       this.server.tryShutdown(() => {
         this.logger.info('GRPC server stopped listening');

@@ -25,20 +25,12 @@ class GrpcService {
     this.shutdown = components.shutdown;
 
     this.logger = Logger.rpc;
-
-    this.getInfo = this.getInfo.bind(this);
-    this.getPairs = this.getPairs.bind(this);
-    this.getOrders = this.getOrders.bind(this);
-    this.placeOrder = this.placeOrder.bind(this);
-    this.connect = this.connect.bind(this);
-    this.tokenSwap = this.tokenSwap.bind(this);
-    this.shutdown = this.shutdown.bind(this);
   }
 
   /**
    * Placeholder for a method to return general information about an Exchange Union node.
    */
-  public getInfo(_call, callback) {
+  public getInfo = (_call, callback) => {
     callback(null, this.lndClient.getInfo());
   }
 
@@ -46,15 +38,15 @@ class GrpcService {
    * Get the list of the orderbook's available pairs.
    * @returns A list of available trading pairs
    */
-  public getPairs(_call, callback) {
+  public getPairs = (_call, callback) => {
     callback(null, this.orderBook.getPairs());
   }
 
   /**
    * Get a list of standing orders from the orderbook.
    */
-  public getOrders(_call, callback) {
-    let maxResults = _call.request.maxResults;
+  public getOrders = (call, callback) => {
+    let maxResults = call.request.maxResults;
 
     if (maxResults === undefined) {
       maxResults = 100;
@@ -63,13 +55,13 @@ class GrpcService {
       maxResults = undefined;
     }
 
-    return callback(null, this.orderBook.getOrders(_call.request.pairId, maxResults));
+    return callback(null, this.orderBook.getOrders(call.request.pairId, maxResults));
   }
 
   /**
    * Add an order to the orderbook.
    */
-  public async placeOrder(call, callback) {
+  public placeOrder = async (call, callback) => {
     const order = call.request;
     assert(typeof order.price === 'number', 'price name must be a number');
     assert(order.price > 0, 'price must be greater than 0');
@@ -83,20 +75,20 @@ class GrpcService {
   /**
    * Connect to an XU node on a given host and port.
    */
-  public async connect(call, callback) {
+  public connect = async (call, callback) => {
     const { host, port } = call.request;
     try {
       const peer = await this.pool.addOutbound(host, port);
       callback(null, peer.statusString);
     } catch (err) {
-      return err;
+      callback(err);
     }
   }
 
   /**
    * Demo method to execute a Raiden Token Swap through XUD.
   */
-  public tokenSwap(call, callback) {
+  public tokenSwap = (call, callback) => {
     const { target_address, payload, identifier } = call.request;
     callback(null, this.raidenClient.tokenSwap(target_address, payload, identifier));
   }

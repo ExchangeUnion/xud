@@ -20,7 +20,7 @@ class GrpcWebProxyServer {
   /**
    * Starts the server and begins listening on the specified proxy port
    */
-  public listen(proxyPort: number, grpcPort: number): Promise<void> {
+  public listen = (proxyPort: number, grpcPort: number): Promise<void> => {
     // Load the proxy on / URL
     this.app.use('/api/', grpcGateway(['xud.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
     return new Promise((resolve) => {
@@ -34,7 +34,7 @@ class GrpcWebProxyServer {
   /**
    * Stops listening for requests
    */
-  public close(): Promise<void> {
+  public close = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       if (this.server) {
         this.server.close(() => {
