@@ -11,7 +11,7 @@ This repo contains the early stages of the Exchange Union Daemon ("xud") which e
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
 * Orderbook data stored in a local mysql/mariadb database.
 * Peer-to-peer networking with other XU nodes via TCP.
-* A JSON-RPC API to serve other applications and a command-line interface.
+* A gRPC API with web proxy to serve other applications, also accessible by command-line interface.
 
 Contributions, feedback, and questions are welcome.
 
@@ -67,10 +67,11 @@ Launch a new `xud` process
 ```bash
 ~/xud $ cd bin
 ~/xud/bin $ ./xud
-2018-3-2 11:36:06 - info: config loaded
-2018-3-2 11:36:06 - info: connected to database
-2018-3-2 11:36:06 - info: P2P server listening on port 8885
-2018-3-2 11:36:06 - info: RPC server listening on port 8886
+2018-6-3 15:14:27 [GLOBAL] info: config loaded
+2018-6-3 15:14:27 [DB] info: connected to database. host:localhost port:3306 database:xud dialect:mysql
+2018-6-3 15:14:28 [LND] info: LndClient status: CONNECTION_VERIFIED
+2018-6-3 15:14:28 [P2P] info: pool server listening on 0.0.0.0:8885
+2018-6-3 15:14:28 [RPC] info: GRPC server listening on port 8886
 ```
 
 Optional command line arguments to override defaults and settings in the [Configuration](#configuration) file for a specific `xud` instance
