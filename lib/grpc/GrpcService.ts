@@ -31,21 +31,33 @@ class GrpcService {
    * Placeholder for a method to return general information about an Exchange Union node.
    */
   public getInfo = async (_call, callback) => {
-    callback(null, { lnd: await this.lndClient.getInfo() });
+    try {
+      const lnd = await this.lndClient.getInfo();
+      callback(null, { lnd });
+    } catch (err) {
+      this.logger.error(err);
+      callback(err);
+    }
   }
 
   /**
    * Get the list of the orderbook's available pairs.
    * @returns A list of available trading pairs
    */
-  public getPairs = (_call, callback) => {
+  public getPairs = async (_call, callback) => {
     callback(null, this.orderBook.getPairs());
+    try {
+      callback(null, await this.orderBook.getPairs());
+    } catch (err) {
+      this.logger.error(err);
+      callback(err);
+    }
   }
 
   /**
    * Get a list of standing orders from the orderbook.
    */
-  public getOrders = (call, callback) => {
+  public getOrders = async (call, callback) => {
     let maxResults = call.request.maxResults;
 
     if (maxResults === undefined) {
@@ -55,7 +67,12 @@ class GrpcService {
       maxResults = undefined;
     }
 
-    return callback(null, this.orderBook.getOrders(call.request.pairId, maxResults));
+    try {
+      callback(null, this.orderBook.getOrders(call.request.pairId, maxResults));
+    } catch (err) {
+      this.logger.error(err);
+      callback(err);
+    }
   }
 
   /**
@@ -88,9 +105,13 @@ class GrpcService {
   /**
    * Demo method to execute a Raiden Token Swap through XUD.
   */
-  public tokenSwap = (call, callback) => {
+  public tokenSwap = async (call, callback) => {
     const { target_address, payload, identifier } = call.request;
-    callback(null, this.raidenClient.tokenSwap(target_address, payload, identifier));
+    try {
+      callback(null, await this.raidenClient.tokenSwap(target_address, payload, identifier));
+    } catch (err) {
+      callback(err);
+    }
   }
 }
 
