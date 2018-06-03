@@ -28,7 +28,7 @@ class GrpcServer {
 
   constructor(components: GrpcComponents) {
     this.grpcService = new GrpcService(components);
-    this.logger = Logger.global;
+    this.logger = Logger.rpc;
     const PROTO_PATH = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(PROTO_PATH, 'proto');
     this.xudrpc = protoDescriptor.xudrpc;
