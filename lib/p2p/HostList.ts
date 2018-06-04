@@ -26,7 +26,7 @@ class HostList {
 
   public getOrCreate = async (socketAddress: SocketAddress): Promise<Host> => {
     const host = this.hosts[socketAddress.toString()];
-    return host || this.create(socketAddress);
+    return host || this.createHost(socketAddress);
   }
 
   public ban = async (address: string): Promise<void> => {
@@ -51,7 +51,7 @@ class HostList {
     this.loaded = true;
   }
 
-  private create = async (socketAddress: SocketAddress): Promise<Host> => {
+  private createHost = async (socketAddress: SocketAddress): Promise<Host> => {
     const dbHost = await this.repository.addHost(socketAddress);
     const host = new Host(dbHost);
     this.hosts[host.socketAddress.toString()] = host;
