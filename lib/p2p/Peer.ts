@@ -1,6 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
+import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import { Packet } from './packets';
@@ -13,13 +14,21 @@ enum ConnectionDirection {
   OUTBOUND,
 }
 
+type HandshakeState = {
+  listenPort?: number;
+  nodeKey?: string;
+  xudVersion?: string;
+  pairs?: any;
+};
+
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
-  public address!: SocketAddress;
+  public socketAddress!: SocketAddress;
+  public direction!: ConnectionDirection;
+  private host?: Host;
   private logger: Logger = Logger.p2p;
   private connected: boolean = false;
   private opened: boolean = false;
-  private direction?: ConnectionDirection;
   private socket!: Socket;
   private parser: Parser = new Parser();
   private destroyed: boolean = false;
@@ -30,8 +39,8 @@ class Peer extends EventEmitter {
   private lastSend: number = 0;
 
   get id(): string {
-    assert(this.address);
-    return this.address.toString();
+    assert(this.socketAddress);
+    return this.socketAddress.toString();
   }
 
   get statusString(): string {
@@ -48,9 +57,9 @@ class Peer extends EventEmitter {
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(address: SocketAddress): Peer {
+  public static fromOutbound(socketAddress: SocketAddress): Peer {
     const peer = new Peer();
-    peer.connect(address);
+    peer.connect(socketAddress);
     return peer;
   }
 
@@ -66,9 +75,10 @@ class Peer extends EventEmitter {
 
     await this.initConnection();
     // TODO: handshake process here
+    const handshakeState: HandshakeState = {};
 
     // let the pool know that this peer is ready to go
-    this.emit('open');
+    this.emit('open', handshakeState);
   }
 
   public destroy = (): void => {
@@ -85,6 +95,10 @@ class Peer extends EventEmitter {
     }
 
     this.emit('close');
+  }
+
+  public setHost = (host: Host): void => {
+    this.host = host;
   }
 
   public sendPacket = (packet: Packet): void => {
@@ -153,12 +167,12 @@ class Peer extends EventEmitter {
     });
   }
 
-  private connect = (address: SocketAddress): void => {
+  private connect = (socketAddress: SocketAddress): void => {
     assert(!this.socket);
 
-    const socket = net.connect(address.port, address.host);
+    const socket = net.connect(socketAddress.port, socketAddress.address);
 
-    this.address = address;
+    this.socketAddress = socketAddress;
     this.direction = ConnectionDirection.OUTBOUND;
     this.connected = false;
 
@@ -168,7 +182,7 @@ class Peer extends EventEmitter {
   private accept = (socket: Socket): void => {
     assert(!this.socket);
 
-    this.address = SocketAddress.fromSocket(socket);
+    this.socketAddress = SocketAddress.fromSocket(socket);
     this.direction = ConnectionDirection.INBOUND;
     this.connected = true;
 
@@ -242,3 +256,4 @@ class Peer extends EventEmitter {
 }
 
 export default Peer;
+export { ConnectionDirection, HandshakeState };

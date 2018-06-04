@@ -2,26 +2,23 @@ import Peer from './Peer';
 import SocketAddress from './SocketAddress';
 
 class PeerList {
-  private peers: { [ key: string ]: Peer } = {};
+  private peers: { [ socketAddress: string ]: Peer } = {};
 
   public add(peer: Peer): boolean {
-    if (this.has(peer.address)) {
+    if (this.has(peer.socketAddress)) {
       return false;
     } else {
-      const key = peer.address.toString();
-      this.peers[key] = peer;
+      this.peers[peer.socketAddress.toString()] = peer;
       return true;
     }
   }
 
   public remove(peer:Peer): void {
-    const key = peer.address.toString();
-    delete this.peers[key];
+    delete this.peers[peer.socketAddress.toString()];
   }
 
-  public has(address: SocketAddress): boolean {
-    const key = address.toString();
-    return !!this.peers[key];
+  public has(socketAddress: SocketAddress): boolean {
+    return !!this.peers[socketAddress.toString()];
   }
 
   public forEach(cb: (peer: Peer) => void) {

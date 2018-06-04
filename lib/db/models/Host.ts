@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import { db } from '../../types';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
-  const attributes: db.SequelizeAttributes<db.PeerAttributes> = {
+  const attributes: db.SequelizeAttributes<db.HostAttributes> = {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     address: { type: DataTypes.STRING(39), allowNull: false },
     port: { type: DataTypes.INTEGER, allowNull: false },
@@ -14,12 +14,12 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     fields: ['address', 'port'],
   }];
 
-  const options: Sequelize.DefineOptions<db.PeerInstance> = {
+  const options: Sequelize.DefineOptions<db.HostInstance> = {
     indexes,
     tableName: 'hosts',
   };
 
-  const Peer = sequelize.define<db.PeerInstance, db.PeerAttributes>('Peer', attributes, options);
+  const Peer = sequelize.define<db.HostInstance, db.HostAttributes>('Host', attributes, options);
 
   return Peer;
 };
