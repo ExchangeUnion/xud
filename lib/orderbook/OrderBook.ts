@@ -80,11 +80,12 @@ class OrderBook {
     const { matches, remainingOrder } = matchingResult;
 
     if (matches.length > 0) {
-      for (const [index, match] of matches.entries()) {
-        const { maker, taker } = match;
+      const updatedOrders: Promise<void>[] = [];
+      for (const { maker, taker } of matches) {
         this.handleMatch({ maker, taker });
-        await this.repository.updateOrderQuantity(maker.id, maker.quantity);
+        updatedOrders.push(this.repository.updateOrderQuantity(maker.id, maker.quantity));
       }
+      await Promise.all(updatedOrders);
     }
     if (remainingOrder) {
       this.broadcastOrder(remainingOrder);

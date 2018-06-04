@@ -90,8 +90,8 @@ class OrderbookRepository {
     return this.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
   }
 
-  public updateOrderQuantity = async (orderId: string, usedQuantity: number) => {
-    await this.models.Order.update({ quantity: this.sequelize.literal(`quantity - ${usedQuantity}`) }, { where: { id: orderId } });
+  public updateOrderQuantity = async (orderId: string, decreasedQuantity: number) => {
+    await this.models.Order.update({ quantity: this.sequelize.literal(`quantity - ${decreasedQuantity}`) }, { where: { id: orderId } });
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {
