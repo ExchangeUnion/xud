@@ -3,9 +3,11 @@ import uuidv1 from 'uuid/v1';
 import tasks from '../../tasks';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
+import enums from '../../lib/constants/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import { db, orders } from '../../lib/types';
+import P2PRepository from '../../lib/p2p/P2PRepository';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -13,8 +15,6 @@ describe('OrderBook', () => {
   let orderBookRepository: OrderBookRepository;
 
   before(async () => {
-    await tasks.db.restart(true);
-
     const config = new Config();
     await config.load();
 
@@ -22,8 +22,22 @@ describe('OrderBook', () => {
     await db.init();
 
     orderBookRepository = new OrderBookRepository(db);
+    const p2pRepository = new P2PRepository(db);
 
-    orderBook = new OrderBook({ internalmatching: false }, db);
+    await Promise.all([
+      p2pRepository.addPeer(
+        { address: '127.0.0.1', port: 8885 },
+      ),
+      orderBookRepository.addCurrencies([
+        { id: 'BTC' },
+        { id: 'LTC' },
+      ]),
+      orderBookRepository.addPairs([
+        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
+      ]),
+    ]);
+
+    orderBook = new OrderBook({ internalmatching: true }, db);
     await orderBook.init();
   });
 
@@ -54,16 +68,17 @@ describe('OrderBook', () => {
   });
 
   it('should match new ownOrder and update matches', async () => {
-    const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: 5, price: 100 };
+    const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
     const matches = await orderBook.addOwnOrder(order);
     expect(matches.remainingOrder).to.be.null;
     const firstMakerLeft = await getOrderQuantity(matches.matches[0].maker.id);
     expect(firstMakerLeft).to.be.equal(0);
     const secondMakerLeft = await getOrderQuantity(matches.matches[1].maker.id);
-    expect(secondMakerLeft).to.be.equal(-5.5);
+    expect(secondMakerLeft).to.be.equal(4);
   });
 
   after(async () => {
+    await db.truncate();
     await db.close();
   });
 });

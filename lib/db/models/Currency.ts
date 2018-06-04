@@ -6,7 +6,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     id: { type: DataTypes.STRING, primaryKey: true },
   };
 
-  const Currency = sequelize.define<db.CurrencyInstance, db.CurrencyAttributes>('Currency', attributes);
+  const options: Sequelize.DefineOptions<db.CurrencyInstance> = {
+    tableName: 'currencies',
+  };
+
+  const Currency = sequelize.define<db.CurrencyInstance, db.CurrencyAttributes>('Currency', attributes, options);
 
   return Currency;
 };

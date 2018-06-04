@@ -87,7 +87,7 @@ class DB {
       await this.sequelize.query('truncate table orders', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
-      await this.sequelize.query('truncate table peers', options);
+      await this.sequelize.query('truncate table hosts', options);
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', options);
     });
   }
