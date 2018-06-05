@@ -11,7 +11,7 @@ const createOrder = (price: number, quantity: number, createdAt?: Date): orders.
   price,
   id: uuidv1(),
   pairId: PAIR_ID,
-  peerId: 1,
+  hostId: 1,
   createdAt: createdAt || new Date(),
 });
 
