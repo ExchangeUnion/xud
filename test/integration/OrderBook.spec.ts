@@ -25,15 +25,15 @@ describe('OrderBook', () => {
     const p2pRepository = new P2PRepository(db);
 
     await p2pRepository.addPeer(
-        { address: '127.0.0.1', port: 8885 }
+      { address: '127.0.0.1', port: 8885 },
     );
     await orderBookRepository.addCurrencies([
-        { id: 'BTC' },
-        { id: 'LTC' },
-      ]);
+      { id: 'BTC' },
+      { id: 'LTC' },
+    ]);
     await orderBookRepository.addPairs([
-        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
-      ]);
+      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
+    ]);
 
     orderBook = new OrderBook({ internalmatching: true }, db);
     await orderBook.init();
