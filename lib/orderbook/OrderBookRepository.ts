@@ -1,6 +1,6 @@
-import { Op } from 'sequelize';
+import { default as Sequelize, Op } from 'sequelize';
 
-import { db } from '../types';
+import { db, orders } from '../types';
 import Logger from '../Logger';
 import DB, { Models } from '../db/DB';
 import Bluebird from 'bluebird';
@@ -13,9 +13,11 @@ type Orders = {
 class OrderbookRepository {
   private logger: Logger = Logger.orderbook;
   private models: Models;
+  private sequelize: Sequelize.Sequelize;
 
   constructor(db: DB) {
     this.models = db.models;
+    this.sequelize = db.sequelize;
   }
 
   public async getPairs(): Promise<db.PairInstance[]> {
@@ -23,8 +25,8 @@ class OrderbookRepository {
   }
 
   public async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
-    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
-    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, hostId: { [Op.ne]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, hostId: { [Op.ne]: null } };
 
     if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };
@@ -52,8 +54,8 @@ class OrderbookRepository {
   }
 
   public async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
-    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
-    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, hostId: { [Op.eq]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, hostId: { [Op.eq]: null } };
 
     if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };
@@ -86,6 +88,10 @@ class OrderbookRepository {
 
   public addOrders = (orders: db.OrderFactory[]): Bluebird<db.OrderInstance[]> => {
     return this.models.Order.bulkCreate(<db.OrderAttributes[]>orders);
+  }
+
+  public updateOrderQuantity = async (orderId: string, decreasedQuantity: number) => {
+    await this.models.Order.update({ quantity: this.sequelize.literal(`quantity - ${decreasedQuantity}`) }, { where: { id: orderId } });
   }
 
   public addCurrencies(currencies: db.CurrencyFactory[]): Bluebird<db.CurrencyInstance[]> {

@@ -8,7 +8,7 @@ export type OwnOrder = BaseOrder;
 
 export type PeerOrder = BaseOrder & {
   id: string;
-  peerId: number;
+  hostId: number;
   invoice: string;
 };
 

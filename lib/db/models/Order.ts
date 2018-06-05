@@ -5,7 +5,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
   const attributes: db.SequelizeAttributes<db.OrderAttributes> = {
     id: { type: DataTypes.UUID, primaryKey: true },
     pairId: { type: DataTypes.STRING, allowNull: false },
-    peerId: { type: DataTypes.INTEGER, allowNull: true },
+    hostId: { type: DataTypes.INTEGER, allowNull: true },
     quantity: DataTypes.DECIMAL(14, 8),
     price: DataTypes.DECIMAL(14, 8),
     createdAt: DataTypes.DATE,

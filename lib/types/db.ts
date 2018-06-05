@@ -45,13 +45,18 @@ export type BannedHostInstance = HostAttributes & Sequelize.Instance<HostAttribu
 export type OrderFactory = {
   id: string;
   pairId: string;
-  peerId: number;
+  hostId?: number;
   quantity: number;
   price: number;
   createdAt?: Date;
 };
 
-export type OrderAttributes = OrderFactory & {
+export type OrderAttributes = {
+  id: string;
+  pairId: string;
+  hostId: number;
+  quantity: number | Sequelize.literal;
+  price: number;
   createdAt: Date;
 };
 
