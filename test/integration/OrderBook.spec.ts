@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
-import tasks from '../../tasks';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import enums from '../../lib/constants/enums';
@@ -20,22 +19,21 @@ describe('OrderBook', () => {
 
     db = new DB(config.testDb);
     await db.init();
+    await db.truncate();
 
     orderBookRepository = new OrderBookRepository(db);
     const p2pRepository = new P2PRepository(db);
 
-    await Promise.all([
-      p2pRepository.addPeer(
-        { address: '127.0.0.1', port: 8885 },
-      ),
-      orderBookRepository.addCurrencies([
+    await p2pRepository.addPeer(
+        { address: '127.0.0.1', port: 8885 }
+    );
+    await orderBookRepository.addCurrencies([
         { id: 'BTC' },
         { id: 'LTC' },
-      ]),
-      orderBookRepository.addPairs([
+      ]);
+    await orderBookRepository.addPairs([
         { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
-      ]),
-    ]);
+      ]);
 
     orderBook = new OrderBook({ internalmatching: true }, db);
     await orderBook.init();
@@ -78,7 +76,6 @@ describe('OrderBook', () => {
   });
 
   after(async () => {
-    await db.truncate();
     await db.close();
   });
 });
