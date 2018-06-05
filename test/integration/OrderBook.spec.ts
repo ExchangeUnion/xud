@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
-import enums from '../../lib/constants/enums';
+import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import { db, orders } from '../../lib/types';
@@ -24,7 +24,7 @@ describe('OrderBook', () => {
     orderBookRepository = new OrderBookRepository(db);
     const p2pRepository = new P2PRepository(db);
 
-    await p2pRepository.addPeer(
+    await p2pRepository.addHost(
       { address: '127.0.0.1', port: 8885 },
     );
     await orderBookRepository.addCurrencies([
@@ -32,7 +32,7 @@ describe('OrderBook', () => {
       { id: 'LTC' },
     ]);
     await orderBookRepository.addPairs([
-      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: enums.swapProtocols.LND },
+      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
     orderBook = new OrderBook({ internalmatching: true }, db);
@@ -61,7 +61,7 @@ describe('OrderBook', () => {
   });
 
   it('should append new peerOrder', async () => {
-    const order: orders.PeerOrder = { id: uuidv1(), pairId: 'BTC/LTC',  quantity: 5, price: 55, peerId: 1, invoice: 'dummyInvoice' };
+    const order: orders.PeerOrder = { id: uuidv1(), pairId: 'BTC/LTC',  quantity: 5, price: 55, hostId: 1, invoice: 'dummyInvoice' };
     await orderBook.addPeerOrder(order);
   });
 

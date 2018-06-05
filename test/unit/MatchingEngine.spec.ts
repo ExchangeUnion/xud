@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders, db } from '../../lib/types';
-import enums from '../../lib/constants/enums';
+import { OrderingDirection } from '../../lib/types/enums';
 
 const PAIR_ID = 'BTC/LTC';
 
@@ -55,7 +55,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
 
 describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
       createOrder(5, 10),
       createOrder(5.5, -10),
@@ -64,7 +64,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize higher price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
       createOrder(5.5, 10),
       createOrder(5, -10),
@@ -73,7 +73,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize higher price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
       createOrder(5.5, 10),
       createOrder(5, -10),
@@ -82,7 +82,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize lower price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
       createOrder(5, 10),
       createOrder(5.5, -10),
@@ -91,7 +91,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
       createOrder(5, 10, new Date(1)),
       createOrder(5, -10, new Date(2)),
@@ -100,7 +100,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(enums.orderingDirections.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
       createOrder(5, 10, new Date(1)),
       createOrder(5, -10, new Date(2)),

@@ -21,8 +21,9 @@ type DBConfig = SequelizeConfig & {
 };
 
 type Models = {
+  Host: Sequelize.Model<db.HostInstance, db.HostAttributes>;
+  BannedHost: Sequelize.Model<db.BannedHostInstance, db.BannedHostAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
-  Peer: Sequelize.Model<db.PeerInstance, db.PeerAttributes>;
   Order: Sequelize.Model<db.OrderInstance, db.OrderAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
@@ -56,12 +57,13 @@ class DB {
         throw err;
       }
     }
-    const { Peer, Currency, Pair, Order } = this.models;
+    const { Host, BannedHost, Currency, Pair, Order } = this.models;
     const options = { logging: this.logger.verbose };
 
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Peer.sync(options),
+      Host.sync(options),
+      BannedHost.sync(options),
       Currency.sync(options),
     ]);
     await Promise.all([
@@ -88,6 +90,7 @@ class DB {
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
       await this.sequelize.query('truncate table hosts', options);
+      await this.sequelize.query('truncate table bannedHosts', options);
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', options);
     });
   }

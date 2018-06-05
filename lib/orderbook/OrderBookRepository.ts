@@ -25,8 +25,8 @@ class OrderbookRepository {
   }
 
   public async getPeerOrders(pairId?: string, maxResults?: number): Promise<Orders> {
-    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.ne]: null } };
-    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.ne]: null } };
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, hostId: { [Op.ne]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, hostId: { [Op.ne]: null } };
 
     if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };
@@ -54,8 +54,8 @@ class OrderbookRepository {
   }
 
   public async getOwnOrders(pairId?: string, maxResults?: number): Promise<Orders> {
-    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, peerId: { [Op.eq]: null } };
-    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, peerId: { [Op.eq]: null } };
+    const whereClauseBuy: any = { quantity: { [Op.gt]: 0 }, hostId: { [Op.eq]: null } };
+    const whereClauseSell: any = { quantity: { [Op.lt]: 0 }, hostId: { [Op.eq]: null } };
 
     if (pairId) {
       whereClauseBuy.pairId = { [Op.eq]: pairId };

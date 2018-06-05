@@ -22,22 +22,30 @@ export type CurrencyAttributes = CurrencyFactory;
 
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
-export type PeerFactory = {
+export type HostFactory = {
   address: string;
   port: number;
 };
 
-export type PeerAttributes = PeerFactory & {
+export type HostAttributes = HostFactory & {
   id: number;
   pubKey: string;
 };
 
-export type PeerInstance = PeerAttributes & Sequelize.Instance<PeerAttributes>;
+export type HostInstance = HostAttributes & Sequelize.Instance<HostAttributes>;
+
+export type BannedHostFactory = {
+  address: string;
+};
+
+export type BannedHostAttributes = BannedHostFactory;
+
+export type BannedHostInstance = HostAttributes & Sequelize.Instance<HostAttributes>;
 
 export type OrderFactory = {
   id: string;
   pairId: string;
-  peerId: number;
+  hostId?: number;
   quantity: number;
   price: number;
   createdAt?: Date;
@@ -46,7 +54,7 @@ export type OrderFactory = {
 export type OrderAttributes = {
   id: string;
   pairId: string;
-  peerId: number;
+  hostId: number;
   quantity: number | Sequelize.literal;
   price: number;
   createdAt: Date;

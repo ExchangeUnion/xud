@@ -2,7 +2,7 @@ import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
 import { orders, matchingEngine, db } from '../types';
-import enums from '../constants/enums';
+import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 
 type PriorityQueue = {
@@ -38,10 +38,10 @@ class MatchingEngine {
               ownBuyOrders: db.OrderInstance[] = [],
               ownSellOrders: db.OrderInstance[] = []) {
     this.priorityQueues = {
-      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, enums.orderingDirections.DESC),
-      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, enums.orderingDirections.ASC),
-      ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, enums.orderingDirections.DESC),
-      ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, enums.orderingDirections.ASC),
+      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, OrderingDirection.DESC),
+      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, OrderingDirection.ASC),
+      ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, OrderingDirection.DESC),
+      ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, OrderingDirection.ASC),
     };
   }
 
@@ -59,7 +59,7 @@ class MatchingEngine {
   }
 
   public static getOrdersPriorityQueueComparator(orderingDirection): Function {
-    const directionComparator = orderingDirection === enums.orderingDirections.ASC
+    const directionComparator = orderingDirection === OrderingDirection.ASC
       ? (a, b) => a < b
       : (a, b) => a > b;
 
