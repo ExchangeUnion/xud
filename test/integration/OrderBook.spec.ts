@@ -61,7 +61,6 @@ describe('OrderBook', () => {
     await orderBook.addFillOrder(order);
   });
 
-
   it('should match new ownOrder and update matches', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
     const matches = await orderBook.addFillOrder(order);
