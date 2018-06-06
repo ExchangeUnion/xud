@@ -8,7 +8,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     baseCurrency: { type: DataTypes.STRING, allowNull: false },
     quoteCurrency: { type: DataTypes.STRING, allowNull: false },
     swapProtocol: {
-      type: DataTypes.ENUM, values: Object.values(SwapProtocol), allowNull: true,
+      type: DataTypes.ENUM, values: Object.values(SwapProtocol), allowNull: false,
     },
   };
 
