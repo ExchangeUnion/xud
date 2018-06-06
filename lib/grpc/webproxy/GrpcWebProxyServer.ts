@@ -23,8 +23,8 @@ class GrpcWebProxyServer {
    */
   public listen = (proxyPort: number, grpcPort: number): Promise<void> => {
     // Load the proxy on / URL
-    const xudrpcProtoPath = path.join(__dirname, '..', '..', '..', 'proto', 'xudrpc.proto');
-    this.app.use('/api/', grpcGateway([xudrpcProtoPath], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, __dirname));
+    const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
+    this.app.use('/api/', grpcGateway(['xudrpc.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, protoPath));
     return new Promise((resolve) => {
       this.server = this.app.listen(proxyPort, () => {
         this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);
