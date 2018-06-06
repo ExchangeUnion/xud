@@ -19,7 +19,7 @@ class XUClient {
     }
     this.port = port || 8886;
     const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
-    const xurpc: any = grpc.load(xudrpcProtoPath, 'proto');
+    const xurpc: any = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
     this.grpcClient = new xurpc.xudrpc.XUDService(`${this.host}:${this.port}`, grpc.credentials.createInsecure());
   }
 

@@ -1,4 +1,4 @@
-import grpc, { Server } from 'grpc';
+import grpc, { Server, GrpcObject } from 'grpc';
 import assert from 'assert';
 import path from 'path';
 import Logger from '../Logger';
@@ -7,49 +7,37 @@ import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient from '../raidenclient/RaidenClient';
 import Pool from '../p2p/Pool';
-
-/**
- * The components required by the RPC server.
- */
-type GrpcComponents = {
-  orderBook: OrderBook;
-  lndClient: LndClient;
-  raidenClient: RaidenClient;
-  pool: Pool;
-  /** The function to be called to shutdown the parent process */
-  shutdown: Function;
-};
+import Service from '../service/Service';
 
 class GrpcServer {
   private server: Server;
   private logger: Logger;
-  private grpcService: GrpcService;
-  private xudrpc: any;
 
-  constructor(components: GrpcComponents) {
-    this.grpcService = new GrpcService(components);
+  constructor(service: Service) {
     this.logger = Logger.rpc;
-    const PROTO_PATH = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
-    const protoDescriptor = grpc.load(PROTO_PATH, 'proto');
-    this.xudrpc = protoDescriptor.xudrpc;
     this.server = new grpc.Server();
+
+    const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
+    const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
+    const { xudrpc }: any = protoDescriptor;
+
+    const grpcService = new GrpcService(service);
+    this.server.addService(xudrpc.XUDService.service, {
+      getInfo: grpcService.getInfo,
+      getPairs: grpcService.getPairs,
+      getOrders: grpcService.getOrders,
+      placeOrder: grpcService.placeOrder,
+      connect: grpcService.connect,
+      tokenSwap: grpcService.tokenSwap,
+    });
   }
 
   /**
-   * Starts the server and begins listening on the provided port
+   * Start the server and begin listening on the provided port
    * @param port
    */
   public listen = (port: number) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
-
-    this.server.addService(this.xudrpc.XUDService.service, {
-      getInfo: this.grpcService.getInfo,
-      getPairs: this.grpcService.getPairs,
-      getOrders: this.grpcService.getOrders,
-      placeOrder: this.grpcService.placeOrder,
-      connect: this.grpcService.connect,
-      tokenSwap: this.grpcService.tokenSwap,
-    });
 
     try {
       this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
@@ -61,7 +49,7 @@ class GrpcServer {
   }
 
   /**
-   * Stops listening for requests
+   * Stop listening for requests
    */
   public close = (): Promise<void> => {
     return new Promise((resolve) => {
@@ -74,4 +62,3 @@ class GrpcServer {
 }
 
 export default GrpcServer;
-export { GrpcComponents };

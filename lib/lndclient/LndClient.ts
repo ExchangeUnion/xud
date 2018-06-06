@@ -42,7 +42,7 @@ class LndClient extends BaseClient {
       const lndCert = fs.readFileSync(certpath);
       const credentials = grpc.credentials.createSsl(lndCert);
       const rpcprotopath = path.join(__dirname, '..', '..', 'proto', 'lndrpc.proto');
-      const lnrpcDescriptor: any = grpc.load(rpcprotopath);
+      const lnrpcDescriptor: any = grpc.load(rpcprotopath, 'proto', { convertFieldsToCamelCase: true });
       this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
 
       const adminMacaroon = fs.readFileSync(macaroonpath);

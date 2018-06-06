@@ -10,6 +10,7 @@ import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import dotenv from 'dotenv';
+import Service from './service/Service';
 
 /** Loads environment variables from the file .env */
 dotenv.config();
@@ -26,6 +27,7 @@ class Xud {
   private rpcServer!: GrpcServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
+  public service!: Service;
 
   /**
    * Create an Exchange Union daemon.
@@ -58,13 +60,14 @@ class Xud {
       this.orderBook = new OrderBook(this.config.orderbook, this.db, this.pool, this.lndClient);
       await this.orderBook.init();
 
-      this.rpcServer = new GrpcServer({
+      this.service = new Service({
         orderBook: this.orderBook,
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
         shutdown: this.shutdown,
       });
+      this.rpcServer = new GrpcServer(this.service);
       await this.rpcServer.listen(this.config.rpc.port);
 
       if (!this.config.webproxy.disable) {

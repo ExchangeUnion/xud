@@ -1,117 +1,72 @@
-import assert from 'assert';
-import { GrpcComponents } from './GrpcServer';
+import grpc from 'grpc';
 import Logger from '../Logger';
-import Pool from '../p2p/Pool';
-import OrderBook from '../orderbook/OrderBook';
-import { orders, matchingEngine } from '../types';
-import LndClient from '../lndclient/LndClient';
-import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import Service from '../service/Service';
+import { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import { PairInstance } from '../types/db';
+import { GetInfoResponse } from '../proto/lndrpc_pb';
+import { Orders } from 'lib/orderbook/OrderBookRepository';
+import { MatchingResult } from '../types/matchingEngine';
+import { OwnOrder } from '../types/orders';
 
-/** Class containing the available RPC methods for Exchange Union */
+/** Class containing the available RPC methods for XUD */
 class GrpcService {
-  private orderBook: OrderBook;
-  private lndClient: LndClient;
-  private raidenClient: RaidenClient;
-  private pool: Pool;
-  private shutdown: Function;
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: GrpcComponents) {
-    this.orderBook = components.orderBook;
-    this.lndClient = components.lndClient;
-    this.raidenClient = components.raidenClient;
-    this.pool = components.pool;
-    this.shutdown = components.shutdown;
-
+  constructor(private service: Service) {
     this.logger = Logger.rpc;
   }
 
-  /**
-   * Placeholder for a method to return general information about an Exchange Union node.
-   */
-  public getInfo = async (_call, callback) => {
+  private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
     try {
-      const lnd = await this.lndClient.getInfo();
-      callback(null, { lnd });
+      const response: U = await serviceMethod(call);
+      callback(null, response);
     } catch (err) {
       this.logger.error(err);
-      callback(err);
+      callback(err, null);
     }
   }
 
   /**
-   * Get the list of the orderbook's available pairs.
-   * @returns A list of available trading pairs
+   * See [[Service.getInfo]]
    */
-  public getPairs = async (_call, callback) => {
-    callback(null, this.orderBook.getPairs());
-    try {
-      callback(null, await this.orderBook.getPairs());
-    } catch (err) {
-      this.logger.error(err);
-      callback(err);
-    }
+  public getInfo: grpc.handleUnaryCall<{}, {lnd: GetInfoResponse}> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.getInfo);
   }
 
   /**
-   * Get a list of standing orders from the orderbook.
+   * See [[Service.getPairs]]
    */
-  public getOrders = async (call, callback) => {
-    let maxResults = call.request.maxResults;
-
-    if (maxResults === undefined) {
-      maxResults = 100;
-    } else if (maxResults === 0) {
-      // Return all orders
-      maxResults = undefined;
-    }
-
-    try {
-      callback(null, this.orderBook.getOrders(call.request.pairId, maxResults));
-    } catch (err) {
-      this.logger.error(err);
-      callback(err);
-    }
+  public getPairs: grpc.handleUnaryCall<{}, PairInstance[]> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.getPairs);
   }
 
   /**
-   * Add an order to the orderbook.
+   * See [[Service.getOrders]]
    */
-  public placeOrder = async (call, callback) => {
-    const order = call.request;
-    assert(typeof order.price === 'number', 'price name must be a number');
-    assert(order.price > 0, 'price must be greater than 0');
-    assert(typeof order.quantity === 'number', 'quantity must be a number');
-    assert(order.quantity !== 0, 'quantity must not equal 0');
-    assert(typeof order.pairId === 'string', 'pairId name must be a string');
-
-    return this.orderBook.addLimitOrder(order);
+  public getOrders: grpc.handleUnaryCall<{ pairId: string, maxResults: number }, Orders> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.getOrders);
   }
 
   /**
-   * Connect to an XU node on a given host and port.
+   * See [[Service.placeOrder]]
    */
-  public connect = async (call, callback) => {
-    const { host, port } = call.request;
-    try {
-      const peer = await this.pool.addOutbound(host, port);
-      callback(null, peer.statusString);
-    } catch (err) {
-      callback(err);
-    }
+  public placeOrder: grpc.handleUnaryCall<{ order: OwnOrder }, MatchingResult> = async (call, callback) => {
+    this.unaryCall(call.request.order, callback, this.service.placeOrder);
   }
 
   /**
-   * Demo method to execute a Raiden Token Swap through XUD.
-  */
-  public tokenSwap = async (call, callback) => {
-    const { target_address, payload, identifier } = call.request;
-    try {
-      callback(null, await this.raidenClient.tokenSwap(target_address, payload, identifier));
-    } catch (err) {
-      callback(err);
-    }
+   * See [[Service.connect]]
+   */
+  public connect: grpc.handleUnaryCall<{ host: string, port: number }, Orders> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.connect);
+  }
+
+  /**
+   * See [[Service.tokenSwap]]
+   */
+  public tokenSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.tokenSwap);
   }
 }
 
