@@ -8,33 +8,44 @@
     "xucli": "./bin/xucli"
   },
   "scripts": {
-    "postinstall": "npm run compile",
-    "start": "node dist/Xud.js",
-    "stop": "cross-os stop",
-    "compile": "cross-os compile",
+    "compile": "cross-os precompile && tsc && cross-os postcompile",
+    "compile:watch": "tsc -w",
+    "db:init": "gulp db.init",
     "dev": "npm run compile && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
-    "compile:watch": "tsc -w",
-    "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
-    "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
-    "db:init": "gulp db.init",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
+    "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
+    "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
+    "postinstall": "npm run compile",
+    "proto": "cross-os proto",
+    "start": "node dist/Xud.js",
+    "stop": "cross-os stop",
     "test": "npm run test:unit && npm run test:int",
-    "test:unit": "mocha -r ts-node/register test/unit/*",
-    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
     "test:int": "mocha -r ts-node/register test/integration/*",
-    "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts"
+    "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts",
+    "test:unit": "mocha -r ts-node/register test/unit/*",
+    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts"
   },
   "cross-os": {
+    "postcompile": {
+      "linux": "rsync -am --include '*/' --include '*.js' --exclude '*' lib/proto/ dist/proto",
+      "darwin": "rsync -am --include '*/' --include '*.js' --exclude '*' lib/proto/ dist/proto",
+      "win32": "xcopy /s lib\\proto\\*.js dist\\proto\\* >nul"
+    },
+    "precompile": {
+      "linux": "rm -rf ./dist",
+      "darwin": "rm -rf ./dist",
+      "win32": "rd /q /s dist || cd ."
+    },
+    "proto": {
+      "linux": "protoc --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' --ts_out='import_style=commonjs,binary:lib/proto' --js_out='import_style=commonjs,binary:lib/proto' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "darwin": "protoc --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' --ts_out='import_style=commonjs,binary:lib/proto' --js_out='import_style=commonjs,binary:lib/proto' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "win32": "protoc --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" --ts_out=\"import_style=commonjs,binary:lib\\proto\" --js_out=\"import_style=commonjs,binary:lib\\proto\" -I=\"proto\" proto\\*.proto proto\\google\\api\\*.proto proto\\google\\protobuf\\*.proto"
+    },
     "stop": {
       "linux": "./bin/xucli shutdown",
       "darwin": "./bin/xucli shutdown",
       "win32": "node bin\\xucli shutdown"
-    },
-    "compile": {
-      "linux": "rm -rf ./dist && tsc && cross-os copy:protobufs",
-      "darwin": "rm -rf ./dist && tsc && cross-os copy:protobufs",
-      "win32": "rd /q /s dist && tsc"
     }
   },
   "repository": {
