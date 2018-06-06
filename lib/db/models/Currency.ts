@@ -8,6 +8,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
 
   const options: Sequelize.DefineOptions<db.CurrencyInstance> = {
     tableName: 'currencies',
+    timestamps: false,
   };
 
   const Currency = sequelize.define<db.CurrencyInstance, db.CurrencyAttributes>('Currency', attributes, options);
