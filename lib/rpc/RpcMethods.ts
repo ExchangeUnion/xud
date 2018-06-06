@@ -76,7 +76,7 @@ class RpcMethods {
     assert(order.quantity !== 0, 'quantity must not equal 0');
     assert(typeof order.pairId === 'string', 'pairId name must be a string');
 
-    return this.orderBook.addOwnOrder(order);
+    return this.orderBook.addFillOrder(order);
   }
 
   /**

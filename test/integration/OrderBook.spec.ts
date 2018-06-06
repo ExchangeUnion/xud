@@ -55,19 +55,16 @@ describe('OrderBook', () => {
     });
   });
 
-  it('should append new ownOrder', async () => {
+  it('should append two new ownOrder', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC',  quantity: 5, price: 55 };
-    await orderBook.addOwnOrder(order);
+    await orderBook.addFillOrder(order);
+    await orderBook.addFillOrder(order);
   });
 
-  it('should append new peerOrder', async () => {
-    const order: orders.PeerOrder = { id: uuidv1(), pairId: 'BTC/LTC',  quantity: 5, price: 55, hostId: 1, invoice: 'dummyInvoice' };
-    await orderBook.addPeerOrder(order);
-  });
 
   it('should match new ownOrder and update matches', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
-    const matches = await orderBook.addOwnOrder(order);
+    const matches = await orderBook.addFillOrder(order);
     expect(matches.remainingOrder).to.be.null;
     const firstMakerLeft = await getOrderQuantity(matches.matches[0].maker.id);
     expect(firstMakerLeft).to.be.equal(0);

@@ -69,7 +69,15 @@ class OrderBook {
     return this.repository.getPeerOrders(pairId, maxResults);
   }
 
-  public addOwnOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
+  public addFillOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
+    return this.addOwnOrder(order);
+  }
+
+  public addMarketOrder = async (_order: orders.OwnOrder) => {
+    // TODO: implement
+  }
+
+  private addOwnOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
@@ -99,7 +107,7 @@ class OrderBook {
     return matchingResult;
   }
 
-  public addPeerOrder = async (order: orders.PeerOrder): Promise<void> => {
+  private addPeerOrder = async (order: orders.PeerOrder): Promise<void> => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
