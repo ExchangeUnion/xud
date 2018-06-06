@@ -2,6 +2,7 @@
 // file: lndrpc.proto
 
 import * as jspb from "google-protobuf";
+import * as annotations_pb from "./annotations_pb";
 
 export class GenSeedRequest extends jspb.Message {
   getAezeedPassphrase(): Uint8Array | string;

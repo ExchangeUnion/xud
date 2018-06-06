@@ -5,7 +5,7 @@ import path from 'path';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
-import * as lndrpc from './lndrpc_pb';
+import * as lndrpc from '../proto/lndrpc_pb';
 
 /**
  * The configurable options for the lnd client.
