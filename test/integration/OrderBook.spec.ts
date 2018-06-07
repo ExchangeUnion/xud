@@ -57,13 +57,13 @@ describe('OrderBook', () => {
 
   it('should append two new ownOrder', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC',  quantity: 5, price: 55 };
-    await orderBook.addFillOrder(order);
-    await orderBook.addFillOrder(order);
+    await orderBook.addLimitOrder(order);
+    await orderBook.addLimitOrder(order);
   });
 
   it('should match new ownOrder and update matches', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
-    const matches = await orderBook.addFillOrder(order);
+    const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.null;
     const firstMakerLeft = await getOrderQuantity(matches.matches[0].maker.id);
     expect(firstMakerLeft).to.be.equal(0);

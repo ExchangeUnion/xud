@@ -69,7 +69,7 @@ class OrderBook {
     return this.repository.getPeerOrders(pairId, maxResults);
   }
 
-  public addFillOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
+  public addLimitOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {
     return this.addOwnOrder(order);
   }
 
