@@ -11,6 +11,8 @@ export const builder = {
     type: 'string',
   },
   max_results: {
+    default: 10,
+    description: 'max # of orders to return, 0 = no limit',
     type: 'number',
   },
 };
