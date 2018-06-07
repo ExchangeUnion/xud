@@ -1,12 +1,25 @@
 import grpc from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
+import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBookRepository';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
+
+function serializeDateProperties(response) {
+  Object.keys(response).forEach((key) => {
+    if (response[key] instanceof Date) {
+      response[key] = response[key].getTime();
+    } else if (isObject(response[key])) {
+      response[key] = serializeDateProperties(response[key]);
+    }
+  });
+
+  return response;
+}
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
@@ -19,7 +32,8 @@ class GrpcService {
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
     try {
-      const response: U = await serviceMethod(call);
+      const rawResponse: U = await serviceMethod(call);
+      const response = serializeDateProperties(rawResponse);
       callback(null, response);
     } catch (err) {
       this.logger.error(err);
