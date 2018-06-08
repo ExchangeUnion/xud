@@ -1,9 +1,9 @@
 /**
  * Check whether a variable is a non-array object
  */
-function isObject(val: any): boolean {
+export const isObject = (val: any): boolean => {
   return (val && typeof val === 'object' && !Array.isArray(val));
-}
+};
 
 /** Get the current date in the LocaleString format.
  */

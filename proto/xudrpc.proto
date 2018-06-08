@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+import "annotations.proto";
+import "lndrpc.proto";
+
+package xudrpc;
+
+service XUDService {
+  /**
+   * Placeholder for a method to return general information about an Exchange Union node.
+   */
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/getinfo"
+    };
+  }
+
+  /**
+   * Get the list of the orderbook's available pairs.
+   */
+  rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
+    option (google.api.http) = {
+      get: "/v1/getpairs"
+    };
+  }
+
+  /**
+   * Get a list of standing orders from the orderbook.
+   */
+  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/orders"
+    };
+  }
+
+  /**
+   * Add an order to the orderbook.
+   */
+  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/orders"
+      body: "*"
+    };
+  }
+
+  /**
+   * Connect to an XU node on a given host and port.
+   */
+  rpc Connect(ConnectRequest) returns (ConnectResponse) {
+    option (google.api.http) = {
+      post: "/v1/connect"
+      body: "*"
+    };
+  }
+
+  /**
+   * Demo method to execute a Raiden Token Swap through XUD. 
+  */
+  rpc TokenSwap(TokenSwapRequest) returns (TokenSwapResponse) {
+    option (google.api.http) = {
+      post: "/v1/tokenswap"
+      body: "*"
+    };
+  }
+}
+
+message GetInfoRequest {}
+message GetInfoResponse {
+  lnrpc.GetInfoResponse lnd = 1 [json_name = "lnd"];
+}
+
+message Pair {
+  string id = 1 [json_name = "id"];
+  string base_currency = 2 [json_name = "base_currency"];
+  string quote_currency = 3 [json_name = "quote_currency"];
+  string swap_protocol = 4 [json_name = "swap_protocol"];
+}
+
+message GetPairsRequest {}
+message GetPairsResponse {
+  repeated Pair pairs = 1 [json_name = "pairs"];
+}
+
+message SwapPayload {
+  string role = 1 [json_name = "role"];
+  uint64 sending_amount = 2 [json_name = "sending_amount"];
+  string sending_token = 3 [json_name = "sending_token"];
+  uint64 receiving_amount = 4 [json_name = "receiving_amount"];
+  string receiving_token = 5 [json_name = "receiving_token"];
+}
+
+message TokenSwapRequest {
+  string target_address = 1 [json_name = "target_address"];
+  string identifier = 2 [json_name = "identifier"];
+  SwapPayload payload = 3 [json_name = "payload"];
+}
+message TokenSwapResponse {
+  string result = 1 [json_name = "result"];
+}
+
+message ConnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+
+message ConnectResponse {
+  string result = 1 [json_name = "result"];
+}
+
+message Order {
+  /// the precision of price goes to 6 decimal places
+  double price = 1 [json_name = "price"];
+  /// the precision of quantity goes to 6 decimal places
+  double quantity = 2 [json_name = "quantity"];
+  string pair_id = 3 [json_name = "pair_id"];
+  int32 peer_id = 4 [json_name = "peer_id"];
+  string id = 5 [json_name = "id"];
+  int64 created_at = 6 [json_name = "created_at"];
+}
+
+message OrderMatch {
+  Order maker = 1 [json_name = "maker"];
+  Order taker = 2 [json_name = "taker"];
+}
+
+message PlaceOrderRequest {
+  Order order = 1 [json_name = "order"];
+}
+message PlaceOrderResponse {
+  repeated OrderMatch matches = 1 [json_name = "matches"];
+  Order remaining_order = 2 [json_name= "remaining_order"];
+}
+
+message GetOrdersRequest {
+  string pair_id = 1 [json_name = "pair_id"];
+  uint32 max_results = 2 [json_name = "max_results"];
+}
+message GetOrdersResponse {
+  repeated Order buy_orders = 1 [json_name = "buy_orders"];
+  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+}

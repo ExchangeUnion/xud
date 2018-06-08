@@ -1,9 +1,13 @@
-import http from 'http';
 import assert from 'assert';
+import grpc from 'grpc';
+import path from 'path';
+import { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import { OwnOrder } from '../types/orders';
 
 class XUClient {
   private port: number = 8886;
   private id: number = 1;
+  private grpcClient: any;
 
   constructor(port?: number, private host: string = 'localhost') {
     if (port) {
@@ -13,94 +17,95 @@ class XUClient {
     if (host) {
       this.host = host;
     }
+    this.port = port || 8886;
+    const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
+    const xurpc: any = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
+    this.grpcClient = new xurpc.xudrpc.XUDService(`${this.host}:${this.port}`, grpc.credentials.createInsecure());
   }
 
-  private callRpc(method, params) {
-    const { port, id, host } = this;
-    this.id += 1;
+  public getInfo = (): Promise<any> => {
     return new Promise((resolve, reject) => {
-      const postData = JSON.stringify({
-        params,
-        method,
-        id,
-        jsonrpc: '2.0',
+      return this.grpcClient.getInfo({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
+    });
+  }
 
-      const req = http.request({
-        port,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'Content-Length': postData.length,
-        },
-        method: 'POST',
-        hostname: host,
-      }, (res) => {
-        res.setEncoding('utf8');
-        let body = '';
-        res.on('data', (chunk) => {
-          body += chunk;
-        });
-        res.on('end', () => {
-          const response = JSON.parse(body);
-          if (response.jsonrpc !== '2.0' || parseInt(response.id, 10) !== id) {
-            reject(new Error('unexpected response'));
-          }
-          if (response.error) {
-            reject(response.error);
-          } else {
-            resolve(response.result);
-          }
-        });
+  public getOrders = (pairId: string, maxResults: number): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.getOrders({ pairId, maxResults }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
+    });
+  }
 
-      req.on('error', (err) => {
-        reject(err);
+  public getPairs = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.getPairs({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
       });
+    });
 
-      req.write(postData);
-      req.end();
+  }
+
+  public placeOrder = (order: OwnOrder): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.placeOrder({ order }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
   }
 
-  public getInfo() {
-    return this.callRpc('getInfo', undefined);
-  }
-
-  public getOrders(pairId: string, maxResults: number) {
-    return this.callRpc('getOrders', {
-      pairId,
-      maxResults,
+  public connect = (host: number, port: number): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.connect({ host, port }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
   }
 
-  public getPairs() {
-    return this.callRpc('getPairs', undefined);
-  }
-
-  public placeOrder(order) {
-    return this.callRpc('placeOrder', {
-      order,
+  public tokenSwap = (target_address: string, payload: TokenSwapPayload, identifier: string): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.tokenSwap({ target_address, payload, identifier }, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
   }
 
-  public connect(host, port) {
-    return this.callRpc('connect', {
-      host,
-      port,
+  public shutdown = (): Promise<any> => {
+    return new Promise((resolve, reject) => {
+      return this.grpcClient.shutdown({}, (err, response) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
     });
-  }
-
-  public tokenSwap(target_address, payload, identifier) {
-    return this.callRpc('tokenSwap', {
-      target_address,
-      payload,
-      identifier,
-    });
-  }
-
-  public shutdown() {
-    return this.callRpc('shutdown', undefined);
   }
 }
 

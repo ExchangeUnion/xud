@@ -14,6 +14,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
 
   const options: Sequelize.DefineOptions<db.PairInstance> = {
     tableName: 'pairs',
+    timestamps: false,
   };
 
   const Pair = sequelize.define<db.PairInstance, db.PairAttributes>('Pair', attributes, options);
