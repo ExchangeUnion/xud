@@ -68,11 +68,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       this.rpcServer = new GrpcServer(this.service);
-      await this.rpcServer.listen(this.config.grpc.host, this.config.grpc.port);
+      await this.rpcServer.listen(this.config.grpc.port, this.config.grpc.host);
 
       if (!this.config.webproxy.disable) {
         this.grpcAPIProxy = new GrpcWebProxyServer();
-        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.grpc.host, this.config.grpc.port);
+        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.grpc.port, this.config.grpc.host);
       }
     } catch (err) {
       this.logger.error(err);

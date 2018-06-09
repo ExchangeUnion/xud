@@ -21,7 +21,7 @@ class GrpcWebProxyServer {
   /**
    * Starts the server and begins listening on the specified proxy port
    */
-  public listen = (proxyPort: number, grpcHost: string, grpcPort: number): Promise<void> => {
+  public listen = (proxyPort: number, grpcPort: number, grpcHost: string): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
     this.app.use('/api/', grpcGateway(['xudrpc.proto'], `${grpcHost}:${grpcPort}`, grpc.credentials.createInsecure(), true, protoPath));
