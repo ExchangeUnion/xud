@@ -3,6 +3,7 @@ FROM node:8
 WORKDIR /opt
 
 # Install Deps
+RUN apt update && apt install -y rsync
 RUN npm install -g gulp nodemon typescript --quiet
 RUN git clone https://github.com/ExchangeUnion/xud
 WORKDIR /opt/xud
