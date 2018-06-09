@@ -1,14 +1,14 @@
-import grpcGateway from 'grpc-dynamic-gateway';
 import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
 import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
+import { middleware } from './GrpcExpressMiddleware';
 
 class GrpcWebProxyServer {
   private logger: Logger;
-  private app: express.Application;
+  private app: express.Express;
   private server?: Server;
 
   constructor() {
@@ -21,13 +21,13 @@ class GrpcWebProxyServer {
   /**
    * Starts the server and begins listening on the specified proxy port
    */
-  public listen = (proxyPort: number, grpcPort: number): Promise<void> => {
+  public listen = (proxyPort: number, grpcPort: number, grpcHost: string): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
-    this.app.use('/api/', grpcGateway(['xudrpc.proto'], `localhost:${grpcPort}`, grpc.credentials.createInsecure(), true, protoPath));
+    this.app.use('/api/', middleware(['xudrpc.proto'], `${grpcHost}:${grpcPort}`, grpc.credentials.createInsecure(), protoPath));
     return new Promise((resolve) => {
       this.server = this.app.listen(proxyPort, () => {
-        this.logger.info(`GRPC Web API proxy listening on port ${proxyPort}`);
+        this.logger.info(`gRPC Web API proxy listening on port ${proxyPort}`);
         resolve();
       });
     });
@@ -40,7 +40,7 @@ class GrpcWebProxyServer {
     return new Promise((resolve, reject) => {
       if (this.server) {
         this.server.close(() => {
-          this.logger.info('GRPC Web API proxy stopped listening');
+          this.logger.info('gRPC Web API proxy stopped listening');
           resolve();
         }).once('error', (err) => {
           this.logger.error(err);

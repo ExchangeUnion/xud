@@ -72,7 +72,7 @@ class Xud {
 
       if (!this.config.webproxy.disable) {
         this.grpcAPIProxy = new GrpcWebProxyServer();
-        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port);
+        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {
       this.logger.error(err);
