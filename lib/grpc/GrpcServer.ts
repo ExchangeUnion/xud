@@ -38,7 +38,7 @@ class GrpcServer {
     try {
       this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
       this.server.start();
-      this.logger.info(`GRPC server listening on ${host}:${port}`);
+      this.logger.info(`gRPC server listening on ${host}:${port}`);
     } catch (error) {
       throw error;
     }

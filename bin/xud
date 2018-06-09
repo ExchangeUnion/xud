@@ -78,11 +78,11 @@ const { argv } = require('yargs')
       describe: 'Port for raiden REST service',
       type: 'number',
     },
-    'grpc.host': {
+    'rpc.host': {
       describe: 'gRPC service host',
       type: 'string',
     },
-    'grpc.port': {
+    'rpc.port': {
       describe: 'gRPC service port',
       type: 'number',
       alias: 'r',
