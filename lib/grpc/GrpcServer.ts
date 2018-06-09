@@ -36,13 +36,14 @@ class GrpcServer {
    * Start the server and begin listening on the provided port
    * @param port
    */
-  public listen = (port: number) => {
+  public listen = (host: string, port: number) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     try {
-      this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
+      const address = `${host}:${port}`;
+      this.server.bind(address, grpc.ServerCredentials.createInsecure());
       this.server.start();
-      this.logger.info(`GRPC server listening on port ${port}`);
+      this.logger.info(`GRPC server listening on ${address}`);
     } catch (error) {
       throw error;
     }

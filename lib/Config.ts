@@ -14,7 +14,7 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: { port: number };
+  public grpc: { host: string, port: number };
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
@@ -60,7 +60,8 @@ class Config {
       ...this.db,
       database: 'xud_test',
     };
-    this.rpc = {
+    this.grpc = {
+      host: 'localhost',
       port: 8886,
     };
     this.webproxy = {
