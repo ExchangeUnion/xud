@@ -79,7 +79,6 @@ Optional command line arguments to override defaults and settings in the [Config
 ```bash
 ~/xud/bin $ ./xud --help
 Options:
-Options:
   --help                        Show help                              [boolean]
   --version                     Show version number                    [boolean]
   --xudir, -x                   Data directory for xud                  [string]
