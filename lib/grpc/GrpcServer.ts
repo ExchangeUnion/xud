@@ -1,12 +1,8 @@
-import grpc, { Server, GrpcObject } from 'grpc';
+import grpc, { Server } from 'grpc';
 import assert from 'assert';
 import path from 'path';
 import Logger from '../Logger';
 import GrpcService from './GrpcService';
-import OrderBook from '../orderbook/OrderBook';
-import LndClient from '../lndclient/LndClient';
-import RaidenClient from '../raidenclient/RaidenClient';
-import Pool from '../p2p/Pool';
 import Service from '../service/Service';
 
 class GrpcServer {
@@ -36,13 +32,13 @@ class GrpcServer {
    * Start the server and begin listening on the provided port
    * @param port
    */
-  public listen = (port: number) => {
+  public listen = (port: number, host: string) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     try {
-      this.server.bind('localhost:' + port, grpc.ServerCredentials.createInsecure());
+      this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
       this.server.start();
-      this.logger.info(`GRPC server listening on port ${port}`);
+      this.logger.info(`gRPC server listening on ${host}:${port}`);
     } catch (error) {
       throw error;
     }
