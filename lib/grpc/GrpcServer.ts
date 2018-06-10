@@ -18,7 +18,7 @@ class GrpcServer {
     const { xudrpc }: any = protoDescriptor;
 
     const grpcService = new GrpcService(service);
-    this.server.addService(xudrpc.XUDService.service, {
+    this.server.addService(xudrpc.Xud.service, {
       getInfo: grpcService.getInfo,
       getPairs: grpcService.getPairs,
       getOrders: grpcService.getOrders,
