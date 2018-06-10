@@ -1,6 +1,6 @@
-import callback from '../command';
-import XUClient from '../../xuclient/XUClient';
+import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { ConnectRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'connect <host> [port]';
 
@@ -18,10 +18,9 @@ export const builder = {
   },
 };
 
-const callHandler = (xuClient: XUClient, argv: Arguments) => {
-  return xuClient.connect(argv.host, argv.port);
-};
-
 export const handler = (argv: Arguments) => {
-  callback(argv, callHandler);
+  const request = new ConnectRequest();
+  request.setHost(argv.host);
+  request.setPort(argv.port);
+  loadXudClient(argv).connect(request, callback);
 };
