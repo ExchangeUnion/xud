@@ -1,0 +1,5 @@
+bin/* linguist-language=Javascript
+proto/* linguist-vendored
+proto/xudrpc.proto linguist-vendored=false
+lib/proto/* linguist-generated
+package-lock.json linguist-generated
