@@ -25,6 +25,7 @@ class GrpcServer {
       placeOrder: grpcService.placeOrder,
       connect: grpcService.connect,
       tokenSwap: grpcService.tokenSwap,
+      shutdown: grpcService.shutdown,
     });
   }
 
