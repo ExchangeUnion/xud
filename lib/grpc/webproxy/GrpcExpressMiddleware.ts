@@ -1,4 +1,4 @@
-import grpc, { GrpcObject } from 'grpc';
+import grpc from 'grpc';
 import express from 'express';
 import colors from 'chalk';
 import fs from 'fs';
@@ -17,11 +17,12 @@ const lowerFirstChar = str => str.charAt(0).toLowerCase() + str.slice(1);
  * @param  {string} include      Path to find all includes
  * @return {Function}            Middleware
  */
-export const middleware = (protoFiles: string[], grpcLocation: string, credentials: grpc.ServerCredentials, grpc) => {
+export const middleware = (protoFiles: string[], grpcLocation: string, credentials: grpc.ServerCredentials, include: string) => {
   const router = express.Router();
   const clients = {};
-  const protos = protoFiles.map(p => grpc.load(p));
+  const protos = protoFiles.map(p => include ? grpc.load({ file: p, root: include }) : grpc.load(p));
   protoFiles
+        .map(p => `${include}/${p}`)
         .map(p => schema.parse(fs.readFileSync(p)))
         .forEach((sch, si) => {
           const pkg = sch.package;
@@ -29,7 +30,7 @@ export const middleware = (protoFiles: string[], grpcLocation: string, credentia
           sch.services.forEach((s) => {
             const svc = s.name;
             const svcarr = getPkg(clients, pkg, true);
-            getPkg(clients, pkg, true)[svc] = new (getPkg(protos[si], pkg, false))[svc](grpcLocation, credentials);
+            svcarr[svc] = new (getPkg(protos[si], pkg, false))[svc](grpcLocation, credentials);
             s.methods.forEach((m) => {
               if (m.options['google.api.http']) {
                 supportedMethods.forEach((httpMethod) => {
@@ -64,19 +65,20 @@ export const middleware = (protoFiles: string[], grpcLocation: string, credentia
   return router;
 };
 
-const getPkg = (client:any, pkg:any, create:boolean = false) => {
+const getPkg = (client:any, pkg:any, create:boolean = false): Object => {
   if (!((pkg || '').indexOf('.') !== -1)) {
     return client[pkg];
+  } else {
+    const ls = pkg.split('.');
+    let obj = client;
+    ls.forEach((name) => {
+      if (create) {
+        obj[name] = obj[name] || {};
+      }
+      obj = obj[name];
+    });
+    return obj;
   }
-  const ls = pkg.split('.');
-  let obj = client;
-  ls.forEach((name) => {
-    if (create) {
-      obj[name] = obj[name] || {};
-    }
-    obj = obj[name];
-  });
-  return obj;
 };
 
 /**
