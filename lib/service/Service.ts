@@ -75,8 +75,8 @@ class Service {
    * Connect to an XU node on a given host and port.
    */
   public connect = async ({ host, port }: { host: string, port: number }) => {
-    await this.pool.addOutbound(host, port);
-    return 'connected';
+    const peer = await this.pool.addOutbound(host, port);
+    return peer.getStatus();
   }
 
   /**

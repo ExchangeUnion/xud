@@ -1,4 +1,4 @@
-import fs from 'fs';
+import bootstrap from './bootstrap';
 import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
@@ -9,11 +9,9 @@ import GrpcServer from './grpc/GrpcServer';
 import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
-import dotenv from 'dotenv';
 import Service from './service/Service';
 
-/** Loads environment variables from the file .env */
-dotenv.config();
+bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
