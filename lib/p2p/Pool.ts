@@ -72,7 +72,7 @@ class Pool extends EventEmitter {
   private tryConnectPeer = async (peer: Peer): Promise<void> => {
     try {
       return await this.connectPeer(peer);
-    } catch(err) {
+    } catch (err) {
       this.logger.warn(`connectPeer failed: ${err}`);
     }
   }
