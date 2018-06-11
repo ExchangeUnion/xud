@@ -66,20 +66,16 @@ export const middleware = (protoFiles: string[], grpcLocation: string, credentia
 };
 
 const getPkg = (client:any, pkg:any, create:boolean = false): Object => {
-  if (!((pkg || '').indexOf('.') !== -1)) {
-    return client[pkg];
-  } else {
-    const ls = pkg.split('.');
-    let obj = client;
-    ls.forEach((name) => {
-      if (create) {
-        obj[name] = obj[name] || {};
-      }
-      obj = obj[name];
-    });
-    return obj;
-  }
-};
+  const ls = pkg.split('.');
+  let obj = client;
+  ls.forEach((name) => {
+    if (create) {
+      obj[name] = obj[name] || {};
+    }
+    obj = obj[name];
+  });
+  return obj;
+}
 
 /**
  * Parse express request params & query into params for grpc client
