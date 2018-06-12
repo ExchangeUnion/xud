@@ -75,7 +75,7 @@ const getPkg = (client:any, pkg:any, create:boolean = false): Object => {
     obj = obj[name];
   });
   return obj;
-}
+};
 
 /**
  * Parse express request params & query into params for grpc client
