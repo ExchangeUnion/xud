@@ -65,8 +65,16 @@ class Pool extends EventEmitter {
     }
 
     const peer = Peer.fromOutbound(socketAddress);
-    await this.connectPeer(peer);
+    await this.tryConnectPeer(peer);
     return peer;
+  }
+
+  private tryConnectPeer = async (peer: Peer): Promise<void> => {
+    try {
+      await this.connectPeer(peer);
+    } catch (err) {
+      this.logger.info(`connectPeer failed: ${err}`);
+    }
   }
 
   private connectPeer = async (peer: Peer): Promise<void> => {
@@ -174,9 +182,7 @@ class Pool extends EventEmitter {
   }
 
   private destroyPeers = (): void => {
-    Object.keys(this.peers).map((key) => {
-      this.peers[key].destroy();
-    });
+    this.peers.forEach(peer => peer.destroy());
   }
 
   private listen = (): void => {

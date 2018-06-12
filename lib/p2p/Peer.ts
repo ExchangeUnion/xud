@@ -43,14 +43,6 @@ class Peer extends EventEmitter {
     return this.socketAddress.toString();
   }
 
-  get statusString(): string {
-    if (this.connected) {
-      return `Connected to peer (${this.id})`;
-    } else {
-      return 'Not connected';
-    }
-  }
-
   constructor() {
     super();
 
@@ -67,6 +59,14 @@ class Peer extends EventEmitter {
     const peer = new Peer();
     peer.accept(socket);
     return peer;
+  }
+
+  public getStatus = (): string => {
+    if (this.connected) {
+      return `Connected to peer (${this.id})`;
+    } else {
+      return 'Not connected';
+    }
   }
 
   public open = async (): Promise<void> => {
@@ -129,7 +129,7 @@ class Peer extends EventEmitter {
 
     if (this.connected) {
       assert(this.direction === ConnectionDirection.INBOUND);
-      this.logger.debug(this.statusString);
+      this.logger.debug(this.getStatus());
       return Promise.resolve();
     }
 
@@ -144,13 +144,14 @@ class Peer extends EventEmitter {
 
       const onError = (err) => {
         cleanup();
+        this.destroy();
         reject(err);
       };
 
       this.socket.once('connect', () => {
         this.connectTime = Date.now();
         this.connected = true;
-        this.logger.debug(this.statusString);
+        this.logger.debug(this.getStatus());
         this.emit('connect');
 
         cleanup();
@@ -162,6 +163,7 @@ class Peer extends EventEmitter {
       this.connectTimeout = setTimeout(() => {
         this.connectTimeout = undefined;
         cleanup();
+        this.destroy();
         reject(new Error('Connection timed out.'));
       }, 10000);
     });
