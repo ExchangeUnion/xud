@@ -73,7 +73,7 @@ class Pool extends EventEmitter {
     try {
       await this.connectPeer(peer);
     } catch (err) {
-      this.logger.warn(`connectPeer failed: ${err}`);
+      this.logger.info(`connectPeer failed: ${err}`);
     }
   }
 

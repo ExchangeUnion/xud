@@ -61,7 +61,7 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getStatus(): string {
+  public getStatus = (): string => {
     if (this.connected) {
       return `Connected to peer (${this.id})`;
     } else {
