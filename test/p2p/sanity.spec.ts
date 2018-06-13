@@ -19,6 +19,9 @@ describe('P2P Sanity Tests', () => {
       raiden : {
         disable: true,
       },
+      db : {
+        database: 'xud_test',
+      },
       xudir : `${process.env.HOME}/.xud/1`,
     };
 
@@ -32,6 +35,9 @@ describe('P2P Sanity Tests', () => {
       },
       raiden : {
         disable: true,
+      },
+      db : {
+        database: 'xud_test',
       },
       xudir : `${process.env.HOME}/.xud/2`,
     };
