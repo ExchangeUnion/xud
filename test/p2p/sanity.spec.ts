@@ -2,6 +2,7 @@
 import { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import fs from 'fs';
+import path from 'path';
 
 describe('P2P Sanity Tests', () => {
   let firstpeer: Xud;
@@ -43,11 +44,11 @@ describe('P2P Sanity Tests', () => {
     };
 
     if (!fs.existsSync(firstpeerconfig.xudir)) {
-      fs.mkdirSync(firstpeerconfig.xudir);
+      mkdirRecursiveSync(firstpeerconfig.xudir);
     }
 
     if (!fs.existsSync(secondpeerconfig.xudir)) {
-      fs.mkdirSync(secondpeerconfig.xudir);
+      mkdirRecursiveSync(secondpeerconfig.xudir);
     }
 
     firstpeer = new Xud(firstpeerconfig);
@@ -67,3 +68,22 @@ describe('P2P Sanity Tests', () => {
     await secondpeer.shutdown();
   });
 });
+
+function mkdirRecursiveSync(targetDir: string, isRelative = false) {
+  const sep = path.sep;
+  const initDir = path.isAbsolute(targetDir) ? sep : '';
+  const baseDir = isRelative ? __dirname : '.';
+
+  targetDir.split(sep).reduce((prevDirPath, dirToCreate) => {
+    const curDirPathToCreate = path.resolve(baseDir, prevDirPath, dirToCreate);
+    try {
+      fs.mkdirSync(curDirPathToCreate);
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        throw err;
+      }
+    // caught EEXIST error if curDirPathToCreate already existed (not a problem for us).
+    }
+    return curDirPathToCreate; // becomes prevDirPath on next call to reduce
+  }, initDir);
+}
