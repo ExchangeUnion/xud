@@ -4,7 +4,6 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
-import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { OwnOrder } from '../types/orders';
 
 /**
@@ -25,7 +24,7 @@ class Service {
   private lndClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
-  private shutdown: Function;
+  public shutdown: Function;
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */

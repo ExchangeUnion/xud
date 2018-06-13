@@ -38,9 +38,9 @@
       "win32": "rd /q /s dist || cd ."
     },
     "proto": {
-      "linux": "protoc --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' --ts_out='import_style=commonjs,binary:lib/proto' --js_out='import_style=commonjs,binary:lib/proto' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "darwin": "protoc --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' --ts_out='import_style=commonjs,binary:lib/proto' --js_out='import_style=commonjs,binary:lib/proto' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "win32": "protoc --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" --ts_out=\"import_style=commonjs,binary:lib\\proto\" --js_out=\"import_style=commonjs,binary:lib\\proto\" -I=\"proto\" proto\\*.proto proto\\google\\api\\*.proto proto\\google\\protobuf\\*.proto"
+      "linux": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "darwin": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "win32": "protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"import_style=commonjs,binary:lib\\proto\"  --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\*.proto proto\\google\\api\\*.proto proto\\google\\protobuf\\*.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
@@ -106,6 +106,8 @@
     "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",
     "concurrently": "^3.5.1",
+    "grpc-tools": "^1.6.6",
+    "grpc_tools_node_protoc_ts": "^2.3.0",
     "mocha": "^5.0.5",
     "nodemon": "^1.17.5",
     "ts-node": "^6.0.2",

@@ -1,6 +1,6 @@
-import callback from '../command';
-import XUClient from '../../xuclient/XUClient';
+import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { PlaceOrderRequest, Order } from '../../proto/xudrpc_pb';
 
 export const command = 'placeorder <pair_id> <price> <quantity>';
 
@@ -18,15 +18,14 @@ export const builder = {
   },
 };
 
-const callHandler = (xuClient: XUClient, argv: Arguments) => {
-  const order = {
-    price: argv.price,
-    quantity: argv.quantity,
-    pairId: argv.pair_id,
-  };
-  return xuClient.placeOrder(order);
-};
-
 export const handler = (argv: Arguments) => {
-  callback(argv, callHandler);
+  const request = new PlaceOrderRequest();
+
+  const order = new Order();
+  order.setPrice(argv.price);
+  order.setQuantity(argv.quantity);
+  order.setPairId(argv.pair_id);
+  request.setOrder(order);
+
+  loadXudClient(argv).placeOrder(request, callback);
 };

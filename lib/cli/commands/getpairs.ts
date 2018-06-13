@@ -1,15 +1,11 @@
-import callback from '../command';
-import XUClient from '../../xuclient/XUClient';
+import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { GetPairsRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'getpairs';
 
 export const describe = 'get orderbook\'s available pairs';
 
-const callHandler = (xuClient: XUClient) => {
-  return xuClient.getPairs();
-};
-
 export const handler = (argv: Arguments) => {
-  callback(argv, callHandler);
+  loadXudClient(argv).getPairs(new GetPairsRequest(), callback);
 };
