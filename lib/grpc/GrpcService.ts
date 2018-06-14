@@ -82,6 +82,10 @@ class GrpcService {
   public tokenSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.tokenSwap);
   }
+
+  public shutdown: grpc.handleUnaryCall<{}, {}> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.shutdown);
+  }
 }
 
 export default GrpcService;

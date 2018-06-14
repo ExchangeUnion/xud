@@ -1,15 +1,11 @@
-import callback from '../command';
-import XUClient from '../../xuclient/XUClient';
+import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { ShutdownRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'shutdown';
 
 export const describe = 'gracefully shutdown the xud node';
 
-const callHandler = (xuClient: XUClient) => {
-  return xuClient.shutdown();
-};
-
 export const handler = (argv: Arguments) => {
-  callback(argv, callHandler);
+  loadXudClient(argv).shutdown(new ShutdownRequest(), callback);
 };
