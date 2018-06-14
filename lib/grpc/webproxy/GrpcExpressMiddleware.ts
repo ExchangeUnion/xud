@@ -1,3 +1,5 @@
+// This Code has been adopted and ported from https://github.com/konsumer/grpc-dynamic-gateway to Typescript.
+// Credits to David Konsumer (https://github.com/konsumer) for Vanilla JS Implementation.
 import grpc from 'grpc';
 import express from 'express';
 import colors from 'chalk';
