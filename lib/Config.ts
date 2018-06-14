@@ -90,7 +90,7 @@ class Config {
   public async load() {
     if (!fs.existsSync(this.xudir)) {
       try {
-        await fs.ensureDir(this.xudir);
+        await fse.ensureDir(this.xudir);
       } catch (err) {
         throw new Error(`Error creating ${this.xudir}: ${err.message}`);
       }
