@@ -1,7 +1,6 @@
 
 import { expect } from 'chai';
 import Xud from '../../lib/Xud';
-import fs from 'fs';
 
 describe('P2P Sanity Tests', () => {
   let firstpeer: Xud;
@@ -55,8 +54,13 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail to connect', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port:8887 });
+    const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
     expect(result).to.be.equal('Address (localhost) already connected');
+  });
+
+  it('should not connect', async () => {
+    const result = await firstpeer.service.connect({ host:'localhost', port:8887 });
+    expect(result).to.be.equal('Not connected');
   });
 
   after(async () => {
