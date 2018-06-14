@@ -9,6 +9,7 @@ describe('P2P Sanity Tests', () => {
 
   before(async () => {
     const firstpeerconfig = {
+      xudir : `${process.env.HOME}/.xud/1`,
       p2p : {
         listen: true,
         port: 8885, // X = 88, U = 85 in ASCII
@@ -22,10 +23,10 @@ describe('P2P Sanity Tests', () => {
       db : {
         database: 'xud_test',
       },
-      xudir : `${process.env.HOME}/.xud/1`,
     };
 
     const secondpeerconfig = {
+      xudir : `${process.env.HOME}/.xud/2`,
       p2p : {
         listen: true,
         port: 8886,
@@ -39,7 +40,6 @@ describe('P2P Sanity Tests', () => {
       db : {
         database: 'xud_test',
       },
-      xudir : `${process.env.HOME}/.xud/2`,
     };
 
     firstpeer = new Xud(firstpeerconfig);
@@ -56,7 +56,7 @@ describe('P2P Sanity Tests', () => {
 
   it('should fail to connect', async () => {
     const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
-    expect(result).to.be.equal('Connected to peer (localhost:8887)');
+    expect(result).to.be.equal('Address (localhost) already connected');
   });
 
   after(async () => {

@@ -44,7 +44,6 @@ class Config {
         break;
       }
     }
-
     // default configuration
     this.p2p = {
       listen: true,
@@ -88,7 +87,11 @@ class Config {
   }
 
   public async load() {
-    if (!fs.existsSync(this.xudir)) {
+    if (this.args !== undefined && this.args.hasOwnProperty('xudir')) {
+      this.xudir = this.args['xudir'];
+    }
+    const exists = await fse.pathExists(this.xudir);
+    if (!exists) {
       try {
         await fse.ensureDir(this.xudir);
       } catch (err) {
@@ -98,12 +101,11 @@ class Config {
       const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
       try {
         const props = toml.parse(configText);
-
         // merge parsed json properties from config file to this config object
         deepMerge(this, props);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column
-        }: ${e.message}`);
+          }: ${e.message}`);
       }
     }
 
