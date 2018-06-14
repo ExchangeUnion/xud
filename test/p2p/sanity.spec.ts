@@ -2,7 +2,6 @@
 import { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import fs from 'fs';
-import path from 'path';
 
 describe('P2P Sanity Tests', () => {
   let firstpeer: Xud;
@@ -43,14 +42,6 @@ describe('P2P Sanity Tests', () => {
       xudir : `${process.env.HOME}/.xud/2`,
     };
 
-    if (!fs.existsSync(firstpeerconfig.xudir)) {
-      mkdirRecursiveSync(firstpeerconfig.xudir);
-    }
-
-    if (!fs.existsSync(secondpeerconfig.xudir)) {
-      mkdirRecursiveSync(secondpeerconfig.xudir);
-    }
-
     firstpeer = new Xud(firstpeerconfig);
     await firstpeer.start();
 
@@ -63,27 +54,13 @@ describe('P2P Sanity Tests', () => {
     expect(result).to.be.equal('Connected to peer (localhost:8886)');
   });
 
+  it('should fail to connect', async () => {
+    const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
+    expect(result).to.be.equal('Connected to peer (localhost:8887)');
+  });
+
   after(async () => {
     await firstpeer.shutdown();
     await secondpeer.shutdown();
   });
 });
-
-function mkdirRecursiveSync(targetDir: string, isRelative = false) {
-  const sep = path.sep;
-  const initDir = path.isAbsolute(targetDir) ? sep : '';
-  const baseDir = isRelative ? __dirname : '.';
-
-  targetDir.split(sep).reduce((prevDirPath, dirToCreate) => {
-    const curDirPathToCreate = path.resolve(baseDir, prevDirPath, dirToCreate);
-    try {
-      fs.mkdirSync(curDirPathToCreate);
-    } catch (err) {
-      if (err.code !== 'EEXIST') {
-        throw err;
-      }
-    // caught EEXIST error if curDirPathToCreate already existed (not a problem for us).
-    }
-    return curDirPathToCreate; // becomes prevDirPath on next call to reduce
-  }, initDir);
-}
