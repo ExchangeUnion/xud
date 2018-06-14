@@ -11,7 +11,7 @@ service Xud {
    */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
-      get: "/v1/getinfo"
+      get: "/v1/info"
     };
   }
 
@@ -20,7 +20,7 @@ service Xud {
    */
   rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
     option (google.api.http) = {
-      get: "/v1/getpairs"
+      get: "/v1/pairs"
     };
   }
 
