@@ -1,8 +1,9 @@
 import fs from 'fs';
+import fse from 'fs-extra';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
-import { deepMerge, mkdirRecursiveSync } from './utils/utils';
+import { deepMerge } from './utils/utils';
 import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
@@ -88,7 +89,11 @@ class Config {
 
   public async load() {
     if (!fs.existsSync(this.xudir)) {
-      mkdirRecursiveSync(this.xudir);
+      try {
+        await fs.ensureDir(this.xudir);
+      } catch (err) {
+        throw new Error(`Error creating ${this.xudir}: ${err.message}`);
+      }
     } else if (fs.existsSync(`${this.xudir}xud.conf`)) {
       const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
       try {

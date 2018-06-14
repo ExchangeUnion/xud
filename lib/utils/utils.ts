@@ -63,27 +63,3 @@ export const groupBy = (arr: object[], keyGetter: (item: any) => string | number
   });
   return ret;
 };
-
-/**
- * Create nested directories or folder path recursively (like mkdir -p in linux)
- * @param targetDir directory path to be created.
- * @param isRelative is supplied targetDir is relative path.
- */
-export const mkdirRecursiveSync = (targetDir: string, isRelative = false): any => {
-  const sep = path.sep;
-  const initDir = path.isAbsolute(targetDir) ? sep : '';
-  const baseDir = isRelative ? __dirname : '.';
-
-  targetDir.split(sep).reduce((prevDirPath, dirToCreate) => {
-    const curDirPathToCreate = path.resolve(baseDir, prevDirPath, dirToCreate);
-    try {
-      fs.mkdirSync(curDirPathToCreate);
-    } catch (err) {
-      if (err.code !== 'EEXIST') {
-        throw err;
-      }
-    // caught EEXIST error if curDirPathToCreate already existed (not a problem for us).
-    }
-    return curDirPathToCreate; // becomes prevDirPath on next call to reduce
-  }, initDir);
-};
