@@ -1,6 +1,6 @@
-import callback from '../command';
-import XUClient from '../../xuclient/XUClient';
+import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { GetOrdersRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'getorders [pair_id] [max_results]';
 
@@ -17,10 +17,9 @@ export const builder = {
   },
 };
 
-const callHandler = (xuClient: XUClient, argv: Arguments) => {
-  return xuClient.getOrders(argv.pair_id, argv.max_results);
-};
-
 export const handler = (argv: Arguments) => {
-  callback(argv, callHandler);
+  const request = new GetOrdersRequest();
+  request.setPairId(argv.pair_id);
+  request.setMaxResults(argv.max_results);
+  loadXudClient(argv).getOrders(request, callback);
 };
