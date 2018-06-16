@@ -2,6 +2,9 @@
 
 require('yargs')
   .options({
+    'rpc': {
+      default: {},
+    },
     'rpc.port': {
       alias: 'p',
       default: 8886,
@@ -16,4 +19,6 @@ require('yargs')
     },
   })
   .commandDir('../dist/cli/commands')
+  .demandCommand(1, '')
+  .strict()
   .argv; // we must read the argv property for the command line args to initialize properly
