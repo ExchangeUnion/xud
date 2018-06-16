@@ -2,7 +2,7 @@
 
 require('yargs')
   .options({
-    'rpc': {
+    rpc: {
       default: {},
     },
     'rpc.port': {
