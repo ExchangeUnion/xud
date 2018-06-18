@@ -5,7 +5,6 @@ import HelloPacket from './HelloPacket';
 import PingPacket from './PingPacket';
 import PongPacket from './PongPacket';
 
-
 const fromRaw = (type:string, body:string): Packet|void => {
   switch (type) {
     case PacketType.HELLO:

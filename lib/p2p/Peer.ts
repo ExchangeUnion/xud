@@ -30,13 +30,13 @@ class Peer extends EventEmitter {
    * Interval to check required responses from peer
    */
 
-  static STALL_INTERVAL: number = 5000;
+  private static STALL_INTERVAL: number = 5000;
 
   /**
    * Interval for pinging peers
    */
 
-  static PING_INTERVAL = 30000;
+  private static PING_INTERVAL = 30000;
 
   // TODO: properties documentation
 
@@ -149,7 +149,7 @@ class Peer extends EventEmitter {
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.type, packet.toRaw());
 
-    if(packet.responseType && packet.responseTimeout) {
+    if (packet.responseType && packet.responseTimeout) {
       this.addReponseTimeout(packet.responseType, packet.responseTimeout);
     }
   }
@@ -250,7 +250,7 @@ class Peer extends EventEmitter {
       const entry = this.getOrAddResponseEntry(packetType);
       entry.addJob(resolve, reject);
     });
-  };
+  }
 
   /**
    * Potentially timeout peer if it hasn't responded
@@ -266,7 +266,7 @@ class Peer extends EventEmitter {
         return;
       }
     }
-  };
+  }
 
   /**
    * Wait for a packet to be received from peer
@@ -281,7 +281,7 @@ class Peer extends EventEmitter {
     entry.setTimeout(timeout);
 
     return entry;
-  };
+  }
 
   private getOrAddResponseEntry = (packetType: PacketType): ResponseEntry => {
     let entry = this.responseMap.get(packetType);
@@ -308,7 +308,7 @@ class Peer extends EventEmitter {
     this.responseMap.delete(packetType);
 
     return entry;
-  };
+  }
 
   private connect = (socketAddress: SocketAddress): void => {
     assert(!this.socket);
@@ -403,7 +403,7 @@ class Peer extends EventEmitter {
 
     if (status) {
       const entry = this.fulfillReponse(packet.type);
-      if(entry) {
+      if (entry) {
         entry.resolve(packet);
       }
     }
@@ -422,7 +422,6 @@ class Peer extends EventEmitter {
 
     this.emit('error', { msg, err });
   }
-
 
   private sendHello = (): HelloPacket => {
     // TODO: use real values
@@ -464,7 +463,7 @@ class Peer extends EventEmitter {
   }
 
   private sendPong = (id: string): PongPacket => {
-    const packet = new PongPacket({ id })
+    const packet = new PongPacket({ id });
 
     this.sendPacket(packet);
 
@@ -501,22 +500,24 @@ class ResponseEntry {
   }
 
   public resolve = (result: any) => {
-    for (const job of this.jobs)
+    for (const job of this.jobs) {
       job.resolve(result);
+    }
 
     this.jobs.length = 0;
   }
 
   public reject = (err: any) => {
-    for (const job of this.jobs)
+    for (const job of this.jobs) {
       job.reject(err);
+    }
 
     this.jobs.length = 0;
   }
 }
 
 class Job {
-  constructor(public resolve, public reject) {};
+  constructor(public resolve, public reject) {}
 }
 
 export default Peer;

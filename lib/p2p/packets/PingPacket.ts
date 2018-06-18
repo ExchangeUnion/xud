@@ -3,7 +3,7 @@ import PacketType from './PacketType';
 
 type PingPacketBody = {
   id: string;
-}
+};
 
 class PingPacker extends Packet {
   public type: PacketType = PacketType.PING;
