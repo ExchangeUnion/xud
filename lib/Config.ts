@@ -14,7 +14,7 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: { host:string, port: number };
+  public rpc: { host: string, port: number };
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
