@@ -1,5 +1,8 @@
 enum PacketType  {
-  ORDER = 'order',
+  HELLO = 'HELLO',
+  PING = 'PING',
+  PONG = 'PONG',
+  ORDER = 'ORDER',
 }
 
 export default PacketType;

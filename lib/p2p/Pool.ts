@@ -117,9 +117,6 @@ class Pool extends EventEmitter {
         this.emit('packet.order', order);
         break;
       }
-      default:
-        assert(false, `invalid packet type: ${packet.type}`);
-        break;
     }
   }
 

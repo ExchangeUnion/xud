@@ -12,6 +12,8 @@ type OrderPacketBody = {
 
 class OrderPacket extends Packet {
   public type: PacketType = PacketType.ORDER;
+  public responseType = undefined;
+  public responseTimeout = undefined;
 
   constructor(public body: OrderPacketBody) {
     super();
