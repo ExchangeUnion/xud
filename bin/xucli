@@ -3,7 +3,7 @@
 require('yargs')
   .options({
     rpc: {
-      default: {},
+      hidden: true,
     },
     'rpc.port': {
       alias: 'p',
