@@ -27,15 +27,13 @@ type HandshakeState = {
 class Peer extends EventEmitter {
 
   /**
-   * Interval to check required responses from peer
+   * Interval to check required responses from peer.
    */
-
   private static STALL_INTERVAL: number = 5000;
 
   /**
-   * Interval for pinging peers
+   * Interval for pinging peers.
    */
-
   private static PING_INTERVAL = 30000;
 
   // TODO: properties documentation
@@ -242,9 +240,8 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Wait for a packet to be received from peer. Executed on timeout or once packet is received
+   * Wait for a packet to be received from peer. Executed on timeout or once packet is received.
    */
-
   private wait = (packetType: PacketType) => {
     return new Promise((resolve, reject) => {
       const entry = this.getOrAddResponseEntry(packetType);
@@ -253,9 +250,8 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Potentially timeout peer if it hasn't responded
+   * Potentially timeout peer if it hasn't responded.
    */
-
   private maybeTimeout = () => {
     const now = ms();
 
@@ -269,9 +265,8 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Wait for a packet to be received from peer
+   * Wait for a packet to be received from peer.
    */
-
   private addReponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry|null => {
     if (this.destroyed) {
       return null;
@@ -295,9 +290,8 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Fulfill awaiting requests response
+   * Fulfill awaiting requests response.
    */
-
   private fulfillReponse = (packetType: PacketType): ResponseEntry|null => {
     const entry = this.responseMap.get(packetType);
 
