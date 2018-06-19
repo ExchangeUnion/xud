@@ -10,8 +10,8 @@ type HelloPacketBody = {
 
 class HelloPacket extends Packet {
   public type: PacketType = PacketType.HELLO;
-  public responseType?: PacketType = PacketType.HELLO;
-  public responseTimeout?: number = 10000;
+  public responseType: PacketType = PacketType.HELLO;
+  public responseTimeout: number = 10000;
 
   constructor(public body: HelloPacketBody) {
     super();
