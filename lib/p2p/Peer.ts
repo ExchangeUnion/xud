@@ -47,9 +47,9 @@ class Peer extends EventEmitter {
   private socket!: Socket;
   private parser: Parser = new Parser();
   private destroyed: boolean = false;
-  private connectTimeout?: NodeJS.Timer;
-  private stallTimer?: NodeJS.Timer;
-  private pingTimer?: NodeJS.Timer;
+  private connectTimeout: NodeJS.Timer | null = null;
+  private stallTimer: NodeJS.Timer | null = null;
+  private pingTimer: NodeJS.Timer | null = null;
   private lastPingId: string | null = null;
   private responseMap: Map<PacketType, ResponseEntry> = new Map();
   private connectTime: number = 0;
@@ -119,17 +119,17 @@ class Peer extends EventEmitter {
 
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
-      delete this.pingTimer;
+      this.pingTimer = null;
     }
 
     if (this.stallTimer) {
       clearInterval(this.stallTimer);
-      delete this.stallTimer;
+      this.stallTimer = null;
     }
 
     if (this.connectTimeout) {
       clearTimeout(this.connectTimeout);
-      delete this.connectTimeout;
+      this.connectTimeout = null;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -184,7 +184,7 @@ class Peer extends EventEmitter {
       const cleanup = () => {
         if (this.connectTimeout) {
           clearTimeout(this.connectTimeout);
-          this.connectTimeout = undefined;
+          this.connectTimeout = null;
         }
         this.socket.removeListener('error', onError);
       };
@@ -208,7 +208,7 @@ class Peer extends EventEmitter {
       this.socket.once('error', onError);
 
       this.connectTimeout = setTimeout(() => {
-        this.connectTimeout = undefined;
+        this.connectTimeout = null;
         cleanup();
         this.destroy();
         reject(new Error('Connection timed out.'));
