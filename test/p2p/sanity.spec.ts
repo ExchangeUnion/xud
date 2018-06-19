@@ -55,7 +55,7 @@ describe('P2P Sanity Tests', () => {
 
   it('should fail to connect', async () => {
     const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
-    expect(result).to.be.equal('Address (localhost) already connected');
+    expect(result).to.be.equal('SocketAddress (localhost:8886) already connected');
   });
 
   it('should not connect', async () => {

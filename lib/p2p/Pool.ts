@@ -59,7 +59,7 @@ class Pool extends EventEmitter {
   public addOutbound = async (address: string, port: number): Promise<Peer> => {
     const socketAddress = new SocketAddress(address, port);
     if (this.peers.has(socketAddress)) {
-      const err = errors.ADDRESS_ALREADY_CONNECTED(address.toString());
+      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress);
       this.logger.info(err.message);
       throw err;
     }
