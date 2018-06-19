@@ -220,7 +220,7 @@ class Peer extends EventEmitter {
     assert(!this.destroyed);
     assert(!this.stallTimer);
 
-    this.stallTimer = setInterval(this.maybeTimeout, Peer.STALL_INTERVAL);
+    this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
   }
 
   private initHello = async () => {
@@ -252,7 +252,7 @@ class Peer extends EventEmitter {
   /**
    * Potentially timeout peer if it hasn't responded.
    */
-  private maybeTimeout = () => {
+  private checkTimeout = () => {
     const now = ms();
 
     for (const [packetType, entry] of this.responseMap) {
