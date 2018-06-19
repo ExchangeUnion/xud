@@ -51,7 +51,7 @@ class Peer extends EventEmitter {
   private stallTimer: NodeJS.Timer | null = null;
   private pingTimer: NodeJS.Timer | null = null;
   private lastPingId: string | null = null;
-  private responseMap: Map<PacketType, ResponseEntry> = new Map();
+  private responseMap: Map<PacketType, PendingResponseEntry> = new Map();
   private connectTime: number = 0;
   private banScore: number = 0;
   private lastRecv: number = 0;
@@ -244,7 +244,7 @@ class Peer extends EventEmitter {
    */
   private wait = (packetType: PacketType) => {
     return new Promise((resolve, reject) => {
-      const entry = this.getOrAddResponseEntry(packetType);
+      const entry = this.getOrAddPendingResponseEntry(packetType);
       entry.addJob(resolve, reject);
     });
   }
@@ -267,22 +267,22 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry | null => {
+  private addResponseTimeout = (packetType: PacketType, timeout: number): PendingResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
 
-    const entry = this.getOrAddResponseEntry(packetType);
+    const entry = this.getOrAddPendingResponseEntry(packetType);
     entry.setTimeout(timeout);
 
     return entry;
   }
 
-  private getOrAddResponseEntry = (packetType: PacketType): ResponseEntry => {
+  private getOrAddPendingResponseEntry = (packetType: PacketType): PendingResponseEntry => {
     let entry = this.responseMap.get(packetType);
 
     if (!entry) {
-      entry = new ResponseEntry();
+      entry = new PendingResponseEntry();
       this.responseMap.set(packetType, entry);
     }
 
@@ -292,7 +292,7 @@ class Peer extends EventEmitter {
   /**
    * Fulfill awaiting requests response.
    */
-  private fulfillResponse = (packetType: PacketType): ResponseEntry | null => {
+  private fulfillResponse = (packetType: PacketType): PendingResponseEntry | null => {
     const entry = this.responseMap.get(packetType);
 
     if (!entry) {
@@ -481,7 +481,7 @@ class Peer extends EventEmitter {
   }
 }
 
-class ResponseEntry {
+class PendingResponseEntry {
   public timeout: number = 0;
   public jobs: Job[] = [];
 
