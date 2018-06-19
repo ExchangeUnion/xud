@@ -7,8 +7,8 @@ type PingPacketBody = {
 
 class PingPacket extends Packet {
   public type: PacketType = PacketType.PING;
-  public responseType = PacketType.PONG;
-  public responseTimeout = 10000;
+  public responseType: PacketType = PacketType.PONG;
+  public responseTimeout: number = 10000;
 
   constructor(public body: PingPacketBody) {
     super();

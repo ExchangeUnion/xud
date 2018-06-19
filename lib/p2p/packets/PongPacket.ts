@@ -7,8 +7,8 @@ type PongPacketBody = {
 
 class PongPacket extends Packet {
   public type: PacketType = PacketType.PONG;
-  public responseType = undefined;
-  public responseTimeout = undefined;
+  public responseType?: PacketType = undefined;
+  public responseTimeout?: number = undefined;
 
   constructor(public body: PongPacketBody) {
     super();
