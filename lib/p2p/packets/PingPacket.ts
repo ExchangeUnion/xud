@@ -5,7 +5,7 @@ type PingPacketBody = {
   id: string;
 };
 
-class PingPacker extends Packet {
+class PingPacket extends Packet {
   public type: PacketType = PacketType.PING;
   public responseType = PacketType.PONG;
   public responseTimeout = 10000;
@@ -14,9 +14,9 @@ class PingPacker extends Packet {
     super();
   }
 
-  public static fromRaw(body: string): PingPacker {
+  public static fromRaw(body: string): PingPacket {
     const bodyObject = JSON.parse(body);
-    return new PingPacker(bodyObject);
+    return new PingPacket(bodyObject);
   }
 
   public toRaw(): string {
@@ -24,4 +24,4 @@ class PingPacker extends Packet {
   }
 }
 
-export default PingPacker;
+export default PingPacket;
