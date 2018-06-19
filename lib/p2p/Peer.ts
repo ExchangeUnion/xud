@@ -148,7 +148,7 @@ class Peer extends EventEmitter {
     this.sendRaw(packet.type, packet.toRaw());
 
     if (packet.responseType && packet.responseTimeout) {
-      this.addReponseTimeout(packet.responseType, packet.responseTimeout);
+      this.addResponseTimeout(packet.responseType, packet.responseTimeout);
     }
   }
 
@@ -267,7 +267,7 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addReponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry | null => {
+  private addResponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
@@ -292,7 +292,7 @@ class Peer extends EventEmitter {
   /**
    * Fulfill awaiting requests response.
    */
-  private fulfillReponse = (packetType: PacketType): ResponseEntry | null => {
+  private fulfillResponse = (packetType: PacketType): ResponseEntry | null => {
     const entry = this.responseMap.get(packetType);
 
     if (!entry) {
@@ -396,7 +396,7 @@ class Peer extends EventEmitter {
     }
 
     if (status) {
-      const entry = this.fulfillReponse(packet.type);
+      const entry = this.fulfillResponse(packet.type);
       if (entry) {
         entry.resolve(packet);
       }
