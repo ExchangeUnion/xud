@@ -267,7 +267,7 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addReponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry|null => {
+  private addReponseTimeout = (packetType: PacketType, timeout: number): ResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
@@ -292,7 +292,7 @@ class Peer extends EventEmitter {
   /**
    * Fulfill awaiting requests response.
    */
-  private fulfillReponse = (packetType: PacketType): ResponseEntry|null => {
+  private fulfillReponse = (packetType: PacketType): ResponseEntry | null => {
     const entry = this.responseMap.get(packetType);
 
     if (!entry) {
