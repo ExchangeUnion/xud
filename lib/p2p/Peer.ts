@@ -453,7 +453,7 @@ class Peer extends EventEmitter {
       return;
     }
 
-    this.sendPong(id + 1);
+    this.sendPong(id);
   }
 
   private sendPong = (id: string): PongPacket => {
