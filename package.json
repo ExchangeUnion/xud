@@ -97,6 +97,7 @@
     "protocol-buffers-schema": "^3.3.2",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
+    "swagger-ui-express": "^3.0.10",
     "toml": "^2.3.3",
     "typescript": "^2.8.3",
     "uuid": "^3.2.1",
