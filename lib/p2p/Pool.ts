@@ -1,4 +1,3 @@
-import assert from 'assert';
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
@@ -117,13 +116,9 @@ class Pool extends EventEmitter {
         this.emit('packet.order', order);
         break;
       }
-      default:
-        assert(false, `invalid packet type: ${packet.type}`);
-        break;
     }
   }
 
-  /** post-handshake stuff */
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
   }

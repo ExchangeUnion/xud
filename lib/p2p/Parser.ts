@@ -24,7 +24,7 @@ class Parser extends EventEmitter {
         this.emit('error', new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, type));
       }
     } catch (err) {
-      this.emit('error', new ParserError(ParserErrorType.UNPARSABLE_MESSAGE, dataStr));
+      this.emit('error', new ParserError(ParserErrorType.UNPARSABLE_MESSAGE, `${dataStr}: ${err}`));
     }
   }
 }
