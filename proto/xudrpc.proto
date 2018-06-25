@@ -161,7 +161,6 @@ message StreamingExampleResponse {
   int64 date = 1 [json_name = "date"];
 }
 
-
 message ShutdownRequest {}
 message ShutdownResponse {
   string result = 1 [json_name = "result"];
