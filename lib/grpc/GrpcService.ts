@@ -70,10 +70,24 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.cancelOrder]]
+   */
+  public cancelOrder: grpc.handleUnaryCall<{ id: string }, string> = async (call, callback) => {
+    this.unaryCall(call.request.id, callback, this.service.cancelOrder);
+  }
+
+  /**
    * See [[Service.connect]]
    */
   public connect: grpc.handleUnaryCall<{ host: string, port: number }, Orders> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.connect);
+  }
+
+  /**
+   * See [[Service.disconnect]]
+   */
+  public disconnect: grpc.handleUnaryCall<{ host: string, port: number }, Orders> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.disconnect);
   }
 
   /**

@@ -71,10 +71,25 @@ class Service {
   }
 
   /**
+   * Cancel placed order from the orderbook.
+   */
+  public cancelOrder = async (id: string) => {
+    return this.orderBook.removeOwnOrder(id);
+  }
+
+  /**
    * Connect to an XU node on a given host and port.
    */
   public connect = async ({ host, port }: { host: string, port: number }) => {
     const peer = await this.pool.addOutbound(host, port);
+    return peer.getStatus();
+  }
+
+   /**
+   * Disconnect from an connected peer XU node on a given host and port.
+   */
+  public disconnect = async ({ host, port }: { host: string, port: number }) => {
+    const peer = await this.pool.removeOutbound(host, port);
     return peer.getStatus();
   }
 

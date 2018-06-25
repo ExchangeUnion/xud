@@ -44,11 +44,31 @@ service Xud {
   }
 
   /**
+   * Cancel placed order from the orderbook.
+   */
+   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/cancelorder"
+      body: "*"
+    };
+  }
+
+  /**
    * Connect to an XU node on a given host and port.
    */
   rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
       post: "/v1/connect"
+      body: "*"
+    };
+  }
+
+  /**
+   * Disconnect from an connected peer XU node on a given host and port.
+   */
+   rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
+    option (google.api.http) = {
+      post: "/v1/disconnect"
       body: "*"
     };
   }
@@ -114,6 +134,15 @@ message ConnectResponse {
   string result = 1 [json_name = "result"];
 }
 
+message DisconnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+
+message DisconnectResponse {
+  string result = 1 [json_name = "result"];
+}
+
 message Order {
   /// the precision of price goes to 6 decimal places
   double price = 1 [json_name = "price"];
@@ -136,6 +165,13 @@ message PlaceOrderRequest {
 message PlaceOrderResponse {
   repeated OrderMatch matches = 1 [json_name = "matches"];
   Order remaining_order = 2 [json_name= "remaining_order"];
+}
+
+message CancelOrderRequest {
+  string id = 1 [json_name = "order_id"];
+}
+message CancelOrderResponse {
+  string result = 1 [json_name = "result"];
 }
 
 message GetOrdersRequest {
