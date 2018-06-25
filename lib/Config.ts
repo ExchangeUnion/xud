@@ -15,7 +15,7 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: { host: string, port: number };
+  public rpc: { disable: boolean, host: string, port: number };
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
@@ -61,6 +61,7 @@ class Config {
       database: 'xud_test',
     };
     this.rpc = {
+      disable: false,
       host: 'localhost',
       port: 8886,
     };

@@ -5,13 +5,19 @@ import Xud from '../../lib/Xud';
 describe('P2P Sanity Tests', () => {
   let firstpeer: Xud;
   let secondpeer: Xud;
+  let secondpeerconfig: any;
+  let firstpeerconfig: any;
 
   before(async () => {
-    const firstpeerconfig = {
-      xudir : `${process.env.HOME}/.xud/1`,
+
+    firstpeerconfig = {
+      xudir : `${process.env.HOME}/.xud/1/`,
       p2p : {
         listen: true,
-        port: 8885, // X = 88, U = 85 in ASCII
+        port: 8885,
+      },
+      rpc : {
+        disable: true,
       },
       lnd : {
         disable: true,
@@ -24,11 +30,14 @@ describe('P2P Sanity Tests', () => {
       },
     };
 
-    const secondpeerconfig = {
-      xudir : `${process.env.HOME}/.xud/2`,
+    secondpeerconfig = {
+      xudir : `${process.env.HOME}/.xud/2/`,
       p2p : {
         listen: true,
         port: 8886,
+      },
+      rpc : {
+        disable: true,
       },
       lnd : {
         disable: true,
@@ -49,12 +58,12 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should return connected', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
+    const result = await firstpeer.service.connect({ host:'localhost', port: secondpeerconfig.port });
     expect(result).to.be.equal('Connected to peer (localhost:8886)');
   });
 
   it('should fail to connect', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port:8886 });
+    const result = await firstpeer.service.connect({ host:'localhost', port: secondpeerconfig.port });
     expect(result).to.be.equal('SocketAddress (localhost:8886) already connected');
   });
 

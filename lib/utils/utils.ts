@@ -1,6 +1,3 @@
-import path from 'path';
-import fs from 'fs';
-
 /**
  * Check whether a variable is a non-array object
  */

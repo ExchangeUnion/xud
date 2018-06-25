@@ -65,8 +65,13 @@ class Xud {
         pool: this.pool,
         shutdown: this.shutdown,
       });
-      this.rpcServer = new GrpcServer(this.service);
-      await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+
+      if (!this.config.rpc.disable) {
+        this.rpcServer = new GrpcServer(this.service);
+        await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+      } else {
+        this.logger.warn('gRPC Server is disabled! XUD might not function properly with gRPC disabled.');
+      }
 
       if (!this.config.webproxy.disable) {
         this.grpcAPIProxy = new GrpcWebProxyServer();
@@ -90,7 +95,9 @@ class Xud {
     (async () => {
       // we use an immediately invoked function here to close rpcServer and exit process AFTER the
       // shutdown method returns a response.
-      await this.rpcServer.close();
+      if (this.rpcServer) {
+        await this.rpcServer.close();
+      }
       if (this.grpcAPIProxy) {
         await this.grpcAPIProxy.close();
       }
