@@ -34,6 +34,15 @@ service Xud {
   }
 
   /**
+  * Example for a server-side streaming call
+  */
+  rpc StreamingExample(StreamingExampleRequest) returns (stream StreamingExampleResponse) {
+    option (google.api.http) = {
+      get: "/v1/streamingexample"
+    };
+  }
+
+  /**
    * Add an order to the orderbook.
    */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
@@ -146,6 +155,12 @@ message GetOrdersResponse {
   repeated Order buy_orders = 1 [json_name = "buy_orders"];
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
+
+message StreamingExampleRequest {}
+message StreamingExampleResponse {
+  int64 date = 1 [json_name = "date"];
+}
+
 
 message ShutdownRequest {}
 message ShutdownResponse {

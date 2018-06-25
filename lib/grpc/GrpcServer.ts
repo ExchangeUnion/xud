@@ -21,6 +21,7 @@ class GrpcServer {
     this.server.addService(xudrpc.Xud.service, {
       getInfo: grpcService.getInfo,
       getPairs: grpcService.getPairs,
+      streamingExample: grpcService.streamingExample,
       getOrders: grpcService.getOrders,
       placeOrder: grpcService.placeOrder,
       connect: grpcService.connect,
