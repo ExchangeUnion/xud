@@ -67,7 +67,7 @@ Launch a new `xud` process
 ~/xud $ cd bin
 ~/xud/bin $ ./xud
 2018-6-3 15:14:27 [GLOBAL] info: config loaded
-2018-6-3 15:14:27 [DB] info: connected to database. host:localhost port:3306 database:xud dialect:mysql
+2018-6-3 15:14:27 [DB] info: connected to database. host:localhost port:3306 database:xud
 2018-6-3 15:14:28 [LND] info: LndClient status: CONNECTION_VERIFIED
 2018-6-3 15:14:28 [P2P] info: pool server listening on 0.0.0.0:8885
 2018-6-3 15:14:28 [RPC] info: GRPC server listening on port 8886
@@ -82,7 +82,6 @@ Options:
   --version                     Show version number                    [boolean]
   --xudir, -x                   Data directory for xud                  [string]
   --db.database                 SQL database name                       [string]
-  --db.dialect                  SQL database dialect                    [string]
   --db.host                     Hostname for SQL database               [string]
   --db.port                     Port for SQL database                   [number]
   --db.username                 User for SQL database                   [string]

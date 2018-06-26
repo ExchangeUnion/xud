@@ -13,10 +13,6 @@ const { argv } = require('yargs')
       describe: 'SQL database name',
       type: 'string',
     },
-    'db.dialect': {
-      describe: 'SQL database dialect',
-      type: 'string',
-    },
     'db.host': {
       describe: 'Hostname for SQL database',
       type: 'string',
