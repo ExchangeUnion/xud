@@ -33,10 +33,6 @@ const { argv } = require('yargs')
       describe: 'Path to the SSL certificate for lnd',
       type: 'string',
     },
-    'lnd.datadir': {
-      describe: 'Data directory for lnd',
-      type: 'string',
-    },
     'lnd.disable': {
       describe: 'Disable lnd integration',
       type: 'boolean',

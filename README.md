@@ -48,7 +48,6 @@ port = 8885
 
 [lnd]
 disable = false
-datadir = "~/.lnd"
 host = "localhost"
 
 [raiden]
@@ -88,7 +87,6 @@ Options:
   --db.port                     Port for SQL database                   [number]
   --db.username                 User for SQL database                   [string]
   --lnd.certpath                Path to the SSL certificate for lnd     [string]
-  --lnd.datadir                 Data directory for lnd                  [string]
   --lnd.disable                 Disable lnd integration                [boolean]
   --lnd.host                    Host of the lnd gRPC interface          [string]
   --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
