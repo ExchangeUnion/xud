@@ -54,7 +54,6 @@ class Config {
       port: 3306,
       username: 'xud',
       database: 'xud',
-      dialect: 'mysql',
     };
     this.testDb = {
       ...this.db,
