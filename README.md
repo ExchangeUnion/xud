@@ -35,6 +35,10 @@ An optional configuration file uses [TOML](https://github.com/toml-lang/toml) an
 [rpc]
 port = 8886
 
+[webproxy]
+disable = false
+port = 8080
+
 [db]
 username = "xud"
 password = ""
@@ -71,6 +75,7 @@ Launch a new `xud` process
 2018-6-3 15:14:28 [LND] info: LndClient status: CONNECTION_VERIFIED
 2018-6-3 15:14:28 [P2P] info: pool server listening on 0.0.0.0:8885
 2018-6-3 15:14:28 [RPC] info: GRPC server listening on port 8886
+2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
 
 Optional command line arguments to override defaults and settings in the [Configuration](#configuration) file for a specific `xud` instance
