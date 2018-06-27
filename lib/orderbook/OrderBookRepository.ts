@@ -26,9 +26,9 @@ class OrderbookRepository {
   }
 
   /**
-   * Get peer's orders from the orderbook.
+   * Get peer's orders from the order book.
    * @param pairId The trading pair to match to retrieved orders, if undefined then all trading pairs are retrieved.
-   * @param maxResults The max number of orders to retrieve from each side of the orderbook, if 0 or undefined then
+   * @param maxResults The max number of orders to retrieve from each side of the order book, if 0 or undefined then
    * the number of orders returned is unlimited.
    */
   public getPeerOrders = (pairId?: string, maxResults?: number) => {
@@ -36,9 +36,9 @@ class OrderbookRepository {
   }
 
   /**
-   * Get this node's own orders from the orderbook.
+   * Get this node's own orders from the order book.
    * @param pairId The trading pair to match to retrieved orders, if undefined then all trading pairs are retrieved.
-   * @param maxResults The max number of orders to retrieve from each side of the orderbook, if 0 or undefined then
+   * @param maxResults The max number of orders to retrieve from each side of the order book, if 0 or undefined then
    * the number of orders returned is unlimited.
    */
   public getOwnOrders = (pairId?: string, maxResults?: number) => {

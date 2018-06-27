@@ -1,0 +1,493 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "xudrpc.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/connect": {
+      "post": {
+        "summary": "Connect to an XU node on a given host and port.",
+        "operationId": "Connect",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcConnectResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcConnectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/info": {
+      "get": {
+        "summary": "Placeholder for a method to return general information about an Exchange Union node.",
+        "operationId": "GetInfo",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/orders": {
+      "get": {
+        "summary": "Get a list of standing orders from the order book.",
+        "operationId": "GetOrders",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetOrdersResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "pair_id",
+            "description": "The trading pair for which to retrieve orders.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "max_results",
+            "description": "The maximum number of orders to return from either side of the order book.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/pairs": {
+      "get": {
+        "summary": "Get the list of the order book's available pairs.",
+        "operationId": "GetPairs",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetPairsResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/placeorder": {
+      "post": {
+        "summary": "Add an order to the order book.",
+        "operationId": "PlaceOrder",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcPlaceOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcPlaceOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/shutdown": {
+      "post": {
+        "summary": "Shutdown the xud daemon.",
+        "operationId": "Shutdown",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcShutdownResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcShutdownRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/streamingexample": {
+      "get": {
+        "summary": "*\nExample for a server-side streaming call",
+        "operationId": "StreamingExample",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/xudrpcStreamingExampleResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/tokenswap": {
+      "post": {
+        "summary": "Demo method to execute a Raiden Token Swap through XUD.",
+        "operationId": "TokenSwap",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcTokenSwapResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcTokenSwapRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "lnrpcGetInfoResponse": {
+      "type": "object",
+      "properties": {
+        "identity_pubkey": {
+          "type": "string",
+          "description": "/ The identity pubkey of the current node."
+        },
+        "alias": {
+          "type": "string",
+          "title": "/ If applicable, the alias of the current node, e.g. \"bob\""
+        },
+        "num_pending_channels": {
+          "type": "integer",
+          "format": "int64",
+          "title": "/ Number of pending channels"
+        },
+        "num_active_channels": {
+          "type": "integer",
+          "format": "int64",
+          "title": "/ Number of active channels"
+        },
+        "num_peers": {
+          "type": "integer",
+          "format": "int64",
+          "title": "/ Number of peers"
+        },
+        "block_height": {
+          "type": "integer",
+          "format": "int64",
+          "title": "/ The node's current view of the height of the best block"
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "/ The node's current view of the hash of the best block"
+        },
+        "synced_to_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "/ Whether the wallet's view is synced to the main chain"
+        },
+        "testnet": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "/ Whether the current node is connected to testnet"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "/ A list of active chains the node is connected to"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "/ The URIs of the current node."
+        },
+        "best_header_timestamp": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ Timestamp of the block best known to the wallet"
+        },
+        "version": {
+          "type": "string",
+          "description": "/ The version of the LND software that the node is running."
+        }
+      }
+    },
+    "xudrpcConnectRequest": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "xudrpcConnectResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "title": "A message describing the result of the connection request"
+        }
+      }
+    },
+    "xudrpcGetInfoResponse": {
+      "type": "object",
+      "properties": {
+        "lnd": {
+          "$ref": "#/definitions/lnrpcGetInfoResponse"
+        }
+      }
+    },
+    "xudrpcGetOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "buy_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of buy orders sorted by descending price"
+        },
+        "sell_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of sell orders sorted by ascending price"
+        }
+      }
+    },
+    "xudrpcGetPairsResponse": {
+      "type": "object",
+      "properties": {
+        "pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcPair"
+          }
+        }
+      }
+    },
+    "xudrpcOrder": {
+      "type": "object",
+      "properties": {
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The price of the order, precise to 6 decimal places."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "The quantity of the order, precise to 6 decimal places."
+        },
+        "pair_id": {
+          "type": "string",
+          "title": "The trading pair that this order is for"
+        },
+        "peer_id": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The id of the peer that created this order"
+        },
+        "id": {
+          "type": "string",
+          "title": "A UUID for this order"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "int64",
+          "title": "The epoch time when this order was created"
+        }
+      }
+    },
+    "xudrpcOrderMatch": {
+      "type": "object",
+      "properties": {
+        "maker": {
+          "$ref": "#/definitions/xudrpcOrder"
+        },
+        "taker": {
+          "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcPair": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "base_currency": {
+          "type": "string"
+        },
+        "quote_currency": {
+          "type": "string"
+        },
+        "swap_protocol": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcPlaceOrderRequest": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcPlaceOrderResponse": {
+      "type": "object",
+      "properties": {
+        "matches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrderMatch"
+          },
+          "title": "A list of orders matching the newly placed order"
+        },
+        "remaining_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "title": "The remaining portion of the order, after matches, that enters the order book"
+        }
+      }
+    },
+    "xudrpcShutdownRequest": {
+      "type": "object"
+    },
+    "xudrpcShutdownResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string",
+          "title": "A message describing the result of the shutdown request"
+        }
+      }
+    },
+    "xudrpcStreamingExampleResponse": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "xudrpcSwapPayload": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "sending_amount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "sending_token": {
+          "type": "string"
+        },
+        "receiving_amount": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "receiving_token": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcTokenSwapRequest": {
+      "type": "object",
+      "properties": {
+        "target_address": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/definitions/xudrpcSwapPayload"
+        }
+      }
+    },
+    "xudrpcTokenSwapResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

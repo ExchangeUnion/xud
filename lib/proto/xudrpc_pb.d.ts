@@ -525,6 +525,44 @@ export namespace GetOrdersResponse {
     }
 }
 
+export class StreamingExampleRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): StreamingExampleRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: StreamingExampleRequest): StreamingExampleRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: StreamingExampleRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): StreamingExampleRequest;
+    static deserializeBinaryFromReader(message: StreamingExampleRequest, reader: jspb.BinaryReader): StreamingExampleRequest;
+}
+
+export namespace StreamingExampleRequest {
+    export type AsObject = {
+    }
+}
+
+export class StreamingExampleResponse extends jspb.Message { 
+    getDate(): number;
+    setDate(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): StreamingExampleResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: StreamingExampleResponse): StreamingExampleResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: StreamingExampleResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): StreamingExampleResponse;
+    static deserializeBinaryFromReader(message: StreamingExampleResponse, reader: jspb.BinaryReader): StreamingExampleResponse;
+}
+
+export namespace StreamingExampleResponse {
+    export type AsObject = {
+        date: number,
+    }
+}
+
 export class ShutdownRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;

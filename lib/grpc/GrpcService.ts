@@ -1,7 +1,7 @@
 import grpc from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
-import { isObject } from '../utils/utils';
+import { isObject, ms } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
@@ -60,6 +60,18 @@ class GrpcService {
    */
   public getOrders: grpc.handleUnaryCall<{ pairId: string, maxResults: number }, Orders> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.getOrders);
+  }
+
+  /**
+   * Example for a server-side streaming call
+   */
+  public streamingExample: grpc.handleServerStreamingCall<{}, Orders> = async (call) => {
+    setInterval(() => {
+      const date = ms();
+      call.write({
+        date,
+      });
+    }, 1000);
   }
 
   /**

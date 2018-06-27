@@ -6,27 +6,21 @@ import "lndrpc.proto";
 package xudrpc;
 
 service Xud {
-  /**
-   * Placeholder for a method to return general information about an Exchange Union node.
-   */
+  /* Placeholder for a method to return general information about an Exchange Union node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
       get: "/v1/info"
     };
   }
 
-  /**
-   * Get the list of the orderbook's available pairs.
-   */
+  /* Get the list of the order book's available pairs. */
   rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
     option (google.api.http) = {
       get: "/v1/pairs"
     };
   }
 
-  /**
-   * Get a list of standing orders from the orderbook.
-   */
+  /* Get a list of standing orders from the order book. */
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
@@ -34,8 +28,15 @@ service Xud {
   }
 
   /**
-   * Add an order to the orderbook.
-   */
+  * Example for a server-side streaming call
+  */
+  rpc StreamingExample(StreamingExampleRequest) returns (stream StreamingExampleResponse) {
+    option (google.api.http) = {
+      get: "/v1/streamingexample"
+    };
+  }
+
+  /* Add an order to the order book. */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
       post: "/v1/placeorder"
@@ -83,6 +84,7 @@ service Xud {
     };
   }
 
+  /* Shutdown the xud daemon. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
       post: "/v1/shutdown"
@@ -131,6 +133,7 @@ message ConnectRequest {
 }
 
 message ConnectResponse {
+  // A message describing the result of the connection request
   string result = 1 [json_name = "result"];
 }
 
@@ -144,13 +147,17 @@ message DisconnectResponse {
 }
 
 message Order {
-  /// the precision of price goes to 6 decimal places
+  // The price of the order, precise to 6 decimal places.
   double price = 1 [json_name = "price"];
-  /// the precision of quantity goes to 6 decimal places
+  // The quantity of the order, precise to 6 decimal places.
   double quantity = 2 [json_name = "quantity"];
+  // The trading pair that this order is for
   string pair_id = 3 [json_name = "pair_id"];
+  // The id of the peer that created this order
   int32 peer_id = 4 [json_name = "peer_id"];
+  // A UUID for this order
   string id = 5 [json_name = "id"];
+  // The epoch time when this order was created
   int64 created_at = 6 [json_name = "created_at"];
 }
 
@@ -163,7 +170,9 @@ message PlaceOrderRequest {
   Order order = 1 [json_name = "order"];
 }
 message PlaceOrderResponse {
+  // A list of orders matching the newly placed order
   repeated OrderMatch matches = 1 [json_name = "matches"];
+  // The remaining portion of the order, after matches, that enters the order book
   Order remaining_order = 2 [json_name= "remaining_order"];
 }
 
@@ -175,15 +184,25 @@ message CancelOrderResponse {
 }
 
 message GetOrdersRequest {
+  // The trading pair for which to retrieve orders
   string pair_id = 1 [json_name = "pair_id"];
+  // The maximum number of orders to return from either side of the order book
   uint32 max_results = 2 [json_name = "max_results"];
 }
 message GetOrdersResponse {
+  // A list of buy orders sorted by descending price
   repeated Order buy_orders = 1 [json_name = "buy_orders"];
+  // A list of sell orders sorted by ascending price
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
+}
+
+message StreamingExampleRequest {}
+message StreamingExampleResponse {
+  int64 date = 1 [json_name = "date"];
 }
 
 message ShutdownRequest {}
 message ShutdownResponse {
+  // A message describing the result of the shutdown request
   string result = 1 [json_name = "result"];
 }

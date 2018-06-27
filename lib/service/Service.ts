@@ -49,7 +49,7 @@ class Service {
   }
 
   /**
-   * Get the list of the orderbook's available pairs.
+   * Get the list of the order book's available pairs.
    * @returns A list of available trading pairs
    */
   public getPairs = () => {
@@ -57,14 +57,14 @@ class Service {
   }
 
   /**
-   * Get a list of standing orders from the orderbook.
+   * Get a list of standing orders from the order book.
    */
   public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
     return this.orderBook.getOrders(pairId, maxResults);
   }
 
   /**
-   * Add an order to the orderbook.
+   * Add an order to the order book.
    */
   public placeOrder = async (order: OwnOrder) => {
     assert(order.price > 0, 'price must be greater than 0');
