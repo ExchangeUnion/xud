@@ -257,6 +257,52 @@ export namespace ConnectResponse {
     }
 }
 
+export class DisconnectRequest extends jspb.Message { 
+    getHost(): string;
+    setHost(value: string): void;
+
+    getPort(): number;
+    setPort(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DisconnectRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: DisconnectRequest): DisconnectRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DisconnectRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DisconnectRequest;
+    static deserializeBinaryFromReader(message: DisconnectRequest, reader: jspb.BinaryReader): DisconnectRequest;
+}
+
+export namespace DisconnectRequest {
+    export type AsObject = {
+        host: string,
+        port: number,
+    }
+}
+
+export class DisconnectResponse extends jspb.Message { 
+    getResult(): string;
+    setResult(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DisconnectResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: DisconnectResponse): DisconnectResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DisconnectResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DisconnectResponse;
+    static deserializeBinaryFromReader(message: DisconnectResponse, reader: jspb.BinaryReader): DisconnectResponse;
+}
+
+export namespace DisconnectResponse {
+    export type AsObject = {
+        result: string,
+    }
+}
+
 export class Order extends jspb.Message { 
     getPrice(): number;
     setPrice(value: number): void;
@@ -380,6 +426,48 @@ export namespace PlaceOrderResponse {
     export type AsObject = {
         matchesList: Array<OrderMatch.AsObject>,
         remainingOrder?: Order.AsObject,
+    }
+}
+
+export class CancelOrderRequest extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CancelOrderRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: CancelOrderRequest): CancelOrderRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CancelOrderRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CancelOrderRequest;
+    static deserializeBinaryFromReader(message: CancelOrderRequest, reader: jspb.BinaryReader): CancelOrderRequest;
+}
+
+export namespace CancelOrderRequest {
+    export type AsObject = {
+        id: string,
+    }
+}
+
+export class CancelOrderResponse extends jspb.Message { 
+    getResult(): string;
+    setResult(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CancelOrderResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: CancelOrderResponse): CancelOrderResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CancelOrderResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CancelOrderResponse;
+    static deserializeBinaryFromReader(message: CancelOrderResponse, reader: jspb.BinaryReader): CancelOrderResponse;
+}
+
+export namespace CancelOrderResponse {
+    export type AsObject = {
+        result: string,
     }
 }
 

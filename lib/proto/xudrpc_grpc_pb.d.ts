@@ -13,7 +13,9 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     getPairs: IXudService_IGetPairs;
     getOrders: IXudService_IGetOrders;
     placeOrder: IXudService_IPlaceOrder;
+    cancelOrder: IXudService_ICancelOrder;
     connect: IXudService_IConnect;
+    disconnect: IXudService_IDisconnect;
     tokenSwap: IXudService_ITokenSwap;
     shutdown: IXudService_IShutdown;
 }
@@ -54,6 +56,15 @@ interface IXudService_IPlaceOrder extends grpc.MethodDefinition<xudrpc_pb.PlaceO
     responseSerialize: grpc.serialize<xudrpc_pb.PlaceOrderResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.PlaceOrderResponse>;
 }
+interface IXudService_ICancelOrder extends grpc.MethodDefinition<xudrpc_pb.CancelOrderRequest, xudrpc_pb.CancelOrderResponse> {
+    path: string; // "/xudrpc.Xud/CancelOrder"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.CancelOrderRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.CancelOrderResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderResponse>;
+}
 interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse> {
     path: string; // "/xudrpc.Xud/Connect"
     requestStream: boolean; // false
@@ -62,6 +73,15 @@ interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRe
     requestDeserialize: grpc.deserialize<xudrpc_pb.ConnectRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.ConnectResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ConnectResponse>;
+}
+interface IXudService_IDisconnect extends grpc.MethodDefinition<xudrpc_pb.DisconnectRequest, xudrpc_pb.DisconnectResponse> {
+    path: string; // "/xudrpc.Xud/Disconnect"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.DisconnectRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.DisconnectRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.DisconnectResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.DisconnectResponse>;
 }
 interface IXudService_ITokenSwap extends grpc.MethodDefinition<xudrpc_pb.TokenSwapRequest, xudrpc_pb.TokenSwapResponse> {
     path: string; // "/xudrpc.Xud/TokenSwap"
@@ -89,7 +109,9 @@ export interface IXudServer {
     getPairs: grpc.handleUnaryCall<xudrpc_pb.GetPairsRequest, xudrpc_pb.GetPairsResponse>;
     getOrders: grpc.handleUnaryCall<xudrpc_pb.GetOrdersRequest, xudrpc_pb.GetOrdersResponse>;
     placeOrder: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
+    cancelOrder: grpc.handleUnaryCall<xudrpc_pb.CancelOrderRequest, xudrpc_pb.CancelOrderResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
+    disconnect: grpc.handleUnaryCall<xudrpc_pb.DisconnectRequest, xudrpc_pb.DisconnectResponse>;
     tokenSwap: grpc.handleUnaryCall<xudrpc_pb.TokenSwapRequest, xudrpc_pb.TokenSwapResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
 }
@@ -107,9 +129,15 @@ export interface IXudClient {
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
+    cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
+    disconnect(request: xudrpc_pb.DisconnectRequest, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
+    disconnect(request: xudrpc_pb.DisconnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
+    disconnect(request: xudrpc_pb.DisconnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
     tokenSwap(request: xudrpc_pb.TokenSwapRequest, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
@@ -132,9 +160,15 @@ export class XudClient extends grpc.Client implements IXudClient {
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
+    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
+    public disconnect(request: xudrpc_pb.DisconnectRequest, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
+    public disconnect(request: xudrpc_pb.DisconnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
+    public disconnect(request: xudrpc_pb.DisconnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.DisconnectResponse) => void): grpc.ClientUnaryCall;
     public tokenSwap(request: xudrpc_pb.TokenSwapRequest, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     public tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     public tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;

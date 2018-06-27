@@ -10,12 +10,13 @@ import DB from '../db/DB';
 import { groupBy } from '../utils/utils';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
+import { EventEmitter } from 'events';
 
 type OrderBookConfig = {
   internalmatching: boolean;
 };
 
-class OrderBook {
+class OrderBook extends EventEmitter{
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
@@ -23,6 +24,7 @@ class OrderBook {
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+    super();
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -75,6 +77,14 @@ class OrderBook {
 
   public addMarketOrder = async (_order: orders.OwnOrder) => {
     // TODO: implement
+  }
+
+  public removeOwnOrder = async (id: string): Promise<void> => {
+    return this.repository.removeOrder(id);
+  }
+
+  public removePeerOrder = async (id: string, hostId: number): Promise<void> => {
+    return this.repository.removeOrder(id, hostId);
   }
 
   private addOwnOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {

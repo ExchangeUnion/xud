@@ -38,6 +38,10 @@ class HostList {
     return this.bannedHosts.has(address);
   }
 
+  public removeHost = async (socketAddress: SocketAddress): Promise<void> => {
+    return this.repository.removeHost(socketAddress);
+  }
+
   private load = async (): Promise<void> => {
     const [hosts, bannedHosts] =  await Promise.all([this.repository.getHosts(), this.repository.getBannedHosts()]);
 

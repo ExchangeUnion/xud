@@ -1,6 +1,7 @@
 import Logger from '../Logger';
 import DB, { Models } from '../db/DB';
 import { db } from '../types';
+import { Op } from 'sequelize';
 
 class P2PRepository {
   private logger: Logger = Logger.p2p;
@@ -20,6 +21,17 @@ class P2PRepository {
 
   public addHost = async (host: db.HostFactory): Promise<db.HostInstance> => {
     return this.models.Host.create(<db.HostAttributes>host);
+  }
+
+  public removeHost = async (host: db.HostFactory): Promise<void> => {
+    const whereClause = { address: { [Op.eq]: host.address }, port: { [Op.eq]: host.port } };
+    return await this.models.Order.destroy({ where: whereClause }).then((affectedRows: number) => {
+      if (affectedRows > 0) {
+        this.logger.info(`Removed host ${host.address}:${host.port}`);
+      } else {
+        this.logger.info(`Host ${host.address}:${host.port} does not exist.`);
+      }
+    });
   }
 
   public addHosts = async (hosts: db.HostFactory[]): Promise<db.HostInstance[]> => {

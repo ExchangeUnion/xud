@@ -106,6 +106,22 @@ class OrderbookRepository {
   public addPairs = (pairs: db.PairFactory[]): Bluebird<db.PairInstance[]> => {
     return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   }
+
+  public removeOrder = async (orderId: string, hostId?: number): Promise<void> => {
+    let whereClause = {};
+    if (hostId != null) {
+      whereClause = { id: { [Op.eq]: orderId }, hostId: { [Op.eq]: hostId } };
+    } else {
+      whereClause = { id: { [Op.eq]: orderId }, hostId: { [Op.eq]: null } };
+    }
+    return await this.models.Order.destroy({ where: whereClause }).then((affectedRows: number) => {
+      if (affectedRows > 0) {
+        this.logger.info(`Deleted order with id ${orderId}`);
+      } else {
+        this.logger.info(`Order with id ${orderId} does not exist.`);
+      }
+    });
+  }
 }
 
 export default OrderbookRepository;
