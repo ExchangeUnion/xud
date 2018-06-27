@@ -7,5 +7,11 @@
 Whenever `xudrpc.proto` is updated, the protobuf javascript code and type definitions must be regenerated.
 
 1. Install [Go](https://golang.org/doc/install) and add it to your PATH.
-2. Install [protoc](https://github.com/google/protobuf/releases) and add it to your PATH.
-3. Run `npm run proto`.
+2. Install [protoc 3.4.0](https://github.com/google/protobuf/releases/tag/v3.4.0) and add it to your PATH.
+3. Install `protoc-gen-swagger` using the following command:
+
+    ```bash
+    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+    ```
+
+4. Run `npm run proto`.
