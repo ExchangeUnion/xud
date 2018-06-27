@@ -13,7 +13,6 @@ type SequelizeConfig = {
   username: string;
   password?: string;
   database?: string;
-  dialect: string;
 };
 
 type DBConfig = SequelizeConfig & {
@@ -47,8 +46,8 @@ class DB {
   public init = async (): Promise<void> => {
     try {
       await this.sequelize.authenticate();
-      const { host, port, database, dialect } = this.config;
-      this.logger.info(`connected to database. host:${host} port:${port} database:${database} dialect:${dialect}`);
+      const { host, port, database } = this.config;
+      this.logger.info(`connected to database. host:${host} port:${port} database:${database}`);
     } catch (err) {
       if (DB.isDbDoesNotExistError(err)) {
         await this.createDatabase();
@@ -98,6 +97,7 @@ class DB {
   private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
     return new Sequelize({
       ...config,
+      dialect: 'mysql',
       operatorsAliases: false,
       dialectOptions: {
         multipleStatements: true,

@@ -43,6 +43,8 @@ class Service {
    */
   public getInfo = async () => {
     const lnd = await this.lndClient.getInfo();
+    delete lnd.chainsList;
+    delete lnd.urisList;
     return { lnd };
   }
 
