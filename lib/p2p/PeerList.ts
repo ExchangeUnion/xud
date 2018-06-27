@@ -4,16 +4,16 @@ import SocketAddress from './SocketAddress';
 class PeerList {
   private peers: { [ socketAddress: string ]: Peer } = {};
 
-  get lenght(): number {
-    let lenght = 0;
+  get length(): number {
+    let length = 0;
 
     this.forEach((peer) => {
       if (peer.connected) {
-        lenght = lenght + 1;
+        length = length + 1;
       }
     });
 
-    return lenght;
+    return length;
   }
 
   public add = (peer: Peer): boolean => {
