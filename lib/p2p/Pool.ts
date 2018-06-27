@@ -31,6 +31,10 @@ class Pool extends EventEmitter {
     this.bindServer(this.server);
   }
 
+  get peerCount(): number {
+    return this.peers.length;
+  }
+
   public connect = async (): Promise<void> => {
     if (this.connected) {
       return;
