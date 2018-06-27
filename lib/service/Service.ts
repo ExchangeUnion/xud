@@ -7,6 +7,8 @@ import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 
+const packageJson = require('../../package.json');
+
 /**
  * The components required by the API service layer.
  */
@@ -50,7 +52,6 @@ class Service {
   public getInfo = async () => {
     const info: any = {};
 
-    const packageJson = require('../../package.json');
     info.version = packageJson.version;
 
     const pairs = await this.orderBook.getPairs();

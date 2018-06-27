@@ -4,6 +4,10 @@ import SocketAddress from './SocketAddress';
 class PeerList {
   private peers: { [ socketAddress: string ]: Peer } = {};
 
+  get lenght(): number {
+    return Object.keys(this.peers).length;
+  }
+
   public add = (peer: Peer): boolean => {
     if (this.has(peer.socketAddress)) {
       return false;

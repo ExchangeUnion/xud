@@ -21,8 +21,7 @@
   },
   "linterOptions": {
     "exclude": [
-        "lib/lndclient/lndrpc_pb.d.ts",
-        "package.json"
+        "lib/lndclient/lndrpc_pb.d.ts"
     ]
   }
 }
