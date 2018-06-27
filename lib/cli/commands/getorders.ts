@@ -4,7 +4,7 @@ import { GetOrdersRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'getorders [pair_id] [max_results]';
 
-export const describe = 'get orders from the orderbook';
+export const describe = 'get orders from the order book';
 
 export const builder = {
   pair_id: {
