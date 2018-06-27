@@ -60,3 +60,10 @@ export const groupBy = (arr: object[], keyGetter: (item: any) => string | number
   });
   return ret;
 };
+
+/**
+ * Get current time in unix time (milliseconds).
+ */
+export const ms =  (): number => {
+  return Date.now();
+};

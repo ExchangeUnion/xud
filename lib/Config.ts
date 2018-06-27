@@ -23,24 +23,24 @@ class Config {
 
   constructor(private args?: object) {
     const platform = os.platform();
-    let lndDatadir;
+    let lndDefaultDatadir;
     switch (platform) {
       case 'win32': { // windows
         const homeDir = process.env.LOCALAPPDATA;
         this.xudir = `${homeDir}/Xud/`;
-        lndDatadir = `${homeDir}/Lnd/`; // default lnd directory location
+        lndDefaultDatadir = `${homeDir}/Lnd/`;
         break;
       }
       case 'darwin': { // mac
         const homeDir = process.env.HOME;
         this.xudir = `${homeDir}/.xud/`;
-        lndDatadir = `${homeDir}/Library/Application Support/Lnd/`;
+        lndDefaultDatadir = `${homeDir}/Library/Application Support/Lnd/`;
         break;
       }
       default: { // linux
         const homeDir = process.env.HOME;
         this.xudir = `${homeDir}/.xud/`;
-        lndDatadir = `${homeDir}/.lnd/`;
+        lndDefaultDatadir = `${homeDir}/.lnd/`;
         break;
       }
     }
@@ -54,7 +54,6 @@ class Config {
       port: 3306,
       username: 'xud',
       database: 'xud',
-      dialect: 'mysql',
     };
     this.testDb = {
       ...this.db,
@@ -71,9 +70,8 @@ class Config {
     };
     this.lnd = {
       disable: false,
-      datadir: lndDatadir,
-      certpath: path.join(lndDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDatadir, 'admin.macaroon'),
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
+      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
     };
@@ -105,8 +103,7 @@ class Config {
         // merge parsed json properties from config file to this config object
         deepMerge(this, props);
       } catch (e) {
-        throw new Error(`Parsing error on line ${e.line}, column ${e.column
-          }: ${e.message}`);
+        throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
       }
     }
 

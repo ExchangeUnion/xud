@@ -1,12 +1,12 @@
 import { Socket } from 'net';
 import assert from 'assert';
 
-/** Represents a network socketAddress */
+/** Represents a network socketAddress. */
 class SocketAddress {
   constructor(public address: string, public port: number) {}
 
   /**
-   * Create a `SocketAddress` using the remote host and port of a `Socket`
+   * Create a `SocketAddress` using the remote host and port of a `Socket`.
    */
   public static fromSocket = (socket: Socket) => {
     const { remoteAddress: address, remotePort: port } = socket;

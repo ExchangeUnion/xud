@@ -1,10 +1,10 @@
 import grpc from 'grpc';
 import fs from 'fs';
-import path from 'path';
 
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
+import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 
 /**
@@ -12,18 +12,20 @@ import * as lndrpc from '../proto/lndrpc_pb';
  */
 type LndClientConfig = {
   disable: boolean;
-  datadir: string;
   certpath: string;
   macaroonpath: string;
   host: string;
   port: number;
 };
 
+interface GrpcResponse {
+  toObject: Function;
+}
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
-  private lightning: any;
-  private meta?: grpc.Metadata;
-  private boundMethods: any;
+  private lightning!: LightningClient;
+  private meta!: grpc.Metadata;
 
   /**
    * Create an lnd client.
@@ -31,51 +33,40 @@ class LndClient extends BaseClient {
    */
   constructor(config: LndClientConfig) {
     super(Logger.lnd);
-    const { disable, datadir, certpath, host, port, macaroonpath } = config;
+    const { disable, certpath, host, port, macaroonpath } = config;
 
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
     } else if (!fs.existsSync(certpath)) {
-      this.logger.error('could not find certificate in the lnd datadir, is lnd installed?');
+      this.logger.error('could not find lnd certificate, is lnd installed?');
+      this.setStatus(ClientStatus.DISABLED);
+    } else if (!fs.existsSync(macaroonpath)) {
+      this.logger.error('could not find lnd macaroon, is lnd installed?');
       this.setStatus(ClientStatus.DISABLED);
     } else {
       const lndCert = fs.readFileSync(certpath);
       const credentials = grpc.credentials.createSsl(lndCert);
-      const rpcprotopath = path.join(__dirname, '..', '..', 'proto', 'lndrpc.proto');
-      const lnrpcDescriptor: any = grpc.load(rpcprotopath, 'proto', { convertFieldsToCamelCase: true });
-      this.lightning = new lnrpcDescriptor.lnrpc.Lightning(`${host}:${port}`, credentials);
+      this.lightning = new LightningClient(`${host}:${port}`, credentials);
 
       const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
-      this.boundMethods = {
-        getInfo: this.lightning.getInfo.bind(this.lightning),
-        addInvoice: this.lightning.addInvoice.bind(this.lightning),
-        sendPaymentSync: this.lightning.sendPaymentSync.bind(this.lightning),
-        newAddress: this.lightning.newAddress.bind(this.lightning),
-        channelBalance: this.lightning.channelBalance.bind(this.lightning),
-        walletBalance: this.lightning.walletBalance.bind(this.lightning),
-        connectPeer: this.lightning.connectPeer.bind(this.lightning),
-        openChannel: this.lightning.openChannel.bind(this.lightning),
-        listChannels: this.lightning.listChannels.bind(this.lightning),
-      };
-
       this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
     }
   }
 
-  private unaryCall = <T>(methodName: string, params: any): Promise<T> => {
+  private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      this.boundMethods[methodName](params, this.meta, (err: grpc.StatusObject, response: T) => {
+      this.lightning[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
         if (err) {
-          reject(err.details);
+          reject(err);
         } else {
-          resolve(response);
+          resolve(response.toObject());
         }
       });
     });
@@ -86,7 +77,7 @@ class LndClient extends BaseClient {
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
-    return this.unaryCall<lndrpc.GetInfoResponse.AsObject>('getInfo', {});
+    return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse.AsObject>('getInfo', new lndrpc.GetInfoRequest());
   }
 
   /**
@@ -94,67 +85,87 @@ class LndClient extends BaseClient {
    * @param value The value of this invoice in satoshis
    */
   public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.AddInvoiceResponse.AsObject>('addInvoice', { value, memo: 'XU' });
+    const request = new lndrpc.Invoice();
+    request.setValue(value);
+    return this.unaryCall<lndrpc.Invoice, lndrpc.AddInvoiceResponse.AsObject>('addInvoice', request);
   }
 
   /**
    * Pay an invoice through the Lightning Network.
    * @param payment_request An invoice for a payment within the Lightning Network.
    */
-  public payInvoice = (payment_request: string): Promise<lndrpc.SendResponse.AsObject> => {
-    return this.unaryCall<lndrpc.SendResponse.AsObject>('sendPaymentSync', { payment_request });
+  public payInvoice = (paymentRequest: string): Promise<lndrpc.SendResponse.AsObject> => {
+    const request = new lndrpc.SendRequest();
+    request.setPaymentRequest(paymentRequest);
+    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse.AsObject>('sendPaymentSync', request);
   }
 
   /**
    * Get a new address for the internal lnd wallet.
    */
-  public newAddress = (address_type: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
-    return this.unaryCall<lndrpc.NewAddressResponse.AsObject>('newAddress', { address_type });
+  public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
+    const request = new lndrpc.NewAddressRequest();
+    request.setType(addressType);
+    return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse.AsObject>('newAddress', request);
   }
 
   /**
    * Return the total of unspent outputs for the internal lnd wallet.
    */
   public walletBalance = (): Promise<lndrpc.WalletBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.WalletBalanceResponse.AsObject>('walletBalance', {});
+    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse.AsObject>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
   /**
    * Return the total funds available across all channels.
    */
   public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', {});
+    return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', new lndrpc.ChannelBalanceRequest());
   }
 
   /**
    * Connect to another lnd node.
    */
-  public connectPeer = (addr: lndrpc.LightningAddress): Promise<lndrpc.ConnectPeerResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ConnectPeerResponse.AsObject>('connectPeer', { addr });
+  public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse.AsObject> => {
+    const request = new lndrpc.ConnectPeerRequest();
+    const address = new lndrpc.LightningAddress();
+    address.setHost(`${host}:${port}`);
+    address.setPubkey(pubkey);
+    request.setAddr(address);
+    return this.unaryCall<lndrpc.ConnectPeerRequest, lndrpc.ConnectPeerResponse.AsObject>('connectPeer', request);
   }
 
   /**
    * Open a channel with a connected lnd node.
    */
-  public openChannel = (node_pubkey_string: string, local_funding_amount: string): Promise<lndrpc.ChannelPoint.AsObject> => {
-    return this.unaryCall<lndrpc.ChannelPoint.AsObject>('openChannel', { node_pubkey_string, local_funding_amount });
+  public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint.AsObject> => {
+    const request = new lndrpc.OpenChannelRequest;
+    request.setNodePubkeyString(node_pubkey_string);
+    request.setLocalFundingAmount(local_funding_amount);
+    return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint.AsObject>('openChannelSync', request);
   }
 
   /**
    * List all open channels for this node.
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ListChannelsResponse.AsObject>('listChannels', {});
+    return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse.AsObject>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  /**
+/**
    * Attempt to close an open channel.
    */
-  public closeChannel = (channel_point: lndrpc.ChannelPoint, force: boolean): void => {
+  public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
-    this.lightning.closeChannel({ channel_point, force }, this.meta)
+    const request = new lndrpc.CloseChannelRequest();
+    const channelPoint = new lndrpc.ChannelPoint();
+    channelPoint.setFundingTxidStr(fundingTxId);
+    channelPoint.setOutputIndex(outputIndex);
+    request.setChannelPoint(channelPoint);
+    request.setForce(force);
+    this.lightning.closeChannel(request, this.meta)
       // TODO: handle close channel events
       .on('data', (message: string) => {
         this.logger.info(`closeChannel update: ${message}`);
@@ -177,7 +188,7 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
-    this.lightning.subscribeInvoices({}, this.meta)
+    this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
       .on('data', (message: string) => {
         this.logger.info(`invoice update: ${message}`);
