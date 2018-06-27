@@ -5,7 +5,15 @@ class PeerList {
   private peers: { [ socketAddress: string ]: Peer } = {};
 
   get lenght(): number {
-    return Object.keys(this.peers).length;
+    let lenght = 0;
+
+    this.forEach((peer) => {
+      if (peer.connected) {
+        lenght = lenght + 1;
+      }
+    });
+
+    return lenght;
   }
 
   public add = (peer: Peer): boolean => {
