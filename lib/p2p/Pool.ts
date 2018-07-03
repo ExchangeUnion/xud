@@ -28,7 +28,6 @@ class Pool extends EventEmitter {
     super();
 
     this.hosts = new HostList(new P2PRepository(db));
-    this.bindServer(this.server);
   }
 
   get peerCount(): number {
@@ -44,7 +43,11 @@ class Pool extends EventEmitter {
       this.addOutbound(host.socketAddress.address, host.socketAddress.port);
     }
 
-    this.listen();
+    if (this.config.listen) {
+      this.bindServer(this.server);
+      this.listen();
+    }
+
     this.connected = true;
   }
 
@@ -53,7 +56,10 @@ class Pool extends EventEmitter {
       return;
     }
 
-    await this.unlisten();
+    if (this.config.listen) {
+      await this.unlisten();
+    }
+
     this.destroyPeers();
 
     this.connected = false;
