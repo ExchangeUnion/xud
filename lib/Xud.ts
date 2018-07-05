@@ -63,6 +63,7 @@ class Xud {
         lndClient: this.lndClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
+        config: this.config,
         shutdown: this.shutdown,
       });
       this.rpcServer = new GrpcServer(this.service);

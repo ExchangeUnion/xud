@@ -65,10 +65,17 @@ class OrderBook extends EventEmitter{
   }
 
   /**
-   * Returns lists of buy and sell orders sorted by price.
+   * Returns lists of buy and sell orders of peers sorted by price.
    */
-  public getOrders(pairId: string, maxResults: number): Promise<Orders> {
+  public getPeerOrders(pairId: string, maxResults: number): Promise<Orders> {
     return this.repository.getPeerOrders(pairId, maxResults);
+  }
+
+  /*
+  * Returns lists of the node's own buy and sell orders sorted by price.
+  */
+  public getOwnOrders(pairId: string, maxResults: number): Promise<Orders> {
+    return this.repository.getOwnOrders(pairId, maxResults);
   }
 
   public addLimitOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {

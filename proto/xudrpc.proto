@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "annotations.proto";
-import "lndrpc.proto";
 
 package xudrpc;
 
@@ -95,7 +94,39 @@ service Xud {
 
 message GetInfoRequest {}
 message GetInfoResponse {
-  lnrpc.GetInfoResponse lnd = 1 [json_name = "lnd"];
+    int32 num_peers = 1 [json_name = "num_peers"];
+    int32 num_pairs = 2 [json_name = "num_pairs"];
+    string version = 3 [json_name = "version"];
+    OrdersCount orders = 4 [json_name = "orders"];
+    LndInfo lnd = 5 [json_name = "lnd"];
+    RaidenInfo raiden = 6 [json_name = "raiden"];
+}
+
+message OrdersCount {
+    int32 peer = 1 [json_name = "peer"];
+    int32 own = 2 [json_name = "own"];
+}
+
+message LndInfo {
+    string error = 1 [json_name = "error"];
+    LndChannels channels = 2 [json_name = "channels"];
+    repeated string chains = 3 [json_name = "chains"];
+    int32 blockheight = 4 [json_name = "blockheight"];
+    repeated string uris = 5 [json_name = "uris"];
+    string version = 6 [json_name = "version"];
+}
+
+message LndChannels {
+    int32 active = 1 [json_name = "active"];
+    int32 inactive = 2 [json_name = "inactive"];
+    int32 pending = 3 [json_name = "pending"];
+}
+
+message RaidenInfo {
+    string error = 1 [json_name = "error"];
+    string address = 2 [json_name = "address"];
+    int32 channels = 3 [json_name = "channels"];
+    string version = 4 [json_name = "version"];
 }
 
 message Pair {
@@ -123,6 +154,7 @@ message TokenSwapRequest {
   string identifier = 2 [json_name = "identifier"];
   SwapPayload payload = 3 [json_name = "payload"];
 }
+
 message TokenSwapResponse {
   string result = 1 [json_name = "result"];
 }
