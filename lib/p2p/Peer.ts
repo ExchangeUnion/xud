@@ -89,6 +89,13 @@ class Peer extends EventEmitter {
     }
   }
 
+  public getHostId = (): number => {
+    if (this.host) {
+      return this.host.id;
+    }
+    return 0;
+  }
+
   public open = async (): Promise<void> => {
     assert(!this.opened);
     this.opened = true;

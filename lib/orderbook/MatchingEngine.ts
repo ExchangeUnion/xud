@@ -1,12 +1,12 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
-
 import { orders, matchingEngine, db } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 
 type PriorityQueue = {
   add: Function;
+  remove: Function;
   heapify: Function;
   peek: Function;
   poll: Function;
@@ -32,11 +32,11 @@ class MatchingEngine {
   private logger: Logger = Logger.orderbook;
 
   constructor(public pairId: string,
-              private internalMatching: boolean,
-              peerBuyOrders: db.OrderInstance[] = [],
-              peerSellOrders: db.OrderInstance[] = [],
-              ownBuyOrders: db.OrderInstance[] = [],
-              ownSellOrders: db.OrderInstance[] = []) {
+    private internalMatching: boolean,
+    peerBuyOrders: db.OrderInstance[] = [],
+    peerSellOrders: db.OrderInstance[] = [],
+    ownBuyOrders: db.OrderInstance[] = [],
+    ownSellOrders: db.OrderInstance[] = []) {
     this.priorityQueues = {
       peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, OrderingDirection.DESC),
       peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, OrderingDirection.ASC),
@@ -81,7 +81,7 @@ class MatchingEngine {
   }
 
   public static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
-    const { quantity } =  order;
+    const { quantity } = order;
     const absQuantity = Math.abs(quantity);
     assert(absQuantity > targetQuantity, 'order abs quantity should be higher than targetQuantity');
 
@@ -95,7 +95,7 @@ class MatchingEngine {
   public static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
-    let remainingOrder: orders.StampedOrder|null = { ...order };
+    let remainingOrder: orders.StampedOrder | null = { ...order };
 
     const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
@@ -147,10 +147,25 @@ class MatchingEngine {
     ).add(order);
   }
 
+  public dropPeerOrders = (hostId: number): void => {
+    this.priorityQueues.peerBuyOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
+      if (queuedOrder.id === hostId) {
+        return true;
+      }
+      return false;
+    });
+    this.priorityQueues.peerSellOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
+      if (queuedOrder.id === hostId) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
     const matchAgainst: PriorityQueue[] = [];
-    let addTo: PriorityQueue|null = null;
+    let addTo: PriorityQueue | null = null;
 
     if (isBuyOrder) {
       matchAgainst.push(this.priorityQueues.peerSellOrders);

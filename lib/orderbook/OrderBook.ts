@@ -5,6 +5,7 @@ import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
+import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
 import DB from '../db/DB';
 import { groupBy } from '../utils/utils';
@@ -26,6 +27,7 @@ class OrderBook {
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
+      pool.on('peer.destroy', this.removePeerOrders);
     }
   }
 
@@ -125,6 +127,12 @@ class OrderBook {
     matchingEngine.addPeerOrder(stampedOrder);
     const dbOrder = await this.repository.addOrder(stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(dbOrder)}`);
+  }
+
+  private removePeerOrders = async (peer: Peer): Promise<void> => {
+    this.pairs.forEach((pair) => {
+      this.matchingEngines[pair.id].dropPeerOrders(peer.getHostId());
+    });
   }
 
   private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {

@@ -173,6 +173,7 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', () => {
+      this.emit('peer.destroy', peer);
       this.peers.remove(peer);
     });
 
@@ -187,7 +188,10 @@ class Pool extends EventEmitter {
   }
 
   private destroyPeers = (): void => {
-    this.peers.forEach(peer => peer.destroy());
+    this.peers.forEach((peer) => {
+      this.emit('peer.destroy', peer);
+      peer.destroy();
+    });
   }
 
   private listen = (): void => {
