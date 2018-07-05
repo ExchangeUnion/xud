@@ -149,13 +149,13 @@ class MatchingEngine {
 
   public dropPeerOrders = (hostId: number): void => {
     this.priorityQueues.peerBuyOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
-      if (queuedOrder.id === hostId) {
+      if (queuedOrder.hostId === hostId) {
         return true;
       }
       return false;
     });
     this.priorityQueues.peerSellOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
-      if (queuedOrder.id === hostId) {
+      if (queuedOrder.hostId === hostId) {
         return true;
       }
       return false;
