@@ -78,13 +78,13 @@ class Pool extends EventEmitter {
     return peer;
   }
 
-  public removeOutbound = async (address: string, port: number): Promise<void> => {
+  public disconnectPeer = async (address: string, port: number): Promise<void> => {
     const socketAddress = new SocketAddress(address, port);
     if (this.peers.has(socketAddress)) {
-      const peer = Peer.fromOutbound(socketAddress);
+      const peer = new Peer();
+      peer.socketAddress = socketAddress;
       this.peers.remove(peer);
       peer.destroy();
-      this.hosts.removeHost(socketAddress);
     } else {
       const err = errors.NOT_CONNECTED(address.toString());
       this.logger.info(err.message);

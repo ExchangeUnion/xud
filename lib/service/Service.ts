@@ -168,7 +168,7 @@ class Service {
    * Disconnect from an connected peer XU node on a given host and port.
    */
   public disconnect = async ({ host, port }: { host: string, port: number }) => {
-    return await this.pool.removeOutbound(host, port);
+    return await this.pool.disconnectPeer(host, port);
   }
 
   /**
