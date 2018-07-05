@@ -182,6 +182,7 @@ class Pool extends EventEmitter {
       this.hosts.ban(peer.socketAddress.address);
 
       if (peer) {
+        this.emit('peer.destroy', peer);
         peer.destroy();
       }
     });
