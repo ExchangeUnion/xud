@@ -10,13 +10,12 @@ import DB from '../db/DB';
 import { groupBy } from '../utils/utils';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
-import { EventEmitter } from 'events';
 
 type OrderBookConfig = {
   internalmatching: boolean;
 };
 
-class OrderBook extends EventEmitter{
+class OrderBook {
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
@@ -24,7 +23,6 @@ class OrderBook extends EventEmitter{
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
-    super();
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
