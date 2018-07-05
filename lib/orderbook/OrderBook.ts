@@ -84,12 +84,10 @@ class OrderBook {
     // TODO: implement
   }
 
-  public removeOwnOrder = async (id: string): Promise<void> => {
-    return this.repository.removeOrder(id);
-  }
-
-  public removePeerOrder = async (id: string, hostId: number): Promise<void> => {
-    return this.repository.removeOrder(id, hostId);
+  public removeOwnOrder = async (orderId: string): Promise<void> => {
+    this.pairs.forEach((pair) => {
+      this.matchingEngines[pair.id].removeOwnOrder(orderId);
+    });
   }
 
   private addOwnOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {

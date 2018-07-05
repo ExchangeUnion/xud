@@ -175,16 +175,15 @@ class MatchingEngine {
     return matchingResult;
   }
 
-  public removeOwnOrder = (id: string): void => {
-    this.priorityQueues.ownBuyOrders.remove(id, this.removeQueuedComparator);
-    this.priorityQueues.ownSellOrders.remove(id, this.removeQueuedComparator);
+  public removeOwnOrder = (orderId: string): void => {
+    this.priorityQueues.ownBuyOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
+    this.priorityQueues.ownSellOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
   }
 
-  private removeQueuedComparator = (queuedOrder:any, orderID:string): Boolean => {
+  private static removeQueuedComparator = (queuedOrder:any, orderID:string): Boolean => {
     if (queuedOrder.id === orderID) {
       return true;
     }
-
     return false;
   }
 
