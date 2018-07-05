@@ -59,6 +59,30 @@ service Xud {
     };
   }
 
+  /* Execute Swap. */
+  rpc executeSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
+    option (google.api.http) = {
+      post: "/v1/executeswap"
+      body: "*"
+    };
+  }
+
+  /* Subscribe to incoming peer orders. */
+  rpc subscribePeerOrders(EmptyRequest) returns (SubscribePeerOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/subscribepeerorders"
+      body: "*"
+    };
+  }
+
+  /* Subscribe to Swaps executed. */
+  rpc subscribeSwaps(EmptyRequest) returns (SubscribeSwapsResponse) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswaps"
+      body: "*"
+    };
+  }
+
   /* Shutdown the xud daemon. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -68,7 +92,12 @@ service Xud {
   }
 }
 
+message EmptyRequest {}
+message SubscribePeerOrdersResponse {}
+message SubscribeSwapsResponse{}
 message GetInfoRequest {}
+message ExecuteSwapResponse {}
+message ExecuteSwapRequest {}
 message GetInfoResponse {
     int32 num_peers = 1 [json_name = "num_peers"];
     int32 num_pairs = 2 [json_name = "num_pairs"];

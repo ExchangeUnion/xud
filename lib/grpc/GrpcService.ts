@@ -63,9 +63,34 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.executeSwap]]
+   */
+  public executeSwap: grpc.handleUnaryCall<{}, {}> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.executeSwap);
+  }
+
+  /**
    * Example for a server-side streaming call
    */
   public streamingExample: grpc.handleServerStreamingCall<{}, Orders> = async (call) => {
+    setInterval(() => {
+      const date = ms();
+      call.write({
+        date,
+      });
+    }, 1000);
+  }
+
+  public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
+    setInterval(() => {
+      const date = ms();
+      call.write({
+        date,
+      });
+    }, 1000);
+  }
+
+  public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
     setInterval(() => {
       const date = ms();
       call.write({

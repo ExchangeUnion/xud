@@ -163,6 +163,27 @@ class Service {
   public tokenSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
-}
 
+  /**
+   * Execute a Swap.
+   */
+  public executeSwap = async() => {
+
+  }
+
+  /**
+   * Subcribe to Incoming Peer Orders.
+   */
+  public subscribePeerOrders = async() => {
+
+  }
+
+  /**
+   * Subcribe to  Swap Executions.
+   */
+  public subscribeSwaps = async() => {
+
+  }
+
+}
 export default Service;
