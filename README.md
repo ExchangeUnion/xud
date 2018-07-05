@@ -9,7 +9,7 @@
 This repo contains the early stages of the Exchange Union Daemon ("xud") which encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
-* Orderbook data stored in a local mysql/mariadb database.
+* Order book data stored in a local mysql/mariadb database.
 * Peer-to-peer networking with other XU nodes via TCP.
 * A gRPC API with web proxy to serve other applications, also accessible by command-line interface.
 
@@ -34,6 +34,10 @@ An optional configuration file uses [TOML](https://github.com/toml-lang/toml) an
 ```toml
 [rpc]
 port = 8886
+
+[webproxy]
+disable = false
+port = 8080
 
 [db]
 username = "xud"
@@ -71,6 +75,7 @@ Launch a new `xud` process
 2018-6-3 15:14:28 [LND] info: LndClient status: CONNECTION_VERIFIED
 2018-6-3 15:14:28 [P2P] info: pool server listening on 0.0.0.0:8885
 2018-6-3 15:14:28 [RPC] info: GRPC server listening on port 8886
+2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
 
 Optional command line arguments to override defaults and settings in the [Configuration](#configuration) file for a specific `xud` instance
@@ -111,8 +116,8 @@ xucli [command]
 Commands:
   xucli connect <host> [port]               connect to an xu node
   xucli getinfo                             get general info from the xud node
-  xucli getorders [pair_id] [max_results]   get orders from the orderbook
-  xucli getpairs                            get orderbook's available pairs
+  xucli getorders [pair_id] [max_results]   get orders from the order book
+  xucli getpairs                            get order book's available pairs
   xucli placeorder <pair_id> <price>        place an order
   <quantity>
   xucli shutdown                            gracefully shutdown the xud node

@@ -17,7 +17,7 @@
     "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "postinstall": "npm run compile",
-    "proto": "cross-os proto",
+    "proto": "cross-os proto && cross-os swagger",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
     "test": "npm run test:unit && npm run test:int",
@@ -30,9 +30,9 @@
   },
   "cross-os": {
     "postcompile": {
-      "linux": "rsync -am --include '*/' --include '*.js' --exclude '*' lib/proto/ dist/proto",
-      "darwin": "rsync -am --include '*/' --include '*.js' --exclude '*' lib/proto/ dist/proto",
-      "win32": "xcopy /s lib\\proto\\*.js dist\\proto\\* >nul"
+      "linux": "rsync -am --include '*/' --include '*.js*' --exclude '*' lib/proto/ dist/proto",
+      "darwin": "rsync -am --include '*/' --include '*.js*' --exclude '*' lib/proto/ dist/proto",
+      "win32": "xcopy /s lib\\proto\\*.js* dist\\proto\\* >nul"
     },
     "precompile": {
       "linux": "rm -rf ./dist",
@@ -43,6 +43,11 @@
       "linux": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
       "darwin": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
       "win32": "protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"import_style=commonjs,binary:lib\\proto\"  --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\*.proto proto\\google\\api\\*.proto proto\\google\\protobuf\\*.proto"
+    },
+    "swagger": {
+      "linux": "protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
+      "darwin": "protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
+      "win32": "protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
@@ -95,8 +100,9 @@
     "protocol-buffers-schema": "^3.3.2",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
+    "swagger-ui-express": "^3.0.10",
     "toml": "^2.3.3",
-    "typescript": "^2.8.3",
+    "typescript": "^2.9.1",
     "uuid": "^3.2.1",
     "winston": "^3.0.0-rc3",
     "yargs": "^11.0.0"

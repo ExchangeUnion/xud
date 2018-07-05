@@ -4,7 +4,19 @@ import SocketAddress from './SocketAddress';
 class PeerList {
   private peers: { [ socketAddress: string ]: Peer } = {};
 
-  public add(peer: Peer): boolean {
+  get length(): number {
+    let length = 0;
+
+    this.forEach((peer) => {
+      if (peer.connected) {
+        length = length + 1;
+      }
+    });
+
+    return length;
+  }
+
+  public add = (peer: Peer): boolean => {
     if (this.has(peer.socketAddress)) {
       return false;
     } else {
@@ -13,15 +25,15 @@ class PeerList {
     }
   }
 
-  public remove(peer:Peer): void {
+  public remove = (peer:Peer): void => {
     delete this.peers[peer.socketAddress.toString()];
   }
 
-  public has(socketAddress: SocketAddress): boolean {
+  public has = (socketAddress: SocketAddress): boolean => {
     return !!this.peers[socketAddress.toString()];
   }
 
-  public forEach(cb: (peer: Peer) => void) {
+  public forEach = (cb: (peer: Peer) => void) => {
     Object.keys(this.peers).map(key => cb(this.peers[key]));
   }
 }

@@ -66,7 +66,7 @@ class Config {
     };
     this.webproxy = {
       disable: true,
-      port: 8887,
+      port: 8080,
     };
     this.lnd = {
       disable: false,

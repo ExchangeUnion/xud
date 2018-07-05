@@ -40,9 +40,9 @@ class Peer extends EventEmitter {
 
   public socketAddress!: SocketAddress;
   public direction!: ConnectionDirection;
+  public connected: boolean = false;
   private host?: Host;
   private logger: Logger = Logger.p2p;
-  private connected: boolean = false;
   private opened: boolean = false;
   private socket!: Socket;
   private parser: Parser = new Parser();

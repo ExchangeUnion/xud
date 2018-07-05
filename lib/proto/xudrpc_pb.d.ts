@@ -5,7 +5,6 @@
 
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
-import * as lndrpc_pb from "./lndrpc_pb";
 
 export class GetInfoRequest extends jspb.Message { 
 
@@ -25,11 +24,32 @@ export namespace GetInfoRequest {
 }
 
 export class GetInfoResponse extends jspb.Message { 
+    getNumPeers(): number;
+    setNumPeers(value: number): void;
+
+    getNumPairs(): number;
+    setNumPairs(value: number): void;
+
+    getVersion(): string;
+    setVersion(value: string): void;
+
+
+    hasOrders(): boolean;
+    clearOrders(): void;
+    getOrders(): OrdersCount | undefined;
+    setOrders(value?: OrdersCount): void;
+
 
     hasLnd(): boolean;
     clearLnd(): void;
-    getLnd(): lndrpc_pb.GetInfoResponse | undefined;
-    setLnd(value?: lndrpc_pb.GetInfoResponse): void;
+    getLnd(): LndInfo | undefined;
+    setLnd(value?: LndInfo): void;
+
+
+    hasRaiden(): boolean;
+    clearRaiden(): void;
+    getRaiden(): RaidenInfo | undefined;
+    setRaiden(value?: RaidenInfo): void;
 
 
     serializeBinary(): Uint8Array;
@@ -44,7 +64,147 @@ export class GetInfoResponse extends jspb.Message {
 
 export namespace GetInfoResponse {
     export type AsObject = {
-        lnd?: lndrpc_pb.GetInfoResponse.AsObject,
+        numPeers: number,
+        numPairs: number,
+        version: string,
+        orders?: OrdersCount.AsObject,
+        lnd?: LndInfo.AsObject,
+        raiden?: RaidenInfo.AsObject,
+    }
+}
+
+export class OrdersCount extends jspb.Message { 
+    getPeer(): number;
+    setPeer(value: number): void;
+
+    getOwn(): number;
+    setOwn(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OrdersCount.AsObject;
+    static toObject(includeInstance: boolean, msg: OrdersCount): OrdersCount.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OrdersCount, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OrdersCount;
+    static deserializeBinaryFromReader(message: OrdersCount, reader: jspb.BinaryReader): OrdersCount;
+}
+
+export namespace OrdersCount {
+    export type AsObject = {
+        peer: number,
+        own: number,
+    }
+}
+
+export class LndInfo extends jspb.Message { 
+    getError(): string;
+    setError(value: string): void;
+
+
+    hasChannels(): boolean;
+    clearChannels(): void;
+    getChannels(): LndChannels | undefined;
+    setChannels(value?: LndChannels): void;
+
+    clearChainsList(): void;
+    getChainsList(): Array<string>;
+    setChainsList(value: Array<string>): void;
+    addChains(value: string, index?: number): string;
+
+    getBlockheight(): number;
+    setBlockheight(value: number): void;
+
+    clearUrisList(): void;
+    getUrisList(): Array<string>;
+    setUrisList(value: Array<string>): void;
+    addUris(value: string, index?: number): string;
+
+    getVersion(): string;
+    setVersion(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): LndInfo.AsObject;
+    static toObject(includeInstance: boolean, msg: LndInfo): LndInfo.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: LndInfo, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): LndInfo;
+    static deserializeBinaryFromReader(message: LndInfo, reader: jspb.BinaryReader): LndInfo;
+}
+
+export namespace LndInfo {
+    export type AsObject = {
+        error: string,
+        channels?: LndChannels.AsObject,
+        chainsList: Array<string>,
+        blockheight: number,
+        urisList: Array<string>,
+        version: string,
+    }
+}
+
+export class LndChannels extends jspb.Message { 
+    getActive(): number;
+    setActive(value: number): void;
+
+    getInactive(): number;
+    setInactive(value: number): void;
+
+    getPending(): number;
+    setPending(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): LndChannels.AsObject;
+    static toObject(includeInstance: boolean, msg: LndChannels): LndChannels.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: LndChannels, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): LndChannels;
+    static deserializeBinaryFromReader(message: LndChannels, reader: jspb.BinaryReader): LndChannels;
+}
+
+export namespace LndChannels {
+    export type AsObject = {
+        active: number,
+        inactive: number,
+        pending: number,
+    }
+}
+
+export class RaidenInfo extends jspb.Message { 
+    getError(): string;
+    setError(value: string): void;
+
+    getAddress(): string;
+    setAddress(value: string): void;
+
+    getChannels(): number;
+    setChannels(value: number): void;
+
+    getVersion(): string;
+    setVersion(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RaidenInfo.AsObject;
+    static toObject(includeInstance: boolean, msg: RaidenInfo): RaidenInfo.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RaidenInfo, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RaidenInfo;
+    static deserializeBinaryFromReader(message: RaidenInfo, reader: jspb.BinaryReader): RaidenInfo;
+}
+
+export namespace RaidenInfo {
+    export type AsObject = {
+        error: string,
+        address: string,
+        channels: number,
+        version: string,
     }
 }
 
@@ -434,6 +594,44 @@ export namespace GetOrdersResponse {
     export type AsObject = {
         buyOrdersList: Array<Order.AsObject>,
         sellOrdersList: Array<Order.AsObject>,
+    }
+}
+
+export class StreamingExampleRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): StreamingExampleRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: StreamingExampleRequest): StreamingExampleRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: StreamingExampleRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): StreamingExampleRequest;
+    static deserializeBinaryFromReader(message: StreamingExampleRequest, reader: jspb.BinaryReader): StreamingExampleRequest;
+}
+
+export namespace StreamingExampleRequest {
+    export type AsObject = {
+    }
+}
+
+export class StreamingExampleResponse extends jspb.Message { 
+    getDate(): number;
+    setDate(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): StreamingExampleResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: StreamingExampleResponse): StreamingExampleResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: StreamingExampleResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): StreamingExampleResponse;
+    static deserializeBinaryFromReader(message: StreamingExampleResponse, reader: jspb.BinaryReader): StreamingExampleResponse;
+}
+
+export namespace StreamingExampleResponse {
+    export type AsObject = {
+        date: number,
     }
 }
 
