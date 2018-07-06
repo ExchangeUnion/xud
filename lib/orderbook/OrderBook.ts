@@ -30,25 +30,19 @@ class OrderBook {
   }
 
   public async init() {
-    const [pairs, peerOrders, ownOrders] = await Promise.all([
+    const [pairs, Orders] = await Promise.all([
       this.repository.getPairs(),
-      this.repository.getPeerOrders(),
-      this.repository.getOwnOrders(),
+      this.repository.getOrders(),
     ]);
 
-    const peerBuyOrdersByPairs = groupBy(peerOrders.buyOrders, order => order.pairId);
-    const peerSellOrdersByPairs = groupBy(peerOrders.sellOrders, order => order.pairId);
-    const ownBuyOrdersByPairs = groupBy(ownOrders.buyOrders, order => order.pairId);
-    const ownSellOrdersByPairs = groupBy(ownOrders.sellOrders, order => order.pairId);
+    const buyOrdersByPairs = groupBy(Orders.buyOrders, order => order.pairId);
+    const sellOrdersByPairs = groupBy(Orders.sellOrders, order => order.pairId);
 
     pairs.forEach((pair) => {
       this.matchingEngines[pair.id] = new MatchingEngine(
         pair.id,
-        this.config.internalmatching,
-        peerBuyOrdersByPairs[pair.id],
-        peerSellOrdersByPairs[pair.id],
-        ownBuyOrdersByPairs[pair.id],
-        ownSellOrdersByPairs[pair.id],
+        buyOrdersByPairs[pair.id],
+        sellOrdersByPairs[pair.id],
       );
     });
 
@@ -66,14 +60,14 @@ class OrderBook {
    * Returns lists of buy and sell orders of peers sorted by price.
    */
   public getPeerOrders(pairId: string, maxResults: number): Promise<Orders> {
-    return this.repository.getPeerOrders(pairId, maxResults);
+    return this.repository.getOrders(pairId, maxResults);
   }
 
   /*
   * Returns lists of the node's own buy and sell orders sorted by price.
   */
   public getOwnOrders(pairId: string, maxResults: number): Promise<Orders> {
-    return this.repository.getOwnOrders(pairId, maxResults);
+    return this.repository.getOrders(pairId, maxResults);
   }
 
   public addLimitOrder = async (order: orders.OwnOrder): Promise<matchingEngine.MatchingResult>  => {

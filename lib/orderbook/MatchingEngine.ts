@@ -16,10 +16,8 @@ type PriorityQueue = {
 };
 
 type PriorityQueues = {
-  peerBuyOrders: PriorityQueue;
-  peerSellOrders: PriorityQueue;
-  ownBuyOrders: PriorityQueue;
-  ownSellOrders: PriorityQueue;
+  buyOrders: PriorityQueue;
+  sellOrders: PriorityQueue;
 };
 
 type SplitOrder = {
@@ -32,16 +30,11 @@ class MatchingEngine {
   private logger: Logger = Logger.orderbook;
 
   constructor(public pairId: string,
-              private internalMatching: boolean,
-              peerBuyOrders: db.OrderInstance[] = [],
-              peerSellOrders: db.OrderInstance[] = [],
-              ownBuyOrders: db.OrderInstance[] = [],
-              ownSellOrders: db.OrderInstance[] = []) {
+              buyOrders: db.OrderInstance[] = [],
+              sellOrders: db.OrderInstance[] = []) {
     this.priorityQueues = {
-      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, OrderingDirection.DESC),
-      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, OrderingDirection.ASC),
-      ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, OrderingDirection.DESC),
-      ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, OrderingDirection.ASC),
+      buyOrders: MatchingEngine.initPriorityQueue(buyOrders, OrderingDirection.DESC),
+      sellOrders: MatchingEngine.initPriorityQueue(sellOrders, OrderingDirection.ASC),
     };
   }
 
@@ -111,7 +104,6 @@ class MatchingEngine {
           const oppositeOrder = priorityQueue.poll();
           const oppositeOrderAbsQuantity = Math.abs(oppositeOrder.quantity);
           const remainingOrderAbsQuantity = Math.abs(remainingOrder.quantity);
-
           if (
             oppositeOrderAbsQuantity === matchingQuantity &&
             remainingOrderAbsQuantity === matchingQuantity
@@ -142,8 +134,8 @@ class MatchingEngine {
 
   public addPeerOrder = (order: orders.StampedPeerOrder): void => {
     (order.quantity > 0
-      ? this.priorityQueues.peerBuyOrders
-      : this.priorityQueues.peerSellOrders
+      ? this.priorityQueues.buyOrders
+      : this.priorityQueues.sellOrders
     ).add(order);
   }
 
@@ -153,17 +145,13 @@ class MatchingEngine {
     let addTo: PriorityQueue|null = null;
 
     if (isBuyOrder) {
-      matchAgainst.push(this.priorityQueues.peerSellOrders);
-      if (this.internalMatching) {
-        matchAgainst.unshift(this.priorityQueues.ownSellOrders);
-        addTo = this.priorityQueues.ownBuyOrders;
-      }
+      matchAgainst.push(this.priorityQueues.sellOrders);
+      matchAgainst.unshift(this.priorityQueues.sellOrders);
+      addTo = this.priorityQueues.buyOrders;
     } else {
-      matchAgainst.push(this.priorityQueues.peerBuyOrders);
-      if (this.internalMatching) {
-        matchAgainst.unshift(this.priorityQueues.ownBuyOrders);
-        addTo = this.priorityQueues.ownSellOrders;
-      }
+      matchAgainst.push(this.priorityQueues.buyOrders);
+      matchAgainst.unshift(this.priorityQueues.buyOrders);
+      addTo = this.priorityQueues.sellOrders;
     }
 
     const matchingResult = MatchingEngine.match(order, matchAgainst);
