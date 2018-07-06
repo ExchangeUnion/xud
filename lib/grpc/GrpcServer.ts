@@ -36,9 +36,12 @@ class GrpcServer {
    */
   public listen = (port: number, host: string) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
-
     try {
-      this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
+      const bindCode = this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
+      if (bindCode !== port) {
+        this.logger.error(`gRPC Failed to listen on port: ${port}`);
+        throw `gRPC couldn't bind on port: ${port}`;
+      }
       this.server.start();
       this.logger.info(`gRPC server listening on ${host}:${port}`);
     } catch (error) {
