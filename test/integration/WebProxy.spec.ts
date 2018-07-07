@@ -31,11 +31,13 @@ describe('WebProxy', () => {
   it('should respond with http status 200', (done) => {
     chai.request(`http://localhost:${config.webproxy.port}/api/v1/info`)
                 .get('/')
-                .end((err, res) => {
+                .then((res: ChaiHttp.Response) => {
                   res.should.have.status(200);
                   expect(res.body.state).to.be.true;
                   res.body.data.should.be.an('object');
                   done();
+                }, (err: any) => {
+                  throw err;
                 });
   });
 
