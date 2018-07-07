@@ -32,9 +32,8 @@ describe('WebProxy', () => {
     chai.request(`http://localhost:${config.webproxy.port}/api/v1/info`)
                 .get('/')
                 .then((res: ChaiHttp.Response) => {
-                  res.should.have.status(200);
-                  expect(res.body.state).to.be.true;
-                  res.body.data.should.be.an('object');
+                  expect(res.status).to.equal(200);
+                  expect(res).to.be.json;
                   done();
                 }, (err: any) => {
                   throw err;
