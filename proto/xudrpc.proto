@@ -5,7 +5,7 @@ import "annotations.proto";
 package xudrpc;
 
 service Xud {
-  /* Placeholder for a method to return general information about an Exchange Union node. */
+  /* Get general information about this Exchange Union node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
       get: "/v1/info"
