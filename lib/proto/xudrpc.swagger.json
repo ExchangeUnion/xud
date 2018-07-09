@@ -44,7 +44,7 @@
     },
     "/v1/info": {
       "get": {
-        "summary": "Placeholder for a method to return general information about an Exchange Union node.",
+        "summary": "Get general information about this Exchange Union node.",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -105,6 +105,33 @@
             }
           }
         },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/payinvoice": {
+      "post": {
+        "summary": "Pays a Lightning invoice.",
+        "operationId": "PayInvoice",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcPayInvoiceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcPayInvoiceRequest"
+            }
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -181,6 +208,33 @@
         ]
       }
     },
+    "/v1/subscribeinvoices": {
+      "post": {
+        "summary": "Uni-directional stream (server -\u003e client) containing all settled invoices",
+        "operationId": "SubscribeInvoices",
+        "responses": {
+          "200": {
+            "description": "(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/xudrpcSubscibeInvoicesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcSubscibeInvoicesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/tokenswap": {
       "post": {
         "summary": "Demo method to execute a Raiden Token Swap through XUD.",
@@ -210,76 +264,6 @@
     }
   },
   "definitions": {
-    "lnrpcGetInfoResponse": {
-      "type": "object",
-      "properties": {
-        "identity_pubkey": {
-          "type": "string",
-          "description": "/ The identity pubkey of the current node."
-        },
-        "alias": {
-          "type": "string",
-          "title": "/ If applicable, the alias of the current node, e.g. \"bob\""
-        },
-        "num_pending_channels": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of pending channels"
-        },
-        "num_active_channels": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of active channels"
-        },
-        "num_peers": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of peers"
-        },
-        "block_height": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ The node's current view of the height of the best block"
-        },
-        "block_hash": {
-          "type": "string",
-          "title": "/ The node's current view of the hash of the best block"
-        },
-        "synced_to_chain": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "/ Whether the wallet's view is synced to the main chain"
-        },
-        "testnet": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "/ Whether the current node is connected to testnet"
-        },
-        "chains": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "/ A list of active chains the node is connected to"
-        },
-        "uris": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "/ The URIs of the current node."
-        },
-        "best_header_timestamp": {
-          "type": "string",
-          "format": "int64",
-          "title": "/ Timestamp of the block best known to the wallet"
-        },
-        "version": {
-          "type": "string",
-          "description": "/ The version of the LND software that the node is running."
-        }
-      }
-    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -304,8 +288,25 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
+        "num_peers": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "num_pairs": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "version": {
+          "type": "string"
+        },
+        "orders": {
+          "$ref": "#/definitions/xudrpcOrdersCount"
+        },
         "lnd": {
-          "$ref": "#/definitions/lnrpcGetInfoResponse"
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "raiden": {
+          "$ref": "#/definitions/xudrpcRaidenInfo"
         }
       }
     },
@@ -336,6 +337,53 @@
           "items": {
             "$ref": "#/definitions/xudrpcPair"
           }
+        }
+      }
+    },
+    "xudrpcLndChannels": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "inactive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pending": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "xudrpcLndInfo": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "channels": {
+          "$ref": "#/definitions/xudrpcLndChannels"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blockheight": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
@@ -383,6 +431,19 @@
         }
       }
     },
+    "xudrpcOrdersCount": {
+      "type": "object",
+      "properties": {
+        "peer": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "own": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "xudrpcPair": {
       "type": "object",
       "properties": {
@@ -397,6 +458,26 @@
         },
         "swap_protocol": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcPayInvoiceRequest": {
+      "type": "object",
+      "properties": {
+        "invoice": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcPayInvoiceResponse": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "preimage": {
+          "type": "string",
+          "format": "byte"
         }
       }
     },
@@ -424,6 +505,24 @@
         }
       }
     },
+    "xudrpcRaidenInfo": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "channels": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcShutdownRequest": {
       "type": "object"
     },
@@ -442,6 +541,25 @@
         "date": {
           "type": "string",
           "format": "int64"
+        }
+      }
+    },
+    "xudrpcSubscibeInvoicesRequest": {
+      "type": "object"
+    },
+    "xudrpcSubscibeInvoicesResponse": {
+      "type": "object",
+      "properties": {
+        "preimage": {
+          "type": "string",
+          "format": "byte"
+        },
+        "value": {
+          "type": "string",
+          "format": "int64"
+        },
+        "memo": {
+          "type": "string"
         }
       }
     },

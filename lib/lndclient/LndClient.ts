@@ -184,16 +184,18 @@ class LndClient extends BaseClient {
   /**
    * Subscribe to events for when invoices are settled.
    */
-  public subscribeInvoices = (): void => {
+  public subscribeInvoices = () => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
     this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
-      .on('data', (message: string) => {
-        this.logger.info(`invoice update: ${message}`);
+      .on('data', (message) => {
+        this.logger.debug(`invoice update: ${message}`);
+        this.emit('invoice.settled', message);
       })
       .on('end', () => {
+        // TODO: reconnect to LND
         this.logger.info('invoice ended');
       })
       .on('status', (status: string) => {
