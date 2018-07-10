@@ -4,6 +4,56 @@
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
 
+export class AddInvoiceRequest extends jspb.Message {
+  getValue(): number;
+  setValue(value: number): void;
+
+  getMemo(): string;
+  setMemo(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): AddInvoiceRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: AddInvoiceRequest): AddInvoiceRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: AddInvoiceRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): AddInvoiceRequest;
+  static deserializeBinaryFromReader(message: AddInvoiceRequest, reader: jspb.BinaryReader): AddInvoiceRequest;
+}
+
+export namespace AddInvoiceRequest {
+  export type AsObject = {
+    value: number,
+    memo: string,
+  }
+}
+
+export class AddInvoiceResponse extends jspb.Message {
+  getRHash(): Uint8Array | string;
+  getRHash_asU8(): Uint8Array;
+  getRHash_asB64(): string;
+  setRHash(value: Uint8Array | string): void;
+
+  getInvoice(): string;
+  setInvoice(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): AddInvoiceResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: AddInvoiceResponse): AddInvoiceResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: AddInvoiceResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): AddInvoiceResponse;
+  static deserializeBinaryFromReader(message: AddInvoiceResponse, reader: jspb.BinaryReader): AddInvoiceResponse;
+}
+
+export namespace AddInvoiceResponse {
+  export type AsObject = {
+    rHash: Uint8Array | string,
+    invoice: string,
+  }
+}
+
 export class PayInvoiceRequest extends jspb.Message {
   getInvoice(): string;
   setInvoice(value: string): void;
@@ -28,11 +78,6 @@ export class PayInvoiceResponse extends jspb.Message {
   getError(): string;
   setError(value: string): void;
 
-  getPreimage(): Uint8Array | string;
-  getPreimage_asU8(): Uint8Array;
-  getPreimage_asB64(): string;
-  setPreimage(value: Uint8Array | string): void;
-
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PayInvoiceResponse.AsObject;
   static toObject(includeInstance: boolean, msg: PayInvoiceResponse): PayInvoiceResponse.AsObject;
@@ -46,7 +91,6 @@ export class PayInvoiceResponse extends jspb.Message {
 export namespace PayInvoiceResponse {
   export type AsObject = {
     error: string,
-    preimage: Uint8Array | string,
   }
 }
 
@@ -67,10 +111,10 @@ export namespace SubscribeInvoicesRequest {
 }
 
 export class SubscribeInvoicesResponse extends jspb.Message {
-  getPreimage(): Uint8Array | string;
-  getPreimage_asU8(): Uint8Array;
-  getPreimage_asB64(): string;
-  setPreimage(value: Uint8Array | string): void;
+  getRHash(): Uint8Array | string;
+  getRHash_asU8(): Uint8Array;
+  getRHash_asB64(): string;
+  setRHash(value: Uint8Array | string): void;
 
   getValue(): number;
   setValue(value: number): void;
@@ -90,7 +134,7 @@ export class SubscribeInvoicesResponse extends jspb.Message {
 
 export namespace SubscribeInvoicesResponse {
   export type AsObject = {
-    preimage: Uint8Array | string,
+    rHash: Uint8Array | string,
     value: number,
     memo: string,
   }

@@ -4,7 +4,7 @@ import Service from '../service/Service';
 import { isObject, ms } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
-import { GetInfoResponse, Invoice } from '../proto/lndrpc_pb';
+import { GetInfoResponse, AddInvoiceResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBookRepository';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
@@ -98,6 +98,13 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.addInvoice]]
+   */
+  public addInvoice: grpc.handleUnaryCall<{ value: number, memo: string }, AddInvoiceResponse> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.addInvoice);
+  }
+
+  /**
    * See [[Service.payInvoice]]
    */
   public payInvoice: grpc.handleUnaryCall<{ invoice: string }, PayInvoiceResponse> = async (call, callback) => {
@@ -110,7 +117,7 @@ class GrpcService {
   public subscribeInvoices: grpc.handleServerStreamingCall<{}, SubscribeInvoicesResponse> = async (call) => {
     this.service.lndClient.on('invoice.settled', (data) => {
       call.write({
-        preimage: data.rPreimage,
+        rHash: data.rHash,
         value: data.value,
         memo: data.memo,
       });

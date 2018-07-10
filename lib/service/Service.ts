@@ -164,12 +164,20 @@ class Service {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
 
+  /* Add a new Lightning invoice */
+  public addInvoice = async ({ value, memo }: { value: number, memo: string }) => {
+    const response = await this.lndClient.addInvoice(value, memo);
+    return {
+      rHash: response.rHash,
+      invoice: response.paymentRequest,
+    };
+  }
+
   /* Pay a Lightning invoice. */
   public payInvoice = async ({ invoice }: { invoice: string }) => {
     const response = await this.lndClient.payInvoice(invoice);
     return {
       error: response.paymentError,
-      preimage: response.paymentPreimage,
     };
   }
 
