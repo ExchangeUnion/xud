@@ -51,6 +51,30 @@ service Xud {
     };
   }
 
+  /* Add a new Lightning invoice */
+  rpc AddInvoice(AddInvoiceRequest) returns (AddInvoiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/addinvoice"
+      body: "*"
+    };
+  }
+
+  /* Pay a Lightning invoice. */
+  rpc PayInvoice(PayInvoiceRequest) returns (PayInvoiceResponse) {
+    option (google.api.http) = {
+      post: "/v1/payinvoice"
+      body: "*"
+    };
+  }
+
+  /* Uni-directional stream (server -> client) containing all settled invoices */
+  rpc SubscribeInvoices(SubscribeInvoicesRequest) returns (stream SubscribeInvoicesResponse) {
+    option (google.api.http) = {
+      post: "/v1/subscribeinvoices"
+      body: "*"
+    };
+  }
+
   /* Demo method to execute a Raiden Token Swap through XUD. */
   rpc TokenSwap(TokenSwapRequest) returns (TokenSwapResponse) {
     option (google.api.http) = {
@@ -66,6 +90,32 @@ service Xud {
       body: "*"
     };
   }
+}
+
+message AddInvoiceRequest {
+  int64 value = 1 [json_name = "value"];
+  string memo = 2 [json_name = "memo"];
+}
+
+message AddInvoiceResponse {
+  bytes r_hash = 1 [json_name = "r_hash"];
+  string invoice = 2 [json_name = "invoice"];
+}
+
+message PayInvoiceRequest {
+  string invoice = 1 [json_name = "invoice"];
+}
+
+message PayInvoiceResponse {
+  string error = 1 [json_name = "error"];
+}
+
+message SubscribeInvoicesRequest {}
+
+message SubscribeInvoicesResponse {
+  bytes r_hash = 1 [json_name = "r_hash"];
+  int64 value = 2 [json_name = "value"];
+  string memo = 3 [json_name = "memo"];
 }
 
 message GetInfoRequest {}

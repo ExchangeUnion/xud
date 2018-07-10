@@ -25,9 +25,9 @@ export type ServiceComponents = {
 /** Class containing the available RPC methods for XUD */
 class Service {
   public shutdown: Function;
+  public lndClient: LndClient;
 
   private orderBook: OrderBook;
-  private lndClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
@@ -163,6 +163,24 @@ class Service {
   public tokenSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
+
+  /* Add a new Lightning invoice */
+  public addInvoice = async ({ value, memo }: { value: number, memo: string }) => {
+    const response = await this.lndClient.addInvoice(value, memo);
+    return {
+      rHash: response.rHash,
+      invoice: response.paymentRequest,
+    };
+  }
+
+  /* Pay a Lightning invoice. */
+  public payInvoice = async ({ invoice }: { invoice: string }) => {
+    const response = await this.lndClient.payInvoice(invoice);
+    return {
+      error: response.paymentError,
+    };
+  }
+
 }
 
 export default Service;

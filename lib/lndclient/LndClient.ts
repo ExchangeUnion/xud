@@ -84,9 +84,10 @@ class LndClient extends BaseClient {
    * Attempt to add a new invoice to the lnd invoice database.
    * @param value The value of this invoice in satoshis
    */
-  public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
+  public addInvoice = (value: number, memo: string = ''): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
     const request = new lndrpc.Invoice();
     request.setValue(value);
+    request.setMemo(memo);
     return this.unaryCall<lndrpc.Invoice, lndrpc.AddInvoiceResponse.AsObject>('addInvoice', request);
   }
 
@@ -184,16 +185,19 @@ class LndClient extends BaseClient {
   /**
    * Subscribe to events for when invoices are settled.
    */
-  public subscribeInvoices = (): void => {
+  public subscribeInvoices = () => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
     this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
-      .on('data', (message: string) => {
-        this.logger.info(`invoice update: ${message}`);
+      .on('data', (message) => {
+        const data = message.toObject();
+        this.logger.debug(`invoice update: ${JSON.stringify(data)}`);
+        this.emit('invoice.settled', data);
       })
       .on('end', () => {
+        // TODO: reconnect to LND
         this.logger.info('invoice ended');
       })
       .on('status', (status: string) => {

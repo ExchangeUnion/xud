@@ -26,6 +26,9 @@ class GrpcServer {
       placeOrder: grpcService.placeOrder,
       connect: grpcService.connect,
       tokenSwap: grpcService.tokenSwap,
+      addInvoice: grpcService.addInvoice,
+      payInvoice: grpcService.payInvoice,
+      subscribeInvoices: grpcService.subscribeInvoices,
       shutdown: grpcService.shutdown,
     });
   }

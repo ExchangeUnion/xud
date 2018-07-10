@@ -4,10 +4,11 @@ import Service from '../service/Service';
 import { isObject, ms } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
-import { GetInfoResponse } from '../proto/lndrpc_pb';
+import { GetInfoResponse, AddInvoiceResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBookRepository';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
+import { PayInvoiceResponse, StreamingExampleResponse, SubscribeInvoicesResponse } from '../proto/xudrpc_pb';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -28,6 +29,7 @@ class GrpcService {
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(private service: Service) {
     this.logger = Logger.rpc;
+    service.lndClient.subscribeInvoices();
   }
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
@@ -65,7 +67,7 @@ class GrpcService {
   /**
    * Example for a server-side streaming call
    */
-  public streamingExample: grpc.handleServerStreamingCall<{}, Orders> = async (call) => {
+  public streamingExample: grpc.handleServerStreamingCall<{}, StreamingExampleResponse> = async (call) => {
     setInterval(() => {
       const date = ms();
       call.write({
@@ -93,6 +95,33 @@ class GrpcService {
    */
   public tokenSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.tokenSwap);
+  }
+
+  /**
+   * See [[Service.addInvoice]]
+   */
+  public addInvoice: grpc.handleUnaryCall<{ value: number, memo: string }, AddInvoiceResponse> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.addInvoice);
+  }
+
+  /**
+   * See [[Service.payInvoice]]
+   */
+  public payInvoice: grpc.handleUnaryCall<{ invoice: string }, PayInvoiceResponse> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.payInvoice);
+  }
+
+  /**
+   * Uni-directional stream (server -> client) containing all settled invoices
+   */
+  public subscribeInvoices: grpc.handleServerStreamingCall<{}, SubscribeInvoicesResponse> = async (call) => {
+    this.service.lndClient.on('invoice.settled', (data) => {
+      call.write({
+        rHash: data.rHash,
+        value: data.value,
+        memo: data.memo,
+      });
+    });
   }
 
   public shutdown: grpc.handleUnaryCall<{}, {}> = async (call, callback) => {
