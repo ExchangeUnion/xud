@@ -164,8 +164,8 @@ class Service {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
 
-  /* Pays a Lightning invoice. */
-  public payInvoice = async (invoice: string) => {
+  /* Pay a Lightning invoice. */
+  public payInvoice = async ({ invoice }: { invoice: string }) => {
     const response = await this.lndClient.payInvoice(invoice);
     return {
       error: response.paymentError,

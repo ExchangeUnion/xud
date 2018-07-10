@@ -44,7 +44,7 @@
     },
     "/v1/info": {
       "get": {
-        "summary": "Get general information about this Exchange Union node.",
+        "summary": "Placeholder for a method to return general information about an Exchange Union node.",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -216,7 +216,7 @@
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSubscibeInvoicesResponse"
+              "$ref": "#/definitions/xudrpcSubscribeInvoicesResponse"
             }
           }
         },
@@ -226,7 +226,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/xudrpcSubscibeInvoicesRequest"
+              "$ref": "#/definitions/xudrpcSubscribeInvoicesRequest"
             }
           }
         ],
@@ -544,10 +544,10 @@
         }
       }
     },
-    "xudrpcSubscibeInvoicesRequest": {
+    "xudrpcSubscribeInvoicesRequest": {
       "type": "object"
     },
-    "xudrpcSubscibeInvoicesResponse": {
+    "xudrpcSubscribeInvoicesResponse": {
       "type": "object",
       "properties": {
         "preimage": {

@@ -51,7 +51,7 @@ service Xud {
     };
   }
 
-  /* Pays a Lightning invoice. */
+  /* Pay a Lightning invoice. */
   rpc PayInvoice(PayInvoiceRequest) returns (PayInvoiceResponse) {
     option (google.api.http) = {
       post: "/v1/payinvoice"
@@ -60,7 +60,7 @@ service Xud {
   }
 
   /* Uni-directional stream (server -> client) containing all settled invoices */
-  rpc SubscribeInvoices(SubscibeInvoicesRequest) returns (stream SubscibeInvoicesResponse) {
+  rpc SubscribeInvoices(SubscribeInvoicesRequest) returns (stream SubscribeInvoicesResponse) {
     option (google.api.http) = {
       post: "/v1/subscribeinvoices"
       body: "*"
@@ -93,9 +93,9 @@ message PayInvoiceResponse {
   bytes preimage = 2 [json_name = "preimage"];
 }
 
-message SubscibeInvoicesRequest {}
+message SubscribeInvoicesRequest {}
 
-message SubscibeInvoicesResponse {
+message SubscribeInvoicesResponse {
   bytes preimage = 1 [json_name = "preimage"];
   int64 value = 2 [json_name = "value"];
   string memo = 3 [json_name = "memo"];

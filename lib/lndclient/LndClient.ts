@@ -191,8 +191,9 @@ class LndClient extends BaseClient {
     this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
       .on('data', (message) => {
-        this.logger.debug(`invoice update: ${message}`);
-        this.emit('invoice.settled', message);
+        const data = message.toObject();
+        this.logger.debug(`invoice update: ${JSON.stringify(data)}`);
+        this.emit('invoice.settled', data);
       })
       .on('end', () => {
         // TODO: reconnect to LND

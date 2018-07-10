@@ -8,7 +8,7 @@ import { GetInfoResponse, Invoice } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBookRepository';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
-import { PayInvoiceResponse, SubscibeInvoicesResponse, StreamingExampleResponse } from '../proto/xudrpc_pb';
+import { PayInvoiceResponse, StreamingExampleResponse, SubscribeInvoicesResponse } from '../proto/xudrpc_pb';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -100,7 +100,6 @@ class GrpcService {
   /**
    * See [[Service.payInvoice]]
    */
-  // TODO: own type for response
   public payInvoice: grpc.handleUnaryCall<{ invoice: string }, PayInvoiceResponse> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.payInvoice);
   }
@@ -108,10 +107,10 @@ class GrpcService {
   /**
    * Uni-directional stream (server -> client) containing all settled invoices
    */
-  public subscribeInvoices: grpc.handleServerStreamingCall<{}, SubscibeInvoicesResponse> = async (call) => {
+  public subscribeInvoices: grpc.handleServerStreamingCall<{}, SubscribeInvoicesResponse> = async (call) => {
     this.service.lndClient.on('invoice.settled', (data) => {
       call.write({
-        preimage: data.r_preimage,
+        preimage: data.rPreimage,
         value: data.value,
         memo: data.memo,
       });

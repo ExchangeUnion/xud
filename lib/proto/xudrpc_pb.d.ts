@@ -50,23 +50,23 @@ export namespace PayInvoiceResponse {
   }
 }
 
-export class SubscibeInvoicesRequest extends jspb.Message {
+export class SubscribeInvoicesRequest extends jspb.Message {
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SubscibeInvoicesRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: SubscibeInvoicesRequest): SubscibeInvoicesRequest.AsObject;
+  toObject(includeInstance?: boolean): SubscribeInvoicesRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: SubscribeInvoicesRequest): SubscribeInvoicesRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SubscibeInvoicesRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SubscibeInvoicesRequest;
-  static deserializeBinaryFromReader(message: SubscibeInvoicesRequest, reader: jspb.BinaryReader): SubscibeInvoicesRequest;
+  static serializeBinaryToWriter(message: SubscribeInvoicesRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SubscribeInvoicesRequest;
+  static deserializeBinaryFromReader(message: SubscribeInvoicesRequest, reader: jspb.BinaryReader): SubscribeInvoicesRequest;
 }
 
-export namespace SubscibeInvoicesRequest {
+export namespace SubscribeInvoicesRequest {
   export type AsObject = {
   }
 }
 
-export class SubscibeInvoicesResponse extends jspb.Message {
+export class SubscribeInvoicesResponse extends jspb.Message {
   getPreimage(): Uint8Array | string;
   getPreimage_asU8(): Uint8Array;
   getPreimage_asB64(): string;
@@ -79,16 +79,16 @@ export class SubscibeInvoicesResponse extends jspb.Message {
   setMemo(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SubscibeInvoicesResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: SubscibeInvoicesResponse): SubscibeInvoicesResponse.AsObject;
+  toObject(includeInstance?: boolean): SubscribeInvoicesResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: SubscribeInvoicesResponse): SubscribeInvoicesResponse.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SubscibeInvoicesResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SubscibeInvoicesResponse;
-  static deserializeBinaryFromReader(message: SubscibeInvoicesResponse, reader: jspb.BinaryReader): SubscibeInvoicesResponse;
+  static serializeBinaryToWriter(message: SubscribeInvoicesResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SubscribeInvoicesResponse;
+  static deserializeBinaryFromReader(message: SubscribeInvoicesResponse, reader: jspb.BinaryReader): SubscribeInvoicesResponse;
 }
 
-export namespace SubscibeInvoicesResponse {
+export namespace SubscribeInvoicesResponse {
   export type AsObject = {
     preimage: Uint8Array | string,
     value: number,
