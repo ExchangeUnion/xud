@@ -2,7 +2,7 @@ import PacketType from './PacketType';
 import Packet from './Packet';
 import * as packetTypes from './types';
 
-const fromRaw = (type:string, packet:string): Packet|void => {
+const fromRaw = (type: string, packet: string): Packet | void => {
   switch (type) {
     case PacketType.HELLO:
       return packetTypes.HelloPacket.fromRaw(packet);

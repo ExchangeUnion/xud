@@ -276,12 +276,12 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (key: string, timeout: number): PendingResponseEntry | null => {
+  private addResponseTimeout = (hash: string, timeout: number): PendingResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
 
-    const entry = this.getOrAddPendingResponseEntry(key);
+    const entry = this.getOrAddPendingResponseEntry(hash);
     entry.setTimeout(timeout);
 
     return entry;
@@ -301,7 +301,7 @@ class Peer extends EventEmitter {
   /**
    * Fulfill awaiting requests response.
    */
-  private fulfillResponse = (key: string, packet: Packet): boolean => {
+  private fulfillResponse = (key: string | undefined, packet: Packet): boolean => {
     if (!key) {
       this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${packet.type})`);
       // TODO: penalize
@@ -396,7 +396,7 @@ class Peer extends EventEmitter {
 
   private handlePacket = (packet: Packet): void => {
     if (packet.messageType === MessageType.RESPONSE) {
-      if (!this.fulfillResponse(packet.header.reqHash!, packet)) {
+      if (!this.fulfillResponse(packet.header.reqHash, packet)) {
         return;
       }
     }
