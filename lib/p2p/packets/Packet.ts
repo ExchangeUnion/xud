@@ -20,8 +20,8 @@ abstract class Packet {
   public abstract messageType: MessageType;
 
   constructor (body: any, header?: PacketHeader) {
-    this.header = header || {
-      hash: SHA256(body).toString(CryptoJS.enc.Hex),
+    this.header = {
+      hash: (header && header.hash) || SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Hex),
       ...header!,
     };
   }
