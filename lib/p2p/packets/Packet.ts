@@ -21,7 +21,7 @@ abstract class Packet {
 
   constructor (body: any, header?: PacketHeader) {
     this.header = {
-      hash: (header && header.hash) || SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Hex),
+      hash: (header && header.hash) || SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Base64),
       ...header!,
     };
   }
