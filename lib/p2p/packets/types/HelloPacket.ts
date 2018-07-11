@@ -11,14 +11,12 @@ type HelloPacketBody = {
 class HelloPacket extends Packet {
   public type: PacketType = PacketType.HELLO;
   public messageType: MessageType = MessageType.UNILATERAL;
+  public body!: HelloPacketBody;
 
-  constructor(public body: HelloPacketBody, header?: PacketHeader) {
-    super(body, header);
-  }
-
-  public static fromRaw(packet: string): HelloPacket {
-    const { header, body } = JSON.parse(packet);
-    return new HelloPacket(body, header);
+  init(args: HelloPacketBody): HelloPacket {
+    this.body = args;
+    this.header = this.createHeader();
+    return this;
   }
 }
 

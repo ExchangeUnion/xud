@@ -1,9 +1,9 @@
 import PacketType from './PacketType';
 import CryptoJS from 'crypto-js';
-import SHA256 from 'crypto-js/sha256';
+import MD5 from 'crypto-js/md5';
 
 type PacketHeader = {
-  hash?: string;
+  hash: string;
   reqHash?: string;
 };
 
@@ -14,21 +14,28 @@ enum MessageType {
 }
 
 abstract class Packet {
-  public header: PacketHeader;
+  public header!: PacketHeader;
   public abstract type: PacketType;
-  public abstract body: any;
   public abstract messageType: MessageType;
+  public abstract body: any;
 
-  constructor (body: any, header?: PacketHeader) {
-    this.header = {
-      hash: (header && header.hash) || SHA256(JSON.stringify(body)).toString(CryptoJS.enc.Base64),
-      ...header!,
-    };
+  public fromRaw(raw: string): Packet {
+    const { header, body } = JSON.parse(raw);
+    this.body = body;
+    this.header = header;
+    return this;
   }
 
   public toRaw(): string {
     const { header, body } = this;
     return JSON.stringify({ header, body });
+  }
+
+  public createHeader(reqHash?: string): PacketHeader {
+    return {
+      hash: MD5(JSON.stringify(this.body)).toString(CryptoJS.enc.Base64),
+      reqHash,
+    };
   }
 }
 

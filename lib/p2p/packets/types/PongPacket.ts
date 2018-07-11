@@ -1,5 +1,6 @@
-import Packet, { MessageType, PacketHeader } from '../Packet';
+import Packet, { MessageType } from '../Packet';
 import PacketType from '../PacketType';
+import { ms } from '../../../utils/utils';
 
 type PongPacketBody = {
   ts: number;
@@ -8,15 +9,14 @@ type PongPacketBody = {
 class PongPacket extends Packet {
   public type: PacketType = PacketType.PONG;
   public messageType: MessageType = MessageType.RESPONSE;
+  public body!: PongPacketBody;
 
-  constructor(public body: PongPacketBody, header?: PacketHeader) {
-    super(body, header);
+  init(args: { reqHash: string }): PongPacket {
+    this.body = { ts: ms() };
+    this.header = this.createHeader(args.reqHash);
+    return this;
   }
 
-  public static fromRaw(packet: string): PongPacket {
-    const { header, body } = JSON.parse(packet);
-    return new PongPacket(body, header);
-  }
 }
 
 export default PongPacket;

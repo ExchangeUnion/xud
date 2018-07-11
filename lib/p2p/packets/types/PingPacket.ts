@@ -1,5 +1,6 @@
 import Packet, { MessageType, PacketHeader } from '../Packet';
 import PacketType from '../PacketType';
+import {ms} from "../../../utils/utils";
 
 type PingPacketBody = {
   ts: number;
@@ -8,14 +9,12 @@ type PingPacketBody = {
 class PingPacket extends Packet {
   public type: PacketType = PacketType.PING;
   public messageType: MessageType = MessageType.REQUEST;
+  public body!: PingPacketBody;
 
-  constructor(public body: PingPacketBody, header?: PacketHeader) {
-    super(body, header);
-  }
-
-  public static fromRaw(packet: string): PingPacket {
-    const { header, body } = JSON.parse(packet);
-    return new PingPacket(body, header);
+  init(): PingPacket {
+    this.body = { ts: ms() };
+    this.header = this.createHeader();
+    return this;
   }
 }
 

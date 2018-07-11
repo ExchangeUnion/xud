@@ -13,19 +13,16 @@ type OrderPacketBody = {
 class OrderPacket extends Packet {
   public type: PacketType = PacketType.ORDER;
   public messageType: MessageType = MessageType.UNILATERAL;
+  public body!: OrderPacketBody;
 
-  constructor(public body: OrderPacketBody, header?: PacketHeader) {
-    super(body, header);
+  public init(args: OrderPacketBody): OrderPacket {
+    this.body = args;
+    this.header = this.createHeader();
+    return this;
   }
 
-  public static fromOutgoingOrder(order: orders.OutgoingOrder) {
-    const { id, pairId, quantity, price, invoice } = order;
-    return new OrderPacket({ id, pairId, quantity, price, invoice });
-  }
-
-  public static fromRaw(packet: string): OrderPacket {
-    const { header, body } = JSON.parse(packet);
-    return new OrderPacket(body, header);
+  public fromOutgoingOrder(order: orders.OutgoingOrder): OrderPacket {
+    return this.init(order)
   }
 }
 

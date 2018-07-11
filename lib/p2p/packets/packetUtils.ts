@@ -5,13 +5,13 @@ import * as packetTypes from './types';
 const fromRaw = (type: string, packet: string): Packet | void => {
   switch (type) {
     case PacketType.HELLO:
-      return packetTypes.HelloPacket.fromRaw(packet);
+      return new packetTypes.HelloPacket().fromRaw(packet);
     case PacketType.PING:
-      return packetTypes.PingPacket.fromRaw(packet);
+      return new packetTypes.PingPacket().fromRaw(packet);
     case PacketType.PONG:
-      return packetTypes.PongPacket.fromRaw(packet);
+      return new packetTypes.PongPacket().fromRaw(packet);
     case PacketType.ORDER:
-      return packetTypes.OrderPacket.fromRaw(packet);
+      return new packetTypes.OrderPacket().fromRaw(packet);
     default:
       return;
   }

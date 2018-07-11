@@ -429,7 +429,7 @@ class Peer extends EventEmitter {
 
   private sendHello = (): HelloPacket => {
     // TODO: use real values
-    const packet = new HelloPacket({
+    const packet = new HelloPacket().init({
       version: '123',
       nodeKey: '123',
       listenPort: 20000,
@@ -450,7 +450,7 @@ class Peer extends EventEmitter {
   }
 
   private sendPing = (): PingPacket => {
-    const packet = new PingPacket({ ts: ms() });
+    const packet = new PingPacket().init();
 
     this.sendPacket(packet);
 
@@ -468,7 +468,7 @@ class Peer extends EventEmitter {
   }
 
   private sendPong = (pingHash: string): PongPacket => {
-    const packet = new PongPacket({ ts: ms() }, { reqHash: pingHash });
+    const packet = new PongPacket().init({ reqHash: pingHash });
 
     this.sendPacket(packet);
 

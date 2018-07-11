@@ -87,7 +87,7 @@ class Pool extends EventEmitter {
   }
 
   public broadcastOrder = (order: orders.OutgoingOrder) => {
-    const orderPacket = OrderPacket.fromOutgoingOrder(order);
+    const orderPacket = new OrderPacket().fromOutgoingOrder(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
   }
 
