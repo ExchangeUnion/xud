@@ -33,8 +33,8 @@ abstract class Packet {
 
   public createHeader(reqHash?: string): PacketHeader {
     return {
-      hash: MD5(JSON.stringify(this.body)).toString(CryptoJS.enc.Base64),
       reqHash,
+      hash: MD5(JSON.stringify(this.body)).toString(CryptoJS.enc.Base64),
     };
   }
 }

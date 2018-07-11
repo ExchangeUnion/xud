@@ -1,4 +1,4 @@
-import Packet, { PacketHeader, MessageType } from '../Packet';
+import Packet, { MessageType } from '../Packet';
 import PacketType from '../PacketType';
 
 type HelloPacketBody = {
@@ -13,7 +13,7 @@ class HelloPacket extends Packet {
   public messageType: MessageType = MessageType.UNILATERAL;
   public body!: HelloPacketBody;
 
-  init(args: HelloPacketBody): HelloPacket {
+  public init(args: HelloPacketBody): HelloPacket {
     this.body = args;
     this.header = this.createHeader();
     return this;

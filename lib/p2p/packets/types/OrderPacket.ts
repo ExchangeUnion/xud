@@ -1,4 +1,4 @@
-import Packet, { MessageType, PacketHeader } from '../Packet';
+import Packet, { MessageType } from '../Packet';
 import PacketType from '../PacketType';
 import { orders } from '../../../types/index';
 
@@ -22,7 +22,7 @@ class OrderPacket extends Packet {
   }
 
   public fromOutgoingOrder(order: orders.OutgoingOrder): OrderPacket {
-    return this.init(order)
+    return this.init(order);
   }
 }
 

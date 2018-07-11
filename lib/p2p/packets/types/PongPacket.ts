@@ -11,7 +11,7 @@ class PongPacket extends Packet {
   public messageType: MessageType = MessageType.RESPONSE;
   public body!: PongPacketBody;
 
-  init(args: { reqHash: string }): PongPacket {
+  public init(args: { reqHash: string }): PongPacket {
     this.body = { ts: ms() };
     this.header = this.createHeader(args.reqHash);
     return this;
