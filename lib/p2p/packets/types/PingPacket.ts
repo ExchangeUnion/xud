@@ -13,7 +13,7 @@ class PingPacket extends Packet {
 
   public init(): PingPacket {
     this.body = { ts: ms() };
-    this.header = this.createHeader();
+    this.header = this.createHeader(this.body);
     return this;
   }
 }

@@ -17,7 +17,7 @@ class OrderPacket extends Packet {
 
   public init(args: OrderPacketBody): OrderPacket {
     this.body = args;
-    this.header = this.createHeader();
+    this.header = this.createHeader(this.body);
     return this;
   }
 

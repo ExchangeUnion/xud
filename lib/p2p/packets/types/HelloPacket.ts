@@ -15,7 +15,7 @@ class HelloPacket extends Packet {
 
   public init(args: HelloPacketBody): HelloPacket {
     this.body = args;
-    this.header = this.createHeader();
+    this.header = this.createHeader(this.body);
     return this;
   }
 }

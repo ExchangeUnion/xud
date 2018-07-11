@@ -13,7 +13,7 @@ class PongPacket extends Packet {
 
   public init(args: { reqHash: string }): PongPacket {
     this.body = { ts: ms() };
-    this.header = this.createHeader(args.reqHash);
+    this.header = this.createHeader(this.body, args.reqHash);
     return this;
   }
 

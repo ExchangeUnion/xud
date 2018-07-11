@@ -31,10 +31,10 @@ abstract class Packet {
     return JSON.stringify({ header, body });
   }
 
-  public createHeader(reqHash?: string): PacketHeader {
+  public createHeader(body: any, reqHash?: string): PacketHeader {
     return {
       reqHash,
-      hash: MD5(JSON.stringify(this.body)).toString(CryptoJS.enc.Base64),
+      hash: MD5(JSON.stringify(body)).toString(CryptoJS.enc.Base64),
     };
   }
 }
