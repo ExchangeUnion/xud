@@ -52,6 +52,7 @@ class LndClient extends BaseClient {
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
 
+      this.subscribeInvoices();
       this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
     }
   }
@@ -195,12 +196,14 @@ class LndClient extends BaseClient {
       })
       .on('end', () => {
         this.logger.info('invoice ended');
+        this.setStatus(ClientStatus.DISABLED);
       })
       .on('status', (status: string) => {
         this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
       })
       .on('error', (error: any) => {
         this.logger.error(`invoice error: ${error}`);
+        this.setStatus(ClientStatus.DISABLED);
       });
   }
 }
