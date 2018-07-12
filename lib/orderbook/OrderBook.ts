@@ -11,10 +11,6 @@ import { groupBy } from '../utils/utils';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 
-type OrderBookConfig = {
-  internalmatching: boolean;
-};
-
 class OrderBook {
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
@@ -22,7 +18,7 @@ class OrderBook {
   public pairs: db.PairInstance[] = [];
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
-  constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(db: DB, private pool?: Pool, private lndClient?: LndClient) {
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -98,11 +94,6 @@ class OrderBook {
     }
     if (remainingOrder) {
       this.broadcastOrder(remainingOrder);
-
-      if (this.config.internalmatching) {
-        const dbOrder = await this.repository.addOrder(<db.OrderFactory>remainingOrder);
-        this.logger.debug(`order added: ${JSON.stringify(dbOrder)}`);
-      }
     }
 
     return matchingResult;
@@ -155,4 +146,3 @@ class OrderBook {
 }
 
 export default OrderBook;
-export { OrderBookConfig };

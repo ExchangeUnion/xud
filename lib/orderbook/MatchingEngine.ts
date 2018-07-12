@@ -146,11 +146,9 @@ class MatchingEngine {
 
     if (isBuyOrder) {
       matchAgainst.push(this.priorityQueues.sellOrders);
-      matchAgainst.unshift(this.priorityQueues.sellOrders);
       addTo = this.priorityQueues.buyOrders;
     } else {
       matchAgainst.push(this.priorityQueues.buyOrders);
-      matchAgainst.unshift(this.priorityQueues.buyOrders);
       addTo = this.priorityQueues.sellOrders;
     }
 
