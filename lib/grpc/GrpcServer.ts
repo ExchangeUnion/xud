@@ -39,8 +39,8 @@ class GrpcServer {
     try {
       const bindCode = this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
       if (bindCode !== port) {
-        this.logger.error(`gRPC Failed to listen on port: ${port}`);
-        throw `gRPC couldn't bind on port: ${port}`;
+        this.logger.error(`Failed to listen on port: ${port}`);
+        throw new Error(`gRPC couldn't bind on port: ${port}`);
       }
       this.server.start();
       this.logger.info(`gRPC server listening on ${host}:${port}`);
