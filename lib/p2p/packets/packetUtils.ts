@@ -1,20 +1,17 @@
 import PacketType from './PacketType';
 import Packet from './Packet';
-import OrderPacket from './OrderPacket';
-import HelloPacket from './HelloPacket';
-import PingPacket from './PingPacket';
-import PongPacket from './PongPacket';
+import * as packetTypes from './types';
 
-const fromRaw = (type:string, body:string): Packet|void => {
+const fromRaw = (type: string, packet: string): Packet | void => {
   switch (type) {
     case PacketType.HELLO:
-      return HelloPacket.fromRaw(body);
+      return new packetTypes.HelloPacket().fromRaw(packet);
     case PacketType.PING:
-      return PingPacket.fromRaw(body);
+      return new packetTypes.PingPacket().fromRaw(packet);
     case PacketType.PONG:
-      return PongPacket.fromRaw(body);
+      return new packetTypes.PongPacket().fromRaw(packet);
     case PacketType.ORDER:
-      return OrderPacket.fromRaw(body);
+      return new packetTypes.OrderPacket().fromRaw(packet);
     default:
       return;
   }
