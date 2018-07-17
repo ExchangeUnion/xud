@@ -210,76 +210,6 @@
     }
   },
   "definitions": {
-    "lnrpcGetInfoResponse": {
-      "type": "object",
-      "properties": {
-        "identity_pubkey": {
-          "type": "string",
-          "description": "/ The identity pubkey of the current node."
-        },
-        "alias": {
-          "type": "string",
-          "title": "/ If applicable, the alias of the current node, e.g. \"bob\""
-        },
-        "num_pending_channels": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of pending channels"
-        },
-        "num_active_channels": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of active channels"
-        },
-        "num_peers": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ Number of peers"
-        },
-        "block_height": {
-          "type": "integer",
-          "format": "int64",
-          "title": "/ The node's current view of the height of the best block"
-        },
-        "block_hash": {
-          "type": "string",
-          "title": "/ The node's current view of the hash of the best block"
-        },
-        "synced_to_chain": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "/ Whether the wallet's view is synced to the main chain"
-        },
-        "testnet": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "/ Whether the current node is connected to testnet"
-        },
-        "chains": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "/ A list of active chains the node is connected to"
-        },
-        "uris": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "/ The URIs of the current node."
-        },
-        "best_header_timestamp": {
-          "type": "string",
-          "format": "int64",
-          "title": "/ Timestamp of the block best known to the wallet"
-        },
-        "version": {
-          "type": "string",
-          "description": "/ The version of the LND software that the node is running."
-        }
-      }
-    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -304,8 +234,25 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
+        "num_peers": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "num_pairs": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "version": {
+          "type": "string"
+        },
+        "orders": {
+          "$ref": "#/definitions/xudrpcOrdersCount"
+        },
         "lnd": {
-          "$ref": "#/definitions/lnrpcGetInfoResponse"
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "raiden": {
+          "$ref": "#/definitions/xudrpcRaidenInfo"
         }
       }
     },
@@ -339,6 +286,53 @@
         }
       }
     },
+    "xudrpcLndChannels": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "inactive": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "pending": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "xudrpcLndInfo": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "channels": {
+          "$ref": "#/definitions/xudrpcLndChannels"
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "blockheight": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcOrder": {
       "type": "object",
       "properties": {
@@ -361,6 +355,10 @@
           "format": "int32",
           "title": "The id of the peer that created this order"
         },
+        "host_id": {
+          "type": "string",
+          "title": "The id of the host that created this order"
+        },
         "id": {
           "type": "string",
           "title": "A UUID for this order"
@@ -369,6 +367,10 @@
           "type": "string",
           "format": "int64",
           "title": "The epoch time when this order was created"
+        },
+        "invoice": {
+          "type": "string",
+          "title": "Lightning invoice"
         }
       }
     },
@@ -380,6 +382,19 @@
         },
         "taker": {
           "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcOrdersCount": {
+      "type": "object",
+      "properties": {
+        "peer": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "own": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -421,6 +436,24 @@
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
           "title": "The remaining portion of the order, after matches, that enters the order book"
+        }
+      }
+    },
+    "xudrpcRaidenInfo": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "channels": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
