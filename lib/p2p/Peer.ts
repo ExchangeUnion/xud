@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
-import { Packet, MessageType, PacketType, HelloPacket, PingPacket, PongPacket } from './packets';
+import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket } from './packets';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
 
@@ -150,7 +150,7 @@ class Peer extends EventEmitter {
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.type, packet.toRaw());
 
-    if (packet.messageType === MessageType.REQUEST) {
+    if (packet.direction === PacketDirection.REQUEST) {
       this.addResponseTimeout(packet.header.hash!, Peer.RESPONSE_TIMEOUT);
     }
   }
@@ -395,7 +395,7 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = (packet: Packet): void => {
-    if (packet.messageType === MessageType.RESPONSE) {
+    if (packet.direction === PacketDirection.RESPONSE) {
       if (!this.fulfillResponse(packet.header.reqHash, packet)) {
         return;
       }
@@ -429,7 +429,7 @@ class Peer extends EventEmitter {
 
   private sendHello = (): HelloPacket => {
     // TODO: use real values
-    const packet = new HelloPacket().init({
+    const packet = new HelloPacket({
       version: '123',
       nodeKey: '123',
       listenPort: 20000,
@@ -450,7 +450,7 @@ class Peer extends EventEmitter {
   }
 
   private sendPing = (): PingPacket => {
-    const packet = new PingPacket().init();
+    const packet = new PingPacket({ ts: ms() });
 
     this.sendPacket(packet);
 
@@ -468,7 +468,7 @@ class Peer extends EventEmitter {
   }
 
   private sendPong = (pingHash: string): PongPacket => {
-    const packet = new PongPacket().init({ reqHash: pingHash });
+    const packet = new PongPacket({ ts: ms() }, pingHash);
 
     this.sendPacket(packet);
 

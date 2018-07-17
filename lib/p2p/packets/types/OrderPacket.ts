@@ -1,4 +1,4 @@
-import Packet, { MessageType } from '../Packet';
+import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { orders } from '../../../types/index';
 
@@ -10,19 +10,13 @@ type OrderPacketBody = {
   invoice: string;
 };
 
-class OrderPacket extends Packet {
-  public type: PacketType = PacketType.ORDER;
-  public messageType: MessageType = MessageType.UNILATERAL;
-  public body!: OrderPacketBody;
-
-  public init(args: OrderPacketBody): OrderPacket {
-    this.body = args;
-    this.header = this.createHeader(this.body);
-    return this;
+class OrderPacket extends Packet<OrderPacketBody> {
+  public get type() {
+    return PacketType.HELLO;
   }
 
-  public fromOutgoingOrder(order: orders.OutgoingOrder): OrderPacket {
-    return this.init(order);
+  public get direction() {
+    return PacketDirection.UNILATERAL;
   }
 }
 
