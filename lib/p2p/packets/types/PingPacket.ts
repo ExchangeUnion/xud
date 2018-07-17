@@ -1,20 +1,17 @@
-import Packet, { MessageType } from '../Packet';
+import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { ms } from '../../../utils/utils';
 
 type PingPacketBody = {
   ts: number;
 };
 
-class PingPacket extends Packet {
-  public type: PacketType = PacketType.PING;
-  public messageType: MessageType = MessageType.REQUEST;
-  public body!: PingPacketBody;
+class PingPacket extends Packet<PingPacketBody> {
+  public get type() {
+    return PacketType.PING;
+  }
 
-  public init(): PingPacket {
-    this.body = { ts: ms() };
-    this.header = this.createHeader(this.body);
-    return this;
+  public get direction() {
+    return PacketDirection.REQUEST;
   }
 }
 

@@ -1,4 +1,4 @@
-import Packet, { MessageType } from '../Packet';
+import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 type HelloPacketBody = {
@@ -8,15 +8,13 @@ type HelloPacketBody = {
   pairs: string[];
 };
 
-class HelloPacket extends Packet {
-  public type: PacketType = PacketType.HELLO;
-  public messageType: MessageType = MessageType.UNILATERAL;
-  public body!: HelloPacketBody;
+class HelloPacket extends Packet<HelloPacketBody> {
+  public get type() {
+    return PacketType.HELLO;
+  }
 
-  public init(args: HelloPacketBody): HelloPacket {
-    this.body = args;
-    this.header = this.createHeader(this.body);
-    return this;
+  public get direction() {
+    return PacketDirection.UNILATERAL;
   }
 }
 
