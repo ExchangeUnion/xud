@@ -11,14 +11,13 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     getInfo: IXudService_IGetInfo;
     getPairs: IXudService_IGetPairs;
     getOrders: IXudService_IGetOrders;
-    streamingExample: IXudService_IStreamingExample;
     placeOrder: IXudService_IPlaceOrder;
     connect: IXudService_IConnect;
-    tokenSwap: IXudService_ITokenSwap;
-    executeSwap: IXudService_IexecuteSwap;
-    subscribePeerOrders: IXudService_IsubscribePeerOrders;
-    subscribeSwaps: IXudService_IsubscribeSwaps;
+    executeSwap: IXudService_IExecuteSwap;
     shutdown: IXudService_IShutdown;
+    streamingExample: IXudService_IStreamingExample;
+    subscribePeerOrders: IXudService_ISubscribePeerOrders;
+    subscribeSwaps: IXudService_ISubscribeSwaps;
 }
 
 interface IXudService_IGetInfo extends grpc.MethodDefinition<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse> {
@@ -48,15 +47,6 @@ interface IXudService_IGetOrders extends grpc.MethodDefinition<xudrpc_pb.GetOrde
     responseSerialize: grpc.serialize<xudrpc_pb.GetOrdersResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetOrdersResponse>;
 }
-interface IXudService_IStreamingExample extends grpc.MethodDefinition<xudrpc_pb.StreamingExampleRequest, xudrpc_pb.StreamingExampleResponse> {
-    path: string; // "/xudrpc.Xud/StreamingExample"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
-    requestSerialize: grpc.serialize<xudrpc_pb.StreamingExampleRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.StreamingExampleRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.StreamingExampleResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.StreamingExampleResponse>;
-}
 interface IXudService_IPlaceOrder extends grpc.MethodDefinition<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse> {
     path: string; // "/xudrpc.Xud/PlaceOrder"
     requestStream: boolean; // false
@@ -75,41 +65,14 @@ interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRe
     responseSerialize: grpc.serialize<xudrpc_pb.ConnectResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ConnectResponse>;
 }
-interface IXudService_ITokenSwap extends grpc.MethodDefinition<xudrpc_pb.TokenSwapRequest, xudrpc_pb.TokenSwapResponse> {
-    path: string; // "/xudrpc.Xud/TokenSwap"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.TokenSwapRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.TokenSwapRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.TokenSwapResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.TokenSwapResponse>;
-}
-interface IXudService_IexecuteSwap extends grpc.MethodDefinition<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.ExecuteSwapResponse> {
-    path: string; // "/xudrpc.Xud/executeSwap"
+interface IXudService_IExecuteSwap extends grpc.MethodDefinition<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.ExecuteSwapResponse> {
+    path: string; // "/xudrpc.Xud/ExecuteSwap"
     requestStream: boolean; // false
     responseStream: boolean; // false
     requestSerialize: grpc.serialize<xudrpc_pb.ExecuteSwapRequest>;
     requestDeserialize: grpc.deserialize<xudrpc_pb.ExecuteSwapRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.ExecuteSwapResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ExecuteSwapResponse>;
-}
-interface IXudService_IsubscribePeerOrders extends grpc.MethodDefinition<xudrpc_pb.EmptyRequest, xudrpc_pb.SubscribePeerOrdersResponse> {
-    path: string; // "/xudrpc.Xud/subscribePeerOrders"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.EmptyRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.EmptyRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.SubscribePeerOrdersResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.SubscribePeerOrdersResponse>;
-}
-interface IXudService_IsubscribeSwaps extends grpc.MethodDefinition<xudrpc_pb.EmptyRequest, xudrpc_pb.SubscribeSwapsResponse> {
-    path: string; // "/xudrpc.Xud/subscribeSwaps"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.EmptyRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.EmptyRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.SubscribeSwapsResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.SubscribeSwapsResponse>;
 }
 interface IXudService_IShutdown extends grpc.MethodDefinition<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse> {
     path: string; // "/xudrpc.Xud/Shutdown"
@@ -120,6 +83,33 @@ interface IXudService_IShutdown extends grpc.MethodDefinition<xudrpc_pb.Shutdown
     responseSerialize: grpc.serialize<xudrpc_pb.ShutdownResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ShutdownResponse>;
 }
+interface IXudService_IStreamingExample extends grpc.MethodDefinition<xudrpc_pb.StreamingExampleRequest, xudrpc_pb.StreamingExampleResponse> {
+    path: string; // "/xudrpc.Xud/StreamingExample"
+    requestStream: boolean; // false
+    responseStream: boolean; // true
+    requestSerialize: grpc.serialize<xudrpc_pb.StreamingExampleRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.StreamingExampleRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.StreamingExampleResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.StreamingExampleResponse>;
+}
+interface IXudService_ISubscribePeerOrders extends grpc.MethodDefinition<xudrpc_pb.SubscribePeerOrdersRequest, xudrpc_pb.SubscribePeerOrdersResponse> {
+    path: string; // "/xudrpc.Xud/SubscribePeerOrders"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.SubscribePeerOrdersRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.SubscribePeerOrdersRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.SubscribePeerOrdersResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.SubscribePeerOrdersResponse>;
+}
+interface IXudService_ISubscribeSwaps extends grpc.MethodDefinition<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SubscribeSwapsResponse> {
+    path: string; // "/xudrpc.Xud/SubscribeSwaps"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.SubscribeSwapsRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.SubscribeSwapsRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.SubscribeSwapsResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.SubscribeSwapsResponse>;
+}
 
 export const XudService: IXudService;
 
@@ -127,14 +117,13 @@ export interface IXudServer {
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
     getPairs: grpc.handleUnaryCall<xudrpc_pb.GetPairsRequest, xudrpc_pb.GetPairsResponse>;
     getOrders: grpc.handleUnaryCall<xudrpc_pb.GetOrdersRequest, xudrpc_pb.GetOrdersResponse>;
-    streamingExample: grpc.handleServerStreamingCall<xudrpc_pb.StreamingExampleRequest, xudrpc_pb.StreamingExampleResponse>;
     placeOrder: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
-    tokenSwap: grpc.handleUnaryCall<xudrpc_pb.TokenSwapRequest, xudrpc_pb.TokenSwapResponse>;
     executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.ExecuteSwapResponse>;
-    subscribePeerOrders: grpc.handleUnaryCall<xudrpc_pb.EmptyRequest, xudrpc_pb.SubscribePeerOrdersResponse>;
-    subscribeSwaps: grpc.handleUnaryCall<xudrpc_pb.EmptyRequest, xudrpc_pb.SubscribeSwapsResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
+    streamingExample: grpc.handleServerStreamingCall<xudrpc_pb.StreamingExampleRequest, xudrpc_pb.StreamingExampleResponse>;
+    subscribePeerOrders: grpc.handleUnaryCall<xudrpc_pb.SubscribePeerOrdersRequest, xudrpc_pb.SubscribePeerOrdersResponse>;
+    subscribeSwaps: grpc.handleUnaryCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SubscribeSwapsResponse>;
 }
 
 export interface IXudClient {
@@ -147,29 +136,26 @@ export interface IXudClient {
     getOrders(request: xudrpc_pb.GetOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
     getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
     getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    streamingExample(request: xudrpc_pb.StreamingExampleRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
-    streamingExample(request: xudrpc_pb.StreamingExampleRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
-    tokenSwap(request: xudrpc_pb.TokenSwapRequest, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
-    tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
-    tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     executeSwap(request: xudrpc_pb.ExecuteSwapRequest, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
     executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
     executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
-    subscribePeerOrders(request: xudrpc_pb.EmptyRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    subscribePeerOrders(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    subscribePeerOrders(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    subscribeSwaps(request: xudrpc_pb.EmptyRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
-    subscribeSwaps(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
-    subscribeSwaps(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
+    streamingExample(request: xudrpc_pb.StreamingExampleRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
+    streamingExample(request: xudrpc_pb.StreamingExampleRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
+    subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
+    subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
+    subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class XudClient extends grpc.Client implements IXudClient {
@@ -183,27 +169,24 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getOrders(request: xudrpc_pb.GetOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
     public getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
     public getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    public streamingExample(request: xudrpc_pb.StreamingExampleRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
-    public streamingExample(request: xudrpc_pb.StreamingExampleRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
-    public tokenSwap(request: xudrpc_pb.TokenSwapRequest, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
-    public tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
-    public tokenSwap(request: xudrpc_pb.TokenSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.TokenSwapResponse) => void): grpc.ClientUnaryCall;
     public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
     public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
     public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ExecuteSwapResponse) => void): grpc.ClientUnaryCall;
-    public subscribePeerOrders(request: xudrpc_pb.EmptyRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    public subscribePeerOrders(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    public subscribePeerOrders(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
-    public subscribeSwaps(request: xudrpc_pb.EmptyRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
-    public subscribeSwaps(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
-    public subscribeSwaps(request: xudrpc_pb.EmptyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
     public shutdown(request: xudrpc_pb.ShutdownRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ShutdownResponse) => void): grpc.ClientUnaryCall;
+    public streamingExample(request: xudrpc_pb.StreamingExampleRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
+    public streamingExample(request: xudrpc_pb.StreamingExampleRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.StreamingExampleRequest>;
+    public subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    public subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    public subscribePeerOrders(request: xudrpc_pb.SubscribePeerOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribePeerOrdersResponse) => void): grpc.ClientUnaryCall;
+    public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
+    public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
+    public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SubscribeSwapsResponse) => void): grpc.ClientUnaryCall;
 }

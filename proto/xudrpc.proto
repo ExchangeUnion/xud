@@ -26,15 +26,6 @@ service Xud {
     };
   }
 
-  /**
-  * Example for a server-side streaming call
-  */
-  rpc StreamingExample(StreamingExampleRequest) returns (stream StreamingExampleResponse) {
-    option (google.api.http) = {
-      get: "/v1/streamingexample"
-    };
-  }
-
   /* Add an order to the order book. */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
@@ -51,34 +42,10 @@ service Xud {
     };
   }
 
-  /* Demo method to execute a Raiden Token Swap through XUD. */
-  rpc TokenSwap(TokenSwapRequest) returns (TokenSwapResponse) {
-    option (google.api.http) = {
-      post: "/v1/tokenswap"
-      body: "*"
-    };
-  }
-
-  /* Execute Swap. */
-  rpc executeSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
+  /* Execute an atomic swap */
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
     option (google.api.http) = {
       post: "/v1/executeswap"
-      body: "*"
-    };
-  }
-
-  /* Subscribe to incoming peer orders. */
-  rpc subscribePeerOrders(EmptyRequest) returns (SubscribePeerOrdersResponse) {
-    option (google.api.http) = {
-      get: "/v1/subscribepeerorders"
-      body: "*"
-    };
-  }
-
-  /* Subscribe to Swaps executed. */
-  rpc subscribeSwaps(EmptyRequest) returns (SubscribeSwapsResponse) {
-    option (google.api.http) = {
-      get: "/v1/subscribeswaps"
       body: "*"
     };
   }
@@ -90,14 +57,30 @@ service Xud {
       body: "*"
     };
   }
+
+  /* Example for a server-side streaming call */
+  rpc StreamingExample(StreamingExampleRequest) returns (stream StreamingExampleResponse) {
+    option (google.api.http) = {
+      get: "/v1/streamingexample"
+    };
+  }
+
+  /* Subscribe to incoming peer orders. */
+  rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (SubscribePeerOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/subscribepeerorders"
+    };
+  }
+
+  /* Subscribe executed swaps. */
+  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (SubscribeSwapsResponse) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswaps"
+    };
+  }
 }
 
-message EmptyRequest {}
-message SubscribePeerOrdersResponse {}
-message SubscribeSwapsResponse{}
 message GetInfoRequest {}
-message ExecuteSwapResponse {}
-message ExecuteSwapRequest {}
 message GetInfoResponse {
     int32 num_peers = 1 [json_name = "num_peers"];
     int32 num_pairs = 2 [json_name = "num_pairs"];
@@ -154,13 +137,13 @@ message SwapPayload {
   string receiving_token = 5 [json_name = "receiving_token"];
 }
 
-message TokenSwapRequest {
+message ExecuteSwapRequest {
   string target_address = 1 [json_name = "target_address"];
   string identifier = 2 [json_name = "identifier"];
   SwapPayload payload = 3 [json_name = "payload"];
 }
 
-message TokenSwapResponse {
+message ExecuteSwapResponse {
   string result = 1 [json_name = "result"];
 }
 
@@ -217,13 +200,23 @@ message GetOrdersResponse {
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
 
+message ShutdownRequest {}
+message ShutdownResponse {
+  // A message describing the result of the shutdown request
+  string result = 1 [json_name = "result"];
+}
+
 message StreamingExampleRequest {}
 message StreamingExampleResponse {
   int64 date = 1 [json_name = "date"];
 }
 
-message ShutdownRequest {}
-message ShutdownResponse {
-  // A message describing the result of the shutdown request
+message SubscribePeerOrdersRequest {}
+message SubscribePeerOrdersResponse {
+  Order order = 1 [json_name = "order"];
+}
+
+message SubscribeSwapsRequest {}
+message SubscribeSwapsResponse {
   string result = 1 [json_name = "result"];
 }

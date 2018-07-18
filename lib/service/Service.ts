@@ -6,6 +6,8 @@ import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
+import { EventEmitter } from 'events';
+import { orders } from '../types';
 
 const packageJson = require('../../package.json');
 
@@ -23,7 +25,7 @@ export type ServiceComponents = {
 };
 
 /** Class containing the available RPC methods for XUD */
-class Service {
+class Service extends EventEmitter {
   public shutdown: Function;
 
   private orderBook: OrderBook;
@@ -35,6 +37,8 @@ class Service {
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
+    super();
+
     this.shutdown = components.shutdown;
 
     this.orderBook = components.orderBook;
@@ -160,30 +164,25 @@ class Service {
   /**
    * Demo method to execute a Raiden Token Swap through XUD.
   */
-  public tokenSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
+  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
 
-  /**
-   * Execute a Swap.
+  /*
+   * Subscribe to incoming peer orders.
    */
-  public executeSwap = async() => {
-
+  public subscribePeerOrders = async () => {
+    this.pool.on('packet.order', (order: orders.PeerOrder) => this.emit('peerOrder', order));
   }
 
-  /**
-   * Subcribe to Incoming Peer Orders.
+  /*
+   * Subscribe executed swaps
    */
-  public subscribePeerOrders = async() => {
-
+  public subscribeSwaps = async () => {
+    // TODO: add support for Lightning swaps
+    // TODO: subscribe to channel events of Raiden
+    this.raidenClient.on('swap', (result: string) => this.emit('swap', result));
   }
-
-  /**
-   * Subcribe to  Swap Executions.
-   */
-  public subscribeSwaps = async() => {
-
-  }
-
 }
+
 export default Service;
