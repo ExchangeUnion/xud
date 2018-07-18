@@ -178,7 +178,7 @@ class Service extends EventEmitter {
   /*
    * Subscribe to executed swaps
    */
-  public subscribeSwaps = async (_callback: Function) => {}
+  public subscribeSwaps = async (_callback: Function) => {};
 }
 
 export default Service;
