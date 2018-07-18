@@ -176,7 +176,7 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe executed swaps
+   * Subscribe to executed swaps
    */
   public subscribeSwaps = async () => {
     // TODO: add support for Lightning swaps
