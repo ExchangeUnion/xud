@@ -153,12 +153,26 @@ class Service extends EventEmitter {
     return this.orderBook.addLimitOrder(order);
   }
 
+  /*
+   * Cancel placed order from the orderbook.
+   */
+  public cancelOrder = async (_id: string) => {
+    return 'Not implemented';
+  }
+
   /**
    * Connect to an XU node on a given host and port.
    */
   public connect = async ({ host, port }: { host: string, port: number }) => {
     const peer = await this.pool.addOutbound(host, port);
     return peer.getStatus();
+  }
+
+  /*
+   * Disconnect from a connected peer XU node on a given host and port.
+   */
+  public disconnect = async (_request: { host: string, port: number}) => {
+    return 'Not implemented';
   }
 
   /**

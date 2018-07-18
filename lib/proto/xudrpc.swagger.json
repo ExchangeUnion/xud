@@ -15,6 +15,33 @@
     "application/json"
   ],
   "paths": {
+    "/v1/cancelorder": {
+      "post": {
+        "summary": "Cancel placed order from the orderbook.",
+        "operationId": "CancelOrder",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcCancelOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcCancelOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Connect to an XU node on a given host and port.",
@@ -34,6 +61,33 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/xudrpcConnectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/disconnect": {
+      "post": {
+        "summary": "Disconnect from a connected peer XU node on a given host and port.",
+        "operationId": "Disconnect",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDisconnectResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDisconnectRequest"
             }
           }
         ],
@@ -227,6 +281,22 @@
     }
   },
   "definitions": {
+    "xudrpcCancelOrderRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcCancelOrderResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -245,6 +315,26 @@
         "result": {
           "type": "string",
           "title": "A message describing the result of the connection request"
+        }
+      }
+    },
+    "xudrpcDisconnectRequest": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "xudrpcDisconnectResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
         }
       }
     },

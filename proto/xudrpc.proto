@@ -11,21 +11,21 @@ service Xud {
       get: "/v1/info"
     };
   }
-
+  
   /* Get the list of the order book's available pairs. */
   rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
     option (google.api.http) = {
       get: "/v1/pairs"
     };
   }
-
+  
   /* Get a list of standing orders from the order book. */
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
     };
   }
-
+  
   /* Add an order to the order book. */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
@@ -33,7 +33,15 @@ service Xud {
       body: "*"
     };
   }
-
+  
+  /* Cancel placed order from the orderbook. */
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/cancelorder"
+      body: "*"
+    };
+  }
+  
   /* Connect to an XU node on a given host and port. */
   rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
@@ -41,7 +49,16 @@ service Xud {
       body: "*"
     };
   }
-
+  
+  
+  /* Disconnect from a connected peer XU node on a given host and port. */
+  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
+    option (google.api.http) = {
+      post: "/v1/disconnect"
+      body: "*"
+    };
+  }
+  
   /* Execute an atomic swap */
   rpc ExecuteSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
     option (google.api.http) = {
@@ -49,7 +66,7 @@ service Xud {
       body: "*"
     };
   }
-
+  
   /* Shutdown the xud daemon. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -57,14 +74,14 @@ service Xud {
       body: "*"
     };
   }
-
+  
   /* Subscribe to incoming peer orders. */
   rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (stream SubscribePeerOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/subscribepeerorders"
     };
   }
-
+  
   /* Subscribe executed swaps. */
   rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SubscribeSwapsResponse) {
     option (google.api.http) = {
@@ -75,39 +92,39 @@ service Xud {
 
 message GetInfoRequest {}
 message GetInfoResponse {
-    int32 num_peers = 1 [json_name = "num_peers"];
-    int32 num_pairs = 2 [json_name = "num_pairs"];
-    string version = 3 [json_name = "version"];
-    OrdersCount orders = 4 [json_name = "orders"];
-    LndInfo lnd = 5 [json_name = "lnd"];
-    RaidenInfo raiden = 6 [json_name = "raiden"];
+  int32 num_peers = 1 [json_name = "num_peers"];
+  int32 num_pairs = 2 [json_name = "num_pairs"];
+  string version = 3 [json_name = "version"];
+  OrdersCount orders = 4 [json_name = "orders"];
+  LndInfo lnd = 5 [json_name = "lnd"];
+  RaidenInfo raiden = 6 [json_name = "raiden"];
 }
 
 message OrdersCount {
-    int32 peer = 1 [json_name = "peer"];
-    int32 own = 2 [json_name = "own"];
+  int32 peer = 1 [json_name = "peer"];
+  int32 own = 2 [json_name = "own"];
 }
 
 message LndInfo {
-    string error = 1 [json_name = "error"];
-    LndChannels channels = 2 [json_name = "channels"];
-    repeated string chains = 3 [json_name = "chains"];
-    int32 blockheight = 4 [json_name = "blockheight"];
-    repeated string uris = 5 [json_name = "uris"];
-    string version = 6 [json_name = "version"];
+  string error = 1 [json_name = "error"];
+  LndChannels channels = 2 [json_name = "channels"];
+  repeated string chains = 3 [json_name = "chains"];
+  int32 blockheight = 4 [json_name = "blockheight"];
+  repeated string uris = 5 [json_name = "uris"];
+  string version = 6 [json_name = "version"];
 }
 
 message LndChannels {
-    int32 active = 1 [json_name = "active"];
-    int32 inactive = 2 [json_name = "inactive"];
-    int32 pending = 3 [json_name = "pending"];
+  int32 active = 1 [json_name = "active"];
+  int32 inactive = 2 [json_name = "inactive"];
+  int32 pending = 3 [json_name = "pending"];
 }
 
 message RaidenInfo {
-    string error = 1 [json_name = "error"];
-    string address = 2 [json_name = "address"];
-    int32 channels = 3 [json_name = "channels"];
-    string version = 4 [json_name = "version"];
+  string error = 1 [json_name = "error"];
+  string address = 2 [json_name = "address"];
+  int32 channels = 3 [json_name = "channels"];
+  string version = 4 [json_name = "version"];
 }
 
 message Pair {
@@ -150,6 +167,15 @@ message ConnectResponse {
   string result = 1 [json_name = "result"];
 }
 
+message DisconnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+
+message DisconnectResponse {
+  string result = 1 [json_name = "result"];
+}
+
 message Order {
   // The price of the order, precise to 6 decimal places.
   double price = 1 [json_name = "price"];
@@ -178,6 +204,14 @@ message PlaceOrderResponse {
   repeated OrderMatch matches = 1 [json_name = "matches"];
   // The remaining portion of the order, after matches, that enters the order book
   Order remaining_order = 2 [json_name= "remaining_order"];
+}
+
+message CancelOrderRequest {
+  string id = 1 [json_name = "order_id"];
+}
+
+message CancelOrderResponse {
+  string result = 1 [json_name = "result"];
 }
 
 message GetOrdersRequest {

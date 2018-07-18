@@ -1,14 +1,13 @@
 import grpc from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
-import { isObject, ms } from '../utils/utils';
+import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from '../orderbook/OrderBookRepository';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
-import { orders } from '../types';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -71,10 +70,24 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.cancelOrder]]
+   */
+  public cancelOrder: grpc.handleUnaryCall<{ id: string }, string> = async (call, callback) => {
+    this.unaryCall(call.request.id, callback, this.service.cancelOrder);
+  }
+
+  /**
    * See [[Service.connect]]
    */
-  public connect: grpc.handleUnaryCall<{ host: string, port: number }, Orders> = async (call, callback) => {
+  public connect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.connect);
+  }
+
+  /**
+   * See [[Service.disconnect]]
+   */
+  public disconnect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.disconnect);
   }
 
   /**
