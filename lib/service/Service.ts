@@ -171,18 +171,14 @@ class Service extends EventEmitter {
   /*
    * Subscribe to incoming peer orders.
    */
-  public subscribePeerOrders = async () => {
-    this.pool.on('packet.order', (order: orders.PeerOrder) => this.emit('peerOrder', order));
+  public subscribePeerOrders = async (callback: Function) => {
+    this.orderBook.on('peerOrder', order => callback(order));
   }
 
   /*
    * Subscribe to executed swaps
    */
-  public subscribeSwaps = async () => {
-    // TODO: add support for Lightning swaps
-    // TODO: subscribe to channel events of Raiden
-    this.raidenClient.on('swap', (result: string) => this.emit('swap', result));
-  }
+  public subscribeSwaps = async (_callback: Function) => {}
 }
 
 export default Service;

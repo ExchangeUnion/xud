@@ -93,14 +93,14 @@ class GrpcService {
    * See [[Service.subscribePeerOrders]]
    */
   public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
-    this.service.on('peerOrder', (order: orders.PeerOrder) => call.write({ order }));
+    this.service.subscribePeerOrders(order => call.write({ order }));
   }
 
   /*
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
-    this.service.on('swap', (result: string) => call.write({ result }));
+    this.service.subscribeSwaps(result => call.write({ result }));
   }
 }
 

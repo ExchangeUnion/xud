@@ -2,7 +2,7 @@ import { loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { SubscribePeerOrdersRequest, SubscribePeerOrdersResponse } from '../../proto/xudrpc_pb';
 
-export const command = 'subscribeorders';
+export const command = 'subscribepeerorders';
 
 export const describe = 'subscribe to incoming peer orders';
 
