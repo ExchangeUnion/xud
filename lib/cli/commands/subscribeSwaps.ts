@@ -8,7 +8,7 @@ export const describe = 'subscribe to incoming peer orders';
 
 export const handler = (argv: Arguments) => {
   const request = new SubscribeSwapsRequest();
-  const call = loadXudClient(argv).streamingExample(request);
+  const call = loadXudClient(argv).subscribeSwaps(request);
   call.on('data', (message: SubscribeSwapsResponse) => {
     console.log(message.toObject());
   });

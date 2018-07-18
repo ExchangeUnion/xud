@@ -58,22 +58,15 @@ service Xud {
     };
   }
 
-  /* Example for a server-side streaming call */
-  rpc StreamingExample(StreamingExampleRequest) returns (stream StreamingExampleResponse) {
-    option (google.api.http) = {
-      get: "/v1/streamingexample"
-    };
-  }
-
   /* Subscribe to incoming peer orders. */
-  rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (SubscribePeerOrdersResponse) {
+  rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (stream SubscribePeerOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/subscribepeerorders"
     };
   }
 
   /* Subscribe executed swaps. */
-  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (SubscribeSwapsResponse) {
+  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SubscribeSwapsResponse) {
     option (google.api.http) = {
       get: "/v1/subscribeswaps"
     };
@@ -204,11 +197,6 @@ message ShutdownRequest {}
 message ShutdownResponse {
   // A message describing the result of the shutdown request
   string result = 1 [json_name = "result"];
-}
-
-message StreamingExampleRequest {}
-message StreamingExampleResponse {
-  int64 date = 1 [json_name = "date"];
 }
 
 message SubscribePeerOrdersRequest {}

@@ -89,18 +89,6 @@ class GrpcService {
     this.unaryCall(call.request, callback, this.service.shutdown);
   }
 
-  /**
-   * Example for a server-side streaming call
-   */
-  public streamingExample: grpc.handleServerStreamingCall<{}, Orders> = async (call) => {
-    setInterval(() => {
-      const date = ms();
-      call.write({
-        date,
-      });
-    }, 1000);
-  }
-
   /*
    * See [[Service.subscribePeerOrders]]
    */

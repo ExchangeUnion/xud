@@ -191,30 +191,13 @@
         ]
       }
     },
-    "/v1/streamingexample": {
-      "get": {
-        "summary": "Example for a server-side streaming call",
-        "operationId": "StreamingExample",
-        "responses": {
-          "200": {
-            "description": "(streaming responses)",
-            "schema": {
-              "$ref": "#/definitions/xudrpcStreamingExampleResponse"
-            }
-          }
-        },
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/subscribepeerorders": {
       "get": {
         "summary": "Subscribe to incoming peer orders.",
         "operationId": "SubscribePeerOrders",
         "responses": {
           "200": {
-            "description": "",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSubscribePeerOrdersResponse"
             }
@@ -231,7 +214,7 @@
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSubscribeSwapsResponse"
             }
@@ -514,15 +497,6 @@
         "result": {
           "type": "string",
           "title": "A message describing the result of the shutdown request"
-        }
-      }
-    },
-    "xudrpcStreamingExampleResponse": {
-      "type": "object",
-      "properties": {
-        "date": {
-          "type": "string",
-          "format": "int64"
         }
       }
     },

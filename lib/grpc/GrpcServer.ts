@@ -26,7 +26,6 @@ class GrpcServer {
       connect: grpcService.connect,
       executeSwap: grpcService.executeSwap,
       shutdown: grpcService.shutdown,
-      streamingExample: grpcService.streamingExample,
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
     });
