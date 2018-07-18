@@ -1,10 +1,10 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
-import { CancelOrderRequest, Order } from '../../proto/xudrpc_pb';
+import { CancelOrderRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'placeorder <pair_id> <price> <quantity>';
+export const command = 'cancelorder <id>';
 
-export const describe = 'place an order';
+export const describe = 'cancel an order';
 
 export const builder = {
   id: {
