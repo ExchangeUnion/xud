@@ -162,8 +162,8 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Demo method to execute a Raiden Token Swap through XUD.
-  */
+   * Execute an atomic swap
+   */
   public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
