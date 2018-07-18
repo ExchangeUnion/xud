@@ -15,6 +15,33 @@
     "application/json"
   ],
   "paths": {
+    "/v1/cancelorder": {
+      "post": {
+        "summary": "Cancel placed order from the orderbook.",
+        "operationId": "CancelOrder",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcCancelOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcCancelOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Connect to an XU node on a given host and port.",
@@ -42,9 +69,63 @@
         ]
       }
     },
+    "/v1/disconnect": {
+      "post": {
+        "summary": "Disconnect from a connected peer XU node on a given host and port.",
+        "operationId": "Disconnect",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDisconnectResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDisconnectRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/executeswap": {
+      "post": {
+        "summary": "Execute an atomic swap",
+        "operationId": "ExecuteSwap",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcExecuteSwapResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcExecuteSwapRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/info": {
       "get": {
-        "summary": "Placeholder for a method to return general information about an Exchange Union node.",
+        "summary": "Get general information about this Exchange Union node.",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -164,15 +245,15 @@
         ]
       }
     },
-    "/v1/streamingexample": {
+    "/v1/subscribepeerorders": {
       "get": {
-        "summary": "*\nExample for a server-side streaming call",
-        "operationId": "StreamingExample",
+        "summary": "Subscribe to incoming peer orders.",
+        "operationId": "SubscribePeerOrders",
         "responses": {
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcStreamingExampleResponse"
+              "$ref": "#/definitions/xudrpcSubscribePeerOrdersResponse"
             }
           }
         },
@@ -181,28 +262,18 @@
         ]
       }
     },
-    "/v1/tokenswap": {
-      "post": {
-        "summary": "Demo method to execute a Raiden Token Swap through XUD.",
-        "operationId": "TokenSwap",
+    "/v1/subscribeswaps": {
+      "get": {
+        "summary": "Subscribe executed swaps.",
+        "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "",
+            "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcTokenSwapResponse"
+              "$ref": "#/definitions/xudrpcSubscribeSwapsResponse"
             }
           }
         },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcTokenSwapRequest"
-            }
-          }
-        ],
         "tags": [
           "Xud"
         ]
@@ -210,6 +281,22 @@
     }
   },
   "definitions": {
+    "xudrpcCancelOrderRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcCancelOrderResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -228,6 +315,48 @@
         "result": {
           "type": "string",
           "title": "A message describing the result of the connection request"
+        }
+      }
+    },
+    "xudrpcDisconnectRequest": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "xudrpcDisconnectResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcExecuteSwapRequest": {
+      "type": "object",
+      "properties": {
+        "target_address": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/definitions/xudrpcSwapPayload"
+        }
+      }
+    },
+    "xudrpcExecuteSwapResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
         }
       }
     },
@@ -469,12 +598,19 @@
         }
       }
     },
-    "xudrpcStreamingExampleResponse": {
+    "xudrpcSubscribePeerOrdersResponse": {
       "type": "object",
       "properties": {
-        "date": {
-          "type": "string",
-          "format": "int64"
+        "order": {
+          "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcSubscribeSwapsResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "string"
         }
       }
     },
@@ -496,28 +632,6 @@
           "format": "uint64"
         },
         "receiving_token": {
-          "type": "string"
-        }
-      }
-    },
-    "xudrpcTokenSwapRequest": {
-      "type": "object",
-      "properties": {
-        "target_address": {
-          "type": "string"
-        },
-        "identifier": {
-          "type": "string"
-        },
-        "payload": {
-          "$ref": "#/definitions/xudrpcSwapPayload"
-        }
-      }
-    },
-    "xudrpcTokenSwapResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
           "type": "string"
         }
       }

@@ -167,6 +167,7 @@ class RaidenClient extends BaseClient {
     }
 
     const res = await this.sendRequest(endpoint, 'PUT', payload);
+    // TODO: parse result of request
   }
 
   /**

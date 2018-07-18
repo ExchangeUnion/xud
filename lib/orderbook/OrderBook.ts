@@ -11,6 +11,7 @@ import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import Peer from '../p2p/Peer';
+import { EventEmitter } from 'events';
 
 type OrderBookConfig = {
   internalmatching: boolean;
@@ -21,7 +22,7 @@ type Orders = {
   sellOrders: { [ id: string ]: orders.StampedOrder };
 };
 
-class OrderBook {
+class OrderBook extends EventEmitter {
   public pairs: db.PairInstance[] = [];
   public matchingEngines: { [ pairId: string ]: MatchingEngine } = {};
 
@@ -33,6 +34,8 @@ class OrderBook {
   private peerOrders: { [ pairId: string ]: Orders } = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+    super();
+
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -141,6 +144,7 @@ class OrderBook {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
+    this.emit('peerOrder', order);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
