@@ -6,6 +6,8 @@ import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
+import { EventEmitter } from 'events';
+import { orders } from '../types';
 
 const packageJson = require('../../package.json');
 
@@ -23,7 +25,7 @@ export type ServiceComponents = {
 };
 
 /** Class containing the available RPC methods for XUD */
-class Service {
+class Service extends EventEmitter {
   public shutdown: Function;
 
   private orderBook: OrderBook;
@@ -35,6 +37,8 @@ class Service {
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
+    super();
+
     this.shutdown = components.shutdown;
 
     this.orderBook = components.orderBook;
@@ -149,6 +153,13 @@ class Service {
     return this.orderBook.addLimitOrder(order);
   }
 
+  /*
+   * Cancel placed order from the orderbook.
+   */
+  public cancelOrder = async (_id: string) => {
+    return 'Not implemented';
+  }
+
   /**
    * Connect to an XU node on a given host and port.
    */
@@ -157,12 +168,31 @@ class Service {
     return peer.getStatus();
   }
 
+  /*
+   * Disconnect from a connected peer XU node on a given host and port.
+   */
+  public disconnect = async (_request: { host: string, port: number}) => {
+    return 'Not implemented';
+  }
+
   /**
-   * Demo method to execute a Raiden Token Swap through XUD.
-  */
-  public tokenSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
+   * Execute an atomic swap
+   */
+  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     return this.raidenClient.tokenSwap(target_address, payload, identifier);
   }
+
+  /*
+   * Subscribe to incoming peer orders.
+   */
+  public subscribePeerOrders = async (callback: Function) => {
+    this.orderBook.on('peerOrder', order => callback(order));
+  }
+
+  /*
+   * Subscribe to executed swaps
+   */
+  public subscribeSwaps = async (_callback: Function) => {};
 }
 
 export default Service;
