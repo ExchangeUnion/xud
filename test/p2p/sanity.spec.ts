@@ -11,7 +11,7 @@ describe('P2P Sanity Tests', () => {
   before(async () => {
 
     firstpeerconfig = {
-      xudir : `${process.env.HOME}/.xud/1/`,
+      instanceId : 1,
       p2p : {
         listen: true,
         port: 8885,
@@ -31,7 +31,7 @@ describe('P2P Sanity Tests', () => {
     };
 
     secondpeerconfig = {
-      xudir : `${process.env.HOME}/.xud/2/`,
+      instanceId : 2,
       p2p : {
         listen: true,
         port: 8886,

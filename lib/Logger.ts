@@ -12,7 +12,7 @@ enum Level {
   DEBUG = 'debug',
 }
 
-enum Context {
+export enum Context {
   GLOBAL = 'GLOBAL',
   DB = 'DB',
   RPC = 'RPC',
@@ -37,6 +37,7 @@ class Logger {
   private logDir: string;
   private context: Context;
   private logger: any;
+  public instanceId: number;
 
   private static defaultLogDir = 'logs';
 
@@ -44,23 +45,24 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public static global = new Logger({ context: Context.GLOBAL });
-  public static db = new Logger({ context: Context.DB });
-  public static rpc = new Logger({ context: Context.RPC });
-  public static p2p = new Logger({ context: Context.P2P });
-  public static orderbook = new Logger({ context: Context.ORDERBOOK });
-  public static lnd = new Logger({ context: Context.LND });
-  public static raiden = new Logger({ context: Context.RAIDEN });
+  public static p2p = new Logger({ context: Context.P2P, instanceId:1 });
+  public static orderbook = new Logger({ context: Context.ORDERBOOK, instanceId:1 });
+  public static lnd = new Logger({ context: Context.LND, instanceId:1 });
+  public static raiden = new Logger({ context: Context.RAIDEN, instanceId:1 });
 
-  constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
+  constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
+    this.instanceId = instanceId || 0;
 
     const { format } = winston;
-    const logFormat = format.printf(
-        info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
-
+    let logFormat: any;
+    if (this.instanceId > 0) {
+      logFormat = format.printf(info => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
+    } else {
+      logFormat = format.printf(info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
+    }
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
     }

@@ -20,6 +20,7 @@ class Config {
   public raiden: RaidenClientConfig;
   public orderbook: OrderBookConfig;
   public webproxy: { port: number, disable: boolean };
+  public instanceId: any;
 
   constructor(private args?: object) {
     const platform = os.platform();
@@ -45,6 +46,7 @@ class Config {
       }
     }
     // default configuration
+    this.instanceId = 0;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
@@ -86,9 +88,6 @@ class Config {
   }
 
   public async load() {
-    if (this.args !== undefined && this.args.hasOwnProperty('xudir')) {
-      this.xudir = this.args['xudir'];
-    }
     const exists = await fse.pathExists(this.xudir);
     if (!exists) {
       try {

@@ -8,21 +8,24 @@ import Pool from '../p2p/Pool';
 import { orders, matchingEngine, db } from '../types';
 import DB from '../db/DB';
 import { groupBy } from '../utils/utils';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import LndClient from '../lndclient/LndClient';
+import { EventEmitter } from 'events';
 
 type OrderBookConfig = {
   internalmatching: boolean;
 };
 
-class OrderBook {
-  private logger: Logger = Logger.orderbook;
+class OrderBook extends EventEmitter {
+  private logger: Logger;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
   public pairs: db.PairInstance[] = [];
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
-  constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(private config: OrderBookConfig, db: DB, instanceId: number, private pool?: Pool, private lndClient?: LndClient) {
+    super();
+    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -120,6 +123,8 @@ class OrderBook {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       return;
     }
+
+    this.emit('peerOrder', order);
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: new Date() };
     matchingEngine.addPeerOrder(stampedOrder);

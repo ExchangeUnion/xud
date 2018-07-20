@@ -17,7 +17,7 @@ describe('OrderBook', () => {
     const config = new Config();
     await config.load();
 
-    db = new DB(config.testDb);
+    db = new DB(config.testDb, config.instanceId);
     await db.init();
     await db.truncate();
 

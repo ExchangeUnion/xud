@@ -68,7 +68,7 @@ class Pool extends EventEmitter {
   public addOutbound = async (address: string, port: number): Promise<Peer> => {
     const socketAddress = new SocketAddress(address, port);
     if (this.peers.has(socketAddress)) {
-      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress);
+      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress.toString());
       this.logger.info(err.message);
       throw err;
     }
@@ -93,7 +93,7 @@ class Pool extends EventEmitter {
   }
 
   public broadcastOrder = (order: orders.OutgoingOrder) => {
-    const orderPacket = OrderPacket.fromOutgoingOrder(order);
+    const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
   }
 

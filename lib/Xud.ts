@@ -1,5 +1,5 @@
 import bootstrap from './bootstrap';
-import Logger from './Logger';
+import Logger, { Context } from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
@@ -15,7 +15,7 @@ bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
-  private logger: Logger = Logger.global;
+  private logger: Logger;
   private config: Config;
   private db!: DB;
   private lndClient!: LndClient;
@@ -33,6 +33,7 @@ class Xud {
    */
   constructor(args)  {
     this.config = new Config(args);
+    this.logger = new Logger({ context: Context.GLOBAL, instanceId: this.config.instanceId });
   }
 
   /**
@@ -44,9 +45,13 @@ class Xud {
 
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
+      if (this.config.instanceId > 0) {
+        this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey_${this.config.instanceId}.dat`);
+      } else {
+        this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
+      }
 
-      this.db = new DB(this.config.db);
+      this.db = new DB(this.config.db, this.config.instanceId);
       await this.db.init();
 
       this.lndClient = new LndClient(this.config.lnd);
@@ -75,7 +80,7 @@ class Xud {
       }
 
       if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer();
+        this.grpcAPIProxy = new GrpcWebProxyServer(this.config.instanceId);
         await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {

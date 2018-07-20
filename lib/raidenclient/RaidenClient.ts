@@ -1,6 +1,6 @@
 import http from 'http';
 
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import * as errors from './errors';
 
@@ -76,8 +76,8 @@ class RaidenClient extends BaseClient {
   /**
    * Create a raiden client.
    */
-  constructor(config: RaidenClientConfig) {
-    super(Logger.raiden);
+  constructor(config: RaidenClientConfig, instanceId: number) {
+    super(new Logger({ instanceId, context: Context.RAIDEN }));
     const { disable, host, port } = config;
 
     this.port = port;
@@ -167,6 +167,7 @@ class RaidenClient extends BaseClient {
     }
 
     const res = await this.sendRequest(endpoint, 'PUT', payload);
+    // TODO: parse result of request
   }
 
   /**
