@@ -1,11 +1,10 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import uuidv1 from 'uuid/v1';
 import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
-import { Packet, PacketType, HelloPacket, PingPacket, PongPacket } from './packets';
+import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket } from './packets';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
 
@@ -36,6 +35,11 @@ class Peer extends EventEmitter {
    */
   private static PING_INTERVAL = 30000;
 
+  /**
+   * Response timeout for response packets.
+   */
+  private static RESPONSE_TIMEOUT = 10000;
+
   // TODO: properties documentation
 
   public socketAddress!: SocketAddress;
@@ -50,8 +54,7 @@ class Peer extends EventEmitter {
   private connectTimeout: NodeJS.Timer | null = null;
   private stallTimer: NodeJS.Timer | null = null;
   private pingTimer: NodeJS.Timer | null = null;
-  private lastPingId: string | null = null;
-  private responseMap: Map<PacketType, PendingResponseEntry> = new Map();
+  private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime: number = 0;
   private banScore: number = 0;
   private lastRecv: number = 0;
@@ -147,8 +150,8 @@ class Peer extends EventEmitter {
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.type, packet.toRaw());
 
-    if (packet.responseType && packet.responseTimeout) {
-      this.addResponseTimeout(packet.responseType, packet.responseTimeout);
+    if (packet.direction === PacketDirection.REQUEST) {
+      this.addResponseTimeout(packet.header.hash!, Peer.RESPONSE_TIMEOUT);
     }
   }
 
@@ -227,7 +230,9 @@ class Peer extends EventEmitter {
     const packet = this.sendHello();
 
     if (!this.handshakeState) {
-      await this.wait(packet.responseType);
+      // using the packet type as the response key,
+      // to allow waiting for any incoming HelloPacket
+      await this.wait(packet.type, Peer.RESPONSE_TIMEOUT);
       assert(this.handshakeState);
     }
   }
@@ -242,10 +247,14 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer. Executed on timeout or once packet is received.
    */
-  private wait = (packetType: PacketType) => {
+  private wait = (key: string, timeout?: number) => {
     return new Promise((resolve, reject) => {
-      const entry = this.getOrAddPendingResponseEntry(packetType);
+      const entry = this.getOrAddPendingResponseEntry(key);
       entry.addJob(resolve, reject);
+
+      if (timeout) {
+        entry.setTimeout(timeout);
+      }
     });
   }
 
@@ -257,7 +266,7 @@ class Peer extends EventEmitter {
 
     for (const [packetType, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.error(`Peer is stalling (${packetType})`);
+        this.error(`Peer (${this.id}) is stalling (${packetType})`);
         this.destroy();
         return;
       }
@@ -267,23 +276,23 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetType: PacketType, timeout: number): PendingResponseEntry | null => {
+  private addResponseTimeout = (hash: string, timeout: number): PendingResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
 
-    const entry = this.getOrAddPendingResponseEntry(packetType);
+    const entry = this.getOrAddPendingResponseEntry(hash);
     entry.setTimeout(timeout);
 
     return entry;
   }
 
-  private getOrAddPendingResponseEntry = (packetType: PacketType): PendingResponseEntry => {
-    let entry = this.responseMap.get(packetType);
+  private  getOrAddPendingResponseEntry = (key: string): PendingResponseEntry => {
+    let entry = this.responseMap.get(key);
 
     if (!entry) {
       entry = new PendingResponseEntry();
-      this.responseMap.set(packetType, entry);
+      this.responseMap.set(key, entry);
     }
 
     return entry;
@@ -292,16 +301,25 @@ class Peer extends EventEmitter {
   /**
    * Fulfill awaiting requests response.
    */
-  private fulfillResponse = (packetType: PacketType): PendingResponseEntry | null => {
-    const entry = this.responseMap.get(packetType);
-
-    if (!entry) {
-      return null;
+  private fulfillResponse = (key: string | undefined, packet: Packet): boolean => {
+    if (!key) {
+      this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${packet.type})`);
+      // TODO: penalize
+      return false;
     }
 
-    this.responseMap.delete(packetType);
+    const entry = this.responseMap.get(key);
 
-    return entry;
+    if (!entry) {
+      this.logger.debug(`Peer (${this.id}) sent an unmatched response packet (${packet.type})`);
+      // TODO: penalize
+      return false;
+    }
+
+    this.responseMap.delete(key);
+    entry.resolve(packet);
+
+    return true;
   }
 
   private connect = (socketAddress: SocketAddress): void => {
@@ -377,28 +395,20 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = (packet: Packet): void => {
-    let status: Boolean = false;
+    if (packet.direction === PacketDirection.RESPONSE) {
+      if (!this.fulfillResponse(packet.header.reqHash, packet)) {
+        return;
+      }
+    }
 
     switch (packet.type) {
       case PacketType.HELLO: {
         this.handleHello(<HelloPacket>packet);
-        status = true;
         break;
       }
       case PacketType.PING: {
         this.handlePing(<PingPacket>packet);
-        status = true;
         break;
-      }
-      case PacketType.PONG:
-        status = this.handlePong(<PongPacket>packet);
-        break;
-    }
-
-    if (status) {
-      const entry = this.fulfillResponse(packet.type);
-      if (entry) {
-        entry.resolve(packet);
       }
     }
 
@@ -434,12 +444,13 @@ class Peer extends EventEmitter {
   private handleHello = (packet: HelloPacket): void => {
     this.handshakeState = { ...this.handshakeState, ...packet.body };
 
-    // TODO: define XUD_MIN_VERSION, throw exception if version below
+    if (this.responseMap.has(packet.type)) {
+      this.fulfillResponse(packet.type, packet);
+    }
   }
 
   private sendPing = (): PingPacket => {
-    this.lastPingId = uuidv1();
-    const packet = new PingPacket({ id: this.lastPingId! });
+    const packet = new PingPacket({ ts: ms() });
 
     this.sendPacket(packet);
 
@@ -447,37 +458,21 @@ class Peer extends EventEmitter {
   }
 
   private handlePing = (packet: PingPacket): void  => {
-    const { id } = packet.body;
+    const { hash } = packet.header;
 
-    if (!id) {
+    if (!hash) {
       return;
     }
 
-    this.sendPong(id);
+    this.sendPong(hash);
   }
 
-  private sendPong = (id: string): PongPacket => {
-    const packet = new PongPacket({ id });
+  private sendPong = (pingHash: string): PongPacket => {
+    const packet = new PongPacket({ ts: ms() }, pingHash);
 
     this.sendPacket(packet);
 
     return packet;
-  }
-
-  private handlePong = (packet: PongPacket): boolean => {
-    const { id } = packet.body;
-    if (!this.lastPingId) {
-      this.logger.debug(`Peer sent an unsolicited pong (${this.id})`);
-      return false;
-    }
-
-    if (id !== this.lastPingId) {
-      this.logger.debug(`Peer sent an invalid pong id (${this.id})`);
-      return false;
-    }
-
-    this.lastPingId = null;
-    return true;
   }
 }
 
