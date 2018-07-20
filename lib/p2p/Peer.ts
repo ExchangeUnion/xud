@@ -60,26 +60,28 @@ class Peer extends EventEmitter {
   private lastRecv: number = 0;
   private lastSend: number = 0;
   private handshakeState: HandshakeState = {};
+  private instanceId: number;
 
   get id(): string {
     assert(this.socketAddress);
     return this.socketAddress.toString();
   }
 
-  constructor(private instanceId: number) {
+  constructor(instanceId: number) {
     super();
+    this.instanceId = instanceId;
     this.logger = new Logger({ instanceId, context: Context.P2P });
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer(this.instanceId);
+  public static fromOutbound(socketAddress: SocketAddress, instanceId: number): Peer {
+    const peer = new Peer(instanceId);
     peer.connect(socketAddress);
     return peer;
   }
 
-  public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer(this.instanceId);
+  public static fromInbound(socket: Socket, instanceId: number): Peer {
+    const peer = new Peer(instanceId);
     peer.accept(socket);
     return peer;
   }
