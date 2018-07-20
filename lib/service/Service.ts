@@ -153,13 +153,6 @@ class Service extends EventEmitter {
     return this.orderBook.addLimitOrder(order);
   }
 
-  /*
-   * Cancel placed order from the orderbook.
-   */
-  public cancelOrder = async (_id: string) => {
-    return 'Not implemented';
-  }
-
   /**
    * Cancel placed order from the orderbook.
    */
