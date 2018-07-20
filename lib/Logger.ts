@@ -45,11 +45,6 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public static p2p = new Logger({ context: Context.P2P, instanceId:1 });
-  public static orderbook = new Logger({ context: Context.ORDERBOOK, instanceId:1 });
-  public static lnd = new Logger({ context: Context.LND, instanceId:1 });
-  public static raiden = new Logger({ context: Context.RAIDEN, instanceId:1 });
-
   constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;

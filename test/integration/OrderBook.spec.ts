@@ -21,8 +21,8 @@ describe('OrderBook', () => {
     await db.init();
     await db.truncate();
 
-    orderBookRepository = new OrderBookRepository(db);
-    const p2pRepository = new P2PRepository(db);
+    orderBookRepository = new OrderBookRepository(db, config.instanceId);
+    const p2pRepository = new P2PRepository(db, config.instanceId);
 
     await p2pRepository.addHost(
       { address: '127.0.0.1', port: 8885 },
@@ -35,7 +35,7 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook({ internalmatching: true }, db);
+    orderBook = new OrderBook({ internalmatching: true }, db, config.instanceId);
     await orderBook.init();
   });
 

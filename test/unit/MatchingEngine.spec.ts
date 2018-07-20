@@ -5,6 +5,7 @@ import { orders, db } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 
 const PAIR_ID = 'BTC/LTC';
+const INSTANCE_ID = 0;
 
 const createOrder = (price: number, quantity: number, createdAt?: Date): orders.StampedOrder => ({
   quantity,
@@ -142,7 +143,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
+    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID, true, [], [
       createOrderInstance(5, -5),
       createOrderInstance(5, -5),
     ], [], []);
@@ -155,7 +156,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
+    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID, true, [], [
       createOrderInstance(5, -5),
       createOrderInstance(5, -4),
     ], [], []);
@@ -168,7 +169,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
+    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID, true, [], [
       createOrderInstance(5, -5),
       createOrderInstance(5, -6),
     ], [], []);

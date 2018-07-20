@@ -9,7 +9,7 @@ import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket } from './packets';
 import { orders } from '../types';
 import DB from '../db/DB';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 
 type PoolConfig = {
   listen: boolean;
@@ -21,13 +21,15 @@ class Pool extends EventEmitter {
   private hosts: HostList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private logger: Logger = Logger.p2p;
+  private logger: Logger;
   private connected: boolean = false;
 
-  constructor(private config: PoolConfig, db: DB) {
+  constructor(private config: PoolConfig, db: DB, instanceId: number) {
     super();
 
-    this.hosts = new HostList(new P2PRepository(db));
+    this.logger = new Logger({ instanceId, context: Context.P2P });
+
+    this.hosts = new HostList(new P2PRepository(db, instanceId));
   }
 
   get peerCount(): number {
@@ -68,7 +70,7 @@ class Pool extends EventEmitter {
   public addOutbound = async (address: string, port: number): Promise<Peer> => {
     const socketAddress = new SocketAddress(address, port);
     if (this.peers.has(socketAddress)) {
-      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress.toString());
+      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress);
       this.logger.info(err.message);
       throw err;
     }

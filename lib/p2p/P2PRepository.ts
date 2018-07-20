@@ -1,13 +1,14 @@
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import DB, { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
-  private logger: Logger = Logger.p2p;
+  private logger: Logger;
   private models: Models;
 
-  constructor(private db: DB) {
+  constructor(private db: DB, instanceId: number) {
     this.models = db.models;
+    this.logger = new Logger({ instanceId, context: Context.P2P });
   }
 
   public getHosts = async (): Promise<db.HostInstance[]> => {

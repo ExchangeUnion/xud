@@ -19,14 +19,15 @@ type OrderBookConfig = {
 class OrderBook extends EventEmitter {
   private logger: Logger;
   private repository: OrderBookRepository;
-  private matchesProcessor: MatchesProcessor = new MatchesProcessor();
+  private matchesProcessor: MatchesProcessor;
   public pairs: db.PairInstance[] = [];
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
-  constructor(private config: OrderBookConfig, db: DB, instanceId: number, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(private config: OrderBookConfig, db: DB, private instanceId: number, private pool?: Pool, private lndClient?: LndClient) {
     super();
     this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
-    this.repository = new OrderBookRepository(db);
+    this.repository = new OrderBookRepository(db, instanceId);
+    this.matchesProcessor = new MatchesProcessor(instanceId);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
     }
@@ -46,6 +47,7 @@ class OrderBook extends EventEmitter {
 
     pairs.forEach((pair) => {
       this.matchingEngines[pair.id] = new MatchingEngine(
+        this.instanceId,
         pair.id,
         this.config.internalmatching,
         peerBuyOrdersByPairs[pair.id],

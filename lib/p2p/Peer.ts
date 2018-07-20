@@ -5,7 +5,7 @@ import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket } from './packets';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import { ms } from '../utils/utils';
 
 const pubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
@@ -46,7 +46,7 @@ class Peer extends EventEmitter {
   public direction!: ConnectionDirection;
   public connected: boolean = false;
   private host?: Host;
-  private logger: Logger = Logger.p2p;
+  private logger: Logger;
   private opened: boolean = false;
   private socket!: Socket;
   private parser: Parser = new Parser();
@@ -66,20 +66,20 @@ class Peer extends EventEmitter {
     return this.socketAddress.toString();
   }
 
-  constructor() {
+  constructor(private instanceId: number) {
     super();
-
+    this.logger = new Logger({ instanceId, context: Context.P2P });
     this.bindParser(this.parser);
   }
 
   public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer();
+    const peer = new Peer(this.instanceId);
     peer.connect(socketAddress);
     return peer;
   }
 
   public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer();
+    const peer = new Peer(this.instanceId);
     peer.accept(socket);
     return peer;
   }

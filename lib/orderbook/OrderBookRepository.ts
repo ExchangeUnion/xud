@@ -1,7 +1,7 @@
 import { default as Sequelize, Op } from 'sequelize';
 
 import { db, orders } from '../types';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import DB, { Models } from '../db/DB';
 import Bluebird from 'bluebird';
 import { OrderAttributes } from '../types/db';
@@ -12,13 +12,14 @@ type Orders = {
 };
 
 class OrderbookRepository {
-  private logger: Logger = Logger.orderbook;
+  private logger: Logger;
   private models: Models;
   private sequelize: Sequelize.Sequelize;
 
-  constructor(db: DB) {
+  constructor(db: DB, instanceId: number) {
     this.models = db.models;
     this.sequelize = db.sequelize;
+    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
   }
 
   public getPairs = async (): Promise<db.PairInstance[]> => {

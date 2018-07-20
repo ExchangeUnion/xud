@@ -12,8 +12,8 @@ export default async (testDb?: boolean) => {
   const db = new DB(testDb ? config.testDb : config.db, config.instanceId);
   await db.init();
 
-  const orderBookRepository = new OrderBookRepository(db);
-  const p2pRepository = new P2PRepository(db);
+  const orderBookRepository = new OrderBookRepository(db, config.instanceId);
+  const p2pRepository = new P2PRepository(db, config.instanceId);
 
   await Promise.all([
     orderBookRepository.addCurrencies([

@@ -54,13 +54,13 @@ class Xud {
       this.db = new DB(this.config.db, this.config.instanceId);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd);
-      this.raidenClient = new RaidenClient(this.config.raiden);
+      this.lndClient = new LndClient(this.config.lnd, this.config.instanceId);
+      this.raidenClient = new RaidenClient(this.config.raiden, this.config.instanceId);
 
-      this.pool = new Pool(this.config.p2p, this.db);
+      this.pool = new Pool(this.config.p2p, this.db, this.config.instanceId);
       this.pool.connect();
 
-      this.orderBook = new OrderBook(this.config.orderbook, this.db, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.config.orderbook, this.db, this.config.instanceId, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.service = new Service({
@@ -73,7 +73,7 @@ class Xud {
       });
 
       if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(this.service);
+        this.rpcServer = new GrpcServer(this.service, this.config.instanceId);
         await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
       } else {
         this.logger.warn('gRPC Server is disabled! XUD might not function properly with gRPC disabled.');

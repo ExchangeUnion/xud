@@ -1,7 +1,7 @@
 import grpc, { Server } from 'grpc';
 import assert from 'assert';
 import path from 'path';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';
 
@@ -9,15 +9,15 @@ class GrpcServer {
   private server: Server;
   private logger: Logger;
 
-  constructor(service: Service) {
-    this.logger = Logger.rpc;
+  constructor(service: Service, instanceId: number) {
+    this.logger = this.logger = new Logger({ instanceId, context: Context.RPC });
     this.server = new grpc.Server();
 
     const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
     const { xudrpc }: any = protoDescriptor;
 
-    const grpcService = new GrpcService(service);
+    const grpcService = new GrpcService(service, instanceId);
     this.server.addService(xudrpc.Xud.service, {
       getInfo: grpcService.getInfo,
       getPairs: grpcService.getPairs,

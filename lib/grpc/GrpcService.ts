@@ -1,5 +1,5 @@
 import grpc from 'grpc';
-import Logger from '../Logger';
+import Logger, { Context } from '../Logger';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -26,8 +26,8 @@ class GrpcService {
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service) {
-    this.logger = Logger.rpc;
+  constructor(private service: Service, instanceId: number) {
+    this.logger = new Logger({ instanceId, context: Context.RPC });
   }
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
