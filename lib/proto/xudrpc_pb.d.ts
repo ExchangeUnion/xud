@@ -318,7 +318,7 @@ export namespace SwapPayload {
     }
 }
 
-export class TokenSwapRequest extends jspb.Message { 
+export class ExecuteSwapRequest extends jspb.Message { 
     getTargetAddress(): string;
     setTargetAddress(value: string): void;
 
@@ -333,16 +333,16 @@ export class TokenSwapRequest extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): TokenSwapRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: TokenSwapRequest): TokenSwapRequest.AsObject;
+    toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: TokenSwapRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): TokenSwapRequest;
-    static deserializeBinaryFromReader(message: TokenSwapRequest, reader: jspb.BinaryReader): TokenSwapRequest;
+    static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
+    static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
 }
 
-export namespace TokenSwapRequest {
+export namespace ExecuteSwapRequest {
     export type AsObject = {
         targetAddress: string,
         identifier: string,
@@ -350,22 +350,22 @@ export namespace TokenSwapRequest {
     }
 }
 
-export class TokenSwapResponse extends jspb.Message { 
+export class ExecuteSwapResponse extends jspb.Message { 
     getResult(): string;
     setResult(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): TokenSwapResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: TokenSwapResponse): TokenSwapResponse.AsObject;
+    toObject(includeInstance?: boolean): ExecuteSwapResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ExecuteSwapResponse): ExecuteSwapResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: TokenSwapResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): TokenSwapResponse;
-    static deserializeBinaryFromReader(message: TokenSwapResponse, reader: jspb.BinaryReader): TokenSwapResponse;
+    static serializeBinaryToWriter(message: ExecuteSwapResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ExecuteSwapResponse;
+    static deserializeBinaryFromReader(message: ExecuteSwapResponse, reader: jspb.BinaryReader): ExecuteSwapResponse;
 }
 
-export namespace TokenSwapResponse {
+export namespace ExecuteSwapResponse {
     export type AsObject = {
         result: string,
     }
@@ -685,44 +685,6 @@ export namespace GetOrdersResponse {
     }
 }
 
-export class StreamingExampleRequest extends jspb.Message { 
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): StreamingExampleRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: StreamingExampleRequest): StreamingExampleRequest.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: StreamingExampleRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): StreamingExampleRequest;
-    static deserializeBinaryFromReader(message: StreamingExampleRequest, reader: jspb.BinaryReader): StreamingExampleRequest;
-}
-
-export namespace StreamingExampleRequest {
-    export type AsObject = {
-    }
-}
-
-export class StreamingExampleResponse extends jspb.Message { 
-    getDate(): number;
-    setDate(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): StreamingExampleResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: StreamingExampleResponse): StreamingExampleResponse.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: StreamingExampleResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): StreamingExampleResponse;
-    static deserializeBinaryFromReader(message: StreamingExampleResponse, reader: jspb.BinaryReader): StreamingExampleResponse;
-}
-
-export namespace StreamingExampleResponse {
-    export type AsObject = {
-        date: number,
-    }
-}
-
 export class ShutdownRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
@@ -756,6 +718,85 @@ export class ShutdownResponse extends jspb.Message {
 }
 
 export namespace ShutdownResponse {
+    export type AsObject = {
+        result: string,
+    }
+}
+
+export class SubscribePeerOrdersRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribePeerOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribePeerOrdersRequest): SubscribePeerOrdersRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribePeerOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribePeerOrdersRequest;
+    static deserializeBinaryFromReader(message: SubscribePeerOrdersRequest, reader: jspb.BinaryReader): SubscribePeerOrdersRequest;
+}
+
+export namespace SubscribePeerOrdersRequest {
+    export type AsObject = {
+    }
+}
+
+export class SubscribePeerOrdersResponse extends jspb.Message { 
+
+    hasOrder(): boolean;
+    clearOrder(): void;
+    getOrder(): Order | undefined;
+    setOrder(value?: Order): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribePeerOrdersResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribePeerOrdersResponse): SubscribePeerOrdersResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribePeerOrdersResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribePeerOrdersResponse;
+    static deserializeBinaryFromReader(message: SubscribePeerOrdersResponse, reader: jspb.BinaryReader): SubscribePeerOrdersResponse;
+}
+
+export namespace SubscribePeerOrdersResponse {
+    export type AsObject = {
+        order?: Order.AsObject,
+    }
+}
+
+export class SubscribeSwapsRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeSwapsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeSwapsRequest): SubscribeSwapsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeSwapsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeSwapsRequest;
+    static deserializeBinaryFromReader(message: SubscribeSwapsRequest, reader: jspb.BinaryReader): SubscribeSwapsRequest;
+}
+
+export namespace SubscribeSwapsRequest {
+    export type AsObject = {
+    }
+}
+
+export class SubscribeSwapsResponse extends jspb.Message { 
+    getResult(): string;
+    setResult(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeSwapsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeSwapsResponse): SubscribeSwapsResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeSwapsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeSwapsResponse;
+    static deserializeBinaryFromReader(message: SubscribeSwapsResponse, reader: jspb.BinaryReader): SubscribeSwapsResponse;
+}
+
+export namespace SubscribeSwapsResponse {
     export type AsObject = {
         result: string,
     }

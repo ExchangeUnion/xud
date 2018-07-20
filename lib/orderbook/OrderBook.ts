@@ -10,12 +10,13 @@ import DB from '../db/DB';
 import { groupBy } from '../utils/utils';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
+import { EventEmitter } from 'events';
 
 type OrderBookConfig = {
   internalmatching: boolean;
 };
 
-class OrderBook {
+class OrderBook extends EventEmitter {
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
@@ -23,6 +24,8 @@ class OrderBook {
   public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
 
   constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+    super();
+
     this.repository = new OrderBookRepository(db);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -126,6 +129,8 @@ class OrderBook {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       return;
     }
+
+    this.emit('peerOrder', order);
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: new Date() };
     matchingEngine.addPeerOrder(stampedOrder);

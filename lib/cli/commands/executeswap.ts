@@ -1,10 +1,10 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
-import { TokenSwapRequest, SwapPayload } from '../../proto/xudrpc_pb';
+import { ExecuteSwapRequest, SwapPayload } from '../../proto/xudrpc_pb';
 
-export const command = 'tokenswap <identifier> <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
+export const command = 'executeSwap <identifier> <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
 
-export const describe = 'perform a raiden token swap';
+export const describe = 'execute an atomic swap';
 
 export const builder = {
   sending_amount: {
@@ -27,7 +27,7 @@ export const builder = {
 }*/
 
 export const handler = (argv: Arguments) => {
-  const request = new TokenSwapRequest();
+  const request = new ExecuteSwapRequest();
   request.setTargetAddress = argv.target_address;
   request.setIdentifier = argv.identifier;
 
@@ -38,5 +38,5 @@ export const handler = (argv: Arguments) => {
   payload.setReceivingToken(argv.receiving_token);
   request.setPayload(payload);
 
-  loadXudClient(argv).tokenSwap(request, callback);
+  loadXudClient(argv).executeSwap(request, callback);
 };

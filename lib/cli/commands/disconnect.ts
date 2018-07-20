@@ -4,7 +4,7 @@ import { DisconnectRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'disconnect <host> [port]';
 
-export const describe = 'disconnect from a connected an xu node';
+export const describe = 'disconnect from an xu node';
 
 export const builder = {
   host: {

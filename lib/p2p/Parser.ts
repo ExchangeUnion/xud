@@ -14,14 +14,14 @@ enum ParserErrorType {
 class Parser extends EventEmitter {
   public feed = (data): void => {
     const dataStr = data.toString();
-    const type = dataStr.split(' ', 1)[0];
-    const body = dataStr.substring(type.length + 1);
+    const typeStr = dataStr.split(' ', 1)[0];
+    const packetStr = dataStr.substring(typeStr.length + 1);
     try {
-      const packet = packetUtils.fromRaw(type, body);
+      const packet = packetUtils.fromRaw(typeStr, packetStr);
       if (packet) {
         this.emit('packet', packet);
       } else {
-        this.emit('error', new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, type));
+        this.emit('error', new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, typeStr));
       }
     } catch (err) {
       this.emit('error', new ParserError(ParserErrorType.UNPARSABLE_MESSAGE, `${dataStr}: ${err}`));
