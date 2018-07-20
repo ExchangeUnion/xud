@@ -1,4 +1,4 @@
-import grpc from 'grpc';
+import grpc, { ChannelCredentials } from 'grpc';
 import fs from 'fs';
 
 import Logger from '../Logger';
@@ -27,6 +27,7 @@ class LndClient extends BaseClient {
   private lightning!: LightningClient;
   private meta!: grpc.Metadata;
   private config!: LndClientConfig;
+  private credentials!: ChannelCredentials;
 
   /**
    * Create an lnd client.
@@ -46,7 +47,13 @@ class LndClient extends BaseClient {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
       this.setStatus(ClientStatus.DISABLED);
     } else {
-      this.connect(this);
+      const lndCert = fs.readFileSync(certpath);
+      this.credentials = grpc.credentials.createSsl(lndCert);
+
+      const adminMacaroon = fs.readFileSync(macaroonpath);
+      this.meta = new grpc.Metadata();
+      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      this.connect(this, true);
     }
   }
 
@@ -66,21 +73,17 @@ class LndClient extends BaseClient {
     });
   }
 
-  private connect(lndCLient) {
-    const { certpath, host, port, macaroonpath } = lndCLient.config;
+  private connect = (lndCLient: LndClient, subscribeInvoices: boolean = false) => {
+    const { host, port } = lndCLient.config;
 
-    const lndCert = fs.readFileSync(certpath);
-    const credentials = grpc.credentials.createSsl(lndCert);
-    lndCLient.lightning = new LightningClient(`${host}:${port}`, credentials);
-
-    const adminMacaroon = fs.readFileSync(macaroonpath);
-    lndCLient.meta = new grpc.Metadata();
-    lndCLient.meta.add('macaroon', adminMacaroon.toString('hex'));
+    lndCLient.lightning = new LightningClient(`${host}:${port}`, lndCLient.credentials);
 
     lndCLient.getInfo().then((getInfoResponse) => {
       if (getInfoResponse && getInfoResponse.numActiveChannels >= 1) {
         lndCLient.setStatus(ClientStatus.CONNECTION_VERIFIED);
-        lndCLient.subscribeInvoices();
+        if (subscribeInvoices) {
+          lndCLient.subscribeInvoices();
+        }
       }
     }).catch((err: any) => {
       lndCLient.logger.error(`could not fetch info from lnd host, error: ${err}, retrying in 5000 ms`);
