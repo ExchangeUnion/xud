@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
-import { db, orders } from '../../lib/types';
 import P2PRepository from '../../lib/p2p/P2PRepository';
+import { orders } from '../../lib/types';
+import { StampedOrder } from '../../lib/types/orders';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -21,7 +21,7 @@ describe('OrderBook', () => {
     await db.init();
     await db.truncate();
 
-    orderBookRepository = new OrderBookRepository(db);
+    orderBookRepository = new OrderBookRepository(db.models);
     const p2pRepository = new P2PRepository(db);
 
     await p2pRepository.addHost(
@@ -35,18 +35,30 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook({ internalmatching: true }, db);
+    orderBook = new OrderBook({ internalmatching: true }, db.models);
     await orderBook.init();
   });
 
-  async function getOrderQuantity(orderId: string): Promise<number> {
-    const result = await db.models.Order.find({
-      where: { id: orderId },
-      raw: true,
-      attributes: ['quantity'],
-    }) as db.OrderInstance;
-    return Number(result.quantity);
-  }
+  const getOrder = (order: orders.StampedOrder): orders.StampedOrder | null => {
+    const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
+    let array: StampedOrder[];
+
+    if (order.quantity > 0) {
+      array = ownOrders.buyOrders;
+    } else {
+      array = ownOrders.sellOrders;
+    }
+
+    let result;
+
+    array.forEach((ownOrder) => {
+      if (ownOrder.id === order.id) {
+        result = ownOrder;
+      }
+    });
+
+    return result;
+  };
 
   it('should have pairs and matchingEngines equivalent loaded', () => {
     expect(orderBook.pairs).to.be.an('array');
@@ -61,14 +73,12 @@ describe('OrderBook', () => {
     await orderBook.addLimitOrder(order);
   });
 
-  it('should match new ownOrder and update matches', async () => {
+  it('should fully match new ownOrder and remove matches', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.null;
-    const firstMakerLeft = await getOrderQuantity(matches.matches[0].maker.id);
-    expect(firstMakerLeft).to.be.equal(0);
-    const secondMakerLeft = await getOrderQuantity(matches.matches[1].maker.id);
-    expect(secondMakerLeft).to.be.equal(4);
+    expect(getOrder(matches.matches[0].maker)).to.be.undefined;
+    expect((getOrder(matches.matches[1].maker) as orders.StampedOrder).quantity).to.be.equal(4);
   });
 
   after(async () => {

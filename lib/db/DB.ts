@@ -23,7 +23,6 @@ type Models = {
   Host: Sequelize.Model<db.HostInstance, db.HostAttributes>;
   BannedHost: Sequelize.Model<db.BannedHostInstance, db.BannedHostAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
-  Order: Sequelize.Model<db.OrderInstance, db.OrderAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
 
@@ -56,7 +55,7 @@ class DB {
         throw err;
       }
     }
-    const { Host, BannedHost, Currency, Pair, Order } = this.models;
+    const { Host, BannedHost, Currency, Pair } = this.models;
     const options = { logging: this.logger.verbose };
 
     // sync schemas with the database in phases, according to FKs dependencies
@@ -67,9 +66,6 @@ class DB {
     ]);
     await Promise.all([
       Pair.sync(options),
-    ]);
-    await Promise.all([
-      Order.sync(options),
     ]);
   }
 
@@ -85,7 +81,6 @@ class DB {
     await this.sequelize.transaction(async (t) => {
       const options = { raw: true, transaction: t };
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
-      await this.sequelize.query('truncate table orders', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
       await this.sequelize.query('truncate table hosts', options);
@@ -105,7 +100,7 @@ class DB {
     });
   }
 
-  private loadModels(): Models {
+  private loadModels = (): Models => {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
     fs.readdirSync(modelsFolder)

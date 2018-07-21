@@ -185,10 +185,14 @@ message Order {
   string pair_id = 3 [json_name = "pair_id"];
   // The id of the peer that created this order
   int32 peer_id = 4 [json_name = "peer_id"];
+  // The id of the host that created this order
+  string host_id = 5 [json_name = "host_id"];
   // A UUID for this order
-  string id = 5 [json_name = "id"];
+  string id = 6 [json_name = "id"];
   // The epoch time when this order was created
-  int64 created_at = 6 [json_name = "created_at"];
+  int64 created_at = 7 [json_name = "created_at"];
+  // Lightning invoice
+  string invoice = 8 [json_name = "invoice"];
 }
 
 message OrderMatch {

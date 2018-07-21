@@ -32,25 +32,13 @@ class MatchingEngine {
   private logger: Logger = Logger.orderbook;
 
   constructor(public pairId: string,
-              private internalMatching: boolean,
-              peerBuyOrders: db.OrderInstance[] = [],
-              peerSellOrders: db.OrderInstance[] = [],
-              ownBuyOrders: db.OrderInstance[] = [],
-              ownSellOrders: db.OrderInstance[] = []) {
+              private internalMatching: boolean) {
     this.priorityQueues = {
-      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, OrderingDirection.DESC),
-      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, OrderingDirection.ASC),
-      ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, OrderingDirection.DESC),
-      ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, OrderingDirection.ASC),
+      peerBuyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
+      peerSellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
+      ownBuyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
+      ownSellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
     };
-  }
-
-  private static initPriorityQueue(orders, orderingDirection): PriorityQueue {
-    const priorityQueue = this.createPriorityQueue(orderingDirection);
-    orders.forEach((order) => {
-      priorityQueue.add(order);
-    });
-    return priorityQueue;
   }
 
   private static createPriorityQueue(orderingDirection): PriorityQueue {
@@ -95,7 +83,7 @@ class MatchingEngine {
   public static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
-    let remainingOrder: orders.StampedOrder|null = { ...order };
+    let remainingOrder: orders.StampedOrder | null = { ...order };
 
     const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
