@@ -60,7 +60,7 @@ class Xud {
       this.pool = new Pool(this.config.p2p, this.db, this.config.instanceId);
       this.pool.connect();
 
-      this.orderBook = new OrderBook(this.config.orderbook, this.db, this.config.instanceId, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.config.orderbook, this.db.models, this.config.instanceId, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.service = new Service({

@@ -152,7 +152,7 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse.AsObject>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-/**
+  /**
    * Attempt to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
