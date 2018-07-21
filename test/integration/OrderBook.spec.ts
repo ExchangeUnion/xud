@@ -35,7 +35,7 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook({ internalmatching: true }, db.models);
+    orderBook = new OrderBook(db.models);
     await orderBook.init();
   });
 

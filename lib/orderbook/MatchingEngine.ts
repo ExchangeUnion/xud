@@ -29,8 +29,7 @@ class MatchingEngine {
   public priorityQueues: PriorityQueues;
   private logger: Logger = Logger.orderbook;
 
-  constructor(public pairId: string,
-              private internalMatching: boolean) {
+  constructor(public pairId: string) {
     this.priorityQueues = {
       buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
       sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),

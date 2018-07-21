@@ -140,7 +140,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
@@ -152,7 +152,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -4));
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
@@ -164,7 +164,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -6));
     const matchAgainst = [engine.priorityQueues.sellOrders];
