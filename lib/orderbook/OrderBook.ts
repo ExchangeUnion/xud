@@ -107,6 +107,12 @@ class OrderBook extends EventEmitter {
     // TODO: implement
   }
 
+  public removeOwnOrder = async (orderId: string): Promise<void> => {
+    this.pairs.forEach((pair) => {
+      this.matchingEngines[pair.id].removeOwnOrder(orderId);
+    });
+  }
+
   private addOwnOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {

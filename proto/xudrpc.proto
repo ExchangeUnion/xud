@@ -213,7 +213,6 @@ message PlaceOrderResponse {
 message CancelOrderRequest {
   string id = 1 [json_name = "order_id"];
 }
-
 message CancelOrderResponse {
   string result = 1 [json_name = "result"];
 }
