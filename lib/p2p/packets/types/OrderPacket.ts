@@ -1,6 +1,5 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { orders } from '../../../types/index';
 
 type OrderPacketBody = {
   id: string;

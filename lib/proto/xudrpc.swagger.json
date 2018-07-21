@@ -125,7 +125,7 @@
     },
     "/v1/info": {
       "get": {
-        "summary": "Placeholder for a method to return general information about an Exchange Union node.",
+        "summary": "Get general information about this Exchange Union node.",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -484,6 +484,10 @@
           "format": "int32",
           "title": "The id of the peer that created this order"
         },
+        "host_id": {
+          "type": "string",
+          "title": "The id of the host that created this order"
+        },
         "id": {
           "type": "string",
           "title": "A UUID for this order"
@@ -492,6 +496,10 @@
           "type": "string",
           "format": "int64",
           "title": "The epoch time when this order was created"
+        },
+        "invoice": {
+          "type": "string",
+          "title": "Lightning invoice"
         }
       }
     },

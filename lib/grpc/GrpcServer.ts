@@ -4,6 +4,7 @@ import path from 'path';
 import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';
+import errors from './errors';
 
 class GrpcServer {
   private server: Server;
@@ -39,9 +40,13 @@ class GrpcServer {
    */
   public listen = (port: number, host: string) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
-
     try {
-      this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
+      const bindCode = this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
+      if (bindCode !== port) {
+        const error = errors.COULDNOT_BIND(port.toString());
+        this.logger.error(error.message);
+        throw error;
+      }
       this.server.start();
       this.logger.info(`gRPC server listening on ${host}:${port}`);
     } catch (error) {

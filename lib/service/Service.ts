@@ -67,13 +67,13 @@ class Service extends EventEmitter {
     for (const key in pairs) {
       const pair = pairs[key];
 
-      const [orders, ownOrders] = await Promise.all([
+      const [peerOrders, ownOrders] = await Promise.all([
         this.orderBook.getPeerOrders(pair.id, 0),
         this.orderBook.getOwnOrders(pair.id, 0),
       ]);
 
-      peerOrdersCount += orders.buyOrders.length + orders.sellOrders.length;
-      ownOrdersCount += ownOrders.buyOrders.length + ownOrders.sellOrders.length;
+      peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
+      ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
     }
 
     info.orders = {

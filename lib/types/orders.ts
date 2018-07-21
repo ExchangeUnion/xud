@@ -14,11 +14,11 @@ export type PeerOrder = BaseOrder & {
 
 export type StampedOwnOrder = OwnOrder & {
   id: string;
-  createdAt: Date;
+  createdAt: number;
 };
 
 export type StampedPeerOrder = PeerOrder & {
-  createdAt: Date;
+  createdAt: number;
 };
 
 export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
