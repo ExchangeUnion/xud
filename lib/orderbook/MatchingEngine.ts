@@ -30,20 +30,11 @@ class MatchingEngine {
   private logger: Logger = Logger.orderbook;
 
   constructor(public pairId: string,
-              buyOrders: db.OrderInstance[] = [],
-              sellOrders: db.OrderInstance[] = []) {
+              private internalMatching: boolean) {
     this.priorityQueues = {
-      buyOrders: MatchingEngine.initPriorityQueue(buyOrders, OrderingDirection.DESC),
-      sellOrders: MatchingEngine.initPriorityQueue(sellOrders, OrderingDirection.ASC),
+      buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
+      sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
     };
-  }
-
-  private static initPriorityQueue(orders, orderingDirection): PriorityQueue {
-    const priorityQueue = this.createPriorityQueue(orderingDirection);
-    orders.forEach((order) => {
-      priorityQueue.add(order);
-    });
-    return priorityQueue;
   }
 
   private static createPriorityQueue(orderingDirection): PriorityQueue {
@@ -88,7 +79,7 @@ class MatchingEngine {
   public static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
-    let remainingOrder: orders.StampedOrder|null = { ...order };
+    let remainingOrder: orders.StampedOrder | null = { ...order };
 
     const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)

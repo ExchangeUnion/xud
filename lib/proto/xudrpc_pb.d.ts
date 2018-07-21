@@ -476,11 +476,17 @@ export class Order extends jspb.Message {
     getPeerId(): number;
     setPeerId(value: number): void;
 
+    getHostId(): string;
+    setHostId(value: string): void;
+
     getId(): string;
     setId(value: string): void;
 
     getCreatedAt(): number;
     setCreatedAt(value: number): void;
+
+    getInvoice(): string;
+    setInvoice(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -499,8 +505,10 @@ export namespace Order {
         quantity: number,
         pairId: string,
         peerId: number,
+        hostId: string,
         id: string,
         createdAt: number,
+        invoice: string,
     }
 }
 
