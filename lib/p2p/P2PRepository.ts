@@ -25,7 +25,7 @@ class P2PRepository {
 
   public removeHost = async (host: db.HostFactory): Promise<void> => {
     const whereClause = { address: { [Op.eq]: host.address }, port: { [Op.eq]: host.port } };
-    return await this.models.Order.destroy({ where: whereClause }).then((affectedRows: number) => {
+    return await this.models.Host.destroy({ where: whereClause }).then((affectedRows: number) => {
       if (affectedRows > 0) {
         this.logger.info(`Removed host ${host.address}:${host.port}`);
       } else {
