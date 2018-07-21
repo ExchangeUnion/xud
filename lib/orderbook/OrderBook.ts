@@ -1,17 +1,16 @@
 import uuidv1 from 'uuid/v1';
-
+import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
 import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
 import { orders, matchingEngine, db } from '../types';
-import DB from '../db/DB';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import Peer from '../p2p/Peer';
-import { EventEmitter } from 'events';
+import { Models } from '../db/DB';
 
 type OrderBookConfig = {
   internalmatching: boolean;
@@ -33,10 +32,10 @@ class OrderBook extends EventEmitter {
   private ownOrders: { [ pairId: string ]: Orders } = {};
   private peerOrders: { [ pairId: string ]: Orders } = {};
 
-  constructor(private config: OrderBookConfig, db: DB, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(private config: OrderBookConfig, models: Models, private pool?: Pool, private lndClient?: LndClient) {
     super();
 
-    this.repository = new OrderBookRepository(db);
+    this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.getOrders', this.sendOrders);

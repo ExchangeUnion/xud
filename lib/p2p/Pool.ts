@@ -119,7 +119,7 @@ class Pool extends EventEmitter {
     this.addInbound(socket);
   }
 
-  private handlePacket = async (peer: Peer, packet: Packet) => {
+  private handlePacket = (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
         const order: PeerOrder = { ...packet.body, hostId: peer.id };

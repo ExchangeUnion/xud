@@ -5,8 +5,8 @@ import DB, { Models } from '../db/DB';
 class OrderbookRepository {
   private models: Models;
 
-  constructor(db: DB) {
-    this.models = db.models;
+  constructor(models: Models) {
+    this.models = models;
   }
 
   public getPairs = async (): Promise<db.PairInstance[]> => {
