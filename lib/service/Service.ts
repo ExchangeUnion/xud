@@ -171,8 +171,9 @@ class Service extends EventEmitter {
   /*
    * Disconnect from a connected peer XU node on a given host and port.
    */
-  public disconnect = async (_request: { host: string, port: number}) => {
-    return 'Not implemented';
+  public disconnect = async ({ host, port }: { host: string, port: number}) => {
+    const peer = await this.pool.disconnectPeer(host, port);
+    return 'success';
   }
 
   /**
