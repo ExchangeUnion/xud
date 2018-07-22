@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
-import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket, GetOrdersPacket, OrdersPacket } from './packets';
+import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket, HostsPacket, OrdersPacket } from './packets';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { orders } from '../types';
@@ -152,16 +152,19 @@ class Peer extends EventEmitter {
     this.sendRaw(packet.type, packet.toRaw());
 
     if (packet.direction === PacketDirection.REQUEST) {
-      this.addResponseTimeout(packet.header.hash!, Peer.RESPONSE_TIMEOUT);
+      this.addResponseTimeout(packet.header.hash, Peer.RESPONSE_TIMEOUT);
     }
   }
 
-  public sendOrders = (orders: orders.OutgoingOrder[]): OrdersPacket => {
+  public sendOrders = (orders: orders.OutgoingOrder[]): void => {
     const packet = new OrdersPacket({ orders });
 
     this.sendPacket(packet);
+  }
 
-    return packet;
+  public sendHosts = (hosts: Host[], reqHash: string): void => {
+    const packet = new HostsPacket({ hosts }, reqHash);
+    this.sendPacket(packet);
   }
 
   private sendRaw = (type, body) => {

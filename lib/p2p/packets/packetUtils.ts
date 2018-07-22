@@ -16,6 +16,10 @@ const fromRaw = (type: string, packet: string): Packet | void => {
       return new packetTypes.GetOrdersPacket(packet);
     case PacketType.ORDERS:
       return new packetTypes.OrdersPacket(packet);
+    case PacketType.GET_HOSTS:
+      return new packetTypes.GetHostsPacket(packet);
+    case PacketType.HOSTS:
+      return new packetTypes.HostsPacket(packet);
     default:
       return;
   }

@@ -6,10 +6,11 @@ import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, GetOrdersPacket } from './packets';
+import { Packet, PacketType, OrderPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
 import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
+import { ms } from '../utils/utils';
 
 type PoolConfig = {
   listen: boolean;
@@ -72,6 +73,7 @@ class Pool extends EventEmitter {
   /**
    * Attempt to add an outbound peer by connecting to a given SocketAddress.
    * Throws an error if a connection already exists for the provided address.
+   * If the connection is successful, send a [[GetHostsPacket]] to discover new XUD hosts to connect to.
    */
   public addOutbound = async (socketAddress: SocketAddress): Promise<Peer> => {
     if (this.peers.has(socketAddress)) {
@@ -144,12 +146,28 @@ class Pool extends EventEmitter {
         });
         break;
       }
+      case PacketType.GET_HOSTS: {
+        peer.sendHosts(this.hosts.toArray(), packet.header.hash);
+        break;
+      }
+      case PacketType.HOSTS: {
+        const { hosts } = (packet as HostsPacket).body;
+        hosts.forEach(async (host) => {
+          try {
+            await this.addOutbound(host.socketAddress);
+          } catch (err) {
+            this.logger.info(err);
+          }
+        });
+        break;
+      }
     }
   }
 
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
     peer.sendPacket(new GetOrdersPacket({}));
+    peer.sendPacket(new GetHostsPacket({ ts: ms() }));
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
