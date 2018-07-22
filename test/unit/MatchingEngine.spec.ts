@@ -140,10 +140,10 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -5));
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -152,10 +152,10 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -4));
     engine.addPeerOrder(createOrder(5, -5));
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -164,10 +164,10 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -6));
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -176,6 +176,6 @@ describe('MatchingEngine.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
     });
-    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.equal(-1);
+    expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
   });
 });

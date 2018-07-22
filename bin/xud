@@ -46,11 +46,6 @@ const { argv } = require('yargs')
       describe: 'Port of the lnd gRPC interface',
       type: 'number',
     },
-    'orderbook.internalmatching': {
-      describe: 'OrderBook Internal Matching',
-      type: 'boolean',
-      default: undefined,
-    },
     'p2p.listen': {
       describe: 'Listen for incoming peers',
       type: 'boolean',

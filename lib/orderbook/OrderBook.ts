@@ -12,10 +12,6 @@ import { ms } from '../utils/utils';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 
-type OrderBookConfig = {
-  internalmatching: boolean;
-};
-
 type Orders = {
   buyOrders: { [ id: string ]: orders.StampedOrder };
   sellOrders: { [ id: string ]: orders.StampedOrder };
@@ -32,7 +28,7 @@ class OrderBook extends EventEmitter {
   private ownOrders: { [ pairId: string ]: Orders } = {};
   private peerOrders: { [ pairId: string ]: Orders } = {};
 
-  constructor(private config: OrderBookConfig, models: Models, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
     super();
 
     this.repository = new OrderBookRepository(models);
@@ -46,10 +42,7 @@ class OrderBook extends EventEmitter {
     const pairs = await this.repository.getPairs();
 
     pairs.forEach((pair) => {
-      this.matchingEngines[pair.id] = new MatchingEngine(
-        pair.id,
-        this.config.internalmatching,
-      );
+      this.matchingEngines[pair.id] = new MatchingEngine(pair.id);
       this.ownOrders[pair.id] = this.initOrders();
       this.peerOrders[pair.id] = this.initOrders();
     });
@@ -125,11 +118,9 @@ class OrderBook extends EventEmitter {
     }
     if (remainingOrder) {
       this.broadcastOrder(remainingOrder);
+      this.addOrder(this.ownOrders, remainingOrder);
+      this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
 
-      if (this.config.internalmatching) {
-        this.addOrder(this.ownOrders, remainingOrder);
-        this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
-      }
     }
 
     return matchingResult;
@@ -225,4 +216,4 @@ class OrderBook extends EventEmitter {
 }
 
 export default OrderBook;
-export { OrderBookConfig, Orders };
+export { Orders };
