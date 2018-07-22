@@ -308,9 +308,10 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Fulfill awaiting requests response.
+   * Fulfill a pending response entry.
+   * @returns false if no pending response entry exists for the provided key, otherwise true
    */
-  private fulfillResponse = (key: string | undefined, packet: Packet): boolean => {
+  private fulfillResponseEntry = (key: string | undefined, packet: Packet): boolean => {
     if (!key) {
       this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${packet.type})`);
       // TODO: penalize
@@ -390,38 +391,37 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UNPARSABLE_MESSAGE: {
+        case ParserErrorType.UNPARSABLE_MESSAGE:
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
           this.increaseBan(10);
           break;
-        }
-        case ParserErrorType.UNKNOWN_PACKET_TYPE: {
+        case ParserErrorType.UNKNOWN_PACKET_TYPE:
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
           this.increaseBan(20);
-        }
       }
     });
   }
 
   private handlePacket = (packet: Packet): void => {
     if (packet.direction === PacketDirection.RESPONSE) {
-      if (!this.fulfillResponse(packet.header.reqHash, packet)) {
+      if (!this.fulfillResponseEntry(packet.header.reqHash, packet)) {
         return;
       }
     }
 
     switch (packet.type) {
       case PacketType.HELLO: {
-        this.handleHello(<HelloPacket>packet);
+        this.handleHello(packet);
         break;
       }
       case PacketType.PING: {
-        this.handlePing(<PingPacket>packet);
+        this.handlePing(packet);
         break;
       }
+      default:
+        this.emit('packet', packet);
+        break;
     }
-
-    this.emit('packet', packet);
   }
 
   private error = (err): void => {
@@ -454,7 +454,7 @@ class Peer extends EventEmitter {
     this.handshakeState = { ...this.handshakeState, ...packet.body };
 
     if (this.responseMap.has(packet.type)) {
-      this.fulfillResponse(packet.type, packet);
+      this.fulfillResponseEntry(packet.type, packet);
     }
   }
 

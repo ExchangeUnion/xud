@@ -3,7 +3,7 @@ enum PacketType  {
   PING = 'PING',
   PONG = 'PONG',
   ORDER = 'ORDER',
-  GETORDERS = 'GETORDERS',
+  GET_ORDERS = 'GET_ORDERS',
   ORDERS = 'ORDERS',
 }
 

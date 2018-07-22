@@ -12,7 +12,7 @@ const fromRaw = (type: string, packet: string): Packet | void => {
       return new packetTypes.PongPacket(packet);
     case PacketType.ORDER:
       return new packetTypes.OrderPacket(packet);
-    case PacketType.GETORDERS:
+    case PacketType.GET_ORDERS:
       return new packetTypes.GetOrdersPacket(packet);
     case PacketType.ORDERS:
       return new packetTypes.OrdersPacket(packet);

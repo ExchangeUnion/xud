@@ -3,7 +3,7 @@ import PacketType from '../PacketType';
 
 class GetOrdersPacket extends Packet<{}> {
   public get type() {
-    return PacketType.GETORDERS;
+    return PacketType.GET_ORDERS;
   }
 
   public get direction() {
