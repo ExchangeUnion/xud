@@ -129,7 +129,7 @@ class MatchingEngine {
     ).add(order);
   }
 
-  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
+  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
     let matchAgainst: PriorityQueue | null = null;
     let addTo: PriorityQueue | null = null;
@@ -143,7 +143,7 @@ class MatchingEngine {
     }
 
     const matchingResult = MatchingEngine.match(order, [matchAgainst]);
-    if (matchingResult.remainingOrder && addTo) {
+    if (matchingResult.remainingOrder && addTo && !discardRemaining) {
       addTo.add(matchingResult.remainingOrder);
     }
 

@@ -193,7 +193,7 @@
     },
     "/v1/placeorder": {
       "post": {
-        "summary": "Add an order to the order book.",
+        "summary": "Add an order to the order book.\nIf no price is specified a market order will get added",
         "operationId": "PlaceOrder",
         "responses": {
           "200": {

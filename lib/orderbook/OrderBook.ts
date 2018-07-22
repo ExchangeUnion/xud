@@ -96,18 +96,19 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder(order);
   }
 
-  public addMarketOrder = (_order: orders.OwnOrder) => {
-    // TODO: implement
+  public addMarketOrder = (order: orders.MarketOrder) => {
+    const price = order.quantity > 0 ? Number.MAX_VALUE : 0;
+    return this.addOwnOrder({ ...order, price }, true);
   }
 
-  private addOwnOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
+  private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
     }
 
     const stampedOrder: orders.StampedOwnOrder = { ...order, id: uuidv1(), createdAt: ms() };
-    const matchingResult = matchingEngine.matchOrAddOwnOrder(stampedOrder);
+    const matchingResult = matchingEngine.matchOrAddOwnOrder(stampedOrder, discardRemaining);
     const { matches, remainingOrder } = matchingResult;
 
     if (matches.length > 0) {

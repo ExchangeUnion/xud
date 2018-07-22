@@ -1,12 +1,13 @@
-type BaseOrder = {
-  price: number;
+export type MarketOrder = {
   quantity: number;
   pairId: string;
 };
 
-export type OwnOrder = BaseOrder;
+export type OwnOrder = MarketOrder & {
+  price: number;
+};
 
-export type PeerOrder = BaseOrder & {
+export type PeerOrder = OwnOrder & {
   id: string;
   hostId: number;
   invoice: string;
@@ -23,7 +24,7 @@ export type StampedPeerOrder = PeerOrder & {
 
 export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
 
-export type OutgoingOrder = BaseOrder & {
+export type OutgoingOrder = OwnOrder & {
   id: string;
   invoice: string;
 };
