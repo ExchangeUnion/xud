@@ -179,3 +179,21 @@ describe('MatchingEngine.match', () => {
     expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
   });
 });
+
+describe('MatchingEngine.dropPeerOrders', () => {
+  it('should drop the peer order from queue', () => {
+    const engine = new MatchingEngine(PAIR_ID);
+    const firstOrder = createOrder(5, -5);
+    const secondOrder = createOrder(5, -6);
+    const thirdOrder = createOrder(5, 10);
+    engine.addPeerOrder(firstOrder);
+    engine.addPeerOrder(secondOrder);
+    engine.dropPeerOrders(1);
+    const matchAgainst = [engine.priorityQueues.sellOrders];
+    const { remainingOrder } = MatchingEngine.match(
+      thirdOrder,
+      matchAgainst,
+    );
+    expect(remainingOrder.quantity).to.equal(10);
+  });
+});
