@@ -131,18 +131,18 @@ class MatchingEngine {
 
   public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
-    const matchAgainst: PriorityQueue[] = [];
-    let addTo: PriorityQueue|null = null;
+    let matchAgainst: PriorityQueue | null = null;
+    let addTo: PriorityQueue | null = null;
 
     if (isBuyOrder) {
-      matchAgainst.push(this.priorityQueues.sellOrders);
+      matchAgainst = this.priorityQueues.sellOrders;
       addTo = this.priorityQueues.buyOrders;
     } else {
-      matchAgainst.push(this.priorityQueues.buyOrders);
+      matchAgainst = this.priorityQueues.buyOrders;
       addTo = this.priorityQueues.sellOrders;
     }
 
-    const matchingResult = MatchingEngine.match(order, matchAgainst);
+    const matchingResult = MatchingEngine.match(order, [matchAgainst]);
     if (matchingResult.remainingOrder && addTo) {
       addTo.add(matchingResult.remainingOrder);
     }
