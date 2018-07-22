@@ -184,16 +184,15 @@ describe('MatchingEngine.dropPeerOrders', () => {
   it('should drop the peer order from queue', () => {
     const engine = new MatchingEngine(PAIR_ID);
     const firstOrder = createOrder(5, -5);
-    const secondOrder = createOrder(5, -6);
-    const thirdOrder = createOrder(5, 10);
+    const secondOrder = createOrder(5, 15);
+    const hostId = 1;
     engine.addPeerOrder(firstOrder);
-    engine.addPeerOrder(secondOrder);
-    engine.dropPeerOrders(1);
     const matchAgainst = [engine.priorityQueues.sellOrders];
+    engine.dropPeerOrders(hostId);
     const { remainingOrder } = MatchingEngine.match(
-      thirdOrder,
+      secondOrder,
       matchAgainst,
     );
-    expect(remainingOrder.quantity).to.equal(10);
+    expect(remainingOrder.quantity).to.equal(15);
   });
 });

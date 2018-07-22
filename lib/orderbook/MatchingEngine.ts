@@ -1,8 +1,9 @@
-import assert from 'assert';
+import assert, { equal } from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 import { orders, matchingEngine, db } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
+import { isObject, isNumber } from 'util';
 
 type PriorityQueue = {
   add: Function;
@@ -12,7 +13,7 @@ type PriorityQueue = {
   poll: Function;
   trim: Function;
   isEmpty: Function;
-  has: Function;
+  size: Function;
 };
 
 type PriorityQueues = {
@@ -130,18 +131,22 @@ class MatchingEngine {
   }
 
   public dropPeerOrders = (hostId: number): void => {
-    this.priorityQueues.buyOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
-      if (queuedOrder.hostId === hostId) {
-        return true;
+    this.priorityQueues.buyOrders.remove(hostId, MatchingEngine.hostIdComparator);
+    this.priorityQueues.sellOrders.remove(hostId, MatchingEngine.hostIdComparator);
+  }
+
+  private static hostIdComparator = (queuedOrder: any, orderHostId: any) => {
+    if (isObject(queuedOrder) && isNumber(orderHostId)) {
+      if (queuedOrder.hostId === orderHostId) {
+        return false;
       }
-      return false;
-    });
-    this.priorityQueues.sellOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
-      if (queuedOrder.hostId === hostId) {
-        return true;
+    }
+    if (isObject(orderHostId) && isNumber(queuedOrder)) {
+      if (orderHostId.hostId === queuedOrder) {
+        return false;
       }
-      return false;
-    });
+    }
+    return true;
   }
 
   public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
