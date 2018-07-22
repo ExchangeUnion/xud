@@ -7,6 +7,7 @@ import Logger from '../Logger';
 
 type PriorityQueue = {
   add: Function;
+  remove: Function;
   heapify: Function;
   peek: Function;
   poll: Function;
@@ -148,6 +149,18 @@ class MatchingEngine {
     }
 
     return matchingResult;
+  }
+
+  public removeOwnOrder = (orderId: string): void => {
+    this.priorityQueues.buyOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
+    this.priorityQueues.sellOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
+  }
+
+  private static removeQueuedComparator = (queuedOrder:any, orderID:string): Boolean => {
+    if (queuedOrder.id === orderID) {
+      return true;
+    }
+    return false;
   }
 }
 
