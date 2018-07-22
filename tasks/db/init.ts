@@ -12,7 +12,7 @@ export default async (testDb?: boolean) => {
   const db = new DB(testDb ? config.testDb : config.db, config.instanceId);
   await db.init();
 
-  const orderBookRepository = new OrderBookRepository(db, config.instanceId);
+  const orderBookRepository = new OrderBookRepository(db.models, config.instanceId);
   const p2pRepository = new P2PRepository(db, config.instanceId);
 
   await Promise.all([
@@ -26,21 +26,6 @@ export default async (testDb?: boolean) => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
       { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
     ]),
-  ]);
-
-  await orderBookRepository.addOrders([
-    {
-      id: uuidv1(), pairId: 'BTC/LTC', quantity: 10.01, price: 59.9679, createdAt: new Date(),
-    },
-    {
-      id: uuidv1(), pairId: 'BTC/LTC', quantity: -2, price: 60, createdAt: new Date(),
-    },
-    {
-      id: uuidv1(), pairId: 'BTC/LTC', quantity: 3, price: 60, createdAt: new Date(),
-    },
-    {
-      id: uuidv1(), pairId: 'BTC/LTC', quantity: -8.5, price: 66, createdAt: new Date(),
-    },
   ]);
 
   db.close();

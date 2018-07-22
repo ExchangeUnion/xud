@@ -58,9 +58,6 @@ host = "localhost"
 disable = false
 host = "localhost"
 port = 5001
-
-[orderbook]
-internalmatching = true
 ```
 
 ## Starting the Daemon
@@ -95,7 +92,6 @@ Options:
   --lnd.host                    Host of the lnd gRPC interface          [string]
   --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
   --lnd.port                    Port of the lnd gRPC interface          [number]
-  --orderbook.internalmatching  OrderBook Internal Matching            [boolean]
   --p2p.listen                  Listen for incoming peers              [boolean]
   --p2p.port, -p                Port to listen for incoming peers       [number]
   --raiden.disable              Disable raiden integration             [boolean]
