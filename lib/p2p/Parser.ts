@@ -19,8 +19,8 @@ class Parser extends EventEmitter {
       if (!packet) {
         return;
       }
-      const typeStr = dataStr.split(' ', 1)[0];
-      const packetStr = dataStr.substring(typeStr.length + 1);
+      const typeStr = packet.split(' ', 1)[0];
+      const packetStr = packet.substring(typeStr.length + 1);
       try {
         const packet = packetUtils.fromRaw(typeStr, packetStr);
         if (packet) {
@@ -29,7 +29,7 @@ class Parser extends EventEmitter {
           this.emit('error', new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, typeStr));
         }
       } catch (err) {
-        this.emit('error', new ParserError(ParserErrorType.UNPARSABLE_MESSAGE, `${dataStr}: ${err}`));
+        this.emit('error', new ParserError(ParserErrorType.UNPARSABLE_MESSAGE, `${packetStr}: ${err}`));
       }
     });
   }
