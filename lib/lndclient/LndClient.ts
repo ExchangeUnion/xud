@@ -53,7 +53,6 @@ class LndClient extends BaseClient {
       const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
-      this.connect();
     }
   }
 
@@ -73,7 +72,8 @@ class LndClient extends BaseClient {
     });
   }
 
-  private connect = async () => {
+  public connect = async () => {
+    this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
     this.lightning = new LightningClient(this.uri, this.credentials);
 
     try {

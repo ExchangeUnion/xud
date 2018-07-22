@@ -50,6 +50,8 @@ class Xud {
       await this.db.init();
 
       this.lndClient = new LndClient(this.config.lnd);
+      await this.lndClient.connect();
+
       this.raidenClient = new RaidenClient(this.config.raiden);
 
       this.pool = new Pool(this.config.p2p, this.db);
