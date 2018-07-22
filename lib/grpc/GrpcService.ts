@@ -1,11 +1,11 @@
 import grpc from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
-import { isObject, ms } from '../utils/utils';
+import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
-import { Orders } from 'lib/orderbook/OrderBookRepository';
+import { Orders } from 'lib/orderbook/OrderBook';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
 
@@ -63,18 +63,6 @@ class GrpcService {
   }
 
   /**
-   * Example for a server-side streaming call
-   */
-  public streamingExample: grpc.handleServerStreamingCall<{}, Orders> = async (call) => {
-    setInterval(() => {
-      const date = ms();
-      call.write({
-        date,
-      });
-    }, 1000);
-  }
-
-  /**
    * See [[Service.placeOrder]]
    */
   public placeOrder: grpc.handleUnaryCall<{ order: OwnOrder }, MatchingResult> = async (call, callback) => {
@@ -82,21 +70,50 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.cancelOrder]]
+   */
+  public cancelOrder: grpc.handleUnaryCall<{ id: string }, string> = async (call, callback) => {
+    this.unaryCall(call.request.id, callback, this.service.cancelOrder);
+  }
+
+  /**
    * See [[Service.connect]]
    */
-  public connect: grpc.handleUnaryCall<{ host: string, port: number }, Orders> = async (call, callback) => {
+  public connect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.connect);
   }
 
   /**
-   * See [[Service.tokenSwap]]
+   * See [[Service.disconnect]]
    */
-  public tokenSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.tokenSwap);
+  public disconnect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.disconnect);
+  }
+
+  /**
+   * See [[Service.executeSwap]]
+   */
+  public executeSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> =
+  async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.executeSwap);
   }
 
   public shutdown: grpc.handleUnaryCall<{}, {}> = async (call, callback) => {
     this.unaryCall(call.request, callback, this.service.shutdown);
+  }
+
+  /*
+   * See [[Service.subscribePeerOrders]]
+   */
+  public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
+    this.service.subscribePeerOrders(order => call.write({ order }));
+  }
+
+  /*
+   * See [[Service.subscribeSwaps]]
+   */
+  public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
+    this.service.subscribeSwaps(result => call.write({ result }));
   }
 }
 

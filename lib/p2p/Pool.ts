@@ -6,8 +6,8 @@ import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket } from './packets';
-import { orders } from '../types';
+import { Packet, PacketType, OrderPacket, GetOrdersPacket } from './packets';
+import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 
@@ -92,8 +92,8 @@ class Pool extends EventEmitter {
     this.peers.add(peer);
   }
 
-  public broadcastOrder = (order: orders.OutgoingOrder) => {
-    const orderPacket = OrderPacket.fromOutgoingOrder(order);
+  public broadcastOrder = (order: OutgoingOrder) => {
+    const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
   }
 
@@ -122,8 +122,19 @@ class Pool extends EventEmitter {
   private handlePacket = (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order: orders.PeerOrder = { ...packet.body, peerId: peer.id };
+        const order: PeerOrder = { ...packet.body, hostId: peer.id };
         this.emit('packet.order', order);
+        break;
+      }
+      case PacketType.GETORDERS: {
+        this.emit('packet.getOrders', peer);
+        break;
+      }
+      case PacketType.ORDERS: {
+        const { orders } = packet.body;
+        orders.forEach((order) => {
+          this.emit('packet.order', { ...order, hostId: peer.id });
+        });
         break;
       }
     }
@@ -131,6 +142,7 @@ class Pool extends EventEmitter {
 
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
+    peer.sendPacket(new GetOrdersPacket({}));
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {

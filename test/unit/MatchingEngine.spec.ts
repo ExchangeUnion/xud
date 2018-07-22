@@ -3,21 +3,19 @@ import uuidv1 from 'uuid/v1';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders, db } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
+import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'BTC/LTC';
 
-const createOrder = (price: number, quantity: number, createdAt?: Date): orders.StampedOrder => ({
+const createOrder = (price: number, quantity: number, date = ms()): orders.StampedPeerOrder => ({
   quantity,
   price,
   id: uuidv1(),
   pairId: PAIR_ID,
   hostId: 1,
-  createdAt: createdAt || new Date(),
+  createdAt: date,
+  invoice: '',
 });
-
-const createOrderInstance = (price: number, quantity: number) => {
-  return createOrder(price, quantity) as db.OrderInstance;
-};
 
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
@@ -93,8 +91,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
-      createOrder(5, 10, new Date(1)),
-      createOrder(5, -10, new Date(2)),
+      createOrder(5, 10, ms() - 1),
+      createOrder(5, -10, ms()),
     );
     expect(res).to.be.true;
   });
@@ -102,8 +100,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
-      createOrder(5, 10, new Date(1)),
-      createOrder(5, -10, new Date(2)),
+      createOrder(5, 10, ms() - 1),
+      createOrder(5, -10, ms()),
     );
     expect(res).to.be.true;
   });
@@ -142,11 +140,10 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createOrderInstance(5, -5),
-      createOrderInstance(5, -5),
-    ], [], []);
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const engine = new MatchingEngine(PAIR_ID);
+    engine.addPeerOrder(createOrder(5, -5));
+    engine.addPeerOrder(createOrder(5, -5));
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -155,11 +152,10 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createOrderInstance(5, -5),
-      createOrderInstance(5, -4),
-    ], [], []);
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const engine = new MatchingEngine(PAIR_ID);
+    engine.addPeerOrder(createOrder(5, -4));
+    engine.addPeerOrder(createOrder(5, -5));
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -168,11 +164,10 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID, true, [], [
-      createOrderInstance(5, -5),
-      createOrderInstance(5, -6),
-    ], [], []);
-    const matchAgainst = [engine.priorityQueues.peerSellOrders];
+    const engine = new MatchingEngine(PAIR_ID);
+    engine.addPeerOrder(createOrder(5, -5));
+    engine.addPeerOrder(createOrder(5, -6));
+    const matchAgainst = [engine.priorityQueues.sellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
       matchAgainst,
@@ -181,6 +176,6 @@ describe('MatchingEngine.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
     });
-    expect(engine.priorityQueues.peerSellOrders.peek().quantity).to.equal(-1);
+    expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
   });
 });

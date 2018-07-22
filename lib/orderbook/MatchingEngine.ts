@@ -16,10 +16,8 @@ type PriorityQueue = {
 };
 
 type PriorityQueues = {
-  peerBuyOrders: PriorityQueue;
-  peerSellOrders: PriorityQueue;
-  ownBuyOrders: PriorityQueue;
-  ownSellOrders: PriorityQueue;
+  buyOrders: PriorityQueue;
+  sellOrders: PriorityQueue;
 };
 
 type SplitOrder = {
@@ -31,26 +29,11 @@ class MatchingEngine {
   public priorityQueues: PriorityQueues;
   private logger: Logger = Logger.orderbook;
 
-  constructor(public pairId: string,
-    private internalMatching: boolean,
-    peerBuyOrders: db.OrderInstance[] = [],
-    peerSellOrders: db.OrderInstance[] = [],
-    ownBuyOrders: db.OrderInstance[] = [],
-    ownSellOrders: db.OrderInstance[] = []) {
+  constructor(public pairId: string) {
     this.priorityQueues = {
-      peerBuyOrders: MatchingEngine.initPriorityQueue(peerBuyOrders, OrderingDirection.DESC),
-      peerSellOrders: MatchingEngine.initPriorityQueue(peerSellOrders, OrderingDirection.ASC),
-      ownBuyOrders: MatchingEngine.initPriorityQueue(ownBuyOrders, OrderingDirection.DESC),
-      ownSellOrders: MatchingEngine.initPriorityQueue(ownSellOrders, OrderingDirection.ASC),
+      buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
+      sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
     };
-  }
-
-  private static initPriorityQueue(orders, orderingDirection): PriorityQueue {
-    const priorityQueue = this.createPriorityQueue(orderingDirection);
-    orders.forEach((order) => {
-      priorityQueue.add(order);
-    });
-    return priorityQueue;
   }
 
   private static createPriorityQueue(orderingDirection): PriorityQueue {
@@ -111,7 +94,6 @@ class MatchingEngine {
           const oppositeOrder = priorityQueue.poll();
           const oppositeOrderAbsQuantity = Math.abs(oppositeOrder.quantity);
           const remainingOrderAbsQuantity = Math.abs(remainingOrder.quantity);
-
           if (
             oppositeOrderAbsQuantity === matchingQuantity &&
             remainingOrderAbsQuantity === matchingQuantity
@@ -142,19 +124,19 @@ class MatchingEngine {
 
   public addPeerOrder = (order: orders.StampedPeerOrder): void => {
     (order.quantity > 0
-      ? this.priorityQueues.peerBuyOrders
-      : this.priorityQueues.peerSellOrders
+      ? this.priorityQueues.buyOrders
+      : this.priorityQueues.sellOrders
     ).add(order);
   }
 
   public dropPeerOrders = (hostId: number): void => {
-    this.priorityQueues.peerBuyOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
+    this.priorityQueues.buyOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
       if (queuedOrder.hostId === hostId) {
         return true;
       }
       return false;
     });
-    this.priorityQueues.peerSellOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
+    this.priorityQueues.sellOrders.remove(hostId, (queuedOrder: any, hostId: number) => {
       if (queuedOrder.hostId === hostId) {
         return true;
       }
@@ -164,24 +146,18 @@ class MatchingEngine {
 
   public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
-    const matchAgainst: PriorityQueue[] = [];
+    let matchAgainst: PriorityQueue | null = null;
     let addTo: PriorityQueue | null = null;
 
     if (isBuyOrder) {
-      matchAgainst.push(this.priorityQueues.peerSellOrders);
-      if (this.internalMatching) {
-        matchAgainst.unshift(this.priorityQueues.ownSellOrders);
-        addTo = this.priorityQueues.ownBuyOrders;
-      }
+      matchAgainst = this.priorityQueues.sellOrders;
+      addTo = this.priorityQueues.buyOrders;
     } else {
-      matchAgainst.push(this.priorityQueues.peerBuyOrders);
-      if (this.internalMatching) {
-        matchAgainst.unshift(this.priorityQueues.ownBuyOrders);
-        addTo = this.priorityQueues.ownSellOrders;
-      }
+      matchAgainst = this.priorityQueues.buyOrders;
+      addTo = this.priorityQueues.sellOrders;
     }
 
-    const matchingResult = MatchingEngine.match(order, matchAgainst);
+    const matchingResult = MatchingEngine.match(order, [matchAgainst]);
     if (matchingResult.remainingOrder && addTo) {
       addTo.add(matchingResult.remainingOrder);
     }

@@ -7,7 +7,6 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
-import { OrderBookConfig } from './orderbook/OrderBook';
 
 class Config {
   public p2p: PoolConfig;
@@ -17,7 +16,6 @@ class Config {
   public rpc: { host: string, port: number };
   public lnd: LndClientConfig;
   public raiden: RaidenClientConfig;
-  public orderbook: OrderBookConfig;
   public webproxy: { port: number, disable: boolean };
 
   constructor(private args?: object) {
@@ -78,9 +76,6 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 5001,
-    };
-    this.orderbook = {
-      internalmatching: true,
     };
   }
 
