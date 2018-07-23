@@ -101,10 +101,17 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrder = async (orderId: string): Promise<void> => {
-    this.pairs.forEach((pair) => {
-      this.matchingEngines[pair.id].removeOwnOrder(orderId);
-    });
+  public removeOwnOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines[pairId];
+    if (!matchingEngine) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
+
+    if (matchingEngine.removeOwnOrder(orderId)) {
+      return this.removeOrder(this.ownOrders, orderId, pairId);
+    } else {
+      return false;
+    }
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
@@ -157,6 +164,18 @@ class OrderBook extends EventEmitter {
 
   private addOrder = (type: { [pairId: string]: Orders }, order: orders.StampedOrder) => {
     this.getOrderMap(type, order)[order.id] = order;
+  }
+
+  private removeOrder = (type: { [pairId: string]: Orders }, orderId: string, pairId: string): boolean => {
+    const orders = type[pairId];
+    if (orders.buyOrders[orderId]) {
+      delete orders.buyOrders[orderId];
+      return true;
+    } else if (orders.sellOrders[orderId]) {
+      delete orders.sellOrders[orderId];
+      return true;
+    }
+    return false;
   }
 
   private getOrderMap = (type: { [pairId: string]: Orders }, order: orders.StampedOrder): { [ id: string ]: orders.StampedOrder } => {

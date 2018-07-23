@@ -1,13 +1,14 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
-import { orders, matchingEngine, db } from '../types';
+import { orders, matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 
 type PriorityQueue = {
   add: Function;
-  remove: Function;
+  removeOne: Function;
+  removeMany: Function;
   heapify: Function;
   peek: Function;
   poll: Function;
@@ -151,16 +152,13 @@ class MatchingEngine {
     return matchingResult;
   }
 
-  public removeOwnOrder = (orderId: string): void => {
-    this.priorityQueues.buyOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
-    this.priorityQueues.sellOrders.remove(orderId, MatchingEngine.removeQueuedComparator);
+  public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
+    return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
+      this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
   }
 
-  private static removeQueuedComparator = (queuedOrder:any, orderID:string): Boolean => {
-    if (queuedOrder.id === orderID) {
-      return true;
-    }
-    return false;
+  public isEmpty = (): boolean => {
+    return this.priorityQueues.buyOrders.isEmpty() && this.priorityQueues.sellOrders.isEmpty();
   }
 }
 

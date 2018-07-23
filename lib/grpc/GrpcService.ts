@@ -72,8 +72,8 @@ class GrpcService {
   /**
    * See [[Service.cancelOrder]]
    */
-  public cancelOrder: grpc.handleUnaryCall<{ id: string }, string> = async (call, callback) => {
-    this.unaryCall(call.request.id, callback, this.service.cancelOrder);
+  public cancelOrder: grpc.handleUnaryCall<{ id: string, pairId: string }, string> = async (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.cancelOrder);
   }
 
   /**
