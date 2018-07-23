@@ -83,7 +83,7 @@ class LndClient extends BaseClient {
         this.subscribeInvoices();
       }
     } catch (err) {
-      this.logger.error(`could not fetch info from lnd host, error: ${err}, retrying in 5000 ms`);
+      this.logger.error(`could not fetch info from lnd host, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
       setTimeout(this.connect, 5000);
     }
   }
