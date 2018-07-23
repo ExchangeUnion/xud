@@ -23,6 +23,20 @@ type HandshakeState = {
   pairs?: string[];
 };
 
+declare interface Peer {
+  on(event: 'packet', listener: (packet: Packet) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  once(event: 'open', listener: (handshakeState: HandshakeState) => void);
+  once(event: 'close', listener: () => void);
+  once(event: 'ban', listener: () => void);
+  emit(event: 'connect');
+  emit(event: 'ban');
+  emit(event: 'open', handshakeState: HandshakeState);
+  emit(event: 'close');
+  emit(event: 'error', err: Error);
+  emit(event: 'packet', packet: Packet);
+}
+
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
 
@@ -427,16 +441,17 @@ class Peer extends EventEmitter {
     }
   }
 
-  private error = (err): void => {
+  private error = (err: Error | string): void => {
     if (this.destroyed) {
       return;
     }
 
-    // TODO: construct a proper error object
-    const msg = `Socket Error (${this.id}): ${JSON.stringify(err)}`;
-    this.logger.debug(msg);
-
-    this.emit('error', { msg, err });
+    this.logger.debug(`Socket Error (${this.id}): ${err.toString()}`);
+    if (err instanceof Error) {
+      this.emit('error', err);
+    } else {
+      this.emit('error', new Error(`Socket Error (${this.id}): ${err}`));
+    }
   }
 
   private sendHello = (): HelloPacket => {
