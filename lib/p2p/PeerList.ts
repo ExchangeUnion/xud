@@ -16,6 +16,14 @@ class PeerList {
     return length;
   }
 
+  public get = (socketAddress: SocketAddress): Peer => {
+    return this.peers[socketAddress.toString()];
+  }
+
+  public has = (socketAddress: SocketAddress): boolean => {
+    return !!this.peers[socketAddress.toString()];
+  }
+
   public add = (peer: Peer): boolean => {
     if (this.has(peer.socketAddress)) {
       return false;
@@ -25,12 +33,14 @@ class PeerList {
     }
   }
 
-  public remove = (peer:Peer): void => {
-    delete this.peers[peer.socketAddress.toString()];
-  }
-
-  public has = (socketAddress: SocketAddress): boolean => {
-    return !!this.peers[socketAddress.toString()];
+  public remove = (socketAddress: SocketAddress): Peer | null => {
+    const peer = this.get(socketAddress);
+    if (peer) {
+      delete this.peers[socketAddress.toString()];
+      return peer;
+    } else {
+      return null;
+    }
   }
 
   public forEach = (cb: (peer: Peer) => void) => {

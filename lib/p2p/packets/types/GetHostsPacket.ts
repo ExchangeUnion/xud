@@ -1,9 +1,13 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-class GetOrdersPacket extends Packet<{}> {
+type GetHostsPacketBody = {
+  ts: number;
+};
+
+class GetHostsPacket extends Packet<GetHostsPacketBody> {
   public get type() {
-    return PacketType.GET_ORDERS;
+    return PacketType.GET_HOSTS;
   }
 
   public get direction() {
@@ -11,4 +15,4 @@ class GetOrdersPacket extends Packet<{}> {
   }
 }
 
-export default GetOrdersPacket;
+export default GetHostsPacket;

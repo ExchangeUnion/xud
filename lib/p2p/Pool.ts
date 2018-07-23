@@ -6,10 +6,11 @@ import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, GetOrdersPacket } from './packets';
+import { Packet, PacketType, OrderPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
 import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
+import { ms } from '../utils/utils';
 
 type PoolConfig = {
   listen: boolean;
@@ -34,13 +35,17 @@ class Pool extends EventEmitter {
     return this.peers.length;
   }
 
-  public connect = async (): Promise<void> => {
+  /**
+   * Initialize the Pool by connecting to known hosts and listening to incoming peer connections, if configured to do so.
+   */
+  public init = async (): Promise<void> => {
     if (this.connected) {
       return;
     }
 
-    for (const host of await this.hosts.get()) {
-      this.addOutbound(host.socketAddress.address, host.socketAddress.port);
+    await this.hosts.load();
+    for (const host of this.hosts.toArray()) {
+      this.addOutbound(host.socketAddress);
     }
 
     if (this.config.listen) {
@@ -65,10 +70,14 @@ class Pool extends EventEmitter {
     this.connected = false;
   }
 
-  public addOutbound = async (address: string, port: number): Promise<Peer> => {
-    const socketAddress = new SocketAddress(address, port);
+  /**
+   * Attempt to add an outbound peer by connecting to a given SocketAddress.
+   * Throws an error if a connection already exists for the provided address.
+   * If the connection is successful, send a [[GetHostsPacket]] to discover new XUD hosts to connect to.
+   */
+  public addOutbound = async (socketAddress: SocketAddress): Promise<Peer> => {
     if (this.peers.has(socketAddress)) {
-      const err = errors.ADDRESS_ALREADY_CONNECTED(address.toString());
+      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress.address);
       this.logger.info(err.message);
       throw err;
     }
@@ -90,6 +99,16 @@ class Pool extends EventEmitter {
     this.bindPeer(peer);
     await peer.open();
     this.peers.add(peer);
+  }
+
+  public disconnectPeer = async (address: string, port: number): Promise<void> => {
+    const socketAddress = new SocketAddress(address, port);
+    const peer = this.peers.get(socketAddress);
+    if (peer) {
+      peer.destroy();
+    } else {
+      throw(errors.NOT_CONNECTED(socketAddress.toString()));
+    }
   }
 
   public broadcastOrder = (order: OutgoingOrder) => {
@@ -126,14 +145,29 @@ class Pool extends EventEmitter {
         this.emit('packet.order', order);
         break;
       }
-      case PacketType.GETORDERS: {
+      case PacketType.GET_ORDERS: {
         this.emit('packet.getOrders', peer);
         break;
       }
       case PacketType.ORDERS: {
-        const { orders } = packet.body;
+        const { orders } = (packet as OrdersPacket).body;
         orders.forEach((order) => {
           this.emit('packet.order', { ...order, hostId: peer.id });
+        });
+        break;
+      }
+      case PacketType.GET_HOSTS: {
+        peer.sendHosts(this.hosts.toArray(), packet.header.hash);
+        break;
+      }
+      case PacketType.HOSTS: {
+        const { hosts } = (packet as HostsPacket).body;
+        hosts.forEach(async (host) => {
+          try {
+            await this.addOutbound(host.socketAddress);
+          } catch (err) {
+            this.logger.info(err);
+          }
         });
         break;
       }
@@ -143,15 +177,16 @@ class Pool extends EventEmitter {
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
     peer.sendPacket(new GetOrdersPacket({}));
+    peer.sendPacket(new GetHostsPacket({ ts: ms() }));
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
     if (peer.direction === ConnectionDirection.OUTBOUND) {
-      const host = await this.hosts.getOrCreate(peer.socketAddress);
+      const host = await this.hosts.getOrCreateHost(peer.socketAddress);
       peer.setHost(host);
     } else if (peer.direction === ConnectionDirection.INBOUND && listenPort) {
       const socketAddress = new SocketAddress(peer.socketAddress.address, listenPort);
-      const host = await this.hosts.getOrCreate(socketAddress);
+      const host = await this.hosts.getOrCreateHost(socketAddress);
       peer.setHost(host);
     }
   }
@@ -186,12 +221,12 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => {
       this.emit('peer.close', peer);
-      this.peers.remove(peer);
+      this.peers.remove(peer.socketAddress);
     });
 
     peer.once('ban', () => {
       this.logger.debug(`Banning peer (${peer.id})`);
-      this.hosts.ban(peer.socketAddress.address);
+      this.hosts.ban(peer);
 
       if (peer) {
         peer.destroy();
