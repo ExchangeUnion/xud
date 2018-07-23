@@ -73,9 +73,7 @@ class LndClient extends BaseClient {
   }
 
   public connect = async () => {
-    if (this.isDisabled()) {
-      this.setStatus(ClientStatus.DISABLED);
-    } else {
+    if (!this.isDisabled()) {
       this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
