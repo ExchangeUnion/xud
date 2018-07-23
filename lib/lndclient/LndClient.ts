@@ -200,7 +200,7 @@ class LndClient extends BaseClient {
   /**
    * Subscribe to events for when invoices are settled.
    */
-  public subscribeInvoices = (): void => {
+  private subscribeInvoices = (): void => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
