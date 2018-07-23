@@ -73,18 +73,22 @@ class LndClient extends BaseClient {
   }
 
   public connect = async () => {
-    this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
-    this.lightning = new LightningClient(this.uri, this.credentials);
+    if (this.isDisabled()) {
+      this.setStatus(ClientStatus.DISABLED);
+    } else {
+      this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
+      this.lightning = new LightningClient(this.uri, this.credentials);
 
-    try {
-      const getInfoResponse = await this.getInfo();
-      if (getInfoResponse) {
-        this.setStatus(ClientStatus.CONNECTION_VERIFIED);
-        this.subscribeInvoices();
+      try {
+        const getInfoResponse = await this.getInfo();
+        if (getInfoResponse) {
+          this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+          this.subscribeInvoices();
+        }
+      } catch (err) {
+        this.logger.error(`could not fetch info from lnd host, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
+        setTimeout(this.connect, 5000);
       }
-    } catch (err) {
-      this.logger.error(`could not fetch info from lnd host, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
-      setTimeout(this.connect, 5000);
     }
   }
 
