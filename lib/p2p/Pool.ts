@@ -185,7 +185,7 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', () => {
-      this.emit('peer.destroy', peer);
+      this.emit('peer.close', peer);
       this.peers.remove(peer);
     });
 
@@ -194,7 +194,6 @@ class Pool extends EventEmitter {
       this.hosts.ban(peer.socketAddress.address);
 
       if (peer) {
-        this.emit('peer.destroy', peer);
         peer.destroy();
       }
     });
@@ -202,7 +201,6 @@ class Pool extends EventEmitter {
 
   private destroyPeers = (): void => {
     this.peers.forEach((peer) => {
-      this.emit('peer.destroy', peer);
       peer.destroy();
     });
   }
