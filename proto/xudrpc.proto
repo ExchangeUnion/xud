@@ -27,7 +27,7 @@ service Xud {
   }
   
   /* Add an order to the order book.
-   * If no price is specified a market order will get added
+   * If price is zero or unspecified a market order will get added.
    */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {

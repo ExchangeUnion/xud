@@ -148,7 +148,7 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    */
   public placeOrder = async (order: OwnOrder) => {
-    assert(order.price >= 0, 'price must be greater than 0');
+    assert(order.price >= 0, 'price cannot be negative');
     assert(order.quantity !== 0, 'quantity must not equal 0');
     if (order.price === 0) {
       return this.orderBook.addMarketOrder(order);

@@ -117,7 +117,7 @@ class OrderBook extends EventEmitter {
         this.updateOrderQuantity(this.ownOrders, maker, maker.quantity);
       });
     }
-    if (remainingOrder) {
+    if (remainingOrder && !discardRemaining) {
       this.broadcastOrder(remainingOrder);
       this.addOrder(this.ownOrders, remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
