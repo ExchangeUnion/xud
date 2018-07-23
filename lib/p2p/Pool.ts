@@ -92,6 +92,16 @@ class Pool extends EventEmitter {
     this.peers.add(peer);
   }
 
+  public disconnectPeer = async (address: string, port: number): Promise<void> => {
+    const socketAddress = new SocketAddress(address, port);
+    const peer = this.peers.get(socketAddress);
+    if (peer) {
+      peer.destroy();
+    } else {
+      throw(errors.NOT_CONNECTED(socketAddress.toString()));
+    }
+  }
+
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
@@ -185,7 +195,7 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', () => {
-      this.peers.remove(peer);
+      this.peers.remove(peer.socketAddress);
     });
 
     peer.once('ban', () => {
