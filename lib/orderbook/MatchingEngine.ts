@@ -1,4 +1,4 @@
-import assert, { equal } from 'assert';
+import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 import { orders, matchingEngine, db } from '../types';
 import { OrderingDirection } from '../types/enums';
@@ -13,7 +13,7 @@ type PriorityQueue = {
   poll: Function;
   trim: Function;
   isEmpty: Function;
-  size: Function;
+  size: number;
 };
 
 type PriorityQueues = {

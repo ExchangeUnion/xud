@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
-import { orders, db } from '../../lib/types';
+import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
@@ -183,10 +183,12 @@ describe('MatchingEngine.match', () => {
 describe('MatchingEngine.dropPeerOrders', () => {
   it('should drop the peer order from queue', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    const peerOrder = createOrder(5, -5);
+    const peerOrderOne = createOrder(5, -5);
+    const peerOrderTwo = createOrder(5, -5);
     const ownOrder = createOrder(5, 15);
     const hostId = 1;
-    engine.addPeerOrder(peerOrder);
+    engine.addPeerOrder(peerOrderOne);
+    engine.addPeerOrder(peerOrderTwo);
     const matchAgainst = [engine.priorityQueues.sellOrders];
     engine.dropPeerOrders(hostId);
     const { remainingOrder } = MatchingEngine.match(
