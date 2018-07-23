@@ -152,7 +152,7 @@ class Pool extends EventEmitter {
 
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
-   // peer.sendPacket(new GetOrdersPacket({}));
+    peer.sendPacket(new GetOrdersPacket({}));
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
