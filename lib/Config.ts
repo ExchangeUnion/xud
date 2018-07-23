@@ -1,5 +1,4 @@
 import fs from 'fs';
-import fse from 'fs-extra';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
@@ -83,13 +82,8 @@ class Config {
   }
 
   public async load() {
-    const exists = await fse.pathExists(this.xudir);
-    if (!exists) {
-      try {
-        await fse.ensureDir(this.xudir);
-      } catch (err) {
-        throw new Error(`Error creating ${this.xudir}: ${err.message}`);
-      }
+    if (!fs.existsSync(this.xudir)) {
+      fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(`${this.xudir}xud.conf`)) {
       const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
       try {
