@@ -9,11 +9,11 @@ export default async (testDb?: boolean) => {
   const config = new Config();
   await config.load();
 
-  const db = new DB(testDb ? config.testDb : config.db, config.instanceId);
+  const db = new DB(testDb ? config.testDb : config.db);
   await db.init();
 
-  const orderBookRepository = new OrderBookRepository(db.models, config.instanceId);
-  const p2pRepository = new P2PRepository(db, config.instanceId);
+  const orderBookRepository = new OrderBookRepository(db.models);
+  const p2pRepository = new P2PRepository(db);
 
   await Promise.all([
     orderBookRepository.addCurrencies([

@@ -3,7 +3,7 @@ import FastPriorityQueue from 'fastpriorityqueue';
 
 import { orders, matchingEngine, db } from '../types';
 import { OrderingDirection } from '../types/enums';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 
 type PriorityQueue = {
   add: Function;
@@ -27,14 +27,13 @@ type SplitOrder = {
 
 class MatchingEngine {
   public priorityQueues: PriorityQueues;
-  private logger: Logger;
+  private logger: Logger = Logger.orderbook;
 
-  constructor(instanceId: number, public pairId: string) {
+  constructor(public pairId: string) {
     this.priorityQueues = {
       buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
       sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
     };
-    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
   }
 
   private static createPriorityQueue(orderingDirection): PriorityQueue {

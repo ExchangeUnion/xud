@@ -8,17 +8,16 @@ import errors from './errors';
 
 class GrpcServer {
   private server: Server;
-  private logger: Logger;
+  private logger: Logger = Logger.rpc;
 
-  constructor(service: Service, instanceId: number) {
-    this.logger = this.logger = new Logger({ instanceId, context: Context.RPC });
+  constructor(service: Service) {
     this.server = new grpc.Server();
 
     const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
     const { xudrpc }: any = protoDescriptor;
 
-    const grpcService = new GrpcService(service, instanceId);
+    const grpcService = new GrpcService(service);
     this.server.addService(xudrpc.Xud.service, {
       getInfo: grpcService.getInfo,
       getPairs: grpcService.getPairs,

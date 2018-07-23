@@ -29,15 +29,13 @@ type Models = {
 class DB {
   public sequelize!: Sequelize.Sequelize;
   public models!: Models;
-  private logger: Logger;
+  private logger: Logger = Logger.db;
 
-  constructor(private config: DBConfig, instanceId: number) {
+  constructor(private config: DBConfig) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.sequelize = this.createSequelizeInstance(this.config);
     this.models = this.loadModels();
-
-    this.logger = new Logger({ instanceId, context: Context.DB });
   }
 
   private static isDbDoesNotExistError(err: Error): boolean {

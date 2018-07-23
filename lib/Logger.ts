@@ -37,13 +37,21 @@ class Logger {
   private logDir: string;
   private context: Context;
   private logger: any;
-  public instanceId: number;
+  private instanceId: number;
 
   private static defaultLogDir = 'logs';
 
   private static defaultLevel = process.env.NODE_ENV === 'production'
   ? Level.INFO
   : Level.DEBUG;
+
+  public global = new Logger({ context: Context.GLOBAL, instanceId: this.instanceId });
+  public db = new Logger({ context: Context.DB, instanceId: this.instanceId });
+  public rpc = new Logger({ context: Context.RPC, instanceId: this.instanceId });
+  public p2p = new Logger({ context: Context.P2P, instanceId: this.instanceId });
+  public orderbook = new Logger({ context: Context.ORDERBOOK, instanceId: this.instanceId });
+  public lnd = new Logger({ context: Context.LND, instanceId: this.instanceId });
+  public raiden = new Logger({ context: Context.RAIDEN, instanceId: this.instanceId });
 
   constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;

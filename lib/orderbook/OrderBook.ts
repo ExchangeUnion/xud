@@ -7,7 +7,7 @@ import errors from './errors';
 import Pool from '../p2p/Pool';
 import { orders, matchingEngine, db } from '../types';
 import { Models } from '../db/DB';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import Peer from '../p2p/Peer';
@@ -18,7 +18,7 @@ type Orders = {
 };
 
 class OrderBook extends EventEmitter {
-  private logger: Logger;
+  private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor;
   public pairs: db.PairInstance[] = [];
@@ -26,11 +26,10 @@ class OrderBook extends EventEmitter {
   private ownOrders: { [ pairId: string ]: Orders } = {};
   private peerOrders: { [ pairId: string ]: Orders } = {};
 
-  constructor(models: Models, private instanceId: number, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
     super();
-    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
-    this.repository = new OrderBookRepository(models, instanceId);
-    this.matchesProcessor = new MatchesProcessor(instanceId);
+    this.repository = new OrderBookRepository(models);
+    this.matchesProcessor = new MatchesProcessor();
 
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
@@ -42,7 +41,7 @@ class OrderBook extends EventEmitter {
     const pairs = await this.repository.getPairs();
 
     pairs.forEach((pair) => {
-      this.matchingEngines[pair.id] = new MatchingEngine(this.instanceId, pair.id);
+      this.matchingEngines[pair.id] = new MatchingEngine(pair.id);
       this.ownOrders[pair.id] = this.initOrders();
       this.peerOrders[pair.id] = this.initOrders();
     });

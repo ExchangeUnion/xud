@@ -5,7 +5,7 @@ export default async (testDb?: boolean) => {
   const config = new Config();
   await config.load();
 
-  const db = new DB(testDb ? config.testDb : config.db, config.instanceId);
+  const db = new DB(testDb ? config.testDb : config.db);
   await db.init();
 
   await db.dropTables();

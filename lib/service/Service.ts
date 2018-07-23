@@ -33,7 +33,7 @@ class Service extends EventEmitter {
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger;
+  private logger: Logger = Logger.rpc;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
@@ -46,8 +46,6 @@ class Service extends EventEmitter {
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
-
-    this.logger = new Logger({ context: Context.RPC, instanceId: this.config.instanceId });
   }
 
   /**

@@ -1,16 +1,14 @@
 import { db } from '../types';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
 
 class OrderbookRepository {
-  private logger: Logger;
+  private logger: Logger = Logger.orderbook;
   private models: Models;
 
-  constructor(models: Models, instanceId: number) {
+  constructor(models: Models) {
     this.models = models;
-    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
-
   }
 
   public getPairs = async (): Promise<db.PairInstance[]> => {

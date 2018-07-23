@@ -23,11 +23,10 @@ function serializeDateProperties(response) {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
-  private logger: Logger;
+  private logger: Logger = Logger.rpc;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service, instanceId: number) {
-    this.logger = new Logger({ instanceId, context: Context.RPC });
+  constructor(private service: Service) {
   }
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {

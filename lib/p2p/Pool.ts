@@ -9,7 +9,7 @@ import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket, GetOrdersPacket } from './packets';
 import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 
 type PoolConfig = {
   listen: boolean;
@@ -21,16 +21,12 @@ class Pool extends EventEmitter {
   private hosts: HostList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private logger: Logger;
+  private logger: Logger = Logger.p2p;
   private connected: boolean = false;
-  private instanceId: number;
 
-  constructor(private config: PoolConfig, db: DB, instanceId: number) {
+  constructor(private config: PoolConfig, db: DB) {
     super();
-
-    this.logger = new Logger({ instanceId, context: Context.P2P });
-    this.hosts = new HostList(new P2PRepository(db, instanceId));
-    this.instanceId = instanceId;
+    this.hosts = new HostList(new P2PRepository(db));
   }
 
   get peerCount(): number {
@@ -76,7 +72,7 @@ class Pool extends EventEmitter {
       throw err;
     }
 
-    const peer = Peer.fromOutbound(socketAddress, this.instanceId);
+    const peer = Peer.fromOutbound(socketAddress);
     await this.tryConnectPeer(peer);
     return peer;
   }
@@ -101,7 +97,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
-    const peer = Peer.fromInbound(socket, this.instanceId);
+    const peer = Peer.fromInbound(socket);
     await this.connectPeer(peer);
     return peer;
   }

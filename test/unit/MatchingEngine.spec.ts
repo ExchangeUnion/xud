@@ -6,7 +6,6 @@ import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'BTC/LTC';
-const INSTANCE_ID = 0;
 
 const createOrder = (price: number, quantity: number, date = ms()): orders.StampedPeerOrder => ({
   quantity,
@@ -141,7 +140,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
@@ -153,7 +152,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -4));
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
@@ -165,7 +164,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(INSTANCE_ID, PAIR_ID);
+    const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createOrder(5, -5));
     engine.addPeerOrder(createOrder(5, -6));
     const matchAgainst = [engine.priorityQueues.sellOrders];

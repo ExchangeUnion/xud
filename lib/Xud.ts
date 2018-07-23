@@ -45,22 +45,17 @@ class Xud {
 
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      if (this.config.instanceId > 0) {
-        this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey_${this.config.instanceId}.dat`);
-      } else {
-        this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
-      }
-
-      this.db = new DB(this.config.db, this.config.instanceId);
+      this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
+      this.db = new DB(this.config.db);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd, this.config.instanceId);
-      this.raidenClient = new RaidenClient(this.config.raiden, this.config.instanceId);
+      this.lndClient = new LndClient(this.config.lnd);
+      this.raidenClient = new RaidenClient(this.config.raiden);
 
-      this.pool = new Pool(this.config.p2p, this.db, this.config.instanceId);
+      this.pool = new Pool(this.config.p2p, this.db);
       this.pool.connect();
 
-      this.orderBook = new OrderBook(this.db.models, this.config.instanceId, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.service = new Service({
@@ -73,14 +68,14 @@ class Xud {
       });
 
       if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(this.service, this.config.instanceId);
+        this.rpcServer = new GrpcServer(this.service);
         await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
       } else {
         this.logger.warn('gRPC Server is disabled! XUD might not function properly with gRPC disabled.');
       }
 
       if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer(this.config.instanceId);
+        this.grpcAPIProxy = new GrpcWebProxyServer();
         await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {

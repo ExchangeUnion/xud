@@ -17,12 +17,12 @@ describe('OrderBook', () => {
     const config = new Config();
     await config.load();
 
-    db = new DB(config.testDb, config.instanceId);
+    db = new DB(config.testDb);
     await db.init();
     await db.truncate();
 
-    orderBookRepository = new OrderBookRepository(db.models, config.instanceId);
-    const p2pRepository = new P2PRepository(db, config.instanceId);
+    orderBookRepository = new OrderBookRepository(db.models);
+    const p2pRepository = new P2PRepository(db);
 
     await p2pRepository.addHost(
       { address: '127.0.0.1', port: 8885 },
@@ -35,7 +35,7 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook(db.models, config.instanceId);
+    orderBook = new OrderBook(db.models);
     await orderBook.init();
   });
 

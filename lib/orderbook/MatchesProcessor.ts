@@ -1,12 +1,11 @@
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 
 class MatchesProcessor {
   private buffer: any[];
-  private logger: Logger;
+  private logger: Logger = Logger.orderbook;
 
-  constructor(instanceId: number) {
+  constructor() {
     this.buffer = [];
-    this.logger = new Logger({ instanceId, context: Context.ORDERBOOK });
   }
 
   public add(match) {

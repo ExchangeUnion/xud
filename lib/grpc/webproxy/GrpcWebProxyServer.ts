@@ -9,12 +9,11 @@ import swaggerUi from 'swagger-ui-express';
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
 class GrpcWebProxyServer {
-  private logger: Logger;
+  private logger: Logger = Logger.rpc;
   private app: express.Express;
   private server?: Server;
 
-  constructor(instanceId: number) {
-    this.logger = new Logger({ instanceId, context: Context.RPC });
+  constructor() {
     this.app = express();
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));
