@@ -41,7 +41,7 @@ describe('OrderBook', () => {
     await orderBook.init();
   });
 
-  const getOrder = (order: orders.StampedOrder): orders.StampedOrder | null => {
+  const getOrder = (order: orders.StampedOrder): orders.StampedOrder => {
     const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
     let array: StampedOrder[];
 
@@ -80,7 +80,14 @@ describe('OrderBook', () => {
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.null;
     expect(getOrder(matches.matches[0].maker)).to.be.undefined;
-    expect((getOrder(matches.matches[1].maker) as orders.StampedOrder).quantity).to.be.equal(4);
+    expect(getOrder(matches.matches[1].maker).quantity).to.be.equal(4);
+  });
+
+  it('should partially match new market order and discard remaining order', async () => {
+    const order: orders.MarketOrder = { pairId: 'BTC/LTC', quantity: -10 };
+    const matches = await orderBook.addMarketOrder(order);
+    expect(matches.remainingOrder.quantity).to.be.greaterThan(order.quantity);
+    expect((getOrder(matches.remainingOrder))).to.be.undefined;
   });
 
   after(async () => {
