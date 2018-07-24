@@ -1,20 +1,19 @@
 import P2PRepository from './P2PRepository';
 import SocketAddress from './SocketAddress';
 import Host from './Host';
+import Peer from './Peer';
 
 /** Represents a list of hosts for managing network peers activity */
 class HostList {
-  public hosts: { [ socketAddress: string ]: Host } = {};
+  public hosts: { [ address: string ]: Host } = {};
   public bannedHosts!: Set<string>;
-  private loaded: boolean = false;
 
   constructor(private repository: P2PRepository) {}
 
-  public get = async (): Promise<Host[]> => {
-    if (!this.loaded) {
-      await this.load();
-    }
-
+  /**
+   * Return an array of hosts that haven't been banned.
+   */
+  public toArray = (): Host[] => {
     const hosts: Host[] = [];
     Object.keys(this.hosts).map((socketAddress) => {
       if (!this.bannedHosts.has(SocketAddress.fromString(socketAddress).address)) {
@@ -24,12 +23,16 @@ class HostList {
     return hosts;
   }
 
-  public getOrCreate = async (socketAddress: SocketAddress): Promise<Host> => {
+  /**
+   * Get a host by socket address, or create the host if none exists.
+   */
+  public getOrCreateHost = async (socketAddress: SocketAddress): Promise<Host> => {
     const host = this.hosts[socketAddress.toString()];
     return host || this.createHost(socketAddress);
   }
 
-  public ban = async (address: string): Promise<void> => {
+  public ban = async (peer: Peer): Promise<void> => {
+    const { address } = peer.socketAddress;
     this.bannedHosts.add(address);
     await this.repository.addBannedHost({ address });
   }
@@ -38,7 +41,10 @@ class HostList {
     return this.bannedHosts.has(address);
   }
 
-  private load = async (): Promise<void> => {
+  /**
+   * Load this HostList from the database
+   */
+  public load = async (): Promise<void> => {
     const [hosts, bannedHosts] =  await Promise.all([this.repository.getHosts(), this.repository.getBannedHosts()]);
 
     hosts.forEach((host) => {
@@ -47,8 +53,6 @@ class HostList {
     });
 
     this.bannedHosts = new Set<string>(bannedHosts.map(bannedHost => bannedHost.address));
-
-    this.loaded = true;
   }
 
   private createHost = async (socketAddress: SocketAddress): Promise<Host> => {

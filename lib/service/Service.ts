@@ -8,6 +8,7 @@ import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import { orders } from '../types';
+import SocketAddress from '../p2p/SocketAddress';
 
 const packageJson = require('../../package.json');
 
@@ -162,19 +163,16 @@ class Service extends EventEmitter {
    * Connect to an XU node on a given host and port.
    */
   public connect = async ({ host, port }: { host: string, port: number }) => {
-    try {
-      const peer =  await this.pool.addOutbound(host, port);
-      return peer.getStatus();
-    } catch (err) {
-      return err.toString();
-    }
+    const peer = await this.pool.addOutbound(new SocketAddress(host, port));
+    return peer.getStatus();
   }
 
   /*
    * Disconnect from a connected peer XU node on a given host and port.
    */
-  public disconnect = async (_request: { host: string, port: number}) => {
-    return 'Not implemented';
+  public disconnect = async ({ host, port }: { host: string, port: number}) => {
+    await this.pool.disconnectPeer(host, port);
+    return 'success';
   }
 
   /**

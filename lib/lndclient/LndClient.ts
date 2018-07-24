@@ -1,4 +1,4 @@
-import grpc from 'grpc';
+import grpc, { ChannelCredentials } from 'grpc';
 import fs from 'fs';
 
 import Logger from '../Logger';
@@ -26,6 +26,8 @@ interface GrpcResponse {
 class LndClient extends BaseClient {
   private lightning!: LightningClient;
   private meta!: grpc.Metadata;
+  private uri!: string;
+  private credentials!: ChannelCredentials;
 
   /**
    * Create an lnd client.
@@ -33,7 +35,7 @@ class LndClient extends BaseClient {
    */
   constructor(config: LndClientConfig) {
     super(Logger.lnd);
-    const { disable, certpath, host, port, macaroonpath } = config;
+    const { disable, certpath, macaroonpath } = config;
 
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
@@ -44,15 +46,13 @@ class LndClient extends BaseClient {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
       this.setStatus(ClientStatus.DISABLED);
     } else {
+      this.uri = `${config.host}:${config.port}`;
       const lndCert = fs.readFileSync(certpath);
-      const credentials = grpc.credentials.createSsl(lndCert);
-      this.lightning = new LightningClient(`${host}:${port}`, credentials);
+      this.credentials = grpc.credentials.createSsl(lndCert);
 
       const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
-
-      this.setStatus(ClientStatus.CONNECTION_VERIFIED); // TODO: verify connection
     }
   }
 
@@ -70,6 +70,24 @@ class LndClient extends BaseClient {
         }
       });
     });
+  }
+
+  public connect = async () => {
+    if (!this.isDisabled()) {
+      this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
+      this.lightning = new LightningClient(this.uri, this.credentials);
+
+      try {
+        const getInfoResponse = await this.getInfo();
+        if (getInfoResponse) {
+          this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+          this.subscribeInvoices();
+        }
+      } catch (err) {
+        this.logger.error(`could not fetch info from lnd host, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
+        setTimeout(this.connect, 5000);
+      }
+    }
   }
 
   /**
@@ -184,7 +202,7 @@ class LndClient extends BaseClient {
   /**
    * Subscribe to events for when invoices are settled.
    */
-  public subscribeInvoices = (): void => {
+  private subscribeInvoices = (): void => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
@@ -195,12 +213,16 @@ class LndClient extends BaseClient {
       })
       .on('end', () => {
         this.logger.info('invoice ended');
+        this.setStatus(ClientStatus.DISABLED);
+        this.connect();
       })
       .on('status', (status: string) => {
         this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
       })
       .on('error', (error: any) => {
         this.logger.error(`invoice error: ${error}`);
+        this.setStatus(ClientStatus.DISABLED);
+        this.connect();
       });
   }
 }
