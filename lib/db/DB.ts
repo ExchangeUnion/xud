@@ -29,11 +29,12 @@ type Models = {
 class DB {
   public sequelize!: Sequelize.Sequelize;
   public models!: Models;
-  private logger: Logger = Logger.db;
+  private logger: Logger;
 
-  constructor(private config: DBConfig) {
+  constructor(private config: DBConfig, logger: Logger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
+    this.logger = logger.db;
     this.sequelize = this.createSequelizeInstance(this.config);
     this.models = this.loadModels();
   }

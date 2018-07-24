@@ -46,18 +46,18 @@ class Xud {
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
       this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
-      this.db = new DB(this.config.db);
+      this.db = new DB(this.config.db, this.logger);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd);
+      this.lndClient = new LndClient(this.config.lnd, this.logger);
       await this.lndClient.connect();
 
-      this.raidenClient = new RaidenClient(this.config.raiden);
+      this.raidenClient = new RaidenClient(this.config.raiden, this.logger);
 
-      this.pool = new Pool(this.config.p2p, this.db);
+      this.pool = new Pool(this.config.p2p, this.db, this.logger);
       this.pool.init();
 
-      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.db.models, this.logger, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.service = new Service({
@@ -67,17 +67,17 @@ class Xud {
         pool: this.pool,
         config: this.config,
         shutdown: this.shutdown,
-      });
+      }, this.logger);
 
       if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(this.service);
+        this.rpcServer = new GrpcServer(this.service, this.logger);
         await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
       } else {
         this.logger.warn('gRPC Server is disabled! XUD might not function properly with gRPC disabled.');
       }
 
       if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer();
+        this.grpcAPIProxy = new GrpcWebProxyServer(this.logger);
         await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {

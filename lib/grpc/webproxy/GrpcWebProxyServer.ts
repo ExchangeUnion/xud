@@ -1,7 +1,7 @@
 import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import Logger, { Context } from '../../Logger';
+import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
 import { middleware } from './GrpcExpressMiddleware';
@@ -9,11 +9,12 @@ import swaggerUi from 'swagger-ui-express';
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
 class GrpcWebProxyServer {
-  private logger: Logger = Logger.rpc;
+  private logger: Logger;
   private app: express.Express;
   private server?: Server;
 
-  constructor() {
+  constructor(logger: Logger) {
+    this.logger = logger.rpc;
     this.app = express();
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));

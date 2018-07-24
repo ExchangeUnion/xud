@@ -1,5 +1,5 @@
 import assert from 'assert';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
@@ -7,7 +7,6 @@ import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
-import { orders } from '../types';
 import SocketAddress from '../p2p/SocketAddress';
 
 const packageJson = require('../../package.json');
@@ -34,14 +33,14 @@ class Service extends EventEmitter {
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger = Logger.rpc;
+  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents) {
+  constructor(components: ServiceComponents, logger: Logger) {
     super();
 
     this.shutdown = components.shutdown;
-
+    this.logger = logger;
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;

@@ -1,5 +1,3 @@
-import SocketAddress from './SocketAddress';
-
 class P2PError {
   constructor(public message: string) {}
 

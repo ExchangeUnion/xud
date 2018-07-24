@@ -27,13 +27,14 @@ type SplitOrder = {
 
 class MatchingEngine {
   public priorityQueues: PriorityQueues;
-  private logger: Logger = Logger.orderbook;
+  private logger: Logger;
 
-  constructor(public pairId: string) {
+  constructor(public pairId: string, logger: Logger) {
     this.priorityQueues = {
       buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
       sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
     };
+    this.logger = logger.orderbook;
   }
 
   private static createPriorityQueue(orderingDirection): PriorityQueue {

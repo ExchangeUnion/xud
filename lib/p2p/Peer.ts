@@ -47,7 +47,7 @@ class Peer extends EventEmitter {
   public direction!: ConnectionDirection;
   public connected: boolean = false;
   private host?: Host;
-  private logger: Logger = Logger.p2p;
+  private logger: Logger ;
   private opened: boolean = false;
   private socket!: Socket;
   private parser: Parser = new Parser();
@@ -61,25 +61,27 @@ class Peer extends EventEmitter {
   private lastRecv: number = 0;
   private lastSend: number = 0;
   private handshakeState: HandshakeState = {};
+  private static logger: Logger;
 
   get id(): string {
     assert(this.socketAddress);
     return this.socketAddress.toString();
   }
 
-  constructor() {
+  constructor(logger: Logger) {
     super();
+    this.logger = logger.p2p;
     this.bindParser(this.parser);
   }
 
   public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer();
+    const peer = new Peer(this.logger);
     peer.connect(socketAddress);
     return peer;
   }
 
   public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer();
+    const peer = new Peer(this.logger);
     peer.accept(socket);
     return peer;
   }

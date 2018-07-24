@@ -3,11 +3,12 @@ import DB, { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
-  private logger: Logger = Logger.p2p;
+  private logger: Logger;
   private models: Models;
 
-  constructor(private db: DB) {
+  constructor(private db: DB, logger: Logger) {
     this.models = db.models;
+    this.logger = logger.p2p;
   }
 
   public getHosts = async (): Promise<db.HostInstance[]> => {

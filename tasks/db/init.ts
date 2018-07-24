@@ -4,16 +4,18 @@ import DB from '../../lib/db/DB';
 import { SwapProtocol } from '../../lib/types/enums';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
+import Logger from '../../lib/Logger';
 
 export default async (testDb?: boolean) => {
   const config = new Config();
   await config.load();
+  const logger = new Logger(config.instanceId);
 
-  const db = new DB(testDb ? config.testDb : config.db);
+  const db = new DB(testDb ? config.testDb : config.db, logger);
   await db.init();
 
-  const orderBookRepository = new OrderBookRepository(db.models);
-  const p2pRepository = new P2PRepository(db);
+  const orderBookRepository = new OrderBookRepository(db.models, logger);
+  const p2pRepository = new P2PRepository(db, logger);
 
   await Promise.all([
     orderBookRepository.addCurrencies([

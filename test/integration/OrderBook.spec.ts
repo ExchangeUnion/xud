@@ -7,6 +7,7 @@ import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import { orders } from '../../lib/types';
 import { StampedOrder } from '../../lib/types/orders';
+import Logger from '../../lib/Logger';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -16,13 +17,14 @@ describe('OrderBook', () => {
   before(async () => {
     const config = new Config();
     await config.load();
+    const logger = new Logger(config.instanceId);
 
-    db = new DB(config.testDb);
+    db = new DB(config.testDb, logger);
     await db.init();
     await db.truncate();
 
-    orderBookRepository = new OrderBookRepository(db.models);
-    const p2pRepository = new P2PRepository(db);
+    orderBookRepository = new OrderBookRepository(db.models, logger);
+    const p2pRepository = new P2PRepository(db, logger);
 
     await p2pRepository.addHost(
       { address: '127.0.0.1', port: 8885 },
@@ -35,7 +37,7 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook(db.models);
+    orderBook = new OrderBook(db.models, logger);
     await orderBook.init();
   });
 

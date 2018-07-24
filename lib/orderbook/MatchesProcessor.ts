@@ -2,9 +2,10 @@ import Logger from '../Logger';
 
 class MatchesProcessor {
   private buffer: any[];
-  private logger: Logger = Logger.orderbook;
+  private logger: Logger;
 
-  constructor() {
+  constructor(logger: Logger) {
+    this.logger = logger.orderbook;
     this.buffer = [];
   }
 

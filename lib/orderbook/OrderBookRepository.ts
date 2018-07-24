@@ -4,11 +4,12 @@ import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
 
 class OrderbookRepository {
-  private logger: Logger = Logger.orderbook;
+  private logger: Logger;
   private models: Models;
 
-  constructor(models: Models) {
+  constructor(models: Models, logger: Logger) {
     this.models = models;
+    this.logger = logger;
   }
 
   public getPairs = async (): Promise<db.PairInstance[]> => {

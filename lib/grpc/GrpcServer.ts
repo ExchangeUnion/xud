@@ -1,23 +1,23 @@
 import grpc, { Server } from 'grpc';
 import assert from 'assert';
 import path from 'path';
-import Logger, { Context } from '../Logger';
+import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 
 class GrpcServer {
   private server: Server;
-  private logger: Logger = Logger.rpc;
+  private logger: Logger;
 
-  constructor(service: Service) {
+  constructor(service: Service, logger: Logger) {
     this.server = new grpc.Server();
-
+    this.logger = logger.rpc;
     const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
     const { xudrpc }: any = protoDescriptor;
 
-    const grpcService = new GrpcService(service);
+    const grpcService = new GrpcService(service, logger);
     this.server.addService(xudrpc.Xud.service, {
       getInfo: grpcService.getInfo,
       getPairs: grpcService.getPairs,
