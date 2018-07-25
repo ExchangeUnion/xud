@@ -213,7 +213,8 @@ message PlaceOrderResponse {
 }
 
 message CancelOrderRequest {
-  string id = 1 [json_name = "order_id"];
+  string order_id = 1 [json_name = "order_id"];
+  string pair_id = 2 [json_name = "pair_id"];
 }
 
 message CancelOrderResponse {
