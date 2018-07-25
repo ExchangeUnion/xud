@@ -15,6 +15,10 @@ class NodeKey {
     this.pubKeyStr = pubKey.toString('hex');
   }
 
+  public get nodePubKey(): string {
+    return this.pubKeyStr;
+  }
+
   /**
    * Generate a random NodeKey.
    */
@@ -71,13 +75,6 @@ class NodeKey {
    */
   public sign = (msg: Buffer): Buffer => {
     return secp256k1.sign(msg, this.privKey).signature;
-  }
-
-  /**
-   * Return the public key in hex format
-   */
-  public toString = (): string => {
-    return this.pubKeyStr;
   }
 
   /**
