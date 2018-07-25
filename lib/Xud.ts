@@ -69,7 +69,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       this.rpcServer = new GrpcServer(this.service);
-      await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+      if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
+        this.logger.error('Could not start RPC server, exiting...');
+        this.shutdown();
+        return;
+      }
 
       if (!this.config.webproxy.disable) {
         this.grpcAPIProxy = new GrpcWebProxyServer();

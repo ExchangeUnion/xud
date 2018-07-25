@@ -33,6 +33,9 @@ class GrpcWebProxyServer {
         this.logger.info(`gRPC Web API proxy listening on port ${proxyPort}`);
         resolve();
       });
+      this.server.on('error', (err) => {
+        this.logger.error('WebProxyServer Error: ' + err.message);
+      });
     });
   }
 
@@ -41,7 +44,7 @@ class GrpcWebProxyServer {
    */
   public close = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      if (this.server) {
+      if (this.server && this.server.listening) {
         this.server.close(() => {
           this.logger.info('gRPC Web API proxy stopped listening');
           resolve();
