@@ -132,25 +132,6 @@ class MatchingEngine {
     ).add(order);
   }
 
-  public dropPeerOrders = (hostId: number): void => {
-    this.priorityQueues.buyOrders.remove(hostId, MatchingEngine.hostIdComparator);
-    this.priorityQueues.sellOrders.remove(hostId, MatchingEngine.hostIdComparator);
-  }
-
-  private static hostIdComparator = (queuedOrder: any, orderHostId: any) => {
-    if (isObject(queuedOrder) && isNumber(orderHostId)) {
-      if (queuedOrder.hostId === orderHostId) {
-        return false;
-      }
-    }
-    if (isObject(orderHostId) && isNumber(queuedOrder)) {
-      if (orderHostId.hostId === queuedOrder) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   public matchOrAddOwnOrder = (order: orders.StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
     let matchAgainst: PriorityQueue | null = null;
@@ -175,6 +156,13 @@ class MatchingEngine {
   public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
     return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
       this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
+  }
+
+  public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
+    return [
+      ...this.priorityQueues.buyOrders.removeMany(predicate),
+      ...this.priorityQueues.sellOrders.removeMany(predicate),
+    ]
   }
 
   public isEmpty = (): boolean => {

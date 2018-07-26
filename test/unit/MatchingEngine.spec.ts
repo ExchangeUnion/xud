@@ -7,15 +7,24 @@ import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'BTC/LTC';
 
-const createOrder = (price: number, quantity: number, date = ms()): orders.StampedPeerOrder => ({
+const createOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOrder => ({
   quantity,
   price,
   id: uuidv1(),
   pairId: PAIR_ID,
-  hostId: 1,
-  createdAt: date,
-  invoice: '',
+  createdAt,
 });
+
+const createPeerOrder = (price: number, quantity: number, createdAt = ms(), hostId = 1): orders.StampedPeerOrder => ({
+  quantity,
+  price,
+  id: uuidv1(),
+  pairId: PAIR_ID,
+  createdAt,
+  hostId,
+  invoice: ''
+});
+
 
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
@@ -141,8 +150,8 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    engine.addPeerOrder(createOrder(5, -5));
-    engine.addPeerOrder(createOrder(5, -5));
+    engine.addPeerOrder(createPeerOrder(5, -5));
+    engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
@@ -153,8 +162,8 @@ describe('MatchingEngine.match', () => {
 
   it('should split taker order when makers are insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    engine.addPeerOrder(createOrder(5, -4));
-    engine.addPeerOrder(createOrder(5, -5));
+    engine.addPeerOrder(createPeerOrder(5, -4));
+    engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
@@ -165,8 +174,8 @@ describe('MatchingEngine.match', () => {
 
   it('should split one maker order when taker is insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    engine.addPeerOrder(createOrder(5, -5));
-    engine.addPeerOrder(createOrder(5, -6));
+    engine.addPeerOrder(createPeerOrder(5, -5));
+    engine.addPeerOrder(createPeerOrder(5, -6));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
       createOrder(5, 10),
@@ -178,7 +187,10 @@ describe('MatchingEngine.match', () => {
     });
     expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
   });
+});
 
+
+describe('MatchingEngine.removeOwnOrder', () => {
   it('should add a new ownOrder and then remove it', async () => {
     const engine = new MatchingEngine(PAIR_ID);
     expect(engine.isEmpty()).to.be.true;
@@ -194,24 +206,26 @@ describe('MatchingEngine.match', () => {
     expect(JSON.stringify(removedOrder)).to.equals(JSON.stringify(matchingResult.remainingOrder));
     expect(engine.isEmpty()).to.be.true;
   });
-
 });
 
-describe('MatchingEngine.dropPeerOrders', () => {
-  it('should drop the peer order from queue', () => {
+describe('MatchingEngine.removePeerOrders', () => {
+  it('should add a new peerOrders and then remove some of them', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    const peerOrderOne = createOrder(5, -5);
-    const peerOrderTwo = createOrder(5, -5);
-    const ownOrder = createOrder(5, 15);
-    const hostId = 1;
-    engine.addPeerOrder(peerOrderOne);
-    engine.addPeerOrder(peerOrderTwo);
-    const matchAgainst = [engine.priorityQueues.sellOrders];
-    engine.dropPeerOrders(hostId);
-    const { remainingOrder } = MatchingEngine.match(
-      ownOrder,
-      matchAgainst,
-    );
-    expect(remainingOrder.quantity).to.equal(15);
+    const firstHostId = 1;
+    const secondHostId = 2;
+
+    expect(engine.isEmpty()).to.be.true;
+    expect(engine.removePeerOrders(() => true)).to.be.empty;
+
+    const firstHostOrders = [createPeerOrder(5, -5, ms(), firstHostId), createPeerOrder(5, -5, ms(), firstHostId)];
+    engine.addPeerOrder(firstHostOrders[0]);
+    engine.addPeerOrder(firstHostOrders[1]);
+    engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondHostId));
+
+    const removedOrders = engine.removePeerOrders(order => order.hostId === firstHostId);
+    expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
+
+    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, 15), false)
+    expect(matchingResult.remainingOrder.quantity).to.equal(10);
   });
 });

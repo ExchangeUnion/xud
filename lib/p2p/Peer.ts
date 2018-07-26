@@ -65,6 +65,14 @@ class Peer extends EventEmitter {
     return this.socketAddress.toString();
   }
 
+  get hostId(): number | null {
+    if (this.host) {
+      return this.host.id;
+    } else {
+      return null;
+    }
+  }
+
   constructor() {
     super();
 
@@ -89,13 +97,6 @@ class Peer extends EventEmitter {
     } else {
       return 'Not connected';
     }
-  }
-
-  public getHostId = (): number => {
-    if (this.host) {
-      return this.host.id;
-    }
-    return 0;
   }
 
   public open = async (): Promise<void> => {

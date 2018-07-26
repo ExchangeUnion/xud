@@ -220,8 +220,8 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', () => {
-      this.emit('peer.close', peer);
       this.peers.remove(peer.socketAddress);
+      this.emit('peer.close', peer);
     });
 
     peer.once('ban', () => {

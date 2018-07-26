@@ -34,8 +34,9 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('peer.close', this.removePeerOrders);
       pool.on('packet.getOrders', this.sendOrders);
+      pool.on('peer.close', this.removePeerOrders);
+
     }
   }
 
@@ -155,11 +156,10 @@ class OrderBook extends EventEmitter {
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
   }
 
-  // TODO write unit tests
   private removePeerOrders = async (peer: Peer): Promise<void> => {
-    if (peer.getHostId() !== 0) {
-      this.pairs.forEach((pair) => {
-        this.matchingEngines[pair.id].dropPeerOrders(peer.getHostId());
+    if (peer.hostId) {
+      this.pairs.forEach(pair => {
+        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
       });
     }
   }
