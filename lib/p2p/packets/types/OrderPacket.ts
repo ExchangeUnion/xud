@@ -11,7 +11,7 @@ type OrderPacketBody = {
 
 class OrderPacket extends Packet<OrderPacketBody> {
   public get type() {
-    return PacketType.HELLO;
+    return PacketType.ORDER;
   }
 
   public get direction() {
