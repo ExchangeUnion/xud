@@ -20,7 +20,5 @@ RUN npm run compile
 EXPOSE 8885 
 EXPOSE 8886
 
-RUN ls -la
-
 # Start Exchange Union Daemon
 ENTRYPOINT ["npm", "start"]
