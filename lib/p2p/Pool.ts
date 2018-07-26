@@ -235,9 +235,7 @@ class Pool extends EventEmitter {
   }
 
   private destroyPeers = (): void => {
-    this.peers.forEach((peer) => {
-      peer.destroy();
-    });
+    this.peers.forEach(peer => peer.destroy());
   }
 
   private listen = (): void => {

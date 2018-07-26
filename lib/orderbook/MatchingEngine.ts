@@ -1,10 +1,9 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
-import { orders, matchingEngine, db } from '../types';
+import { orders, matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
-import { isObject, isNumber } from 'util';
 
 type PriorityQueue = {
   add: Function;
@@ -162,7 +161,7 @@ class MatchingEngine {
     return [
       ...this.priorityQueues.buyOrders.removeMany(predicate),
       ...this.priorityQueues.sellOrders.removeMany(predicate),
-    ]
+    ];
   }
 
   public isEmpty = (): boolean => {

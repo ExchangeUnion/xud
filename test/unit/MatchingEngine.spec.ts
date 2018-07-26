@@ -10,21 +10,20 @@ const PAIR_ID = 'BTC/LTC';
 const createOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOrder => ({
   quantity,
   price,
+  createdAt,
   id: uuidv1(),
   pairId: PAIR_ID,
-  createdAt,
 });
 
 const createPeerOrder = (price: number, quantity: number, createdAt = ms(), hostId = 1): orders.StampedPeerOrder => ({
   quantity,
   price,
-  id: uuidv1(),
-  pairId: PAIR_ID,
   createdAt,
   hostId,
-  invoice: ''
+  id: uuidv1(),
+  pairId: PAIR_ID,
+  invoice: '',
 });
-
 
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
@@ -189,7 +188,6 @@ describe('MatchingEngine.match', () => {
   });
 });
 
-
 describe('MatchingEngine.removeOwnOrder', () => {
   it('should add a new ownOrder and then remove it', async () => {
     const engine = new MatchingEngine(PAIR_ID);
@@ -225,7 +223,7 @@ describe('MatchingEngine.removePeerOrders', () => {
     const removedOrders = engine.removePeerOrders(order => order.hostId === firstHostId);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
-    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, 15), false)
+    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, 15), false);
     expect(matchingResult.remainingOrder.quantity).to.equal(10);
   });
 });
