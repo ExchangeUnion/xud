@@ -164,11 +164,10 @@ class OrderBook extends EventEmitter {
 
   private updateOrderQuantity = (type: { [pairId: string]: Orders }, order: orders.StampedOrder, decreasedQuantity: number) => {
     const orderMap = this.getOrderMap(type, order);
-    const id = this.localIds[order.id] ? this.localIds[order.id] : order.id;
 
-    orderMap[id].quantity = orderMap[id].quantity - decreasedQuantity;
-    if (orderMap[id].quantity === 0) {
-      delete orderMap[id];
+    orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
+    if (orderMap[order.id].quantity === 0) {
+      delete orderMap[order.id];
     }
   }
 
