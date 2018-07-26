@@ -5,7 +5,7 @@ services:
     build:
       context: xud/
     volumes:
-      - ../:/opt/xud
+      #- ../:/opt/xud
       - /opt/xud/node_modules
       - ./xud:/root/.xud
       - shared:/root/.lnd/
@@ -53,6 +53,28 @@ services:
     entrypoint: ["./start-btcd.sh"]
     networks:
       - xud
+  # ltc is an image of litecoin node which used as base image for ltcd and 
+  # ltccli. The environment variables default values determined on stage of
+  # container start within starting script.
+  ltc:
+    image: ltcd
+    build:
+      context: ltcd/
+    container_name: ltcd
+    volumes:
+      - shared:/rpc
+      - litecoin:/data
+    environment:
+      - RPCUSER
+      - RPCPASS
+      - NETWORK
+      - DEBUG
+      - MINING_ADDRESS
+    entrypoint: ["./start-ltcd.sh"]
+    networks:
+      - xud
+  
+  # lnd - lightning network daemon
   lnd:
     image: lnd
     build:
@@ -69,6 +91,7 @@ services:
     entrypoint: ["./start-lnd.sh"]
     networks:
       - xud
+
 volumes:
   # db-data volume is needed for maintaining mysql persistence
   # during db container recreation.
@@ -82,7 +105,10 @@ volumes:
   # during btcd container recreation.
   bitcoin:
     driver: local
+  # litecoin volume is needed for maintaining blockchain persistence
+  # during ltcd container recreation.
+  litecoin:
+    driver: local
 
 networks:
   xud:
-
