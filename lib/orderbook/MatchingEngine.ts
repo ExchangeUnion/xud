@@ -1,5 +1,6 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
+
 import { orders, matchingEngine, db } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
@@ -7,13 +8,14 @@ import { isObject, isNumber } from 'util';
 
 type PriorityQueue = {
   add: Function;
-  remove: Function;
+  removeOne: Function;
+  removeMany: Function;
   heapify: Function;
   peek: Function;
   poll: Function;
   trim: Function;
   isEmpty: Function;
-  size: number;
+  has: Function;
 };
 
 type PriorityQueues = {
@@ -149,7 +151,7 @@ class MatchingEngine {
     return true;
   }
 
-  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder): matchingEngine.MatchingResult => {
+  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
     let matchAgainst: PriorityQueue | null = null;
     let addTo: PriorityQueue | null = null;
@@ -163,11 +165,20 @@ class MatchingEngine {
     }
 
     const matchingResult = MatchingEngine.match(order, [matchAgainst]);
-    if (matchingResult.remainingOrder && addTo) {
+    if (matchingResult.remainingOrder && addTo && !discardRemaining) {
       addTo.add(matchingResult.remainingOrder);
     }
 
     return matchingResult;
+  }
+
+  public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
+    return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
+      this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
+  }
+
+  public isEmpty = (): boolean => {
+    return this.priorityQueues.buyOrders.isEmpty() && this.priorityQueues.sellOrders.isEmpty();
   }
 }
 

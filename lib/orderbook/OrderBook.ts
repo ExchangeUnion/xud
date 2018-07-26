@@ -97,18 +97,32 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder(order);
   }
 
-  public addMarketOrder = (_order: orders.OwnOrder) => {
-    // TODO: implement
+  public addMarketOrder = (order: orders.MarketOrder) => {
+    const price = order.quantity > 0 ? Number.MAX_VALUE : 0;
+    return this.addOwnOrder({ ...order, price }, true);
   }
 
-  private addOwnOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
+  public removeOwnOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines[pairId];
+    if (!matchingEngine) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
+
+    if (matchingEngine.removeOwnOrder(orderId)) {
+      return this.removeOrder(this.ownOrders, orderId, pairId);
+    } else {
+      return false;
+    }
+  }
+
+  private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
     }
 
     const stampedOrder: orders.StampedOwnOrder = { ...order, id: uuidv1(), createdAt: ms() };
-    const matchingResult = matchingEngine.matchOrAddOwnOrder(stampedOrder);
+    const matchingResult = matchingEngine.matchOrAddOwnOrder(stampedOrder, discardRemaining);
     const { matches, remainingOrder } = matchingResult;
 
     if (matches.length > 0) {
@@ -117,7 +131,7 @@ class OrderBook extends EventEmitter {
         this.updateOrderQuantity(this.ownOrders, maker, maker.quantity);
       });
     }
-    if (remainingOrder) {
+    if (remainingOrder && !discardRemaining) {
       this.broadcastOrder(remainingOrder);
       this.addOrder(this.ownOrders, remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
@@ -160,6 +174,18 @@ class OrderBook extends EventEmitter {
 
   private addOrder = (type: { [pairId: string]: Orders }, order: orders.StampedOrder) => {
     this.getOrderMap(type, order)[order.id] = order;
+  }
+
+  private removeOrder = (type: { [pairId: string]: Orders }, orderId: string, pairId: string): boolean => {
+    const orders = type[pairId];
+    if (orders.buyOrders[orderId]) {
+      delete orders.buyOrders[orderId];
+      return true;
+    } else if (orders.sellOrders[orderId]) {
+      delete orders.sellOrders[orderId];
+      return true;
+    }
+    return false;
   }
 
   private getOrderMap = (type: { [pairId: string]: Orders }, order: orders.StampedOrder): { [ id: string ]: orders.StampedOrder } => {

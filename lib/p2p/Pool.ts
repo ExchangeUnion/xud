@@ -202,7 +202,7 @@ class Pool extends EventEmitter {
 
     server.on('listening', () => {
       const { address, port } = this.server.address();
-      this.logger.info(`pool server listening on ${address}:${port}`);
+      this.logger.info(`p2p server listening on ${address}:${port}`);
     });
   }
 

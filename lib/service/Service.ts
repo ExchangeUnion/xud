@@ -149,16 +149,20 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    */
   public placeOrder = async (order: OwnOrder) => {
-    assert(order.price > 0, 'price must be greater than 0');
+    assert(order.price >= 0, 'price cannot be negative');
     assert(order.quantity !== 0, 'quantity must not equal 0');
-    return this.orderBook.addLimitOrder(order);
+    if (order.price === 0) {
+      return this.orderBook.addMarketOrder(order);
+    } else {
+      return this.orderBook.addLimitOrder(order);
+    }
   }
 
   /*
    * Cancel placed order from the orderbook.
    */
-  public cancelOrder = async (_id: string) => {
-    return 'Not implemented';
+  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
+    return this.orderBook.removeOwnOrder(orderId, pairId);
   }
 
   /**

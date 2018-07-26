@@ -178,6 +178,23 @@ describe('MatchingEngine.match', () => {
     });
     expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
   });
+
+  it('should add a new ownOrder and then remove it', async () => {
+    const engine = new MatchingEngine(PAIR_ID);
+    expect(engine.isEmpty()).to.be.true;
+
+    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, -5), false);
+    expect(matchingResult.matches).to.be.empty;
+    expect(engine.isEmpty()).to.be.false;
+
+    expect(engine.removeOwnOrder(uuidv1())).to.be.null;
+    expect(engine.isEmpty()).to.be.false;
+
+    const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder.id);
+    expect(JSON.stringify(removedOrder)).to.equals(JSON.stringify(matchingResult.remainingOrder));
+    expect(engine.isEmpty()).to.be.true;
+  });
+
 });
 
 describe('MatchingEngine.dropPeerOrders', () => {

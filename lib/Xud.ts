@@ -50,6 +50,8 @@ class Xud {
       await this.db.init();
 
       this.lndClient = new LndClient(this.config.lnd);
+      await this.lndClient.connect();
+
       this.raidenClient = new RaidenClient(this.config.raiden);
 
       this.pool = new Pool(this.config.p2p, this.db);
@@ -67,7 +69,11 @@ class Xud {
         shutdown: this.shutdown,
       });
       this.rpcServer = new GrpcServer(this.service);
-      await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+      if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
+        this.logger.error('Could not start RPC server, exiting...');
+        this.shutdown();
+        return;
+      }
 
       if (!this.config.webproxy.disable) {
         this.grpcAPIProxy = new GrpcWebProxyServer();

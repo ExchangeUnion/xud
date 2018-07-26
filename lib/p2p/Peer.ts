@@ -9,8 +9,6 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { orders } from '../types';
 
-const pubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
-
 enum ConnectionDirection {
   INBOUND,
   OUTBOUND,
@@ -18,7 +16,7 @@ enum ConnectionDirection {
 
 type HandshakeState = {
   version?: string;
-  nodeKey?: string;
+  nodePubKey?: string;
   listenPort?: number;
   pairs?: string[];
 };
@@ -450,7 +448,7 @@ class Peer extends EventEmitter {
     // TODO: use real values
     const packet = new HelloPacket({
       version: '123',
-      nodeKey: '123',
+      nodePubKey: '123',
       listenPort: 20000,
       pairs: ['BTC/LTC'],
     });

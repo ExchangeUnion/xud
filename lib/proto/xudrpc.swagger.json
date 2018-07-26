@@ -193,7 +193,7 @@
     },
     "/v1/placeorder": {
       "post": {
-        "summary": "Add an order to the order book.",
+        "summary": "Add an order to the order book.\nIf price is zero or unspecified a market order will get added.",
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
@@ -284,7 +284,10 @@
     "xudrpcCancelOrderRequest": {
       "type": "object",
       "properties": {
-        "id": {
+        "order_id": {
+          "type": "string"
+        },
+        "pair_id": {
           "type": "string"
         }
       }

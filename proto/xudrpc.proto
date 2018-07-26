@@ -26,7 +26,9 @@ service Xud {
     };
   }
   
-  /* Add an order to the order book. */
+  /* Add an order to the order book.
+   * If price is zero or unspecified a market order will get added.
+   */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
       post: "/v1/placeorder"
@@ -211,7 +213,8 @@ message PlaceOrderResponse {
 }
 
 message CancelOrderRequest {
-  string id = 1 [json_name = "order_id"];
+  string order_id = 1 [json_name = "order_id"];
+  string pair_id = 2 [json_name = "pair_id"];
 }
 
 message CancelOrderResponse {

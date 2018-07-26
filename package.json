@@ -90,7 +90,7 @@
     "crypto-js": "^3.1.9-1",
     "dotenv": "^5.0.1",
     "express": "^4.16.3",
-    "fastpriorityqueue": "^0.5.0",
+    "fastpriorityqueue": "git://github.com/ExchangeUnion/FastPriorityQueue.js.git#master",
     "grpc": "^1.12.2",
     "gulp": "^4.0.0",
     "mysql2": "^1.5.3",
