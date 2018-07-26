@@ -28,6 +28,8 @@ class OrderBook extends EventEmitter {
   private ownOrders: { [ pairId: string ]: Orders } = {};
   private peerOrders: { [ pairId: string ]: Orders } = {};
 
+  private localIds: { [ localId: string ]: string } = {};
+
   constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
     super();
 
@@ -65,17 +67,17 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Returns lists of buy and sell orders of peers sorted by price.
+   * Returns lists of buy and sell orders of peers
    */
-  public getPeerOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOrder[] } => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]);
+  public getPeerOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedPeerOrder[] } => {
+    return this.getOrders(maxResults, this.peerOrders[pairId]) as { [type: string]: orders.StampedPeerOrder[] };
   }
 
   /*
-  * Returns lists of the node's own buy and sell orders sorted by price.
+  * Returns lists of the node's own buy and sell orders
   */
-  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOrder[] } => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]);
+  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOwnOrder[] } => {
+    return this.getOrders(maxResults, this.ownOrders[pairId]) as { [type: string]: orders.StampedOwnOrder[] };
   }
 
   private getOrders = (maxResults: number, orders: Orders): { [ type: string ]: orders.StampedOrder[]} => {
@@ -96,19 +98,26 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder(order);
   }
 
-  public addMarketOrder = (order: orders.MarketOrder) => {
+  public addMarketOrder = (order: orders.OwnMarketOrder): matchingEngine.MatchingResult => {
     const price = order.quantity > 0 ? Number.MAX_VALUE : 0;
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrder = (orderId: string, pairId: string): boolean => {
+  public removeOwnOrder = (pairId: string, orderId: string): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(pairId);
     }
 
-    if (matchingEngine.removeOwnOrder(orderId)) {
-      return this.removeOrder(this.ownOrders, orderId, pairId);
+    let id = orderId;
+
+    if (this.localIds[orderId]) {
+      id = this.localIds[orderId];
+      delete this.localIds[orderId];
+    }
+
+    if (matchingEngine.removeOwnOrder(id)) {
+      return this.removeOrder(this.ownOrders, id, pairId);
     } else {
       return false;
     }
@@ -134,7 +143,6 @@ class OrderBook extends EventEmitter {
       this.broadcastOrder(remainingOrder);
       this.addOrder(this.ownOrders, remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
-
     }
 
     return matchingResult;
@@ -155,19 +163,26 @@ class OrderBook extends EventEmitter {
   }
 
   private updateOrderQuantity = (type: { [pairId: string]: Orders }, order: orders.StampedOrder, decreasedQuantity: number) => {
-    const object = this.getOrderMap(type, order);
-    object[order.id].quantity = object[order.id].quantity - decreasedQuantity;
-    if (object[order.id].quantity === 0) {
-      delete object[order.id];
+    const orderMap = this.getOrderMap(type, order);
+    const id = this.localIds[order.id] ? this.localIds[order.id] : order.id;
+
+    orderMap[id].quantity = orderMap[id].quantity - decreasedQuantity;
+    if (orderMap[id].quantity === 0) {
+      delete orderMap[id];
     }
   }
 
   private addOrder = (type: { [pairId: string]: Orders }, order: orders.StampedOrder) => {
+    if (order['localId']) {
+      this.localIds[order['localId']] = order.id;
+    }
+
     this.getOrderMap(type, order)[order.id] = order;
   }
 
   private removeOrder = (type: { [pairId: string]: Orders }, orderId: string, pairId: string): boolean => {
     const orders = type[pairId];
+
     if (orders.buyOrders[orderId]) {
       delete orders.buyOrders[orderId];
       return true;
@@ -175,6 +190,7 @@ class OrderBook extends EventEmitter {
       delete orders.sellOrders[orderId];
       return true;
     }
+
     return false;
   }
 
@@ -217,7 +233,7 @@ class OrderBook extends EventEmitter {
 
     if (!invoice) return;
 
-    const { createdAt, ...outgoingOrder } = { ...order, invoice };
+    const { createdAt, localId, ...outgoingOrder } = { ...order, invoice };
     return outgoingOrder;
   }
 

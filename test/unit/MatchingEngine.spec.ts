@@ -17,6 +17,11 @@ const createOrder = (price: number, quantity: number, date = ms()): orders.Stamp
   invoice: '',
 });
 
+const createOwnOrder = (price: number, quantity: number, data = ms()): orders.StampedOwnOrder => {
+  const { hostId, invoice, ...ownOrder } = { ...createOrder(price, quantity, data), localId: uuidv1() };
+  return ownOrder;
+};
+
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
@@ -145,7 +150,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder).to.be.null;
@@ -157,7 +162,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder.quantity).to.equal(1);
@@ -169,7 +174,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createOrder(5, -6));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder).to.be.null;
@@ -183,7 +188,7 @@ describe('MatchingEngine.match', () => {
     const engine = new MatchingEngine(PAIR_ID);
     expect(engine.isEmpty()).to.be.true;
 
-    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, -5), false);
+    const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, -5), false);
     expect(matchingResult.matches).to.be.empty;
     expect(engine.isEmpty()).to.be.false;
 

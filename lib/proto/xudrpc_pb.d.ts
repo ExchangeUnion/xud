@@ -459,6 +459,9 @@ export class Order extends jspb.Message {
   getId(): string;
   setId(value: string): void;
 
+  getLocalId(): string;
+  setLocalId(value: string): void;
+
   getCreatedAt(): number;
   setCreatedAt(value: number): void;
 
@@ -483,6 +486,7 @@ export namespace Order {
     peerId: number,
     hostId: string,
     id: string,
+    localId: string,
     createdAt: number,
     invoice: string,
   }
@@ -591,8 +595,8 @@ export namespace CancelOrderRequest {
 }
 
 export class CancelOrderResponse extends jspb.Message {
-  getResult(): string;
-  setResult(value: string): void;
+  getResult(): boolean;
+  setResult(value: boolean): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): CancelOrderResponse.AsObject;
@@ -606,7 +610,7 @@ export class CancelOrderResponse extends jspb.Message {
 
 export namespace CancelOrderResponse {
   export type AsObject = {
-    result: string,
+    result: boolean,
   }
 }
 
