@@ -65,6 +65,14 @@ class Peer extends EventEmitter {
     return this.socketAddress.toString();
   }
 
+  get hostId(): number | null {
+    if (this.host) {
+      return this.host.id;
+    } else {
+      return null;
+    }
+  }
+
   constructor() {
     super();
 

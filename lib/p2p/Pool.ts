@@ -221,6 +221,12 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => {
       this.peers.remove(peer.socketAddress);
+
+      if (!peer.hostId) {
+        this.logger.warn(`disconnected peer (${peer.id}) hostId is missing`);
+      }
+
+      this.emit('peer.close', peer);
     });
 
     peer.once('ban', () => {
