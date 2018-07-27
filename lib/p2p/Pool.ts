@@ -196,7 +196,7 @@ class Pool extends EventEmitter {
       console.log('err: ' + err);
     });
 
-    server.on('connection', (socket: Socket) => {
+    server.on('connection', (socket) => {
       this.handleSocket(socket);
     });
 
@@ -215,7 +215,7 @@ class Pool extends EventEmitter {
       this.logger.error('peer error', err);
     });
 
-    peer.once('open', (handshakeState: HandshakeState) => {
+    peer.once('open', (handshakeState) => {
       this.handleOpen(peer, handshakeState);
     });
 
