@@ -295,9 +295,10 @@
     "xudrpcCancelOrderResponse": {
       "type": "object",
       "properties": {
-        "result": {
+        "canceled": {
           "type": "boolean",
-          "format": "boolean"
+          "format": "boolean",
+          "title": "True means that the order was canceled and false means that it wasn't"
         }
       }
     },

@@ -162,7 +162,8 @@ class Service extends EventEmitter {
    * Cancel placed order from the orderbook.
    */
   public cancelOrder = async ({ pairId, orderId }: { pairId: string, orderId: string }) => {
-    return this.orderBook.removeOwnOrder(pairId, orderId);
+    return {
+      canceled: this.orderBook.removeOwnOrderByLocalId(pairId, orderId) };
   }
 
   /**

@@ -2,7 +2,7 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { PlaceOrderRequest, Order } from '../../proto/xudrpc_pb';
 
-export const command = 'placeorder <pair_id> <order_id> <price> [quantity]';
+export const command = 'placeorder <pair_id> <order_id> <quantity> [price]';
 
 export const describe = 'place an order';
 

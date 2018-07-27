@@ -13,8 +13,8 @@ import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 
 type Orders = {
-  buyOrders: { [ id: string ]: orders.StampedOrder };
-  sellOrders: { [ id: string ]: orders.StampedOrder };
+  buyOrders: Map<String, orders.StampedOrder>;
+  sellOrders: Map<String, orders.StampedOrder>;
 };
 
 class OrderBook extends EventEmitter {
@@ -25,10 +25,14 @@ class OrderBook extends EventEmitter {
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
 
-  private ownOrders: { [ pairId: string ]: Orders } = {};
-  private peerOrders: { [ pairId: string ]: Orders } = {};
+  private ownOrders: Map<String, Orders> = new Map<String, Orders>();
+  private peerOrders: Map<String, Orders> = new Map<String, Orders>();
 
-  private localIds: { [ localId: string ]: string } = {};
+  /**
+   * This map has the localId of and order as key and the global id as value
+   * which makes possible to cancel orders by their local id without iterating
+   */
+  private localIdMap: Map<String, String> = new Map<String, String>();
 
   constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
     super();
@@ -54,8 +58,8 @@ class OrderBook extends EventEmitter {
 
   private initOrders = (): Orders => {
     return {
-      buyOrders: {},
-      sellOrders: {},
+      buyOrders: new Map <String, orders.StampedOrder>(),
+      sellOrders: new Map <String, orders.StampedOrder>(),
     };
   }
 
@@ -103,21 +107,24 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrder = (pairId: string, orderId: string): boolean => {
+  public removeOwnOrderByLocalId = (pairId: string, localId: string): boolean => {
+    const id = this.localIdMap[localId];
+
+    if (id === undefined) {
+      return false;
+    } else {
+      return this.removeOwnOrder(pairId, id);
+    }
+  }
+
+  private removeOwnOrder = (pairId: string, orderId: string): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(pairId);
     }
 
-    let id = orderId;
-
-    if (this.localIds[orderId]) {
-      id = this.localIds[orderId];
-      delete this.localIds[orderId];
-    }
-
-    if (matchingEngine.removeOwnOrder(id)) {
-      return this.removeOrder(this.ownOrders, id, pairId);
+    if (matchingEngine.removeOwnOrder(orderId)) {
+      return this.removeOrder(this.ownOrders, orderId, pairId);
     } else {
       return false;
     }
@@ -162,7 +169,7 @@ class OrderBook extends EventEmitter {
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
   }
 
-  private updateOrderQuantity = (type: { [pairId: string]: Orders }, order: orders.StampedOrder, decreasedQuantity: number) => {
+  private updateOrderQuantity = (type: Map<String, Orders>, order: orders.StampedOrder, decreasedQuantity: number) => {
     const orderMap = this.getOrderMap(type, order);
 
     orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
@@ -171,15 +178,15 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private addOrder = (type: { [pairId: string]: Orders }, order: orders.StampedOrder) => {
+  private addOrder = (type: Map<String, Orders>, order: orders.StampedOrder) => {
     if (order['localId']) {
-      this.localIds[order['localId']] = order.id;
+      this.localIdMap[order['localId']] = order.id;
     }
 
     this.getOrderMap(type, order)[order.id] = order;
   }
 
-  private removeOrder = (type: { [pairId: string]: Orders }, orderId: string, pairId: string): boolean => {
+  private removeOrder = (type: Map<String, Orders>, orderId: string, pairId: string): boolean => {
     const orders = type[pairId];
 
     if (orders.buyOrders[orderId]) {
@@ -193,7 +200,7 @@ class OrderBook extends EventEmitter {
     return false;
   }
 
-  private getOrderMap = (type: { [pairId: string]: Orders }, order: orders.StampedOrder): { [ id: string ]: orders.StampedOrder } => {
+  private getOrderMap = (type: Map<String, Orders>, order: orders.StampedOrder): Map<String, orders.StampedOrder> => {
     const orders = type[order.pairId];
     if (order.quantity > 0) {
       return orders.buyOrders;
