@@ -5,11 +5,11 @@ import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
+import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
-import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 
 type Orders = {
@@ -35,6 +35,8 @@ class OrderBook extends EventEmitter {
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.getOrders', this.sendOrders);
+      pool.on('peer.close', this.removePeerOrders);
+
     }
   }
 
@@ -154,6 +156,14 @@ class OrderBook extends EventEmitter {
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
   }
 
+  private removePeerOrders = async (peer: Peer): Promise<void> => {
+    if (peer.hostId) {
+      this.pairs.forEach((pair) => {
+        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
+      });
+    }
+  }
+
   private updateOrderQuantity = (type: { [pairId: string]: Orders }, order: orders.StampedOrder, decreasedQuantity: number) => {
     const object = this.getOrderMap(type, order);
     object[order.id].quantity = object[order.id].quantity - decreasedQuantity;
@@ -205,7 +215,6 @@ class OrderBook extends EventEmitter {
   private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {
     if (this.pool) {
       const outgoingOrder = await this.createOutgoingOrder(order);
-
       if (outgoingOrder) {
         this.pool.broadcastOrder(outgoingOrder);
       }
