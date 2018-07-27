@@ -298,7 +298,7 @@
         "canceled": {
           "type": "boolean",
           "format": "boolean",
-          "title": "True means that the order was canceled and false means that it wasn't"
+          "title": "Indicates whether an order was successfully canceled"
         }
       }
     },

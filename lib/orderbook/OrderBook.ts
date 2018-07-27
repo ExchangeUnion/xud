@@ -29,8 +29,8 @@ class OrderBook extends EventEmitter {
   private peerOrders: Map<String, Orders> = new Map<String, Orders>();
 
   /**
-   * This map has the localId of and order as key and the global id as value
-   * which makes possible to cancel orders by their local id without iterating
+   * This map has the localId of an order as key and the global id as value
+   * which it makes possible to reference orders by their local id
    */
   private localIdMap: Map<String, String> = new Map<String, String>();
 
@@ -124,6 +124,7 @@ class OrderBook extends EventEmitter {
     }
 
     if (matchingEngine.removeOwnOrder(orderId)) {
+      this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
       return this.removeOrder(this.ownOrders, orderId, pairId);
     } else {
       return false;

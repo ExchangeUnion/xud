@@ -220,7 +220,7 @@ message CancelOrderRequest {
 }
 
 message CancelOrderResponse {
-  // True means that the order was canceled and false means that it wasn't
+  // Indicates whether an order was successfully canceled
   bool canceled = 1 [json_name = "canceled"];
 }
 
