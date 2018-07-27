@@ -73,8 +73,8 @@ class Service extends EventEmitter {
         this.orderBook.getOwnOrders(pair.id, 0),
       ]);
 
-      peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
-      ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
+      peerOrdersCount += peerOrders['buyOrders'].length + peerOrders['sellOrders'].length;
+      ownOrdersCount += ownOrders['buyOrders'].length + ownOrders['sellOrders'].length;
     }
 
     info.orders = {

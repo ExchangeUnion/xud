@@ -45,9 +45,9 @@ describe('OrderBook', () => {
     let array: StampedOrder[];
 
     if (order.quantity > 0) {
-      array = ownOrders.buyOrders;
+      array = ownOrders['buyOrders'];
     } else {
-      array = ownOrders.sellOrders;
+      array = ownOrders['sellOrders'];
     }
 
     let result;

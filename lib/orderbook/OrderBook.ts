@@ -137,7 +137,7 @@ class OrderBook extends EventEmitter {
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
     if (this.localIdMap[order.localId]) {
-      throw errors.DUPLICATED_ORDER;
+      throw errors.DUPLICATED_ORDER(order.localId);
     }
 
     const matchingEngine = this.matchingEngines[order.pairId];
