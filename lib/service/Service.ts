@@ -22,7 +22,7 @@ export type ServiceComponents = {
   raidenClient: RaidenClient;
   pool: Pool;
   config: Config
-    /** The function to be called to shutdown the parent process */
+  /** The function to be called to shutdown the parent process */
   shutdown: Function;
 };
 
@@ -37,7 +37,7 @@ class Service extends EventEmitter {
   private config: Config;
   private logger: Logger;
 
-    /** Create an instance of available RPC methods and bind all exposed functions. */
+  /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
     super();
 
@@ -52,10 +52,10 @@ class Service extends EventEmitter {
     this.logger = Logger.rpc;
   }
 
-    /**
-     * Get general information about this Exchange Union node.
-     * @throws ServiceError with status.FAILED_PRECONDITION if order constructon fails
-     */
+  /**
+   * Get general information about this Exchange Union node.
+   * @throws ServiceError with status.FAILED_PRECONDITION if order constructon fails
+   */
   public getInfo = async () => {
     const info: any = {};
 
@@ -73,11 +73,11 @@ class Service extends EventEmitter {
     return info;
   }
 
-    /**
-     * Get the list of the order book's available pairs.
-     * @returns A list of available trading pairs
-     * @throws ServiceError with status.FAILED_PRECONDITION code
-     */
+  /**
+   * Get the list of the order book's available pairs.
+   * @returns A list of available trading pairs
+   * @throws ServiceError with status.FAILED_PRECONDITION code
+   */
   public getPairs = () => {
     try {
       return this.orderBook.getPairs();
@@ -92,10 +92,10 @@ class Service extends EventEmitter {
     }
   }
 
-    /**
-     * Get a list of standing orders from the order book.
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /**
+   * Get a list of standing orders from the order book.
+   * @throws ServiceError with status.INTERNAL code
+   */
   public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
     try {
       return this.orderBook.getPeerOrders(pairId, maxResults);
@@ -110,10 +110,10 @@ class Service extends EventEmitter {
     }
   }
 
-    /**
-     * Add an order to the order book.
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /**
+   * Add an order to the order book.
+   * @throws ServiceError with status.INTERNAL code
+   */
   public placeOrder = async (order: OwnOrder) => {
     if (order.price < 0) {
       const serviceError: ServiceError = {
@@ -150,17 +150,17 @@ class Service extends EventEmitter {
     }
   }
 
-    /*
-     * Cancel placed order from the orderbook.
-     */
-  public cancelOrder = async (_id: string) => {
-    return 'Not implemented';
+  /*
+   * Cancel placed order from the orderbook.
+   */
+  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
+    return this.orderBook.removeOwnOrder(orderId, pairId);
   }
 
-    /**
-     * Connect to an XU node on a given host and port.
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /**
+   * Connect to an XU node on a given host and port.
+   * @throws ServiceError with status.INTERNAL code
+   */
   public connect = async ({ host, port }: { host: string, port: number }) => {
     try {
       const peer = await this.pool.addOutbound(new SocketAddress(host, port));
@@ -176,10 +176,10 @@ class Service extends EventEmitter {
     }
   }
 
-    /*
-     * Disconnect from a connected peer XU node on a given host and port.
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /*
+   * Disconnect from a connected peer XU node on a given host and port.
+   * @throws ServiceError with status.INTERNAL code
+   */
   public disconnect = async ({ host, port }: { host: string, port: number }) => {
     try {
       await this.pool.disconnectPeer(host, port);
@@ -195,10 +195,10 @@ class Service extends EventEmitter {
     }
   }
 
-    /**
-     * Execute an atomic swap
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /**
+   * Execute an atomic swap
+   * @throws ServiceError with status.INTERNAL code
+   */
   public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
     try {
       return this.raidenClient.tokenSwap(target_address, payload, identifier);
@@ -213,10 +213,10 @@ class Service extends EventEmitter {
     }
   }
 
-    /*
-     * Subscribe to incoming peer orders.
-     * @throws ServiceError with status.INTERNAL code
-     */
+  /*
+   * Subscribe to incoming peer orders.
+   * @throws ServiceError with status.INTERNAL code
+   */
   public subscribePeerOrders = async (callback: Function) => {
     try {
       this.orderBook.on('peerOrder', order => callback(order));
@@ -231,19 +231,19 @@ class Service extends EventEmitter {
     }
   }
 
-    /*
-     * Subscribe to executed swaps
-     */
+  /*
+   * Subscribe to executed swaps
+   */
   public subscribeSwaps = async (_callback: Function) => {
   }
 
-    /*
-     * Differently from LND and RAIDEN connections this function is a must for
-     * getInfo, so it catches possible errors and converts them into meaningful ServiceError
-     * then throws it to prevent startup
-     *
-     * No logging is required since exception to be thrown will be catched and logged at upstream
-     */
+  /*
+   * Differently from LND and RAIDEN connections this function is a must for
+   * getInfo, so it catches possible errors and converts them into meaningful ServiceError
+   * then throws it to prevent startup
+   *
+   * No logging is required since exception to be thrown will be catched and logged at upstream
+   */
   private constructOders = async(info: any) => {
     try {
       const pairs = await this.orderBook.getPairs();

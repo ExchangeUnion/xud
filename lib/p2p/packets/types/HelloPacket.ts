@@ -3,7 +3,7 @@ import PacketType from '../PacketType';
 
 type HelloPacketBody = {
   version: string;
-  nodeKey: string;
+  nodePubKey: string;
   listenPort: number;
   pairs: string[];
 };
