@@ -154,7 +154,17 @@ class Service extends EventEmitter {
    * Cancel placed order from the orderbook.
    */
   public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
-    return this.orderBook.removeOwnOrder(orderId, pairId);
+    try {
+      return this.orderBook.removeOwnOrder(orderId, pairId);
+    }catch (err) {
+      const serviceError: ServiceError = {
+        code: status.INTERNAL,
+        name: 'internal',
+        message: 'internal error occured while connecting',
+        metadata: err,
+      };
+      throw serviceError;
+    }
   }
 
   /**
