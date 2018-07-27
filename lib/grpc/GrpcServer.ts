@@ -37,21 +37,21 @@ class GrpcServer {
   /**
    * Start the server and begin listening on the provided port
    * @param port
+   * @returns true if the server started listening successfully, false otherwise
    */
   public listen = (port: number, host: string) => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
-    try {
-      const bindCode = this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
-      if (bindCode !== port) {
-        const error = errors.COULDNOT_BIND(port.toString());
-        this.logger.error(error.message);
-        throw error;
-      }
-      this.server.start();
-      this.logger.info(`gRPC server listening on ${host}:${port}`);
-    } catch (error) {
-      throw error;
+
+    const bindCode = this.server.bind(`${host}:${port}`, grpc.ServerCredentials.createInsecure());
+    if (bindCode !== port) {
+      const error = errors.COULD_NOT_BIND(port.toString());
+      this.logger.error(error.message);
+      return false;
     }
+
+    this.server.start();
+    this.logger.info(`gRPC server listening on ${host}:${port}`);
+    return true;
   }
 
   /**
@@ -60,7 +60,7 @@ class GrpcServer {
   public close = (): Promise<void> => {
     return new Promise((resolve) => {
       this.server.tryShutdown(() => {
-        this.logger.info('GRPC server stopped listening');
+        this.logger.info('GRPC server completed shutdown');
         resolve();
       });
     });

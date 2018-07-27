@@ -1,12 +1,14 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
-import { orders, matchingEngine, db } from '../types';
+import { orders, matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 
 type PriorityQueue = {
   add: Function;
+  removeOne: Function;
+  removeMany: Function;
   heapify: Function;
   peek: Function;
   poll: Function;
@@ -64,7 +66,7 @@ class MatchingEngine {
   }
 
   public static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
-    const { quantity } =  order;
+    const { quantity } = order;
     const absQuantity = Math.abs(quantity);
     assert(absQuantity > targetQuantity, 'order abs quantity should be higher than targetQuantity');
 
@@ -148,6 +150,22 @@ class MatchingEngine {
     }
 
     return matchingResult;
+  }
+
+  public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
+    return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
+      this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
+  }
+
+  public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
+    return [
+      ...this.priorityQueues.buyOrders.removeMany(predicate),
+      ...this.priorityQueues.sellOrders.removeMany(predicate),
+    ];
+  }
+
+  public isEmpty = (): boolean => {
+    return this.priorityQueues.buyOrders.isEmpty() && this.priorityQueues.sellOrders.isEmpty();
   }
 }
 
