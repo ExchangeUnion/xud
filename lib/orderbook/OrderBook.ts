@@ -12,6 +12,8 @@ import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
 
+type OrdersMap = Map<String, Orders>;
+
 type Orders = {
   buyOrders: Map<String, orders.StampedOrder>;
   sellOrders: Map<String, orders.StampedOrder>;
@@ -25,12 +27,11 @@ class OrderBook extends EventEmitter {
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor = new MatchesProcessor();
 
-  private ownOrders: Map<String, Orders> = new Map<String, Orders>();
-  private peerOrders: Map<String, Orders> = new Map<String, Orders>();
+  private ownOrders: OrdersMap = new Map<String, Orders>();
+  private peerOrders: OrdersMap = new Map<String, Orders>();
 
   /**
-   * This map has the localId of an order as key and the global id as value
-   * which it makes possible to reference orders by their local id
+   * A map between an order's local id and global id
    */
   private localIdMap: Map<String, String> = new Map<String, String>();
 
@@ -75,29 +76,29 @@ class OrderBook extends EventEmitter {
   /**
    * Returns lists of buy and sell orders of peers
    */
-  public getPeerOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedPeerOrder[] } => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]) as { [type: string]: orders.StampedPeerOrder[] };
+  public getPeerOrders = (pairId: string, maxResults: number): Map<String, orders.StampedPeerOrder[]> => {
+    return this.getOrders(maxResults, this.peerOrders[pairId]) as Map<String, orders.StampedPeerOrder[]>;
   }
 
   /*
   * Returns lists of the node's own buy and sell orders
   */
-  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOwnOrder[] } => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]) as { [type: string]: orders.StampedOwnOrder[] };
+  public getOwnOrders = (pairId: string, maxResults: number): Map<String, orders.StampedOwnOrder[]> => {
+    return this.getOrders(maxResults, this.ownOrders[pairId]) as Map<String, orders.StampedOwnOrder[]>;
   }
 
-  private getOrders = (maxResults: number, orders: Orders): { [ type: string ]: orders.StampedOrder[]} => {
+  private getOrders = (maxResults: number, orders: Orders): Map<String, orders.StampedOrder[]> => {
+    const result = new Map<String, orders.StampedOrder[]>();
+
     if (maxResults > 0) {
-      return {
-        buyOrders: Object.values(orders.buyOrders).slice(0, maxResults),
-        sellOrders: Object.values(orders.sellOrders).slice(0, maxResults),
-      };
+      result['buyOrders'] = Object.values(orders.buyOrders).slice(0, maxResults);
+      result['sellOrders'] = Object.values(orders.sellOrders).slice(0, maxResults);
     } else {
-      return {
-        buyOrders: Object.values(orders.buyOrders),
-        sellOrders: Object.values(orders.sellOrders),
-      };
+      result['buyOrders'] = Object.values(orders.buyOrders);
+      result['sellOrders'] = Object.values(orders.sellOrders);
     }
+
+    return result;
   }
 
   public addLimitOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
@@ -115,6 +116,7 @@ class OrderBook extends EventEmitter {
     if (id === undefined) {
       return false;
     } else {
+      delete this.localIdMap[localId];
       return this.removeOwnOrder(pairId, id);
     }
   }
@@ -134,6 +136,10 @@ class OrderBook extends EventEmitter {
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
+    if (this.localIdMap[order.localId]) {
+      throw errors.DUPLICATED_ORDER;
+    }
+
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
@@ -180,24 +186,29 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private updateOrderQuantity = (type: Map<String, Orders>, order: orders.StampedOrder, decreasedQuantity: number) => {
+  private updateOrderQuantity = (type: OrdersMap, order: orders.StampedOrder, decreasedQuantity: number) => {
     const orderMap = this.getOrderMap(type, order);
 
     orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
     if (orderMap[order.id].quantity === 0) {
+      if (this.isOwnOrder(type)) {
+        const { localId } = order as orders.StampedOwnOrder;
+        delete this.localIdMap[localId];
+      }
       delete orderMap[order.id];
     }
   }
 
-  private addOrder = (type: Map<String, Orders>, order: orders.StampedOrder) => {
-    if (order['localId']) {
-      this.localIdMap[order['localId']] = order.id;
+  private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
+    if (this.isOwnOrder(type)) {
+      const { localId } = order as orders.StampedOwnOrder;
+      this.localIdMap[localId] = order.id;
     }
 
     this.getOrderMap(type, order)[order.id] = order;
   }
 
-  private removeOrder = (type: Map<String, Orders>, orderId: string, pairId: string): boolean => {
+  private removeOrder = (type: OrdersMap, orderId: string, pairId: string): boolean => {
     const orders = type[pairId];
 
     if (orders.buyOrders[orderId]) {
@@ -211,13 +222,17 @@ class OrderBook extends EventEmitter {
     return false;
   }
 
-  private getOrderMap = (type: Map<String, Orders>, order: orders.StampedOrder): Map<String, orders.StampedOrder> => {
+  private getOrderMap = (type: OrdersMap, order: orders.StampedOrder): OrdersMap => {
     const orders = type[order.pairId];
     if (order.quantity > 0) {
       return orders.buyOrders;
     } else {
       return orders.sellOrders;
     }
+  }
+
+  private isOwnOrder = (type: OrdersMap) => {
+    return type === this.ownOrders;
   }
 
   private sendOrders = async (peer: Peer) => {
@@ -227,8 +242,8 @@ class OrderBook extends EventEmitter {
     const promises: Promise<orders.OutgoingOrder | void>[] = [];
     for (const { id } of pairs) {
       const orders = await this.getOwnOrders(id, 0);
-      Object.values(orders.buyOrders).forEach(order => promises.push(this.createOutgoingOrder(order)));
-      Object.values(orders.sellOrders).forEach(order => promises.push(this.createOutgoingOrder(order)));
+      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
+      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
     }
     await Promise.all(promises).then((outgoingOrders) => {
       peer.sendOrders(outgoingOrders as orders.OutgoingOrder[]);
