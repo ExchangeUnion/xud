@@ -76,29 +76,29 @@ class OrderBook extends EventEmitter {
   /**
    * Returns lists of buy and sell orders of peers
    */
-  public getPeerOrders = (pairId: string, maxResults: number): Map<String, orders.StampedPeerOrder[]> => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]) as Map<String, orders.StampedPeerOrder[]>;
+  public getPeerOrders = (pairId: string, maxResults: number): { [ type: string ]: orders.StampedPeerOrder[] } => {
+    return this.getOrders(maxResults, this.peerOrders[pairId]) as { [type: string]: orders.StampedPeerOrder[] };
   }
 
   /*
   * Returns lists of the node's own buy and sell orders
   */
-  public getOwnOrders = (pairId: string, maxResults: number): Map<String, orders.StampedOwnOrder[]> => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]) as Map<String, orders.StampedOwnOrder[]>;
+  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOwnOrder[] } => {
+    return this.getOrders(maxResults, this.ownOrders[pairId]) as { [type: string]: orders.StampedOwnOrder[] };
   }
 
-  private getOrders = (maxResults: number, orders: Orders): Map<String, orders.StampedOrder[]> => {
-    const result = new Map<String, orders.StampedOrder[]>();
-
+  private getOrders = (maxResults: number, orders: Orders): { [type: string]: orders.StampedOrder[] } => {
     if (maxResults > 0) {
-      result['buyOrders'] = Object.values(orders.buyOrders).slice(0, maxResults);
-      result['sellOrders'] = Object.values(orders.sellOrders).slice(0, maxResults);
+      return {
+        buyOrders: Object.values(orders.buyOrders).slice(0, maxResults),
+        sellOrders: Object.values(orders.sellOrders).slice(0, maxResults),
+      };
     } else {
-      result['buyOrders'] = Object.values(orders.buyOrders);
-      result['sellOrders'] = Object.values(orders.sellOrders);
+      return {
+        buyOrders: Object.values(orders.buyOrders),
+        sellOrders: Object.values(orders.sellOrders),
+      };
     }
-
-    return result;
   }
 
   public addLimitOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
