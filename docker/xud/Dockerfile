@@ -1,9 +1,27 @@
-FROM node:8
+FROM node:8.11.3
+
+# Install Golang & gRPC deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		g++ \
+		gcc \
+		libc6-dev \
+		make \
+		pkg-config \
+	&& rm -rf /var/lib/apt/lists/*
+ADD https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz .
+RUN tar -C /usr/local -xzf go1.10.3.linux-amd64.tar.gz 
+RUN rm go1.10.3.linux-amd64.tar.gz
+ENV PATH="/usr/local/go/bin:$PATH"
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH"
+RUN go get google.golang.org/grpc
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 WORKDIR /opt
 
 # Install Deps
-RUN apt update && apt install -y rsync
+RUN apt-get update && apt-get install -y rsync
 RUN npm install -g gulp nodemon typescript --quiet
 RUN git clone https://github.com/ExchangeUnion/xud
 WORKDIR /opt/xud
@@ -24,4 +42,4 @@ COPY xud.conf xud.conf
 WORKDIR /opt/xud
 
 # Start Exchange Union Daemon
-ENTRYPOINT ["npm","run","run"]
+ENTRYPOINT ["npm","start"]
