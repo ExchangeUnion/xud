@@ -34,6 +34,7 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
+      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
 
@@ -106,11 +107,26 @@ class OrderBook extends EventEmitter {
   public removeOwnOrder = (orderId: string, pairId: string): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
     if (!matchingEngine) {
-      throw errors.INVALID_PAIR_ID(pairId);
+      this.logger.warn(`Invalid pairId: ${pairId}`);
+      return false;
     }
 
     if (matchingEngine.removeOwnOrder(orderId)) {
       return this.removeOrder(this.ownOrders, orderId, pairId);
+    } else {
+      return false;
+    }
+  }
+
+  private removePeerOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines[pairId];
+    if (!matchingEngine) {
+      this.logger.warn(`Invalid pairId: ${pairId}`);
+      return false;
+    }
+
+    if (matchingEngine.removePeerOrder(orderId)) {
+      return this.removeOrder(this.peerOrders, orderId, pairId);
     } else {
       return false;
     }
