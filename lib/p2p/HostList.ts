@@ -45,7 +45,7 @@ class HostList {
    * Load this HostList from the database
    */
   public load = async (): Promise<void> => {
-    const [hosts, bannedHosts] =  await Promise.all([this.repository.getHosts(), this.repository.getBannedHosts()]);
+    const [hosts, bannedHosts] = await Promise.all([this.repository.getHosts(), this.repository.getBannedHosts()]);
 
     hosts.forEach((host) => {
       const address = new SocketAddress(host.address, host.port);
