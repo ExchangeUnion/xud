@@ -17,6 +17,15 @@ type PoolConfig = {
   port: number;
 };
 
+interface Pool {
+  on(event: 'packet.order', listener: (order: PeerOrder) => void);
+  on(event: 'packet.getOrders', listener: (peer: Peer) => void);
+  on(event: 'peer.close', listener: (peer: Peer) => void);
+  emit(event: 'packet.order', order: PeerOrder);
+  emit(event: 'packet.getOrders', peer: Peer);
+  emit(event: 'peer.close', peer: Peer);
+}
+
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
   private hosts: HostList;
