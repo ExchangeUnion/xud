@@ -185,7 +185,9 @@ describe('MatchingEngine.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
     });
-    expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
+    const peekResult = engine.priorityQueues.sellOrders.peek();
+    expect(peekResult).to.not.be.undefined;
+    expect(peekResult!.quantity).to.equal(-1);
   });
 });
 
