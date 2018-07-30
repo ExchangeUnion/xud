@@ -197,7 +197,7 @@ class OrderBook extends EventEmitter {
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     if (peer.hostId) {
       this.pairs.forEach((pair) => {
-        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
+        this.matchingEngines[pair.id].removePeerOrders(peer.hostId!);
       });
     }
   }

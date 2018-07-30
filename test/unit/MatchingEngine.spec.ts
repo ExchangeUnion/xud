@@ -214,14 +214,13 @@ describe('MatchingEngine.removePeerOrders', () => {
     const secondHostId = 2;
 
     expect(engine.isEmpty()).to.be.true;
-    expect(engine.removePeerOrders(() => true)).to.be.empty;
 
     const firstHostOrders = [createPeerOrder(5, -5, ms(), firstHostId), createPeerOrder(5, -5, ms(), firstHostId)];
     engine.addPeerOrder(firstHostOrders[0]);
     engine.addPeerOrder(firstHostOrders[1]);
     engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondHostId));
 
-    const removedOrders = engine.removePeerOrders(order => order.hostId === firstHostId);
+    const removedOrders = engine.removePeerOrders(firstHostId);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);

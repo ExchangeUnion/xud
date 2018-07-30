@@ -16,6 +16,7 @@ type PriorityQueue = {
   isEmpty: Function;
   has: Function;
 };
+import { StampedOrder, StampedOwnOrder, StampedPeerOrder } from '../types/orders';
 
 type PriorityQueues = {
   buyOrders: PriorityQueue;
@@ -160,11 +161,15 @@ class MatchingEngine {
     return this.removeOrder(orderId) as orders.StampedPeerOrder;
   }
 
-  public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
+  public removePeerOrders = (hostId: number): StampedPeerOrder[] => {
+    const callback = (order: StampedOrder) => {
+      return (order as StampedPeerOrder).hostId === hostId;
+    };
+
     return [
-      ...this.priorityQueues.buyOrders.removeMany(predicate),
-      ...this.priorityQueues.sellOrders.removeMany(predicate),
-    ];
+      ...this.priorityQueues.buyOrders.removeMany(callback),
+      ...this.priorityQueues.sellOrders.removeMany(callback),
+    ] as StampedPeerOrder[];
   }
 
   public isEmpty = (): boolean => {
