@@ -295,8 +295,10 @@
     "xudrpcCancelOrderResponse": {
       "type": "object",
       "properties": {
-        "result": {
-          "type": "string"
+        "canceled": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether an order was successfully canceled"
         }
       }
     },
@@ -494,6 +496,10 @@
         "id": {
           "type": "string",
           "title": "A UUID for this order"
+        },
+        "local_id": {
+          "type": "string",
+          "title": "The local ID for this oder"
         },
         "created_at": {
           "type": "string",

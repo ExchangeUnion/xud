@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import { SwapProtocol } from '../../lib/types/enums';
@@ -68,13 +69,13 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order: orders.OwnOrder = { pairId: 'BTC/LTC',  quantity: 5, price: 55 };
-    await orderBook.addLimitOrder(order);
-    await orderBook.addLimitOrder(order);
+    const order = { pairId: 'BTC/LTC', quantity: 5, price: 55 };
+    await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
+    await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order: orders.OwnOrder = { pairId: 'BTC/LTC', quantity: -6, price: 55 };
+    const order: orders.OwnOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -6, price: 55 };
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.null;
     expect(getOrder(matches.matches[0].maker)).to.be.undefined;
@@ -82,7 +83,7 @@ describe('OrderBook', () => {
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order: orders.MarketOrder = { pairId: 'BTC/LTC', quantity: -10 };
+    const order: orders.OwnMarketOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -10 };
     const matches = await orderBook.addMarketOrder(order);
     expect(matches.remainingOrder.quantity).to.be.greaterThan(order.quantity);
     expect((getOrder(matches.remainingOrder))).to.be.undefined;

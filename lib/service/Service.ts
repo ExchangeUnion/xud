@@ -155,7 +155,7 @@ class Service extends EventEmitter {
    */
   public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
     try {
-      return this.orderBook.removeOwnOrder(orderId, pairId);
+      return { canceled: this.orderBook.removeOwnOrderByLocalId(pairId, orderId) };
     }catch (err) {
       const serviceError: ServiceError = {
         code: status.INTERNAL,
@@ -165,7 +165,6 @@ class Service extends EventEmitter {
       };
       throw serviceError;
     }
-  }
 
   /**
    * Connect to an XU node on a given host and port.
