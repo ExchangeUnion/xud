@@ -7,11 +7,11 @@ const errorCodes = {
 };
 
 const errors = {
-  INVALID_PAIR_ID: pairId => ({
+  INVALID_PAIR_ID: (pairId: string) => ({
     message: `invalid pairId: ${pairId}`,
     code: errorCodes.INVALID_PAIR_ID,
   }),
-  DUPLICATED_ORDER: localId => ({
+  DUPLICATED_ORDER: (localId: string) => ({
     message: `duplicated localId: ${localId}`,
     code: codesPrefix.concat('.2'),
   }),

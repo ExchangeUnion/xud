@@ -2,7 +2,7 @@ import http from 'http';
 
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
-import * as errors from './errors';
+import errors from './errors';
 
 /**
  * A utility function to parse the payload from an http response.
