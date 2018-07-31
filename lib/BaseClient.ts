@@ -1,4 +1,4 @@
-import Logger from './Logger';
+import Logger, { ContextLogger } from './Logger';
 
 enum ClientStatus {
   DISABLED,
@@ -9,8 +9,8 @@ abstract class BaseClient {
   protected logger: Logger;
   protected status!: ClientStatus;
 
-  constructor(logger: Logger) {
-    this.logger = logger;
+  constructor(logger: ContextLogger) {
+    this.logger = logger.global;
   }
 
   protected setStatus(val: ClientStatus): void {

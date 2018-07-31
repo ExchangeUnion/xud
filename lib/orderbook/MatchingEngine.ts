@@ -3,7 +3,7 @@ import FastPriorityQueue from 'fastpriorityqueue';
 
 import { orders, matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 
 type PriorityQueue = {
   add: Function;
@@ -31,7 +31,7 @@ class MatchingEngine {
   public priorityQueues: PriorityQueues;
   private logger: Logger;
 
-  constructor(public pairId: string, logger: Logger) {
+  constructor(public pairId: string, logger: ContextLogger) {
     this.priorityQueues = {
       buyOrders: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
       sellOrders: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),

@@ -1,4 +1,4 @@
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 import DB, { Models } from '../db/DB';
 import { db } from '../types';
 
@@ -6,7 +6,7 @@ class P2PRepository {
   private logger: Logger;
   private models: Models;
 
-  constructor(private db: DB, logger: Logger) {
+  constructor(private db: DB, logger: ContextLogger) {
     this.models = db.models;
     this.logger = logger.p2p;
   }

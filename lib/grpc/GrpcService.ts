@@ -1,5 +1,5 @@
 import grpc from 'grpc';
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -26,7 +26,7 @@ class GrpcService {
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service, logger: Logger) {
+  constructor(private service: Service, logger: ContextLogger) {
     this.logger = logger.rpc;
   }
 

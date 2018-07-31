@@ -1,7 +1,7 @@
 import grpc from 'grpc';
 import express from 'express';
 import * as bodyParser from 'body-parser';
-import Logger from '../../Logger';
+import Logger, { ContextLogger } from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
 import { middleware } from './GrpcExpressMiddleware';
@@ -13,7 +13,7 @@ class GrpcWebProxyServer {
   private app: express.Express;
   private server?: Server;
 
-  constructor(logger: Logger) {
+  constructor(logger: ContextLogger) {
     this.logger = logger.rpc;
     this.app = express();
     this.app.use(bodyParser.json());

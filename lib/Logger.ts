@@ -45,14 +45,6 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public global = new Logger({ context: Context.GLOBAL, instanceId: this.instanceId });
-  public db = new Logger({ context: Context.DB, instanceId: this.instanceId });
-  public rpc = new Logger({ context: Context.RPC, instanceId: this.instanceId });
-  public p2p = new Logger({ context: Context.P2P, instanceId: this.instanceId });
-  public orderbook = new Logger({ context: Context.ORDERBOOK, instanceId: this.instanceId });
-  public lnd = new Logger({ context: Context.LND, instanceId: this.instanceId });
-  public raiden = new Logger({ context: Context.RAIDEN, instanceId: this.instanceId });
-
   constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
@@ -114,4 +106,23 @@ class Logger {
     this.log(Level.DEBUG, msg);
   }
 }
+
+class ContextLogger {
+  private instanceId: number;
+
+  constructor(instanceId: number) {
+    this.instanceId = instanceId;
+  }
+
+  public global = new Logger({ context: Context.GLOBAL, instanceId: this.instanceId });
+  public db = new Logger({ context: Context.DB, instanceId: this.instanceId });
+  public rpc = new Logger({ context: Context.RPC, instanceId: this.instanceId });
+  public p2p = new Logger({ context: Context.P2P, instanceId: this.instanceId });
+  public orderbook = new Logger({ context: Context.ORDERBOOK, instanceId: this.instanceId });
+  public lnd = new Logger({ context: Context.LND, instanceId: this.instanceId });
+  public raiden = new Logger({ context: Context.RAIDEN, instanceId: this.instanceId });
+
+}
+
 export default Logger;
+export { ContextLogger };

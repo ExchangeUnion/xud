@@ -1,10 +1,10 @@
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 
 class MatchesProcessor {
   private buffer: any[];
   private logger: Logger;
 
-  constructor(logger: Logger) {
+  constructor(logger: ContextLogger) {
     this.logger = logger.orderbook;
     this.buffer = [];
   }

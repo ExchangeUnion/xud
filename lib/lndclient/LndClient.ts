@@ -1,7 +1,7 @@
 import grpc, { ChannelCredentials } from 'grpc';
 import fs from 'fs';
 
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
@@ -33,8 +33,8 @@ class LndClient extends BaseClient {
    * Create an lnd client.
    * @param config The lnd configuration
    */
-  constructor(config: LndClientConfig, logger: Logger) {
-    super(logger.lnd);
+  constructor(config: LndClientConfig, logger: ContextLogger) {
+    super(logger);
     const { disable, certpath, macaroonpath } = config;
 
     if (disable) {

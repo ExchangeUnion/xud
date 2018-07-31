@@ -1,5 +1,5 @@
 import bootstrap from './bootstrap';
-import Logger, { Context } from './Logger';
+import Logger, { Context, ContextLogger } from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
@@ -26,6 +26,7 @@ class Xud {
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   public service!: Service;
+  private contextLogger: ContextLogger;
 
   /**
    * Create an Exchange Union daemon.
@@ -33,7 +34,8 @@ class Xud {
    */
   constructor(args)  {
     this.config = new Config(args);
-    this.logger = new Logger({ context: Context.GLOBAL, instanceId: this.config.instanceId });
+    this.contextLogger = new ContextLogger(this.config.instanceId);
+    this.logger = this.contextLogger.global;
   }
 
   /**
@@ -46,18 +48,18 @@ class Xud {
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
       this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
-      this.db = new DB(this.config.db, this.logger);
+      this.db = new DB(this.config.db, this.contextLogger);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd, this.logger);
+      this.lndClient = new LndClient(this.config.lnd, this.contextLogger);
       await this.lndClient.connect();
 
-      this.raidenClient = new RaidenClient(this.config.raiden, this.logger);
+      this.raidenClient = new RaidenClient(this.config.raiden, this.contextLogger);
 
-      this.pool = new Pool(this.config.p2p, this.db, this.logger);
+      this.pool = new Pool(this.config.p2p, this.db, this.contextLogger);
       this.pool.init();
 
-      this.orderBook = new OrderBook(this.db.models, this.logger, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.db.models, this.contextLogger, this.pool, this.lndClient);
       await this.orderBook.init();
 
       this.service = new Service({
@@ -67,9 +69,9 @@ class Xud {
         pool: this.pool,
         config: this.config,
         shutdown: this.shutdown,
-      }, this.logger);
+      }, this.contextLogger);
 
-      this.rpcServer = new GrpcServer(this.service, this.logger);
+      this.rpcServer = new GrpcServer(this.service, this.contextLogger);
       if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
         this.logger.error('Could not start RPC server, exiting...');
         this.shutdown();
@@ -77,7 +79,7 @@ class Xud {
       }
 
       if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer(this.logger);
+        this.grpcAPIProxy = new GrpcWebProxyServer(this.contextLogger);
         await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {

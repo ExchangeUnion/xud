@@ -9,7 +9,7 @@ import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
 import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
-import Logger from '../Logger';
+import  Logger, { ContextLogger } from '../Logger';
 import { ms } from '../utils/utils';
 
 type PoolConfig = {
@@ -25,7 +25,7 @@ class Pool extends EventEmitter {
   private logger: Logger;
   private connected: boolean = false;
 
-  constructor(private config: PoolConfig, db: DB, logger: Logger) {
+  constructor(private config: PoolConfig, db: DB, logger: ContextLogger) {
     super();
     this.logger = logger.p2p;
     this.hosts = new HostList(new P2PRepository(db, logger));

@@ -7,7 +7,7 @@ import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import { orders } from '../../lib/types';
 import { StampedOrder } from '../../lib/types/orders';
-import Logger from '../../lib/Logger';
+import { ContextLogger } from '../../lib/Logger';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -17,7 +17,7 @@ describe('OrderBook', () => {
   before(async () => {
     const config = new Config();
     await config.load();
-    const logger = new Logger(config.instanceId);
+    const logger = new ContextLogger(config.instanceId);
 
     db = new DB(config.testDb, logger);
     await db.init();

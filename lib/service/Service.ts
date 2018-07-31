@@ -1,5 +1,5 @@
 import assert from 'assert';
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
@@ -36,11 +36,11 @@ class Service extends EventEmitter {
   private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents, logger: Logger) {
+  constructor(components: ServiceComponents, logger: ContextLogger) {
     super();
 
     this.shutdown = components.shutdown;
-    this.logger = logger;
+    this.logger = logger.global;
     this.orderBook = components.orderBook;
     this.lndClient = components.lndClient;
     this.raidenClient = components.raidenClient;

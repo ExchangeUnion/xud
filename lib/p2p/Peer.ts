@@ -5,7 +5,7 @@ import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket, HostsPacket, OrdersPacket } from './packets';
-import Logger from '../Logger';
+import Logger, { ContextLogger } from '../Logger';
 import { ms } from '../utils/utils';
 import { orders } from '../types';
 
@@ -59,7 +59,6 @@ class Peer extends EventEmitter {
   public direction!: ConnectionDirection;
   public connected: boolean = false;
   private host?: Host;
-  private logger: Logger ;
   private opened: boolean = false;
   private socket!: Socket;
   private parser: Parser = new Parser();
@@ -73,16 +72,17 @@ class Peer extends EventEmitter {
   private lastRecv: number = 0;
   private lastSend: number = 0;
   private handshakeState: HandshakeState = {};
-  private static logger: Logger;
+  private static contextLogger: ContextLogger;
 
   get id(): string {
     assert(this.socketAddress);
     return this.socketAddress.toString();
   }
 
-  constructor(logger: Logger) {
+  constructor(logger?: ContextLogger) {
     super();
-    this.logger = logger.p2p;
+    // this.logger = logger.p2p;
+    // this.contextLogger = logger;
     this.bindParser(this.parser);
   }
 
@@ -95,13 +95,13 @@ class Peer extends EventEmitter {
   }
 
   public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer(this.logger);
+    const peer = new Peer(this.contextLogger);
     peer.connect(socketAddress);
     return peer;
   }
 
   public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer(this.logger);
+    const peer = new Peer();
     peer.accept(socket);
     return peer;
   }

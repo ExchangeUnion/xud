@@ -4,7 +4,7 @@ import assert from 'assert';
 import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 
-import Logger, { Context }  from '../Logger';
+import Logger, { ContextLogger }  from '../Logger';
 import { db } from '../types';
 
 type SequelizeConfig = {
@@ -31,7 +31,7 @@ class DB {
   public models!: Models;
   private logger: Logger;
 
-  constructor(private config: DBConfig, logger: Logger) {
+  constructor(private config: DBConfig, logger: ContextLogger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.logger = logger.db;

@@ -4,11 +4,12 @@ import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
-import Logger, { Context } from '../../lib/Logger';
+import { ContextLogger } from '../../lib/Logger';
 
 const PAIR_ID = 'BTC/LTC';
+const INSTANCE_ID = 0;
 
-const logger = new Logger({ context: Context.ORDERBOOK });
+const logger = new ContextLogger(INSTANCE_ID);
 const createOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOrder => ({
   quantity,
   price,
