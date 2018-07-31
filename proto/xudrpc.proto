@@ -126,8 +126,7 @@ message DisconnectResponse {
 
 message ExecuteSwapRequest {
   string target_address = 1 [json_name = "target_address"];
-  string identifier = 2 [json_name = "identifier"];
-  SwapPayload payload = 3 [json_name = "payload"];
+  SwapPayload payload = 2 [json_name = "payload"];
 }
 message ExecuteSwapResponse {
   string result = 1 [json_name = "result"];
@@ -279,5 +278,6 @@ message SubscribePeerOrdersResponse {
 
 message SubscribeSwapsRequest {}
 message SubscribeSwapsResponse {
-  string result = 1 [json_name = "result"];
+  // The order which was executed for the swap with updated remaining quantity
+  string order = 1 [json_name = "order"];
 }

@@ -88,10 +88,10 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Execute an atomic swap
+   * Execute an atomic swap.
    */
-  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
+    return this.raidenClient.tokenSwap(target_address, payload, '');
   }
 
   /**
