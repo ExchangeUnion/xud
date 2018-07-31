@@ -24,6 +24,11 @@ interface OrderBook {
   emit(event: 'peerOrder', order: orders.StampedPeerOrder);
 }
 
+type OrderArrays = {
+  buyOrders: orders.StampedOrder[],
+  sellOrders: orders.StampedOrder[],
+};
+
 class OrderBook extends EventEmitter {
   public pairs: db.PairInstance[] = [];
   public matchingEngines: { [ pairId: string ]: MatchingEngine } = {};
@@ -82,18 +87,18 @@ class OrderBook extends EventEmitter {
   /**
    * Returns lists of buy and sell orders of peers
    */
-  public getPeerOrders = (pairId: string, maxResults: number): { [ type: string ]: orders.StampedPeerOrder[] } => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]) as { [type: string]: orders.StampedPeerOrder[] };
+  public getPeerOrders = (pairId: string, maxResults: number): OrderArrays => {
+    return this.getOrders(maxResults, this.peerOrders[pairId]);
   }
 
   /*
   * Returns lists of the node's own buy and sell orders
   */
-  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOwnOrder[] } => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]) as { [type: string]: orders.StampedOwnOrder[] };
+  public getOwnOrders = (pairId: string, maxResults: number): OrderArrays => {
+    return this.getOrders(maxResults, this.ownOrders[pairId]);
   }
 
-  private getOrders = (maxResults: number, orders: Orders): { [type: string]: orders.StampedOrder[] } => {
+  private getOrders = (maxResults: number, orders: Orders): OrderArrays => {
     if (maxResults > 0) {
       return {
         buyOrders: Object.values(orders.buyOrders).slice(0, maxResults),
@@ -263,8 +268,8 @@ class OrderBook extends EventEmitter {
     const promises: Promise<orders.OutgoingOrder | void>[] = [];
     for (const { id } of pairs) {
       const orders = await this.getOwnOrders(id, 0);
-      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
-      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
+      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
+      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
     }
     await Promise.all(promises).then((outgoingOrders) => {
       peer.sendOrders(outgoingOrders as orders.OutgoingOrder[]);
@@ -310,4 +315,4 @@ class OrderBook extends EventEmitter {
 }
 
 export default OrderBook;
-export { Orders };
+export { Orders, OrderArrays };

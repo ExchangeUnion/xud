@@ -1,6 +1,6 @@
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
-import OrderBook from '../orderbook/OrderBook';
+import OrderBook, { OrderArrays } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
@@ -144,10 +144,26 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get a list of standing orders from the order book.
+   * Get a list of standing peer orders from the order book for a specified trading pair, or for all
+   * trading pairs if no pair is specified.
    */
-  public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
-    return this.orderBook.getPeerOrders(pairId, maxResults);
+  public getOrders = ({ pairId, maxResults }: { pairId?: string, maxResults?: number }) => {
+    const ret: OrderArrays = {
+      buyOrders: [],
+      sellOrders: [],
+    };
+    if (pairId) {
+      const orderArrays = this.orderBook.getPeerOrders(pairId, maxResults ? maxResults : 0);
+      ret.buyOrders.concat(orderArrays.buyOrders);
+      ret.sellOrders.concat(orderArrays.sellOrders);
+    } else {
+      this.orderBook.pairs.forEach((pair) => {
+        const orderArrays = this.orderBook.getPeerOrders(pair.id, maxResults ? maxResults : 0);
+        ret.buyOrders.concat(orderArrays.buyOrders);
+        ret.sellOrders.concat(orderArrays.sellOrders);
+      });
+    }
+    return ret;
   }
 
   /**
