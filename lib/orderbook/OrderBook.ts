@@ -19,6 +19,11 @@ type Orders = {
   sellOrders: Map<String, orders.StampedOrder>;
 };
 
+interface OrderBook {
+  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
+  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+}
+
 class OrderBook extends EventEmitter {
   public pairs: db.PairInstance[] = [];
   public matchingEngines: { [ pairId: string ]: MatchingEngine } = {};
@@ -41,7 +46,7 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId));
+      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
 
@@ -188,7 +193,7 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', order);
+    this.emit('peerOrder', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);

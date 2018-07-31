@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { packetUtils } from './packets';
+import { packetUtils, Packet } from './packets';
 
 class ParserError {
   constructor(public type: ParserErrorType, public payload: string) { }
@@ -8,6 +8,13 @@ class ParserError {
 enum ParserErrorType {
   UNPARSABLE_MESSAGE,
   UNKNOWN_PACKET_TYPE,
+}
+
+interface Parser {
+  on(event: 'packet', packet: (order: Packet) => void);
+  on(event: 'error', err: (order: ParserError) => void);
+  emit(event: 'packet', packet: Packet);
+  emit(event: 'error', err: ParserError);
 }
 
 /** Protocol packet parser */

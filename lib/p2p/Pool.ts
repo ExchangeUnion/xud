@@ -7,7 +7,7 @@ import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
-import { PeerOrder, OutgoingOrder } from '../types/orders';
+import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
@@ -16,6 +16,17 @@ type PoolConfig = {
   listen: boolean;
   port: number;
 };
+
+interface Pool {
+  on(event: 'packet.order', listener: (order: PeerOrder) => void);
+  on(event: 'packet.getOrders', listener: (peer: Peer) => void);
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void);
+  on(event: 'peer.close', listener: (peer: Peer) => void);
+  emit(event: 'packet.order', order: PeerOrder);
+  emit(event: 'packet.getOrders', peer: Peer);
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier);
+  emit(event: 'peer.close', peer: Peer);
+}
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
@@ -150,12 +161,12 @@ class Pool extends EventEmitter {
   private handlePacket = (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order: PeerOrder = { ...packet.body, hostId: peer.id };
-        this.emit('packet.order', order);
+        const order = (packet as OrderPacket).body;
+        this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', packet.body);
+        this.emit('packet.orderInvalidation', (packet as OrderInvalidationPacket).body);
         break;
       }
       case PacketType.GET_ORDERS: {
@@ -165,7 +176,7 @@ class Pool extends EventEmitter {
       case PacketType.ORDERS: {
         const { orders } = (packet as OrdersPacket).body;
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, hostId: peer.id });
+          this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
         });
         break;
       }
