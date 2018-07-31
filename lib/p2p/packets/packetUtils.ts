@@ -12,6 +12,8 @@ const fromRaw = (type: string, packet: string): Packet | void => {
       return new packetTypes.PongPacket(packet);
     case PacketType.ORDER:
       return new packetTypes.OrderPacket(packet);
+    case PacketType.ORDER_INVALIDATION:
+      return new packetTypes.OrderInvalidationPacket(packet);
     case PacketType.GET_ORDERS:
       return new packetTypes.GetOrdersPacket(packet);
     case PacketType.ORDERS:

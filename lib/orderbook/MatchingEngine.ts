@@ -153,8 +153,11 @@ class MatchingEngine {
   }
 
   public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
-    return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
-      this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
+    return this.removeOrder(orderId) as orders.StampedOwnOrder;
+  }
+
+  public removePeerOrder = (orderId: string): orders.StampedPeerOrder | null => {
+    return this.removeOrder(orderId) as orders.StampedPeerOrder;
   }
 
   public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
@@ -166,6 +169,11 @@ class MatchingEngine {
 
   public isEmpty = (): boolean => {
     return this.priorityQueues.buyOrders.isEmpty() && this.priorityQueues.sellOrders.isEmpty();
+  }
+
+  private removeOrder = (orderId: string): orders.StampedOrder | null => {
+    return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
+      this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
   }
 }
 
