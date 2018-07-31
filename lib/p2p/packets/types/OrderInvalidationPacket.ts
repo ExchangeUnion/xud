@@ -1,11 +1,8 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
+import { OrderIdentifier } from '../../../types/orders';
 
-type OrderInvalidationPacketBody = {
-  orderId: string;
-  pairId: string;
-  // quantity: number;  TODO: implement quantity invalidation
-};
+type OrderInvalidationPacketBody = OrderIdentifier;
 
 class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
   public get type() {

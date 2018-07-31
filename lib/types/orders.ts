@@ -34,3 +34,9 @@ export type OutgoingOrder = MarketOrder & {
   id: string;
   invoice: string;
 };
+
+export type OrderIdentifier = {
+  orderId: string;
+  pairId: string;
+  quantity?: number;
+};

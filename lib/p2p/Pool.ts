@@ -7,7 +7,7 @@ import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
-import { PeerOrder, OutgoingOrder } from '../types/orders';
+import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
@@ -20,9 +20,11 @@ type PoolConfig = {
 interface Pool {
   on(event: 'packet.order', listener: (order: PeerOrder) => void);
   on(event: 'packet.getOrders', listener: (peer: Peer) => void);
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void);
   on(event: 'peer.close', listener: (peer: Peer) => void);
   emit(event: 'packet.order', order: PeerOrder);
   emit(event: 'packet.getOrders', peer: Peer);
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier);
   emit(event: 'peer.close', peer: Peer);
 }
 
@@ -164,7 +166,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', packet.body);
+        this.emit('packet.orderInvalidation', (packet as OrderInvalidationPacket).body);
         break;
       }
       case PacketType.GET_ORDERS: {
