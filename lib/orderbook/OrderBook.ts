@@ -11,6 +11,7 @@ import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
+import RaidenClient from '../raidenclient/RaidenClient';
 
 /** A mapping of a string (such as pairId) to an [[Orders]] object. */
 type OrdersMap = Map<string, Orders>;
@@ -40,7 +41,7 @@ class OrderBook extends EventEmitter {
 
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
-  private matchesProcessor = new MatchesProcessor();
+  private matchesProcessor: MatchesProcessor;
 
   private ownOrders: OrdersMap = new Map<string, Orders>();
   private peerOrders: OrdersMap = new Map<string, Orders>();
@@ -50,8 +51,10 @@ class OrderBook extends EventEmitter {
    */
   private localIdMap: Map<string, string> = new Map<string, string>();
 
-  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
+
+    this.matchesProcessor = new MatchesProcessor(pool, raidenClient);
 
     this.repository = new OrderBookRepository(models);
     if (pool) {
@@ -59,6 +62,23 @@ class OrderBook extends EventEmitter {
       pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
+    }
+
+    if (raidenClient) {
+      raidenClient.on('swap', this.swapHandler);
+    }
+  }
+
+  private swapHandler = (order: orders.StampedOrder) => {
+    if (order.quantity === 0) {
+      // full order execution
+      if (orders.isPeerOrder(order)) {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+      } else {
+        this.removeOwnOrder(order.pairId, order.id);
+      }
+    } else {
+      // TODO: partial order execution, update existing order
     }
   }
 
