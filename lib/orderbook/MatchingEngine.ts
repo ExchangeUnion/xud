@@ -152,12 +152,12 @@ class MatchingEngine {
     return matchingResult;
   }
 
-  public removeOwnOrder = (orderId: string): orders.StampedOrder | null => {
-    return this.removeOrder(orderId);
+  public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
+    return this.removeOrder(orderId) as orders.StampedOwnOrder;
   }
 
-  public removePeerOrder = (orderId: string): orders.StampedOrder | null => {
-    return this.removeOrder(orderId);
+  public removePeerOrder = (orderId: string): orders.StampedPeerOrder | null => {
+    return this.removeOrder(orderId) as orders.StampedPeerOrder;
   }
 
   public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
