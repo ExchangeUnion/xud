@@ -76,7 +76,8 @@
   ],
   "author": "Daniel McNally",
   "contributors": [
-    "Moshe Shababo"
+    "Moshe Shababo",
+    "Balamurali Pandranki <balamurali@live.com> (https://balamurali.me)"
   ],
   "license": "AGPL-3.0",
   "bugs": {
@@ -126,6 +127,6 @@
     "typedoc": "^0.11.1"
   },
   "engines": {
-    "node": ">=7.6.0"
+    "node": ">=8.11.3"
   }
 }

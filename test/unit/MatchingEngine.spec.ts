@@ -7,11 +7,12 @@ import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'BTC/LTC';
 
-const createOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOrder => ({
-  quantity,
+const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOwnOrder => ({
   price,
+  quantity,
   createdAt,
   id: uuidv1(),
+  localId: uuidv1(),
   pairId: PAIR_ID,
 });
 
@@ -28,32 +29,32 @@ const createPeerOrder = (price: number, quantity: number, createdAt = ms(), host
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
-      createOrder(5, 10),
-      createOrder(5.5, -10),
+      createOwnOrder(5, 10),
+      createOwnOrder(5.5, -10),
     );
     expect(res).to.equal(0);
   });
 
   it('should match buy order with a higher then a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
-      createOrder(5.5, 10),
-      createOrder(5, -10),
+      createOwnOrder(5.5, 10),
+      createOwnOrder(5, -10),
     );
     expect(res).to.equal(10);
   });
 
   it('should match buy order with an equal price to a sell order', () => {
     const res = MatchingEngine.getMatchingQuantity(
-      createOrder(5, 10),
-      createOrder(5, -10),
+      createOwnOrder(5, 10),
+      createOwnOrder(5, -10),
     );
     expect(res).to.equal(10);
   });
 
   it('should match with lowest quantity of both orders', () => {
     const res = MatchingEngine.getMatchingQuantity(
-      createOrder(5, 5),
-      createOrder(5, -10),
+      createOwnOrder(5, 5),
+      createOwnOrder(5, -10),
     );
     expect(res).to.equal(5);
   });
@@ -63,8 +64,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
-      createOrder(5, 10),
-      createOrder(5.5, -10),
+      createOwnOrder(5, 10),
+      createOwnOrder(5.5, -10),
     );
     expect(res).to.be.true;
   });
@@ -72,8 +73,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should not prioritize higher price on ASC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
-      createOrder(5.5, 10),
-      createOrder(5, -10),
+      createOwnOrder(5.5, 10),
+      createOwnOrder(5, -10),
     );
     expect(res).to.be.false;
   });
@@ -81,8 +82,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize higher price on DESC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
-      createOrder(5.5, 10),
-      createOrder(5, -10),
+      createOwnOrder(5.5, 10),
+      createOwnOrder(5, -10),
     );
     expect(res).to.be.true;
   });
@@ -90,8 +91,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should not prioritize lower price on DESC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
-      createOrder(5, 10),
-      createOrder(5.5, -10),
+      createOwnOrder(5, 10),
+      createOwnOrder(5.5, -10),
     );
     expect(res).to.be.false;
   });
@@ -99,8 +100,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
     const res = comparator(
-      createOrder(5, 10, ms() - 1),
-      createOrder(5, -10, ms()),
+      createOwnOrder(5, 10, ms() - 1),
+      createOwnOrder(5, -10, ms()),
     );
     expect(res).to.be.true;
   });
@@ -108,8 +109,8 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
     const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
     const res = comparator(
-      createOrder(5, 10, ms() - 1),
-      createOrder(5, -10, ms()),
+      createOwnOrder(5, 10, ms() - 1),
+      createOwnOrder(5, -10, ms()),
     );
     expect(res).to.be.true;
   });
@@ -120,7 +121,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
     const orderQuantity = 10;
     const targetQuantity = 6;
     const { target, remaining } = MatchingEngine.splitOrderByQuantity(
-      createOrder(5, orderQuantity),
+      createOwnOrder(5, orderQuantity),
       targetQuantity,
     );
     expect(target.quantity).to.equal(targetQuantity);
@@ -131,7 +132,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
     const orderQuantity = -10;
     const targetQuantity = 4;
     const { target, remaining } = MatchingEngine.splitOrderByQuantity(
-      createOrder(5, orderQuantity),
+      createOwnOrder(5, orderQuantity),
       targetQuantity,
     );
     expect(target.quantity).to.equal(targetQuantity * -1);
@@ -140,7 +141,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
   it('should not work when targetQuantity higher than quantity of order', () => {
     expect(() => MatchingEngine.splitOrderByQuantity(
-      createOrder(5, 5),
+      createOwnOrder(5, 5),
       10,
     )).to.throw('order abs quantity should be higher than targetQuantity');
   });
@@ -153,7 +154,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder).to.be.null;
@@ -165,7 +166,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder.quantity).to.equal(1);
@@ -177,7 +178,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createPeerOrder(5, -6));
     const matchAgainst = [engine.priorityQueues.sellOrders];
     const { matches, remainingOrder } = MatchingEngine.match(
-      createOrder(5, 10),
+      createOwnOrder(5, 10),
       matchAgainst,
     );
     expect(remainingOrder).to.be.null;
@@ -193,7 +194,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
     const engine = new MatchingEngine(PAIR_ID);
     expect(engine.isEmpty()).to.be.true;
 
-    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, -5), false);
+    const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, -5), false);
     expect(matchingResult.matches).to.be.empty;
     expect(engine.isEmpty()).to.be.false;
 
@@ -223,7 +224,7 @@ describe('MatchingEngine.removePeerOrders', () => {
     const removedOrders = engine.removePeerOrders(order => order.hostId === firstHostId);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
-    const matchingResult = engine.matchOrAddOwnOrder(createOrder(5, 15), false);
+    const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);
     expect(matchingResult.remainingOrder.quantity).to.equal(10);
   });
 });

@@ -77,10 +77,10 @@ class MatchingEngine {
     };
   }
 
-  public static match(order: orders.StampedOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
+  public static match(order: orders.StampedOwnOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
-    let remainingOrder: orders.StampedOrder | null = { ...order };
+    let remainingOrder: orders.StampedOwnOrder | null = { ...order };
 
     const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
@@ -110,7 +110,7 @@ class MatchingEngine {
           } else if (oppositeOrderAbsQuantity === matchingQuantity) { // taker order quantity is not sufficient. maker order will split
             const splitOrder = this.splitOrderByQuantity(remainingOrder, matchingQuantity);
             matches.push({ maker: oppositeOrder, taker: splitOrder.target });
-            remainingOrder = splitOrder.remaining;
+            remainingOrder = splitOrder.remaining as orders.StampedOwnOrder;
           } else {
             assert(false, 'matchingQuantity should not be lower than both orders quantity values');
           }
