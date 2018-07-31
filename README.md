@@ -128,6 +128,20 @@ Options:
   --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
 ```
 
+## Auto Restart Support
+
+Auto restart on every file change under `dist` folder with `nodemon`.
+
+```
+nodemon --watch dist -e js bin/xud
+```
+
+With args;
+
+```
+nodemon --watch dist -e js bin/xud --lnd.disable=true
+```
+
 ## Database Initialization
 
 To initialize the database with default testing data, run the following command:
