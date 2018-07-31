@@ -6,7 +6,7 @@ import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
+import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
 import { PeerOrder, OutgoingOrder } from '../types/orders';
 import DB from '../db/DB';
 import  Logger, { ContextLogger } from '../Logger';
@@ -114,6 +114,15 @@ class Pool extends EventEmitter {
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
+
+    // TODO: send only to peers which accepts the pairId
+  }
+
+  public broadcastOrderInvalidation = (orderId: string, pairId: string) => {
+    const orderInvalidationPacket = new OrderInvalidationPacket({ orderId, pairId });
+    this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
+
+    // TODO: send only to peers which accepts the pairId
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
@@ -143,6 +152,10 @@ class Pool extends EventEmitter {
       case PacketType.ORDER: {
         const order: PeerOrder = { ...packet.body, hostId: peer.id };
         this.emit('packet.order', order);
+        break;
+      }
+      case PacketType.ORDER_INVALIDATION: {
+        this.emit('packet.orderInvalidation', packet.body);
         break;
       }
       case PacketType.GET_ORDERS: {
