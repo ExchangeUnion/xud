@@ -200,7 +200,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
     expect(matchingResult.matches).to.be.empty;
     expect(engine.isEmpty()).to.be.false;
 
-    expect(engine.removeOwnOrder(uuidv1())).to.be.null;
+    expect(engine.removeOwnOrder(uuidv1())).to.be.undefined;
     expect(engine.isEmpty()).to.be.false;
 
     const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder.id);
