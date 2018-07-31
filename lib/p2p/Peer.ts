@@ -6,7 +6,7 @@ import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
-import { ms, isEmptyObject } from '../utils/utils';
+import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
 
@@ -16,15 +16,22 @@ enum ConnectionDirection {
 }
 
 type HandshakeState = {
-  version?: string;
-  nodePubKey?: string;
-  listenPort?: number;
-  pairs?: string[];
+  version: string;
+  nodePubKey: string;
+  listenPort: number;
+  pairs: string[];
 };
+
+function isHandshakeState(obj: any): obj is HandshakeState {
+  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && typeof obj.listenPort === 'number'
+    && Array.isArray(obj.pairs);
+}
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void);
   on(event: 'error', listener: (err: Error) => void);
+  on(event: 'packet', listener: (packet: Packet) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
   once(event: 'open', listener: (handshakeState: HandshakeState) => void);
   once(event: 'close', listener: () => void);
   once(event: 'ban', listener: () => void);
@@ -73,7 +80,7 @@ class Peer extends EventEmitter {
   private banScore: number = 0;
   private lastRecv: number = 0;
   private lastSend: number = 0;
-  private handshakeState: HandshakeState = {};
+  private handshakeState?: HandshakeState;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
 
@@ -126,7 +133,7 @@ class Peer extends EventEmitter {
     this.finalizeOpen();
 
     // let the pool know that this peer is ready to go
-    this.emit('open', this.handshakeState);
+    this.emit('open', this.handshakeState!);
   }
 
   public destroy = (): void => {
@@ -261,10 +268,9 @@ class Peer extends EventEmitter {
   private initHello = async () => {
     const packet = this.sendHello();
 
-    if (isEmptyObject(this.handshakeState)) {
+    if (!this.handshakeState) {
       // wait for an incoming HelloPacket
       await this.wait(PacketType.HELLO, Peer.RESPONSE_TIMEOUT);
-      assert(this.handshakeState);
     }
   }
 
@@ -498,7 +504,7 @@ class Peer extends EventEmitter {
       this.responseMap.delete(PacketType.HELLO);
       entry.resolve(packet);
 
-      this.handshakeState = { ...this.handshakeState, ...packet.body };
+      this.handshakeState = packet.body;
     }
   }
 
