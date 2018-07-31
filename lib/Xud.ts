@@ -69,11 +69,11 @@ class Xud {
         shutdown: this.shutdown,
       }, this.logger);
 
-      if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(this.service, this.logger);
-        await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
-      } else {
-        this.logger.warn('gRPC Server is disabled! XUD might not function properly with gRPC disabled.');
+      this.rpcServer = new GrpcServer(this.service, this.logger);
+      if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
+        this.logger.error('Could not start RPC server, exiting...');
+        this.shutdown();
+        return;
       }
 
       if (!this.config.webproxy.disable) {

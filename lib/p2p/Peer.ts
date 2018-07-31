@@ -9,8 +9,6 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { orders } from '../types';
 
-const pubKey = `tempPK_${Math.floor(1000 + (Math.random() * 9000))}`;
-
 enum ConnectionDirection {
   INBOUND,
   OUTBOUND,
@@ -18,10 +16,24 @@ enum ConnectionDirection {
 
 type HandshakeState = {
   version?: string;
-  nodeKey?: string;
+  nodePubKey?: string;
   listenPort?: number;
   pairs?: string[];
 };
+
+declare interface Peer {
+  on(event: 'packet', listener: (packet: Packet) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  once(event: 'open', listener: (handshakeState: HandshakeState) => void);
+  once(event: 'close', listener: () => void);
+  once(event: 'ban', listener: () => void);
+  emit(event: 'connect');
+  emit(event: 'ban');
+  emit(event: 'open', handshakeState: HandshakeState);
+  emit(event: 'close');
+  emit(event: 'error', err: Error);
+  emit(event: 'packet', packet: Packet);
+}
 
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
@@ -72,6 +84,14 @@ class Peer extends EventEmitter {
     super();
     this.logger = logger.p2p;
     this.bindParser(this.parser);
+  }
+
+  get hostId(): number | null {
+    if (this.host) {
+      return this.host.id;
+    } else {
+      return null;
+    }
   }
 
   public static fromOutbound(socketAddress: SocketAddress): Peer {
@@ -428,23 +448,24 @@ class Peer extends EventEmitter {
     }
   }
 
-  private error = (err): void => {
+  private error = (err: Error | string): void => {
     if (this.destroyed) {
       return;
     }
 
-    // TODO: construct a proper error object
-    const msg = `Socket Error (${this.id}): ${JSON.stringify(err)}`;
-    this.logger.debug(msg);
-
-    this.emit('error', { msg, err });
+    this.logger.debug(`Socket Error (${this.id}): ${err.toString()}`);
+    if (err instanceof Error) {
+      this.emit('error', err);
+    } else {
+      this.emit('error', new Error(`Socket Error (${this.id}): ${err}`));
+    }
   }
 
   private sendHello = (): HelloPacket => {
     // TODO: use real values
     const packet = new HelloPacket({
       version: '123',
-      nodeKey: '123',
+      nodePubKey: '123',
       listenPort: 20000,
       pairs: ['BTC/LTC'],
     });

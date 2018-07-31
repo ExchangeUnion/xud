@@ -5,12 +5,12 @@ import MatchingEngine from './MatchingEngine';
 import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
+import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
-import { Models } from '../db/DB';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
-import Peer from '../p2p/Peer';
+import { Models } from '../db/DB';
 
 type Orders = {
   buyOrders: { [ id: string ]: orders.StampedOrder };
@@ -35,6 +35,8 @@ class OrderBook extends EventEmitter {
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.getOrders', this.sendOrders);
+      pool.on('peer.close', this.removePeerOrders);
+
     }
   }
 
@@ -101,6 +103,19 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
+  public removeOwnOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines[pairId];
+    if (!matchingEngine) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
+
+    if (matchingEngine.removeOwnOrder(orderId)) {
+      return this.removeOrder(this.ownOrders, orderId, pairId);
+    } else {
+      return false;
+    }
+  }
+
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
     const matchingEngine = this.matchingEngines[order.pairId];
     if (!matchingEngine) {
@@ -141,6 +156,14 @@ class OrderBook extends EventEmitter {
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
   }
 
+  private removePeerOrders = async (peer: Peer): Promise<void> => {
+    if (peer.hostId) {
+      this.pairs.forEach((pair) => {
+        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
+      });
+    }
+  }
+
   private updateOrderQuantity = (type: { [pairId: string]: Orders }, order: orders.StampedOrder, decreasedQuantity: number) => {
     const object = this.getOrderMap(type, order);
     object[order.id].quantity = object[order.id].quantity - decreasedQuantity;
@@ -151,6 +174,18 @@ class OrderBook extends EventEmitter {
 
   private addOrder = (type: { [pairId: string]: Orders }, order: orders.StampedOrder) => {
     this.getOrderMap(type, order)[order.id] = order;
+  }
+
+  private removeOrder = (type: { [pairId: string]: Orders }, orderId: string, pairId: string): boolean => {
+    const orders = type[pairId];
+    if (orders.buyOrders[orderId]) {
+      delete orders.buyOrders[orderId];
+      return true;
+    } else if (orders.sellOrders[orderId]) {
+      delete orders.sellOrders[orderId];
+      return true;
+    }
+    return false;
   }
 
   private getOrderMap = (type: { [pairId: string]: Orders }, order: orders.StampedOrder): { [ id: string ]: orders.StampedOrder } => {
@@ -180,7 +215,6 @@ class OrderBook extends EventEmitter {
   private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {
     if (this.pool) {
       const outgoingOrder = await this.createOutgoingOrder(order);
-
       if (outgoingOrder) {
         this.pool.broadcastOrder(outgoingOrder);
       }

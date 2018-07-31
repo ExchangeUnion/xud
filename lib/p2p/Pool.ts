@@ -196,13 +196,13 @@ class Pool extends EventEmitter {
       console.log('err: ' + err);
     });
 
-    server.on('connection', (socket: Socket) => {
+    server.on('connection', (socket) => {
       this.handleSocket(socket);
     });
 
     server.on('listening', () => {
       const { address, port } = this.server.address();
-      this.logger.info(`pool server listening on ${address}:${port}`);
+      this.logger.info(`p2p server listening on ${address}:${port}`);
     });
   }
 
@@ -215,12 +215,18 @@ class Pool extends EventEmitter {
       this.logger.error('peer error', err);
     });
 
-    peer.once('open', (handshakeState: HandshakeState) => {
+    peer.once('open', (handshakeState) => {
       this.handleOpen(peer, handshakeState);
     });
 
     peer.once('close', () => {
       this.peers.remove(peer.socketAddress);
+
+      if (!peer.hostId) {
+        this.logger.warn(`disconnected peer (${peer.id}) hostId is missing`);
+      }
+
+      this.emit('peer.close', peer);
     });
 
     peer.once('ban', () => {
