@@ -5,7 +5,7 @@ import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket, HostsPacket, OrdersPacket } from './packets';
-import Logger, { ContextLogger } from '../Logger';
+import Logger, { ContextLogger, Context } from '../Logger';
 import { ms } from '../utils/utils';
 import { orders } from '../types';
 
@@ -72,7 +72,7 @@ class Peer extends EventEmitter {
   private lastRecv: number = 0;
   private lastSend: number = 0;
   private handshakeState: HandshakeState = {};
-  private static contextLogger: ContextLogger;
+  private logger: Logger = new Logger({ context: Context.P2P });
 
   get id(): string {
     assert(this.socketAddress);
@@ -81,8 +81,9 @@ class Peer extends EventEmitter {
 
   constructor(logger?: ContextLogger) {
     super();
-    // this.logger = logger.p2p;
-    // this.contextLogger = logger;
+    if (logger) {
+      this.logger = logger.p2p;
+    }
     this.bindParser(this.parser);
   }
 
@@ -95,7 +96,7 @@ class Peer extends EventEmitter {
   }
 
   public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer(this.contextLogger);
+    const peer = new Peer();
     peer.connect(socketAddress);
     return peer;
   }
