@@ -3,11 +3,16 @@ export type MarketOrder = {
   pairId: string;
 };
 
-export type OwnOrder = MarketOrder & {
+export type OwnMarketOrder = MarketOrder & {
+  localId: string;
+};
+
+export type OwnOrder = OwnMarketOrder & {
   price: number;
 };
 
-export type PeerOrder = OwnOrder & {
+export type PeerOrder = MarketOrder & {
+  price: number;
   id: string;
   hostId: number;
   invoice: string;
@@ -24,7 +29,8 @@ export type StampedPeerOrder = PeerOrder & {
 
 export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
 
-export type OutgoingOrder = OwnOrder & {
+export type OutgoingOrder = MarketOrder & {
+  price: number;
   id: string;
   invoice: string;
 };
