@@ -176,9 +176,8 @@ class Peer extends EventEmitter {
     }
   }
 
-  public sendOrders = (orders: orders.OutgoingOrder[]): void => {
-    const packet = new OrdersPacket({ orders });
-
+  public sendOrders = (orders: orders.OutgoingOrder[], reqHash: string): void => {
+    const packet = new OrdersPacket({ orders }, reqHash);
     this.sendPacket(packet);
   }
 
