@@ -170,7 +170,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GET_ORDERS: {
-        this.emit('packet.getOrders', peer);
+        this.emit('packet.getOrders', orders => peer.sendOrders(orders, packet.header.hash));
         break;
       }
       case PacketType.ORDERS: {
