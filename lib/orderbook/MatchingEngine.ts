@@ -1,30 +1,35 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 
-import { orders, matchingEngine } from '../types';
+import { matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger, { ContextLogger } from '../Logger';
+import { StampedOrder, StampedOwnOrder, StampedPeerOrder } from '../types/orders';
 
-type PriorityQueue = {
-  add: Function;
-  removeOne: Function;
-  removeMany: Function;
-  heapify: Function;
-  peek: Function;
-  poll: Function;
-  trim: Function;
-  isEmpty: Function;
-  has: Function;
-};
+interface PriorityQueue<T> {
+  add: (value: T) => void;
+  clone: () => PriorityQueue<T>;
+  forEach: (callback: (value: T, index: number) => void) => void;
+  heapify: (array: T[]) => void;
+  isEmpty: () => boolean;
+  peek: () => T | undefined;
+  poll: () => T | undefined;
+  remove: (value: T) => boolean;
+  removeMany: (callback: (a: T) => boolean, limit?: number) => T[];
+  removeOne: (callback: (a: T) => boolean) => T | undefined;
+  replaceTop: (value: T) => T | undefined;
+  size: number;
+  trim: () => void;
+}
 
 type PriorityQueues = {
-  buyOrders: PriorityQueue;
-  sellOrders: PriorityQueue;
+  buyOrders: PriorityQueue<StampedOrder>;
+  sellOrders: PriorityQueue<StampedOrder>;
 };
 
 type SplitOrder = {
-  target: orders.StampedOrder;
-  remaining: orders.StampedOrder;
+  target: StampedOrder;
+  remaining: StampedOrder;
 };
 
 class MatchingEngine {
@@ -39,17 +44,17 @@ class MatchingEngine {
     this.logger = logger.orderbook;
   }
 
-  private static createPriorityQueue(orderingDirection): PriorityQueue {
+  private static createPriorityQueue(orderingDirection: OrderingDirection): PriorityQueue<StampedOrder> {
     const comparator = this.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   }
 
-  public static getOrdersPriorityQueueComparator(orderingDirection): Function {
+  public static getOrdersPriorityQueueComparator(orderingDirection: OrderingDirection) {
     const directionComparator = orderingDirection === OrderingDirection.ASC
-      ? (a, b) => a < b
-      : (a, b) => a > b;
+      ? (a: number, b: number) => a < b
+      : (a: number, b: number) => a > b;
 
-    return (a, b) => {
+    return (a: StampedOrder, b: StampedOrder) => {
       if (a.price === b.price) {
         return a.createdAt < b.createdAt;
       } else {
@@ -58,7 +63,7 @@ class MatchingEngine {
     };
   }
 
-  public static getMatchingQuantity = (buyOrder: orders.StampedOrder, sellOrder: orders.StampedOrder): number => {
+  public static getMatchingQuantity = (buyOrder: StampedOrder, sellOrder: StampedOrder): number => {
     if (buyOrder.price >= sellOrder.price) {
       return Math.min(buyOrder.quantity, sellOrder.quantity * -1);
     } else {
@@ -66,7 +71,7 @@ class MatchingEngine {
     }
   }
 
-  public static splitOrderByQuantity = (order: orders.StampedOrder, targetQuantity: number): SplitOrder => {
+  public static splitOrderByQuantity = (order: StampedOrder, targetQuantity: number): SplitOrder => {
     const { quantity } = order;
     const absQuantity = Math.abs(quantity);
     assert(absQuantity > targetQuantity, 'order abs quantity should be higher than targetQuantity');
@@ -78,10 +83,10 @@ class MatchingEngine {
     };
   }
 
-  public static match(order: orders.StampedOwnOrder, matchAgainst: PriorityQueue[]): matchingEngine.MatchingResult {
+  public static match(order: StampedOwnOrder, matchAgainst: PriorityQueue<StampedOrder>[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
-    let remainingOrder: orders.StampedOwnOrder | null = { ...order };
+    let remainingOrder: StampedOwnOrder | null = { ...order };
 
     const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
@@ -94,7 +99,7 @@ class MatchingEngine {
         if (matchingQuantity <= 0) {
           break;
         } else {
-          const oppositeOrder = priorityQueue.poll();
+          const oppositeOrder = priorityQueue.poll()!;
           const oppositeOrderAbsQuantity = Math.abs(oppositeOrder.quantity);
           const remainingOrderAbsQuantity = Math.abs(remainingOrder.quantity);
           if (
@@ -111,7 +116,7 @@ class MatchingEngine {
           } else if (oppositeOrderAbsQuantity === matchingQuantity) { // taker order quantity is not sufficient. maker order will split
             const splitOrder = this.splitOrderByQuantity(remainingOrder, matchingQuantity);
             matches.push({ maker: oppositeOrder, taker: splitOrder.target });
-            remainingOrder = splitOrder.remaining as orders.StampedOwnOrder;
+            remainingOrder = splitOrder.remaining as StampedOwnOrder;
           } else {
             assert(false, 'matchingQuantity should not be lower than both orders quantity values');
           }
@@ -125,17 +130,17 @@ class MatchingEngine {
     };
   }
 
-  public addPeerOrder = (order: orders.StampedPeerOrder): void => {
+  public addPeerOrder = (order: StampedPeerOrder): void => {
     (order.quantity > 0
       ? this.priorityQueues.buyOrders
       : this.priorityQueues.sellOrders
     ).add(order);
   }
 
-  public matchOrAddOwnOrder = (order: orders.StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
+  public matchOrAddOwnOrder = (order: StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
-    let matchAgainst: PriorityQueue | null = null;
-    let addTo: PriorityQueue | null = null;
+    let matchAgainst: PriorityQueue<StampedOrder> | undefined ;
+    let addTo: PriorityQueue<StampedOrder> | undefined;
 
     if (isBuyOrder) {
       matchAgainst = this.priorityQueues.sellOrders;
@@ -153,26 +158,30 @@ class MatchingEngine {
     return matchingResult;
   }
 
-  public removeOwnOrder = (orderId: string): orders.StampedOwnOrder | null => {
-    return this.removeOrder(orderId) as orders.StampedOwnOrder;
+  public removeOwnOrder = (orderId: string): StampedOwnOrder | undefined => {
+    return this.removeOrder(orderId) as StampedOwnOrder | undefined;
   }
 
-  public removePeerOrder = (orderId: string): orders.StampedPeerOrder | null => {
-    return this.removeOrder(orderId) as orders.StampedPeerOrder;
+  public removePeerOrder = (orderId: string): StampedPeerOrder | undefined => {
+    return this.removeOrder(orderId) as StampedPeerOrder | undefined;
   }
 
-  public removePeerOrders = (predicate: Function): orders.StampedPeerOrder[] => {
+  public removePeerOrders = (hostId: number): StampedPeerOrder[] => {
+    const callback = (order: StampedOrder) => {
+      return (order as StampedPeerOrder).hostId === hostId;
+    };
+
     return [
-      ...this.priorityQueues.buyOrders.removeMany(predicate),
-      ...this.priorityQueues.sellOrders.removeMany(predicate),
-    ];
+      ...this.priorityQueues.buyOrders.removeMany(callback),
+      ...this.priorityQueues.sellOrders.removeMany(callback),
+    ] as StampedPeerOrder[];
   }
 
   public isEmpty = (): boolean => {
     return this.priorityQueues.buyOrders.isEmpty() && this.priorityQueues.sellOrders.isEmpty();
   }
 
-  private removeOrder = (orderId: string): orders.StampedOrder | null => {
+  private removeOrder = (orderId: string): StampedOrder | undefined => {
     return this.priorityQueues.buyOrders.removeOne(order => order.id === orderId) ||
       this.priorityQueues.sellOrders.removeOne(order => order.id === orderId);
   }

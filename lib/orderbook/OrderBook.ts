@@ -19,6 +19,11 @@ type Orders = {
   sellOrders: Map<String, orders.StampedOrder>;
 };
 
+interface OrderBook {
+  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
+  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+}
+
 class OrderBook extends EventEmitter {
   private logger: Logger;
   private repository: OrderBookRepository;
@@ -43,7 +48,7 @@ class OrderBook extends EventEmitter {
 
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId));
+      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
 
@@ -190,7 +195,7 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', order);
+    this.emit('peerOrder', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
@@ -199,7 +204,7 @@ class OrderBook extends EventEmitter {
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     if (peer.hostId) {
       this.pairs.forEach((pair) => {
-        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
+        this.matchingEngines[pair.id].removePeerOrders(peer.hostId!);
       });
     }
   }

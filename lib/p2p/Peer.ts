@@ -21,9 +21,9 @@ type HandshakeState = {
   pairs?: string[];
 };
 
-declare interface Peer {
-  on(event: 'packet', listener: (packet: Packet) => void): this;
-  on(event: 'error', listener: (err: Error) => void): this;
+interface Peer {
+  on(event: 'packet', listener: (packet: Packet) => void);
+  on(event: 'error', listener: (err: Error) => void);
   once(event: 'open', listener: (handshakeState: HandshakeState) => void);
   once(event: 'close', listener: () => void);
   once(event: 'ban', listener: () => void);
