@@ -45,24 +45,7 @@ interface Peer {
 
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
-
-  /**
-   * Interval to check required responses from peer.
-   */
-  private static STALL_INTERVAL: number = 5000;
-
-  /**
-   * Interval for pinging peers.
-   */
-  private static PING_INTERVAL = 30000;
-
-  /**
-   * Response timeout for response packets.
-   */
-  private static RESPONSE_TIMEOUT = 10000;
-
   // TODO: properties documentation
-
   public socketAddress!: SocketAddress;
   public direction!: ConnectionDirection;
   public connected: boolean = false;
@@ -83,6 +66,12 @@ class Peer extends EventEmitter {
   private handshakeState?: HandshakeState;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
+  /** Interval to check required responses from peer. */
+  private static STALL_INTERVAL: number = 5000;
+  /** Interval for pinging peers. */
+  private static PING_INTERVAL = 30000;
+  /** Response timeout for response packets. */
+  private static RESPONSE_TIMEOUT = 10000;
 
   get id(): string {
     assert(this.socketAddress);
