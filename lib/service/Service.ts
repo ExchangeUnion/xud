@@ -112,13 +112,10 @@ class Service extends EventEmitter {
 
     if (!this.config.raiden.disable) {
       try {
-        const [address, channels] = await Promise.all([
-          this.raidenClient.getAddress(),
-          this.raidenClient.getChannels(),
-        ]);
+        const channels = await this.raidenClient.getChannels();
 
         info.raiden = {
-          address,
+          address: this.raidenClient.address!,
           channels: channels.length,
           // Hardcoded for now until they expose it to their API
           version: 'v0.3.0',

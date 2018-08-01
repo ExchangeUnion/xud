@@ -70,6 +70,7 @@ type Channel = OpenChannelPayload & {
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
+  public address?: string;
   private port: number;
   private host: string;
 
@@ -84,6 +85,20 @@ class RaidenClient extends BaseClient {
     this.host = host;
     if (disable) {
       this.setStatus(ClientStatus.DISABLED);
+    }
+  }
+
+  /**
+   * Discover our raiden address.
+   */
+  public async init() {
+    if (!this.isDisabled()) {
+      try {
+        this.address = await this.getAddress();
+      } catch (err) {
+        this.logger.error('could not get raiden address', err);
+        this.status = ClientStatus.DISABLED;
+      }
     }
   }
 
@@ -223,7 +238,7 @@ class RaidenClient extends BaseClient {
   /**
    * Get the account address for the raiden node.
    */
-  public getAddress = async (): Promise<string> => {
+  private getAddress = async (): Promise<string> => {
     const endpoint = `address`;
     const res = await this.sendRequest(endpoint, 'GET');
 
