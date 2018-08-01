@@ -6,7 +6,7 @@ We use `docker-compose` to package `xud`, `mysql`, `lnd`, `btcd`, `ltcd`, `raide
 
 The goal of this is `docker-compose` being able to lauch `xud` along with its dependencies.
 
-## Prerequisites
+## 1. Prerequisites
 * docker (e.g. apt install docker-compose)
 * docker-compose (e.g. apt install docker-compose)
 
@@ -16,29 +16,32 @@ apt install docker
 apt install docker-compose
 ```
 
-## Install
+## 2. Install
 ```bash
 git clone https://github.com/ExchangeUnion/xud/tree/1.0.0-prealpha
 ```
 
-```bash
+### 3. Run
+
 Start Containers:
+
+```bash
 cd ~/xud/docker
 docker-compose up -d
 ```
-Above command should create and launch both `xud` and other required containers as per `docker-compose.yml`
+Above command should create and launch both `xud` and other required containers as per `docker-compose.yml`. It will take a moment until everything is downloaded for the first time.
 
-Stopping Containers:
+Stop Containers:
 ```bash
 docker-compose stop
 ```
 
-Removing Containers:
+Remove Containers:
 ```bash
 docker-compose down
 ```
 
-* How to see `xud` | `mysql` logs?
+Check `xud` | `mysql` logs:
 ```bash
 docker-compose logs <xud|db>
 ```

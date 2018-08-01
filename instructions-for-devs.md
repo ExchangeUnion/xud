@@ -111,27 +111,9 @@ Options:
   --webproxy.port               Port for web proxy server               [number]
 ```
 
-## 5. Daemonize xud (optional)
-If you want to daemonize `xud`, so you don't have to keep a terminal open and xud starts on bootup, you can do this for example on Ubuntu by adding the following to `systemd`:
+## 5. Interacting with `xud` via Command-Line Interface
 
-```bash
-[Unit]
-Description=Exchange Union Daemon
-# If you want to daemonize lnd/raiden too, start lnd/raiden first 
-# After=lnd.service
-
-[Service]
-User=xud
-Group=xud
-ExecStart=/usr/bin/xud
-
-[Install]
-WantedBy=multi-user.target
-```
-
-## 6. Interacting with `xud` via Command-Line Interface
-
-Interact with an `xud` process, identified by its `rpc` host and port
+Interact with an `xud` process, identified by its `rpc` host and port using `xucli`.
 
 ```bash
 ~/xud/bin $ ./xucli --help
@@ -155,7 +137,35 @@ Options:
   --rpc.port, -p  The RPC service port                  [number] [default: 8886]
   --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
 ```
+## 6. Useful stuff for developers (optional)
 
+### Auto-restart `xud` on file change
+
+Auto restart on every file change under `dist` folder with `nodemon`:
+ ```
+nodemon --watch dist -e js bin/xud
+```
+ With args:
+ ```
+nodemon --watch dist -e js bin/xud --lnd.disable=true
+```
+### Daemonize `xud`
+If you want to daemonize `xud`, so you don't have to keep a terminal open and xud starts on bootup, you can do this for example on Ubuntu by adding the following to `systemd`:
+
+```bash
+[Unit]
+Description=Exchange Union Daemon
+# If you want to daemonize lnd/raiden too, start lnd/raiden first 
+# After=lnd.service
+
+[Service]
+User=xud
+Group=xud
+ExecStart=/usr/bin/xud
+
+[Install]
+WantedBy=multi-user.target
+```
 ## Code Documentation
 
 Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
