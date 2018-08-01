@@ -1,20 +1,30 @@
 # Instructions for Developers
 
-## Install
+This document contains `xud` setup instructions for developers and everyone with a need for more fine-grained control when running `xud`.
 
-First, clone the repository from GitHub and install dependencies.
+## 1. Install
 
+First, clone the repository from GitHub and install dependencies. 
+
+Developers:
 ```bash
 git clone https://github.com/ExchangeUnion/xud
 cd xud
 npm install
 ```
+For everyone else, we recommend cloning the [latest release](https://github.com/ExchangeUnion/xud/releases):
+```bash
+git clone https://github.com/ExchangeUnion/xud/tree/1.0.0-prealpha
+cd xud
+npm install
+```
+
 
 Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
 
-## Configuration
+## 2. Configuration (optional)
 
-An **optional** configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows. Default settings which can be overridden are shown below.
+This **optional** configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows. Default settings which can be overridden are shown below.
 
 ```toml
 [rpc]
@@ -45,7 +55,7 @@ host = "localhost"
 port = 5001
 ```
 
-## Preparing your environment for the preAlpha (testnet) release
+## 3. Prepare your environment 
 
 To initialize the database with some testing data, run the following command:
 
@@ -53,14 +63,16 @@ To initialize the database with some testing data, run the following command:
 npm run db:init
 ```
 
-The [preAlpha release](https://github.com/ExchangeUnion/xud/releases) only supports raiden swaps on testnet, thus we recommend to disable lnd for now, to avoid unnecessary error outputs:
+Setup raiden according to [this guide](https://github.com/ExchangeUnion/xud/blob/raiden_swap/lib/raidenclient/README.md).
+
+[Releases](https://github.com/ExchangeUnion/xud/releases) currently only support raiden ERC20 swaps on testnet, thus we recommend to disable lnd in the config, to avoid unnecessary error outputs:
 ```toml
 [lnd]
 disable = true
 ```
-Then setup raiden by following [this guide](https://github.com/ExchangeUnion/xud/blob/raiden_swap/lib/raidenclient/README.md).
 
-## Starting the Daemon
+
+## 4. Starting the Daemon
 
 Open a new terminal and launch a `xud` process
 
@@ -99,8 +111,8 @@ Options:
   --webproxy.port               Port for web proxy server               [number]
 ```
 
-## Daemonize xud
-If you want to daemonize `xud`, so you don't have to keep a terminal open, you can do this for example by adding the following to `systemd` on Ubuntu:
+## 5. Daemonize xud (optional)
+If you want to daemonize `xud`, so you don't have to keep a terminal open and xud starts on bootup, you can do this for example on Ubuntu by adding the following to `systemd`:
 
 ```bash
 [Unit]
@@ -117,7 +129,7 @@ ExecStart=/usr/bin/xud
 WantedBy=multi-user.target
 ```
 
-## Command-Line Interface
+## 6. Interacting with `xud` via Command-Line Interface
 
 Interact with an `xud` process, identified by its `rpc` host and port
 
@@ -146,7 +158,7 @@ Options:
 
 ## Code Documentation
 
-[Read the TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
+Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
 ## Questions?
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)

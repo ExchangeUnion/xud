@@ -17,16 +17,16 @@ Contributions, feedback, and questions are welcome.
 
 ## Instructions for Developers
 
-[Here.](instructions-for-devs.md) Manual xud setup with nodejs.
+[Here](instructions-for-devs.md) (Manual setup).
 
 ## Instructions for Exchanges
 
-[Here.](instructions-for-exchanges.md) Docker.
+[Here](instructions-for-exchanges.md) (Using Docker).
 
 
 ## Code Documentation
 
-[Read the TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
+Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
 ## Questions?
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
