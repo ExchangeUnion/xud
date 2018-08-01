@@ -1,4 +1,3 @@
-import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import { SwapProtocol } from '../../lib/types/enums';
@@ -25,6 +24,11 @@ export default async (testDb?: boolean) => {
     orderBookRepository.addPairs([
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
       { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
+    ]),
+    p2pRepository.addHosts([
+      { address: 'xud1.test.exchangeunion.com', port: 8885 },
+      { address: 'xud2.test.exchangeunion.com', port: 8885 },
+      { address: 'xud3.test.exchangeunion.com', port: 8885 },
     ]),
   ]);
 

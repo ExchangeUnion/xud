@@ -85,16 +85,24 @@ class Peer extends EventEmitter {
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
 
-  get id(): string {
+  public get id(): string {
     assert(this.socketAddress);
     return this.socketAddress.toString();
   }
 
-  get hostId(): number | null {
+  public get hostId(): number | null {
     if (this.host) {
       return this.host.id;
     } else {
       return null;
+    }
+  }
+
+  public get pubKey(): string | undefined {
+    if (this.host) {
+      return this.host.pubKey;
+    } else {
+      return undefined;
     }
   }
 

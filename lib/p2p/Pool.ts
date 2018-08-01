@@ -53,6 +53,7 @@ class Pool extends EventEmitter {
       return;
     }
 
+    this.logger.info('Connecting to known / previously connected peers');
     await this.hosts.load();
     for (const host of this.hosts.toArray()) {
       this.addOutbound(host.socketAddress);
