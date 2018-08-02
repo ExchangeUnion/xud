@@ -61,6 +61,34 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.cancelOrder]]
+   */
+  public cancelOrder: grpc.handleUnaryCall<{ id: string, pairId: string }, string> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.cancelOrder);
+  }
+
+  /**
+   * See [[Service.connect]]
+   */
+  public connect: grpc.handleUnaryCall<{ host: string, port: number }, string> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.connect);
+  }
+
+  /**
+   * See [[Service.disconnect]]
+   */
+  public disconnect: grpc.handleUnaryCall<{ host: string, port: number }, string> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.disconnect);
+  }
+
+  /**
+   * See [[Service.executeSwap]]
+   */
+  public executeSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.executeSwap);
+  }
+
+  /**
    * See [[Service.getInfo]]
    */
   public getInfo: grpc.handleUnaryCall<{}, {lnd: GetInfoResponse}> = (call, callback) => {
@@ -68,53 +96,24 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.getPairs]]
+   * See [[Service.getOrders]]
    */
-  public getPairs: grpc.handleUnaryCall<{}, PairInstance[]> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.getPairs);
+  public getOrders: grpc.handleUnaryCall<{ pairId: string, maxResults: number }, Orders> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.getOrders);
   }
 
   /**
-   * See [[Service.getOrders]]
+   * See [[Service.getPairs]]
    */
-  public getOrders: grpc.handleUnaryCall<{ pairId: string, maxResults: number }, Orders> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.getOrders);
+  public getPairs: grpc.handleUnaryCall<{}, PairInstance[]> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.getPairs);
   }
 
   /**
    * See [[Service.placeOrder]]
    */
-  public placeOrder: grpc.handleUnaryCall<{ order: OwnOrder }, MatchingResult> = async (call, callback) => {
+  public placeOrder: grpc.handleUnaryCall<{ order: OwnOrder }, MatchingResult> = (call, callback) => {
     this.unaryCall(call.request.order, callback, this.service.placeOrder);
-  }
-
-  /**
-   * See [[Service.cancelOrder]]
-   */
-  public cancelOrder: grpc.handleUnaryCall<{ id: string, pairId: string }, string> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.cancelOrder);
-  }
-
-  /**
-   * See [[Service.connect]]
-   */
-  public connect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.connect);
-  }
-
-  /**
-   * See [[Service.disconnect]]
-   */
-  public disconnect: grpc.handleUnaryCall<{ host: string, port: number }, string> = async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.disconnect);
-  }
-
-  /**
-   * See [[Service.executeSwap]]
-   */
-  public executeSwap: grpc.handleUnaryCall<{ target_address: string, payload: TokenSwapPayload, identifier: string }, {}> =
-  async (call, callback) => {
-    this.unaryCall(call.request, callback, this.service.executeSwap);
   }
 
   public shutdown: grpc.handleUnaryCall<{}, {}> = async (call, callback) => {
@@ -124,14 +123,14 @@ class GrpcService {
   /*
    * See [[Service.subscribePeerOrders]]
    */
-  public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
+  public subscribePeerOrders: grpc.handleServerStreamingCall<{}, {}> = (call) => {
     this.service.subscribePeerOrders(order => call.write({ order }));
   }
 
   /*
    * See [[Service.subscribeSwaps]]
    */
-  public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = async (call) => {
+  public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = (call) => {
     this.service.subscribeSwaps(result => call.write({ result }));
   }
 }

@@ -20,14 +20,14 @@ class GrpcServer {
 
     const grpcService = new GrpcService(service);
     this.server.addService(xudrpc.Xud.service, {
-      getInfo: grpcService.getInfo,
-      getPairs: grpcService.getPairs,
-      getOrders: grpcService.getOrders,
-      placeOrder: grpcService.placeOrder,
       cancelOrder: grpcService.cancelOrder,
       connect: grpcService.connect,
       disconnect: grpcService.disconnect,
       executeSwap: grpcService.executeSwap,
+      getInfo: grpcService.getInfo,
+      getOrders: grpcService.getOrders,
+      getPairs: grpcService.getPairs,
+      placeOrder: grpcService.placeOrder,
       shutdown: grpcService.shutdown,
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
