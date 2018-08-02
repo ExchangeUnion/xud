@@ -6,7 +6,7 @@ This document contains `xud` setup instructions for developers and everyone with
 
 First, clone the repository from GitHub and install dependencies. 
 
-Developers:
+Developers & Testers:
 ```bash
 git clone https://github.com/ExchangeUnion/xud
 cd xud
