@@ -20,7 +20,7 @@ interface grpcResponse {
  */
 export const callback = (error: Error | null, response: grpcResponse) => {
   if (error) {
-    console.error(error);
+    console.error(`${error.name}: ${error.message}`);
   } else {
     console.log(JSON.stringify(response.toObject(), null, 2));
   }

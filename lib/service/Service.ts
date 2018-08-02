@@ -1,14 +1,13 @@
-import assert from 'assert';
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
-import OrderBook from '../orderbook/OrderBook';
+import OrderBook, { OrderArrays } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
-import { orders } from '../types';
 import SocketAddress from '../p2p/SocketAddress';
+import errors from './errors';
 
 const packageJson = require('../../package.json');
 
@@ -24,6 +23,12 @@ export type ServiceComponents = {
   /** The function to be called to shutdown the parent process */
   shutdown: Function;
 };
+
+function checkArgument(expectedCondition: boolean, message: string) {
+  if (!expectedCondition) {
+    throw errors.INVALID_ARGUMENT(message);
+  }
+}
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
@@ -139,23 +144,36 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get a list of standing orders from the order book.
+   * Get a list of standing peer orders from the order book for a specified trading pair, or for all
+   * trading pairs if no pair is specified.
    */
-  public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
-    return this.orderBook.getPeerOrders(pairId, maxResults);
+  public getOrders = ({ pairId, maxResults }: { pairId?: string, maxResults?: number }) => {
+    const ret: OrderArrays = {
+      buyOrders: [],
+      sellOrders: [],
+    };
+    if (pairId) {
+      const orderArrays = this.orderBook.getPeerOrders(pairId, maxResults ? maxResults : 0);
+      ret.buyOrders.concat(orderArrays.buyOrders);
+      ret.sellOrders.concat(orderArrays.sellOrders);
+    } else {
+      this.orderBook.pairs.forEach((pair) => {
+        const orderArrays = this.orderBook.getPeerOrders(pair.id, maxResults ? maxResults : 0);
+        ret.buyOrders.concat(orderArrays.buyOrders);
+        ret.sellOrders.concat(orderArrays.sellOrders);
+      });
+    }
+    return ret;
   }
 
   /**
    * Add an order to the order book.
    */
   public placeOrder = async (order: OwnOrder) => {
-    assert(order.price >= 0, 'price cannot be negative');
-    assert(order.quantity !== 0, 'quantity must not equal 0');
-    if (order.price === 0) {
-      return this.orderBook.addMarketOrder(order);
-    } else {
-      return this.orderBook.addLimitOrder(order);
-    }
+    checkArgument(order.price >= 0, 'price cannot be negative');
+    checkArgument(order.quantity !== 0, 'quantity must not equal 0');
+
+    return order.price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
   }
 
   /*
