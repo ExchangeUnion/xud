@@ -47,6 +47,9 @@ class GrpcService {
         case orderErrorCodes.INVALID_PAIR_ID:
           grpcError = { ...err, code: status.NOT_FOUND };
           break;
+        case orderErrorCodes.DUPLICATE_ORDER:
+          grpcError = { ...err, code: status.ALREADY_EXISTS };
+          break;
       }
       this.logger.error(err);
 
