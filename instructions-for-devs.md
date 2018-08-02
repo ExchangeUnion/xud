@@ -1,4 +1,4 @@
-# Instructions for Developers
+# Instructions for Developers & Testers
 
 This document contains `xud` setup instructions for developers and everyone with a need for more fine-grained control when running `xud`.
 

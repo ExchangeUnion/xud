@@ -1,4 +1,4 @@
-# Instructions for Exchanges
+# Instructions for Exchanges & Users
 
 This document contains `xud` setup instructions for exchange admins and technical users utilizing Docker.
 
