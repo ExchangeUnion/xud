@@ -21,7 +21,7 @@ npm install
 ```
 
 
-Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
+`xud` uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
 
 ## 2. Prepare your environment 
 
