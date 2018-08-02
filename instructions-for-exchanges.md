@@ -18,7 +18,7 @@ apt install docker-compose
 
 ## 2. Install
 ```bash
-git clone https://github.com/ExchangeUnion/xud/tree/1.0.0-prealpha
+git clone https://github.com/ExchangeUnion/xud -b 1.0.0-prealpha
 ```
 
 ### 3. Run

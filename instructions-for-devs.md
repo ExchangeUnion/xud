@@ -14,7 +14,7 @@ npm install
 ```
 For everyone else, we recommend cloning the [latest release](https://github.com/ExchangeUnion/xud/releases):
 ```bash
-git clone https://github.com/ExchangeUnion/xud/tree/1.0.0-prealpha
+git clone https://github.com/ExchangeUnion/xud -b 1.0.0-prealpha
 cd xud
 npm install
 ```
