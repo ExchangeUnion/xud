@@ -1,11 +1,7 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-type GetHostsPacketBody = {
-  ts: number;
-};
-
-class GetHostsPacket extends Packet<GetHostsPacketBody> {
+class GetHostsPacket extends Packet<undefined> {
   public get type() {
     return PacketType.GET_HOSTS;
   }

@@ -1,7 +1,7 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-class GetOrdersPacket extends Packet<{}> {
+class GetOrdersPacket extends Packet<undefined> {
   public get type() {
     return PacketType.GET_ORDERS;
   }

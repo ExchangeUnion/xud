@@ -1,4 +1,4 @@
-enum PacketType  {
+enum PacketType {
   HELLO = 'HELLO',
   PING = 'PING',
   PONG = 'PONG',
