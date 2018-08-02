@@ -69,12 +69,12 @@ class Peer extends EventEmitter {
   private host?: Host;
   private logger: Logger = Logger.p2p;
   private opened: boolean = false;
-  private socket!: Socket;
+  private socket?: Socket;
   private parser: Parser = new Parser();
-  private destroyed: boolean = false;
-  private connectTimeout: NodeJS.Timer | null = null;
-  private stallTimer: NodeJS.Timer | null = null;
-  private pingTimer: NodeJS.Timer | null = null;
+  private closed: boolean = false;
+  private connectTimeout?: NodeJS.Timer;
+  private stallTimer?: NodeJS.Timer;
+  private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime: number = 0;
   private banScore: number = 0;
@@ -136,32 +136,37 @@ class Peer extends EventEmitter {
     this.emit('open', this.handshakeState!);
   }
 
-  public destroy = (): void => {
-    if (this.destroyed) {
+  /**
+   * Close a peer by ensuring the socket is destroyed and terminating all timers.
+   */
+  public close = (): void => {
+    if (this.closed) {
       return;
     }
 
-    this.destroyed = true;
+    this.closed = true;
     this.connected = false;
 
     if (this.socket) {
-      this.socket.destroy();
+      if (!this.socket.destroyed) {
+        this.socket.destroy();
+      }
       delete this.socket;
     }
 
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
-      this.pingTimer = null;
+      this.pingTimer = undefined;
     }
 
     if (this.stallTimer) {
       clearInterval(this.stallTimer);
-      this.stallTimer = null;
+      this.stallTimer = undefined;
     }
 
     if (this.connectTimeout) {
       clearTimeout(this.connectTimeout);
-      this.connectTimeout = null;
+      this.connectTimeout = undefined;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -196,9 +201,11 @@ class Peer extends EventEmitter {
   }
 
   private sendRaw = (packetStr: string) => {
-    this.socket.write(`${packetStr}\r\n`);
+    if (this.socket) {
+      this.socket.write(`${packetStr}\r\n`);
 
-    this.lastSend = Date.now();
+      this.lastSend = Date.now();
+    }
   }
 
   private increaseBan = (score): boolean => {
@@ -226,18 +233,20 @@ class Peer extends EventEmitter {
       const cleanup = () => {
         if (this.connectTimeout) {
           clearTimeout(this.connectTimeout);
-          this.connectTimeout = null;
+          this.connectTimeout = undefined;
         }
-        this.socket.removeListener('error', onError);
+        if (this.socket) {
+          this.socket.removeListener('error', onError);
+        }
       };
 
       const onError = (err) => {
         cleanup();
-        this.destroy();
+        this.close();
         reject(err);
       };
 
-      this.socket.once('connect', () => {
+      this.socket!.once('connect', () => {
         this.connectTime = Date.now();
         this.connected = true;
         this.logger.debug(this.getStatus());
@@ -247,19 +256,19 @@ class Peer extends EventEmitter {
         resolve();
       });
 
-      this.socket.once('error', onError);
+      this.socket!.once('error', onError);
 
       this.connectTimeout = setTimeout(() => {
-        this.connectTimeout = null;
+        this.connectTimeout = undefined;
         cleanup();
-        this.destroy();
+        this.close();
         reject(new Error('Connection timed out.'));
       }, 10000);
     });
   }
 
   private initStall = (): void => {
-    assert(!this.destroyed);
+    assert(!this.closed);
     assert(!this.stallTimer);
 
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
@@ -275,7 +284,7 @@ class Peer extends EventEmitter {
   }
 
   private finalizeOpen = (): void => {
-    assert(!this.destroyed);
+    assert(!this.closed);
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -304,7 +313,7 @@ class Peer extends EventEmitter {
     for (const [packetType, entry] of this.responseMap) {
       if (now > entry.timeout) {
         this.error(`Peer (${this.id}) is stalling (${packetType})`);
-        this.destroy();
+        this.close();
         return;
       }
     }
@@ -314,7 +323,7 @@ class Peer extends EventEmitter {
    * Wait for a packet to be received from peer.
    */
   private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | null => {
-    if (this.destroyed) {
+    if (this.closed) {
       return null;
     }
 
@@ -394,12 +403,17 @@ class Peer extends EventEmitter {
       }
 
       this.error(err);
-      this.destroy();
+      // socket close event will be called immediately after the socket error
     });
 
-    this.socket.once('close', () => {
-      this.error('Socket hangup');
-      this.destroy();
+    this.socket.once('close', (hadError) => {
+      // emitted once the socket is fully closed
+      if (hadError) {
+        this.logger.warn(`Socket closed due to error (${this.id})`);
+      } else {
+        this.logger.info(`Socket closed (${this.id})`);
+      }
+      this.close();
     });
 
     this.socket.on('data', (data) => {
@@ -415,7 +429,7 @@ class Peer extends EventEmitter {
     parser.on('packet', this.handlePacket);
 
     parser.on('error', (err: ParserError) => {
-      if (this.destroyed) {
+      if (this.closed) {
         return;
       }
 
@@ -468,11 +482,11 @@ class Peer extends EventEmitter {
   }
 
   private error = (err: Error | string): void => {
-    if (this.destroyed) {
+    if (this.closed) {
       return;
     }
 
-    this.logger.debug(`Socket Error (${this.id}): ${err.toString()}`);
+    this.logger.error(`Socket Error (${this.id}): ${err.toString()}`);
     if (err instanceof Error) {
       this.emit('error', err);
     } else {

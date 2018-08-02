@@ -75,7 +75,7 @@ class Pool extends EventEmitter {
       await this.unlisten();
     }
 
-    this.destroyPeers();
+    this.closePeers();
 
     this.connected = false;
   }
@@ -93,29 +93,29 @@ class Pool extends EventEmitter {
     }
 
     const peer = Peer.fromOutbound(socketAddress);
-    await this.tryConnectPeer(peer);
+    await this.tryOpenPeer(peer);
     return peer;
   }
 
-  private tryConnectPeer = async (peer: Peer): Promise<void> => {
+  private tryOpenPeer = async (peer: Peer): Promise<void> => {
     try {
-      await this.connectPeer(peer);
+      await this.openPeer(peer);
     } catch (err) {
-      this.logger.info(`connectPeer failed: ${err}`);
+      this.logger.warn(`error while connecting to peer ${peer.id}: ${err}`);
     }
   }
 
-  private connectPeer = async (peer: Peer): Promise<void> => {
+  private openPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
     await peer.open();
     this.peers.add(peer);
   }
 
-  public disconnectPeer = async (address: string, port: number): Promise<void> => {
+  public closePeer = async (address: string, port: number): Promise<void> => {
     const socketAddress = new SocketAddress(address, port);
     const peer = this.peers.get(socketAddress);
     if (peer) {
-      peer.destroy();
+      peer.close();
     } else {
       throw(errors.NOT_CONNECTED(socketAddress.toString()));
     }
@@ -137,7 +137,7 @@ class Pool extends EventEmitter {
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
     const peer = Peer.fromInbound(socket);
-    await this.connectPeer(peer);
+    await this.openPeer(peer);
     return peer;
   }
 
@@ -259,13 +259,13 @@ class Pool extends EventEmitter {
       this.hosts.ban(peer);
 
       if (peer) {
-        peer.destroy();
+        peer.close();
       }
     });
   }
 
-  private destroyPeers = (): void => {
-    this.peers.forEach(peer => peer.destroy());
+  private closePeers = (): void => {
+    this.peers.forEach(peer => peer.close());
   }
 
   private listen = (): void => {
