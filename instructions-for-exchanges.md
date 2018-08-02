@@ -14,7 +14,7 @@ To install these on e.g. Ubuntu, check the [official docker install instructions
 
 ## 2. Install
 ```bash
-git clone https://github.com/ExchangeUnion/xud -b 1.0.0-prealpha
+git clone https://github.com/ExchangeUnion/xud
 ```
 
 ### 3. Run
