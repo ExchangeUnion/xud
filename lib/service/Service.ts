@@ -168,6 +168,7 @@ class Service extends EventEmitter {
 
   /**
    * Add an order to the order book.
+   * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (order: OwnOrder) => {
     checkArgument(order.price >= 0, 'price cannot be negative');
