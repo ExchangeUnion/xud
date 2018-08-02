@@ -22,42 +22,9 @@ npm install
 
 Xud uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
 
-## 2. Configuration (optional)
+## 2. Prepare your environment 
 
-This **optional** configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows. Default settings which can be overridden are shown below.
-
-```toml
-[rpc]
-port = 8886
-
-[webproxy]
-disable = false
-port = 8080
-
-[db]
-username = "xud"
-password = ""
-database = "xud"
-port = 3306
-host = "localhost"
-
-[p2p]
-listen = true
-port = 8885
-
-[lnd]
-disable = false
-host = "localhost"
-
-[raiden]
-disable = false
-host = "localhost"
-port = 5001
-```
-
-## 3. Prepare your environment 
-
-To initialize the database with some testing data, run the following command:
+To initialize the database with some testing data, run the following command from `~/xud`:
 
 ```bash
 npm run db:init
@@ -71,8 +38,7 @@ Setup raiden according to [this guide](https://github.com/ExchangeUnion/xud/blob
 disable = true
 ```
 
-
-## 4. Starting the Daemon
+## 3. Starting the Daemon
 
 Open a new terminal and launch a `xud` process
 
@@ -111,7 +77,7 @@ Options:
   --webproxy.port               Port for web proxy server               [number]
 ```
 
-## 5. Interacting with `xud` via Command-Line Interface
+## 4. Interacting with `xud` via Command-Line Interface
 
 Interact with an `xud` process, identified by its `rpc` host and port using `xucli`.
 
@@ -137,6 +103,40 @@ Options:
   --rpc.port, -p  The RPC service port                  [number] [default: 8886]
   --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
 ```
+
+## 5. Configuration (optional)
+
+This **optional** configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). Default settings which can be overridden are shown below.
+
+```toml
+[rpc]
+port = 8886
+
+[webproxy]
+disable = false
+port = 8080
+
+[db]
+username = "xud"
+password = ""
+database = "xud"
+port = 3306
+host = "localhost"
+
+[p2p]
+listen = true
+port = 8885
+
+[lnd]
+disable = false
+host = "localhost"
+
+[raiden]
+disable = false
+host = "localhost"
+port = 5001
+```
+
 ## 6. Useful stuff for developers (optional)
 
 ### Auto-restart `xud` on file change
