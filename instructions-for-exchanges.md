@@ -12,7 +12,6 @@ The goal of this is `docker-compose` being able to lauch `xud` along with its de
 
 To install these on e.g. Ubuntu, check the [official docker install instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/).
 ```
-
 ## 2. Install
 ```bash
 git clone https://github.com/ExchangeUnion/xud -b 1.0.0-prealpha
