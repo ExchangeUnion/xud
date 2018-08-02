@@ -17,7 +17,7 @@ To install these on e.g. Ubuntu, check the [official docker install instructions
 git clone https://github.com/ExchangeUnion/xud
 ```
 
-### 3. Run
+## 3. Run
 
 Start Containers:
 
