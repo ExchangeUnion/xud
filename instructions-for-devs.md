@@ -12,7 +12,7 @@ git clone https://github.com/ExchangeUnion/xud
 cd xud
 npm install
 ```
-For everyone else, we recommend cloning the [latest release](https://github.com/ExchangeUnion/xud/releases), below an example using the `1.0.0-prealpha` release tag:
+For everyone else, we recommend using the [latest release](https://github.com/ExchangeUnion/xud/releases), below an example using the `1.0.0-prealpha` release tag:
 ```bash
 git clone https://github.com/ExchangeUnion/xud 
 cd xud
