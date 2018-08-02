@@ -12,10 +12,11 @@ git clone https://github.com/ExchangeUnion/xud
 cd xud
 npm install
 ```
-For everyone else, we recommend cloning the [latest release](https://github.com/ExchangeUnion/xud/releases):
+For everyone else, we recommend cloning the [latest release](https://github.com/ExchangeUnion/xud/releases), below an example using the `1.0.0-prealpha` release tag:
 ```bash
-git clone https://github.com/ExchangeUnion/xud -b 1.0.0-prealpha
+git clone https://github.com/ExchangeUnion/xud 
 cd xud
+git checkout tags/1.0.0-prealpha -b 1.0.0-prealpha
 npm install
 ```
 
@@ -38,7 +39,7 @@ Setup raiden according to [this guide](https://github.com/ExchangeUnion/xud/blob
 disable = true
 ```
 
-## 3. Starting the Daemon
+## 3. Starting `xud`
 
 Open a new terminal and launch a `xud` process
 
@@ -51,7 +52,7 @@ Open a new terminal and launch a `xud` process
 2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
 
-Optional command line arguments to override defaults and settings in the [configuration](#configuration) file for a specific `xud` instance
+Optional command line arguments to override defaults and settings in the [configuration](#5-configuration-optional) file for a specific `xud` instance
 
 ```bash
 ~/xud/bin $ ./xud --help
@@ -79,29 +80,51 @@ Options:
 
 ## 4. Interacting with `xud` via Command-Line Interface
 
-Interact with an `xud` process, identified by its `rpc` host and port using `xucli`.
+Interact with an `xud` process, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
 ```bash
-~/xud/bin $ ./xucli --help
-xucli [command]
+~/xud/bin$ ./xucli --help
+xucli <command>
 
 Commands:
+  xucli cancelorder <pair_id> <order_id>    cancel an order
   xucli connect <host> [port]               connect to an xu node
+  xucli disconnect <host> [port]            disconnect from an xu node
+  xucli executeSwap <identifier> <role>     execute an atomic swap
+  <sending_amount> <sending_token>
+  <receiving_amount> <receiving_token>
   xucli getinfo                             get general info from the xud node
   xucli getorders [pair_id] [max_results]   get orders from the order book
   xucli getpairs                            get order book's available pairs
-  xucli placeorder <pair_id> <price>        place an order
-  <quantity>
+  xucli placeorder <pair_id> <order_id>     place an order
+  <quantity> [price]
   xucli shutdown                            gracefully shutdown the xud node
-  xucli tokenswap <identifier> <role>       perform a raiden token swap
-  <sending_amount> <sending_token>
-  <receiving_amount> <receiving_token>
+  xucli subscribepeerorders                 subscribe to incoming peer orders
+  xucli subscribeswaps                      subscribe to executed swaps
 
 Options:
   --help          Show help                                            [boolean]
   --version       Show version number                                  [boolean]
-  --rpc.port, -p  The RPC service port                  [number] [default: 8886]
-  --rpc.host, -h  The RPC service hostname       [string] [default: "localhost"]
+  --rpc.port, -p  RPC service port                      [number] [default: 8886]
+  --rpc.host, -h  RPC service hostname           [string] [default: "localhost"]
+
+
+```
+
+Examples:
+```bash
+./xucli connect xud1.test.exchangeunion.com 8885
+# Manually connect to another xud instance
+
+./xucli placeorder BTC/LTC 1337 1 99
+#Places a new limit order BUYING 1 BTC for 99 LTC, assigning the orderId 1337 (orderID param will be removed from CLI in future releases)
+
+./xucli placeorder BTC/LTC 1338 -1 99
+#Places a new limit order SELLING 1 BTC for 99 LTC, assigning the orderId 1338 (orderID param will be removed from CLI in future releases)
+
+./xucli placeorder BTC/LTC 1339 1
+#Places a new market order BUYING 1 BTC for the best LTC market price, assigning the orderId 1339 (orderID param will be removed from CLI in future releases)
+
 ```
 
 ## 5. Configuration (optional)
@@ -170,5 +193,6 @@ WantedBy=multi-user.target
 
 Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
-## Questions?
+## Development & Testing Discussion
+
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)

@@ -7,13 +7,10 @@ We use `docker-compose` to package `xud`, `mysql`, `lnd`, `btcd`, `ltcd`, `raide
 The goal of this is `docker-compose` being able to lauch `xud` along with its dependencies.
 
 ## 1. Prerequisites
-* docker (e.g. apt install docker-compose)
-* docker-compose (e.g. apt install docker-compose)
+* docker
+* docker-compose
 
-To install these on e.g. Ubuntu, run:
-```bash
-apt install docker
-apt install docker-compose
+To install these on e.g. Ubuntu, check the [official docker install instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/).
 ```
 
 ## 2. Install
@@ -50,5 +47,6 @@ docker-compose logs <xud|db>
 
 Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
-## Questions?
+## Development & Testing Discussion
+
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)

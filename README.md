@@ -15,11 +15,11 @@ This repo contains the early stages of the Exchange Union Daemon ("xud") which e
 
 Contributions, feedback, and questions are welcome.
 
-## Instructions for Developers
+## Instructions for Developers & Testers
 
 [Here](instructions-for-devs.md) (Manual setup).
 
-## Instructions for Exchanges
+## Instructions for Exchanges & Users
 
 [Here](instructions-for-exchanges.md) (Using Docker).
 
@@ -28,5 +28,6 @@ Contributions, feedback, and questions are welcome.
 
 Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
-## Questions?
+## Development & Testing Discussion
+
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
