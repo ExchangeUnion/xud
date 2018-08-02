@@ -19,6 +19,16 @@ type Orders = {
   sellOrders: Map<String, orders.StampedOrder>;
 };
 
+interface OrderBook {
+  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
+  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+}
+
+type OrderArrays = {
+  buyOrders: orders.StampedOrder[],
+  sellOrders: orders.StampedOrder[],
+};
+
 class OrderBook extends EventEmitter {
   public pairs: db.PairInstance[] = [];
   public matchingEngines: { [ pairId: string ]: MatchingEngine } = {};
@@ -41,6 +51,7 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
+      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
 
@@ -76,18 +87,18 @@ class OrderBook extends EventEmitter {
   /**
    * Returns lists of buy and sell orders of peers
    */
-  public getPeerOrders = (pairId: string, maxResults: number): { [ type: string ]: orders.StampedPeerOrder[] } => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]) as { [type: string]: orders.StampedPeerOrder[] };
+  public getPeerOrders = (pairId: string, maxResults: number): OrderArrays => {
+    return this.getOrders(maxResults, this.peerOrders[pairId]);
   }
 
   /*
   * Returns lists of the node's own buy and sell orders
   */
-  public getOwnOrders = (pairId: string, maxResults: number): { [type: string]: orders.StampedOwnOrder[] } => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]) as { [type: string]: orders.StampedOwnOrder[] };
+  public getOwnOrders = (pairId: string, maxResults: number): OrderArrays => {
+    return this.getOrders(maxResults, this.ownOrders[pairId]);
   }
 
-  private getOrders = (maxResults: number, orders: Orders): { [type: string]: orders.StampedOrder[] } => {
+  private getOrders = (maxResults: number, orders: Orders): OrderArrays => {
     if (maxResults > 0) {
       return {
         buyOrders: Object.values(orders.buyOrders).slice(0, maxResults),
@@ -124,12 +135,27 @@ class OrderBook extends EventEmitter {
   private removeOwnOrder = (pairId: string, orderId: string): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
     if (!matchingEngine) {
-      throw errors.INVALID_PAIR_ID(pairId);
+      this.logger.warn(`Invalid pairId: ${pairId}`);
+      return false;
     }
 
     if (matchingEngine.removeOwnOrder(orderId)) {
       this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
       return this.removeOrder(this.ownOrders, orderId, pairId);
+    } else {
+      return false;
+    }
+  }
+
+  private removePeerOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines[pairId];
+    if (!matchingEngine) {
+      this.logger.warn(`Invalid pairId: ${pairId}`);
+      return false;
+    }
+
+    if (matchingEngine.removePeerOrder(orderId)) {
+      return this.removeOrder(this.peerOrders, orderId, pairId);
     } else {
       return false;
     }
@@ -172,7 +198,7 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', order);
+    this.emit('peerOrder', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
@@ -181,7 +207,7 @@ class OrderBook extends EventEmitter {
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     if (peer.hostId) {
       this.pairs.forEach((pair) => {
-        this.matchingEngines[pair.id].removePeerOrders(order => order === peer.hostId!);
+        this.matchingEngines[pair.id].removePeerOrders(peer.hostId!);
       });
     }
   }
@@ -235,18 +261,18 @@ class OrderBook extends EventEmitter {
     return type === this.ownOrders;
   }
 
-  private sendOrders = async (peer: Peer) => {
+  private sendOrders = async (peer: Peer, reqId: string) => {
     // TODO: just send supported pairs
     const pairs = await this.getPairs();
 
     const promises: Promise<orders.OutgoingOrder | void>[] = [];
     for (const { id } of pairs) {
       const orders = await this.getOwnOrders(id, 0);
-      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
-      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order)));
+      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
+      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
     }
     await Promise.all(promises).then((outgoingOrders) => {
-      peer.sendOrders(outgoingOrders as orders.OutgoingOrder[]);
+      peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
     });
   }
 
@@ -289,4 +315,4 @@ class OrderBook extends EventEmitter {
 }
 
 export default OrderBook;
-export { Orders };
+export { Orders, OrderArrays };

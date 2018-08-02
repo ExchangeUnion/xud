@@ -5,6 +5,13 @@ export const isObject = (val: any): boolean => {
   return (val && typeof val === 'object' && !Array.isArray(val));
 };
 
+/**
+ * Check whether a variable is an empty object
+ */
+export const isEmptyObject = (val: any): boolean => {
+  return isObject(val) && Object.keys(val).length === 0;
+};
+
 /** Get the current date in the LocaleString format.
  */
 export const getTsString = (): string => (new Date()).toLocaleString();
@@ -64,6 +71,6 @@ export const groupBy = (arr: object[], keyGetter: (item: any) => string | number
 /**
  * Get current time in unix time (milliseconds).
  */
-export const ms =  (): number => {
+export const ms = (): number => {
   return Date.now();
 };

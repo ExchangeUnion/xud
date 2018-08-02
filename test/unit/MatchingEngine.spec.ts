@@ -185,7 +185,9 @@ describe('MatchingEngine.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
     });
-    expect(engine.priorityQueues.sellOrders.peek().quantity).to.equal(-1);
+    const peekResult = engine.priorityQueues.sellOrders.peek();
+    expect(peekResult).to.not.be.undefined;
+    expect(peekResult!.quantity).to.equal(-1);
   });
 });
 
@@ -198,7 +200,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
     expect(matchingResult.matches).to.be.empty;
     expect(engine.isEmpty()).to.be.false;
 
-    expect(engine.removeOwnOrder(uuidv1())).to.be.null;
+    expect(engine.removeOwnOrder(uuidv1())).to.be.undefined;
     expect(engine.isEmpty()).to.be.false;
 
     const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder.id);
@@ -214,14 +216,13 @@ describe('MatchingEngine.removePeerOrders', () => {
     const secondHostId = 2;
 
     expect(engine.isEmpty()).to.be.true;
-    expect(engine.removePeerOrders(() => true)).to.be.empty;
 
     const firstHostOrders = [createPeerOrder(5, -5, ms(), firstHostId), createPeerOrder(5, -5, ms(), firstHostId)];
     engine.addPeerOrder(firstHostOrders[0]);
     engine.addPeerOrder(firstHostOrders[1]);
     engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondHostId));
 
-    const removedOrders = engine.removePeerOrders(order => order.hostId === firstHostId);
+    const removedOrders = engine.removePeerOrders(firstHostId);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);

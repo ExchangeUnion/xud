@@ -2,9 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import Host from '../../Host';
 
-type HostsPacketBody = {
-  hosts: Host[],
-};
+type HostsPacketBody = Host[];
 
 class HostsPacket extends Packet<HostsPacketBody> {
   public get type() {

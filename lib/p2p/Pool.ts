@@ -6,16 +6,26 @@ import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
-import { PeerOrder, OutgoingOrder } from '../types/orders';
+import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, HostsPacket, OrdersPacket, GetHostsPacket } from './packets';
+import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
-import { ms } from '../utils/utils';
 
 type PoolConfig = {
   listen: boolean;
   port: number;
 };
+
+interface Pool {
+  on(event: 'packet.order', listener: (order: PeerOrder) => void);
+  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void);
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void);
+  on(event: 'peer.close', listener: (peer: Peer) => void);
+  emit(event: 'packet.order', order: PeerOrder);
+  emit(event: 'packet.getOrders', peer: Peer, reqId: string);
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier);
+  emit(event: 'peer.close', peer: Peer);
+}
 
 /** A pool of peers for handling all network activity */
 class Pool extends EventEmitter {
@@ -114,6 +124,15 @@ class Pool extends EventEmitter {
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
+
+    // TODO: send only to peers which accepts the pairId
+  }
+
+  public broadcastOrderInvalidation = (orderId: string, pairId: string) => {
+    const orderInvalidationPacket = new OrderInvalidationPacket({ orderId, pairId });
+    this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
+
+    // TODO: send only to peers which accepts the pairId
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
@@ -141,27 +160,31 @@ class Pool extends EventEmitter {
   private handlePacket = (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order: PeerOrder = { ...packet.body, hostId: peer.id };
-        this.emit('packet.order', order);
+        const order = (packet as OrderPacket).body!;
+        this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
+        break;
+      }
+      case PacketType.ORDER_INVALIDATION: {
+        this.emit('packet.orderInvalidation', (packet as OrderInvalidationPacket).body!);
         break;
       }
       case PacketType.GET_ORDERS: {
-        this.emit('packet.getOrders', peer);
+        this.emit('packet.getOrders', peer, packet.header.id);
         break;
       }
       case PacketType.ORDERS: {
-        const { orders } = (packet as OrdersPacket).body;
+        const orders = (packet as OrdersPacket).body!;
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, hostId: peer.id });
+          this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
         });
         break;
       }
       case PacketType.GET_HOSTS: {
-        peer.sendHosts(this.hosts.toArray(), packet.header.hash);
+        peer.sendHosts(this.hosts.toArray(), packet.header.id);
         break;
       }
       case PacketType.HOSTS: {
-        const { hosts } = (packet as HostsPacket).body;
+        const hosts = (packet as HostsPacket).body!;
         hosts.forEach(async (host) => {
           try {
             await this.addOutbound(host.socketAddress);
@@ -176,8 +199,10 @@ class Pool extends EventEmitter {
 
   private handleOpen = async (peer: Peer, handshakeState: HandshakeState): Promise<void> => {
     this.setPeerHost(peer, handshakeState.listenPort);
-    peer.sendPacket(new GetOrdersPacket({}));
-    peer.sendPacket(new GetHostsPacket({ ts: ms() }));
+
+    // request peer's orders and known hosts
+    peer.sendPacket(new GetOrdersPacket());
+    peer.sendPacket(new GetHostsPacket());
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
