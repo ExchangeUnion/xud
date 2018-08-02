@@ -39,7 +39,7 @@ Setup raiden according to [this guide](https://github.com/ExchangeUnion/xud/blob
 disable = true
 ```
 
-## 3. Starting `xud`
+## 3. Start `xud`
 
 Open a new terminal and launch a `xud` process
 
@@ -78,7 +78,7 @@ Options:
   --webproxy.port               Port for web proxy server               [number]
 ```
 
-## 4. Interacting with `xud` via Command-Line Interface
+## 4. Interact with `xud` via Command-Line Interface
 
 Interact with an `xud` process, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
