@@ -52,7 +52,7 @@ Open a new terminal and launch a `xud` process
 2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
 
-Optional command line arguments to override defaults and settings in the [configuration](#5-configuration-optional) file for a specific `xud` instance
+Optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
 
 ```bash
 ~/xud/bin $ ./xud --help
@@ -127,9 +127,9 @@ Examples:
 
 ```
 
-## 5. Configuration (optional)
+## Configuration (optional)
 
-This **optional** configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). Default settings which can be overridden are shown below.
+This *optional* configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). Default settings which can be overridden are shown below.
 
 ```toml
 [rpc]
@@ -160,7 +160,7 @@ host = "localhost"
 port = 5001
 ```
 
-## 6. Useful stuff for developers (optional)
+## Useful stuff for developers (optional)
 
 ### Auto-restart `xud` on file change
 
