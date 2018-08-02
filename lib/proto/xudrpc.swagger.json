@@ -487,11 +487,7 @@
         "peer_id": {
           "type": "integer",
           "format": "int32",
-          "title": "The id of the peer that created this order"
-        },
-        "host_id": {
-          "type": "string",
-          "title": "The id of the host that created this order"
+          "title": "The id of the peer - consisting of a [host]:[port] socket address - that created this order"
         },
         "id": {
           "type": "string",
@@ -499,7 +495,7 @@
         },
         "local_id": {
           "type": "string",
-          "title": "The local ID for this oder"
+          "title": "The local ID for this order"
         },
         "created_at": {
           "type": "string",

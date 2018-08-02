@@ -161,7 +161,7 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.ORDER: {
         const order = (packet as OrderPacket).body!;
-        this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
+        this.emit('packet.order', { ...order, peerId: peer.id } as PeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
@@ -175,7 +175,7 @@ class Pool extends EventEmitter {
       case PacketType.ORDERS: {
         const orders = (packet as OrdersPacket).body!;
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, hostId: peer.hostId } as PeerOrder);
+          this.emit('packet.order', { ...order, peerId: peer.id } as PeerOrder);
         });
         break;
       }

@@ -453,9 +453,6 @@ export class Order extends jspb.Message {
   getPeerId(): number;
   setPeerId(value: number): void;
 
-  getHostId(): string;
-  setHostId(value: string): void;
-
   getId(): string;
   setId(value: string): void;
 
@@ -484,7 +481,6 @@ export namespace Order {
     quantity: number,
     pairId: string,
     peerId: number,
-    hostId: string,
     id: string,
     localId: string,
     createdAt: number,
