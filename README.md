@@ -19,7 +19,7 @@ Contributions, feedback, and questions are welcome.
 
 [Here](instructions-for-devs.md) (Manual setup).
 
-## Instructions for Exchanges & Users
+## Instructions for Exchanges & Users (WIP, untested)
 
 [Here](instructions-for-exchanges.md) (Using Docker).
 
