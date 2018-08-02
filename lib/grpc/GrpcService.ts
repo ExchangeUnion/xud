@@ -1,4 +1,4 @@
-import grpc from 'grpc';
+import grpc, { status, ServiceError } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
@@ -8,6 +8,8 @@ import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBook';
 import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
+import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
+import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -36,8 +38,23 @@ class GrpcService {
       const response = serializeDateProperties(rawResponse);
       callback(null, response);
     } catch (err) {
+      // if we recognize this error, return a proper gRPC ServiceError with a descriptive and appropriate code
+      let grpcError: ServiceError | undefined;
+      switch (err.code) {
+        case serviceErrorCodes.INVALID_ARGUMENT:
+          grpcError = { ...err, code: status.INVALID_ARGUMENT };
+          break;
+        case orderErrorCodes.INVALID_PAIR_ID:
+          grpcError = { ...err, code: status.NOT_FOUND };
+          break;
+        case orderErrorCodes.DUPLICATE_ORDER:
+          grpcError = { ...err, code: status.ALREADY_EXISTS };
+          break;
+      }
       this.logger.error(err);
-      callback(err, null);
+
+      // return grpcError if we've created one, otherwise pass along the caught error as UNKNOWN
+      callback(grpcError ? grpcError : err, null);
     }
   }
 

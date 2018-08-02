@@ -4,7 +4,7 @@ import { PlaceOrderRequest, Order } from '../../proto/xudrpc_pb';
 
 export const command = 'placeorder <pair_id> <order_id> <quantity> [price]';
 
-export const describe = 'place an order';
+export const describe = 'place an order, if price is 0 or unspecified a market order is placed';
 
 export const builder = {
   pair_id: {
