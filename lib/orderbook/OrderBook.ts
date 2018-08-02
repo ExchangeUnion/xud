@@ -261,7 +261,7 @@ class OrderBook extends EventEmitter {
     return type === this.ownOrders;
   }
 
-  private sendOrders = async (peer: Peer) => {
+  private sendOrders = async (peer: Peer, reqId: string) => {
     // TODO: just send supported pairs
     const pairs = await this.getPairs();
 
@@ -272,7 +272,7 @@ class OrderBook extends EventEmitter {
       orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
     }
     await Promise.all(promises).then((outgoingOrders) => {
-      peer.sendOrders(outgoingOrders as orders.OutgoingOrder[]);
+      peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
     });
   }
 
