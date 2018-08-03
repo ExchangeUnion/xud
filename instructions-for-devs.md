@@ -149,6 +149,7 @@ host = "localhost"
 [p2p]
 listen = true
 port = 8885
+#make sure this port is reachable from the internet
 
 [lnd]
 disable = false
