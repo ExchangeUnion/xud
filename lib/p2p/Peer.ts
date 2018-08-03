@@ -4,10 +4,11 @@ import { EventEmitter } from 'events';
 import Host from './Host';
 import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
-import { Packet, PacketDirection, PacketType, HelloPacket, PingPacket, PongPacket, HostsPacket, OrdersPacket } from './packets';
-import Logger, { ContextLogger, Context } from '../Logger';
+import * as packets from './packets/types';
 import { ms } from '../utils/utils';
-import { orders } from '../types';
+import { OutgoingOrder } from '../types/orders';
+import { Packet, PacketDirection, PacketType } from './packets';
+import Logger, { Context, ContextLogger } from 'lib/Logger';
 
 enum ConnectionDirection {
   INBOUND,
@@ -15,15 +16,22 @@ enum ConnectionDirection {
 }
 
 type HandshakeState = {
-  version?: string;
-  nodePubKey?: string;
-  listenPort?: number;
-  pairs?: string[];
+  version: string;
+  nodePubKey: string;
+  listenPort: number;
+  pairs: string[];
 };
+
+function isHandshakeState(obj: any): obj is HandshakeState {
+  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && typeof obj.listenPort === 'number'
+    && Array.isArray(obj.pairs);
+}
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void);
   on(event: 'error', listener: (err: Error) => void);
+  on(event: 'packet', listener: (packet: Packet) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
   once(event: 'open', listener: (handshakeState: HandshakeState) => void);
   once(event: 'close', listener: () => void);
   once(event: 'ban', listener: () => void);
@@ -71,8 +79,10 @@ class Peer extends EventEmitter {
   private banScore: number = 0;
   private lastRecv: number = 0;
   private lastSend: number = 0;
-  private handshakeState: HandshakeState = {};
   private logger: Logger = new Logger({ context: Context.P2P });
+  private handshakeState?: HandshakeState;
+  /** A counter for packets sent to be used for assigning unique packet ids. */
+  private packetCount = 0;
 
   get id(): string {
     assert(this.socketAddress);
@@ -124,10 +134,8 @@ class Peer extends EventEmitter {
     await this.initHello();
     this.finalizeOpen();
 
-    const handshakeState: HandshakeState = {};
-
     // let the pool know that this peer is ready to go
-    this.emit('open', handshakeState);
+    this.emit('open', this.handshakeState!);
   }
 
   public destroy = (): void => {
@@ -171,27 +179,26 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = (packet: Packet): void => {
-    this.sendRaw(packet.type, packet.toRaw());
+    this.sendRaw(packet.toRaw());
+    this.packetCount += 1;
 
     if (packet.direction === PacketDirection.REQUEST) {
-      this.addResponseTimeout(packet.header.hash, Peer.RESPONSE_TIMEOUT);
+      this.addResponseTimeout(packet.header.id, Peer.RESPONSE_TIMEOUT);
     }
   }
 
-  public sendOrders = (orders: orders.OutgoingOrder[]): void => {
-    const packet = new OrdersPacket({ orders });
-
+  public sendOrders = (orders: OutgoingOrder[], reqId: string): void => {
+    const packet = new packets.OrdersPacket(orders, reqId);
     this.sendPacket(packet);
   }
 
-  public sendHosts = (hosts: Host[], reqHash: string): void => {
-    const packet = new HostsPacket({ hosts }, reqHash);
+  public sendHosts = (hosts: Host[], reqId: string): void => {
+    const packet = new packets.HostsPacket(hosts, reqId);
     this.sendPacket(packet);
   }
 
-  private sendRaw = (type, body) => {
-    const payload = `${type} ${body}\r\n`;
-    this.socket.write(payload);
+  private sendRaw = (packetStr: string) => {
+    this.socket.write(`${packetStr}\r\n`);
 
     this.lastSend = Date.now();
   }
@@ -264,10 +271,8 @@ class Peer extends EventEmitter {
     const packet = this.sendHello();
 
     if (!this.handshakeState) {
-      // using the packet type as the response key,
-      // to allow waiting for any incoming HelloPacket
-      await this.wait(packet.type, Peer.RESPONSE_TIMEOUT);
-      assert(this.handshakeState);
+      // wait for an incoming HelloPacket
+      await this.wait(PacketType.HELLO, Peer.RESPONSE_TIMEOUT);
     }
   }
 
@@ -281,9 +286,9 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer. Executed on timeout or once packet is received.
    */
-  private wait = (key: string, timeout?: number) => {
+  private wait = (packetId: string, timeout?: number) => {
+    const entry = this.getOrAddPendingResponseEntry(packetId);
     return new Promise((resolve, reject) => {
-      const entry = this.getOrAddPendingResponseEntry(key);
       entry.addJob(resolve, reject);
 
       if (timeout) {
@@ -310,48 +315,49 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (hash: string, timeout: number): PendingResponseEntry | null => {
+  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | null => {
     if (this.destroyed) {
       return null;
     }
 
-    const entry = this.getOrAddPendingResponseEntry(hash);
+    const entry = this.getOrAddPendingResponseEntry(packetId);
     entry.setTimeout(timeout);
 
     return entry;
   }
 
-  private  getOrAddPendingResponseEntry = (key: string): PendingResponseEntry => {
-    let entry = this.responseMap.get(key);
+  private getOrAddPendingResponseEntry = (packetId: string): PendingResponseEntry => {
+    let entry = this.responseMap.get(packetId);
 
     if (!entry) {
       entry = new PendingResponseEntry();
-      this.responseMap.set(key, entry);
+      this.responseMap.set(packetId, entry);
     }
 
     return entry;
   }
 
   /**
-   * Fulfill a pending response entry.
+   * Fulfill a pending response entry for solicited responses, penalize unsolicited responses.
    * @returns false if no pending response entry exists for the provided key, otherwise true
    */
-  private fulfillResponseEntry = (key: string | undefined, packet: Packet): boolean => {
-    if (!key) {
-      this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${packet.type})`);
+  private fulfillResponseEntry = (packet: Packet): boolean => {
+    const { reqId } = packet.header;
+    if (!reqId) {
+      this.logger.debug(`Peer (${this.id}) sent a response packet without reqId`);
       // TODO: penalize
       return false;
     }
 
-    const entry = this.responseMap.get(key);
+    const entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      this.logger.debug(`Peer (${this.id}) sent an unmatched response packet (${packet.type})`);
+      this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
 
-    this.responseMap.delete(key);
+    this.responseMap.delete(reqId);
     entry.resolve(packet);
 
     return true;
@@ -416,8 +422,12 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UNPARSABLE_MESSAGE:
+        case ParserErrorType.UNPARSEABLE_MESSAGE:
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
+          this.increaseBan(10);
+          break;
+        case ParserErrorType.INVALID_MESSAGE:
+          this.logger.warn(`Invalid peer message: ${err.payload}`);
           this.increaseBan(10);
           break;
         case ParserErrorType.UNKNOWN_PACKET_TYPE:
@@ -427,25 +437,35 @@ class Peer extends EventEmitter {
     });
   }
 
-  private handlePacket = (packet: Packet): void => {
+  /** Check if a given packet is solicited and fulfill the pending response entry if it's a response. */
+  private isPacketSolicited = (packet: Packet): boolean => {
+    let solicted = true;
+
     if (packet.direction === PacketDirection.RESPONSE) {
-      if (!this.fulfillResponseEntry(packet.header.reqHash, packet)) {
-        return;
+      // lookup a pending response entry for this packet by its reqId
+      if (!this.fulfillResponseEntry(packet)) {
+        solicted = false;
       }
     }
 
-    switch (packet.type) {
-      case PacketType.HELLO: {
-        this.handleHello(packet);
-        break;
+    return solicted;
+  }
+
+  private handlePacket = (packet: Packet): void => {
+    if (this.isPacketSolicited(packet)) {
+      switch (packet.type) {
+        case PacketType.HELLO: {
+          this.handleHello(packet);
+          break;
+        }
+        case PacketType.PING: {
+          this.handlePing(packet);
+          break;
+        }
+        default:
+          this.emit('packet', packet);
+          break;
       }
-      case PacketType.PING: {
-        this.handlePing(packet);
-        break;
-      }
-      default:
-        this.emit('packet', packet);
-        break;
     }
   }
 
@@ -462,9 +482,9 @@ class Peer extends EventEmitter {
     }
   }
 
-  private sendHello = (): HelloPacket => {
+  private sendHello = (): packets.HelloPacket => {
     // TODO: use real values
-    const packet = new HelloPacket({
+    const packet = new packets.HelloPacket({
       version: '123',
       nodePubKey: '123',
       listenPort: 20000,
@@ -476,34 +496,34 @@ class Peer extends EventEmitter {
     return packet;
   }
 
-  private handleHello = (packet: HelloPacket): void => {
-    this.handshakeState = { ...this.handshakeState, ...packet.body };
+  private handleHello = (packet: packets.HelloPacket): void => {
+    const entry = this.responseMap.get(PacketType.HELLO);
 
-    if (this.responseMap.has(packet.type)) {
-      this.fulfillResponseEntry(packet.type, packet);
+    if (!entry) {
+      this.logger.debug(`Peer (${this.id}) sent an unsolicited Hello packet`);
+      // TODO: penalize
+    } else {
+      this.responseMap.delete(PacketType.HELLO);
+      entry.resolve(packet);
+
+      this.handshakeState = packet.body;
     }
   }
 
-  private sendPing = (): PingPacket => {
-    const packet = new PingPacket({ ts: ms() });
+  private sendPing = (): packets.PingPacket => {
+    const packet = new packets.PingPacket();
 
     this.sendPacket(packet);
 
     return packet;
   }
 
-  private handlePing = (packet: PingPacket): void  => {
-    const { hash } = packet.header;
-
-    if (!hash) {
-      return;
-    }
-
-    this.sendPong(hash);
+  private handlePing = (packet: packets.PingPacket): void  => {
+    this.sendPong(packet.header.id);
   }
 
-  private sendPong = (pingHash: string): PongPacket => {
-    const packet = new PongPacket({ ts: ms() }, pingHash);
+  private sendPong = (pingId: string): packets.PongPacket => {
+    const packet = new packets.PongPacket(undefined, pingId);
 
     this.sendPacket(packet);
 
