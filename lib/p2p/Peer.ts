@@ -9,6 +9,7 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
+import { HostFactory } from '../types/db';
 
 enum ConnectionDirection {
   INBOUND,
@@ -190,7 +191,7 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
-  public sendHosts = (hosts: Host[], reqId: string): void => {
+  public sendHosts = (hosts: HostFactory[], reqId: string): void => {
     const packet = new packets.HostsPacket(hosts, reqId);
     this.sendPacket(packet);
   }

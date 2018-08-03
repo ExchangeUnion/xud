@@ -180,14 +180,14 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GET_HOSTS: {
-        peer.sendHosts(this.hosts.toArray(), packet.header.id);
+        peer.sendHosts(this.hosts.toHostFactoryArray(), packet.header.id);
         break;
       }
       case PacketType.HOSTS: {
         const hosts = (packet as HostsPacket).body!;
         hosts.forEach(async (host) => {
           try {
-            await this.addOutbound(host.socketAddress);
+            await this.addOutbound(new SocketAddress(host.address, host.port));
           } catch (err) {
             this.logger.info(err);
           }
@@ -207,11 +207,11 @@ class Pool extends EventEmitter {
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
     if (peer.direction === ConnectionDirection.OUTBOUND) {
-      const host = await this.hosts.getOrCreateHost(peer.socketAddress);
+      const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
     } else if (peer.direction === ConnectionDirection.INBOUND && listenPort) {
       const socketAddress = new SocketAddress(peer.socketAddress.address, listenPort);
-      const host = await this.hosts.getOrCreateHost(socketAddress);
+      const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
     }
   }

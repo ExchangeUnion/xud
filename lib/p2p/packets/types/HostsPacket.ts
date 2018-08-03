@@ -1,10 +1,8 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import Host from '../../Host';
+import { HostFactory } from '../../../types/db';
 
-type HostsPacketBody = Host[];
-
-class HostsPacket extends Packet<HostsPacketBody> {
+class HostsPacket extends Packet<HostFactory[]> {
   public get type() {
     return PacketType.HOSTS;
   }

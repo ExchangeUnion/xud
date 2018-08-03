@@ -6,7 +6,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     address: { type: DataTypes.STRING(39), allowNull: false },
     port: { type: DataTypes.INTEGER, allowNull: false },
-    pubKey: { type: DataTypes.STRING, allowNull: true, unique: true },
+    pubKey: { type: DataTypes.STRING, allowNull: true, unique: false },
   };
 
   const indexes: Sequelize.DefineIndexesOptions[] = [{
@@ -19,7 +19,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     tableName: 'hosts',
   };
 
-  const Peer = sequelize.define<db.HostInstance, db.HostAttributes>('Host', attributes, options);
+  const Host = sequelize.define<db.HostInstance, db.HostAttributes>('Host', attributes, options);
 
-  return Peer;
+  return Host;
 };
