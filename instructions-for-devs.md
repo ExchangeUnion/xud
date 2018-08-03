@@ -31,12 +31,14 @@ To initialize the database with some testing data, run the following command fro
 npm run db:init
 ```
 
-Setup raiden according to [this guide](https://github.com/ExchangeUnion/xud/blob/raiden_swap/lib/raidenclient/README.md).
+[Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
 
-[Releases](https://github.com/ExchangeUnion/xud/releases) currently only support raiden ERC20 swaps on testnet, thus we recommend to disable lnd in the config, to avoid unnecessary error outputs:
 ```toml
 [lnd]
 disable = true
+
+[raiden]
+disable = false
 ```
 
 ## 3. Start `xud`
@@ -117,13 +119,13 @@ Examples:
 # Manually connect to another xud instance
 
 ./xucli placeorder BTC/LTC 1337 1 99
-#Places a new limit order BUYING 1 BTC for 99 LTC, assigning the orderId 1337
+# Places a new limit order BUYING 1 BTC for 99 LTC, assigning the orderId 1337
 
 ./xucli placeorder BTC/LTC 1338 -1 99
-#Places a new limit order SELLING 1 BTC for 99 LTC, assigning the orderId 1338
+# Places a new limit order SELLING 1 BTC for 99 LTC, assigning the orderId 1338
 
 ./xucli placeorder BTC/LTC 1339 1
-#Places a new market order BUYING 1 BTC for the best LTC market price, assigning the orderId 1339
+# Places a new market order BUYING 1 BTC for the best LTC market price, assigning the orderId 1339
 
 ```
 
@@ -178,14 +180,16 @@ If you want to daemonize `xud`, so you don't have to keep a terminal open and xu
 
 ```bash
 [Unit]
-Description=Exchange Union Daemon
-# If you want to daemonize lnd/raiden too, start lnd/raiden first 
-# After=lnd.service
+Description= XUD - ExchangeUnion Daemon
+ConditionPathExists=/opt/xud/dist/
+After=network.target
 
 [Service]
 User=xud
 Group=xud
-ExecStart=/usr/bin/xud
+WorkingDirectory=/opt/xud/
+ExecStart=/usr/bin/node /opt/xud/dist/Xud.js
+Type=simple
 
 [Install]
 WantedBy=multi-user.target
