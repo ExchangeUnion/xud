@@ -10,6 +10,7 @@ import { MatchingResult } from '../types/matchingEngine';
 import { OwnOrder } from '../types/orders';
 import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
+import { default as p2pErrors, errorCodes as p2pErrorCodes } from '../p2p/errors';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -48,6 +49,7 @@ class GrpcService {
           grpcError = { ...err, code: status.NOT_FOUND };
           break;
         case orderErrorCodes.DUPLICATE_ORDER:
+        case p2pErrorCodes.ADDRESS_ALREADY_CONNECTED:
           grpcError = { ...err, code: status.ALREADY_EXISTS };
           break;
       }
