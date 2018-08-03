@@ -202,6 +202,14 @@ class Service extends EventEmitter {
   }
 
   /**
+   * Get information about currently connected peers.
+   * @returns A list of connected peers with key information for each peer
+   */
+  public listPeers = () => {
+    return this.pool.listPeers();
+  }
+
+  /**
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */

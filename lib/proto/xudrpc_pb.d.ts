@@ -338,6 +338,44 @@ export namespace GetPairsResponse {
   }
 }
 
+export class ListPeersRequest extends jspb.Message {
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListPeersRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListPeersRequest): ListPeersRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ListPeersRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListPeersRequest;
+  static deserializeBinaryFromReader(message: ListPeersRequest, reader: jspb.BinaryReader): ListPeersRequest;
+}
+
+export namespace ListPeersRequest {
+  export type AsObject = {
+  }
+}
+
+export class ListPeersResponse extends jspb.Message {
+  clearPeersList(): void;
+  getPeersList(): Array<Peer>;
+  setPeersList(value: Array<Peer>): void;
+  addPeers(value?: Peer, index?: number): Peer;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ListPeersResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListPeersResponse): ListPeersResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: ListPeersResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListPeersResponse;
+  static deserializeBinaryFromReader(message: ListPeersResponse, reader: jspb.BinaryReader): ListPeersResponse;
+}
+
+export namespace ListPeersResponse {
+  export type AsObject = {
+    peersList: Array<Peer.AsObject>,
+  }
+}
+
 export class LndChannels extends jspb.Message {
   getActive(): number;
   setActive(value: number): void;
@@ -545,6 +583,48 @@ export namespace Pair {
     baseCurrency: string,
     quoteCurrency: string,
     swapProtocol: string,
+  }
+}
+
+export class Peer extends jspb.Message {
+  getAddress(): string;
+  setAddress(value: string): void;
+
+  getNodePubKey(): string;
+  setNodePubKey(value: string): void;
+
+  getInbound(): boolean;
+  setInbound(value: boolean): void;
+
+  clearPairsList(): void;
+  getPairsList(): Array<string>;
+  setPairsList(value: Array<string>): void;
+  addPairs(value: string, index?: number): string;
+
+  getXudVersion(): string;
+  setXudVersion(value: string): void;
+
+  getSecondsConnected(): number;
+  setSecondsConnected(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Peer.AsObject;
+  static toObject(includeInstance: boolean, msg: Peer): Peer.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: Peer, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Peer;
+  static deserializeBinaryFromReader(message: Peer, reader: jspb.BinaryReader): Peer;
+}
+
+export namespace Peer {
+  export type AsObject = {
+    address: string,
+    nodePubKey: string,
+    inbound: boolean,
+    pairsList: Array<string>,
+    xudVersion: string,
+    secondsConnected: number,
   }
 }
 

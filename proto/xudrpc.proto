@@ -58,6 +58,13 @@ service Xud {
     };
   }
   
+  /* Get a list of connected peers. */
+  rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
+    option (google.api.http) = {
+      get: "/v1/peers"
+    };
+  }
+
   /* Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
@@ -154,6 +161,11 @@ message GetPairsResponse {
   repeated Pair pairs = 1 [json_name = "pairs"];
 }
 
+message ListPeersRequest {}
+message ListPeersResponse {
+  repeated Peer peers = 1 [json_name = "peers"];
+}
+
 message LndChannels {
   int32 active = 1 [json_name = "active"];
   int32 inactive = 2 [json_name = "inactive"];
@@ -205,6 +217,21 @@ message Pair {
   string base_currency = 2 [json_name = "base_currency"];
   string quote_currency = 3 [json_name = "quote_currency"];
   string swap_protocol = 4 [json_name = "swap_protocol"];
+}
+
+message Peer {
+  // The socket address with host and port for this peer
+  string address = 1 [json_name = "address"];
+  // The node pub key to uniquely identify this peer
+  string node_pub_key = 2 [json_name = "node_pub_key"];
+  // Indicates whether this peer was connected inbound
+  bool inbound = 3 [json_name = "inbound"];
+  // A list of trading pair tickers supported by this peer
+  repeated string pairs = 4 [json_name = "pairs"]; 
+  // The version of xud being used by the peer
+  string xud_version = 5 [json_name = "xud_version"];
+  // The time in seconds that we have been connected to this peer
+  int32 seconds_connected = 6 [json_name = "seconds_connected"];
 }
 
 message PlaceOrderRequest {

@@ -191,6 +191,23 @@
         ]
       }
     },
+    "/v1/peers": {
+      "get": {
+        "summary": "Get a list of connected peers.",
+        "operationId": "ListPeers",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListPeersResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/placeorder": {
       "post": {
         "summary": "Add an order to the order book.\nIf price is zero or unspecified a market order will get added.",
@@ -420,6 +437,17 @@
         }
       }
     },
+    "xudrpcListPeersResponse": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcPeer"
+          }
+        }
+      }
+    },
     "xudrpcLndChannels": {
       "type": "object",
       "properties": {
@@ -550,6 +578,40 @@
         },
         "swap_protocol": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcPeer": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "The socket address with host and port for this peer"
+        },
+        "node_pub_key": {
+          "type": "string",
+          "title": "The node pub key to uniquely identify this peer"
+        },
+        "inbound": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether this peer was connected inbound"
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A list of trading pair tickers supported by this peer"
+        },
+        "xud_version": {
+          "type": "string",
+          "title": "The version of xud being used by the peer"
+        },
+        "seconds_connected": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The time in seconds that we have been connected to this peer"
         }
       }
     },

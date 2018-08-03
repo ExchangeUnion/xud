@@ -31,6 +31,7 @@ class GrpcServer {
       shutdown: grpcService.shutdown,
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
+      listPeers: grpcService.listPeers,
     });
   }
 

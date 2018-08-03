@@ -11,6 +11,7 @@ import { OwnOrder } from '../types/orders';
 import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
 import { default as p2pErrors, errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { PeerInfo } from '../p2p/Peer';
 
 function serializeDateProperties(response) {
   Object.keys(response).forEach((key) => {
@@ -107,6 +108,13 @@ class GrpcService {
    */
   public getPairs: grpc.handleUnaryCall<{}, PairInstance[]> = (call, callback) => {
     this.unaryCall(call.request, callback, this.service.getPairs);
+  }
+
+  /**
+   * See [[Service.listPeers]]
+   */
+  public listPeers: grpc.handleUnaryCall<{}, PeerInfo[]> = (call, callback) => {
+    this.unaryCall(call.request, callback, this.service.listPeers);
   }
 
   /**
