@@ -4,7 +4,7 @@ This document contains `xud` setup instructions for developers and everyone with
 
 ## 1. Install
 
-First, clone the repository from GitHub and install dependencies. 
+First, clone the repository from GitHub and install dependencies. Make sure to have minimum `nodejs` v8.11.3 installed. If not the case, checkout [the official instructions](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions). 
 
 Developers & Testers:
 ```bash
