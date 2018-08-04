@@ -56,7 +56,7 @@ Open a new terminal and launch a `xud` process
 2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
 
-Optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
+Use `./xucli --help` to get up-to-date, optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
 
 ```bash
 ~/xud/bin $ ./xud --help
