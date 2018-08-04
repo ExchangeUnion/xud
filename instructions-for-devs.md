@@ -25,11 +25,13 @@ npm install
 
 ## 2. Prepare your environment 
 
-To initialize the database with some testing data, run the following command from `~/xud`:
+An empty 'xud' database with schema gets automatically created when launching `xud`. To initialize an additional 'xud_test' database with some testing data, run the following command from the `~/xud` folder:
 
 ```bash
 npm run db:init
 ```
+
+Use the [config file](#configuration-optional) or `--db.database xud_test` to use the pre-filled testing database. 
 
 [Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
 
@@ -59,25 +61,26 @@ Optional command line arguments to override defaults and settings in the [config
 ```bash
 ~/xud/bin $ ./xud --help
 Options:
-  --help                        Show help                              [boolean]
-  --version                     Show version number                    [boolean]
-  --xudir, -x                   Data directory for xud                  [string]
-  --db.database                 SQL database name                       [string]
-  --db.host                     Hostname for SQL database               [string]
-  --db.port                     Port for SQL database                   [number]
-  --db.username                 User for SQL database                   [string]
-  --lnd.certpath                Path to the SSL certificate for lnd     [string]
-  --lnd.disable                 Disable lnd integration                [boolean]
-  --lnd.host                    Host of the lnd gRPC interface          [string]
-  --lnd.macaroonpath            Path of the admin macaroon for lnd      [string]
-  --lnd.port                    Port of the lnd gRPC interface          [number]
-  --p2p.listen                  Listen for incoming peers              [boolean]
-  --p2p.port, -p                Port to listen for incoming peers       [number]
-  --raiden.disable              Disable raiden integration             [boolean]
-  --raiden.port                 Port for raiden REST service            [number]
-  --rpc.port, -r                RPC service port                        [number]
-  --webproxy.disable            Disable web proxy server               [boolean]
-  --webproxy.port               Port for web proxy server               [number]
+  --help              Show help                                        [boolean]
+  --version           Show version number                              [boolean]
+  --xudir, -x         Data directory for xud                            [string]
+  --db.database       SQL database name                                 [string]
+  --db.host           Hostname for SQL database                         [string]
+  --db.port           Port for SQL database                             [number]
+  --db.username       User for SQL database                             [string]
+  --lnd.certpath      Path to the SSL certificate for lnd               [string]
+  --lnd.disable       Disable lnd integration                          [boolean]
+  --lnd.host          Host of the lnd gRPC interface                    [string]
+  --lnd.macaroonpath  Path of the admin macaroon for lnd                [string]
+  --lnd.port          Port of the lnd gRPC interface                    [number]
+  --p2p.listen        Listen for incoming peers                        [boolean]
+  --p2p.port, -p      Port to listen for incoming peers                 [number]
+  --raiden.disable    Disable raiden integration                       [boolean]
+  --raiden.port       Port for raiden REST service                      [number]
+  --rpc.host          gRPC service host                                 [string]
+  --rpc.port, -r      gRPC service port                                 [number]
+  --webproxy.disable  Disable web proxy server                         [boolean]
+  --webproxy.port     Port for web proxy server                         [number]
 ```
 
 ## 4. Interact with `xud` via Command-Line Interface
