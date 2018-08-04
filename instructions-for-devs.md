@@ -25,13 +25,13 @@ npm install
 
 ## 2. Prepare your environment 
 
-An empty 'xud' database with schema gets automatically created when launching `xud`. To initialize an additional 'xud_test' database with some testing data, run the following command from the `~/xud` folder:
+An empty *xud* database with schema gets automatically created when launching `xud`. To initialize an additional *xud_test* database with some pre-filled testing data, run the following command from the `~/xud` folder:
 
 ```bash
 npm run db:init
 ```
 
-Use the [config file](#configuration-optional) or `--db.database xud_test` to use the pre-filled testing database. 
+Use the [config file](#configuration-optional) or launch `xud` with `--db.database xud_test` to use the pre-filled *xud_test* database. 
 
 [Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
 
