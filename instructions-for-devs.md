@@ -23,27 +23,8 @@ npm install
 
 `xud` uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
 
-## 2. Prepare your environment 
 
-An empty *xud* database with schema gets automatically created when launching `xud`. To initialize an additional *xud_test* database with some pre-filled testing data, run the following command from the `~/xud` folder:
-
-```bash
-npm run db:init
-```
-
-Use the [config file](#configuration-optional) or launch `xud` with `--db.database xud_test` to use the pre-filled *xud_test* database. 
-
-[Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
-
-```toml
-[lnd]
-disable = true
-
-[raiden]
-disable = false
-```
-
-## 3. Start `xud`
+## 2. Start `xud`
 
 Open a new terminal and launch a `xud` process
 
@@ -83,7 +64,7 @@ Options:
   --webproxy.port     Port for web proxy server                         [number]
 ```
 
-## 4. Interact with `xud` via Command-Line Interface
+## 3. Interact with `xud` via Command-Line Interface
 
 Interact with an `xud` process, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
@@ -132,6 +113,7 @@ Examples:
 
 ```
 
+
 ## Configuration (optional)
 
 This *optional* configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). Default settings which can be overridden are shown below.
@@ -164,6 +146,24 @@ host = "localhost"
 disable = false
 host = "localhost"
 port = 5001
+```
+
+An empty *xud* database with schema gets automatically created when launching `xud`. To initialize an additional *xud_test* database with some pre-filled testing data, run the following command from the `~/xud` folder:
+
+```bash
+npm run db:init
+```
+
+Use the [config file](#configuration-optional) or launch `xud` with `--db.database xud_test` to use the pre-filled *xud_test* database. 
+
+[Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
+
+```toml
+[lnd]
+disable = true
+
+[raiden]
+disable = false
 ```
 
 ## Useful stuff for developers (optional)
