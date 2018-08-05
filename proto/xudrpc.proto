@@ -185,10 +185,8 @@ message Order {
   double quantity = 2 [json_name = "quantity"];
   // The trading pair that this order is for
   string pair_id = 3 [json_name = "pair_id"];
-  // The id of the peer that created this order
-  int32 peer_id = 4 [json_name = "peer_id"];
   // The id of the host that created this order
-  string host_id = 5 [json_name = "host_id"];
+  int32 host_id = 5 [json_name = "host_id"];
   // A UUID for this order
   string id = 6 [json_name = "id"];
   // The local ID for this oder

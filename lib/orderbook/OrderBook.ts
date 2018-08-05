@@ -178,7 +178,7 @@ class OrderBook extends EventEmitter {
     if (matches.length > 0) {
       matches.forEach(({ maker, taker }) => {
         this.handleMatch({ maker, taker });
-        this.updateOrderQuantity(this.ownOrders, maker, maker.quantity);
+        this.updateOrderQuantity(maker, maker.quantity);
       });
     }
     if (remainingOrder && !discardRemaining) {
@@ -212,12 +212,13 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private updateOrderQuantity = (type: OrdersMap, order: orders.StampedOrder, decreasedQuantity: number) => {
-    const orderMap = this.getOrderMap(type, order);
+  private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number) => {
+    const isOwnOrder = this.isOwnOrder(order);
+    const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
     orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
     if (orderMap[order.id].quantity === 0) {
-      if (this.isOwnOrder(type)) {
+      if (isOwnOrder) {
         const { localId } = order as orders.StampedOwnOrder;
         delete this.localIdMap[localId];
       }
@@ -226,7 +227,7 @@ class OrderBook extends EventEmitter {
   }
 
   private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
-    if (this.isOwnOrder(type)) {
+    if (this.isOwnOrdersMap(type)) {
       const { localId } = order as orders.StampedOwnOrder;
       this.localIdMap[localId] = order.id;
     }
@@ -257,8 +258,12 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private isOwnOrder = (type: OrdersMap) => {
+  private isOwnOrdersMap = (type: OrdersMap) => {
     return type === this.ownOrders;
+  }
+
+  private isOwnOrder = (order: orders.StampedOrder) => {
+    return !order['hostId'];
   }
 
   private sendOrders = async (peer: Peer, reqId: string) => {
