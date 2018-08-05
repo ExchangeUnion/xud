@@ -484,13 +484,9 @@
           "type": "string",
           "title": "The trading pair that this order is for"
         },
-        "peer_id": {
+        "host_id": {
           "type": "integer",
           "format": "int32",
-          "title": "The id of the peer that created this order"
-        },
-        "host_id": {
-          "type": "string",
           "title": "The id of the host that created this order"
         },
         "id": {
