@@ -58,6 +58,10 @@ class OrderBook extends EventEmitter {
     }
   }
 
+  private static isOwnOrder(order: orders.StampedOrder): order is orders.StampedOwnOrder {
+    return order['hostId'] === undefined && typeof order['localId'] === 'string';
+  }
+
   public init = async () => {
     const pairs = await this.repository.getPairs();
 
@@ -213,7 +217,7 @@ class OrderBook extends EventEmitter {
   }
 
   private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number) => {
-    const isOwnOrder = this.isOwnOrder(order);
+    const isOwnOrder = OrderBook.isOwnOrder(order);
     const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
     orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
@@ -260,10 +264,6 @@ class OrderBook extends EventEmitter {
 
   private isOwnOrdersMap = (type: OrdersMap) => {
     return type === this.ownOrders;
-  }
-
-  private isOwnOrder = (order: orders.StampedOrder) => {
-    return !order['hostId'];
   }
 
   private sendOrders = async (peer: Peer, reqId: string) => {
