@@ -55,7 +55,6 @@ class OrderBook extends EventEmitter {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.orderInvalidation', (body: orders.OrderIdentifier) => {
         // TODO: implement quantity invalidation
-        // TODO: penalize peer if id of the order is invalid
         if (this.removePeerOrder(body.id, body.pairId)) {
           this.emit('peerOrder.invalidation', body);
         }
@@ -216,7 +215,15 @@ class OrderBook extends EventEmitter {
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     this.pairs.forEach((pair) => {
-      this.matchingEngines[pair.id].removePeerOrders(peer.id);
+      const orders = this.matchingEngines[pair.id].removePeerOrders(peer.id);
+
+      orders.forEach((order) => {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+        this.emit('peerOrder.invalidation', {
+          id: order.id,
+          pairId: order.pairId,
+        });
+      });
     });
   }
 
