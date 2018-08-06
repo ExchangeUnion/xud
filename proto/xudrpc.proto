@@ -186,7 +186,7 @@ message Order {
   // The trading pair that this order is for
   string pair_id = 3 [json_name = "pair_id"];
   // The id of the peer - consisting of a [host]:[port] socket address - that created this order
-  int32 peer_id = 4 [json_name = "peer_id"];
+  string peer_id = 4 [json_name = "peer_id"];
   // A UUID for this order
   string id = 6 [json_name = "id"];
   // The local ID for this order
