@@ -55,7 +55,7 @@ class OrderBook extends EventEmitter {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.orderInvalidation', (body: orders.OrderIdentifier) => {
         // TODO: implement quantity invalidation
-        if (this.removePeerOrder(body.id, body.pairId)) {
+        if (this.removePeerOrder(body.orderId, body.pairId)) {
           this.emit('peerOrder.invalidation', body);
         }
       });
@@ -131,7 +131,7 @@ class OrderBook extends EventEmitter {
     const id = this.localIdMap[localId];
 
     if (id === undefined) {
-      return { removed: false, globalId: '' };
+      return { removed: false, globalId: id };
     } else {
       delete this.localIdMap[localId];
       return {
@@ -220,7 +220,7 @@ class OrderBook extends EventEmitter {
       orders.forEach((order) => {
         this.removeOrder(this.peerOrders, order.id, order.pairId);
         this.emit('peerOrder.invalidation', {
-          id: order.id,
+          orderId: order.id,
           pairId: order.pairId,
         });
       });

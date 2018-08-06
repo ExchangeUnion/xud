@@ -213,11 +213,16 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to incoming peer orders and cancellations.
+   * Subscribe to peer order events.
    */
   public subscribePeerOrders = async (callback: Function) => {
     this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('peerOrder.invalidation', order => callback({ canceled: true, ...order }));
+    this.orderBook.on('peerOrder.invalidation', order => callback({
+      canceled: true,
+      id: order.orderId,
+      pairId: order.pairId,
+      quantity: order.quantity,
+    }));
   }
 
   /*
