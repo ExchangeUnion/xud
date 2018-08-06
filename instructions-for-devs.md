@@ -21,7 +21,14 @@ npm install
 ```
 
 
-`xud` uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user *xud* and a database *xud* and grant all permissions for the new database to the *xud* user.
+`xud` uses [MySQL](https://www.mysql.com/) or [MariaDB](https://mariadb.org/). You will have to install one of those and create a user "xud" (password empty) and grant permissions to the "xud" user. Note: We currently don't support the *strong password mechanism* of MySQL 8.
+
+Here an example of how to achieve the above:
+```bash
+sudo mysql
+mysql> CREATE USER 'xud'@'localhost' IDENTIFIED BY '';
+mysql> GRANT ALL ON *.* TO 'xud'@'localhost';
+
 
 
 ## 2. Start `xud`
