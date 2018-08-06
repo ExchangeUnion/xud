@@ -28,7 +28,7 @@ Here an example of how to achieve the above:
 sudo mysql
 mysql> CREATE USER 'xud'@'localhost' IDENTIFIED BY '';
 mysql> GRANT ALL ON *.* TO 'xud'@'localhost';
-
+```
 
 
 ## 2. Start `xud`
