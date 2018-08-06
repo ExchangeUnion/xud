@@ -4,11 +4,12 @@ import { SwapProtocol } from '../../lib/types/enums';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 
-export default async (testDb?: boolean) => {
+export default async (productionDb?: boolean) => {
   const config = new Config();
   await config.load();
 
-  const db = new DB(testDb ? config.testDb : config.db);
+  const dbName = productionDb ? config.db : config.testDb;
+  const db = new DB(dbName);
   await db.init();
 
   const orderBookRepository = new OrderBookRepository(db.models);
