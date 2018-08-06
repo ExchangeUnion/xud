@@ -14,13 +14,14 @@ export default async (testDb?: boolean) => {
   const orderBookRepository = new OrderBookRepository(db.models);
   const p2pRepository = new P2PRepository(db);
 
-  await Promise.all([
-    orderBookRepository.addCurrencies([
-      { id: 'BTC' },
-      { id: 'LTC' },
-      { id: 'ZRX' },
-      { id: 'GNT' },
-    ]),
+  await orderBookRepository.addCurrencies([
+    { id: 'BTC' },
+    { id: 'LTC' },
+    { id: 'ZRX' },
+    { id: 'GNT' },
+  ]);
+
+  await Promise.all([,
     orderBookRepository.addPairs([
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
       { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
