@@ -165,9 +165,9 @@ class MatchingEngine {
     return this.removeOrder(orderId) as StampedPeerOrder | undefined;
   }
 
-  public removePeerOrders = (hostId: number): StampedPeerOrder[] => {
+  public removePeerOrders = (peerId: string): StampedPeerOrder[] => {
     const callback = (order: StampedOrder) => {
-      return (order as StampedPeerOrder).hostId === hostId;
+      return (order as StampedPeerOrder).peerId === peerId;
     };
 
     return [

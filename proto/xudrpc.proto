@@ -185,11 +185,11 @@ message Order {
   double quantity = 2 [json_name = "quantity"];
   // The trading pair that this order is for
   string pair_id = 3 [json_name = "pair_id"];
-  // The id of the host that created this order
-  int32 host_id = 5 [json_name = "host_id"];
+  // The id of the peer - consisting of a [host]:[port] socket address - that created this order
+  int32 peer_id = 4 [json_name = "peer_id"];
   // A UUID for this order
   string id = 6 [json_name = "id"];
-  // The local ID for this oder
+  // The local ID for this order
   string local_id = 7 [json_name = "local_id"];
   // The epoch time when this order was created
   int64 created_at = 8 [json_name = "created_at"];
