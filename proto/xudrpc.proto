@@ -77,7 +77,7 @@ service Xud {
     };
   }
   
-  /* Subscribe to incoming peer orders. */
+  /* Subscribe to peer order events. */
   rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (stream SubscribePeerOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/subscribepeerorders"
@@ -195,6 +195,8 @@ message Order {
   int64 created_at = 8 [json_name = "created_at"];
   // Lightning invoice
   string invoice = 9 [json_name = "invoice"];
+  // Indicates whether an order was canceled 
+  bool canceled = 10 [json_name = "canceled"];
 }
 
 message OrderMatch {
