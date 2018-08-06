@@ -10,10 +10,6 @@ class Host {
     return this.instance.id;
   }
 
-  public get pubKey(): string | undefined {
-    return this.instance.pubKey;
-  }
-
   constructor(private instance: db.HostInstance) {
     this.socketAddress = new SocketAddress(instance.address, instance.port);
   }

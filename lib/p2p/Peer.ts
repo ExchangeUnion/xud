@@ -98,14 +98,6 @@ class Peer extends EventEmitter {
     }
   }
 
-  public get pubKey(): string | undefined {
-    if (this.host) {
-      return this.host.pubKey;
-    } else {
-      return undefined;
-    }
-  }
-
   constructor() {
     super();
 

@@ -6,7 +6,6 @@ import Bluebird from 'bluebird';
 
 import Logger from '../Logger';
 import { db } from '../types';
-import P2PRepository from '../p2p/P2PRepository';
 
 type SequelizeConfig = {
   host: string;
@@ -44,12 +43,14 @@ class DB {
   }
 
   public init = async (): Promise<void> => {
+    let newDb = false;
     try {
       await this.sequelize.authenticate();
       const { host, port, database } = this.config;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database}`);
     } catch (err) {
       if (DB.isDbDoesNotExistError(err)) {
+        newDb = true;
         await this.createDatabase();
       } else {
         this.logger.error('unable to connect to the database', err);
@@ -58,7 +59,6 @@ class DB {
     }
     const { Host, BannedHost, Currency, Pair } = this.models;
     const options = { logging: this.logger.verbose };
-    const p2pRepository = new P2PRepository(this);
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Host.sync(options),
@@ -68,13 +68,14 @@ class DB {
     await Promise.all([
       Pair.sync(options),
     ]);
-    await Promise.all([
-      p2pRepository.addHosts([
+
+    if (newDb) {
+      await Host.bulkCreate(<db.HostAttributes[]>[
         { address: 'xud1.test.exchangeunion.com', port: 8885 },
         { address: 'xud2.test.exchangeunion.com', port: 8885 },
         { address: 'xud3.test.exchangeunion.com', port: 8885 },
-      ]),
-    ]);
+      ]);
+    }
   }
 
   public close = (): Bluebird<void> => {
