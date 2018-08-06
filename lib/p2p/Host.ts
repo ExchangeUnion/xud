@@ -5,7 +5,7 @@ import { db } from '../types';
 class Host {
   public socketAddress: SocketAddress;
 
-  get id(): number {
+  public get id(): number {
     assert(this.instance);
     return this.instance.id;
   }
