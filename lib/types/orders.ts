@@ -14,7 +14,7 @@ export type OwnOrder = OwnMarketOrder & {
 export type PeerOrder = MarketOrder & {
   price: number;
   id: string;
-  hostId: number;
+  peerId: string;
   invoice: string;
 };
 

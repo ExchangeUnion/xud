@@ -16,11 +16,11 @@ const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orde
   pairId: PAIR_ID,
 });
 
-const createPeerOrder = (price: number, quantity: number, createdAt = ms(), hostId = 1): orders.StampedPeerOrder => ({
+const createPeerOrder = (price: number, quantity: number, createdAt = ms(), peerId = '127.0.0.1:8885'): orders.StampedPeerOrder => ({
   quantity,
   price,
   createdAt,
-  hostId,
+  peerId,
   id: uuidv1(),
   pairId: PAIR_ID,
   invoice: '',
@@ -212,8 +212,8 @@ describe('MatchingEngine.removeOwnOrder', () => {
 describe('MatchingEngine.removePeerOrders', () => {
   it('should add a new peerOrders and then remove some of them', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    const firstHostId = 1;
-    const secondHostId = 2;
+    const firstHostId = '127.0.0.1:8885';
+    const secondHostId = '127.0.0.1:9885';
 
     expect(engine.isEmpty()).to.be.true;
 
