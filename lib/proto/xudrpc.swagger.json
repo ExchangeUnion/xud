@@ -485,8 +485,7 @@
           "title": "The trading pair that this order is for"
         },
         "peer_id": {
-          "type": "integer",
-          "format": "int32",
+          "type": "string",
           "title": "The id of the peer - consisting of a [host]:[port] socket address - that created this order"
         },
         "id": {
