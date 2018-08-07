@@ -181,8 +181,12 @@ class Service extends EventEmitter {
    * Cancel placed order from the orderbook.
    */
   public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
-    this.pool.broadcastOrderInvalidation(orderId, pairId);
-    return { canceled: this.orderBook.removeOwnOrderByLocalId(pairId, orderId) };
+    const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
+
+    if (removed) {
+      this.pool.broadcastOrderInvalidation(globalId, pairId);
+    }
+    return { canceled: removed };
   }
 
   /**
@@ -209,10 +213,16 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to incoming peer orders.
+   * Subscribe to peer order events.
    */
   public subscribePeerOrders = async (callback: Function) => {
-    this.orderBook.on('peerOrder', order => callback(order));
+    this.orderBook.on('peerOrder.incoming', order => callback(order));
+    this.orderBook.on('peerOrder.invalidation', order => callback({
+      canceled: true,
+      id: order.orderId,
+      pairId: order.pairId,
+      quantity: order.quantity,
+    }));
   }
 
   /*

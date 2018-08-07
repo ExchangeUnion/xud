@@ -247,7 +247,7 @@
     },
     "/v1/subscribepeerorders": {
       "get": {
-        "summary": "Subscribe to incoming peer orders.",
+        "summary": "Subscribe to peer order events.",
         "operationId": "SubscribePeerOrders",
         "responses": {
           "200": {
@@ -504,6 +504,11 @@
         "invoice": {
           "type": "string",
           "title": "Lightning invoice"
+        },
+        "canceled": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether an order was canceled"
         }
       }
     },

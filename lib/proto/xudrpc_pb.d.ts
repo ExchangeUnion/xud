@@ -465,6 +465,9 @@ export class Order extends jspb.Message {
   getInvoice(): string;
   setInvoice(value: string): void;
 
+  getCanceled(): boolean;
+  setCanceled(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Order.AsObject;
   static toObject(includeInstance: boolean, msg: Order): Order.AsObject;
@@ -485,6 +488,7 @@ export namespace Order {
     localId: string,
     createdAt: number,
     invoice: string,
+    canceled: boolean,
   }
 }
 

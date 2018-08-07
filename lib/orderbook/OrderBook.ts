@@ -20,8 +20,10 @@ type Orders = {
 };
 
 interface OrderBook {
-  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
-  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+  on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void);
+  on(event: 'peerOrder.invalidation', listener: (order: orders.OrderIdentifier) => void);
+  emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder);
+  emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier);
 }
 
 type OrderArrays = {
@@ -51,10 +53,14 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
+      pool.on('packet.orderInvalidation', (body: orders.OrderIdentifier) => {
+        // TODO: implement quantity invalidation
+        if (this.removePeerOrder(body.orderId, body.pairId)) {
+          this.emit('peerOrder.invalidation', body);
+        }
+      });
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
-
     }
   }
 
@@ -121,14 +127,17 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrderByLocalId = (pairId: string, localId: string): boolean => {
+  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId: string } => {
     const id = this.localIdMap[localId];
 
     if (id === undefined) {
-      return false;
+      return { removed: false, globalId: id };
     } else {
       delete this.localIdMap[localId];
-      return this.removeOwnOrder(pairId, id);
+      return {
+        removed: this.removeOwnOrder(pairId, id),
+        globalId: id,
+      };
     }
   }
 
@@ -198,7 +207,7 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', stampedOrder);
+    this.emit('peerOrder.incoming', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
@@ -206,7 +215,15 @@ class OrderBook extends EventEmitter {
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     this.pairs.forEach((pair) => {
-      this.matchingEngines[pair.id].removePeerOrders(peer.id);
+      const orders = this.matchingEngines[pair.id].removePeerOrders(peer.id);
+
+      orders.forEach((order) => {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+        this.emit('peerOrder.invalidation', {
+          orderId: order.id,
+          pairId: order.pairId,
+        });
+      });
     });
   }
 
