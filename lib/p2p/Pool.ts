@@ -129,8 +129,8 @@ class Pool extends EventEmitter {
     // TODO: send only to peers which accepts the pairId
   }
 
-  public broadcastOrderInvalidation = (orderId: string, pairId: string) => {
-    const orderInvalidationPacket = new OrderInvalidationPacket({ orderId, pairId });
+  public broadcastOrderInvalidation = (order: OrderIdentifier) => {
+    const orderInvalidationPacket = new OrderInvalidationPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
 
     // TODO: send only to peers which accepts the pairId
