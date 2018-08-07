@@ -65,7 +65,7 @@ class Service extends EventEmitter {
     if (removed) {
       this.pool.broadcastOrderInvalidation({
         pairId,
-        orderId: globalId,
+        orderId: globalId!,
       });
     }
     return { canceled: removed };

@@ -7,6 +7,7 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
+import { Arguments } from 'yargs';
 
 class Config {
   public p2p: PoolConfig;
@@ -18,7 +19,7 @@ class Config {
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
 
-  constructor(private args?: object) {
+  constructor(private args?: Arguments) {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {

@@ -10,6 +10,7 @@ import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
+import { Arguments } from 'yargs';
 
 bootstrap();
 
@@ -31,7 +32,7 @@ class Xud {
    * Create an Exchange Union daemon.
    * @param args Optional command line arguments to override configuration parameters.
    */
-  constructor(args)  {
+  constructor(args?: Arguments)  {
     this.config = new Config(args);
   }
 
@@ -123,7 +124,7 @@ class Xud {
 }
 
 if (!module.parent) {
-  const xud = new Xud(null);
+  const xud = new Xud();
   xud.start();
 }
 
