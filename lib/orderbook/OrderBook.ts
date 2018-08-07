@@ -54,7 +54,7 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
+      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
     }
@@ -137,12 +137,6 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private handleOrderInvalidation = (body: OrderIdentifier) => {
-    if (this.removePeerOrder(body.orderId, body.pairId, body.quantity)) {
-      this.emit('peerOrder.invalidation', body);
-    }
-  }
-
   private removeOwnOrder = (pairId: string, orderId: string): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
     if (!matchingEngine) {
@@ -170,10 +164,17 @@ class OrderBook extends EventEmitter {
 
     if (order) {
       if (matchingEngine.removePeerOrder(orderId, decreasedQuantity)) {
+        let result;
+
         if (!decreasedQuantity || decreasedQuantity === 0) {
-          return this.removeOrder(this.peerOrders, orderId, pairId);
+          result = this.removeOrder(this.peerOrders, orderId, pairId);
         } else {
-          return this.updateOrderQuantity(order, decreasedQuantity);
+          result = this.updateOrderQuantity(order, decreasedQuantity);
+        }
+
+        if (result) {
+          this.emit('peerOrder.invalidation', { orderId, pairId, quantity: decreasedQuantity });
+          return true;
         }
       }
     }
