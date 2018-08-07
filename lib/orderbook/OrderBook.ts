@@ -11,6 +11,7 @@ import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
+import { OrderIdentifier } from '../types/orders';
 
 type OrdersMap = Map<String, Orders>;
 
@@ -37,7 +38,7 @@ class OrderBook extends EventEmitter {
 
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
-  private matchesProcessor: MatchesProcessor = new MatchesProcessor();
+  private matchesProcessor = new MatchesProcessor();
 
   private ownOrders: OrdersMap = new Map<String, Orders>();
   private peerOrders: OrdersMap = new Map<String, Orders>();
@@ -53,12 +54,7 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', (body: orders.OrderIdentifier) => {
-        // TODO: implement quantity invalidation
-        if (this.removePeerOrder(body.orderId, body.pairId)) {
-          this.emit('peerOrder.invalidation', body);
-        }
-      });
+      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
     }
@@ -156,18 +152,33 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private removePeerOrder = (orderId: string, pairId: string): boolean => {
+  private removePeerOrder = (orderId: string, pairId: string, decreasedQuantity?: number): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
-    if (!matchingEngine) {
+    const ordersMap = this.peerOrders[pairId];
+    if (!matchingEngine || !ordersMap) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
       return false;
     }
 
-    if (matchingEngine.removePeerOrder(orderId)) {
-      return this.removeOrder(this.peerOrders, orderId, pairId);
-    } else {
-      return false;
+    const order = ordersMap[orderId];
+
+    if (order && matchingEngine.removePeerOrder(orderId, decreasedQuantity)) {
+      let result;
+
+      if (!decreasedQuantity || decreasedQuantity === 0) {
+        result = this.removeOrder(this.peerOrders, orderId, pairId);
+      } else {
+        result = this.updateOrderQuantity(order, decreasedQuantity);
+      }
+
+      if (result) {
+        this.emit('peerOrder.invalidation', { orderId, pairId, quantity: decreasedQuantity });
+        return true;
+      }
     }
+
+    this.logger.warn(`Invalid orderId: ${orderId}`);
+    return false;
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
@@ -227,18 +238,26 @@ class OrderBook extends EventEmitter {
     });
   }
 
-  private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number) => {
+  private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number): boolean => {
     const isOwnOrder = orders.isOwnOrder(order);
     const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
-    orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
-    if (orderMap[order.id].quantity === 0) {
+    const orderInstance = orderMap[order.id];
+
+    if (!orderInstance) {
+      return false;
+    }
+
+    orderInstance.quantity = orderInstance.quantity - decreasedQuantity;
+    if (orderInstance.quantity === 0) {
       if (isOwnOrder) {
         const { localId } = order as orders.StampedOwnOrder;
         delete this.localIdMap[localId];
       }
       delete orderMap[order.id];
     }
+
+    return true;
   }
 
   private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
@@ -312,6 +331,15 @@ class OrderBook extends EventEmitter {
 
   private handleMatch = ({ maker, taker }): void => {
     this.logger.debug(`order match: ${JSON.stringify({ maker, taker })}`);
+    if (this.pool) {
+      if (orders.isOwnOrder(maker)) {
+        this.pool.broadcastOrderInvalidation({
+          orderId: maker.id,
+          pairId: maker.pairId,
+          quantity: maker.quantity,
+        });
+      }
+    }
     this.matchesProcessor.add({ maker, taker });
   }
 

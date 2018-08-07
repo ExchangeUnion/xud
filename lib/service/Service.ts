@@ -184,7 +184,10 @@ class Service extends EventEmitter {
     const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
 
     if (removed) {
-      this.pool.broadcastOrderInvalidation(globalId, pairId);
+      this.pool.broadcastOrderInvalidation({
+        pairId,
+        orderId: globalId,
+      });
     }
     return { canceled: removed };
   }
