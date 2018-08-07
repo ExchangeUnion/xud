@@ -162,20 +162,18 @@ class OrderBook extends EventEmitter {
 
     const order = ordersMap[orderId];
 
-    if (order) {
-      if (matchingEngine.removePeerOrder(orderId, decreasedQuantity)) {
-        let result;
+    if (order && matchingEngine.removePeerOrder(orderId, decreasedQuantity)) {
+      let result;
 
-        if (!decreasedQuantity || decreasedQuantity === 0) {
-          result = this.removeOrder(this.peerOrders, orderId, pairId);
-        } else {
-          result = this.updateOrderQuantity(order, decreasedQuantity);
-        }
+      if (!decreasedQuantity || decreasedQuantity === 0) {
+        result = this.removeOrder(this.peerOrders, orderId, pairId);
+      } else {
+        result = this.updateOrderQuantity(order, decreasedQuantity);
+      }
 
-        if (result) {
-          this.emit('peerOrder.invalidation', { orderId, pairId, quantity: decreasedQuantity });
-          return true;
-        }
+      if (result) {
+        this.emit('peerOrder.invalidation', { orderId, pairId, quantity: decreasedQuantity });
+        return true;
       }
     }
 

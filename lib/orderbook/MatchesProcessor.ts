@@ -31,7 +31,6 @@ class MatchesProcessor {
 
   public executeSwap(_args) {
     // TODO: execute the swap procedure
-    // TODO: invalidate the maker if it is of the type ownOrder
   }
 }
 
