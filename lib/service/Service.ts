@@ -144,26 +144,35 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get a list of standing peer orders from the order book for a specified trading pair, or for all
-   * trading pairs if no pair is specified.
+   * Get a list of standing peer orders from the order book for a specified trading pair
    */
   public getOrders = ({ pairId, maxResults }: { pairId?: string, maxResults?: number }) => {
-    const ret: OrderArrays = {
-      buyOrders: [],
-      sellOrders: [],
+    checkArgument(pairId !== undefined && pairId !== '', 'pairId has to be specified');
+
+    const result: { [ type: string ]: OrderArrays } = {
+      peerOrders: {
+        buyOrders: [],
+        sellOrders: [],
+      },
+      ownOrders: {
+        buyOrders: [],
+        sellOrders: [],
+      },
     };
-    if (pairId) {
-      const orderArrays = this.orderBook.getPeerOrders(pairId, maxResults ? maxResults : 0);
-      ret.buyOrders.concat(orderArrays.buyOrders);
-      ret.sellOrders.concat(orderArrays.sellOrders);
-    } else {
-      this.orderBook.pairs.forEach((pair) => {
-        const orderArrays = this.orderBook.getPeerOrders(pair.id, maxResults ? maxResults : 0);
-        ret.buyOrders.concat(orderArrays.buyOrders);
-        ret.sellOrders.concat(orderArrays.sellOrders);
-      });
-    }
-    return ret;
+
+    const concatOrders = (orders: OrderArrays, peerOrders: boolean) => {
+      const concatTo = peerOrders ? result.peerOrders : result.ownOrders;
+
+      concatTo.buyOrders = concatTo.buyOrders.concat(orders.buyOrders);
+      concatTo.sellOrders = concatTo.sellOrders.concat(orders.sellOrders);
+    };
+
+    const maxLength = maxResults ? maxResults : 0;
+
+    concatOrders(this.orderBook.getPeerOrders(pairId as string, maxLength), true);
+    concatOrders(this.orderBook.getOwnOrders(pairId as string, maxLength), false);
+
+    return result;
   }
 
   /**

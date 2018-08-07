@@ -197,6 +197,13 @@ message Order {
   string invoice = 9 [json_name = "invoice"];
 }
 
+message Orders {
+  // A list of buy orders sorted by descending price
+  repeated Order buy_orders = 1 [json_name = "buy_orders"];
+  // A list of sell orders sorted by ascending price
+  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+}
+
 message OrderMatch {
   Order maker = 1 [json_name = "maker"];
   Order taker = 2 [json_name = "taker"];
@@ -229,10 +236,10 @@ message GetOrdersRequest {
   uint32 max_results = 2 [json_name = "max_results"];
 }
 message GetOrdersResponse {
-  // A list of buy orders sorted by descending price
-  repeated Order buy_orders = 1 [json_name = "buy_orders"];
-  // A list of sell orders sorted by ascending price
-  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+  // A list of the orders of peers
+  Orders peer_orders = 1 [json_name = "peer_orders"];
+  // A list of your orders
+  Orders own_orders = 2 [json_name = "own_orders"];
 }
 
 message ShutdownRequest {}
