@@ -244,16 +244,16 @@ class Peer extends EventEmitter {
         }
         if (this.socket) {
           this.socket.removeListener('error', onError);
+          this.socket.removeListener('connect', onConnect);
         }
       };
 
       const onError = (err) => {
         cleanup();
-        this.close();
         reject(err);
       };
 
-      this.socket!.once('connect', () => {
+      const onConnect = () => {
         this.connectTime = Date.now();
         this.connected = true;
         this.logger.debug(this.getStatus());
@@ -261,14 +261,15 @@ class Peer extends EventEmitter {
 
         cleanup();
         resolve();
-      });
+      };
+
+      this.socket!.once('connect', onConnect);
 
       this.socket!.once('error', onError);
 
       this.connectTimeout = setTimeout(() => {
         this.connectTimeout = undefined;
         cleanup();
-        this.close();
         reject(new Error('Connection timed out.'));
       }, 10000);
     });
@@ -493,11 +494,10 @@ class Peer extends EventEmitter {
       return;
     }
 
-    this.logger.error(`Socket Error (${this.id}): ${err.toString()}`);
     if (err instanceof Error) {
       this.emit('error', err);
     } else {
-      this.emit('error', new Error(`Socket Error (${this.id}): ${err}`));
+      this.emit('error', new Error(err));
     }
   }
 
