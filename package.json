@@ -74,10 +74,11 @@
     "atomic swaps",
     "cross-chain"
   ],
-  "author": "Daniel McNally",
+  "author": "Daniel McNally <mcnallydp@gmail.com>",
   "contributors": [
     "Moshe Shababo",
-    "Balamurali Pandranki <balamurali@live.com> (https://balamurali.me)"
+    "Balamurali Pandranki <balamurali@live.com> (https://balamurali.me)",
+    "michael1011"
   ],
   "license": "AGPL-3.0",
   "bugs": {
