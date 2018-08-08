@@ -273,15 +273,15 @@ export namespace GetOrdersRequest {
 }
 
 export class GetOrdersResponse extends jspb.Message {
-  clearBuyOrdersList(): void;
-  getBuyOrdersList(): Array<Order>;
-  setBuyOrdersList(value: Array<Order>): void;
-  addBuyOrders(value?: Order, index?: number): Order;
+  hasPeerOrders(): boolean;
+  clearPeerOrders(): void;
+  getPeerOrders(): Orders | undefined;
+  setPeerOrders(value?: Orders): void;
 
-  clearSellOrdersList(): void;
-  getSellOrdersList(): Array<Order>;
-  setSellOrdersList(value: Array<Order>): void;
-  addSellOrders(value?: Order, index?: number): Order;
+  hasOwnOrders(): boolean;
+  clearOwnOrders(): void;
+  getOwnOrders(): Orders | undefined;
+  setOwnOrders(value?: Orders): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): GetOrdersResponse.AsObject;
@@ -295,8 +295,8 @@ export class GetOrdersResponse extends jspb.Message {
 
 export namespace GetOrdersResponse {
   export type AsObject = {
-    buyOrdersList: Array<Order.AsObject>,
-    sellOrdersList: Array<Order.AsObject>,
+    peerOrders?: Orders.AsObject,
+    ownOrders?: Orders.AsObject,
   }
 }
 
@@ -748,24 +748,11 @@ export class SwapPayload extends jspb.Message {
   getSendingToken(): string;
   setSendingToken(value: string): void;
 
-<<<<<<< HEAD
-export class GetOrdersResponse extends jspb.Message {
-  hasPeerOrders(): boolean;
-  clearPeerOrders(): void;
-  getPeerOrders(): Orders | undefined;
-  setPeerOrders(value?: Orders): void;
-
-  hasOwnOrders(): boolean;
-  clearOwnOrders(): void;
-  getOwnOrders(): Orders | undefined;
-  setOwnOrders(value?: Orders): void;
-=======
   getReceivingAmount(): number;
   setReceivingAmount(value: number): void;
 
   getReceivingToken(): string;
   setReceivingToken(value: string): void;
->>>>>>> master
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapPayload.AsObject;
@@ -779,16 +766,11 @@ export class GetOrdersResponse extends jspb.Message {
 
 export namespace SwapPayload {
   export type AsObject = {
-<<<<<<< HEAD
-    peerOrders?: Orders.AsObject,
-    ownOrders?: Orders.AsObject,
-=======
     role: string,
     sendingAmount: number,
     sendingToken: string,
     receivingAmount: number,
     receivingToken: string,
->>>>>>> master
   }
 }
 
