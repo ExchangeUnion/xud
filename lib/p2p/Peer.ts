@@ -10,22 +10,11 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { HostFactory } from '../types/db';
+import { HandshakeState } from '../types/p2p';
 
 enum ConnectionDirection {
   INBOUND,
   OUTBOUND,
-}
-
-type HandshakeState = {
-  version: string;
-  nodePubKey: string;
-  listenPort: number;
-  pairs: string[];
-};
-
-function isHandshakeState(obj: any): obj is HandshakeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && typeof obj.listenPort === 'number'
-    && Array.isArray(obj.pairs);
 }
 
 interface Peer {
@@ -124,13 +113,13 @@ class Peer extends EventEmitter {
     }
   }
 
-  public open = async (): Promise<void> => {
+  public open = async (handshakeData: HandshakeState): Promise<void> => {
     assert(!this.opened);
     this.opened = true;
 
     await this.initConnection();
     this.initStall();
-    await this.initHello();
+    await this.initHello(handshakeData);
     this.finalizeOpen();
 
     // let the pool know that this peer is ready to go
@@ -275,8 +264,8 @@ class Peer extends EventEmitter {
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
   }
 
-  private initHello = async () => {
-    const packet = this.sendHello();
+  private initHello = async (handshakeData: HandshakeState) => {
+    const packet = this.sendHello(handshakeData);
 
     if (!this.handshakeState) {
       // wait for an incoming HelloPacket
@@ -495,14 +484,9 @@ class Peer extends EventEmitter {
     }
   }
 
-  private sendHello = (): packets.HelloPacket => {
+  private sendHello = (handshakeData: HandshakeState): packets.HelloPacket => {
     // TODO: use real values
-    const packet = new packets.HelloPacket({
-      version: '123',
-      nodePubKey: '123',
-      listenPort: 20000,
-      pairs: ['BTC/LTC'],
-    });
+    const packet = new packets.HelloPacket(handshakeData);
 
     this.sendPacket(packet);
 
@@ -578,4 +562,4 @@ class Job {
 }
 
 export default Peer;
-export { ConnectionDirection, HandshakeState };
+export { ConnectionDirection };

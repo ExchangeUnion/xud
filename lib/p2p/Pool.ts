@@ -1,7 +1,7 @@
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import Peer, { ConnectionDirection, HandshakeState } from './Peer';
+import Peer, { ConnectionDirection } from './Peer';
 import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
@@ -10,6 +10,7 @@ import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPack
 import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
+import { HandshakeState } from '../types/p2p';
 
 type PoolConfig = {
   listen: boolean;
@@ -34,6 +35,7 @@ class Pool extends EventEmitter {
   private server: Server = net.createServer();
   private logger: Logger = Logger.p2p;
   private connected: boolean = false;
+  private handshakeData!: HandshakeState;
 
   constructor(private config: PoolConfig, db: DB) {
     super();
@@ -48,10 +50,12 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known hosts and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (): Promise<void> => {
+  public init = async (handshakeData: HandshakeState): Promise<void> => {
     if (this.connected) {
       return;
     }
+
+    this.handshakeData = handshakeData;
 
     this.logger.info('Connecting to known / previously connected peers');
     await this.hosts.load();
@@ -108,7 +112,7 @@ class Pool extends EventEmitter {
 
   private openPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
-    await peer.open();
+    await peer.open(this.handshakeData);
     this.peers.add(peer);
   }
 
