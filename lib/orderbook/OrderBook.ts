@@ -11,6 +11,7 @@ import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
+import { OrderIdentifier } from '../types/orders';
 
 type OrdersMap = Map<String, Orders>;
 
@@ -20,8 +21,10 @@ type Orders = {
 };
 
 interface OrderBook {
-  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
-  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+  on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void);
+  on(event: 'peerOrder.invalidation', listener: (order: orders.OrderIdentifier) => void);
+  emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder);
+  emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier);
 }
 
 type OrderArrays = {
@@ -35,7 +38,7 @@ class OrderBook extends EventEmitter {
 
   private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
-  private matchesProcessor: MatchesProcessor = new MatchesProcessor();
+  private matchesProcessor = new MatchesProcessor();
 
   private ownOrders: OrdersMap = new Map<String, Orders>();
   private peerOrders: OrdersMap = new Map<String, Orders>();
@@ -51,10 +54,9 @@ class OrderBook extends EventEmitter {
     this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
+      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
-
     }
   }
 
@@ -121,14 +123,17 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrderByLocalId = (pairId: string, localId: string): boolean => {
+  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId: string } => {
     const id = this.localIdMap[localId];
 
     if (id === undefined) {
-      return false;
+      return { removed: false, globalId: id };
     } else {
       delete this.localIdMap[localId];
-      return this.removeOwnOrder(pairId, id);
+      return {
+        removed: this.removeOwnOrder(pairId, id),
+        globalId: id,
+      };
     }
   }
 
@@ -147,18 +152,33 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private removePeerOrder = (orderId: string, pairId: string): boolean => {
+  private removePeerOrder = (orderId: string, pairId: string, decreasedQuantity?: number): boolean => {
     const matchingEngine = this.matchingEngines[pairId];
-    if (!matchingEngine) {
+    const ordersMap = this.peerOrders[pairId];
+    if (!matchingEngine || !ordersMap) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
       return false;
     }
 
-    if (matchingEngine.removePeerOrder(orderId)) {
-      return this.removeOrder(this.peerOrders, orderId, pairId);
-    } else {
-      return false;
+    const order = ordersMap[orderId];
+
+    if (order && matchingEngine.removePeerOrder(orderId, decreasedQuantity)) {
+      let result;
+
+      if (!decreasedQuantity || decreasedQuantity === 0) {
+        result = this.removeOrder(this.peerOrders, orderId, pairId);
+      } else {
+        result = this.updateOrderQuantity(order, decreasedQuantity);
+      }
+
+      if (result) {
+        this.emit('peerOrder.invalidation', { orderId, pairId, quantity: decreasedQuantity });
+        return true;
+      }
     }
+
+    this.logger.warn(`Invalid orderId: ${orderId}`);
+    return false;
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
@@ -178,7 +198,7 @@ class OrderBook extends EventEmitter {
     if (matches.length > 0) {
       matches.forEach(({ maker, taker }) => {
         this.handleMatch({ maker, taker });
-        this.updateOrderQuantity(this.ownOrders, maker, maker.quantity);
+        this.updateOrderQuantity(maker, maker.quantity);
       });
     }
     if (remainingOrder && !discardRemaining) {
@@ -198,7 +218,7 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', stampedOrder);
+    this.emit('peerOrder.incoming', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
@@ -206,25 +226,42 @@ class OrderBook extends EventEmitter {
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     this.pairs.forEach((pair) => {
-      this.matchingEngines[pair.id].removePeerOrders(peer.id);
+      const orders = this.matchingEngines[pair.id].removePeerOrders(peer.id);
+
+      orders.forEach((order) => {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+        this.emit('peerOrder.invalidation', {
+          orderId: order.id,
+          pairId: order.pairId,
+        });
+      });
     });
   }
 
-  private updateOrderQuantity = (type: OrdersMap, order: orders.StampedOrder, decreasedQuantity: number) => {
-    const orderMap = this.getOrderMap(type, order);
+  private updateOrderQuantity = (order: orders.StampedOrder, decreasedQuantity: number): boolean => {
+    const isOwnOrder = orders.isOwnOrder(order);
+    const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
-    orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
-    if (orderMap[order.id].quantity === 0) {
-      if (this.isOwnOrder(type)) {
+    const orderInstance = orderMap[order.id];
+
+    if (!orderInstance) {
+      return false;
+    }
+
+    orderInstance.quantity = orderInstance.quantity - decreasedQuantity;
+    if (orderInstance.quantity === 0) {
+      if (isOwnOrder) {
         const { localId } = order as orders.StampedOwnOrder;
         delete this.localIdMap[localId];
       }
       delete orderMap[order.id];
     }
+
+    return true;
   }
 
   private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
-    if (this.isOwnOrder(type)) {
+    if (this.isOwnOrdersMap(type)) {
       const { localId } = order as orders.StampedOwnOrder;
       this.localIdMap[localId] = order.id;
     }
@@ -255,7 +292,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private isOwnOrder = (type: OrdersMap) => {
+  private isOwnOrdersMap = (type: OrdersMap) => {
     return type === this.ownOrders;
   }
 
@@ -294,6 +331,15 @@ class OrderBook extends EventEmitter {
 
   private handleMatch = ({ maker, taker }): void => {
     this.logger.debug(`order match: ${JSON.stringify({ maker, taker })}`);
+    if (this.pool) {
+      if (orders.isOwnOrder(maker)) {
+        this.pool.broadcastOrderInvalidation({
+          orderId: maker.id,
+          pairId: maker.pairId,
+          quantity: maker.quantity,
+        });
+      }
+    }
     this.matchesProcessor.add({ maker, taker });
   }
 

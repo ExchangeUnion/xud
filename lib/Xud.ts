@@ -15,6 +15,7 @@ bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
+  public service!: Service;
   private logger: Logger = Logger.global;
   private config: Config;
   private db!: DB;
@@ -25,7 +26,6 @@ class Xud {
   private rpcServer!: GrpcServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
-  public service!: Service;
 
   /**
    * Create an Exchange Union daemon.
@@ -53,12 +53,25 @@ class Xud {
       await this.lndClient.connect();
 
       this.raidenClient = new RaidenClient(this.config.raiden);
+      await this.raidenClient.init();
 
       this.pool = new Pool(this.config.p2p, this.db);
-      this.pool.init();
 
       this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient);
       await this.orderBook.init();
+
+      const pairs: string[] = [];
+      (await this.orderBook.getPairs()).forEach((pair) => {
+        pairs.push(pair.id);
+      });
+
+      this.pool.init({
+        pairs,
+        version: '1.0',
+        nodePubKey: this.nodeKey.nodePubKey,
+        listenPort: this.config.p2p.listen ? this.config.p2p.port : undefined,
+        raidenAddress: this.raidenClient.address,
+      });
 
       this.service = new Service({
         orderBook: this.orderBook,

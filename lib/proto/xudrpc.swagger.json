@@ -191,6 +191,23 @@
         ]
       }
     },
+    "/v1/peers": {
+      "get": {
+        "summary": "Get a list of connected peers.",
+        "operationId": "ListPeers",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListPeersResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/placeorder": {
       "post": {
         "summary": "Add an order to the order book.\nIf price is zero or unspecified a market order will get added.",
@@ -247,7 +264,7 @@
     },
     "/v1/subscribepeerorders": {
       "get": {
-        "summary": "Subscribe to incoming peer orders.",
+        "summary": "Subscribe to peer order events.",
         "operationId": "SubscribePeerOrders",
         "responses": {
           "200": {
@@ -420,6 +437,17 @@
         }
       }
     },
+    "xudrpcListPeersResponse": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcPeer"
+          }
+        }
+      }
+    },
     "xudrpcLndChannels": {
       "type": "object",
       "properties": {
@@ -485,8 +513,7 @@
           "title": "The trading pair that this order is for"
         },
         "peer_id": {
-          "type": "integer",
-          "format": "int32",
+          "type": "string",
           "title": "The id of the peer - consisting of a [host]:[port] socket address - that created this order"
         },
         "id": {
@@ -505,6 +532,11 @@
         "invoice": {
           "type": "string",
           "title": "Lightning invoice"
+        },
+        "canceled": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether an order was canceled"
         }
       }
     },
@@ -546,6 +578,40 @@
         },
         "swap_protocol": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcPeer": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "The socket address with host and port for this peer"
+        },
+        "node_pub_key": {
+          "type": "string",
+          "title": "The node pub key to uniquely identify this peer"
+        },
+        "inbound": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether this peer was connected inbound"
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A list of trading pair tickers supported by this peer"
+        },
+        "xud_version": {
+          "type": "string",
+          "title": "The version of xud being used by the peer"
+        },
+        "seconds_connected": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The time in seconds that we have been connected to this peer"
         }
       }
     },

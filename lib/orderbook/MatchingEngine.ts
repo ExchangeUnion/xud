@@ -161,8 +161,18 @@ class MatchingEngine {
     return this.removeOrder(orderId) as StampedOwnOrder | undefined;
   }
 
-  public removePeerOrder = (orderId: string): StampedPeerOrder | undefined => {
-    return this.removeOrder(orderId) as StampedPeerOrder | undefined;
+  public removePeerOrder = (orderId: string, decreasedQuantity?: number): StampedPeerOrder | undefined => {
+    const order = this.removeOrder(orderId) as StampedPeerOrder | undefined;
+
+    if (order && decreasedQuantity) {
+      order.quantity = order.quantity - decreasedQuantity;
+      this.addPeerOrder(order);
+
+      // Return how much was removed
+      return { ...order, quantity: decreasedQuantity };
+    }
+
+    return order;
   }
 
   public removePeerOrders = (peerId: string): StampedPeerOrder[] => {

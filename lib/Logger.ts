@@ -1,3 +1,4 @@
+/* tslint:disable member-ordering */
 import fs from 'fs';
 import path from 'path';
 import winston from 'winston';
@@ -33,13 +34,7 @@ const contextFileMap = {
 };
 
 class Logger {
-  private level: string;
-  private logDir: string;
-  private context: Context;
-  private logger: any;
-
   private static defaultLogDir = 'logs';
-
   private static defaultLevel = process.env.NODE_ENV === 'production'
   ? Level.INFO
   : Level.DEBUG;
@@ -51,6 +46,11 @@ class Logger {
   public static orderbook = new Logger({ context: Context.ORDERBOOK });
   public static lnd = new Logger({ context: Context.LND });
   public static raiden = new Logger({ context: Context.RAIDEN });
+
+  private level: string;
+  private logDir: string;
+  private context: Context;
+  private logger: any;
 
   constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;

@@ -40,3 +40,7 @@ export type OrderIdentifier = {
   pairId: string;
   quantity?: number;
 };
+
+export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
+  return order['peerId'] === undefined && typeof order['localId'] === 'string';
+}
