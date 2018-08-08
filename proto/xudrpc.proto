@@ -99,7 +99,9 @@ service Xud {
 }
 
 message CancelOrderRequest {
+  // The local id of the order to cancel
   string order_id = 1 [json_name = "order_id"];
+  // The trading pair that the order to cancel is for
   string pair_id = 2 [json_name = "pair_id"];
 }
 message CancelOrderResponse {
@@ -192,7 +194,7 @@ message Order {
   string peer_id = 4 [json_name = "peer_id"];
   // A UUID for this order
   string id = 6 [json_name = "id"];
-  // The local ID for this order
+  // The local id for this order
   string local_id = 7 [json_name = "local_id"];
   // The epoch time when this order was created
   int64 created_at = 8 [json_name = "created_at"];

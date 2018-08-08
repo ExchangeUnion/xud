@@ -302,10 +302,12 @@
       "type": "object",
       "properties": {
         "order_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The local id of the order to cancel"
         },
         "pair_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The trading pair that the order to cancel is for"
         }
       }
     },
@@ -516,7 +518,7 @@
         },
         "local_id": {
           "type": "string",
-          "title": "The local ID for this order"
+          "title": "The local id for this order"
         },
         "created_at": {
           "type": "string",
