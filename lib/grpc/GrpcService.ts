@@ -40,24 +40,27 @@ class GrpcService {
       const response = serializeDateProperties(rawResponse);
       callback(null, response);
     } catch (err) {
+      this.logger.error(err);
+
       // if we recognize this error, return a proper gRPC ServiceError with a descriptive and appropriate code
-      let grpcError: ServiceError | undefined;
+      let code: grpc.status | undefined;
       switch (err.code) {
         case serviceErrorCodes.INVALID_ARGUMENT:
-          grpcError = { ...err, code: status.INVALID_ARGUMENT };
+          code = status.INVALID_ARGUMENT;
           break;
         case orderErrorCodes.INVALID_PAIR_ID:
-          grpcError = { ...err, code: status.NOT_FOUND };
+          code = status.NOT_FOUND;
           break;
         case orderErrorCodes.DUPLICATE_ORDER:
         case p2pErrorCodes.ADDRESS_ALREADY_CONNECTED:
-          grpcError = { ...err, code: status.ALREADY_EXISTS };
+          code = status.ALREADY_EXISTS;
+          break;
+        case p2pErrorCodes.NOT_CONNECTED:
+          code = status.FAILED_PRECONDITION;
           break;
       }
-      this.logger.error(err);
-
       // return grpcError if we've created one, otherwise pass along the caught error as UNKNOWN
-      callback(grpcError ? grpcError : err, null);
+      callback(code ? { ...err, code } : err, null);
     }
   }
 
