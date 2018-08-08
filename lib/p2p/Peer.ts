@@ -12,10 +12,15 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HostFactory } from '../types/db';
 import { HandshakeState } from '../types/p2p';
 
-enum ConnectionDirection {
-  INBOUND,
-  OUTBOUND,
-}
+/** Key info about a peer for display purposes */
+type PeerInfo = {
+  address: string,
+  nodePubKey?: string,
+  inbound: boolean,
+  pairs?: string[],
+  xudVersion?: string,
+  secondsConnected: number,
+};
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void);
@@ -54,7 +59,7 @@ class Peer extends EventEmitter {
   // TODO: properties documentation
 
   public socketAddress!: SocketAddress;
-  public direction!: ConnectionDirection;
+  public inbound!: boolean;
   public connected: boolean = false;
   private host?: Host;
   private logger: Logger = Logger.p2p;
@@ -66,7 +71,7 @@ class Peer extends EventEmitter {
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
-  private connectTime: number = 0;
+  private connectTime!: number;
   private banScore: number = 0;
   private lastRecv: number = 0;
   private lastSend: number = 0;
@@ -85,6 +90,17 @@ class Peer extends EventEmitter {
     } else {
       return null;
     }
+  }
+
+  public get info(): PeerInfo {
+    return {
+      address: this.id,
+      nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
+      inbound: this.inbound,
+      pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
+      xudVersion: this.handshakeState ? this.handshakeState.version : undefined,
+      secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
+    };
   }
 
   constructor() {
@@ -214,7 +230,8 @@ class Peer extends EventEmitter {
     assert(this.socket);
 
     if (this.connected) {
-      assert(this.direction === ConnectionDirection.INBOUND);
+      assert(this.inbound);
+      this.connectTime = Date.now();
       this.logger.debug(this.getStatus());
       return Promise.resolve();
     }
@@ -366,7 +383,7 @@ class Peer extends EventEmitter {
     const socket = net.connect(socketAddress.port, socketAddress.address);
 
     this.socketAddress = socketAddress;
-    this.direction = ConnectionDirection.OUTBOUND;
+    this.inbound = false;
     this.connected = false;
 
     this.bindSocket(socket);
@@ -376,7 +393,7 @@ class Peer extends EventEmitter {
     assert(!this.socket);
 
     this.socketAddress = SocketAddress.fromSocket(socket);
-    this.direction = ConnectionDirection.INBOUND;
+    this.inbound = true;
     this.connected = true;
 
     this.bindSocket(socket);
@@ -562,4 +579,4 @@ class Job {
 }
 
 export default Peer;
-export { ConnectionDirection };
+export { HandshakeState, PeerInfo };

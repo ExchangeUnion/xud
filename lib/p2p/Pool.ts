@@ -1,7 +1,7 @@
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import Peer, { ConnectionDirection } from './Peer';
+import Peer, { PeerInfo } from './Peer';
 import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
@@ -43,7 +43,7 @@ class Pool extends EventEmitter {
     this.hosts = new HostList(new P2PRepository(db));
   }
 
-  get peerCount(): number {
+  public get peerCount(): number {
     return this.peers.length;
   }
 
@@ -100,6 +100,16 @@ class Pool extends EventEmitter {
     const peer = Peer.fromOutbound(socketAddress);
     await this.tryOpenPeer(peer);
     return peer;
+  }
+
+  public listPeers = (): PeerInfo[] => {
+    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.length });
+    let i = 0;
+    this.peers.forEach((peer) => {
+      peerInfos[i] = peer.info;
+      i += 1;
+    });
+    return peerInfos;
   }
 
   private tryOpenPeer = async (peer: Peer): Promise<void> => {
@@ -211,10 +221,10 @@ class Pool extends EventEmitter {
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
-    if (peer.direction === ConnectionDirection.OUTBOUND) {
+    if (!peer.inbound) {
       const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
-    } else if (peer.direction === ConnectionDirection.INBOUND && listenPort) {
+    } else if (listenPort) {
       const socketAddress = new SocketAddress(peer.socketAddress.address, listenPort);
       const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
