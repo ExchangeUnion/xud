@@ -4,7 +4,7 @@ import { SubscribePeerOrdersRequest, SubscribePeerOrdersResponse } from '../../p
 
 export const command = 'subscribepeerorders';
 
-export const describe = 'subscribe to incoming peer orders';
+export const describe = 'subscribe to peer order events';
 
 export const handler = (argv: Arguments) => {
   const request = new SubscribePeerOrdersRequest();

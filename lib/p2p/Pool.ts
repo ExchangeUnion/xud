@@ -1,7 +1,7 @@
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import Peer, { ConnectionDirection, HandshakeState } from './Peer';
+import Peer, { PeerInfo } from './Peer';
 import HostList from './HostList';
 import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
@@ -10,6 +10,7 @@ import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPack
 import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
+import { HandshakeState } from '../types/p2p';
 
 type PoolConfig = {
   listen: boolean;
@@ -34,6 +35,7 @@ class Pool extends EventEmitter {
   private server: Server = net.createServer();
   private logger: Logger = Logger.p2p;
   private connected: boolean = false;
+  private handshakeData!: HandshakeState;
 
   constructor(private config: PoolConfig, db: DB) {
     super();
@@ -41,17 +43,19 @@ class Pool extends EventEmitter {
     this.hosts = new HostList(new P2PRepository(db));
   }
 
-  get peerCount(): number {
+  public get peerCount(): number {
     return this.peers.length;
   }
 
   /**
    * Initialize the Pool by connecting to known hosts and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (): Promise<void> => {
+  public init = async (handshakeData: HandshakeState): Promise<void> => {
     if (this.connected) {
       return;
     }
+
+    this.handshakeData = handshakeData;
 
     this.logger.info('Connecting to known / previously connected peers');
     await this.hosts.load();
@@ -98,6 +102,16 @@ class Pool extends EventEmitter {
     return peer;
   }
 
+  public listPeers = (): PeerInfo[] => {
+    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.length });
+    let i = 0;
+    this.peers.forEach((peer) => {
+      peerInfos[i] = peer.info;
+      i += 1;
+    });
+    return peerInfos;
+  }
+
   private tryOpenPeer = async (peer: Peer): Promise<void> => {
     try {
       await this.openPeer(peer);
@@ -108,7 +122,7 @@ class Pool extends EventEmitter {
 
   private openPeer = async (peer: Peer): Promise<void> => {
     this.bindPeer(peer);
-    await peer.open();
+    await peer.open(this.handshakeData);
     this.peers.add(peer);
   }
 
@@ -129,8 +143,8 @@ class Pool extends EventEmitter {
     // TODO: send only to peers which accepts the pairId
   }
 
-  public broadcastOrderInvalidation = (orderId: string, pairId: string) => {
-    const orderInvalidationPacket = new OrderInvalidationPacket({ orderId, pairId });
+  public broadcastOrderInvalidation = (order: OrderIdentifier) => {
+    const orderInvalidationPacket = new OrderInvalidationPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
 
     // TODO: send only to peers which accepts the pairId
@@ -207,10 +221,10 @@ class Pool extends EventEmitter {
   }
 
   private setPeerHost = async (peer: Peer, listenPort?: number): Promise<void> => {
-    if (peer.direction === ConnectionDirection.OUTBOUND) {
+    if (!peer.inbound) {
       const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
-    } else if (peer.direction === ConnectionDirection.INBOUND && listenPort) {
+    } else if (listenPort) {
       const socketAddress = new SocketAddress(peer.socketAddress.address, listenPort);
       const host = await this.hosts.getOrCreateHost(peer);
       peer.setHost(host);
@@ -238,7 +252,7 @@ class Pool extends EventEmitter {
     });
 
     peer.on('error', (err) => {
-      this.logger.error('peer error', err);
+      this.logger.error(`peer error (${peer.id}): ${err.message}`);
     });
 
     peer.once('open', (handshakeState) => {
@@ -247,11 +261,6 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => {
       this.peers.remove(peer.socketAddress);
-
-      if (!peer.hostId) {
-        this.logger.warn(`disconnected peer (${peer.id}) hostId is missing`);
-      }
-
       this.emit('peer.close', peer);
     });
 

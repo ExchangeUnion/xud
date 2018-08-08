@@ -10,23 +10,17 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { HostFactory } from '../types/db';
+import { HandshakeState } from '../types/p2p';
 
-enum ConnectionDirection {
-  INBOUND,
-  OUTBOUND,
-}
-
-type HandshakeState = {
-  version: string;
-  nodePubKey: string;
-  listenPort: number;
-  pairs: string[];
+/** Key info about a peer for display purposes */
+type PeerInfo = {
+  address: string,
+  nodePubKey?: string,
+  inbound: boolean,
+  pairs?: string[],
+  xudVersion?: string,
+  secondsConnected: number,
 };
-
-function isHandshakeState(obj: any): obj is HandshakeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && typeof obj.listenPort === 'number'
-    && Array.isArray(obj.pairs);
-}
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void);
@@ -46,26 +40,9 @@ interface Peer {
 
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
-
-  /**
-   * Interval to check required responses from peer.
-   */
-  private static STALL_INTERVAL: number = 5000;
-
-  /**
-   * Interval for pinging peers.
-   */
-  private static PING_INTERVAL = 30000;
-
-  /**
-   * Response timeout for response packets.
-   */
-  private static RESPONSE_TIMEOUT = 10000;
-
   // TODO: properties documentation
-
   public socketAddress!: SocketAddress;
-  public direction!: ConnectionDirection;
+  public inbound!: boolean;
   public connected: boolean = false;
   private host?: Host;
   private logger: Logger = Logger.p2p;
@@ -77,13 +54,19 @@ class Peer extends EventEmitter {
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
-  private connectTime: number = 0;
+  private connectTime!: number;
   private banScore: number = 0;
   private lastRecv: number = 0;
   private lastSend: number = 0;
   private handshakeState?: HandshakeState;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
+  /** Interval to check required responses from peer. */
+  private static STALL_INTERVAL: number = 5000;
+  /** Interval for pinging peers. */
+  private static PING_INTERVAL = 30000;
+  /** Response timeout for response packets. */
+  private static RESPONSE_TIMEOUT = 10000;
 
   public get id(): string {
     assert(this.socketAddress);
@@ -96,6 +79,17 @@ class Peer extends EventEmitter {
     } else {
       return null;
     }
+  }
+
+  public get info(): PeerInfo {
+    return {
+      address: this.id,
+      nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
+      inbound: this.inbound,
+      pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
+      xudVersion: this.handshakeState ? this.handshakeState.version : undefined,
+      secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
+    };
   }
 
   constructor() {
@@ -124,13 +118,13 @@ class Peer extends EventEmitter {
     }
   }
 
-  public open = async (): Promise<void> => {
+  public open = async (handshakeData: HandshakeState): Promise<void> => {
     assert(!this.opened);
     this.opened = true;
 
     await this.initConnection();
     this.initStall();
-    await this.initHello();
+    await this.initHello(handshakeData);
     this.finalizeOpen();
 
     // let the pool know that this peer is ready to go
@@ -225,7 +219,8 @@ class Peer extends EventEmitter {
     assert(this.socket);
 
     if (this.connected) {
-      assert(this.direction === ConnectionDirection.INBOUND);
+      assert(this.inbound);
+      this.connectTime = Date.now();
       this.logger.debug(this.getStatus());
       return Promise.resolve();
     }
@@ -238,16 +233,16 @@ class Peer extends EventEmitter {
         }
         if (this.socket) {
           this.socket.removeListener('error', onError);
+          this.socket.removeListener('connect', onConnect);
         }
       };
 
       const onError = (err) => {
         cleanup();
-        this.close();
         reject(err);
       };
 
-      this.socket!.once('connect', () => {
+      const onConnect = () => {
         this.connectTime = Date.now();
         this.connected = true;
         this.logger.debug(this.getStatus());
@@ -255,14 +250,15 @@ class Peer extends EventEmitter {
 
         cleanup();
         resolve();
-      });
+      };
+
+      this.socket!.once('connect', onConnect);
 
       this.socket!.once('error', onError);
 
       this.connectTimeout = setTimeout(() => {
         this.connectTimeout = undefined;
         cleanup();
-        this.close();
         reject(new Error('Connection timed out.'));
       }, 10000);
     });
@@ -275,8 +271,8 @@ class Peer extends EventEmitter {
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
   }
 
-  private initHello = async () => {
-    const packet = this.sendHello();
+  private initHello = async (handshakeData: HandshakeState) => {
+    const packet = this.sendHello(handshakeData);
 
     if (!this.handshakeState) {
       // wait for an incoming HelloPacket
@@ -377,7 +373,7 @@ class Peer extends EventEmitter {
     const socket = net.connect(socketAddress.port, socketAddress.address);
 
     this.socketAddress = socketAddress;
-    this.direction = ConnectionDirection.OUTBOUND;
+    this.inbound = false;
     this.connected = false;
 
     this.bindSocket(socket);
@@ -387,7 +383,7 @@ class Peer extends EventEmitter {
     assert(!this.socket);
 
     this.socketAddress = SocketAddress.fromSocket(socket);
-    this.direction = ConnectionDirection.INBOUND;
+    this.inbound = true;
     this.connected = true;
 
     this.bindSocket(socket);
@@ -487,22 +483,16 @@ class Peer extends EventEmitter {
       return;
     }
 
-    this.logger.error(`Socket Error (${this.id}): ${err.toString()}`);
     if (err instanceof Error) {
       this.emit('error', err);
     } else {
-      this.emit('error', new Error(`Socket Error (${this.id}): ${err}`));
+      this.emit('error', new Error(err));
     }
   }
 
-  private sendHello = (): packets.HelloPacket => {
+  private sendHello = (handshakeData: HandshakeState): packets.HelloPacket => {
     // TODO: use real values
-    const packet = new packets.HelloPacket({
-      version: '123',
-      nodePubKey: '123',
-      listenPort: 20000,
-      pairs: ['BTC/LTC'],
-    });
+    const packet = new packets.HelloPacket(handshakeData);
 
     this.sendPacket(packet);
 
@@ -578,4 +568,4 @@ class Job {
 }
 
 export default Peer;
-export { ConnectionDirection, HandshakeState };
+export { HandshakeState, PeerInfo };

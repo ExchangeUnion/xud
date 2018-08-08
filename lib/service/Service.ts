@@ -56,6 +56,44 @@ class Service extends EventEmitter {
     this.logger = Logger.rpc;
   }
 
+  /*
+   * Cancel placed order from the orderbook.
+   */
+  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
+    const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
+
+    if (removed) {
+      this.pool.broadcastOrderInvalidation({
+        pairId,
+        orderId: globalId,
+      });
+    }
+    return { canceled: removed };
+  }
+
+  /**
+   * Connect to an XU node on a given host and port.
+   */
+  public connect = async ({ host, port }: { host: string, port: number }) => {
+    const peer = await this.pool.addOutbound(new SocketAddress(host, port));
+    return peer.getStatus();
+  }
+
+  /*
+   * Disconnect from a connected peer XU node on a given host and port.
+   */
+  public disconnect = async ({ host, port }: { host: string, port: number}) => {
+    await this.pool.closePeer(host, port);
+    return 'success';
+  }
+
+  /**
+   * Execute an atomic swap
+   */
+  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
+    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  }
+
   /**
    * Get general information about this Exchange Union node.
    */
@@ -112,13 +150,10 @@ class Service extends EventEmitter {
 
     if (!this.config.raiden.disable) {
       try {
-        const [address, channels] = await Promise.all([
-          this.raidenClient.getAddress(),
-          this.raidenClient.getChannels(),
-        ]);
+        const channels = await this.raidenClient.getChannels();
 
         info.raiden = {
-          address,
+          address: this.raidenClient.address!,
           channels: channels.length,
           // Hardcoded for now until they expose it to their API
           version: 'v0.3.0',
@@ -133,14 +168,6 @@ class Service extends EventEmitter {
     }
 
     return info;
-  }
-
-  /**
-   * Get the list of the order book's available pairs.
-   * @returns A list of available trading pairs
-   */
-  public getPairs = () => {
-    return this.orderBook.getPairs();
   }
 
   /**
@@ -159,6 +186,22 @@ class Service extends EventEmitter {
   }
 
   /**
+   * Get the list of the order book's available pairs.
+   * @returns A list of available trading pairs
+   */
+  public getPairs = () => {
+    return this.orderBook.getPairs();
+  }
+
+  /**
+   * Get information about currently connected peers.
+   * @returns A list of connected peers with key information for each peer
+   */
+  public listPeers = () => {
+    return this.pool.listPeers();
+  }
+
+  /**
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
@@ -170,41 +213,16 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Cancel placed order from the orderbook.
-   */
-  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
-    this.pool.broadcastOrderInvalidation(orderId, pairId);
-    return { canceled: this.orderBook.removeOwnOrderByLocalId(pairId, orderId) };
-  }
-
-  /**
-   * Connect to an XU node on a given host and port.
-   */
-  public connect = async ({ host, port }: { host: string, port: number }) => {
-    const peer = await this.pool.addOutbound(new SocketAddress(host, port));
-    return peer.getStatus();
-  }
-
-  /*
-   * Disconnect from a connected peer XU node on a given host and port.
-   */
-  public disconnect = async ({ host, port }: { host: string, port: number}) => {
-    await this.pool.closePeer(host, port);
-    return 'success';
-  }
-
-  /**
-   * Execute an atomic swap
-   */
-  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
-  }
-
-  /*
    * Subscribe to incoming peer orders.
    */
   public subscribePeerOrders = async (callback: Function) => {
-    this.orderBook.on('peerOrder', order => callback(order));
+    this.orderBook.on('peerOrder.incoming', order => callback(order));
+    this.orderBook.on('peerOrder.invalidation', order => callback({
+      canceled: true,
+      id: order.orderId,
+      pairId: order.pairId,
+      quantity: order.quantity,
+    }));
   }
 
   /*

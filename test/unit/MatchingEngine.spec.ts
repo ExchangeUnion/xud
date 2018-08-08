@@ -210,22 +210,40 @@ describe('MatchingEngine.removeOwnOrder', () => {
 });
 
 describe('MatchingEngine.removePeerOrders', () => {
-  it('should add a new peerOrders and then remove some of them', () => {
+  it('should add new peerOrders and then remove some of them', () => {
     const engine = new MatchingEngine(PAIR_ID);
-    const firstHostId = '127.0.0.1:8885';
-    const secondHostId = '127.0.0.1:9885';
+
+    const firstPeerId = '127.0.0.1:8885';
+    const secondPeertId = '127.0.0.1:9885';
 
     expect(engine.isEmpty()).to.be.true;
 
-    const firstHostOrders = [createPeerOrder(5, -5, ms(), firstHostId), createPeerOrder(5, -5, ms(), firstHostId)];
+    const firstHostOrders = [createPeerOrder(5, -5, ms(), firstPeerId), createPeerOrder(5, -5, ms(), firstPeerId)];
     engine.addPeerOrder(firstHostOrders[0]);
     engine.addPeerOrder(firstHostOrders[1]);
-    engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondHostId));
+    engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondPeertId));
 
-    const removedOrders = engine.removePeerOrders(firstHostId);
+    const removedOrders = engine.removePeerOrders(firstPeerId);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);
     expect(matchingResult.remainingOrder.quantity).to.equal(10);
+  });
+
+  it('should add a new peerOrder and then remove it partially', () => {
+    const engine = new MatchingEngine(PAIR_ID);
+    expect(engine.isEmpty()).to.be.true;
+
+    const quantity = -5;
+    const decreasedQuantity = -3;
+
+    const order = createPeerOrder(5, quantity);
+    engine.addPeerOrder(order);
+
+    let removedOrder = engine.removePeerOrder(order.id, decreasedQuantity) as orders.StampedPeerOrder;
+    expect(removedOrder.quantity).to.be.equal(decreasedQuantity);
+
+    removedOrder = engine.removePeerOrder(order.id) as orders.StampedPeerOrder;
+    expect(removedOrder.quantity).to.be.equal(quantity - decreasedQuantity);
   });
 });
