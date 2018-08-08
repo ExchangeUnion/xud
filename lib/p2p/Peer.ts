@@ -98,9 +98,9 @@ class Peer extends EventEmitter {
     }
   }
 
-  public get pubKey(): string | undefined {
-    if (this.host) {
-      return this.host.pubKey;
+  public get nodePubKey(): string | undefined {
+    if (this.handshakeState) {
+      return this.handshakeState.nodePubKey;
     } else {
       return undefined;
     }
