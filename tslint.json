@@ -17,7 +17,25 @@
         "variable-declaration": "nospace"
       }
     ],
-    "member-access": true
+    "member-access": true,
+    "member-ordering": [
+      true,
+      {
+        "order": [
+          "public-instance-field",
+          "public-static-field",
+          "protected-instance-field",
+          "protected-static-field",
+          "private-instance-field",
+          "private-static-field",
+          "public-constructor",
+          "protected-constructor",
+          "private-constructor",
+          "static-method",
+          "instance-method"
+        ]
+      }
+    ]
   },
   "linterOptions": {
     "exclude": [

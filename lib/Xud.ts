@@ -15,6 +15,7 @@ bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
+  public service!: Service;
   private logger: Logger = Logger.global;
   private config: Config;
   private db!: DB;
@@ -25,7 +26,6 @@ class Xud {
   private rpcServer!: GrpcServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
-  public service!: Service;
 
   /**
    * Create an Exchange Union daemon.
