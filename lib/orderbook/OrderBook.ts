@@ -12,8 +12,10 @@ import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
 
+/** A mapping of a string (such as pairId) to an [[Orders]] object. */
 type OrdersMap = Map<string, Orders>;
 
+/** A type containing two properties mapping order ids to orders for buy and sell orders. */
 type Orders = {
   buyOrders: Map<string, orders.StampedOrder>;
   sellOrders: Map<string, orders.StampedOrder>;
@@ -26,6 +28,7 @@ interface OrderBook {
   emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier): boolean;
 }
 
+/** A type containing two arrays for buy and sell orders. */
 type OrderArrays = {
   buyOrders: orders.StampedOrder[],
   sellOrders: orders.StampedOrder[],
@@ -79,37 +82,31 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Returns the list of available trading pairs.
+   * Get the list of available trading pairs.
    */
   public getPairs = (): Promise<db.PairInstance[]> => {
     return this.repository.getPairs();
   }
 
   /**
-   * Returns lists of buy and sell orders of peers
+   * Get lists of buy and sell orders of peers.
    */
   public getPeerOrders = (pairId: string, maxResults: number): OrderArrays => {
-    const peerOrders = this.peerOrders.get(pairId);
-    if (peerOrders) {
-      return this.getOrders(maxResults, peerOrders);
-    } else {
-      throw errors.INVALID_PAIR_ID(pairId);
-    }
+    return this.getOrders(pairId, maxResults, this.peerOrders);
   }
 
   /*
-  * Returns lists of the node's own buy and sell orders
+  * Get lists of this node's own buy and sell orders.
   */
   public getOwnOrders = (pairId: string, maxResults: number): OrderArrays => {
-    const ownOrders = this.ownOrders.get(pairId);
-    if (ownOrders) {
-      return this.getOrders(maxResults, ownOrders);
-    } else {
-      throw errors.INVALID_PAIR_ID(pairId);
-    }
+    return this.getOrders(pairId, maxResults, this.ownOrders);
   }
 
-  private getOrders = (maxResults: number, orders: Orders): OrderArrays => {
+  private getOrders = (pairId: string, maxResults: number, ordersMap: OrdersMap): OrderArrays => {
+    const orders = ordersMap.get(pairId);
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
     if (maxResults > 0) {
       return {
         buyOrders: Array.from(orders.buyOrders.values()).slice(0, maxResults),
@@ -266,17 +263,17 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
-    if (this.isOwnOrdersMap(type)) {
+  private addOrder = (ordersMap: OrdersMap, order: orders.StampedOrder) => {
+    if (this.isOwnOrdersMap(ordersMap)) {
       const { localId } = order as orders.StampedOwnOrder;
       this.localIdMap.set(localId, order.id);
     }
 
-    this.getOrderMap(type, order).set(order.id, order);
+    this.getOrderMap(ordersMap, order).set(order.id, order);
   }
 
-  private removeOrder = (type: OrdersMap, orderId: string, pairId: string): boolean => {
-    const orders = type.get(pairId);
+  private removeOrder = (ordersMap: OrdersMap, orderId: string, pairId: string): boolean => {
+    const orders = ordersMap.get(pairId);
 
     if (!orders) {
       throw errors.INVALID_PAIR_ID(pairId);
@@ -292,8 +289,8 @@ class OrderBook extends EventEmitter {
     return false;
   }
 
-  private getOrderMap = (type: OrdersMap, order: orders.StampedOrder): Map<string, orders.StampedOrder> => {
-    const orders = type.get(order.pairId);
+  private getOrderMap = (ordersMap: OrdersMap, order: orders.StampedOrder): Map<string, orders.StampedOrder> => {
+    const orders = ordersMap.get(order.pairId);
     if (!orders) {
       throw errors.INVALID_PAIR_ID(order.pairId);
     }
@@ -304,8 +301,8 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private isOwnOrdersMap = (type: OrdersMap) => {
-    return type === this.ownOrders;
+  private isOwnOrdersMap = (ordersMap: OrdersMap) => {
+    return ordersMap === this.ownOrders;
   }
 
   private sendOrders = async (peer: Peer, reqId: string) => {
