@@ -59,7 +59,7 @@ class Logger {
 
     const { format } = winston;
     const logFormat = format.printf(
-        info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
+        (info: any) => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);

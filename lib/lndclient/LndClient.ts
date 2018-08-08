@@ -1,6 +1,5 @@
 import grpc, { ChannelCredentials } from 'grpc';
 import fs from 'fs';
-
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
@@ -22,9 +21,13 @@ interface GrpcResponse {
   toObject: Function;
 }
 
+interface LightningMethodIndex extends LightningClient {
+  [methodName: string]: Function;
+}
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
-  private lightning!: LightningClient;
+  private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
@@ -62,7 +65,7 @@ class LndClient extends BaseClient {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      this.lightning[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
+      (this.lightning as LightningMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
         if (err) {
           reject(err);
         } else {

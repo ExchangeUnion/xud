@@ -44,7 +44,7 @@ export const deepMerge = (target: any, ...sources: any[]): object => {
  * Get all methods from an object whose name doesn't start with an underscore.
 */
 export const getPublicMethods = (obj: any): any => {
-  const ret = {};
+  const ret: any = {};
   Object.getOwnPropertyNames(Object.getPrototypeOf(obj)).forEach((name) => {
     const func = obj[name];
     if ((func instanceof Function) && name !== 'constructor' && !name.startsWith('_')) {
@@ -55,7 +55,7 @@ export const getPublicMethods = (obj: any): any => {
 };
 
 export const groupBy = (arr: object[], keyGetter: (item: any) => string | number): any => {
-  const ret = {};
+  const ret: any = {};
   arr.forEach((item) => {
     const key = keyGetter(item);
     const group = ret[key];

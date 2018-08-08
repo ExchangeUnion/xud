@@ -42,5 +42,9 @@ export type OrderIdentifier = {
 };
 
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
-  return order['peerId'] === undefined && typeof order['localId'] === 'string';
+  return (order as StampedPeerOrder).peerId === undefined && typeof (order as StampedOwnOrder).localId === 'string';
+}
+
+export function isPeerOrder(order: StampedOrder): order is StampedPeerOrder {
+  return (order as StampedOwnOrder).localId === undefined && typeof (order as StampedPeerOrder).peerId === 'string';
 }

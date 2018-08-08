@@ -39,17 +39,17 @@ describe('OrderBook', () => {
     await orderBook.init();
   });
 
-  const getOwnOrder = (order: orders.StampedOrder): orders.StampedOwnOrder => {
+  const getOwnOrder = (order: orders.StampedOrder): orders.StampedOwnOrder | undefined => {
     const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
-    let array: orders.StampedOrder[];
+    let array: orders.StampedOwnOrder[];
 
     if (order.quantity > 0) {
-      array = ownOrders.buyOrders;
+      array = ownOrders.buyOrders as orders.StampedOwnOrder[];
     } else {
-      array = ownOrders.sellOrders;
+      array = ownOrders.sellOrders as orders.StampedOwnOrder[];
     }
 
-    let result;
+    let result: orders.StampedOwnOrder | undefined;
 
     array.forEach((ownOrder) => {
       if (ownOrder.id === order.id) {
@@ -77,8 +77,18 @@ describe('OrderBook', () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -6, price: 55 };
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.null;
-    expect(getOwnOrder(matches.matches[0].maker)).to.be.undefined;
-    expect(getOwnOrder(matches.matches[1].maker).quantity).to.be.equal(4);
+
+    const firstMatch = matches.matches[0];
+    const secondMatch = matches.matches[1];
+    expect(firstMatch).to.not.be.undefined;
+    expect(secondMatch).to.not.be.undefined;
+
+    const firstMakerOrder = getOwnOrder(firstMatch.maker);
+    const secondMakerOrder = getOwnOrder(secondMatch.maker);
+    console.log(JSON.stringify(secondMatch));
+    expect(firstMakerOrder).to.be.undefined;
+    expect(secondMakerOrder).to.not.be.undefined;
+    expect(secondMakerOrder!.quantity).to.equal(4);
   });
 
   it('should partially match new market order and discard remaining order', async () => {
@@ -86,6 +96,7 @@ describe('OrderBook', () => {
     const matches = await orderBook.addMarketOrder(order);
     expect(matches.remainingOrder.quantity).to.be.greaterThan(order.quantity);
     expect(getOwnOrder(matches.remainingOrder)).to.be.undefined;
+    expect((getOwnOrder(matches.remainingOrder))).to.be.undefined;
   });
 
   after(async () => {

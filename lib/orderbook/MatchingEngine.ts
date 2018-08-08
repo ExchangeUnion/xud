@@ -1,30 +1,14 @@
 import assert from 'assert';
-import FastPriorityQueue from 'fastpriorityqueue';
+import FastPriorityQueue from '@exchangeunion/fastpriorityqueue';
 
 import { matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 import { StampedOrder, StampedOwnOrder, StampedPeerOrder } from '../types/orders';
 
-interface PriorityQueue<T> {
-  add: (value: T) => void;
-  clone: () => PriorityQueue<T>;
-  forEach: (callback: (value: T, index: number) => void) => void;
-  heapify: (array: T[]) => void;
-  isEmpty: () => boolean;
-  peek: () => T | undefined;
-  poll: () => T | undefined;
-  remove: (value: T) => boolean;
-  removeMany: (callback: (a: T) => boolean, limit?: number) => T[];
-  removeOne: (callback: (a: T) => boolean) => T | undefined;
-  replaceTop: (value: T) => T | undefined;
-  size: number;
-  trim: () => void;
-}
-
 type PriorityQueues = {
-  buyOrders: PriorityQueue<StampedOrder>;
-  sellOrders: PriorityQueue<StampedOrder>;
+  buyOrders: FastPriorityQueue<StampedOrder>;
+  sellOrders: FastPriorityQueue<StampedOrder>;
 };
 
 type SplitOrder = {
@@ -43,7 +27,7 @@ class MatchingEngine {
     };
   }
 
-  private static createPriorityQueue(orderingDirection: OrderingDirection): PriorityQueue<StampedOrder> {
+  private static createPriorityQueue(orderingDirection: OrderingDirection): FastPriorityQueue<StampedOrder> {
     const comparator = this.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   }
@@ -82,19 +66,19 @@ class MatchingEngine {
     };
   }
 
-  public static match(order: StampedOwnOrder, matchAgainst: PriorityQueue<StampedOrder>[]): matchingEngine.MatchingResult {
+  public static match(order: StampedOwnOrder, matchAgainst: FastPriorityQueue<StampedOrder>[]): matchingEngine.MatchingResult {
     const isBuyOrder = order.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
     let remainingOrder: StampedOwnOrder | null = { ...order };
 
-    const getMatchingQuantity = (remainingOrder, oppositeOrder) => isBuyOrder
+    const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder: StampedOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
       : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
 
     matchAgainst.forEach((priorityQueue) => {
       while (remainingOrder && !priorityQueue.isEmpty()) {
         const oppositeOrder = priorityQueue.peek();
-        const matchingQuantity = getMatchingQuantity(remainingOrder, oppositeOrder);
+        const matchingQuantity = getMatchingQuantity(remainingOrder, oppositeOrder!);
         if (matchingQuantity <= 0) {
           break;
         } else {
@@ -138,8 +122,8 @@ class MatchingEngine {
 
   public matchOrAddOwnOrder = (order: StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
     const isBuyOrder = order.quantity > 0;
-    let matchAgainst: PriorityQueue<StampedOrder> | undefined ;
-    let addTo: PriorityQueue<StampedOrder> | undefined;
+    let matchAgainst: FastPriorityQueue<StampedOrder> | undefined ;
+    let addTo: FastPriorityQueue<StampedOrder> | undefined;
 
     if (isBuyOrder) {
       matchAgainst = this.priorityQueues.sellOrders;
@@ -161,15 +145,15 @@ class MatchingEngine {
     return this.removeOrder(orderId) as StampedOwnOrder | undefined;
   }
 
-  public removePeerOrder = (orderId: string, decreasedQuantity?: number): StampedPeerOrder | undefined => {
+  public removePeerOrder = (orderId: string, quantityToDecrease?: number): StampedPeerOrder | undefined => {
     const order = this.removeOrder(orderId) as StampedPeerOrder | undefined;
 
-    if (order && decreasedQuantity) {
-      order.quantity = order.quantity - decreasedQuantity;
+    if (order && quantityToDecrease) {
+      order.quantity = order.quantity - quantityToDecrease;
       this.addPeerOrder(order);
 
       // Return how much was removed
-      return { ...order, quantity: decreasedQuantity };
+      return { ...order, quantity: quantityToDecrease };
     }
 
     return order;
