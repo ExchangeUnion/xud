@@ -257,7 +257,7 @@ class Peer extends EventEmitter {
       const onTimeout = () => {
         cleanup();
         reject(new Error('Connection timed out.'));
-      }
+      };
 
       this.socket!.once('connect', onConnect);
 
