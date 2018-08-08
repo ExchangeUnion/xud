@@ -65,6 +65,8 @@ class Peer extends EventEmitter {
   private static STALL_INTERVAL: number = 5000;
   /** Interval for pinging peers. */
   private static PING_INTERVAL = 30000;
+  /** Socket connection timeout for outbound peers. */
+  private static CONNECTION_TIMEOUT = 10000;
   /** Response timeout for response packets. */
   private static RESPONSE_TIMEOUT = 10000;
 
@@ -252,15 +254,16 @@ class Peer extends EventEmitter {
         resolve();
       };
 
+      const onTimeout = () => {
+        cleanup();
+        reject(new Error('Connection timed out.'));
+      };
+
       this.socket!.once('connect', onConnect);
 
       this.socket!.once('error', onError);
 
-      this.connectTimeout = setTimeout(() => {
-        this.connectTimeout = undefined;
-        cleanup();
-        reject(new Error('Connection timed out.'));
-      }, 10000);
+      this.connectTimeout = setTimeout(onTimeout, Peer.CONNECTION_TIMEOUT);
     });
   }
 
