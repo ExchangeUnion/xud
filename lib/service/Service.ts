@@ -171,26 +171,18 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get a list of standing peer orders from the order book for a specified trading pair, or for all
-   * trading pairs if no pair is specified.
+   * Get a list of standing orders from the order book for a specified trading pair.
    */
-  public getOrders = ({ pairId, maxResults }: { pairId?: string, maxResults?: number }) => {
-    const ret: OrderArrays = {
-      buyOrders: [],
-      sellOrders: [],
+  public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
+    checkArgument(pairId !== '', 'pairId must be specified');
+    checkArgument(maxResults >= 0, 'maxResults cannot be negative');
+
+    const result: { [ type: string ]: OrderArrays } = {
+      peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
+      ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
     };
-    if (pairId) {
-      const orderArrays = this.orderBook.getPeerOrders(pairId, maxResults ? maxResults : 0);
-      ret.buyOrders.concat(orderArrays.buyOrders);
-      ret.sellOrders.concat(orderArrays.sellOrders);
-    } else {
-      this.orderBook.pairs.forEach((pair) => {
-        const orderArrays = this.orderBook.getPeerOrders(pair.id, maxResults ? maxResults : 0);
-        ret.buyOrders.concat(orderArrays.buyOrders);
-        ret.sellOrders.concat(orderArrays.sellOrders);
-      });
-    }
-    return ret;
+
+    return result;
   }
 
   /**

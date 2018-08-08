@@ -1,8 +1,8 @@
-import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
+import { callback, loadXudClient } from '../command';
 import { GetOrdersRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'getorders [pair_id] [max_results]';
+export const command = 'getorders <pair_id> [max_results]';
 
 export const describe = 'get orders from the order book';
 
