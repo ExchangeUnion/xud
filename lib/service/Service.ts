@@ -148,20 +148,12 @@ class Service extends EventEmitter {
    */
   public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
     checkArgument(pairId !== '', 'pairId must be specified');
+    checkArgument(maxResults >= 0, 'maxResults cannot be negative');
 
     const result: { [ type: string ]: OrderArrays } = {
-      peerOrders: {
-        buyOrders: [],
-        sellOrders: [],
-      },
-      ownOrders: {
-        buyOrders: [],
-        sellOrders: [],
-      },
+      peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
+      ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
     };
-
-    result.peerOrders = this.orderBook.getPeerOrders(pairId, maxResults);
-    result.ownOrders = this.orderBook.getOwnOrders(pairId, maxResults);
 
     return result;
   }
