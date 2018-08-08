@@ -236,9 +236,9 @@ message GetOrdersRequest {
   uint32 max_results = 2 [json_name = "max_results"];
 }
 message GetOrdersResponse {
-  // A list of the orders of peers
+  // A list of peer orders
   Orders peer_orders = 1 [json_name = "peer_orders"];
-  // A list of your orders
+  // A list of orders placed locally
   Orders own_orders = 2 [json_name = "own_orders"];
 }
 

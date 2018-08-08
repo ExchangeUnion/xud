@@ -395,11 +395,11 @@
       "properties": {
         "peer_orders": {
           "$ref": "#/definitions/xudrpcOrders",
-          "title": "A list of the orders of peers"
+          "title": "A list of peer orders"
         },
         "own_orders": {
           "$ref": "#/definitions/xudrpcOrders",
-          "title": "A list of your orders"
+          "title": "A list of orders placed locally"
         }
       }
     },
