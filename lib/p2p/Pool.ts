@@ -242,7 +242,7 @@ class Pool extends EventEmitter {
     });
 
     peer.on('error', (err) => {
-      this.logger.error('peer error', err);
+      this.logger.error(`peer error (${peer.id}): ${err.message}`);
     });
 
     peer.once('open', (handshakeState) => {
