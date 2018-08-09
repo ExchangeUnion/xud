@@ -82,11 +82,11 @@ class NodeKey {
    * @param path The path at which to save the file
    * @param password An optional password parameter for encrypting the private key
    */
-  private toFile = (path, password?: string): void => {
-    let buf: Buffer;
+  private toFile = (path: string, password?: string): void => {
+    let buf: Buffer | CryptoJS.WordArray;
     if (password) {
-      const wa = CryptoJS.lib.WordArray.create(this.privKey.buffer);
-      buf = CryptoJS.AES.encrypt(wa, password);
+      const lwa = CryptoJS.lib.WordArray.create(this.privKey.buffer);
+      buf = CryptoJS.AES.encrypt(lwa, password);
     } else {
       buf = this.privKey;
     }

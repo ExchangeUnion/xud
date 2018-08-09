@@ -4,6 +4,7 @@ const codesPrefix = errorCodesPrefix.ORDERBOOK;
 const errorCodes = {
   INVALID_PAIR_ID: codesPrefix.concat('.1'),
   DUPLICATE_ORDER: codesPrefix.concat('.2'),
+  ORDER_NOT_FOUND: codesPrefix.concat('.3'),
 };
 
 const errors = {
@@ -13,7 +14,11 @@ const errors = {
   }),
   DUPLICATE_ORDER: (localId: string) => ({
     message: `order with localId ${localId} already exists`,
-    code: codesPrefix.concat('.2'),
+    code: errorCodes.DUPLICATE_ORDER,
+  }),
+  ORDER_NOT_FOUND: (orderId: string) => ({
+    message: `order with id ${orderId} could not be found`,
+    code: errorCodes.ORDER_NOT_FOUND,
   }),
 };
 

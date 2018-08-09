@@ -23,19 +23,19 @@ type PeerInfo = {
 };
 
 interface Peer {
-  on(event: 'packet', listener: (packet: Packet) => void);
-  on(event: 'error', listener: (err: Error) => void);
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  once(event: 'open', listener: (handshakeState: HandshakeState) => void);
-  once(event: 'close', listener: () => void);
-  once(event: 'ban', listener: () => void);
-  emit(event: 'connect');
-  emit(event: 'ban');
-  emit(event: 'open', handshakeState: HandshakeState);
-  emit(event: 'close');
-  emit(event: 'error', err: Error);
-  emit(event: 'packet', packet: Packet);
+  on(event: 'packet', listener: (packet: Packet) => void): this;
+  on(event: 'error', listener: (err: Error) => void): this;
+  once(event: 'open', listener: (handshakeState: HandshakeState) => void): this;
+  once(event: 'close', listener: () => void): this;
+  once(event: 'ban', listener: () => void): this;
+  emit(event: 'connect'): boolean;
+  emit(event: 'ban'): boolean;
+  emit(event: 'open', handshakeState: HandshakeState): boolean;
+  emit(event: 'close'): boolean;
+  emit(event: 'error', err: Error): boolean;
+  emit(event: 'packet', packet: Packet): boolean;
 }
 
 /** Represents a remote XU peer */
@@ -65,6 +65,8 @@ class Peer extends EventEmitter {
   private static STALL_INTERVAL: number = 5000;
   /** Interval for pinging peers. */
   private static PING_INTERVAL = 30000;
+  /** Socket connection timeout for outbound peers. */
+  private static CONNECTION_TIMEOUT = 10000;
   /** Response timeout for response packets. */
   private static RESPONSE_TIMEOUT = 10000;
 
@@ -211,7 +213,7 @@ class Peer extends EventEmitter {
     }
   }
 
-  private increaseBan = (score): boolean => {
+  private increaseBan = (score: number): boolean => {
     this.banScore += score;
 
     if (this.banScore >= 100) { // TODO: make configurable
@@ -245,7 +247,7 @@ class Peer extends EventEmitter {
         }
       };
 
-      const onError = (err) => {
+      const onError = (err: Error) => {
         cleanup();
         reject(err);
       };
@@ -260,15 +262,16 @@ class Peer extends EventEmitter {
         resolve();
       };
 
+      const onTimeout = () => {
+        cleanup();
+        reject(new Error('Connection timed out.'));
+      };
+
       this.socket!.once('connect', onConnect);
 
       this.socket!.once('error', onError);
 
-      this.connectTimeout = setTimeout(() => {
-        this.connectTimeout = undefined;
-        cleanup();
-        reject(new Error('Connection timed out.'));
-      }, 10000);
+      this.connectTimeout = setTimeout(onTimeout, Peer.CONNECTION_TIMEOUT);
     });
   }
 
@@ -546,7 +549,7 @@ class PendingResponseEntry {
   public timeout: number = 0;
   public jobs: Job[] = [];
 
-  public addJob = (resolve, reject) => {
+  public addJob = (resolve: Function, reject: Function) => {
     this.jobs.push(new Job(resolve, reject));
   }
 
@@ -572,7 +575,7 @@ class PendingResponseEntry {
 }
 
 class Job {
-  constructor(public resolve, public reject) {}
+  constructor(public resolve: Function, public reject: Function) {}
 }
 
 export default Peer;

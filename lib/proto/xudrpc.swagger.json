@@ -410,19 +410,13 @@
     "xudrpcGetOrdersResponse": {
       "type": "object",
       "properties": {
-        "buy_orders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcOrder"
-          },
-          "title": "A list of buy orders sorted by descending price"
+        "peer_orders": {
+          "$ref": "#/definitions/xudrpcOrders",
+          "title": "A list of peer orders"
         },
-        "sell_orders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcOrder"
-          },
-          "title": "A list of sell orders sorted by ascending price"
+        "own_orders": {
+          "$ref": "#/definitions/xudrpcOrders",
+          "title": "A list of orders placed locally"
         }
       }
     },
@@ -548,6 +542,25 @@
         },
         "taker": {
           "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcOrders": {
+      "type": "object",
+      "properties": {
+        "buy_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of buy orders sorted by descending price"
+        },
+        "sell_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of sell orders sorted by ascending price"
         }
       }
     },

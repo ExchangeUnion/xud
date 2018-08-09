@@ -273,15 +273,15 @@ export namespace GetOrdersRequest {
 }
 
 export class GetOrdersResponse extends jspb.Message {
-  clearBuyOrdersList(): void;
-  getBuyOrdersList(): Array<Order>;
-  setBuyOrdersList(value: Array<Order>): void;
-  addBuyOrders(value?: Order, index?: number): Order;
+  hasPeerOrders(): boolean;
+  clearPeerOrders(): void;
+  getPeerOrders(): Orders | undefined;
+  setPeerOrders(value?: Orders): void;
 
-  clearSellOrdersList(): void;
-  getSellOrdersList(): Array<Order>;
-  setSellOrdersList(value: Array<Order>): void;
-  addSellOrders(value?: Order, index?: number): Order;
+  hasOwnOrders(): boolean;
+  clearOwnOrders(): void;
+  getOwnOrders(): Orders | undefined;
+  setOwnOrders(value?: Orders): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): GetOrdersResponse.AsObject;
@@ -295,8 +295,8 @@ export class GetOrdersResponse extends jspb.Message {
 
 export namespace GetOrdersResponse {
   export type AsObject = {
-    buyOrdersList: Array<Order.AsObject>,
-    sellOrdersList: Array<Order.AsObject>,
+    peerOrders?: Orders.AsObject,
+    ownOrders?: Orders.AsObject,
   }
 }
 
@@ -499,6 +499,34 @@ export namespace Order {
     createdAt: number,
     invoice: string,
     canceled: boolean,
+  }
+}
+
+export class Orders extends jspb.Message {
+  clearBuyOrdersList(): void;
+  getBuyOrdersList(): Array<Order>;
+  setBuyOrdersList(value: Array<Order>): void;
+  addBuyOrders(value?: Order, index?: number): Order;
+
+  clearSellOrdersList(): void;
+  getSellOrdersList(): Array<Order>;
+  setSellOrdersList(value: Array<Order>): void;
+  addSellOrders(value?: Order, index?: number): Order;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Orders.AsObject;
+  static toObject(includeInstance: boolean, msg: Orders): Orders.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: Orders, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Orders;
+  static deserializeBinaryFromReader(message: Orders, reader: jspb.BinaryReader): Orders;
+}
+
+export namespace Orders {
+  export type AsObject = {
+    buyOrdersList: Array<Order.AsObject>,
+    sellOrdersList: Array<Order.AsObject>,
   }
 }
 

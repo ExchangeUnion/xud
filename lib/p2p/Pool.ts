@@ -18,14 +18,14 @@ type PoolConfig = {
 };
 
 interface Pool {
-  on(event: 'packet.order', listener: (order: PeerOrder) => void);
-  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void);
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void);
-  on(event: 'peer.close', listener: (peer: Peer) => void);
-  emit(event: 'packet.order', order: PeerOrder);
-  emit(event: 'packet.getOrders', peer: Peer, reqId: string);
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier);
-  emit(event: 'peer.close', peer: Peer);
+  on(event: 'packet.order', listener: (order: PeerOrder) => void): this;
+  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void): this;
+  on(event: 'peer.close', listener: (peer: Peer) => void): this;
+  emit(event: 'packet.order', order: PeerOrder): boolean;
+  emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier): boolean;
+  emit(event: 'peer.close', peer: Peer): boolean;
 }
 
 /** A pool of peers for handling all network activity */
