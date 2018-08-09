@@ -4,13 +4,14 @@ import chaiHttp from 'chai-http';
 const protocol = 'http';
 const host = 'localhost';
 const port = '8080';
-const url = '/api/v1/info';
+const action = '/api/v1/info';
+const url = protocol + '://' + host + ':' + port + action;
 
-describe('HttpStatus200', () => {
+describe(url, () => {
   chai.use(chaiHttp);
 
   it('responds with http status 200', (done) => {
-    chai.request(protocol + '://' + host + ':' + port + url)
+    chai.request(url)
                 .get('/')
                 .then((res: ChaiHttp.Response) => {
                   expect(res.status).to.equal(200);
