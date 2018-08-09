@@ -83,6 +83,14 @@ class Peer extends EventEmitter {
     }
   }
 
+  public get nodePubKey(): string | undefined {
+    if (this.handshakeState) {
+      return this.handshakeState.nodePubKey;
+    } else {
+      return undefined;
+    }
+  }
+
   public get info(): PeerInfo {
     return {
       address: this.id,

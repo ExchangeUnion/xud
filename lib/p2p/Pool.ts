@@ -131,6 +131,7 @@ class Pool extends EventEmitter {
     const peer = this.peers.get(socketAddress);
     if (peer) {
       peer.close();
+      this.logger.info(`Disconnected from ${peer.nodePubKey} ${address}:${port}`);
     } else {
       throw(errors.NOT_CONNECTED(socketAddress.toString()));
     }
