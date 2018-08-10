@@ -1,0 +1,10 @@
+{
+    "httpBody": [
+        {
+            "pair_id": "BTC/LTC",
+            "order_id": 1337,
+            "price": 1,
+            "quantity": 99
+        }
+    ]
+}
