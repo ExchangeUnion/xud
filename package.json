@@ -40,14 +40,14 @@
       "win32": "rd /q /s dist || cd ."
     },
     "proto": {
-      "linux":  "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
       "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "win32":  "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\lndrpc.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\lndrpc.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
     },
     "swagger": {
-      "linux":  "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
+      "linux": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
       "darwin": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
-      "win32":  "node_modules\\grpc-tools\\bin\\protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
@@ -111,6 +111,7 @@
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
     "@types/chai": "^4.1.3",
+    "@types/chai-as-promised": "^7.1.0",
     "@types/chai-http": "^3.0.4",
     "@types/crypto-js": "^3.1.43",
     "@types/dotenv": "^4.0.3",
@@ -123,6 +124,7 @@
     "@types/uuid": "^3.4.3",
     "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "concurrently": "^3.5.1",
     "grpc-tools": "^1.6.6",

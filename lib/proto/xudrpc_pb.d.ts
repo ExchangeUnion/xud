@@ -59,6 +59,9 @@ export class ConnectRequest extends jspb.Message {
     getPort(): number;
     setPort(value: number): void;
 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ConnectRequest.AsObject;
@@ -74,6 +77,7 @@ export namespace ConnectRequest {
     export type AsObject = {
         host: string,
         port: number,
+        nodePubKey: string,
     }
 }
 
@@ -99,11 +103,8 @@ export namespace ConnectResponse {
 }
 
 export class DisconnectRequest extends jspb.Message { 
-    getHost(): string;
-    setHost(value: string): void;
-
-    getPort(): number;
-    setPort(value: number): void;
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -118,8 +119,7 @@ export class DisconnectRequest extends jspb.Message {
 
 export namespace DisconnectRequest {
     export type AsObject = {
-        host: string,
-        port: number,
+        nodePubKey: string,
     }
 }
 
@@ -490,8 +490,8 @@ export class Order extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
-    getPeerId(): string;
-    setPeerId(value: string): void;
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
 
     getId(): string;
     setId(value: string): void;
@@ -524,7 +524,7 @@ export namespace Order {
         price: number,
         quantity: number,
         pairId: string,
-        peerId: string,
+        peerPubKey: string,
         id: string,
         localId: string,
         createdAt: number,

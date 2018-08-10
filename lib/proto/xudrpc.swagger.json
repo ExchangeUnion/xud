@@ -44,7 +44,7 @@
     },
     "/v1/connect": {
       "post": {
-        "summary": "Connect to an XU node on a given host and port.",
+        "summary": "Connect to an XU node.",
         "operationId": "Connect",
         "responses": {
           "200": {
@@ -71,7 +71,7 @@
     },
     "/v1/disconnect": {
       "post": {
-        "summary": "Disconnect from a connected peer XU node on a given host and port.",
+        "summary": "Disconnect from a connected peer XU node.",
         "operationId": "Disconnect",
         "responses": {
           "200": {
@@ -330,6 +330,9 @@
         "port": {
           "type": "integer",
           "format": "int64"
+        },
+        "node_pub_key": {
+          "type": "string"
         }
       }
     },
@@ -345,12 +348,8 @@
     "xudrpcDisconnectRequest": {
       "type": "object",
       "properties": {
-        "host": {
+        "node_pub_key": {
           "type": "string"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int64"
         }
       }
     },
@@ -508,9 +507,9 @@
           "type": "string",
           "title": "The trading pair that this order is for"
         },
-        "peer_id": {
+        "peer_pub_key": {
           "type": "string",
-          "title": "The id of the peer - consisting of a [host]:[port] socket address - that created this order"
+          "title": "The node pub key of the peer that created this order"
         },
         "id": {
           "type": "string",

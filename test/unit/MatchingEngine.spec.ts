@@ -18,11 +18,12 @@ const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orde
   pairId: PAIR_ID,
 });
 
-const createPeerOrder = (price: number, quantity: number, createdAt = ms(), peerId = '127.0.0.1:8885'): orders.StampedPeerOrder => ({
+const createPeerOrder = (price: number, quantity: number, createdAt = ms(),
+peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345'): orders.StampedPeerOrder => ({
   quantity,
   price,
   createdAt,
-  peerId,
+  peerPubKey,
   id: uuidv1(),
   pairId: PAIR_ID,
   invoice: '',
@@ -208,17 +209,17 @@ describe('MatchingEngine.removePeerOrders', () => {
   it('should add new peerOrders and then remove some of them', () => {
     const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
 
-    const firstPeerId = '127.0.0.1:8885';
-    const secondPeertId = '127.0.0.1:9885';
+    const firstPeerPubKey = '026a848ebd1792001ff10c6e212f6077aec5669af3de890e1ae196b4e9730d75b9';
+    const secondPeertPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345';
 
     expect(engine.isEmpty()).to.be.true;
 
-    const firstHostOrders = [createPeerOrder(5, -5, ms(), firstPeerId), createPeerOrder(5, -5, ms(), firstPeerId)];
+    const firstHostOrders = [createPeerOrder(5, -5, ms(), firstPeerPubKey), createPeerOrder(5, -5, ms(), firstPeerPubKey)];
     engine.addPeerOrder(firstHostOrders[0]);
     engine.addPeerOrder(firstHostOrders[1]);
-    engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondPeertId));
+    engine.addPeerOrder(createPeerOrder(5, -5, ms(), secondPeertPubKey));
 
-    const removedOrders = engine.removePeerOrders(firstPeerId);
+    const removedOrders = engine.removePeerOrders(firstPeerPubKey);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);

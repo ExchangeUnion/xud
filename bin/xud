@@ -67,6 +67,10 @@ const { argv } = require('yargs')
       describe: 'Port of the lndLtc gRPC interface',
       type: 'number',
     },
+    'p2p.addresses': {
+      describe: 'String array of reachable addresses',
+      type: 'array',
+    },
     'p2p.listen': {
       describe: 'Listen for incoming peers',
       type: 'boolean',

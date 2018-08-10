@@ -19,7 +19,7 @@ class Config {
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
-  public instanceId: any;
+  public instanceId = 0;
 
   constructor(private args?: Arguments | Object) {
     const platform = os.platform();
@@ -46,10 +46,10 @@ class Config {
     }
 
     // default configuration
-    this.instanceId = 0;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
+      addresses: [],
     };
     this.db = {
       host: 'localhost',

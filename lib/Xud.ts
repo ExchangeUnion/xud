@@ -31,6 +31,10 @@ class Xud {
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
 
+  public get nodePubKey() {
+    return this.nodeKey.nodePubKey;
+  }
+
   /**
    * Create an Exchange Union daemon.
    * @param args optional command line arguments to override configuration parameters.
@@ -51,6 +55,7 @@ class Xud {
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
       this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
+      this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
       this.db = new DB(this.config.db, loggers.db);
       await this.db.init();
@@ -79,7 +84,6 @@ class Xud {
         version,
         pairs: this.orderBook.pairIds,
         nodePubKey: this.nodeKey.nodePubKey,
-        listenPort: this.config.p2p.listen ? this.config.p2p.port : undefined,
         raidenAddress: this.raidenClient.address,
       });
 
@@ -96,7 +100,8 @@ class Xud {
 
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
-        if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
+        const listening = await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+        if (!listening) {
           this.logger.error('Could not start RPC server, exiting...');
           this.shutdown();
           return;

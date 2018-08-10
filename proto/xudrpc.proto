@@ -13,7 +13,7 @@ service Xud {
     };
   }
   
-  /* Connect to an XU node on a given host and port. */
+  /* Connect to an XU node. */
   rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
       post: "/v1/connect"
@@ -21,7 +21,7 @@ service Xud {
     };
   }
   
-  /* Disconnect from a connected peer XU node on a given host and port. */
+  /* Disconnect from a connected peer XU node. */
   rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
     option (google.api.http) = {
       post: "/v1/disconnect"
@@ -112,6 +112,7 @@ message CancelOrderResponse {
 message ConnectRequest {
   string host = 1 [json_name = "host"];
   uint32 port = 2 [json_name = "port"];
+  string node_pub_key = 3 [json_name = "node_pub_key"];
 }
 message ConnectResponse {
   // A message describing the result of the connection request
@@ -119,8 +120,7 @@ message ConnectResponse {
 }
 
 message DisconnectRequest {
-  string host = 1 [json_name = "host"];
-  uint32 port = 2 [json_name = "port"];
+  string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message DisconnectResponse {
   string result = 1 [json_name = "result"];
@@ -190,18 +190,18 @@ message Order {
   double quantity = 2 [json_name = "quantity"];
   // The trading pair that this order is for
   string pair_id = 3 [json_name = "pair_id"];
-  // The id of the peer - consisting of a [host]:[port] socket address - that created this order
-  string peer_id = 4 [json_name = "peer_id"];
+  // The node pub key of the peer that created this order
+  string peer_pub_key = 4 [json_name = "peer_id"];
   // A UUID for this order
-  string id = 6 [json_name = "id"];
+  string id = 5 [json_name = "id"];
   // The local id for this order
-  string local_id = 7 [json_name = "local_id"];
+  string local_id = 6 [json_name = "local_id"];
   // The epoch time when this order was created
-  int64 created_at = 8 [json_name = "created_at"];
+  int64 created_at = 7 [json_name = "created_at"];
   // Lightning invoice
-  string invoice = 9 [json_name = "invoice"];
+  string invoice = 8 [json_name = "invoice"];
   // Indicates whether an order was canceled 
-  bool canceled = 10 [json_name = "canceled"];
+  bool canceled = 9 [json_name = "canceled"];
 }
 
 message Orders {
