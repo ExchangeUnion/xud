@@ -21,7 +21,7 @@
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
     "test": "npm run test:unit && npm run test:int && npm run test:ddtd",
-    "test:ddtd": "mocha -r ts-node/register test/ddtd/**/*",
+    "test:ddtd": "mocha -r ts-node/register test/ddtd/suite.ts",
     "test:ddtd:watch": "mocha -r ts-node/register test/ddtd/**/*  --watch --watch-extensions ts",
     "test:int": "mocha -r ts-node/register test/integration/*",
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts",
