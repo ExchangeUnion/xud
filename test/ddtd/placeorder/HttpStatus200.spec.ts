@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
-import dev from '../constants/dev';
+import dev from '../../../lib/constants/dev';
 import data from './data/http_status_200.json';
 
 const url = dev.protocol + '://' + dev.host + ':' + dev.port + '/api/' + dev.version;
