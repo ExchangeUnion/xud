@@ -1,8 +1,8 @@
 import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
-import constants from '../constants';
+import dev from '../constants/dev';
 
-const url = constants.protocol + '://' + constants.host + ':' + constants.port + '/api/v1/info';
+const url = dev.protocol + '://' + dev.host + ':' + dev.port + '/api/' + dev.version + '/info';
 
 describe(url, () => {
   chai.use(chaiHttp);
