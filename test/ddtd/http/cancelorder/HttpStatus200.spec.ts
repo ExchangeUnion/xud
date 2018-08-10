@@ -1,9 +1,9 @@
 import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
-import dev from '../../../../lib/constants/dev';
 import data from './data/http_status_200.json';
+import env from '../env';
 
-const url = dev.protocol + '://' + dev.host + ':' + dev.port + '/api/' + dev.version;
+const url = env.protocol + '://' + env.host + ':' + env.port + '/api/' + env.version;
 const action = '/cancelorder';
 
 describe(url + action, () => {
