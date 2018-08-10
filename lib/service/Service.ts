@@ -24,11 +24,20 @@ export type ServiceComponents = {
   shutdown: Function;
 };
 
-function checkArgument(expectedCondition: boolean, message: string) {
-  if (!expectedCondition) {
-    throw errors.INVALID_ARGUMENT(message);
-  }
-}
+/** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
+const argChecks = {
+  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
+  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
+  HAS_HOST: ({ host }: { host: string }) => { if (host === '') throw errors.INVALID_ARGUMENT('host must be specified'); },
+  VALID_PORT: ({ port }: { port: number }) => {
+    if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+  },
+  MAX_RESULTS_NOT_NEGATIVE: ({ maxResults }: { maxResults: number }) => {
+    if (maxResults < 0) throw errors.INVALID_ARGUMENT('maxResults cannot be negative');
+  },
+  NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
+  PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+};
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
@@ -59,7 +68,11 @@ class Service extends EventEmitter {
   /*
    * Cancel placed order from the orderbook.
    */
-  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
+  public cancelOrder = async (args: { orderId: string, pairId: string }) => {
+    const { orderId, pairId } = args;
+    argChecks.HAS_ORDER_ID(args);
+    argChecks.HAS_PAIR_ID(args);
+
     const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
 
     if (removed) {
@@ -74,7 +87,11 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given host and port.
    */
-  public connect = async ({ host, port }: { host: string, port: number }) => {
+  public connect = async (args: { host: string, port: number }) => {
+    const { host, port } = args;
+    argChecks.HAS_HOST(args);
+    argChecks.VALID_PORT(args);
+
     const peer = await this.pool.addOutbound(new SocketAddress(host, port));
     return peer.getStatus();
   }
@@ -82,9 +99,13 @@ class Service extends EventEmitter {
   /*
    * Disconnect from a connected peer XU node on a given host and port.
    */
-  public disconnect = async ({ host, port }: { host: string, port: number}) => {
+  public disconnect = async (args: { host: string, port: number}) => {
+    const { host, port } = args;
+    argChecks.HAS_HOST(args);
+    argChecks.VALID_PORT(args);
+
     await this.pool.closePeer(host, port);
-    return 'success';
+    return `disconnected from ${host}:${port}`;
   }
 
   /**
@@ -173,9 +194,10 @@ class Service extends EventEmitter {
   /**
    * Get a list of standing orders from the order book for a specified trading pair.
    */
-  public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
-    checkArgument(pairId !== '', 'pairId must be specified');
-    checkArgument(maxResults >= 0, 'maxResults cannot be negative');
+  public getOrders = (args: { pairId: string, maxResults: number }) => {
+    const { pairId, maxResults } = args;
+    argChecks.HAS_PAIR_ID(args);
+    argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
 
     const result: { [ type: string ]: OrderArrays } = {
       peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
@@ -206,8 +228,9 @@ class Service extends EventEmitter {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (order: OwnOrder) => {
-    checkArgument(order.price >= 0, 'price cannot be negative');
-    checkArgument(order.quantity !== 0, 'quantity must not equal 0');
+    argChecks.PRICE_NON_NEGATIVE(order);
+    argChecks.NON_ZERO_QUANTITY(order);
+    argChecks.HAS_PAIR_ID(order);
 
     return order.price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
   }
