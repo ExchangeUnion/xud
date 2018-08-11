@@ -1,21 +1,9 @@
-import chai, { assert, expect } from 'chai';
+import chai, { assert } from 'chai';
 import data from './data/grpc_status_0.json';
 import grpc from 'grpc';
 import env from '../env';
 import { XudClient } from '../../../../lib/proto/xudrpc_grpc_pb';
 import { CancelOrderRequest } from '../../../../lib/proto/xudrpc_pb';
-
-interface grpcResponse {
-  toObject: Function;
-}
-
-const callback = (error: Error | null, response: grpcResponse) => {
-  if (error) {
-    // TODO
-  } else if (response) {
-    // TODO
-  }
-};
 
 describe('client.cancelOrder()', () => {
   const credentials = grpc.credentials.createInsecure();
@@ -26,9 +14,13 @@ describe('client.cancelOrder()', () => {
       const request = new CancelOrderRequest();
       request.setPairId(argv.pair_id);
       request.setOrderId(argv.order_id);
-      client.cancelOrder(request, callback);
-      // TODO
-      assert.isOk(false, 'TODO');
+      client.cancelOrder(request, (error: Error | null, response) => {
+        if (error) {
+          throw error;
+        } else if (response) {
+          assert.equal(0, response.toObject().code);
+        }
+      });
     });
   });
 
