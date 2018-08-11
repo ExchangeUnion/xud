@@ -30,7 +30,7 @@ class Xud {
 
   /**
    * Create an Exchange Union daemon.
-   * @param args Optional command line arguments to override configuration parameters.
+   * @param args optional command line arguments to override configuration parameters.
    */
   constructor(args?: Arguments)  {
     this.config = new Config(args);
@@ -61,13 +61,8 @@ class Xud {
       this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient, this.raidenClient);
       await this.orderBook.init();
 
-      const pairs: string[] = [];
-      (await this.orderBook.getPairs()).forEach((pair) => {
-        pairs.push(pair.id);
-      });
-
       this.pool.init({
-        pairs,
+        pairs: this.orderBook.pairIds,
         version: '1.0',
         nodePubKey: this.nodeKey.nodePubKey,
         listenPort: this.config.p2p.listen ? this.config.p2p.port : undefined,

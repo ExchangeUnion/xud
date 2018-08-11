@@ -37,7 +37,6 @@ class GrpcServer {
 
   /**
    * Start the server and begin listening on the provided port
-   * @param port
    * @returns true if the server started listening successfully, false otherwise
    */
   public listen = (port: number, host: string) => {

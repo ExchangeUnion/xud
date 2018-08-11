@@ -123,23 +123,19 @@ class Service extends EventEmitter {
 
     info.version = packageJson.version;
 
-    const pairs = await this.orderBook.getPairs();
+    const pairIds = this.orderBook.pairIds;
     info.numPeers = this.pool.peerCount;
-    info.numPairs = pairs.length;
+    info.numPairs = pairIds.length;
 
     let peerOrdersCount: number = 0;
     let ownOrdersCount: number = 0;
-    for (const key in pairs) {
-      const pair = pairs[key];
-
-      const [peerOrders, ownOrders] = await Promise.all([
-        this.orderBook.getPeerOrders(pair.id, 0),
-        this.orderBook.getOwnOrders(pair.id, 0),
-      ]);
+    pairIds.forEach((pairId) => {
+      const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
+      const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
 
       peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
       ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
-    }
+    });
 
     info.orders = {
       peer: peerOrdersCount,
@@ -199,7 +195,7 @@ class Service extends EventEmitter {
     argChecks.HAS_PAIR_ID(args);
     argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
 
-    const result: { [ type: string ]: OrderArrays } = {
+    const result = {
       peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
       ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
     };
@@ -212,7 +208,7 @@ class Service extends EventEmitter {
    * @returns A list of available trading pairs
    */
   public getPairs = () => {
-    return this.orderBook.getPairs();
+    return this.orderBook.pairs;
   }
 
   /**

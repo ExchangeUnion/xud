@@ -6,9 +6,7 @@ import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 
-/**
- * The configurable options for the lnd client.
- */
+/** The configurable options for the lnd client. */
 type LndClientConfig = {
   disable: boolean;
   certpath: string;
@@ -34,7 +32,7 @@ class LndClient extends BaseClient {
 
   /**
    * Create an lnd client.
-   * @param config The lnd configuration
+   * @param config the lnd configuration
    */
   constructor(config: LndClientConfig) {
     super(Logger.lnd);
@@ -103,7 +101,7 @@ class LndClient extends BaseClient {
 
   /**
    * Attempt to add a new invoice to the lnd invoice database.
-   * @param value The value of this invoice in satoshis
+   * @param value the value of this invoice in satoshis
    */
   public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
     const request = new lndrpc.Invoice();
@@ -113,7 +111,7 @@ class LndClient extends BaseClient {
 
   /**
    * Pay an invoice through the Lightning Network.
-   * @param payment_request An invoice for a payment within the Lightning Network.
+   * @param payment_request an invoice for a payment within the Lightning Network
    */
   public payInvoice = (paymentRequest: string): Promise<lndrpc.SendResponse.AsObject> => {
     const request = new lndrpc.SendRequest();

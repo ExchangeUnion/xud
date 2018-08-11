@@ -330,9 +330,9 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | null => {
+  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | undefined => {
     if (this.closed) {
-      return null;
+      return undefined;
     }
 
     const entry = this.getOrAddPendingResponseEntry(packetId);
@@ -545,8 +545,10 @@ class Peer extends EventEmitter {
   }
 }
 
+/** A class representing a wait for an anticipated response packet from a peer. */
 class PendingResponseEntry {
   public timeout: number = 0;
+  /** An array of tasks to resolve or reject. */
   public jobs: Job[] = [];
 
   public addJob = (resolve: Function, reject: Function) => {
@@ -574,6 +576,7 @@ class PendingResponseEntry {
   }
 }
 
+/** A pair of functions for resolving or rejecting a task. */
 class Job {
   constructor(public resolve: Function, public reject: Function) {}
 }

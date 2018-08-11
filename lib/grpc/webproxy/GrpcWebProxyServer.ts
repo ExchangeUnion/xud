@@ -8,6 +8,7 @@ import swaggerUi from 'swagger-ui-express';
 import grpc from 'grpc';
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
+/** A class representing an HTTP web proxy for the gRPC service. */
 class GrpcWebProxyServer {
   private logger: Logger;
   private app: express.Express;
@@ -22,7 +23,7 @@ class GrpcWebProxyServer {
   }
 
   /**
-   * Starts the server and begins listening on the specified proxy port
+   * Start the server and begins listening on the specified proxy port.
    */
   public listen = (proxyPort: number, grpcPort: number, grpcHost: string): Promise<void> => {
     // Load the proxy on / URL

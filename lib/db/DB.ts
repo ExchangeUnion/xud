@@ -26,9 +26,10 @@ type Models = {
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
 
+/** A class representing a connection to a SQL database. */
 class DB {
-  public sequelize!: Sequelize.Sequelize;
-  public models!: Models;
+  public sequelize: Sequelize.Sequelize;
+  public models: Models;
   private logger: Logger = Logger.db;
 
   constructor(private config: DBConfig) {
@@ -70,6 +71,7 @@ class DB {
     ]);
 
     if (newDb) {
+      // populate new databases with seed nodes
       await Host.bulkCreate(<db.HostAttributes[]>[
         { address: 'xud1.test.exchangeunion.com', port: 8885 },
         { address: 'xud2.test.exchangeunion.com', port: 8885 },
