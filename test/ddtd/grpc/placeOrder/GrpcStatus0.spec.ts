@@ -18,14 +18,9 @@ describe('client.placeOrder()', () => {
       order.setQuantity(argv.quantity);
       order.setPrice(argv.price);
       request.setOrder(order);
-      client.placeOrder(request, (error: Error | null, response) => {
-        if (error) {
-          throw error;
-        } else if (response) {
-          assert.equal(0, response.toObject().code);
-        }
+      client.placeOrder(request, (response) => {
+        assert.equal(0, response.toObject().code);
       });
     });
   });
-
 });

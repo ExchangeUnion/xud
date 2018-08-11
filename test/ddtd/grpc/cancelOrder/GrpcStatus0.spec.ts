@@ -14,14 +14,9 @@ describe('client.cancelOrder()', () => {
       const request = new CancelOrderRequest();
       request.setPairId(argv.pair_id);
       request.setOrderId(argv.order_id);
-      client.cancelOrder(request, (error: Error | null, response) => {
-        if (error) {
-          throw error;
-        } else if (response) {
-          assert.equal(0, response.toObject().code);
-        }
+      client.cancelOrder(request, (response) => {
+        assert.equal(0, response.toObject().code);
       });
     });
   });
-
 });

@@ -10,13 +10,8 @@ describe('client.getInfo()', () => {
 
   it('responds with grpc status 0', () => {
       const request = new GetInfoRequest();
-      client.getInfo(request, (error: Error | null, response) => {
-        if (error) {
-          throw error;
-        } else if (response) {
-          assert.equal(0, response.toObject().code);
-        }
+      client.getInfo(request, (response) => {
+        assert.equal(0, response.toObject().code);
       });
   });
-
 });
