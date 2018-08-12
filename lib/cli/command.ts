@@ -15,13 +15,13 @@ interface grpcResponse {
 /**
  * A generic function to instantiate an XU client, perform a command, and output the result to the
  * console.
- * @param argv The command line arguments
- * @param callback The callback function to perform a command
+ * @param argv the command line arguments
+ * @param callback the callback function to perform a command
  */
 export const callback = (error: Error | null, response: grpcResponse) => {
   if (error) {
     console.error(`${error.name}: ${error.message}`);
   } else {
-    console.log(JSON.stringify(response.toObject(), null, 2));
+    console.log(JSON.stringify(response.toObject(), undefined, 2));
   }
 };

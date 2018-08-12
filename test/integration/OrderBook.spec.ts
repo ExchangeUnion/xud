@@ -63,7 +63,7 @@ describe('OrderBook', () => {
   it('should have pairs and matchingEngines equivalent loaded', () => {
     expect(orderBook.pairs).to.be.an('array');
     orderBook.pairs.forEach((pair) => {
-      expect(orderBook.matchingEngines).to.have.ownProperty(pair.id);
+      expect(orderBook.matchingEngines).to.have.key(pair.id);
     });
   });
 
@@ -76,7 +76,7 @@ describe('OrderBook', () => {
   it('should fully match new ownOrder and remove matches', async () => {
     const order: orders.OwnOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -6, price: 55 };
     const matches = await orderBook.addLimitOrder(order);
-    expect(matches.remainingOrder).to.be.null;
+    expect(matches.remainingOrder).to.be.undefined;
 
     const firstMatch = matches.matches[0];
     const secondMatch = matches.matches[1];
@@ -94,9 +94,10 @@ describe('OrderBook', () => {
   it('should partially match new market order and discard remaining order', async () => {
     const order: orders.OwnMarketOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -10 };
     const matches = await orderBook.addMarketOrder(order);
-    expect(matches.remainingOrder.quantity).to.be.greaterThan(order.quantity);
-    expect(getOwnOrder(matches.remainingOrder)).to.be.undefined;
-    expect((getOwnOrder(matches.remainingOrder))).to.be.undefined;
+    expect(matches.remainingOrder).to.not.be.undefined;
+    expect(matches.remainingOrder!.quantity).to.be.greaterThan(order.quantity);
+    expect(getOwnOrder(matches.remainingOrder!)).to.be.undefined;
+    expect((getOwnOrder(matches.remainingOrder!))).to.be.undefined;
   });
 
   after(async () => {

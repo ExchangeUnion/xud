@@ -43,14 +43,13 @@ abstract class Packet<T = any> implements PacketInterface {
 
   /**
    * Create a packet from a deserialized packet message.
-   * @param packet A deserialized object containing a packet header and optional body
+   * @param packet a deserialized object containing a packet header and optional body
    */
   constructor(packet: PacketInterface);
 
   /**
   * Create a packet from a packet body.
-  * @param body
-  * @param reqId The id of the requesting packet to set on the header if this packet is a response.
+  * @param reqId the id of the requesting packet to set on the header if this packet is a response
   */
   constructor(body?: T, reqId?: string);
 

@@ -6,6 +6,9 @@ enum ClientStatus {
   CONNECTION_VERIFIED,
 }
 
+/**
+ * A base class to represent a client for an external service such as LND or Raiden.
+ */
 abstract class BaseClient extends EventEmitter {
   protected logger: Logger;
   protected status!: ClientStatus;

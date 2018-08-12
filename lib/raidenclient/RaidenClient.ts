@@ -122,9 +122,9 @@ class RaidenClient extends BaseClient {
 
   /**
    * Send a request to the Raiden REST API.
-   * @param endpoint The URL endpoint
-   * @param method An HTTP request method
-   * @param payload The request payload
+   * @param endpoint the URL endpoint
+   * @param method an HTTP request method
+   * @param payload the request payload
    */
   private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
     return new Promise((resolve, reject) => {
@@ -217,8 +217,8 @@ class RaidenClient extends BaseClient {
 
   /**
    * Initiates or attempts to complete a Raiden token swap
-   * @param target_address The address of the intended swap counterparty
-   * @param payload The token swap payload
+   * @param target_address the address of the intended swap counterparty
+   * @param payload the token swap payload
    */
   public tokenSwap = async (target_address: string, payload: TokenSwapPayload, order?: StampedOrder): Promise<void> => {
     const identifier = ms();
@@ -233,7 +233,7 @@ class RaidenClient extends BaseClient {
 
   /**
    * Get info about a given raiden payment channel.
-   * @param channel_address The address of the channel to query
+   * @param channel_address the address of the channel to query
    */
   public getChannel = async (channel_address: string): Promise<Channel> => {
     const endpoint = `channels/${channel_address}`;
@@ -264,7 +264,7 @@ class RaidenClient extends BaseClient {
 
   /**
    * Close a payment channel.
-   * @param channel_address The address of the channel to close
+   * @param channel_address the address of the channel to close
    */
   public closeChannel = async (channel_address: string): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
@@ -272,9 +272,9 @@ class RaidenClient extends BaseClient {
   }
 
   /**
-   * Deposit more of a token to an existing channel
-   * @param channel_address The address of the channel to deposit to
-   * @param balance The amount to deposit to the channel
+   * Deposit more of a token to an existing channel.
+   * @param channel_address the address of the channel to deposit to
+   * @param balance the amount to deposit to the channel
    */
   public depositToChannel = async(channel_address: string, balance: number): Promise<void> => {
     const endpoint = `channels/${channel_address}`;

@@ -119,31 +119,31 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
 describe('MatchingEngine.splitOrderByQuantity', () => {
   it('should split buy orders properly', () => {
     const orderQuantity = 10;
-    const targetQuantity = 6;
-    const { target, remaining } = MatchingEngine.splitOrderByQuantity(
+    const matchingQuantity = 6;
+    const { matched, remaining } = MatchingEngine.splitOrderByQuantity(
       createOwnOrder(5, orderQuantity),
-      targetQuantity,
+      matchingQuantity,
     );
-    expect(target.quantity).to.equal(targetQuantity);
-    expect(remaining.quantity).to.equal(orderQuantity - targetQuantity);
+    expect(matched.quantity).to.equal(matchingQuantity);
+    expect(remaining.quantity).to.equal(orderQuantity - matchingQuantity);
   });
 
   it('should split sell orders properly', () => {
     const orderQuantity = -10;
-    const targetQuantity = 4;
-    const { target, remaining } = MatchingEngine.splitOrderByQuantity(
+    const matchingQuantity = 4;
+    const { matched, remaining } = MatchingEngine.splitOrderByQuantity(
       createOwnOrder(5, orderQuantity),
-      targetQuantity,
+      matchingQuantity,
     );
-    expect(target.quantity).to.equal(targetQuantity * -1);
-    expect(remaining.quantity).to.equal(orderQuantity + targetQuantity);
+    expect(matched.quantity).to.equal(matchingQuantity * -1);
+    expect(remaining.quantity).to.equal(orderQuantity + matchingQuantity);
   });
 
-  it('should not work when targetQuantity higher than quantity of order', () => {
+  it('should not work when matchingQuantity higher than quantity of order', () => {
     expect(() => MatchingEngine.splitOrderByQuantity(
       createOwnOrder(5, 5),
       10,
-    )).to.throw('order abs quantity should be higher than targetQuantity');
+    )).to.throw('order abs quantity must be greater than matchingQuantity');
   });
 });
 
@@ -152,40 +152,32 @@ describe('MatchingEngine.match', () => {
     const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -5));
-    const matchAgainst = [engine.priorityQueues.sellOrders];
-    const { remainingOrder } = MatchingEngine.match(
-      createOwnOrder(5, 10),
-      matchAgainst,
-    );
-    expect(remainingOrder).to.be.null;
+    const matchAgainst = [engine.sellOrders];
+    const { remainingOrder } = engine.match(createOwnOrder(5, 10));
+    expect(remainingOrder).to.be.undefined;
   });
 
   it('should split taker order when makers are insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -4));
     engine.addPeerOrder(createPeerOrder(5, -5));
-    const matchAgainst = [engine.priorityQueues.sellOrders];
-    const { remainingOrder } = MatchingEngine.match(
-      createOwnOrder(5, 10),
-      matchAgainst,
-    );
-    expect(remainingOrder.quantity).to.equal(1);
+    const matchAgainst = [engine.sellOrders];
+    const { remainingOrder } = engine.match(createOwnOrder(5, 10));
+    expect(remainingOrder).to.not.be.undefined;
+    expect(remainingOrder!.quantity).to.equal(1);
   });
 
   it('should split one maker order when taker is insufficient', () => {
     const engine = new MatchingEngine(PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -6));
-    const matchAgainst = [engine.priorityQueues.sellOrders];
-    const { matches, remainingOrder } = MatchingEngine.match(
-      createOwnOrder(5, 10),
-      matchAgainst,
-    );
-    expect(remainingOrder).to.be.null;
+    const matchAgainst = [engine.sellOrders];
+    const { matches, remainingOrder } = engine.match(createOwnOrder(5, 10));
+    expect(remainingOrder).to.be.undefined;
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
     });
-    const peekResult = engine.priorityQueues.sellOrders.peek();
+    const peekResult = engine.sellOrders.peek();
     expect(peekResult).to.not.be.undefined;
     expect(peekResult!.quantity).to.equal(-1);
   });
@@ -198,12 +190,13 @@ describe('MatchingEngine.removeOwnOrder', () => {
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, -5), false);
     expect(matchingResult.matches).to.be.empty;
+    expect(matchingResult.remainingOrder).to.not.be.undefined;
     expect(engine.isEmpty()).to.be.false;
 
     expect(engine.removeOwnOrder(uuidv1())).to.be.undefined;
     expect(engine.isEmpty()).to.be.false;
 
-    const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder.id);
+    const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder!.id);
     expect(JSON.stringify(removedOrder)).to.equals(JSON.stringify(matchingResult.remainingOrder));
     expect(engine.isEmpty()).to.be.true;
   });
@@ -227,7 +220,8 @@ describe('MatchingEngine.removePeerOrders', () => {
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 15), false);
-    expect(matchingResult.remainingOrder.quantity).to.equal(10);
+    expect(matchingResult.remainingOrder).to.not.be.undefined;
+    expect(matchingResult.remainingOrder!.quantity).to.equal(10);
   });
 
   it('should add a new peerOrder and then remove it partially', () => {

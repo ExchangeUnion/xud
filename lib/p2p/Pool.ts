@@ -28,7 +28,7 @@ interface Pool {
   emit(event: 'peer.close', peer: Peer): boolean;
 }
 
-/** A pool of peers for handling all network activity */
+/** A class representing a pool of peers that handles network activity. */
 class Pool extends EventEmitter {
   private hosts: HostList;
   private peers: PeerList = new PeerList();
