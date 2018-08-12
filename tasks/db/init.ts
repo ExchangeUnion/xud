@@ -27,11 +27,6 @@ export default async (productionDb?: boolean) => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
       { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
     ]),
-    p2pRepository.addHosts([
-      { address: 'xud1.test.exchangeunion.com', port: 8885 },
-      { address: 'xud2.test.exchangeunion.com', port: 8885 },
-      { address: 'xud3.test.exchangeunion.com', port: 8885 },
-    ]),
   ]);
 
   db.close();
