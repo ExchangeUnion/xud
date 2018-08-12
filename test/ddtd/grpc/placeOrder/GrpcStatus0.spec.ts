@@ -1,4 +1,4 @@
-import chai, { assert, expect } from 'chai';
+import { expect } from 'chai';
 import data from './data/grpc_status_0.json';
 import grpc from 'grpc';
 import env from '../env';

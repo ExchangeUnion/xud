@@ -1,4 +1,4 @@
-import chai, { assert, expect } from 'chai';
+import { expect } from 'chai';
 import grpc from 'grpc';
 import env from '../env';
 import { XudClient } from '../../../../lib/proto/xudrpc_grpc_pb';

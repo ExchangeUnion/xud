@@ -1,4 +1,4 @@
-import chai, { assert, expect } from 'chai';
+import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
 import env from '../env';
 
