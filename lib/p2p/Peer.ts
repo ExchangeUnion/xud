@@ -416,11 +416,14 @@ class Peer extends EventEmitter {
 
     this.socket.once('close', (hadError) => {
       // emitted once the socket is fully closed
-      if (hadError) {
-        this.logger.warn(`Socket closed due to error (${this.id})`);
-      } else {
-        this.logger.info(`Socket closed (${this.id})`);
+      if (this.connected) {
+        if (hadError) {
+          this.logger.warn(`Socket closed due to error (${this.id})`);
+        } else {
+          this.logger.info(`Socket closed (${this.id})`);
+        }
       }
+
       this.close();
     });
 
