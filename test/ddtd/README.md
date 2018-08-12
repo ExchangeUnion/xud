@@ -14,7 +14,11 @@ We're using sample data stored in JSON files, interacting with the API layer thr
 
 ## Run the tests
 
+    ./xud --webproxy.disable false --lnd.disable true --raiden.disable true
+
     npm run test:ddtd
+
+    ./xucli shutdown
 
 ## Conventions
 
