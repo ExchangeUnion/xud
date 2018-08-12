@@ -3,6 +3,9 @@ sudo: required
 node_js:
   - "8"
 
+cache:
+  directories:
+    - "node_modules"
 services:
   - docker
   - mysql
