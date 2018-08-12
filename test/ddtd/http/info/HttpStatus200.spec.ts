@@ -1,4 +1,4 @@
-import chai, { expect } from 'chai';
+import chai, { assert, expect } from 'chai';
 import chaiHttp from 'chai-http';
 import env from '../env';
 
@@ -9,14 +9,14 @@ describe(url, () => {
 
   it('responds with http status 200', (done) => {
     chai.request(url)
-                .get('/')
-                .then((res: ChaiHttp.Response) => {
-                  expect(res.status).to.equal(200);
-                  expect(res).to.be.json;
-                  done();
-                }, (err: any) => {
-                  throw err;
-                });
+      .get('/')
+      .then((res: ChaiHttp.Response) => {
+        expect(res.status).to.equal(200);
+        expect(res).to.be.json;
+        done();
+      }, (err: any) => {
+        done(err);
+      });
   });
 
 });

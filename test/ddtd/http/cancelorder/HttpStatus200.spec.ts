@@ -1,4 +1,4 @@
-import chai, { expect } from 'chai';
+import chai, { assert, expect } from 'chai';
 import chaiHttp from 'chai-http';
 import data from './data/http_status_200.json';
 import env from '../env';
@@ -8,6 +8,7 @@ const action = '/cancelorder';
 
 describe(url + action, () => {
   chai.use(chaiHttp);
+  
   it('responds with http status 200', (done) => {
     data.httpBody.forEach(function(httpBody) {
       chai.request(url)
@@ -22,7 +23,7 @@ describe(url + action, () => {
           expect(res).to.be.json;
           done();
         }, (err: any) => {
-          throw err;
+          done(err);
         });
     });
   });
