@@ -3,3 +3,4 @@ proto/* linguist-vendored
 proto/xudrpc.proto linguist-vendored=false
 lib/proto/* linguist-generated
 package-lock.json linguist-generated
+docs/api.md linguist-generated

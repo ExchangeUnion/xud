@@ -17,7 +17,7 @@
     "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "postinstall": "npm run compile",
-    "proto": "cross-os proto && cross-os swagger",
+    "proto": "cross-os proto && cross-os swagger && cross-os protodocs",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
     "test": "npm run test:unit && npm run test:int && npm run test:p2p",
@@ -48,6 +48,11 @@
       "linux": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
       "darwin": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
       "win32": "node_modules\\grpc-tools\\bin\\protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
+    },
+    "protodocs": {
+      "linux": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --doc_out=\"docs\" --doc_opt=markdown,api.md -I=\"proto\" proto\\xudrpc.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
