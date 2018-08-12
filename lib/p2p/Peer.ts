@@ -207,8 +207,13 @@ class Peer extends EventEmitter {
 
   private sendRaw = (packetStr: string) => {
     if (this.socket) {
-      this.socket.write(`${packetStr}\r\n`);
 
+      // writing the packet length into the first 4 bytes of the buffer
+      const size = Buffer.allocUnsafe(4);
+      size.writeUInt32LE(packetStr.length, 0, true);
+      const buffer = Buffer.concat([size, new Buffer(packetStr)]);
+
+      this.socket.write(buffer);
       this.lastSend = Date.now();
     }
   }

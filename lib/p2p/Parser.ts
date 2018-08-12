@@ -60,20 +60,46 @@ interface Parser {
 
 /** Protocol packet parser */
 class Parser extends EventEmitter {
+  private pending: Buffer[] = [];
+  private waiting: number = 0;
+
   public feed = (data: Buffer): void => {
-    const dataStr = data.toString();
-    const packetLines = dataStr.split('\r\n');
-    packetLines.forEach((packetStr) => {
-      if (!packetStr) {
-        return;
+    if (this.waiting) {
+      this.read(this.waiting, data);
+    } else {
+      // first 4 bytes are the size of the packet
+      const size = data.readUInt32LE(0, true);
+      this.read(size, data.slice(4));
+    }
+  }
+
+  private read = (size: number, chunk: Buffer) => {
+    this.pending.push(chunk.slice(0, size));
+
+    if (size > chunk.length) { // packet isn't complete
+      this.waiting = size - chunk.length;
+    } else { // chunk is finalizing the packet
+      this.parsePacket(this.pending);
+      this.resetCycle();
+      if (size < chunk.length) { // multiple packets
+        this.feed(chunk.slice(size));
       }
-      try {
-        const packet = fromRaw(packetStr);
-        this.emit('packet', packet);
-      } catch (err) {
-        this.emit('error', err);
-      }
-    });
+    }
+  }
+
+  private resetCycle = () => {
+    this.waiting = 0;
+    this.pending = [];
+  }
+
+  private parsePacket = (chunks: Buffer[]): void => {
+    try {
+      const packetStr = chunks.map(chunk => chunk.toString()).join('');
+      const packet = fromRaw(packetStr);
+      this.emit('packet', packet);
+    } catch (err) {
+      this.emit('error', err);
+    }
   }
 }
 
