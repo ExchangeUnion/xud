@@ -58,7 +58,7 @@ class Xud {
 
       this.pool = new Pool(this.config.p2p, this.db);
 
-      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient, this.raidenClient);
       await this.orderBook.init();
 
       const pairs: string[] = [];

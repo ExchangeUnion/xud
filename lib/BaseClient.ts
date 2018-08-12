@@ -1,15 +1,18 @@
 import Logger from './Logger';
+import { EventEmitter } from 'events';
 
 enum ClientStatus {
   DISABLED,
   CONNECTION_VERIFIED,
 }
 
-abstract class BaseClient {
+abstract class BaseClient extends EventEmitter {
   protected logger: Logger;
   protected status!: ClientStatus;
 
   constructor(logger: Logger) {
+    super();
+
     this.logger = logger;
   }
 

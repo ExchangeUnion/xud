@@ -109,10 +109,10 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Execute an atomic swap
+   * Execute an atomic swap. Demonstration and testing purposes only.
    */
-  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
+    return this.raidenClient.tokenSwap(target_address, payload);
   }
 
   /**
@@ -249,9 +249,11 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to executed swaps
+   * Subscribe to executed swaps.
    */
-  public subscribeSwaps = async (_callback: Function) => {};
+  public subscribeSwaps = async (callback: Function) => {
+    this.raidenClient.on('swap', order => callback(order));
+  }
 }
 
 export default Service;

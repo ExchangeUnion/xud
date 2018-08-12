@@ -140,9 +140,6 @@ export class ExecuteSwapRequest extends jspb.Message {
   getTargetAddress(): string;
   setTargetAddress(value: string): void;
 
-  getIdentifier(): string;
-  setIdentifier(value: string): void;
-
   hasPayload(): boolean;
   clearPayload(): void;
   getPayload(): SwapPayload | undefined;
@@ -161,7 +158,6 @@ export class ExecuteSwapRequest extends jspb.Message {
 export namespace ExecuteSwapRequest {
   export type AsObject = {
     targetAddress: string,
-    identifier: string,
     payload?: SwapPayload.AsObject,
   }
 }
@@ -865,8 +861,8 @@ export namespace SubscribeSwapsRequest {
 }
 
 export class SubscribeSwapsResponse extends jspb.Message {
-  getResult(): string;
-  setResult(value: string): void;
+  getOrder(): string;
+  setOrder(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscribeSwapsResponse.AsObject;
@@ -880,7 +876,7 @@ export class SubscribeSwapsResponse extends jspb.Message {
 
 export namespace SubscribeSwapsResponse {
   export type AsObject = {
-    result: string,
+    order: string,
   }
 }
 

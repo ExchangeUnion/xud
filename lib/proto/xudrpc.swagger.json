@@ -368,9 +368,6 @@
         "target_address": {
           "type": "string"
         },
-        "identifier": {
-          "type": "string"
-        },
         "payload": {
           "$ref": "#/definitions/xudrpcSwapPayload"
         }
@@ -695,8 +692,9 @@
     "xudrpcSubscribeSwapsResponse": {
       "type": "object",
       "properties": {
-        "result": {
-          "type": "string"
+        "order": {
+          "type": "string",
+          "title": "The order which was executed for the swap with updated remaining quantity"
         }
       }
     },
