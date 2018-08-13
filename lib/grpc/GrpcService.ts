@@ -1,4 +1,4 @@
-/* tslint:disable no-floating-promises */
+/* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
