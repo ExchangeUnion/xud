@@ -10,8 +10,6 @@ import SocketAddress from '../p2p/SocketAddress';
 import errors from './errors';
 import lndErrors from '../lndclient/errors';
 
-const packageJson = require('../../package.json');
-
 /**
  * The components required by the API service layer.
  */
@@ -24,6 +22,8 @@ export type ServiceComponents = {
   config: Config
   /** The function to be called to shutdown the parent process */
   shutdown: Function;
+  /** The version of the local xud instance. */
+  version: string;
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -50,6 +50,7 @@ class Service extends EventEmitter {
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
+  private version: string;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(private logger: Logger, components: ServiceComponents) {
@@ -62,6 +63,8 @@ class Service extends EventEmitter {
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
+
+    this.version = components.version;
   }
 
   private getLndInfo = async (lndClient: LndClient)  => {
@@ -160,7 +163,7 @@ class Service extends EventEmitter {
   public getInfo = async () => {
     const info: any = {};
 
-    info.version = packageJson.version;
+    info.version = this.version;
 
     const pairIds = this.orderBook.pairIds;
     info.numPeers = this.pool.peerCount;

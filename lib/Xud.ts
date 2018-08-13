@@ -12,6 +12,8 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { Arguments } from 'yargs';
 
+const version: string = require('../package.json').version;
+
 bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
@@ -74,14 +76,15 @@ class Xud {
       await this.orderBook.init();
 
       await this.pool.init({
+        version,
         pairs: this.orderBook.pairIds,
-        version: '1.0',
         nodePubKey: this.nodeKey.nodePubKey,
         listenPort: this.config.p2p.listen ? this.config.p2p.port : undefined,
         raidenAddress: this.raidenClient.address,
       });
 
       this.service = new Service(loggers.global, {
+        version,
         orderBook: this.orderBook,
         lndBtcClient: this.lndbtcClient,
         lndLtcClient: this.lndltcClient,
