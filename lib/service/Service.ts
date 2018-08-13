@@ -170,8 +170,8 @@ class Service extends EventEmitter {
     info.numPeers = this.pool.peerCount;
     info.numPairs = pairIds.length;
 
-    let peerOrdersCount: number = 0;
-    let ownOrdersCount: number = 0;
+    let peerOrdersCount = 0;
+    let ownOrdersCount = 0;
     pairIds.forEach((pairId) => {
       const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
       const ownOrders = this.orderBook.getOwnOrders(pairId, 0);

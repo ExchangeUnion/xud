@@ -39,7 +39,7 @@ class Pool extends EventEmitter {
   private nodes: NodeList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private connected: boolean = false;
+  private connected = false;
   /** The local handshake data to be sent to newly connected peers. */
   private handshakeData!: HandshakeState;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */

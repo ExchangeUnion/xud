@@ -42,24 +42,24 @@ class Peer extends EventEmitter {
   // TODO: properties documentation
   public socketAddress!: Address;
   public inbound!: boolean;
-  public connected: boolean = false;
-  private opened: boolean = false;
+  public connected = false;
+  private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser();
-  private closed: boolean = false;
+  private closed = false;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
-  private banScore: number = 0;
-  private lastRecv: number = 0;
-  private lastSend: number = 0;
+  private banScore = 0;
+  private lastRecv = 0;
+  private lastSend = 0;
   private handshakeState?: HandshakeState;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   /** Interval to check required responses from peer. */
-  private static STALL_INTERVAL: number = 5000;
+  private static STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static PING_INTERVAL = 30000;
   /** Socket connection timeout for outbound peers. */
@@ -560,7 +560,7 @@ class Peer extends EventEmitter {
 
 /** A class representing a wait for an anticipated response packet from a peer. */
 class PendingResponseEntry {
-  public timeout: number = 0;
+  public timeout = 0;
   /** An array of tasks to resolve or reject. */
   public jobs: Job[] = [];
 
