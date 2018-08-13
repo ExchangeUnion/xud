@@ -338,7 +338,7 @@ class Pool extends EventEmitter {
   }
 
   private unlisten = async (): Promise<void> => {
-    await this.server.close();
+    this.server.close();
   }
 }
 

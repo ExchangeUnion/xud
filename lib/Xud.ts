@@ -106,7 +106,7 @@ class Xud {
       // start rpc server last
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
-        const listening = await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+        const listening = this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
         if (!listening) {
           // if rpc should be enabled but fails to start, treat it as a fatal error
           this.logger.error('Could not start gRPC server, exiting...');
