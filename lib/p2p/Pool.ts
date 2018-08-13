@@ -212,7 +212,7 @@ class Pool extends EventEmitter {
     await this.tryOpenPeer(peer);
   }
 
-  private handleSocket = (socket: Socket) => {
+  private handleSocket = async (socket: Socket) => {
     if (!socket.remoteAddress) { // client disconnected, socket is destroyed
       this.logger.debug('Ignoring disconnected peer');
       socket.destroy();
@@ -225,7 +225,7 @@ class Pool extends EventEmitter {
       return;
     }
 
-    this.addInbound(socket);
+    await this.addInbound(socket);
   }
 
   private handlePacket = async (peer: Peer, packet: Packet) => {
@@ -270,15 +270,16 @@ class Pool extends EventEmitter {
       // TODO: Penalize peers that attempt to create duplicate connections to us
       peer.close();
     } else {
+      // request peer's orders and known nodes
+      peer.sendPacket(new GetOrdersPacket());
+      peer.sendPacket(new GetNodesPacket());
+
       if (!this.nodes.has(peer.nodePubKey!)) {
-        this.nodes.createNode({
+        await this.nodes.createNode({
           nodePubKey: peer.nodePubKey!,
           addresses: peer.addresses!,
         });
       }
-      // request peer's orders and known nodes
-      peer.sendPacket(new GetOrdersPacket());
-      peer.sendPacket(new GetNodesPacket());
     }
   }
 
@@ -287,8 +288,8 @@ class Pool extends EventEmitter {
       console.log('err: ' + err);
     });
 
-    server.on('connection', (socket) => {
-      this.handleSocket(socket);
+    server.on('connection', async (socket) => {
+      await this.handleSocket(socket);
     });
 
     server.on('listening', () => {
@@ -298,16 +299,16 @@ class Pool extends EventEmitter {
   }
 
   private bindPeer = (peer: Peer) => {
-    peer.on('packet', (packet) => {
-      this.handlePacket(peer, packet);
+    peer.on('packet', async (packet) => {
+      await this.handlePacket(peer, packet);
     });
 
     peer.on('error', (err) => {
       this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
     });
 
-    peer.once('open', () => {
-      this.handleOpen(peer);
+    peer.once('open', async () => {
+      await this.handleOpen(peer);
     });
 
     peer.once('close', () => {
@@ -317,12 +318,12 @@ class Pool extends EventEmitter {
       this.emit('peer.close', peer);
     });
 
-    peer.once('ban', () => {
+    peer.once('ban', async () => {
       this.logger.debug(`Banning peer (${peer.nodePubKey})`);
-      if (peer) {
-        if (peer.nodePubKey) {
-          this.nodes.ban(peer.nodePubKey);
-        }
+      if (peer.nodePubKey) {
+        await this.nodes.ban(peer.nodePubKey);
+      }
+      if (peer.connected) {
         peer.close();
       }
     });

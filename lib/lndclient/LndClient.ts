@@ -237,18 +237,18 @@ class LndClient extends BaseClient {
       .on('data', (message: string) => {
         this.logger.info(`invoice update: ${message}`);
       })
-      .on('end', () => {
+      .on('end', async () => {
         this.logger.info('invoice ended');
         this.setStatus(ClientStatus.DISCONNECTED);
-        this.connect();
+        await this.connect();
       })
       .on('status', (status: string) => {
         this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
       })
-      .on('error', (error: any) => {
+      .on('error', async (error) => {
         this.logger.error(`invoice error: ${error}`);
         this.setStatus(ClientStatus.DISCONNECTED);
-        this.connect();
+        await this.connect();
       });
   }
 

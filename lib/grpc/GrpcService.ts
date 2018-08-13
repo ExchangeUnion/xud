@@ -1,5 +1,6 @@
+/* tslint:disable no-floating-promises */
+import grpc, { status } from 'grpc';
 import Logger from '../Logger';
-import grpc, { status, ServiceError } from 'grpc';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';

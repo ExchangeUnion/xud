@@ -35,11 +35,7 @@
           "instance-method"
         ]
       }
-    ]
-  },
-  "linterOptions": {
-    "exclude": [
-        "lib/lndclient/lndrpc_pb.d.ts"
-    ]
+    ],
+    "no-floating-promises": [true, "Bluebird"]
   }
 }

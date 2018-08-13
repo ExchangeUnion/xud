@@ -352,33 +352,30 @@ class OrderBook extends EventEmitter {
   private sendOrders = async (peer: Peer, reqId: string) => {
     // TODO: just send supported pairs
 
-    const promises: Promise<orders.OutgoingOrder | void>[] = [];
+    const outgoingOrders: orders.OutgoingOrder[] = [];
     this.pairIds.forEach((pairId) => {
       const orders = this.getOwnOrders(pairId, 0);
-      orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
-      orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
+      orders['buyOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
+      orders['sellOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
     });
-    await Promise.all(promises).then((outgoingOrders) => {
-      peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
-    });
+    peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
   }
 
   /**
    * Create an outgoing order and broadcast it to all peers.
    */
-  private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {
+  private broadcastOrder =  (order: orders.StampedOwnOrder) => {
     if (this.pool) {
-      const outgoingOrder = await this.createOutgoingOrder(order);
+      const outgoingOrder = this.createOutgoingOrder(order);
       if (outgoingOrder) {
         this.pool.broadcastOrder(outgoingOrder);
       }
     }
   }
 
-  private createOutgoingOrder = async (order: orders.StampedOwnOrder): Promise<orders.OutgoingOrder | void> => {
-    const invoice = await this.createInvoice(order);
-
-    if (!invoice) return;
+  private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
+    // TODO: Remove functionality of attaching invoices to orders per new swap approach.
+    const invoice = 'dummyInvoice'; // temporarily testing invoices while lnd is not available
 
     const { createdAt, localId, ...outgoingOrder } = { ...order, invoice };
     return outgoingOrder;
@@ -397,20 +394,6 @@ class OrderBook extends EventEmitter {
       }
     }
     this.matchesProcessor.add(match);
-  }
-
-  public createInvoice = async (order: orders.StampedOwnOrder): Promise<string|void> => {
-    if (!this.lndClient) {
-      return;
-    }
-
-    if (!this.lndClient.isConnected()) {
-      return 'dummyInvoice'; // temporarily testing invoices while lnd is not available
-    } else {
-      // temporary simple invoices until swaps are operational
-      const invoice = await this.lndClient.addInvoice(order.price * Math.abs(order.quantity));
-      return invoice.paymentRequest;
-    }
   }
 }
 

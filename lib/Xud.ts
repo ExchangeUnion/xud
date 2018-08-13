@@ -47,7 +47,7 @@ class Xud {
    * Start all processes necessary for the operation of an Exchange Union node.
    */
   public start = async () => {
-    await this.config.load();
+    this.config.load();
     const loggers = Logger.createLoggers(this.config.instanceId);
     this.logger = loggers.global;
     this.logger.info('config loaded');
@@ -110,7 +110,7 @@ class Xud {
         if (!listening) {
           // if rpc should be enabled but fails to start, treat it as a fatal error
           this.logger.error('Could not start gRPC server, exiting...');
-          this.shutdown();
+          await this.shutdown();
           return;
         }
 
@@ -140,7 +140,7 @@ class Xud {
     }
     // TODO: ensure we are not in the middle of executing any trades
     const msg = 'XUD shutdown gracefully';
-    (async () => {
+    await (async () => {
       // we use an immediately invoked function here exit the process AFTER the
       // shutdown method returns a response.
       this.lndbtcClient.close();
@@ -165,7 +165,7 @@ class Xud {
 
 if (!module.parent) {
   const xud = new Xud();
-  xud.start();
+  void xud.start();
 }
 
 export default Xud;
