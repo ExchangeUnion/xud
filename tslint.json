@@ -37,6 +37,7 @@
       }
     ],
     "no-floating-promises": [true, "Bluebird"],
-    "no-null-keyword": true
+    "no-null-keyword": true,
+    "jsdoc-format": true
   }
 }
