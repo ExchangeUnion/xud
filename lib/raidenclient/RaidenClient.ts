@@ -101,8 +101,9 @@ class RaidenClient extends BaseClient {
 
     this.port = port;
     this.host = host;
-    if (disable) {
-      this.setStatus(ClientStatus.DISABLED);
+
+    if (!disable) {
+      this.setStatus(ClientStatus.DISCONNECTED);
     }
   }
 
@@ -110,13 +111,15 @@ class RaidenClient extends BaseClient {
    * Check for connectivity and get our Raiden account address
    */
   public async init() {
-    if (!this.isDisabled()) {
-      try {
-        this.address = await this.getAddress();
-      } catch (err) {
-        this.logger.error('could not get raiden address', err);
-        this.status = ClientStatus.DISABLED;
-      }
+    if (this.isDisabled()) {
+      this.logger.error(`can't init raiden. raiden is disabled`);
+      return;
+    }
+    try {
+      this.address = await this.getAddress();
+      this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+    } catch (err) {
+      this.logger.error('could not get raiden address', err);
     }
   }
 
@@ -128,7 +131,7 @@ class RaidenClient extends BaseClient {
    */
   private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
     return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
+      if (!this.isConnected()) {
         reject(errors.RAIDEN_IS_DISABLED);
       }
 

@@ -15,7 +15,8 @@ class Config {
   public db: DBConfig;
   public testDb: DBConfig;
   public rpc: { host: string, port: number };
-  public lnd: LndClientConfig;
+  public lndbtc: LndClientConfig;
+  public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
 
@@ -66,12 +67,19 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.lnd = {
+    this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
+    };
+    this.lndltc = {
+      disable: false,
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
+      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      host: 'localhost',
+      port: 10010,
     };
     this.raiden = {
       disable: false,
