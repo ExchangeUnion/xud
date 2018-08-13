@@ -78,7 +78,7 @@ Options:
 
 ## 3. Interact with `xud` via Command-Line Interface
 
-Interact with an `xud` process, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
+Open a new terminal (make sure `xud` is running either in a different terminal or as [service](#daemonize-xud)) and interact with `xud`, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
 ```bash
 ~/xud/bin$ ./xucli --help
