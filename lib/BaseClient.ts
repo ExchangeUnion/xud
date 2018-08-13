@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 
 enum ClientStatus {
   DISABLED,
+  DISCONNECTED,
   CONNECTION_VERIFIED,
 }
 
@@ -11,7 +12,7 @@ enum ClientStatus {
  */
 abstract class BaseClient extends EventEmitter {
   protected logger: Logger;
-  protected status!: ClientStatus;
+  protected status: ClientStatus = ClientStatus.DISABLED;
 
   constructor(logger: Logger) {
     super();
@@ -23,9 +24,14 @@ abstract class BaseClient extends EventEmitter {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[val]}`);
     this.status = val;
   }
-
+  public isConnected(): boolean {
+    return this.status === ClientStatus.CONNECTION_VERIFIED;
+  }
   public isDisabled(): boolean {
     return this.status === ClientStatus.DISABLED;
+  }
+  public isDisconnected(): boolean {
+    return this.status === ClientStatus.DISCONNECTED;
   }
 }
 

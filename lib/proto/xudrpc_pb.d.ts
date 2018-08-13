@@ -213,10 +213,15 @@ export class GetInfoResponse extends jspb.Message {
   getOrders(): OrdersCount | undefined;
   setOrders(value?: OrdersCount): void;
 
-  hasLnd(): boolean;
-  clearLnd(): void;
-  getLnd(): LndInfo | undefined;
-  setLnd(value?: LndInfo): void;
+  hasLndbtc(): boolean;
+  clearLndbtc(): void;
+  getLndbtc(): LndInfo | undefined;
+  setLndbtc(value?: LndInfo): void;
+
+  hasLndltc(): boolean;
+  clearLndltc(): void;
+  getLndltc(): LndInfo | undefined;
+  setLndltc(value?: LndInfo): void;
 
   hasRaiden(): boolean;
   clearRaiden(): void;
@@ -239,7 +244,8 @@ export namespace GetInfoResponse {
     numPairs: number,
     version: string,
     orders?: OrdersCount.AsObject,
-    lnd?: LndInfo.AsObject,
+    lndbtc?: LndInfo.AsObject,
+    lndltc?: LndInfo.AsObject,
     raiden?: RaidenInfo.AsObject,
   }
 }

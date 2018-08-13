@@ -140,8 +140,9 @@ message GetInfoResponse {
   int32 num_pairs = 2 [json_name = "num_pairs"];
   string version = 3 [json_name = "version"];
   OrdersCount orders = 4 [json_name = "orders"];
-  LndInfo lnd = 5 [json_name = "lnd"];
-  RaidenInfo raiden = 6 [json_name = "raiden"];
+  LndInfo lndbtc = 5 [json_name = "lndbtc"];
+  LndInfo lndltc = 6 [json_name = "lndltc"];
+  RaidenInfo raiden = 7 [json_name = "raiden"];
 }
 
 message GetOrdersRequest {

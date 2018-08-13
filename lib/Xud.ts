@@ -20,7 +20,8 @@ class Xud {
   private logger: Logger = Logger.global;
   private config: Config;
   private db!: DB;
-  private lndClient!: LndClient;
+  private lndbtcClient!: LndClient;
+  private lndltcClient!: LndClient;
   private raidenClient!: RaidenClient;
   private pool?: Pool;
   private orderBook!: OrderBook;
@@ -50,15 +51,24 @@ class Xud {
       this.db = new DB(this.config.db);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd);
-      await this.lndClient.connect();
+      // setup LND clients and connect if configured
+      this.lndbtcClient = new LndClient(this.config.lndbtc);
+      if (!this.lndbtcClient.isDisabled()) {
+        await this.lndbtcClient.connect();
+      }
+      this.lndltcClient = new LndClient(this.config.lndltc);
+      if (!this.lndltcClient.isDisabled()) {
+        await this.lndltcClient.connect();
+      }
 
+      // setup raiden client and connect if configured
       this.raidenClient = new RaidenClient(this.config.raiden);
-      await this.raidenClient.init();
-
+      if (!this.raidenClient.isDisabled()) {
+        await this.raidenClient.init();
+      }
       this.pool = new Pool(this.config.p2p, this.db);
 
-      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient, this.raidenClient);
+      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndbtcClient, this.raidenClient);
       await this.orderBook.init();
 
       this.pool.init({
@@ -71,7 +81,8 @@ class Xud {
 
       this.service = new Service({
         orderBook: this.orderBook,
-        lndClient: this.lndClient,
+        lndBtcClient: this.lndbtcClient,
+        lndLtcClient: this.lndltcClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
         config: this.config,

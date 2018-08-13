@@ -49,26 +49,31 @@ Use `./xucli --help` to get up-to-date, optional command line arguments to overr
 ```bash
 ~/xud/bin $ ./xud --help
 Options:
-  --help              Show help                                        [boolean]
-  --version           Show version number                              [boolean]
-  --xudir, -x         Data directory for xud                            [string]
-  --db.database       SQL database name                                 [string]
-  --db.host           Hostname for SQL database                         [string]
-  --db.port           Port for SQL database                             [number]
-  --db.username       User for SQL database                             [string]
-  --lnd.certpath      Path to the SSL certificate for lnd               [string]
-  --lnd.disable       Disable lnd integration                          [boolean]
-  --lnd.host          Host of the lnd gRPC interface                    [string]
-  --lnd.macaroonpath  Path of the admin macaroon for lnd                [string]
-  --lnd.port          Port of the lnd gRPC interface                    [number]
-  --p2p.listen        Listen for incoming peers                        [boolean]
-  --p2p.port, -p      Port to listen for incoming peers                 [number]
-  --raiden.disable    Disable raiden integration                       [boolean]
-  --raiden.port       Port for raiden REST service                      [number]
-  --rpc.host          gRPC service host                                 [string]
-  --rpc.port, -r      gRPC service port                                 [number]
-  --webproxy.disable  Disable web proxy server                         [boolean]
-  --webproxy.port     Port for web proxy server                         [number]
+  --help                 Show help                                     [boolean]
+  --version              Show version number                           [boolean]
+  --xudir, -x            Data directory for xud                         [string]
+  --db.database          SQL database name                              [string]
+  --db.host              Hostname for SQL database                      [string]
+  --db.port              Port for SQL database                          [number]
+  --db.username          User for SQL database                          [string]
+  --lndbtc.certpath      Path to the SSL certificate for lndBtc         [string]
+  --lndbtc.disable       Disable lndBtc integration                    [boolean]
+  --lndbtc.host          Host of the lndBtc gRPC interface              [string]
+  --lndbtc.macaroonpath  Path of the admin macaroon for lndBtc          [string]
+  --lndbtc.port          Port of the lndBtc gRPC interface              [number]
+  --lndltc.certpath      Path to the SSL certificate for lndLtc         [string]
+  --lndltc.disable       Disable lndLtc integration                    [boolean]
+  --lndltc.host          Host of the lndLtc gRPC interface              [string]
+  --lndltc.macaroonpath  Path of the admin macaroon for lndLtc          [string]
+  --lndltc.port          Port of the lndLtc gRPC interface              [number]
+  --p2p.listen           Listen for incoming peers                     [boolean]
+  --p2p.port, -p         Port to listen for incoming peers              [number]
+  --raiden.disable       Disable raiden integration                    [boolean]
+  --raiden.port          Port for raiden REST service                   [number]
+  --rpc.host             gRPC service host                              [string]
+  --rpc.port, -r         gRPC service port                              [number]
+  --webproxy.disable     Disable web proxy server                      [boolean]
+  --webproxy.port        Port for web proxy server                      [number]
 ```
 
 ## 3. Interact with `xud` via Command-Line Interface
@@ -145,7 +150,11 @@ listen = true
 port = 8885
 #make sure this port is reachable from the internet
 
-[lnd]
+[lndbtc]
+disable = false
+host = "localhost"
+
+[lndltc]
 disable = false
 host = "localhost"
 
@@ -166,7 +175,10 @@ Use the [config file](#configuration-optional) or launch `xud` with `--db.databa
 [Releases](https://github.com/ExchangeUnion/xud/releases) currently don't support swaps, thus we recommend to disable lnd & raiden in the config, to avoid unnecessary error outputs:
 
 ```toml
-[lnd]
+[lndbtc]
+disable = true
+
+[lndltc]
 disable = true
 
 [raiden]
@@ -183,7 +195,7 @@ nodemon --watch dist -e js bin/xud
 ```
  With args:
  ```
-nodemon --watch dist -e js bin/xud --lnd.disable=true
+nodemon --watch dist -e js bin/xud --lndbtc.disable=true --lndltc.disable=true
 ```
 ### Daemonize `xud`
 If you want to daemonize `xud`, so you don't have to keep a terminal open and xud starts on bootup, you can do this for example on Ubuntu by adding the following to `systemd`:

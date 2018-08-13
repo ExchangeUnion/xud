@@ -398,7 +398,10 @@
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
         },
-        "lnd": {
+        "lndbtc": {
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "lndltc": {
           "$ref": "#/definitions/xudrpcLndInfo"
         },
         "raiden": {

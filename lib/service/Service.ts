@@ -8,6 +8,7 @@ import Config from '../Config';
 import { EventEmitter } from 'events';
 import SocketAddress from '../p2p/SocketAddress';
 import errors from './errors';
+import lndErrors from '../lndclient/errors';
 
 const packageJson = require('../../package.json');
 
@@ -16,7 +17,8 @@ const packageJson = require('../../package.json');
  */
 export type ServiceComponents = {
   orderBook: OrderBook;
-  lndClient: LndClient;
+  lndBtcClient: LndClient;
+  lndLtcClient: LndClient;
   raidenClient: RaidenClient;
   pool: Pool;
   config: Config
@@ -44,7 +46,8 @@ class Service extends EventEmitter {
   public shutdown: Function;
 
   private orderBook: OrderBook;
-  private lndClient: LndClient;
+  private lndBtcClient: LndClient;
+  private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
@@ -57,12 +60,53 @@ class Service extends EventEmitter {
     this.shutdown = components.shutdown;
 
     this.orderBook = components.orderBook;
-    this.lndClient = components.lndClient;
+    this.lndBtcClient = components.lndBtcClient;
+    this.lndLtcClient = components.lndLtcClient;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
 
     this.logger = Logger.rpc;
+  }
+
+  private getLndInfo = async (lndClient: LndClient)  => {
+    let info: any = {};
+
+    if (lndClient.isDisabled()) {
+      info = {
+        error: String(lndErrors.LND_IS_DISABLED.message),
+      };
+      return info;
+    }
+    if (!lndClient.isConnected()) {
+      this.logger.error(`LND error: ${lndErrors.LND_IS_DISCONNECTED.message}`);
+      info = {
+        error: String(lndErrors.LND_IS_DISCONNECTED.message),
+      };
+      return info;
+    }
+
+    try {
+      const lnd = await lndClient.getInfo();
+
+      info = {
+        channels: {
+          active: lnd.numActiveChannels,
+          pending: lnd.numPendingChannels,
+        },
+        chains: lnd.chainsList,
+        blockheight: lnd.blockHeight,
+        uris: lnd.urisList,
+        version: lnd.version,
+      };
+
+    } catch (err) {
+      this.logger.error(`LND error: ${err}`);
+      info = {
+        error: String(err),
+      };
+    }
+    return info;
   }
 
   /*
@@ -142,29 +186,8 @@ class Service extends EventEmitter {
       own: ownOrdersCount,
     };
 
-    if (!this.config.lnd.disable) {
-      try {
-        const lnd = await this.lndClient.getInfo();
-
-        info.lnd = {
-          channels: {
-            active: lnd.numActiveChannels,
-            pending: lnd.numPendingChannels,
-          },
-          chains: lnd.chainsList,
-          blockheight: lnd.blockHeight,
-          uris: lnd.urisList,
-          version: lnd.version,
-        };
-
-      } catch (err) {
-        this.logger.error(`LND error: ${err}`);
-        info.lnd = {
-          error: String(err),
-        };
-      }
-    }
-
+    info.lndbtc = await this.getLndInfo(this.lndBtcClient);
+    info.lndltc = await this.getLndInfo(this.lndLtcClient);
     if (!this.config.raiden.disable) {
       try {
         const channels = await this.raidenClient.getChannels();

@@ -381,7 +381,7 @@ class OrderBook extends EventEmitter {
       return;
     }
 
-    if (this.lndClient.isDisabled()) {
+    if (!this.lndClient.isConnected()) {
       return 'dummyInvoice'; // temporarily testing invoices while lnd is not available
     } else {
       // temporary simple invoices until swaps are operational
