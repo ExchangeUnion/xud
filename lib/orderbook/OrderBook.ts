@@ -358,7 +358,7 @@ class OrderBook extends EventEmitter {
       orders['buyOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
       orders['sellOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
     });
-    peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
+    peer.sendOrders(outgoingOrders, reqId);
   }
 
   /**
