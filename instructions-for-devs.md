@@ -33,7 +33,7 @@ mysql> GRANT ALL ON *.* TO 'xud'@'localhost';
 
 ## 2. Start `xud`
 
-Open a new terminal and launch a `xud` process
+Open a new terminal and launch a `xud` process.
 
 ```bash
 ~/xud/bin $ ./xud
@@ -43,6 +43,8 @@ Open a new terminal and launch a `xud` process
 2018-6-3 15:14:28 [RPC] info: GRPC server listening on port 8886
 2018-6-3 15:14:28 [RPC] info: gRPC Web API proxy listening on port 8080
 ```
+
+*Optional*: Configure `xud` [as a daemon](#daemonize-xud).
 
 Use `./xucli --help` to get up-to-date, optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
 
@@ -78,7 +80,7 @@ Options:
 
 ## 3. Interact with `xud` via Command-Line Interface
 
-Open a new terminal (make sure `xud` is running either in a different terminal or as [service](#daemonize-xud)) and interact with `xud`, identified by its `rpc` host and port using `xucli`. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
+Once `xud` is running, you can use the `xucli` to interact with it. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
 ```bash
 ~/xud/bin$ ./xucli --help
