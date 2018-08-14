@@ -1,5 +1,5 @@
-import grpc, { status, ServiceError } from 'grpc';
 import Logger from '../Logger';
+import grpc, { status, ServiceError } from 'grpc';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -27,12 +27,8 @@ function serializeDateProperties(response: any) {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
-  private logger: Logger;
-
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service) {
-    this.logger = Logger.rpc;
-  }
+  constructor(private logger: Logger, private service: Service) {}
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
     try {

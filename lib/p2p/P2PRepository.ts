@@ -3,10 +3,9 @@ import DB, { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
-  private logger: Logger = Logger.p2p;
   private models: Models;
 
-  constructor(private db: DB) {
+  constructor(private logger: Logger, private db: DB) {
     this.models = db.models;
   }
 

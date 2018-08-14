@@ -45,7 +45,6 @@ class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and matching engines. */
   public matchingEngines = new Map<string, MatchingEngine>();
 
-  private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor;
   /** A map between active trading pair ids and local buy and sell orders. */
@@ -56,12 +55,12 @@ class OrderBook extends EventEmitter {
   /** A map between an order's local id and its global id. */
   private localIdMap: Map<string, string> = new Map<string, string>();
 
-  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
+  constructor(private logger: Logger, models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
 
-    this.matchesProcessor = new MatchesProcessor(pool, raidenClient);
+    this.matchesProcessor = new MatchesProcessor(logger, pool, raidenClient);
 
-    this.repository = new OrderBookRepository(models);
+    this.repository = new OrderBookRepository(logger, models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
@@ -92,7 +91,7 @@ class OrderBook extends EventEmitter {
 
     this.pairs.forEach((pair) => {
       this.pairIds.push(pair.id);
-      this.matchingEngines.set(pair.id, new MatchingEngine(pair.id));
+      this.matchingEngines.set(pair.id, new MatchingEngine(this.logger, pair.id));
       this.ownOrders.set(pair.id, this.initOrders());
       this.peerOrders.set(pair.id, this.initOrders());
     });

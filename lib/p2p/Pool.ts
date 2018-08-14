@@ -33,14 +33,13 @@ class Pool extends EventEmitter {
   private hosts: HostList;
   private peers: PeerList = new PeerList();
   private server: Server = net.createServer();
-  private logger: Logger = Logger.p2p;
   private connected: boolean = false;
   private handshakeData!: HandshakeState;
 
-  constructor(private config: PoolConfig, db: DB) {
+  constructor(private config: PoolConfig, private logger: Logger, db: DB) {
     super();
 
-    this.hosts = new HostList(new P2PRepository(db));
+    this.hosts = new HostList(new P2PRepository(this.logger, db));
   }
 
   public get peerCount(): number {
@@ -92,12 +91,12 @@ class Pool extends EventEmitter {
    */
   public addOutbound = async (socketAddress: SocketAddress): Promise<Peer> => {
     if (this.peers.has(socketAddress)) {
-      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress.address);
+      const err = errors.ADDRESS_ALREADY_CONNECTED(socketAddress.toString());
       this.logger.info(err.message);
       throw err;
     }
 
-    const peer = Peer.fromOutbound(socketAddress);
+    const peer = Peer.fromOutbound(socketAddress, this.logger);
     await this.tryOpenPeer(peer);
     return peer;
   }
@@ -152,7 +151,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket): Promise<Peer> => {
-    const peer = Peer.fromInbound(socket);
+    const peer = Peer.fromInbound(socket, this.logger);
     await this.openPeer(peer);
     return peer;
   }

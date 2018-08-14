@@ -10,12 +10,10 @@ const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
 /** A class representing an HTTP web proxy for the gRPC service. */
 class GrpcWebProxyServer {
-  private logger: Logger;
   private app: express.Express;
   private server?: Server;
 
-  constructor() {
-    this.logger = Logger.rpc;
+  constructor(private logger: Logger) {
     this.app = express();
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));

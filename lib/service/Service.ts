@@ -44,29 +44,24 @@ const argChecks = {
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
   public shutdown: Function;
-
   private orderBook: OrderBook;
   private lndBtcClient: LndClient;
   private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents) {
+  constructor(private logger: Logger, components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
-
     this.orderBook = components.orderBook;
     this.lndBtcClient = components.lndBtcClient;
     this.lndLtcClient = components.lndLtcClient;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
-
-    this.logger = Logger.rpc;
   }
 
   private getLndInfo = async (lndClient: LndClient)  => {

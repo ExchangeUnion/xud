@@ -57,7 +57,11 @@ class NodeKey {
   /**
    * Load a node key from a file or create one if none exists. See [[fromFile]] and [[generate]].
    */
-  public static load = (path: string): NodeKey => {
+  public static load = (xudir: string, instanceId: number): NodeKey => {
+    const path: string = instanceId > 0
+      ? `${xudir}/nodekey_${instanceId}.dat`
+      : `${xudir}/nodekey.dat`;
+
     let nodeKey: NodeKey;
     if (fs.existsSync(path)) {
       nodeKey = NodeKey.fromFile(path);

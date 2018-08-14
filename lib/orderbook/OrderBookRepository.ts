@@ -1,11 +1,12 @@
-import Bluebird from 'bluebird';
 import { db } from '../types';
-import DB, { Models } from '../db/DB';
+import Logger from '../Logger';
+import Bluebird from 'bluebird';
+import { Models } from '../db/DB';
 
 class OrderbookRepository {
   private models: Models;
 
-  constructor(models: Models) {
+  constructor(private logger: Logger, models: Models) {
     this.models = models;
   }
 

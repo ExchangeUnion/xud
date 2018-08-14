@@ -14,9 +14,8 @@ type SplitOrder = {
 class MatchingEngine {
   public buyOrders: FastPriorityQueue<StampedOrder>;
   public sellOrders: FastPriorityQueue<StampedOrder>;
-  private logger: Logger = Logger.orderbook;
 
-  constructor(public pairId: string) {
+  constructor(private logger: Logger, public pairId: string) {
     this.buyOrders = MatchingEngine.createPriorityQueue(OrderingDirection.DESC);
     this.sellOrders = MatchingEngine.createPriorityQueue(OrderingDirection.ASC);
   }

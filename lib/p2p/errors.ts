@@ -1,5 +1,4 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
-
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
   ADDRESS_ALREADY_CONNECTED: codesPrefix.concat('.1'),

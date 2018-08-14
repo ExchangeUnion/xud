@@ -24,7 +24,9 @@
     "test:int": "mocha -r ts-node/register test/integration/*",
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts",
     "test:unit": "mocha -r ts-node/register test/unit/*",
-    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts"
+    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
+    "test:p2p": "mocha -r ts-node/register test/p2p/*",
+    "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts"
   },
   "cross-os": {
     "postcompile": {

@@ -14,13 +14,14 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: { host: string, port: number };
+  public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
+  public instanceId: any;
 
-  constructor(private args?: Arguments) {
+  constructor(private args?: Arguments | Object) {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {
@@ -45,6 +46,7 @@ class Config {
     }
 
     // default configuration
+    this.instanceId = 0;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
@@ -60,6 +62,7 @@ class Config {
       database: 'xud_test',
     };
     this.rpc = {
+      disable: false,
       host: 'localhost',
       port: 8886,
     };

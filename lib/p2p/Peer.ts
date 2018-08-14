@@ -45,7 +45,6 @@ class Peer extends EventEmitter {
   public inbound!: boolean;
   public connected: boolean = false;
   private host?: Host;
-  private logger: Logger = Logger.p2p;
   private opened: boolean = false;
   private socket?: Socket;
   private parser: Parser = new Parser();
@@ -102,20 +101,20 @@ class Peer extends EventEmitter {
     };
   }
 
-  constructor() {
+  constructor(private logger: Logger) {
     super();
 
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer();
+  public static fromOutbound(socketAddress: SocketAddress, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.connect(socketAddress);
     return peer;
   }
 
-  public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer();
+  public static fromInbound(socket: Socket, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.accept(socket);
     return peer;
   }

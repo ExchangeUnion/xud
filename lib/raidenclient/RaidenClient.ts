@@ -1,5 +1,4 @@
 import http from 'http';
-
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
@@ -95,8 +94,8 @@ class RaidenClient extends BaseClient {
   /**
    * Create a raiden client.
    */
-  constructor(config: RaidenClientConfig) {
-    super(Logger.raiden);
+  constructor(config: RaidenClientConfig, logger: Logger) {
+    super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
