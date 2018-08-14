@@ -1,7 +1,6 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -10,6 +9,7 @@ import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
+import addressUtils from '../utils/addressUtils';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -40,7 +40,7 @@ interface Peer {
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   // TODO: properties documentation
-  public socketAddress!: SocketAddress;
+  public socketAddress!: Address;
   public inbound!: boolean;
   public connected: boolean = false;
   private opened: boolean = false;
@@ -77,7 +77,7 @@ class Peer extends EventEmitter {
 
   public get info(): PeerInfo {
     return {
-      address: this.socketAddress.toString(),
+      address: addressUtils.toString(this.socketAddress),
       nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
       inbound: this.inbound,
       pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
@@ -108,7 +108,9 @@ class Peer extends EventEmitter {
   public getStatus = (): string => {
     let status: string;
     if (this.connected) {
-      status = this.nodePubKey ? `Connected to peer ${this.nodePubKey}` : `Connected pre-handshake to peer ${this.socketAddress.toString()}`;
+      status = this.nodePubKey ?
+        `Connected to peer ${this.nodePubKey}` :
+        `Connected pre-handshake to peer ${addressUtils.toString(this.socketAddress)}`;
     } else {
       status = 'Not connected';
     }
@@ -134,7 +136,7 @@ class Peer extends EventEmitter {
     // TODO: Check that the peer's version is compatible with ours
     if (nodePubKey && this.nodePubKey !== nodePubKey) {
       this.close();
-      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, this.socketAddress.toString());
+      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.socketAddress));
     }
 
     this.finalizeOpen();
@@ -385,7 +387,7 @@ class Peer extends EventEmitter {
 
     const socket = net.connect(address.port, address.host);
 
-    this.socketAddress = new SocketAddress(address.host, address.port);
+    this.socketAddress = address;
     this.inbound = false;
     this.connected = false;
 
@@ -395,7 +397,7 @@ class Peer extends EventEmitter {
   private accept = (socket: Socket): void => {
     assert(!this.socket);
 
-    this.socketAddress = SocketAddress.fromSocket(socket);
+    this.socketAddress = addressUtils.fromSocket(socket);
     this.inbound = true;
     this.connected = true;
 
@@ -421,7 +423,7 @@ class Peer extends EventEmitter {
       if (this.connected) {
         // don't log anything on close if we've never connected as the connection failure is logged elsewhere
         if (this.nodePubKey === undefined) {
-          this.logger.info(`Socket closed prior to handshake (${this.socketAddress.toString()})`);
+          this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.socketAddress)})`);
         } else if (hadError) {
           this.logger.warn(`Peer ${this.nodePubKey} socket closed due to error`);
         } else {
@@ -436,7 +438,7 @@ class Peer extends EventEmitter {
       if (this.nodePubKey !== undefined) {
         this.logger.debug(`Received data (${this.nodePubKey}): ${data.toString()}`);
       } else {
-        this.logger.debug(`Received data (${this.socketAddress.toString()}): ${data.toString()}`);
+        this.logger.debug(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
       }
       this.parser.feed(data);
     });

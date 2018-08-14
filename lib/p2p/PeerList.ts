@@ -1,5 +1,4 @@
 import Peer from './Peer';
-import SocketAddress from './SocketAddress';
 
 class PeerList {
   private peers = new Map<string, Peer>();

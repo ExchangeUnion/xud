@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import errors from './errors';
 import Peer, { PeerInfo } from './Peer';
 import NodeList from './NodeList';
-import SocketAddress from './SocketAddress';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, NodesPacket, OrdersPacket, GetNodesPacket } from './packets';
@@ -11,6 +10,7 @@ import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import addressUtils from '../utils/addressUtils';
 
 type PoolConfig = {
   listen: boolean;
@@ -54,7 +54,7 @@ class Pool extends EventEmitter {
       this.listenPort = config.port;
       this.addresses = [];
       config.addresses.forEach((addressString) => {
-        const address = SocketAddress.fromString(addressString, config.port).toAddress();
+        const address = addressUtils.fromString(addressString, config.port);
         this.addresses!.push(address);
       });
     }
@@ -187,7 +187,7 @@ class Pool extends EventEmitter {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
       peer.close();
-      this.logger.info(`Disconnected from ${peer.nodePubKey} ${peer.socketAddress.toString()}`);
+      this.logger.info(`Disconnected from ${peer.nodePubKey} @ ${addressUtils.toString(peer.socketAddress)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
     }
