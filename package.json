@@ -26,7 +26,9 @@
     "test:int": "mocha -r ts-node/register test/integration/*",
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts",
     "test:unit": "mocha -r ts-node/register test/unit/*",
-    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts"
+    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
+    "test:p2p": "mocha -r ts-node/register test/p2p/*",
+    "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts"
   },
   "cross-os": {
     "postcompile": {
@@ -115,6 +117,7 @@
     "@types/crypto-js": "^3.1.43",
     "@types/dotenv": "^4.0.3",
     "@types/express": "^4.16.0",
+    "@types/gulp": "^4.0.5",
     "@types/mocha": "^5.2.0",
     "@types/secp256k1": "^3.5.0",
     "@types/sequelize": "^4.27.20",

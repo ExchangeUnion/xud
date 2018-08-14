@@ -8,17 +8,14 @@ import errors from './errors';
 
 class GrpcServer {
   private server: Server;
-  private logger: Logger;
 
-  constructor(service: Service) {
-    this.logger = Logger.rpc;
+  constructor(private logger: Logger, service: Service) {
     this.server = new grpc.Server();
-
     const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
     const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
     const { xudrpc }: any = protoDescriptor;
 
-    const grpcService = new GrpcService(service);
+    const grpcService = new GrpcService(logger, service);
     this.server.addService(xudrpc.Xud.service, {
       cancelOrder: grpcService.cancelOrder,
       connect: grpcService.connect,
@@ -37,7 +34,6 @@ class GrpcServer {
 
   /**
    * Start the server and begin listening on the provided port
-   * @param port
    * @returns true if the server started listening successfully, false otherwise
    */
   public listen = (port: number, host: string) => {

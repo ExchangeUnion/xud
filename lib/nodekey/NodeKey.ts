@@ -33,9 +33,9 @@ class NodeKey {
 
   /**
    * Load a NodeKey from a file.
-   * @param path The path to the file
-   * @param password An optional password to decrypt the file
-   * @returns A NodeKey if a file containing a valid ECDSA private key exists at the given path
+   * @param path the path to the file
+   * @param password an optional password to decrypt the file
+   * @returns a NodeKey if a file containing a valid ECDSA private key exists at the given path
    */
   private static fromFile = (path: string, password?: string): NodeKey => {
     let buf: Buffer;
@@ -57,7 +57,11 @@ class NodeKey {
   /**
    * Load a node key from a file or create one if none exists. See [[fromFile]] and [[generate]].
    */
-  public static load = (path: string): NodeKey => {
+  public static load = (xudir: string, instanceId: number): NodeKey => {
+    const path: string = instanceId > 0
+      ? `${xudir}/nodekey_${instanceId}.dat`
+      : `${xudir}/nodekey.dat`;
+
     let nodeKey: NodeKey;
     if (fs.existsSync(path)) {
       nodeKey = NodeKey.fromFile(path);
@@ -70,17 +74,17 @@ class NodeKey {
 
   /**
    * Sign a message with the private key.
-   * @param msg The data to sign
-   * @returns The signature
+   * @param msg the data to sign
+   * @returns the signature
    */
   public sign = (msg: Buffer): Buffer => {
     return secp256k1.sign(msg, this.privKey).signature;
   }
 
   /**
-   * Save the private key to a file, optionally encrypted by a password
-   * @param path The path at which to save the file
-   * @param password An optional password parameter for encrypting the private key
+   * Save the private key to a file, optionally encrypted by a password.
+   * @param path the path at which to save the file
+   * @param password an optional password parameter for encrypting the private key
    */
   private toFile = (path: string, password?: string): void => {
     let buf: Buffer | CryptoJS.WordArray;

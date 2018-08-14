@@ -11,8 +11,9 @@ import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
+import RaidenClient from '../raidenclient/RaidenClient';
 
-/** A mapping of a string (such as pairId) to an [[Orders]] object. */
+/** A mapping of strings (such as pair ids) to [[Orders]] objects. */
 type OrdersMap = Map<string, Orders>;
 
 /** A type containing two properties mapping order ids to orders for buy and sell orders. */
@@ -34,44 +35,66 @@ type OrderArrays = {
   sellOrders: orders.StampedOrder[],
 };
 
+/** A class representing an orderbook containing all orders for all active trading pairs. */
 class OrderBook extends EventEmitter {
+  /** An array of supported pair instances for the orderbook. */
   public pairs: db.PairInstance[] = [];
-  public matchingEngines: { [ pairId: string ]: MatchingEngine } = {};
+  /** An array of supported pair ids for the orderbook. */
+  public pairIds: string[] = [];
 
-  private logger: Logger = Logger.orderbook;
+  /** A map between active trading pair ids and matching engines. */
+  public matchingEngines = new Map<string, MatchingEngine>();
+
   private repository: OrderBookRepository;
-  private matchesProcessor = new MatchesProcessor();
-
+  private matchesProcessor: MatchesProcessor;
+  /** A map between active trading pair ids and local buy and sell orders. */
   private ownOrders: OrdersMap = new Map<string, Orders>();
+  /** A map between active trading pair ids and peer buy and sell orders. */
   private peerOrders: OrdersMap = new Map<string, Orders>();
 
-  /**
-   * A map between an order's local id and global id
-   */
+  /** A map between an order's local id and its global id. */
   private localIdMap: Map<string, string> = new Map<string, string>();
 
-  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(private logger: Logger, models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
 
-    this.repository = new OrderBookRepository(models);
+    this.matchesProcessor = new MatchesProcessor(logger, pool, raidenClient);
+
+    this.repository = new OrderBookRepository(logger, models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
     }
+
+    if (raidenClient) {
+      raidenClient.on('swap', this.swapHandler);
+    }
+  }
+
+  private swapHandler = (order: orders.StampedOrder) => {
+    if (order.quantity === 0) {
+      // full order execution
+      if (orders.isPeerOrder(order)) {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+      } else {
+        this.removeOwnOrder(order.pairId, order.id);
+      }
+    } else {
+      // TODO: partial order execution, update existing order
+    }
   }
 
   public init = async () => {
-    const pairs = await this.repository.getPairs();
+    this.pairs = await this.repository.getPairs();
 
-    pairs.forEach((pair) => {
-      this.matchingEngines[pair.id] = new MatchingEngine(pair.id);
+    this.pairs.forEach((pair) => {
+      this.pairIds.push(pair.id);
+      this.matchingEngines.set(pair.id, new MatchingEngine(this.logger, pair.id));
       this.ownOrders.set(pair.id, this.initOrders());
       this.peerOrders.set(pair.id, this.initOrders());
     });
-
-    this.pairs = pairs;
   }
 
   private initOrders = (): Orders => {
@@ -79,13 +102,6 @@ class OrderBook extends EventEmitter {
       buyOrders: new Map <string, orders.StampedOrder>(),
       sellOrders: new Map <string, orders.StampedOrder>(),
     };
-  }
-
-  /**
-   * Get the list of available trading pairs.
-   */
-  public getPairs = (): Promise<db.PairInstance[]> => {
-    return this.repository.getPairs();
   }
 
   /**
@@ -144,7 +160,7 @@ class OrderBook extends EventEmitter {
   }
 
   private removeOwnOrder = (pairId: string, orderId: string): boolean => {
-    const matchingEngine = this.matchingEngines[pairId];
+    const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
       return false;
@@ -159,7 +175,7 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerOrder = (orderId: string, pairId: string, quantityToDecrease?: number): boolean => {
-    const matchingEngine = this.matchingEngines[pairId];
+    const matchingEngine = this.matchingEngines.get(pairId);
     const ordersMap = this.peerOrders.get(pairId);
     if (!matchingEngine || !ordersMap) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
@@ -191,7 +207,7 @@ class OrderBook extends EventEmitter {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    const matchingEngine = this.matchingEngines[order.pairId];
+    const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
     }
@@ -216,7 +232,7 @@ class OrderBook extends EventEmitter {
   }
 
   private addPeerOrder = (order: orders.PeerOrder) => {
-    const matchingEngine = this.matchingEngines[order.pairId];
+    const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       return;
@@ -230,8 +246,8 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
-    this.pairs.forEach((pair) => {
-      const orders = this.matchingEngines[pair.id].removePeerOrders(peer.id);
+    this.matchingEngines.forEach((matchingEngine) => {
+      const orders = matchingEngine.removePeerOrders(peer.id);
 
       orders.forEach((order) => {
         this.removeOrder(this.peerOrders, order.id, order.pairId);
@@ -305,21 +321,27 @@ class OrderBook extends EventEmitter {
     return ordersMap === this.ownOrders;
   }
 
+  /**
+   * Send all local orders to a given peer in an [[OrdersPacket].
+   * @param reqId the request id of a [[GetOrdersPacket]] packet that this method is responding to
+   */
   private sendOrders = async (peer: Peer, reqId: string) => {
     // TODO: just send supported pairs
-    const pairs = await this.getPairs();
 
     const promises: Promise<orders.OutgoingOrder | void>[] = [];
-    for (const { id } of pairs) {
-      const orders = await this.getOwnOrders(id, 0);
+    this.pairIds.forEach((pairId) => {
+      const orders = this.getOwnOrders(pairId, 0);
       orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
       orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
-    }
+    });
     await Promise.all(promises).then((outgoingOrders) => {
       peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
     });
   }
 
+  /**
+   * Create an outgoing order and broadcast it to all peers.
+   */
   private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {
     if (this.pool) {
       const outgoingOrder = await this.createOutgoingOrder(order);
@@ -358,7 +380,7 @@ class OrderBook extends EventEmitter {
       return;
     }
 
-    if (this.lndClient.isDisabled()) {
+    if (!this.lndClient.isConnected()) {
       return 'dummyInvoice'; // temporarily testing invoices while lnd is not available
     } else {
       // temporary simple invoices until swaps are operational

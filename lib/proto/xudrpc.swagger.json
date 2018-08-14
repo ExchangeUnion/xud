@@ -302,10 +302,12 @@
       "type": "object",
       "properties": {
         "order_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The local id of the order to cancel"
         },
         "pair_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The trading pair that the order to cancel is for"
         }
       }
     },
@@ -366,9 +368,6 @@
         "target_address": {
           "type": "string"
         },
-        "identifier": {
-          "type": "string"
-        },
         "payload": {
           "$ref": "#/definitions/xudrpcSwapPayload"
         }
@@ -399,7 +398,10 @@
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
         },
-        "lnd": {
+        "lndbtc": {
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "lndltc": {
           "$ref": "#/definitions/xudrpcLndInfo"
         },
         "raiden": {
@@ -516,7 +518,7 @@
         },
         "local_id": {
           "type": "string",
-          "title": "The local ID for this order"
+          "title": "The local id for this order"
         },
         "created_at": {
           "type": "string",
@@ -693,8 +695,9 @@
     "xudrpcSubscribeSwapsResponse": {
       "type": "object",
       "properties": {
-        "result": {
-          "type": "string"
+        "order": {
+          "type": "string",
+          "title": "The order which was executed for the swap with updated remaining quantity"
         }
       }
     },

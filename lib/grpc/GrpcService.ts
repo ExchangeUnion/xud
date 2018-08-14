@@ -1,5 +1,5 @@
-import grpc, { status, ServiceError } from 'grpc';
 import Logger from '../Logger';
+import grpc, { status, ServiceError } from 'grpc';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -7,10 +7,10 @@ import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBook';
 import { MatchingResult } from '../types/matchingEngine';
-import { OwnOrder, StampedPeerOrder } from '../types/orders';
-import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
-import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
-import { default as p2pErrors, errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { OwnOrder, StampedPeerOrder, StampedOrder } from '../types/orders';
+import { errorCodes as orderErrorCodes } from '../orderbook/errors';
+import { errorCodes as serviceErrorCodes } from '../service/errors';
+import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { PeerInfo } from '../p2p/Peer';
 
 function serializeDateProperties(response: any) {
@@ -27,12 +27,8 @@ function serializeDateProperties(response: any) {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
-  private logger: Logger;
-
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service) {
-    this.logger = Logger.rpc;
-  }
+  constructor(private logger: Logger, private service: Service) {}
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
     try {
@@ -40,24 +36,27 @@ class GrpcService {
       const response = serializeDateProperties(rawResponse);
       callback(null, response);
     } catch (err) {
+      this.logger.error(err);
+
       // if we recognize this error, return a proper gRPC ServiceError with a descriptive and appropriate code
-      let grpcError: ServiceError | undefined;
+      let code: grpc.status | undefined;
       switch (err.code) {
         case serviceErrorCodes.INVALID_ARGUMENT:
-          grpcError = { ...err, code: status.INVALID_ARGUMENT };
+          code = status.INVALID_ARGUMENT;
           break;
         case orderErrorCodes.INVALID_PAIR_ID:
-          grpcError = { ...err, code: status.NOT_FOUND };
+          code = status.NOT_FOUND;
           break;
         case orderErrorCodes.DUPLICATE_ORDER:
         case p2pErrorCodes.ADDRESS_ALREADY_CONNECTED:
-          grpcError = { ...err, code: status.ALREADY_EXISTS };
+          code = status.ALREADY_EXISTS;
+          break;
+        case p2pErrorCodes.NOT_CONNECTED:
+          code = status.FAILED_PRECONDITION;
           break;
       }
-      this.logger.error(err);
-
       // return grpcError if we've created one, otherwise pass along the caught error as UNKNOWN
-      callback(grpcError ? grpcError : err, null);
+      callback(code ? { ...err, code } : err, null);
     }
   }
 
@@ -139,7 +138,7 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = (call) => {
-    this.service.subscribeSwaps((result: any) => call.write({ result }));
+    this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
   }
 }
 

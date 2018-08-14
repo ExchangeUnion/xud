@@ -8,6 +8,7 @@ import Config from '../Config';
 import { EventEmitter } from 'events';
 import SocketAddress from '../p2p/SocketAddress';
 import errors from './errors';
+import lndErrors from '../lndclient/errors';
 
 const packageJson = require('../../package.json');
 
@@ -16,7 +17,8 @@ const packageJson = require('../../package.json');
  */
 export type ServiceComponents = {
   orderBook: OrderBook;
-  lndClient: LndClient;
+  lndBtcClient: LndClient;
+  lndLtcClient: LndClient;
   raidenClient: RaidenClient;
   pool: Pool;
   config: Config
@@ -24,42 +26,92 @@ export type ServiceComponents = {
   shutdown: Function;
 };
 
-function checkArgument(expectedCondition: boolean, message: string) {
-  if (!expectedCondition) {
-    throw errors.INVALID_ARGUMENT(message);
-  }
-}
+/** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
+const argChecks = {
+  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
+  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
+  HAS_HOST: ({ host }: { host: string }) => { if (host === '') throw errors.INVALID_ARGUMENT('host must be specified'); },
+  VALID_PORT: ({ port }: { port: number }) => {
+    if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+  },
+  MAX_RESULTS_NOT_NEGATIVE: ({ maxResults }: { maxResults: number }) => {
+    if (maxResults < 0) throw errors.INVALID_ARGUMENT('maxResults cannot be negative');
+  },
+  NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
+  PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+};
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
   public shutdown: Function;
-
   private orderBook: OrderBook;
-  private lndClient: LndClient;
+  private lndBtcClient: LndClient;
+  private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents) {
+  constructor(private logger: Logger, components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
-
     this.orderBook = components.orderBook;
-    this.lndClient = components.lndClient;
+    this.lndBtcClient = components.lndBtcClient;
+    this.lndLtcClient = components.lndLtcClient;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
+  }
 
-    this.logger = Logger.rpc;
+  private getLndInfo = async (lndClient: LndClient)  => {
+    let info: any = {};
+
+    if (lndClient.isDisabled()) {
+      info = {
+        error: String(lndErrors.LND_IS_DISABLED.message),
+      };
+      return info;
+    }
+    if (!lndClient.isConnected()) {
+      this.logger.error(`LND error: ${lndErrors.LND_IS_DISCONNECTED.message}`);
+      info = {
+        error: String(lndErrors.LND_IS_DISCONNECTED.message),
+      };
+      return info;
+    }
+
+    try {
+      const lnd = await lndClient.getInfo();
+
+      info = {
+        channels: {
+          active: lnd.numActiveChannels,
+          pending: lnd.numPendingChannels,
+        },
+        chains: lnd.chainsList,
+        blockheight: lnd.blockHeight,
+        uris: lnd.urisList,
+        version: lnd.version,
+      };
+
+    } catch (err) {
+      this.logger.error(`LND error: ${err}`);
+      info = {
+        error: String(err),
+      };
+    }
+    return info;
   }
 
   /*
    * Cancel placed order from the orderbook.
    */
-  public cancelOrder = async ({ orderId, pairId }: { orderId: string, pairId: string }) => {
+  public cancelOrder = async (args: { orderId: string, pairId: string }) => {
+    const { orderId, pairId } = args;
+    argChecks.HAS_ORDER_ID(args);
+    argChecks.HAS_PAIR_ID(args);
+
     const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
 
     if (removed) {
@@ -74,7 +126,11 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given host and port.
    */
-  public connect = async ({ host, port }: { host: string, port: number }) => {
+  public connect = async (args: { host: string, port: number }) => {
+    const { host, port } = args;
+    argChecks.HAS_HOST(args);
+    argChecks.VALID_PORT(args);
+
     const peer = await this.pool.addOutbound(new SocketAddress(host, port));
     return peer.getStatus();
   }
@@ -82,16 +138,20 @@ class Service extends EventEmitter {
   /*
    * Disconnect from a connected peer XU node on a given host and port.
    */
-  public disconnect = async ({ host, port }: { host: string, port: number}) => {
+  public disconnect = async (args: { host: string, port: number}) => {
+    const { host, port } = args;
+    argChecks.HAS_HOST(args);
+    argChecks.VALID_PORT(args);
+
     await this.pool.closePeer(host, port);
-    return 'success';
+    return `disconnected from ${host}:${port}`;
   }
 
   /**
-   * Execute an atomic swap
+   * Execute an atomic swap. Demonstration and testing purposes only.
    */
-  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
+    return this.raidenClient.tokenSwap(target_address, payload);
   }
 
   /**
@@ -102,52 +162,27 @@ class Service extends EventEmitter {
 
     info.version = packageJson.version;
 
-    const pairs = await this.orderBook.getPairs();
+    const pairIds = this.orderBook.pairIds;
     info.numPeers = this.pool.peerCount;
-    info.numPairs = pairs.length;
+    info.numPairs = pairIds.length;
 
     let peerOrdersCount: number = 0;
     let ownOrdersCount: number = 0;
-    for (const key in pairs) {
-      const pair = pairs[key];
-
-      const [peerOrders, ownOrders] = await Promise.all([
-        this.orderBook.getPeerOrders(pair.id, 0),
-        this.orderBook.getOwnOrders(pair.id, 0),
-      ]);
+    pairIds.forEach((pairId) => {
+      const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
+      const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
 
       peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
       ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
-    }
+    });
 
     info.orders = {
       peer: peerOrdersCount,
       own: ownOrdersCount,
     };
 
-    if (!this.config.lnd.disable) {
-      try {
-        const lnd = await this.lndClient.getInfo();
-
-        info.lnd = {
-          channels: {
-            active: lnd.numActiveChannels,
-            pending: lnd.numPendingChannels,
-          },
-          chains: lnd.chainsList,
-          blockheight: lnd.blockHeight,
-          uris: lnd.urisList,
-          version: lnd.version,
-        };
-
-      } catch (err) {
-        this.logger.error(`LND error: ${err}`);
-        info.lnd = {
-          error: String(err),
-        };
-      }
-    }
-
+    info.lndbtc = await this.getLndInfo(this.lndBtcClient);
+    info.lndltc = await this.getLndInfo(this.lndLtcClient);
     if (!this.config.raiden.disable) {
       try {
         const channels = await this.raidenClient.getChannels();
@@ -173,11 +208,12 @@ class Service extends EventEmitter {
   /**
    * Get a list of standing orders from the order book for a specified trading pair.
    */
-  public getOrders = ({ pairId, maxResults }: { pairId: string, maxResults: number }) => {
-    checkArgument(pairId !== '', 'pairId must be specified');
-    checkArgument(maxResults >= 0, 'maxResults cannot be negative');
+  public getOrders = (args: { pairId: string, maxResults: number }) => {
+    const { pairId, maxResults } = args;
+    argChecks.HAS_PAIR_ID(args);
+    argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
 
-    const result: { [ type: string ]: OrderArrays } = {
+    const result = {
       peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
       ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
     };
@@ -190,7 +226,7 @@ class Service extends EventEmitter {
    * @returns A list of available trading pairs
    */
   public getPairs = () => {
-    return this.orderBook.getPairs();
+    return this.orderBook.pairs;
   }
 
   /**
@@ -206,8 +242,9 @@ class Service extends EventEmitter {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (order: OwnOrder) => {
-    checkArgument(order.price >= 0, 'price cannot be negative');
-    checkArgument(order.quantity !== 0, 'quantity must not equal 0');
+    argChecks.PRICE_NON_NEGATIVE(order);
+    argChecks.NON_ZERO_QUANTITY(order);
+    argChecks.HAS_PAIR_ID(order);
 
     return order.price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
   }
@@ -226,9 +263,11 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to executed swaps
+   * Subscribe to executed swaps.
    */
-  public subscribeSwaps = async (_callback: Function) => {};
+  public subscribeSwaps = async (callback: Function) => {
+    this.raidenClient.on('swap', order => callback(order));
+  }
 }
 
 export default Service;

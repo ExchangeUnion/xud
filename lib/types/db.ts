@@ -16,9 +16,12 @@ export type SequelizeAttributes<T extends { [key: string]: any }> = {
 
 export type CurrencyFactory = {
   id: string;
+  tokenAddress?: string;
 };
 
-export type CurrencyAttributes = CurrencyFactory;
+export type CurrencyAttributes = CurrencyFactory & {
+  tokenAddress: string;
+};
 
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 

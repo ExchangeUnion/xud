@@ -1,14 +1,14 @@
 import Logger from '../Logger';
 import { OrderMatch } from '../types/matchingEngine';
 import { isPeerOrder } from '../types/orders';
+import RaidenClient from '../raidenclient/RaidenClient';
+import Pool from '../p2p/Pool';
 
 class MatchesProcessor {
   private buffer: any[];
-  private logger: Logger;
 
-  constructor() {
+  constructor(private logger: Logger, private pool?: Pool, private raidenClient?: RaidenClient) {
     this.buffer = [];
-    this.logger = Logger.orderbook;
   }
 
   public add(match: OrderMatch) {

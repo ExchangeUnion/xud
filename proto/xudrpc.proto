@@ -99,7 +99,9 @@ service Xud {
 }
 
 message CancelOrderRequest {
+  // The local id of the order to cancel
   string order_id = 1 [json_name = "order_id"];
+  // The trading pair that the order to cancel is for
   string pair_id = 2 [json_name = "pair_id"];
 }
 message CancelOrderResponse {
@@ -126,8 +128,7 @@ message DisconnectResponse {
 
 message ExecuteSwapRequest {
   string target_address = 1 [json_name = "target_address"];
-  string identifier = 2 [json_name = "identifier"];
-  SwapPayload payload = 3 [json_name = "payload"];
+  SwapPayload payload = 2 [json_name = "payload"];
 }
 message ExecuteSwapResponse {
   string result = 1 [json_name = "result"];
@@ -139,8 +140,9 @@ message GetInfoResponse {
   int32 num_pairs = 2 [json_name = "num_pairs"];
   string version = 3 [json_name = "version"];
   OrdersCount orders = 4 [json_name = "orders"];
-  LndInfo lnd = 5 [json_name = "lnd"];
-  RaidenInfo raiden = 6 [json_name = "raiden"];
+  LndInfo lndbtc = 5 [json_name = "lndbtc"];
+  LndInfo lndltc = 6 [json_name = "lndltc"];
+  RaidenInfo raiden = 7 [json_name = "raiden"];
 }
 
 message GetOrdersRequest {
@@ -192,7 +194,7 @@ message Order {
   string peer_id = 4 [json_name = "peer_id"];
   // A UUID for this order
   string id = 6 [json_name = "id"];
-  // The local ID for this order
+  // The local id for this order
   string local_id = 7 [json_name = "local_id"];
   // The epoch time when this order was created
   int64 created_at = 8 [json_name = "created_at"];
@@ -279,5 +281,6 @@ message SubscribePeerOrdersResponse {
 
 message SubscribeSwapsRequest {}
 message SubscribeSwapsResponse {
-  string result = 1 [json_name = "result"];
+  // The order which was executed for the swap with updated remaining quantity
+  string order = 1 [json_name = "order"];
 }

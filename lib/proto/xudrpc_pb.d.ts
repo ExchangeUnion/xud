@@ -140,9 +140,6 @@ export class ExecuteSwapRequest extends jspb.Message {
   getTargetAddress(): string;
   setTargetAddress(value: string): void;
 
-  getIdentifier(): string;
-  setIdentifier(value: string): void;
-
   hasPayload(): boolean;
   clearPayload(): void;
   getPayload(): SwapPayload | undefined;
@@ -161,7 +158,6 @@ export class ExecuteSwapRequest extends jspb.Message {
 export namespace ExecuteSwapRequest {
   export type AsObject = {
     targetAddress: string,
-    identifier: string,
     payload?: SwapPayload.AsObject,
   }
 }
@@ -217,10 +213,15 @@ export class GetInfoResponse extends jspb.Message {
   getOrders(): OrdersCount | undefined;
   setOrders(value?: OrdersCount): void;
 
-  hasLnd(): boolean;
-  clearLnd(): void;
-  getLnd(): LndInfo | undefined;
-  setLnd(value?: LndInfo): void;
+  hasLndbtc(): boolean;
+  clearLndbtc(): void;
+  getLndbtc(): LndInfo | undefined;
+  setLndbtc(value?: LndInfo): void;
+
+  hasLndltc(): boolean;
+  clearLndltc(): void;
+  getLndltc(): LndInfo | undefined;
+  setLndltc(value?: LndInfo): void;
 
   hasRaiden(): boolean;
   clearRaiden(): void;
@@ -243,7 +244,8 @@ export namespace GetInfoResponse {
     numPairs: number,
     version: string,
     orders?: OrdersCount.AsObject,
-    lnd?: LndInfo.AsObject,
+    lndbtc?: LndInfo.AsObject,
+    lndltc?: LndInfo.AsObject,
     raiden?: RaidenInfo.AsObject,
   }
 }
@@ -865,8 +867,8 @@ export namespace SubscribeSwapsRequest {
 }
 
 export class SubscribeSwapsResponse extends jspb.Message {
-  getResult(): string;
-  setResult(value: string): void;
+  getOrder(): string;
+  setOrder(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscribeSwapsResponse.AsObject;
@@ -880,7 +882,7 @@ export class SubscribeSwapsResponse extends jspb.Message {
 
 export namespace SubscribeSwapsResponse {
   export type AsObject = {
-    result: string,
+    order: string,
   }
 }
 
