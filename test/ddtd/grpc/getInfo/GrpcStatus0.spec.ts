@@ -18,7 +18,8 @@ describe('client.getInfo()', () => {
           expect(response.toObject()).to.have.property('numPairs');
           expect(response.toObject()).to.have.property('version');
           expect(response.toObject()).to.have.property('orders');
-          expect(response.toObject()).to.have.property('lnd');
+          expect(response.toObject()).to.have.property('lndbtc');
+          expect(response.toObject()).to.have.property('lndltc');
           expect(response.toObject()).to.have.property('raiden');
           done();
         }
