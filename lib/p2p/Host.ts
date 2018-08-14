@@ -5,9 +5,13 @@ import { db } from '../types';
 class Host {
   public socketAddress: SocketAddress;
 
-  get id(): number {
+  public get id(): number {
     assert(this.instance);
     return this.instance.id;
+  }
+
+  public get pubKey(): string | undefined {
+    return this.instance.pubKey;
   }
 
   constructor(private instance: db.HostInstance) {

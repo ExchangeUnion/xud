@@ -7,109 +7,132 @@ import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
-import Logger, { ContextLogger } from '../Logger';
+import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
+import RaidenClient from '../raidenclient/RaidenClient';
 
-type OrdersMap = Map<String, Orders>;
+/** A mapping of strings (such as pair ids) to [[Orders]] objects. */
+type OrdersMap = Map<string, Orders>;
 
+/** A type containing two properties mapping order ids to orders for buy and sell orders. */
 type Orders = {
-  buyOrders: Map<String, orders.StampedOrder>;
-  sellOrders: Map<String, orders.StampedOrder>;
+  buyOrders: Map<string, orders.StampedOrder>;
+  sellOrders: Map<string, orders.StampedOrder>;
 };
 
 interface OrderBook {
-  on(event: 'peerOrder', listener: (order: orders.StampedPeerOrder) => void);
-  emit(event: 'peerOrder', order: orders.StampedPeerOrder);
+  on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
+  on(event: 'peerOrder.invalidation', listener: (order: orders.OrderIdentifier) => void): this;
+  emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder): boolean;
+  emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier): boolean;
 }
 
+/** A type containing two arrays for buy and sell orders. */
 type OrderArrays = {
   buyOrders: orders.StampedOrder[],
   sellOrders: orders.StampedOrder[],
 };
 
+/** A class representing an orderbook containing all orders for all active trading pairs. */
 class OrderBook extends EventEmitter {
-  private logger: Logger;
+  /** An array of supported pair instances for the orderbook. */
+  public pairs: db.PairInstance[] = [];
+  /** An array of supported pair ids for the orderbook. */
+  public pairIds: string[] = [];
+
+  /** A map between active trading pair ids and matching engines. */
+  public matchingEngines = new Map<string, MatchingEngine>();
+
+  private logger: Logger = Logger.orderbook;
   private repository: OrderBookRepository;
   private matchesProcessor: MatchesProcessor;
-  public pairs: db.PairInstance[] = [];
-  public matchingEngines: {[ pairId: string ]: MatchingEngine} = {};
-  private contextLogger: ContextLogger;
-  private ownOrders: OrdersMap = new Map<String, Orders>();
-  private peerOrders: OrdersMap = new Map<String, Orders>();
+  /** A map between active trading pair ids and local buy and sell orders. */
+  private ownOrders: OrdersMap = new Map<string, Orders>();
+  /** A map between active trading pair ids and peer buy and sell orders. */
+  private peerOrders: OrdersMap = new Map<string, Orders>();
 
-  /**
-   * A map between an order's local id and global id
-   */
-  private localIdMap: Map<String, String> = new Map<String, String>();
+  /** A map between an order's local id and its global id. */
+  private localIdMap: Map<string, string> = new Map<string, string>();
 
-  constructor(models: Models, logger: ContextLogger, private pool?: Pool, private lndClient?: LndClient) {
+  constructor(models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
-    this.logger = logger.orderbook;
-    this.contextLogger = logger;
-    this.repository = new OrderBookRepository(models, logger);
-    this.matchesProcessor = new MatchesProcessor(logger);
 
+    this.matchesProcessor = new MatchesProcessor(pool, raidenClient);
+
+    this.repository = new OrderBookRepository(models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', body => this.removePeerOrder(body.orderId, body.pairId)); // TODO: implement quantity invalidation
+      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       pool.on('packet.getOrders', this.sendOrders);
       pool.on('peer.close', this.removePeerOrders);
+    }
 
+    if (raidenClient) {
+      raidenClient.on('swap', this.swapHandler);
+    }
+  }
+
+  private swapHandler = (order: orders.StampedOrder) => {
+    if (order.quantity === 0) {
+      // full order execution
+      if (orders.isPeerOrder(order)) {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+      } else {
+        this.removeOwnOrder(order.pairId, order.id);
+      }
+    } else {
+      // TODO: partial order execution, update existing order
     }
   }
 
   public init = async () => {
-    const pairs = await this.repository.getPairs();
+    this.pairs = await this.repository.getPairs();
 
-    pairs.forEach((pair) => {
-      this.matchingEngines[pair.id] = new MatchingEngine(pair.id, this.contextLogger);
-      this.ownOrders[pair.id] = this.initOrders();
-      this.peerOrders[pair.id] = this.initOrders();
+    this.pairs.forEach((pair) => {
+      this.pairIds.push(pair.id);
+      this.matchingEngines.set(pair.id, new MatchingEngine(pair.id));
+      this.ownOrders.set(pair.id, this.initOrders());
+      this.peerOrders.set(pair.id, this.initOrders());
     });
-
-    this.pairs = pairs;
   }
 
   private initOrders = (): Orders => {
     return {
-      buyOrders: new Map <String, orders.StampedOrder>(),
-      sellOrders: new Map <String, orders.StampedOrder>(),
+      buyOrders: new Map <string, orders.StampedOrder>(),
+      sellOrders: new Map <string, orders.StampedOrder>(),
     };
   }
 
   /**
-   * Returns the list of available trading pairs.
-   */
-  public getPairs = (): Promise<db.PairInstance[]> => {
-    return this.repository.getPairs();
-  }
-
-  /**
-   * Returns lists of buy and sell orders of peers
+   * Get lists of buy and sell orders of peers.
    */
   public getPeerOrders = (pairId: string, maxResults: number): OrderArrays => {
-    return this.getOrders(maxResults, this.peerOrders[pairId]);
+    return this.getOrders(pairId, maxResults, this.peerOrders);
   }
 
   /*
-  * Returns lists of the node's own buy and sell orders
+  * Get lists of this node's own buy and sell orders.
   */
   public getOwnOrders = (pairId: string, maxResults: number): OrderArrays => {
-    return this.getOrders(maxResults, this.ownOrders[pairId]);
+    return this.getOrders(pairId, maxResults, this.ownOrders);
   }
 
-  private getOrders = (maxResults: number, orders: Orders): OrderArrays => {
+  private getOrders = (pairId: string, maxResults: number, ordersMap: OrdersMap): OrderArrays => {
+    const orders = ordersMap.get(pairId);
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
     if (maxResults > 0) {
       return {
-        buyOrders: Object.values(orders.buyOrders).slice(0, maxResults),
-        sellOrders: Object.values(orders.sellOrders).slice(0, maxResults),
+        buyOrders: Array.from(orders.buyOrders.values()).slice(0, maxResults),
+        sellOrders: Array.from(orders.sellOrders.values()).slice(0, maxResults),
       };
     } else {
       return {
-        buyOrders: Object.values(orders.buyOrders),
-        sellOrders: Object.values(orders.sellOrders),
+        buyOrders: Array.from(orders.buyOrders.values()),
+        sellOrders: Array.from(orders.sellOrders.values()),
       };
     }
   }
@@ -123,19 +146,22 @@ class OrderBook extends EventEmitter {
     return this.addOwnOrder({ ...order, price }, true);
   }
 
-  public removeOwnOrderByLocalId = (pairId: string, localId: string): boolean => {
-    const id = this.localIdMap[localId];
+  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
+    const id = this.localIdMap.get(localId);
 
     if (id === undefined) {
-      return false;
+      return { removed: false, globalId: id };
     } else {
-      delete this.localIdMap[localId];
-      return this.removeOwnOrder(pairId, id);
+      this.localIdMap.delete(localId);
+      return {
+        removed: this.removeOwnOrder(pairId, id),
+        globalId: id,
+      };
     }
   }
 
   private removeOwnOrder = (pairId: string, orderId: string): boolean => {
-    const matchingEngine = this.matchingEngines[pairId];
+    const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
       return false;
@@ -149,26 +175,40 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private removePeerOrder = (orderId: string, pairId: string): boolean => {
-    const matchingEngine = this.matchingEngines[pairId];
-    if (!matchingEngine) {
+  private removePeerOrder = (orderId: string, pairId: string, quantityToDecrease?: number): boolean => {
+    const matchingEngine = this.matchingEngines.get(pairId);
+    const ordersMap = this.peerOrders.get(pairId);
+    if (!matchingEngine || !ordersMap) {
       this.logger.warn(`Invalid pairId: ${pairId}`);
       return false;
     }
 
-    if (matchingEngine.removePeerOrder(orderId)) {
-      return this.removeOrder(this.peerOrders, orderId, pairId);
-    } else {
-      return false;
+    const order = matchingEngine.removePeerOrder(orderId, quantityToDecrease);
+    if (order) {
+      let result;
+
+      if (!quantityToDecrease || quantityToDecrease === 0) {
+        result = this.removeOrder(this.peerOrders, orderId, pairId);
+      } else {
+        result = this.updateOrderQuantity(order, quantityToDecrease);
+      }
+
+      if (result) {
+        this.emit('peerOrder.invalidation', { orderId, pairId, quantity: quantityToDecrease });
+        return true;
+      }
     }
+
+    this.logger.warn(`Invalid orderId: ${orderId}`);
+    return false;
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining: boolean = false): matchingEngine.MatchingResult => {
-    if (this.localIdMap[order.localId]) {
+    if (this.localIdMap.has(order.localId)) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    const matchingEngine = this.matchingEngines[order.pairId];
+    const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(order.pairId);
     }
@@ -180,7 +220,7 @@ class OrderBook extends EventEmitter {
     if (matches.length > 0) {
       matches.forEach(({ maker, taker }) => {
         this.handleMatch({ maker, taker });
-        this.updateOrderQuantity(this.ownOrders, maker, maker.quantity);
+        this.updateOrderQuantity(maker, maker.quantity);
       });
     }
     if (remainingOrder && !discardRemaining) {
@@ -193,65 +233,84 @@ class OrderBook extends EventEmitter {
   }
 
   private addPeerOrder = (order: orders.PeerOrder) => {
-    const matchingEngine = this.matchingEngines[order.pairId];
+    const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       return;
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder', stampedOrder);
+    this.emit('peerOrder.incoming', stampedOrder);
     matchingEngine.addPeerOrder(stampedOrder);
     this.addOrder(this.peerOrders, stampedOrder);
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
-    if (peer.hostId) {
-      this.pairs.forEach((pair) => {
-        this.matchingEngines[pair.id].removePeerOrders(peer.hostId!);
+    this.matchingEngines.forEach((matchingEngine) => {
+      const orders = matchingEngine.removePeerOrders(peer.id);
+
+      orders.forEach((order) => {
+        this.removeOrder(this.peerOrders, order.id, order.pairId);
+        this.emit('peerOrder.invalidation', {
+          orderId: order.id,
+          pairId: order.pairId,
+        });
       });
-    }
+    });
   }
 
-  private updateOrderQuantity = (type: OrdersMap, order: orders.StampedOrder, decreasedQuantity: number) => {
-    const orderMap = this.getOrderMap(type, order);
+  private updateOrderQuantity = (order: orders.StampedOrder, quantityToDecrease: number) => {
+    const isOwnOrder = orders.isOwnOrder(order);
+    const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
 
-    orderMap[order.id].quantity = orderMap[order.id].quantity - decreasedQuantity;
-    if (orderMap[order.id].quantity === 0) {
-      if (this.isOwnOrder(type)) {
+    const orderToUpdate = orderMap.get(order.id);
+    if (!orderToUpdate) {
+      return false;
+    }
+    orderToUpdate.quantity -= quantityToDecrease;
+    if (orderToUpdate.quantity === 0) {
+      if (isOwnOrder) {
         const { localId } = order as orders.StampedOwnOrder;
-        delete this.localIdMap[localId];
+        this.localIdMap.delete(localId);
       }
-      delete orderMap[order.id];
+      orderMap.delete(order.id);
     }
+
+    return true;
   }
 
-  private addOrder = (type: OrdersMap, order: orders.StampedOrder) => {
-    if (this.isOwnOrder(type)) {
+  private addOrder = (ordersMap: OrdersMap, order: orders.StampedOrder) => {
+    if (this.isOwnOrdersMap(ordersMap)) {
       const { localId } = order as orders.StampedOwnOrder;
-      this.localIdMap[localId] = order.id;
+      this.localIdMap.set(localId, order.id);
     }
 
-    this.getOrderMap(type, order)[order.id] = order;
+    this.getOrderMap(ordersMap, order).set(order.id, order);
   }
 
-  private removeOrder = (type: OrdersMap, orderId: string, pairId: string): boolean => {
-    const orders = type[pairId];
+  private removeOrder = (ordersMap: OrdersMap, orderId: string, pairId: string): boolean => {
+    const orders = ordersMap.get(pairId);
 
-    if (orders.buyOrders[orderId]) {
-      delete orders.buyOrders[orderId];
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(pairId);
+    }
+    if (orders.buyOrders.has(orderId)) {
+      orders.buyOrders.delete(orderId);
       return true;
-    } else if (orders.sellOrders[orderId]) {
-      delete orders.sellOrders[orderId];
+    } else if (orders.sellOrders.has(orderId)) {
+      orders.sellOrders.delete(orderId);
       return true;
     }
 
     return false;
   }
 
-  private getOrderMap = (type: OrdersMap, order: orders.StampedOrder): OrdersMap => {
-    const orders = type[order.pairId];
+  private getOrderMap = (ordersMap: OrdersMap, order: orders.StampedOrder): Map<string, orders.StampedOrder> => {
+    const orders = ordersMap.get(order.pairId);
+    if (!orders) {
+      throw errors.INVALID_PAIR_ID(order.pairId);
+    }
     if (order.quantity > 0) {
       return orders.buyOrders;
     } else {
@@ -259,25 +318,31 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private isOwnOrder = (type: OrdersMap) => {
-    return type === this.ownOrders;
+  private isOwnOrdersMap = (ordersMap: OrdersMap) => {
+    return ordersMap === this.ownOrders;
   }
 
+  /**
+   * Send all local orders to a given peer in an [[OrdersPacket].
+   * @param reqId the request id of a [[GetOrdersPacket]] packet that this method is responding to
+   */
   private sendOrders = async (peer: Peer, reqId: string) => {
     // TODO: just send supported pairs
-    const pairs = await this.getPairs();
 
     const promises: Promise<orders.OutgoingOrder | void>[] = [];
-    for (const { id } of pairs) {
-      const orders = await this.getOwnOrders(id, 0);
+    this.pairIds.forEach((pairId) => {
+      const orders = this.getOwnOrders(pairId, 0);
       orders['buyOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
       orders['sellOrders'].forEach(order => promises.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
-    }
+    });
     await Promise.all(promises).then((outgoingOrders) => {
       peer.sendOrders(outgoingOrders as orders.OutgoingOrder[], reqId);
     });
   }
 
+  /**
+   * Create an outgoing order and broadcast it to all peers.
+   */
   private broadcastOrder = async (order: orders.StampedOwnOrder): Promise<void> => {
     if (this.pool) {
       const outgoingOrder = await this.createOutgoingOrder(order);
@@ -296,9 +361,19 @@ class OrderBook extends EventEmitter {
     return outgoingOrder;
   }
 
-  private handleMatch = ({ maker, taker }): void => {
-    this.logger.debug(`order match: ${JSON.stringify({ maker, taker })}`);
-    this.matchesProcessor.add({ maker, taker });
+  private handleMatch = (match: matchingEngine.OrderMatch): void => {
+    this.logger.debug(`order match: ${JSON.stringify(match)}`);
+    if (this.pool) {
+      const { maker } = match;
+      if (orders.isOwnOrder(maker)) {
+        this.pool.broadcastOrderInvalidation({
+          orderId: maker.id,
+          pairId: maker.pairId,
+          quantity: maker.quantity,
+        });
+      }
+    }
+    this.matchesProcessor.add(match);
   }
 
   public createInvoice = async (order: orders.StampedOwnOrder): Promise<string|void> => {
@@ -306,7 +381,7 @@ class OrderBook extends EventEmitter {
       return;
     }
 
-    if (this.lndClient.isDisabled()) {
+    if (!this.lndClient.isConnected()) {
       return 'dummyInvoice'; // temporarily testing invoices while lnd is not available
     } else {
       // temporary simple invoices until swaps are operational

@@ -4,7 +4,7 @@ import assert from 'assert';
 import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 
-import Logger, { ContextLogger }  from '../Logger';
+import Logger from '../Logger';
 import { db } from '../types';
 
 type SequelizeConfig = {
@@ -26,15 +26,15 @@ type Models = {
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
 
+/** A class representing a connection to a SQL database. */
 class DB {
-  public sequelize!: Sequelize.Sequelize;
-  public models!: Models;
-  private logger: Logger;
+  public sequelize: Sequelize.Sequelize;
+  public models: Models;
+  private logger: Logger = Logger.db;
 
-  constructor(private config: DBConfig, logger: ContextLogger) {
+  constructor(private config: DBConfig) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
-    this.logger = logger.db;
     this.sequelize = this.createSequelizeInstance(this.config);
     this.models = this.loadModels();
   }
@@ -44,12 +44,14 @@ class DB {
   }
 
   public init = async (): Promise<void> => {
+    let newDb = false;
     try {
       await this.sequelize.authenticate();
       const { host, port, database } = this.config;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database}`);
     } catch (err) {
       if (DB.isDbDoesNotExistError(err)) {
+        newDb = true;
         await this.createDatabase();
       } else {
         this.logger.error('unable to connect to the database', err);
@@ -58,7 +60,6 @@ class DB {
     }
     const { Host, BannedHost, Currency, Pair } = this.models;
     const options = { logging: this.logger.verbose };
-
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Host.sync(options),
@@ -68,6 +69,15 @@ class DB {
     await Promise.all([
       Pair.sync(options),
     ]);
+
+    if (newDb) {
+      // populate new databases with seed nodes
+      await Host.bulkCreate(<db.HostAttributes[]>[
+        { address: 'xud1.test.exchangeunion.com', port: 8885 },
+        { address: 'xud2.test.exchangeunion.com', port: 8885 },
+        { address: 'xud3.test.exchangeunion.com', port: 8885 },
+      ]);
+    }
   }
 
   public close = (): Bluebird<void> => {

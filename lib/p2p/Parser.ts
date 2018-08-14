@@ -52,10 +52,10 @@ const fromRaw = (raw: string): Packet => {
 };
 
 interface Parser {
-  on(event: 'packet', packet: (order: Packet) => void);
-  on(event: 'error', err: (order: ParserError) => void);
-  emit(event: 'packet', packet: Packet);
-  emit(event: 'error', err: ParserError);
+  on(event: 'packet', packet: (order: Packet) => void): this;
+  on(event: 'error', err: (order: ParserError) => void): this;
+  emit(event: 'packet', packet: Packet): boolean;
+  emit(event: 'error', err: ParserError): boolean;
 }
 
 /** Protocol packet parser */

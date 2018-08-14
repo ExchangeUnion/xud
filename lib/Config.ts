@@ -7,6 +7,7 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
+import { Arguments } from 'yargs';
 
 class Config {
   public p2p: PoolConfig;
@@ -14,12 +15,13 @@ class Config {
   public db: DBConfig;
   public testDb: DBConfig;
   public rpc: { disable: boolean, host: string, port: number };
-  public lnd: LndClientConfig;
+  public lndbtc: LndClientConfig;
+  public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
   public instanceId: any;
 
-  constructor(private args?: object) {
+  constructor(private args?: Arguments) {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {
@@ -42,8 +44,9 @@ class Config {
         break;
       }
     }
+
     // default configuration
-    this.instanceId = 0;
+    this.instanceId = 1;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
@@ -67,12 +70,19 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.lnd = {
+    this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
+    };
+    this.lndltc = {
+      disable: false,
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
+      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      host: 'localhost',
+      port: 10010,
     };
     this.raiden = {
       disable: false,
@@ -88,6 +98,7 @@ class Config {
       const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
       try {
         const props = toml.parse(configText);
+
         // merge parsed json properties from config file to this config object
         deepMerge(this, props);
       } catch (e) {

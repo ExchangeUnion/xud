@@ -28,7 +28,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
       foreignKey: 'quoteCurrency',
     });
 
-    const derivePairId = (pair) => {
+    const derivePairId = (pair: db.PairInstance) => {
       pair.id = `${pair.baseCurrency}/${pair.quoteCurrency}`;
     };
     models.Pair.beforeBulkCreate(pairs => pairs.forEach(pair => derivePairId(pair)));

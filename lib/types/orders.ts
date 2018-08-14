@@ -14,7 +14,7 @@ export type OwnOrder = OwnMarketOrder & {
 export type PeerOrder = MarketOrder & {
   price: number;
   id: string;
-  hostId: number;
+  peerId: string;
   invoice: string;
 };
 
@@ -40,3 +40,11 @@ export type OrderIdentifier = {
   pairId: string;
   quantity?: number;
 };
+
+export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
+  return (order as StampedPeerOrder).peerId === undefined && typeof (order as StampedOwnOrder).localId === 'string';
+}
+
+export function isPeerOrder(order: StampedOrder): order is StampedPeerOrder {
+  return (order as StampedOwnOrder).localId === undefined && typeof (order as StampedPeerOrder).peerId === 'string';
+}

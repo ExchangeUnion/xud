@@ -191,6 +191,23 @@
         ]
       }
     },
+    "/v1/peers": {
+      "get": {
+        "summary": "Get a list of connected peers.",
+        "operationId": "ListPeers",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListPeersResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/placeorder": {
       "post": {
         "summary": "Add an order to the order book.\nIf price is zero or unspecified a market order will get added.",
@@ -247,7 +264,7 @@
     },
     "/v1/subscribepeerorders": {
       "get": {
-        "summary": "Subscribe to incoming peer orders.",
+        "summary": "Subscribe to peer order events.",
         "operationId": "SubscribePeerOrders",
         "responses": {
           "200": {
@@ -285,10 +302,12 @@
       "type": "object",
       "properties": {
         "order_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The local id of the order to cancel"
         },
         "pair_id": {
-          "type": "string"
+          "type": "string",
+          "title": "The trading pair that the order to cancel is for"
         }
       }
     },
@@ -349,9 +368,6 @@
         "target_address": {
           "type": "string"
         },
-        "identifier": {
-          "type": "string"
-        },
         "payload": {
           "$ref": "#/definitions/xudrpcSwapPayload"
         }
@@ -382,7 +398,10 @@
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
         },
-        "lnd": {
+        "lndbtc": {
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "lndltc": {
           "$ref": "#/definitions/xudrpcLndInfo"
         },
         "raiden": {
@@ -393,19 +412,13 @@
     "xudrpcGetOrdersResponse": {
       "type": "object",
       "properties": {
-        "buy_orders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcOrder"
-          },
-          "title": "A list of buy orders sorted by descending price"
+        "peer_orders": {
+          "$ref": "#/definitions/xudrpcOrders",
+          "title": "A list of peer orders"
         },
-        "sell_orders": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcOrder"
-          },
-          "title": "A list of sell orders sorted by ascending price"
+        "own_orders": {
+          "$ref": "#/definitions/xudrpcOrders",
+          "title": "A list of orders placed locally"
         }
       }
     },
@@ -416,6 +429,17 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/xudrpcPair"
+          }
+        }
+      }
+    },
+    "xudrpcListPeersResponse": {
+      "type": "object",
+      "properties": {
+        "peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcPeer"
           }
         }
       }
@@ -485,13 +509,8 @@
           "title": "The trading pair that this order is for"
         },
         "peer_id": {
-          "type": "integer",
-          "format": "int32",
-          "title": "The id of the peer that created this order"
-        },
-        "host_id": {
           "type": "string",
-          "title": "The id of the host that created this order"
+          "title": "The id of the peer - consisting of a [host]:[port] socket address - that created this order"
         },
         "id": {
           "type": "string",
@@ -499,7 +518,7 @@
         },
         "local_id": {
           "type": "string",
-          "title": "The local ID for this oder"
+          "title": "The local id for this order"
         },
         "created_at": {
           "type": "string",
@@ -509,6 +528,11 @@
         "invoice": {
           "type": "string",
           "title": "Lightning invoice"
+        },
+        "canceled": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether an order was canceled"
         }
       }
     },
@@ -520,6 +544,25 @@
         },
         "taker": {
           "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcOrders": {
+      "type": "object",
+      "properties": {
+        "buy_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of buy orders sorted by descending price"
+        },
+        "sell_orders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcOrder"
+          },
+          "title": "A list of sell orders sorted by ascending price"
         }
       }
     },
@@ -550,6 +593,40 @@
         },
         "swap_protocol": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcPeer": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "The socket address with host and port for this peer"
+        },
+        "node_pub_key": {
+          "type": "string",
+          "title": "The node pub key to uniquely identify this peer"
+        },
+        "inbound": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "Indicates whether this peer was connected inbound"
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "A list of trading pair tickers supported by this peer"
+        },
+        "xud_version": {
+          "type": "string",
+          "title": "The version of xud being used by the peer"
+        },
+        "seconds_connected": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The time in seconds that we have been connected to this peer"
         }
       }
     },
@@ -618,8 +695,9 @@
     "xudrpcSubscribeSwapsResponse": {
       "type": "object",
       "properties": {
-        "result": {
-          "type": "string"
+        "order": {
+          "type": "string",
+          "title": "The order which was executed for the swap with updated remaining quantity"
         }
       }
     },

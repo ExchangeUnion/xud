@@ -19,8 +19,8 @@ export const getTsString = (): string => (new Date()).toLocaleString();
 /**
  * Recursively merge properties from different sources into a target object, overriding any
  * existing properties.
- * @param target The destination object to merge into.
- * @param sources The sources objects to copy from.
+ * @param target the destination object to merge into.
+ * @param sources the sources objects to copy from.
  */
 export const deepMerge = (target: any, ...sources: any[]): object => {
   if (!sources.length) return target;
@@ -44,7 +44,7 @@ export const deepMerge = (target: any, ...sources: any[]): object => {
  * Get all methods from an object whose name doesn't start with an underscore.
 */
 export const getPublicMethods = (obj: any): any => {
-  const ret = {};
+  const ret: any = {};
   Object.getOwnPropertyNames(Object.getPrototypeOf(obj)).forEach((name) => {
     const func = obj[name];
     if ((func instanceof Function) && name !== 'constructor' && !name.startsWith('_')) {
@@ -55,7 +55,7 @@ export const getPublicMethods = (obj: any): any => {
 };
 
 export const groupBy = (arr: object[], keyGetter: (item: any) => string | number): any => {
-  const ret = {};
+  const ret: any = {};
   arr.forEach((item) => {
     const key = keyGetter(item);
     const group = ret[key];

@@ -33,13 +33,13 @@ class PeerList {
     }
   }
 
-  public remove = (socketAddress: SocketAddress): Peer | null => {
+  public remove = (socketAddress: SocketAddress): Peer | undefined => {
     const peer = this.get(socketAddress);
     if (peer) {
       delete this.peers[socketAddress.toString()];
       return peer;
     } else {
-      return null;
+      return undefined;
     }
   }
 

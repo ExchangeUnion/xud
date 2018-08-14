@@ -4,7 +4,39 @@ import "annotations.proto";
 
 package xudrpc;
 
-service Xud {
+service Xud {  
+  /* Cancel placed order from the orderbook. */
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/cancelorder"
+      body: "*"
+    };
+  }
+  
+  /* Connect to an XU node on a given host and port. */
+  rpc Connect(ConnectRequest) returns (ConnectResponse) {
+    option (google.api.http) = {
+      post: "/v1/connect"
+      body: "*"
+    };
+  }
+  
+  /* Disconnect from a connected peer XU node on a given host and port. */
+  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
+    option (google.api.http) = {
+      post: "/v1/disconnect"
+      body: "*"
+    };
+  }
+  
+  /* Execute an atomic swap */
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
+    option (google.api.http) = {
+      post: "/v1/executeswap"
+      body: "*"
+    };
+  }
+
   /* Get general information about this Exchange Union node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
@@ -26,45 +58,19 @@ service Xud {
     };
   }
   
+  /* Get a list of connected peers. */
+  rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
+    option (google.api.http) = {
+      get: "/v1/peers"
+    };
+  }
+
   /* Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
       post: "/v1/placeorder"
-      body: "*"
-    };
-  }
-  
-  /* Cancel placed order from the orderbook. */
-  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
-    option (google.api.http) = {
-      post: "/v1/cancelorder"
-      body: "*"
-    };
-  }
-  
-  /* Connect to an XU node on a given host and port. */
-  rpc Connect(ConnectRequest) returns (ConnectResponse) {
-    option (google.api.http) = {
-      post: "/v1/connect"
-      body: "*"
-    };
-  }
-  
-  
-  /* Disconnect from a connected peer XU node on a given host and port. */
-  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
-    option (google.api.http) = {
-      post: "/v1/disconnect"
-      body: "*"
-    };
-  }
-  
-  /* Execute an atomic swap */
-  rpc ExecuteSwap(ExecuteSwapRequest) returns (ExecuteSwapResponse) {
-    option (google.api.http) = {
-      post: "/v1/executeswap"
       body: "*"
     };
   }
@@ -77,7 +83,7 @@ service Xud {
     };
   }
   
-  /* Subscribe to incoming peer orders. */
+  /* Subscribe to peer order events. */
   rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (stream SubscribePeerOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/subscribepeerorders"
@@ -92,19 +98,80 @@ service Xud {
   }
 }
 
+message CancelOrderRequest {
+  // The local id of the order to cancel
+  string order_id = 1 [json_name = "order_id"];
+  // The trading pair that the order to cancel is for
+  string pair_id = 2 [json_name = "pair_id"];
+}
+message CancelOrderResponse {
+  // Indicates whether an order was successfully canceled
+  bool canceled = 1 [json_name = "canceled"];
+}
+
+message ConnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+message ConnectResponse {
+  // A message describing the result of the connection request
+  string result = 1 [json_name = "result"];
+}
+
+message DisconnectRequest {
+  string host = 1 [json_name = "host"];
+  uint32 port = 2 [json_name = "port"];
+}
+message DisconnectResponse {
+  string result = 1 [json_name = "result"];
+}
+
+message ExecuteSwapRequest {
+  string target_address = 1 [json_name = "target_address"];
+  SwapPayload payload = 2 [json_name = "payload"];
+}
+message ExecuteSwapResponse {
+  string result = 1 [json_name = "result"];
+}
+
 message GetInfoRequest {}
 message GetInfoResponse {
   int32 num_peers = 1 [json_name = "num_peers"];
   int32 num_pairs = 2 [json_name = "num_pairs"];
   string version = 3 [json_name = "version"];
   OrdersCount orders = 4 [json_name = "orders"];
-  LndInfo lnd = 5 [json_name = "lnd"];
-  RaidenInfo raiden = 6 [json_name = "raiden"];
+  LndInfo lndbtc = 5 [json_name = "lndbtc"];
+  LndInfo lndltc = 6 [json_name = "lndltc"];
+  RaidenInfo raiden = 7 [json_name = "raiden"];
 }
 
-message OrdersCount {
-  int32 peer = 1 [json_name = "peer"];
-  int32 own = 2 [json_name = "own"];
+message GetOrdersRequest {
+  // The trading pair for which to retrieve orders
+  string pair_id = 1 [json_name = "pair_id"];
+  // The maximum number of orders to return from either side of the order book
+  uint32 max_results = 2 [json_name = "max_results"];
+}
+message GetOrdersResponse {
+  // A list of peer orders
+  Orders peer_orders = 1 [json_name = "peer_orders"];
+  // A list of orders placed locally
+  Orders own_orders = 2 [json_name = "own_orders"];
+}
+
+message GetPairsRequest {}
+message GetPairsResponse {
+  repeated Pair pairs = 1 [json_name = "pairs"];
+}
+
+message ListPeersRequest {}
+message ListPeersResponse {
+  repeated Peer peers = 1 [json_name = "peers"];
+}
+
+message LndChannels {
+  int32 active = 1 [json_name = "active"];
+  int32 inactive = 2 [json_name = "inactive"];
+  int32 pending = 3 [json_name = "pending"];
 }
 
 message LndInfo {
@@ -116,17 +183,42 @@ message LndInfo {
   string version = 6 [json_name = "version"];
 }
 
-message LndChannels {
-  int32 active = 1 [json_name = "active"];
-  int32 inactive = 2 [json_name = "inactive"];
-  int32 pending = 3 [json_name = "pending"];
+message Order {
+  // The price of the order, precise to 6 decimal places.
+  double price = 1 [json_name = "price"];
+  // The quantity of the order, precise to 6 decimal places.
+  double quantity = 2 [json_name = "quantity"];
+  // The trading pair that this order is for
+  string pair_id = 3 [json_name = "pair_id"];
+  // The id of the peer - consisting of a [host]:[port] socket address - that created this order
+  string peer_id = 4 [json_name = "peer_id"];
+  // A UUID for this order
+  string id = 6 [json_name = "id"];
+  // The local id for this order
+  string local_id = 7 [json_name = "local_id"];
+  // The epoch time when this order was created
+  int64 created_at = 8 [json_name = "created_at"];
+  // Lightning invoice
+  string invoice = 9 [json_name = "invoice"];
+  // Indicates whether an order was canceled 
+  bool canceled = 10 [json_name = "canceled"];
 }
 
-message RaidenInfo {
-  string error = 1 [json_name = "error"];
-  string address = 2 [json_name = "address"];
-  int32 channels = 3 [json_name = "channels"];
-  string version = 4 [json_name = "version"];
+message Orders {
+  // A list of buy orders sorted by descending price
+  repeated Order buy_orders = 1 [json_name = "buy_orders"];
+  // A list of sell orders sorted by ascending price
+  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+}
+
+message OrderMatch {
+  Order maker = 1 [json_name = "maker"];
+  Order taker = 2 [json_name = "taker"];
+}
+
+message OrdersCount {
+  int32 peer = 1 [json_name = "peer"];
+  int32 own = 2 [json_name = "own"];
 }
 
 message Pair {
@@ -136,72 +228,19 @@ message Pair {
   string swap_protocol = 4 [json_name = "swap_protocol"];
 }
 
-message GetPairsRequest {}
-message GetPairsResponse {
-  repeated Pair pairs = 1 [json_name = "pairs"];
-}
-
-message SwapPayload {
-  string role = 1 [json_name = "role"];
-  uint64 sending_amount = 2 [json_name = "sending_amount"];
-  string sending_token = 3 [json_name = "sending_token"];
-  uint64 receiving_amount = 4 [json_name = "receiving_amount"];
-  string receiving_token = 5 [json_name = "receiving_token"];
-}
-
-message ExecuteSwapRequest {
-  string target_address = 1 [json_name = "target_address"];
-  string identifier = 2 [json_name = "identifier"];
-  SwapPayload payload = 3 [json_name = "payload"];
-}
-
-message ExecuteSwapResponse {
-  string result = 1 [json_name = "result"];
-}
-
-message ConnectRequest {
-  string host = 1 [json_name = "host"];
-  uint32 port = 2 [json_name = "port"];
-}
-
-message ConnectResponse {
-  // A message describing the result of the connection request
-  string result = 1 [json_name = "result"];
-}
-
-message DisconnectRequest {
-  string host = 1 [json_name = "host"];
-  uint32 port = 2 [json_name = "port"];
-}
-
-message DisconnectResponse {
-  string result = 1 [json_name = "result"];
-}
-
-message Order {
-  // The price of the order, precise to 6 decimal places.
-  double price = 1 [json_name = "price"];
-  // The quantity of the order, precise to 6 decimal places.
-  double quantity = 2 [json_name = "quantity"];
-  // The trading pair that this order is for
-  string pair_id = 3 [json_name = "pair_id"];
-  // The id of the peer that created this order
-  int32 peer_id = 4 [json_name = "peer_id"];
-  // The id of the host that created this order
-  string host_id = 5 [json_name = "host_id"];
-  // A UUID for this order
-  string id = 6 [json_name = "id"];
-  // The local ID for this oder
-  string local_id = 7 [json_name = "local_id"];
-  // The epoch time when this order was created
-  int64 created_at = 8 [json_name = "created_at"];
-  // Lightning invoice
-  string invoice = 9 [json_name = "invoice"];
-}
-
-message OrderMatch {
-  Order maker = 1 [json_name = "maker"];
-  Order taker = 2 [json_name = "taker"];
+message Peer {
+  // The socket address with host and port for this peer
+  string address = 1 [json_name = "address"];
+  // The node pub key to uniquely identify this peer
+  string node_pub_key = 2 [json_name = "node_pub_key"];
+  // Indicates whether this peer was connected inbound
+  bool inbound = 3 [json_name = "inbound"];
+  // A list of trading pair tickers supported by this peer
+  repeated string pairs = 4 [json_name = "pairs"]; 
+  // The version of xud being used by the peer
+  string xud_version = 5 [json_name = "xud_version"];
+  // The time in seconds that we have been connected to this peer
+  int32 seconds_connected = 6 [json_name = "seconds_connected"];
 }
 
 message PlaceOrderRequest {
@@ -214,27 +253,19 @@ message PlaceOrderResponse {
   Order remaining_order = 2 [json_name= "remaining_order"];
 }
 
-message CancelOrderRequest {
-  string order_id = 1 [json_name = "order_id"];
-  string pair_id = 2 [json_name = "pair_id"];
+message RaidenInfo {
+  string error = 1 [json_name = "error"];
+  string address = 2 [json_name = "address"];
+  int32 channels = 3 [json_name = "channels"];
+  string version = 4 [json_name = "version"];
 }
 
-message CancelOrderResponse {
-  // Indicates whether an order was successfully canceled
-  bool canceled = 1 [json_name = "canceled"];
-}
-
-message GetOrdersRequest {
-  // The trading pair for which to retrieve orders
-  string pair_id = 1 [json_name = "pair_id"];
-  // The maximum number of orders to return from either side of the order book
-  uint32 max_results = 2 [json_name = "max_results"];
-}
-message GetOrdersResponse {
-  // A list of buy orders sorted by descending price
-  repeated Order buy_orders = 1 [json_name = "buy_orders"];
-  // A list of sell orders sorted by ascending price
-  repeated Order sell_orders = 2 [json_name = "sell_orders"];
+message SwapPayload {
+  string role = 1 [json_name = "role"];
+  uint64 sending_amount = 2 [json_name = "sending_amount"];
+  string sending_token = 3 [json_name = "sending_token"];
+  uint64 receiving_amount = 4 [json_name = "receiving_amount"];
+  string receiving_token = 5 [json_name = "receiving_token"];
 }
 
 message ShutdownRequest {}
@@ -250,5 +281,6 @@ message SubscribePeerOrdersResponse {
 
 message SubscribeSwapsRequest {}
 message SubscribeSwapsResponse {
-  string result = 1 [json_name = "result"];
+  // The order which was executed for the swap with updated remaining quantity
+  string order = 1 [json_name = "order"];
 }

@@ -49,14 +49,14 @@ class Logger {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
-    this.instanceId = instanceId || 0;
+    this.instanceId = instanceId || 1;
 
     const { format } = winston;
     let logFormat: any;
-    if (this.instanceId > 0) {
-      logFormat = format.printf(info => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
+    if (this.instanceId > 1) {
+      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
     } else {
-      logFormat = format.printf(info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
+      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
     }
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);

@@ -19,23 +19,23 @@ class GrpcServer {
 
     const grpcService = new GrpcService(service, logger);
     this.server.addService(xudrpc.Xud.service, {
-      getInfo: grpcService.getInfo,
-      getPairs: grpcService.getPairs,
-      getOrders: grpcService.getOrders,
-      placeOrder: grpcService.placeOrder,
       cancelOrder: grpcService.cancelOrder,
       connect: grpcService.connect,
       disconnect: grpcService.disconnect,
       executeSwap: grpcService.executeSwap,
+      getInfo: grpcService.getInfo,
+      getOrders: grpcService.getOrders,
+      getPairs: grpcService.getPairs,
+      placeOrder: grpcService.placeOrder,
       shutdown: grpcService.shutdown,
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
+      listPeers: grpcService.listPeers,
     });
   }
 
   /**
    * Start the server and begin listening on the provided port
-   * @param port
    * @returns true if the server started listening successfully, false otherwise
    */
   public listen = (port: number, host: string) => {
