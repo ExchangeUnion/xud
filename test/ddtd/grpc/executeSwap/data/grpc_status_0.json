@@ -1,0 +1,11 @@
+{
+    "argv": [
+        {
+            "target_address": "",
+            "sending_amount": 2,
+            "sending_token": "foo",
+            "receiving_amount": 2,
+            "receiving_token": "bar"
+        }
+    ]
+}
