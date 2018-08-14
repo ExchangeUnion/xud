@@ -80,7 +80,7 @@ Options:
 
 ## 3. Interact with `xud` via Command-Line Interface
 
-Once `xud` is running, you can use the `xucli` to interact with it. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
+Once `xud` is running, you can use `xucli` to interact with it. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
 
 ```bash
 ~/xud/bin$ ./xucli --help
