@@ -241,7 +241,7 @@ class OrderBook extends EventEmitter {
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
 
-    if(!this.addOrder(this.peerOrders, stampedOrder)) {
+    if (!this.addOrder(this.peerOrders, stampedOrder)) {
       this.logger.debug(`incoming peer order is duplicated: ${order.id}`);
       // TODO: penalize peer
       return false;
