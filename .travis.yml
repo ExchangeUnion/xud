@@ -10,7 +10,6 @@ services:
 script:
   - npm run lint
   - npm run test:unit
-  - npm run test:p2p
   - npm run test:int
   - cd docker/xud && docker build -t exchangeunion/xud .
 

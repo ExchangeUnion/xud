@@ -1,5 +1,5 @@
 import * as bodyParser from 'body-parser';
-import Logger, { ContextLogger } from '../../Logger';
+import Logger from '../../Logger';
 import path from 'path';
 import { Server } from 'net';
 import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
@@ -10,12 +10,10 @@ const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
 /** A class representing an HTTP web proxy for the gRPC service. */
 class GrpcWebProxyServer {
-  private logger: Logger;
   private app: express.Express;
   private server?: Server;
 
-  constructor(logger: ContextLogger) {
-    this.logger = logger.rpc;
+  constructor(private logger: Logger) {
     this.app = express();
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: false }));

@@ -32,6 +32,16 @@ const contextFileMap = {
   [Context.RAIDEN]: 'xud.log',
 };
 
+type Loggers = {
+  global: Logger,
+  db: Logger,
+  rpc: Logger,
+  p2p: Logger,
+  orderbook: Logger,
+  lnd: Logger,
+  raiden: Logger,
+};
+
 class Logger {
   private level: string;
   private logDir: string;
@@ -49,11 +59,11 @@ class Logger {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
-    this.instanceId = instanceId || 1;
+    this.instanceId = instanceId || 0;
 
     const { format } = winston;
     let logFormat: any;
-    if (this.instanceId > 1) {
+    if (this.instanceId > 0) {
       logFormat = format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
     } else {
       logFormat = format.printf((info: any) => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
@@ -71,6 +81,18 @@ class Logger {
         }),
       ],
     });
+  }
+
+  public static createLoggers = (instanceId: number = 0): Loggers => {
+    return {
+      global: new Logger({ instanceId, context: Context.GLOBAL }),
+      db: new Logger({ instanceId, context: Context.DB }),
+      rpc: new Logger({ instanceId, context: Context.RPC }),
+      p2p: new Logger({ instanceId, context: Context.P2P }),
+      orderbook: new Logger({ instanceId, context: Context.ORDERBOOK }),
+      lnd: new Logger({ instanceId, context: Context.LND }),
+      raiden: new Logger({ instanceId, context: Context.RAIDEN }),
+    };
   }
 
   private log = (level: string, msg: string) => {
@@ -107,22 +129,4 @@ class Logger {
   }
 }
 
-class ContextLogger {
-  private instanceId: number;
-
-  constructor(instanceId: number) {
-    this.instanceId = instanceId;
-  }
-
-  public global = new Logger({ context: Context.GLOBAL, instanceId: this.instanceId });
-  public db = new Logger({ context: Context.DB, instanceId: this.instanceId });
-  public rpc = new Logger({ context: Context.RPC, instanceId: this.instanceId });
-  public p2p = new Logger({ context: Context.P2P, instanceId: this.instanceId });
-  public orderbook = new Logger({ context: Context.ORDERBOOK, instanceId: this.instanceId });
-  public lnd = new Logger({ context: Context.LND, instanceId: this.instanceId });
-  public raiden = new Logger({ context: Context.RAIDEN, instanceId: this.instanceId });
-
-}
-
 export default Logger;
-export { ContextLogger };

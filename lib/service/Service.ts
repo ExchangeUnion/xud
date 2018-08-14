@@ -1,4 +1,4 @@
-import Logger, { ContextLogger } from '../Logger';
+import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook, { OrderArrays } from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
@@ -44,21 +44,18 @@ const argChecks = {
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
   public shutdown: Function;
-
   private orderBook: OrderBook;
   private lndBtcClient: LndClient;
   private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents, logger: ContextLogger) {
+  constructor(private logger: Logger, components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
-    this.logger = logger.global;
     this.orderBook = components.orderBook;
     this.lndBtcClient = components.lndBtcClient;
     this.lndLtcClient = components.lndLtcClient;

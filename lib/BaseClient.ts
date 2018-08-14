@@ -11,13 +11,10 @@ enum ClientStatus {
  * A base class to represent a client for an external service such as LND or Raiden.
  */
 abstract class BaseClient extends EventEmitter {
-  protected logger: Logger;
   protected status: ClientStatus = ClientStatus.DISABLED;
 
-  constructor(logger: Logger) {
+  constructor(protected logger: Logger) {
     super();
-
-    this.logger = logger;
   }
 
   protected setStatus(val: ClientStatus): void {

@@ -1,11 +1,13 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
+import Logger from '../../lib/Logger';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'BTC/LTC';
+const loggers = Logger.createLoggers();
 
 const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOwnOrder => ({
   price,
@@ -149,7 +151,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 
 describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.sellOrders];
@@ -158,7 +160,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split taker order when makers are insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -4));
     engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.sellOrders];
@@ -168,7 +170,7 @@ describe('MatchingEngine.match', () => {
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -6));
     const matchAgainst = [engine.sellOrders];
@@ -185,7 +187,7 @@ describe('MatchingEngine.match', () => {
 
 describe('MatchingEngine.removeOwnOrder', () => {
   it('should add a new ownOrder and then remove it', async () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
     expect(engine.isEmpty()).to.be.true;
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, -5), false);
@@ -204,7 +206,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
 
 describe('MatchingEngine.removePeerOrders', () => {
   it('should add new peerOrders and then remove some of them', () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
 
     const firstPeerId = '127.0.0.1:8885';
     const secondPeertId = '127.0.0.1:9885';
@@ -225,7 +227,7 @@ describe('MatchingEngine.removePeerOrders', () => {
   });
 
   it('should add a new peerOrder and then remove it partially', () => {
-    const engine = new MatchingEngine(PAIR_ID);
+    const engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
     expect(engine.isEmpty()).to.be.true;
 
     const quantity = -5;

@@ -1,12 +1,14 @@
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
-import { ContextLogger } from '../../lib/Logger';
+import Logger from '../../lib/Logger';
 
 export default async (testDb?: boolean) => {
   const config = new Config();
   await config.load();
-  const logger = new ContextLogger(config.instanceId);
-  const db = new DB(testDb ? config.testDb : config.db, logger);
+  const loggers = Logger.createLoggers(config.instanceId);
+
+  const dbConfig = testDb ? config.testDb : config.db;
+  const db = new DB(dbConfig, loggers.db);
   await db.init();
 
   await db.dropTables();

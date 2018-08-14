@@ -6,11 +6,9 @@ import Pool from '../p2p/Pool';
 
 class MatchesProcessor {
   private buffer: any[];
-  private logger: Logger;
 
-  constructor(private pool?: Pool, private raidenClient?: RaidenClient) {
+  constructor(private logger: Logger, private pool?: Pool, private raidenClient?: RaidenClient) {
     this.buffer = [];
-    this.logger = Logger.orderbook;
   }
 
   public add(match: OrderMatch) {

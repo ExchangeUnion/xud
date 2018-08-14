@@ -34,8 +34,9 @@ class LndClient extends BaseClient {
    * Create an lnd client.
    * @param config the lnd configuration
    */
-  constructor(config: LndClientConfig) {
-    super(Logger.lnd);
+  constructor(config: LndClientConfig, logger: Logger) {
+    super(logger);
+
     let shouldEnable: boolean = true;
     const { disable, certpath, macaroonpath } = config;
 

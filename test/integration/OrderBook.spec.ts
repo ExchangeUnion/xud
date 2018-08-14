@@ -6,6 +6,7 @@ import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
+import Logger from '../../lib/Logger';
 import { orders } from '../../lib/types';
 
 describe('OrderBook', () => {
@@ -16,13 +17,14 @@ describe('OrderBook', () => {
   before(async () => {
     const config = new Config();
     await config.load();
+    const loggers = Logger.createLoggers();
 
-    db = new DB(config.testDb);
+    db = new DB(config.testDb, loggers.db);
     await db.init();
     await db.truncate();
 
-    orderBookRepository = new OrderBookRepository(db.models);
-    const p2pRepository = new P2PRepository(db);
+    orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
+    const p2pRepository = new P2PRepository(loggers.p2p, db);
 
     await p2pRepository.addHost(
       { address: '127.0.0.1', port: 8885 },
@@ -35,7 +37,7 @@ describe('OrderBook', () => {
       { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
     ]);
 
-    orderBook = new OrderBook(db.models);
+    orderBook = new OrderBook(loggers.orderbook, db.models);
     await orderBook.init();
   });
 

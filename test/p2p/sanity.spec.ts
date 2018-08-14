@@ -1,79 +1,66 @@
-
 import { expect } from 'chai';
 import Xud from '../../lib/Xud';
+import { errorCodes } from '../../lib/p2p/errors';
+
+const createConfig = (instanceId: number, p2pPort: number) => ({
+  instanceId,
+  p2p: {
+    listen: true,
+    port: p2pPort,
+  },
+  rpc: {
+    disable: true,
+  },
+  lndbtc: {
+    disable: true,
+  },
+  lndltc: {
+    disable: true,
+  },
+  raiden: {
+    disable: true,
+  },
+  db: {
+    database: 'xud_test',
+  },
+});
 
 describe('P2P Sanity Tests', () => {
-  let firstpeer: Xud;
-  let secondpeer: Xud;
-  let secondpeerconfig: any;
-  let firstpeerconfig: any;
+  let nodeOneConfig: any;
+  let nodeOne: Xud;
+  let nodeTwoConfig: any;
+  let nodeTwo: Xud;
 
   before(async () => {
+    nodeOneConfig = createConfig(1, 9001);
+    nodeOne = new Xud(nodeOneConfig);
+    await nodeOne.start();
 
-    firstpeerconfig = {
-      instanceId : 1,
-      p2p : {
-        listen: true,
-        port: 8885,
-      },
-      rpc : {
-        disable: true,
-      },
-      lnd : {
-        disable: true,
-      },
-      raiden : {
-        disable: true,
-      },
-      db : {
-        database: 'xud_test',
-      },
-    };
-
-    secondpeerconfig = {
-      instanceId : 2,
-      p2p : {
-        listen: true,
-        port: 8887,
-      },
-      rpc : {
-        disable: true,
-      },
-      lnd : {
-        disable: true,
-      },
-      raiden : {
-        disable: true,
-      },
-      db : {
-        database: 'xud_test',
-      },
-    };
-
-    firstpeer = new Xud(firstpeerconfig);
-    await firstpeer.start();
-
-    secondpeer = new Xud(secondpeerconfig);
-    await secondpeer.start();
+    nodeTwoConfig = createConfig(2, 9001);
+    nodeTwo = new Xud(nodeTwoConfig);
+    await nodeTwo.start();
   });
 
-  it('should return connected', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port: 8887 });
-    expect(result).to.be.equal('Connected to peer (localhost:8887)');
+  it('should connect successfully', async () => {
+    const result = await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port });
+    expect(result).to.be.equal(`Connected to peer (localhost:${nodeTwoConfig.p2p.port})`);
   });
 
-  it('should fail to connect', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port: 8887 });
-    expect(result).to.be.equal('Not connected');
+  it('should fail connecting to the same address', async () => {
+    try {
+      await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port });
+    } catch (err) {
+      expect(err.code).to.be.equal(errorCodes.ADDRESS_ALREADY_CONNECTED);
+    }
   });
 
-  it('should not connect', async () => {
-    const result = await firstpeer.service.connect({ host:'localhost', port:8888 });
+  it('should fail connecting to a non-existing nodenode', async () => {
+    const result = await nodeOne.service.connect({ host:'localhost', port: 9002 });
     expect(result).to.be.equal('Not connected');
   });
 
   after(async () => {
-    await firstpeer.shutdown();
-    await secondpeer.shutdown();
+    await nodeOne.shutdown();
+    await nodeTwo.shutdown();
   });
 });
