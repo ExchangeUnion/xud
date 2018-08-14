@@ -184,7 +184,7 @@ disable = true
 disable = true
 
 [raiden]
-disable = false
+disable = true
 ```
 
 ## Useful stuff for developers (optional)
