@@ -232,18 +232,27 @@ class OrderBook extends EventEmitter {
     return matchingResult;
   }
 
-  private addPeerOrder = (order: orders.PeerOrder) => {
+  private addPeerOrder = (order: orders.PeerOrder): boolean => {
     const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
-      return;
+      return false;
     }
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
-    this.emit('peerOrder.incoming', stampedOrder);
+
+    if(!this.addOrder(this.peerOrders, stampedOrder)) {
+      this.logger.debug(`incoming peer order is duplicated: ${order.id}`);
+      // TODO: penalize peer
+      return false;
+    }
+
     matchingEngine.addPeerOrder(stampedOrder);
-    this.addOrder(this.peerOrders, stampedOrder);
+
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
+    this.emit('peerOrder.incoming', stampedOrder);
+
+    return true;
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
@@ -286,7 +295,13 @@ class OrderBook extends EventEmitter {
       this.localIdMap.set(localId, order.id);
     }
 
-    this.getOrderMap(ordersMap, order).set(order.id, order);
+    const orderMap = this.getOrderMap(ordersMap, order);
+    if (orderMap.has(order.id)) {
+      return false;
+    } else {
+      orderMap.set(order.id, order);
+      return true;
+    }
   }
 
   private removeOrder = (ordersMap: OrdersMap, orderId: string, pairId: string): boolean => {
