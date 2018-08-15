@@ -47,7 +47,7 @@ class Peer extends EventEmitter {
   private host?: Host;
   private opened: boolean = false;
   private socket?: Socket;
-  private parser: Parser = new Parser();
+  private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
   private closed: boolean = false;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
@@ -206,13 +206,7 @@ class Peer extends EventEmitter {
 
   private sendRaw = (packetStr: string) => {
     if (this.socket) {
-
-      // writing the packet length into the first 4 bytes of the buffer
-      const size = Buffer.allocUnsafe(4);
-      size.writeUInt32LE(packetStr.length, 0, true);
-      const buffer = Buffer.concat([size, new Buffer(packetStr)]);
-
-      this.socket.write(buffer);
+      this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
       this.lastSend = Date.now();
     }
   }
