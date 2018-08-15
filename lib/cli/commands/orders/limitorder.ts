@@ -1,10 +1,10 @@
-import { callback, loadXudClient } from '../command';
+import { callback, loadXudClient } from '../../command';
 import { Arguments } from 'yargs';
-import { PlaceOrderRequest, Order } from '../../proto/xudrpc_pb';
+import { PlaceOrderRequest, Order } from '../../../proto/xudrpc_pb';
 
-export const command = 'placeorder <pair_id> <order_id> <quantity> [price]';
+export const command = 'limitorder <pair_id> <order_id> <quantity> <price>';
 
-export const describe = 'place an order, if price is 0 or unspecified a market order is placed';
+export const describe = 'place a limit order';
 
 export const builder = {
   pair_id: {
@@ -13,10 +13,10 @@ export const builder = {
   order_id: {
     type: 'string',
   },
-  price: {
+  quantity: {
     type: 'number',
   },
-  quantity: {
+  price: {
     type: 'number',
   },
 };
@@ -29,6 +29,7 @@ export const handler = (argv: Arguments) => {
   order.setLocalId(argv.order_id);
   order.setQuantity(argv.quantity);
   order.setPrice(argv.price);
+
   request.setOrder(order);
 
   loadXudClient(argv).placeOrder(request, callback);
