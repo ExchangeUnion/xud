@@ -1,4 +1,4 @@
-import grpc, { ChannelCredentials } from 'grpc';
+import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import fs from 'fs';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
@@ -29,6 +29,8 @@ class LndClient extends BaseClient {
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
+  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
+  private reconnectionTimer?: NodeJS.Timer;
 
   /**
    * Create an lnd client.
@@ -99,10 +101,11 @@ class LndClient extends BaseClient {
           // mark connection as active
           this.setStatus(ClientStatus.CONNECTION_VERIFIED);
           this.subscribeInvoices();
+          this.reconnectionTimer = undefined;
         }
       } catch (err) {
         this.logger.error(`could not fetch info from lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
-        setTimeout(this.connect, 5000);
+        this.reconnectionTimer = setTimeout(this.connect, 5000);
       }
     }
   }
@@ -229,7 +232,7 @@ class LndClient extends BaseClient {
     if (this.isDisconnected()) {
       throw(errors.LND_IS_DISCONNECTED);
     }
-    this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
+    this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
       .on('data', (message: string) => {
         this.logger.info(`invoice update: ${message}`);
@@ -247,6 +250,16 @@ class LndClient extends BaseClient {
         this.setStatus(ClientStatus.DISCONNECTED);
         this.connect();
       });
+  }
+
+  /** End all subscriptions and reconnection attempts. */
+  public close = () => {
+    if (this.reconnectionTimer) {
+      clearTimeout(this.reconnectionTimer);
+    }
+    if (this.invoiceSubscription) {
+      this.invoiceSubscription.cancel();
+    }
   }
 }
 
