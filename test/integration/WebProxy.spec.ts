@@ -13,7 +13,10 @@ describe('WebProxy', () => {
         disable: false,
         port: 8080,
       },
-      lnd: {
+      lndbtc: {
+        disable: true,
+      },
+      lndltc: {
         disable: true,
       },
       raiden: {

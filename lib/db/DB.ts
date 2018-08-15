@@ -26,12 +26,12 @@ type Models = {
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
 
+/** A class representing a connection to a SQL database. */
 class DB {
-  public sequelize!: Sequelize.Sequelize;
-  public models!: Models;
-  private logger: Logger = Logger.db;
+  public sequelize: Sequelize.Sequelize;
+  public models: Models;
 
-  constructor(private config: DBConfig) {
+  constructor(private config: DBConfig, private logger: Logger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.sequelize = this.createSequelizeInstance(this.config);
@@ -70,6 +70,7 @@ class DB {
     ]);
 
     if (newDb) {
+      // populate new databases with seed nodes
       await Host.bulkCreate(<db.HostAttributes[]>[
         { address: 'xud1.test.exchangeunion.com', port: 8885 },
         { address: 'xud2.test.exchangeunion.com', port: 8885 },

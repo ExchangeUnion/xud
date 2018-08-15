@@ -25,25 +25,46 @@ const { argv } = require('yargs')
       describe: 'User for SQL database ',
       type: 'string',
     },
-    'lnd.certpath': {
-      describe: 'Path to the SSL certificate for lnd',
+    'lndbtc.certpath': {
+      describe: 'Path to the SSL certificate for lndBtc',
       type: 'string',
     },
-    'lnd.disable': {
-      describe: 'Disable lnd integration',
+    'lndbtc.disable': {
+      describe: 'Disable lndBtc integration',
       type: 'boolean',
       default: undefined,
     },
-    'lnd.host': {
-      describe: 'Host of the lnd gRPC interface',
+    'lndbtc.host': {
+      describe: 'Host of the lndBtc gRPC interface',
       type: 'string',
     },
-    'lnd.macaroonpath': {
-      describe: 'Path of the admin macaroon for lnd',
+    'lndbtc.macaroonpath': {
+      describe: 'Path of the admin macaroon for lndBtc',
       type: 'string',
     },
-    'lnd.port': {
-      describe: 'Port of the lnd gRPC interface',
+    'lndbtc.port': {
+      describe: 'Port of the lndBtc gRPC interface',
+      type: 'number',
+    },
+    'lndltc.certpath': {
+      describe: 'Path to the SSL certificate for lndLtc',
+      type: 'string',
+    },
+    'lndltc.disable': {
+      describe: 'Disable lndLtc integration',
+      type: 'boolean',
+      default: undefined,
+    },
+    'lndltc.host': {
+      describe: 'Host of the lndLtc gRPC interface',
+      type: 'string',
+    },
+    'lndltc.macaroonpath': {
+      describe: 'Path of the admin macaroon for lndLtc',
+      type: 'string',
+    },
+    'lndltc.port': {
+      describe: 'Port of the lndLtc gRPC interface',
       type: 'number',
     },
     'p2p.listen': {

@@ -6,9 +6,7 @@ import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 
-/**
- * The configurable options for the lnd client.
- */
+/** The configurable options for the lnd client. */
 type LndClientConfig = {
   disable: boolean;
   certpath: string;
@@ -34,21 +32,26 @@ class LndClient extends BaseClient {
 
   /**
    * Create an lnd client.
-   * @param config The lnd configuration
+   * @param config the lnd configuration
    */
-  constructor(config: LndClientConfig) {
-    super(Logger.lnd);
+  constructor(config: LndClientConfig, logger: Logger) {
+    super(logger);
+
+    let shouldEnable: boolean = true;
     const { disable, certpath, macaroonpath } = config;
 
     if (disable) {
-      this.setStatus(ClientStatus.DISABLED);
-    } else if (!fs.existsSync(certpath)) {
+      shouldEnable = false;
+    }
+    if (!fs.existsSync(certpath)) {
       this.logger.error('could not find lnd certificate, is lnd installed?');
-      this.setStatus(ClientStatus.DISABLED);
-    } else if (!fs.existsSync(macaroonpath)) {
+      shouldEnable = false;
+    }
+    if (!fs.existsSync(macaroonpath)) {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
-      this.setStatus(ClientStatus.DISABLED);
-    } else {
+      shouldEnable = false;
+    }
+    if (shouldEnable) {
       this.uri = `${config.host}:${config.port}`;
       const lndCert = fs.readFileSync(certpath);
       this.credentials = grpc.credentials.createSsl(lndCert);
@@ -56,6 +59,8 @@ class LndClient extends BaseClient {
       const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      // mark connection as disconnected
+      this.setStatus(ClientStatus.DISCONNECTED);
     }
   }
 
@@ -76,18 +81,27 @@ class LndClient extends BaseClient {
   }
 
   public connect = async () => {
-    if (!this.isDisabled()) {
+    if (this.isDisabled()) {
+      this.logger.error(`can't connect to lnd. lnd is disabled`);
+      return;
+    }
+    if (this.isConnected()) {
+      this.logger.error(`can't connect to lnd, lnd is already connected`);
+      return;
+    }
+    if (this.isDisconnected()) {
       this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse) {
+          // mark connection as active
           this.setStatus(ClientStatus.CONNECTION_VERIFIED);
           this.subscribeInvoices();
         }
       } catch (err) {
-        this.logger.error(`could not fetch info from lnd host, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
+        this.logger.error(`could not fetch info from lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
         setTimeout(this.connect, 5000);
       }
     }
@@ -103,7 +117,7 @@ class LndClient extends BaseClient {
 
   /**
    * Attempt to add a new invoice to the lnd invoice database.
-   * @param value The value of this invoice in satoshis
+   * @param value the value of this invoice in satoshis
    */
   public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
     const request = new lndrpc.Invoice();
@@ -113,7 +127,7 @@ class LndClient extends BaseClient {
 
   /**
    * Pay an invoice through the Lightning Network.
-   * @param payment_request An invoice for a payment within the Lightning Network.
+   * @param payment_request an invoice for a payment within the Lightning Network
    */
   public payInvoice = (paymentRequest: string): Promise<lndrpc.SendResponse.AsObject> => {
     const request = new lndrpc.SendRequest();
@@ -180,6 +194,9 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
+    if (this.isDisconnected()) {
+      throw(errors.LND_IS_DISCONNECTED);
+    }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();
     channelPoint.setFundingTxidStr(fundingTxId);
@@ -209,6 +226,9 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
+    if (this.isDisconnected()) {
+      throw(errors.LND_IS_DISCONNECTED);
+    }
     this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
       // TODO: handle invoice events
       .on('data', (message: string) => {
@@ -216,7 +236,7 @@ class LndClient extends BaseClient {
       })
       .on('end', () => {
         this.logger.info('invoice ended');
-        this.setStatus(ClientStatus.DISABLED);
+        this.setStatus(ClientStatus.DISCONNECTED);
         this.connect();
       })
       .on('status', (status: string) => {
@@ -224,7 +244,7 @@ class LndClient extends BaseClient {
       })
       .on('error', (error: any) => {
         this.logger.error(`invoice error: ${error}`);
-        this.setStatus(ClientStatus.DISABLED);
+        this.setStatus(ClientStatus.DISCONNECTED);
         this.connect();
       });
   }

@@ -12,27 +12,30 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { Arguments } from 'yargs';
 
+const version: string = require('../package.json').version;
+
 bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
 class Xud {
   public service!: Service;
-  private logger: Logger = Logger.global;
+  private logger!: Logger;
   private config: Config;
   private db!: DB;
-  private lndClient!: LndClient;
+  private lndbtcClient!: LndClient;
+  private lndltcClient!: LndClient;
   private raidenClient!: RaidenClient;
   private pool?: Pool;
   private orderBook!: OrderBook;
-  private rpcServer!: GrpcServer;
+  private rpcServer?: GrpcServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
 
   /**
    * Create an Exchange Union daemon.
-   * @param args Optional command line arguments to override configuration parameters.
+   * @param args optional command line arguments to override configuration parameters.
    */
-  constructor(args?: Arguments)  {
+  constructor(args?: Arguments | Object)  {
     this.config = new Config(args);
   }
 
@@ -41,56 +44,69 @@ class Xud {
    */
   public start = async () => {
     await this.config.load();
+    const loggers = Logger.createLoggers(this.config.instanceId);
+    this.logger = loggers.global;
     this.logger.info('config loaded');
 
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      this.nodeKey = NodeKey.load(`${this.config.xudir}/nodekey.dat`);
+      this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
 
-      this.db = new DB(this.config.db);
+      this.db = new DB(this.config.db, loggers.db);
       await this.db.init();
 
-      this.lndClient = new LndClient(this.config.lnd);
-      await this.lndClient.connect();
+      // setup LND clients and connect if configured
+      this.lndbtcClient = new LndClient(this.config.lndbtc, loggers.lnd);
+      if (!this.lndbtcClient.isDisabled()) {
+        await this.lndbtcClient.connect();
+      }
+      this.lndltcClient = new LndClient(this.config.lndltc, loggers.lnd);
+      if (!this.lndltcClient.isDisabled()) {
+        await this.lndltcClient.connect();
+      }
 
-      this.raidenClient = new RaidenClient(this.config.raiden);
-      await this.raidenClient.init();
+      // setup raiden client and connect if configured
+      this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden);
+      if (!this.raidenClient.isDisabled()) {
+        await this.raidenClient.init();
+      }
+      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db);
 
-      this.pool = new Pool(this.config.p2p, this.db);
-
-      this.orderBook = new OrderBook(this.db.models, this.pool, this.lndClient);
+      this.orderBook = new OrderBook(this.logger, this.db.models, this.pool, this.lndbtcClient, this.raidenClient);
       await this.orderBook.init();
 
-      const pairs: string[] = [];
-      (await this.orderBook.getPairs()).forEach((pair) => {
-        pairs.push(pair.id);
-      });
-
-      this.pool.init({
-        pairs,
-        version: '1.0',
+      await this.pool.init({
+        version,
+        pairs: this.orderBook.pairIds,
         nodePubKey: this.nodeKey.nodePubKey,
         listenPort: this.config.p2p.listen ? this.config.p2p.port : undefined,
         raidenAddress: this.raidenClient.address,
       });
 
-      this.service = new Service({
+      this.service = new Service(loggers.global, {
+        version,
         orderBook: this.orderBook,
-        lndClient: this.lndClient,
+        lndBtcClient: this.lndbtcClient,
+        lndLtcClient: this.lndltcClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
         config: this.config,
         shutdown: this.shutdown,
       });
-      this.rpcServer = new GrpcServer(this.service);
-      if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
-        this.logger.error('Could not start RPC server, exiting...');
-        this.shutdown();
-        return;
+
+      if (!this.config.rpc.disable) {
+        this.rpcServer = new GrpcServer(loggers.rpc, this.service);
+        if (!await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host)) {
+          this.logger.error('Could not start RPC server, exiting...');
+          this.shutdown();
+          return;
+        }
+      } else {
+        this.logger.warn('RPC server is disabled.');
       }
 
       if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer();
+        this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
         await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {
@@ -111,7 +127,9 @@ class Xud {
     (async () => {
       // we use an immediately invoked function here to close rpcServer and exit process AFTER the
       // shutdown method returns a response.
-      await this.rpcServer.close();
+      if (this.rpcServer) {
+        await this.rpcServer.close();
+      }
       if (this.grpcAPIProxy) {
         await this.grpcAPIProxy.close();
       }

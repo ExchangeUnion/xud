@@ -7,5 +7,5 @@ export type OrderMatch = {
 
 export type MatchingResult = {
   matches: OrderMatch[];
-  remainingOrder: StampedOwnOrder;
+  remainingOrder?: StampedOwnOrder;
 };

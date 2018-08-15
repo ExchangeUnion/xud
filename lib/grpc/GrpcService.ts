@@ -1,5 +1,5 @@
-import grpc, { status, ServiceError } from 'grpc';
 import Logger from '../Logger';
+import grpc, { status, ServiceError } from 'grpc';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -7,10 +7,10 @@ import { PairInstance } from '../types/db';
 import { GetInfoResponse } from '../proto/lndrpc_pb';
 import { Orders } from 'lib/orderbook/OrderBook';
 import { MatchingResult } from '../types/matchingEngine';
-import { OwnOrder, StampedPeerOrder } from '../types/orders';
-import { default as orderErrors, errorCodes as orderErrorCodes } from '../orderbook/errors';
-import { default as serviceErrors, errorCodes as serviceErrorCodes } from '../service/errors';
-import { default as p2pErrors, errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { OwnOrder, StampedPeerOrder, StampedOrder } from '../types/orders';
+import { errorCodes as orderErrorCodes } from '../orderbook/errors';
+import { errorCodes as serviceErrorCodes } from '../service/errors';
+import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { PeerInfo } from '../p2p/Peer';
 
 function serializeDateProperties(response: any) {
@@ -27,12 +27,8 @@ function serializeDateProperties(response: any) {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
-  private logger: Logger;
-
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private service: Service) {
-    this.logger = Logger.rpc;
-  }
+  constructor(private logger: Logger, private service: Service) {}
 
   private unaryCall = async <T, U>(call: T, callback: grpc.sendUnaryData<U>, serviceMethod: Function) => {
     try {
@@ -142,7 +138,7 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<{}, {}> = (call) => {
-    this.service.subscribeSwaps((result: any) => call.write({ result }));
+    this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
   }
 }
 

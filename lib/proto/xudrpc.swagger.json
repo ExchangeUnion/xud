@@ -368,9 +368,6 @@
         "target_address": {
           "type": "string"
         },
-        "identifier": {
-          "type": "string"
-        },
         "payload": {
           "$ref": "#/definitions/xudrpcSwapPayload"
         }
@@ -401,7 +398,10 @@
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
         },
-        "lnd": {
+        "lndbtc": {
+          "$ref": "#/definitions/xudrpcLndInfo"
+        },
+        "lndltc": {
           "$ref": "#/definitions/xudrpcLndInfo"
         },
         "raiden": {
@@ -695,8 +695,9 @@
     "xudrpcSubscribeSwapsResponse": {
       "type": "object",
       "properties": {
-        "result": {
-          "type": "string"
+        "order": {
+          "type": "string",
+          "title": "The order which was executed for the swap with updated remaining quantity"
         }
       }
     },

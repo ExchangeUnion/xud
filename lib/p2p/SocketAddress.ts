@@ -1,7 +1,7 @@
 import { Socket } from 'net';
 import assert from 'assert';
 
-/** Represents a network socketAddress. */
+/** Represents a network socket address. */
 class SocketAddress {
   constructor(public address: string, public port: number) {}
 

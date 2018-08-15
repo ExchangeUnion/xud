@@ -8,20 +8,22 @@ import Config from '../Config';
 import { EventEmitter } from 'events';
 import SocketAddress from '../p2p/SocketAddress';
 import errors from './errors';
-
-const packageJson = require('../../package.json');
+import lndErrors from '../lndclient/errors';
 
 /**
  * The components required by the API service layer.
  */
 export type ServiceComponents = {
   orderBook: OrderBook;
-  lndClient: LndClient;
+  lndBtcClient: LndClient;
+  lndLtcClient: LndClient;
   raidenClient: RaidenClient;
   pool: Pool;
   config: Config
   /** The function to be called to shutdown the parent process */
   shutdown: Function;
+  /** The version of the local xud instance. */
+  version: string;
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -42,27 +44,67 @@ const argChecks = {
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
   public shutdown: Function;
-
   private orderBook: OrderBook;
-  private lndClient: LndClient;
+  private lndBtcClient: LndClient;
+  private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
   private config: Config;
-  private logger: Logger;
+  private version: string;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(components: ServiceComponents) {
+  constructor(private logger: Logger, components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
-
     this.orderBook = components.orderBook;
-    this.lndClient = components.lndClient;
+    this.lndBtcClient = components.lndBtcClient;
+    this.lndLtcClient = components.lndLtcClient;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
 
-    this.logger = Logger.rpc;
+    this.version = components.version;
+  }
+
+  private getLndInfo = async (lndClient: LndClient)  => {
+    let info: any = {};
+
+    if (lndClient.isDisabled()) {
+      info = {
+        error: String(lndErrors.LND_IS_DISABLED.message),
+      };
+      return info;
+    }
+    if (!lndClient.isConnected()) {
+      this.logger.error(`LND error: ${lndErrors.LND_IS_DISCONNECTED.message}`);
+      info = {
+        error: String(lndErrors.LND_IS_DISCONNECTED.message),
+      };
+      return info;
+    }
+
+    try {
+      const lnd = await lndClient.getInfo();
+
+      info = {
+        channels: {
+          active: lnd.numActiveChannels,
+          pending: lnd.numPendingChannels,
+        },
+        chains: lnd.chainsList,
+        blockheight: lnd.blockHeight,
+        uris: lnd.urisList,
+        version: lnd.version,
+      };
+
+    } catch (err) {
+      this.logger.error(`LND error: ${err}`);
+      info = {
+        error: String(err),
+      };
+    }
+    return info;
   }
 
   /*
@@ -109,10 +151,10 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Execute an atomic swap
+   * Execute an atomic swap. Demonstration and testing purposes only.
    */
-  public executeSwap = async ({ target_address, payload, identifier }: { target_address: string, payload: TokenSwapPayload, identifier: string }) => {
-    return this.raidenClient.tokenSwap(target_address, payload, identifier);
+  public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
+    return this.raidenClient.tokenSwap(target_address, payload);
   }
 
   /**
@@ -121,54 +163,29 @@ class Service extends EventEmitter {
   public getInfo = async () => {
     const info: any = {};
 
-    info.version = packageJson.version;
+    info.version = this.version;
 
-    const pairs = await this.orderBook.getPairs();
+    const pairIds = this.orderBook.pairIds;
     info.numPeers = this.pool.peerCount;
-    info.numPairs = pairs.length;
+    info.numPairs = pairIds.length;
 
     let peerOrdersCount: number = 0;
     let ownOrdersCount: number = 0;
-    for (const key in pairs) {
-      const pair = pairs[key];
-
-      const [peerOrders, ownOrders] = await Promise.all([
-        this.orderBook.getPeerOrders(pair.id, 0),
-        this.orderBook.getOwnOrders(pair.id, 0),
-      ]);
+    pairIds.forEach((pairId) => {
+      const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
+      const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
 
       peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
       ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
-    }
+    });
 
     info.orders = {
       peer: peerOrdersCount,
       own: ownOrdersCount,
     };
 
-    if (!this.config.lnd.disable) {
-      try {
-        const lnd = await this.lndClient.getInfo();
-
-        info.lnd = {
-          channels: {
-            active: lnd.numActiveChannels,
-            pending: lnd.numPendingChannels,
-          },
-          chains: lnd.chainsList,
-          blockheight: lnd.blockHeight,
-          uris: lnd.urisList,
-          version: lnd.version,
-        };
-
-      } catch (err) {
-        this.logger.error(`LND error: ${err}`);
-        info.lnd = {
-          error: String(err),
-        };
-      }
-    }
-
+    info.lndbtc = await this.getLndInfo(this.lndBtcClient);
+    info.lndltc = await this.getLndInfo(this.lndLtcClient);
     if (!this.config.raiden.disable) {
       try {
         const channels = await this.raidenClient.getChannels();
@@ -199,7 +216,7 @@ class Service extends EventEmitter {
     argChecks.HAS_PAIR_ID(args);
     argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
 
-    const result: { [ type: string ]: OrderArrays } = {
+    const result = {
       peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
       ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
     };
@@ -212,7 +229,7 @@ class Service extends EventEmitter {
    * @returns A list of available trading pairs
    */
   public getPairs = () => {
-    return this.orderBook.getPairs();
+    return this.orderBook.pairs;
   }
 
   /**
@@ -249,9 +266,11 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to executed swaps
+   * Subscribe to executed swaps.
    */
-  public subscribeSwaps = async (_callback: Function) => {};
+  public subscribeSwaps = async (callback: Function) => {
+    this.raidenClient.on('swap', order => callback(order));
+  }
 }
 
 export default Service;

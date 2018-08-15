@@ -45,7 +45,6 @@ class Peer extends EventEmitter {
   public inbound!: boolean;
   public connected: boolean = false;
   private host?: Host;
-  private logger: Logger = Logger.p2p;
   private opened: boolean = false;
   private socket?: Socket;
   private parser: Parser = new Parser();
@@ -102,20 +101,20 @@ class Peer extends EventEmitter {
     };
   }
 
-  constructor() {
+  constructor(private logger: Logger) {
     super();
 
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(socketAddress: SocketAddress): Peer {
-    const peer = new Peer();
+  public static fromOutbound(socketAddress: SocketAddress, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.connect(socketAddress);
     return peer;
   }
 
-  public static fromInbound(socket: Socket): Peer {
-    const peer = new Peer();
+  public static fromInbound(socket: Socket, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.accept(socket);
     return peer;
   }
@@ -335,9 +334,9 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | null => {
+  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | undefined => {
     if (this.closed) {
-      return null;
+      return undefined;
     }
 
     const entry = this.getOrAddPendingResponseEntry(packetId);
@@ -550,8 +549,10 @@ class Peer extends EventEmitter {
   }
 }
 
+/** A class representing a wait for an anticipated response packet from a peer. */
 class PendingResponseEntry {
   public timeout: number = 0;
+  /** An array of tasks to resolve or reject. */
   public jobs: Job[] = [];
 
   public addJob = (resolve: Function, reject: Function) => {
@@ -579,6 +580,7 @@ class PendingResponseEntry {
   }
 }
 
+/** A pair of functions for resolving or rejecting a task. */
 class Job {
   constructor(public resolve: Function, public reject: Function) {}
 }
