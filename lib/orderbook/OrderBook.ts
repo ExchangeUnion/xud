@@ -232,10 +232,15 @@ class OrderBook extends EventEmitter {
     return matchingResult;
   }
 
+  /**
+   * Add peer order
+   * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
+   */
   private addPeerOrder = (order: orders.PeerOrder): boolean => {
     const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
+      // TODO: penalize peer
       return false;
     }
 
@@ -289,6 +294,10 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
+  /**
+   * Add an order to an order map
+   * @returns false if an order with the same id already exist, otherwise true
+   */
   private addOrder = (ordersMap: OrdersMap, order: orders.StampedOrder) => {
     if (this.isOwnOrdersMap(ordersMap)) {
       const { localId } = order as orders.StampedOwnOrder;
