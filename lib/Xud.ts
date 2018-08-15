@@ -125,16 +125,22 @@ class Xud {
     // TODO: ensure we are not in the middle of executing any trades
     const msg = 'XUD shutdown gracefully';
     (async () => {
-      // we use an immediately invoked function here to close rpcServer and exit process AFTER the
+      // we use an immediately invoked function here exit the process AFTER the
       // shutdown method returns a response.
+      this.lndbtcClient.close();
+      this.lndltcClient.close();
+
+      const closePromises: Promise<void>[] = [];
       if (this.rpcServer) {
-        await this.rpcServer.close();
+        closePromises.push(this.rpcServer.close());
       }
       if (this.grpcAPIProxy) {
-        await this.grpcAPIProxy.close();
+        closePromises.push(this.grpcAPIProxy.close());
       }
+      await Promise.all(closePromises);
+
+      await this.db.close();
       this.logger.info(msg);
-      this.db.close();
     })();
 
     return msg;
