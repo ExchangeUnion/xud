@@ -60,19 +60,19 @@ interface Parser {
 
 /** Protocol packet parser */
 class Parser extends EventEmitter {
-  private pending = '';
+  private buffer: string = '';
 
   constructor(private delimiter: string) {
     super();
   }
 
   public feed = (data: string): void => {
-    this.pending += data;
-    const index = this.pending.indexOf(this.delimiter);
+    this.buffer += data;
+    const index = this.buffer.indexOf(this.delimiter);
     if (index > -1) {
-      this.parsePacket(this.pending.slice(0, index));
-      const next = this.pending.slice(index + this.delimiter.length);
-      this.pending = '';
+      this.parsePacket(this.buffer.slice(0, index));
+      const next = this.buffer.slice(index + this.delimiter.length);
+      this.buffer = '';
       this.feed(next);
     }
   }
