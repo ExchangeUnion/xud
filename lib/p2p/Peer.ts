@@ -422,10 +422,11 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket.on('data', (data) => {
+    this.socket.on('data', (data: Buffer) => {
       this.lastRecv = Date.now();
-      this.logger.debug(`Received data (${this.id}): ${data.toString()}`);
-      this.parser.feed(data);
+      const dataStr = data.toString();
+      this.logger.debug(`Received data (${this.id}): ${dataStr}`);
+      this.parser.feed(dataStr);
     });
 
     this.socket.setNoDelay(true);

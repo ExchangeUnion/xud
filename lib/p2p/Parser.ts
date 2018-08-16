@@ -66,14 +66,14 @@ class Parser extends EventEmitter {
     super();
   }
 
-  public feed = (data: Buffer): void => {
-    this.pending += data.toString();
+  public feed = (data: string): void => {
+    this.pending += data;
     const index = this.pending.indexOf(this.delimiter);
     if (index > -1) {
       this.parsePacket(this.pending.slice(0, index));
       const next = this.pending.slice(index + this.delimiter.length);
       this.pending = '';
-      this.feed(Buffer.from(next));
+      this.feed(next);
     }
   }
 

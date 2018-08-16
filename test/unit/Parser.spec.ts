@@ -64,7 +64,7 @@ describe('Parser', () => {
         .catch(done);
 
       const packetStr = packet.toRaw();
-      parser.feed(Buffer.from(packetStr + delimiter));
+      parser.feed(packetStr + delimiter);
     });
   }
 
@@ -77,8 +77,8 @@ describe('Parser', () => {
 
       const packetStr = packet.toRaw();
       const middleIndex = packetStr.length >> 1;
-      parser.feed(Buffer.from(packetStr.slice(0, middleIndex)));
-      parser.feed(Buffer.from(packetStr.slice(middleIndex) + delimiter));
+      parser.feed(packetStr.slice(0, middleIndex));
+      parser.feed(packetStr.slice(middleIndex) + delimiter);
     });
   }
 
@@ -89,7 +89,7 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      parser.feed(Buffer.from(packets.map(packet => packet.toRaw() + delimiter).join('')));
+      parser.feed(packets.map(packet => packet.toRaw() + delimiter).join(''));
     });
   }
 
@@ -105,9 +105,9 @@ describe('Parser', () => {
         const packetStr = remaining + packet.toRaw() + delimiter;
         const chunk = packetStr.slice(0, packetStr.length - 1); // split just before the delimiter ends
         remaining = packetStr.slice(packetStr.length - 1); // keep the remaining of the delimiter for the next chunk
-        parser.feed(Buffer.from(chunk));
+        parser.feed(chunk);
       });
-      parser.feed(Buffer.from(remaining));
+      parser.feed(remaining);
     });
   }
 
