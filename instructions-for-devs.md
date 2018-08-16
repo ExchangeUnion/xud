@@ -53,6 +53,7 @@ Use `./xucli --help` to get up-to-date, optional command line arguments to overr
 Options:
   --help                 Show help                                     [boolean]
   --version              Show version number                           [boolean]
+  --initDb               Whether to initialize the db with data        [boolean]
   --xudir, -x            Data directory for xud                         [string]
   --db.database          SQL database name                              [string]
   --db.host              Hostname for SQL database                      [string]
@@ -134,6 +135,8 @@ Examples:
 This *optional* configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). All options with default values are shown below.
 
 ```toml
+initDb = true # Whether to initalize a new database with default values
+
 [rpc]
 port = 8886
 host = "localhost"

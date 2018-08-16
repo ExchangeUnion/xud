@@ -20,6 +20,7 @@ class Config {
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
   public instanceId = 0;
+  public initDb: boolean;
 
   constructor(private args?: Arguments | Object) {
     const platform = os.platform();
@@ -46,6 +47,7 @@ class Config {
     }
 
     // default configuration
+    this.initDb = true;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
