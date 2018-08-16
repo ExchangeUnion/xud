@@ -13,7 +13,7 @@ describe('Parser', () => {
 
   function wait(num: number = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      setTimeout(() => reject('timeout'), 0) // expecting results to be fulfilled synchronously
+      setTimeout(() => reject('timeout'), 0); // expecting results to be fulfilled synchronously
       const parsedPackets: Packet[] = [];
       parser.on('packet', (parsedPacket: Packet) => {
         parsedPackets.push(parsedPacket);
