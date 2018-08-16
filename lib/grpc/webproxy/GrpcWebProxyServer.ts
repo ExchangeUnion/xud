@@ -28,14 +28,24 @@ class GrpcWebProxyServer {
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
     const gateway = grpcGateway(['xudrpc.proto'], `${grpcHost}:${grpcPort}`, grpc.credentials.createInsecure(), protoPath);
     this.app.use('/api/', gateway);
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      /** A handler to handle an error while trying to begin listening. */
+      const listenErrHandler = (err: Error) => {
+        reject(err);
+      };
+
       this.server = this.app.listen(proxyPort, () => {
         this.logger.info(`gRPC Web API proxy listening on port ${proxyPort}`);
+
+        // remove listen error handler and set a general error handler
+        this.server!.removeListener('error', listenErrHandler);
+        this.server!.on('error', (err) => {
+          this.logger.error('Web proxy server Error: ' + err.message);
+        });
+
         resolve();
       });
-      this.server.on('error', (err) => {
-        this.logger.error('WebProxyServer Error: ' + err.message);
-      });
+      this.server.on('error', listenErrHandler);
     });
   }
 

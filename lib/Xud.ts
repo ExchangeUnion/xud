@@ -60,26 +60,31 @@ class Xud {
       this.db = new DB(this.config.db, loggers.db);
       await this.db.init();
 
+      const initPromises: Promise<void>[] = [];
       // setup LND clients and connect if configured
       this.lndbtcClient = new LndClient(this.config.lndbtc, loggers.lnd);
       if (!this.lndbtcClient.isDisabled()) {
-        await this.lndbtcClient.connect();
+        initPromises.push(this.lndbtcClient.connect());
       }
       this.lndltcClient = new LndClient(this.config.lndltc, loggers.lnd);
       if (!this.lndltcClient.isDisabled()) {
-        await this.lndltcClient.connect();
+        initPromises.push(this.lndltcClient.connect());
       }
 
       // setup raiden client and connect if configured
       this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden);
       if (!this.raidenClient.isDisabled()) {
-        await this.raidenClient.init();
+        initPromises.push(this.raidenClient.init());
       }
       this.pool = new Pool(this.config.p2p, loggers.p2p, this.db);
 
       this.orderBook = new OrderBook(this.logger, this.db.models, this.pool, this.lndbtcClient, this.raidenClient);
-      await this.orderBook.init();
+      initPromises.push(this.orderBook.init());
 
+      // wait for components to initialize in parallel
+      await Promise.all(initPromises);
+
+      // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init({
         version,
         pairs: this.orderBook.pairIds,
@@ -98,21 +103,27 @@ class Xud {
         shutdown: this.shutdown,
       });
 
+      // start rpc server last
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
         const listening = await this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
         if (!listening) {
-          this.logger.error('Could not start RPC server, exiting...');
+          // if rpc should be enabled but fails to start, treat it as a fatal error
+          this.logger.error('Could not start gRPC server, exiting...');
           this.shutdown();
           return;
         }
+
+        if (!this.config.webproxy.disable) {
+          this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
+          try {
+            await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
+          } catch (err) {
+            this.logger.error('Could not start gRPC web proxy server', err);
+          }
+        }
       } else {
         this.logger.warn('RPC server is disabled.');
-      }
-
-      if (!this.config.webproxy.disable) {
-        this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
-        await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
       }
     } catch (err) {
       this.logger.error(err);

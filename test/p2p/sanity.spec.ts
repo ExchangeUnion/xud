@@ -80,7 +80,6 @@ describe('P2P Sanity Tests', () => {
   });
 
   after(async () => {
-    await nodeOne.shutdown();
-    await nodeTwo.shutdown();
+    await Promise.all([nodeOne.shutdown(), nodeTwo.shutdown()]);
   });
 });
