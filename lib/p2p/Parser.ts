@@ -70,9 +70,10 @@ class Parser extends EventEmitter {
   }
 
   public feed = (data: string): void => {
-    if (Buffer.byteLength(this.buffer) + Buffer.byteLength(data) > this.maxBufferSize) {
+    const total = Buffer.byteLength(this.buffer) + Buffer.byteLength(data);
+    if (total > this.maxBufferSize) {
       this.buffer = '';
-      this.emit('error', new ParserError(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED, this.maxBufferSize.toString()));
+      this.emit('error', new ParserError(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED, total.toString()));
     }
     this.buffer += data;
     const index = this.buffer.indexOf(this.delimiter);
