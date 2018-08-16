@@ -1,5 +1,5 @@
 import assert from 'assert';
-import FastPriorityQueue from '@exchangeunion/fastpriorityqueue';
+import FastPriorityQueue from 'fastpriorityqueue';
 import { matchingEngine } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
