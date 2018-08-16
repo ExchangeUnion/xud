@@ -6,6 +6,7 @@ import Bluebird from 'bluebird';
 
 import Logger from '../Logger';
 import { db } from '../types';
+import { SwapProtocol } from '../types/enums';
 
 type SequelizeConfig = {
   host: string;
@@ -68,7 +69,8 @@ class DB {
     ]);
 
     if (newDb) {
-      // populate new databases with seed nodes
+      // populate new databases with default data
+      // TODO: make seed peers configurable
       await Node.bulkCreate(<db.NodeAttributes[]>[
         {
           nodePubKey: '02b66438730d1fcdf4a4ae5d3d73e847a272f160fee2938e132b52cab0a0d9cfc6',
@@ -82,6 +84,18 @@ class DB {
           nodePubKey: '03fd337659e99e628d0487e4f87acf93e353db06f754dccc402f2de1b857a319d0',
           addresses: [{ host: 'xud3.test.exchangeunion.com', port: 8885 }],
         },
+      ]);
+
+      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
+        { id: 'BTC' },
+        { id: 'LTC' },
+        { id: 'ZRX' },
+        { id: 'GNT' },
+      ]);
+
+      await Pair.bulkCreate(<db.PairAttributes[]>[
+        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+        { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
       ]);
     }
   }

@@ -10,7 +10,6 @@
   "scripts": {
     "compile": "cross-os precompile && tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
-    "db:init": "gulp db.init",
     "dev": "npm run compile && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",

@@ -4,6 +4,11 @@ const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
+    initDb: {
+      describe: 'Whether to initialize the db with data',
+      type: 'boolean',
+      default: undefined,
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
