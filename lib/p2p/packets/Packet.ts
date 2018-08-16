@@ -11,7 +11,6 @@ type PacketHeader = {
   type?: PacketType;
   /** The Base64 encoded MD5 hash of the body of the packet, to be used for error checking. */
   hash?: string;
-  /** The Base64 encoded MD5 hash of the body of the packet, to be used for error checking. */
 };
 
 interface PacketInterface {
