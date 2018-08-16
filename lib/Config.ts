@@ -91,7 +91,7 @@ class Config {
     };
   }
 
-  public async load() {
+  public load() {
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(`${this.xudir}xud.conf`)) {

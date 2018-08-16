@@ -152,7 +152,7 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Execute an atomic swap. Demonstration and testing purposes only.
+   * Execute an atomic swap
    */
   public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
     return this.raidenClient.tokenSwap(target_address, payload);
@@ -170,8 +170,8 @@ class Service extends EventEmitter {
     info.numPeers = this.pool.peerCount;
     info.numPairs = pairIds.length;
 
-    let peerOrdersCount: number = 0;
-    let ownOrdersCount: number = 0;
+    let peerOrdersCount = 0;
+    let ownOrdersCount = 0;
     pairIds.forEach((pairId) => {
       const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
       const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
@@ -267,11 +267,9 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to executed swaps.
+   * Subscribe to executed swaps
    */
-  public subscribeSwaps = async (callback: Function) => {
-    this.raidenClient.on('swap', order => callback(order));
-  }
+  public subscribeSwaps = async (_callback: Function) => {};
 }
 
 export default Service;

@@ -83,7 +83,7 @@ class Logger {
     });
   }
 
-  public static createLoggers = (instanceId: number = 0): Loggers => {
+  public static createLoggers = (instanceId = 0): Loggers => {
     return {
       global: new Logger({ instanceId, context: Context.GLOBAL }),
       db: new Logger({ instanceId, context: Context.DB }),

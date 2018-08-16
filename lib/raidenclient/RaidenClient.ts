@@ -11,7 +11,7 @@ import { StampedOrder } from '../types/orders';
 async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
   res.setEncoding('utf8');
   return new Promise<T>((resolve, reject) => {
-    let body: string = '';
+    let body = '';
     res.on('data', (chunk) => {
       body += chunk;
     });
