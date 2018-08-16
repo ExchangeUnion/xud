@@ -1,6 +1,5 @@
 import { expect } from 'chai';
-import Peer from '../../lib/p2p/Peer';
-import Parser from '../../lib/p2p/Parser';
+import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
 import { PingPacket, HelloPacket } from '../../lib/p2p/packets/types';
 import { Packet } from '../../lib/p2p/packets';
 
@@ -12,15 +11,9 @@ describe('Parser', () => {
     parser = new Parser(delimiter);
   });
 
-  function waitOne(): Promise<Packet> {
+  function wait(num: number = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      parser.once('packet', resolve);
-      parser.once('error', reject);
-    });
-  }
-
-  function waitMany(num: number): Promise<Packet[]> {
-    return new Promise((resolve, reject) => {
+      setTimeout(() => reject('timeout'), 0) // expecting results to be fulfilled synchronously
       const parsedPackets: Packet[] = [];
       parser.on('packet', (parsedPacket: Packet) => {
         parsedPackets.push(parsedPacket);
@@ -32,20 +25,9 @@ describe('Parser', () => {
     });
   }
 
-  function verifyParsingOne(packet: Packet): Promise<Packet[]> {
+  function verify(packets: Packet[]): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      waitOne()
-        .then((parsedPacket) => {
-          expect(packet).to.deep.equal(parsedPacket);
-          resolve();
-        })
-        .catch(err => reject(err));
-    });
-  }
-
-  function verifyParsingMany(packets: Packet[]): Promise<Packet[]> {
-    return new Promise((resolve, reject) => {
-      waitMany(packets.length)
+      wait(packets.length)
         .then((parsedPackets) => {
           for (let i = 0; i <= packets.length; i += 1) {
             expect(packets[i]).to.deep.equal(parsedPackets[i]);
@@ -58,8 +40,7 @@ describe('Parser', () => {
 
   function testPacket(packet: Packet) {
     it(`should parse ${packet.type}`, (done) => {
-
-      verifyParsingOne(packet)
+      verify([packet])
         .then(done)
         .catch(done);
 
@@ -70,8 +51,7 @@ describe('Parser', () => {
 
   function testSplitPacket(packet: Packet) {
     it(`should parse ${packet.type} split`, (done) => {
-
-      verifyParsingOne(packet)
+      verify([packet])
         .then(done)
         .catch(done);
 
@@ -84,8 +64,7 @@ describe('Parser', () => {
 
   function testConcatenatedPackets(packets: Packet[]) {
     it(`should parse ${packets.map(packet => packet.type).join(' ')} concatenated`, (done) => {
-
-      verifyParsingMany(packets)
+      verify(packets)
         .then(done)
         .catch(done);
 
@@ -95,8 +74,7 @@ describe('Parser', () => {
 
   function testConcatenatedAndSplitOnTheDelimiter(packets: Packet[]) {
     it(`should parse ${packets.map(packet => packet.type).join(' ')} concatenated and split on the delimiter`, (done) => {
-
-      verifyParsingMany(packets)
+      verify(packets)
         .then(done)
         .catch(done);
 
@@ -122,12 +100,54 @@ describe('Parser', () => {
 
   testPacket(pingPacket);
   testPacket(helloPacket);
-
   testSplitPacket(pingPacket);
   testSplitPacket(helloPacket);
-
   testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
-
   testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
 
+  it(`should not try to parse an empty string`, (done) => {
+    wait()
+      .then(() => expect.fail())
+      .catch((err) => {
+        expect(err).to.equal('timeout');
+        done();
+      });
+
+    parser.feed('');
+  });
+
+  it(`should try parse a standalone delimiter and fail`, (done) => {
+    wait()
+      .then(() => expect.fail())
+      .catch((err) => {
+        expect(err.type).to.equal(ParserErrorType.UNPARSEABLE_MESSAGE);
+        done();
+      });
+
+    parser.feed(delimiter);
+  });
+
+  it(`should buffer a max buffer length`, (done) => {
+    parser = new Parser(delimiter, 10);
+    wait()
+      .then(() => expect.fail())
+      .catch((err) => {
+        expect(err).to.equal('timeout');
+        done();
+      });
+
+    parser.feed(Buffer.allocUnsafe(10).toString());
+  });
+
+  it(`should not buffer when max buffer size exceeds`, (done) => {
+    parser = new Parser(delimiter, 10);
+    wait()
+      .then(() => expect.fail())
+      .catch((err) => {
+        expect(err.type).to.equal(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED);
+        done();
+      });
+
+    parser.feed(Buffer.allocUnsafe(11).toString());
+  });
 });

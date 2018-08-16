@@ -11,6 +11,7 @@ enum ParserErrorType {
   INVALID_MESSAGE,
   UNKNOWN_PACKET_TYPE,
   UNPARSEABLE_MESSAGE,
+  MAX_BUFFER_SIZE_EXCEEDED,
 }
 
 const fromRaw = (raw: string): Packet => {
@@ -62,11 +63,17 @@ interface Parser {
 class Parser extends EventEmitter {
   private buffer: string = '';
 
-  constructor(private delimiter: string) {
+  private static MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
+
+  constructor(private delimiter: string, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
     super();
   }
 
   public feed = (data: string): void => {
+    if (Buffer.byteLength(this.buffer) + Buffer.byteLength(data) > this.maxBufferSize) {
+      this.buffer = '';
+      this.emit('error', new ParserError(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED, this.maxBufferSize.toString()));
+    }
     this.buffer += data;
     const index = this.buffer.indexOf(this.delimiter);
     if (index > -1) {
