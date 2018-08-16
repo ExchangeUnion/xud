@@ -161,9 +161,9 @@ class MatchingEngine {
   /**
    * Remove all orders from the queue matching the given peer id.
    */
-  public removePeerOrders = (peerId: string): StampedPeerOrder[] => {
+  public removePeerOrders = (peerPubKey: string): StampedPeerOrder[] => {
     const callback = (order: StampedOrder) => {
-      return (order as StampedPeerOrder).peerId === peerId;
+      return (order as StampedPeerOrder).peerPubKey === peerPubKey;
     };
 
     return [

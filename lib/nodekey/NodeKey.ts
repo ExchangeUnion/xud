@@ -57,7 +57,7 @@ class NodeKey {
   /**
    * Load a node key from a file or create one if none exists. See [[fromFile]] and [[generate]].
    */
-  public static load = (xudir: string, instanceId: number): NodeKey => {
+  public static load = (xudir: string, instanceId = 0): NodeKey => {
     const path: string = instanceId > 0
       ? `${xudir}/nodekey_${instanceId}.dat`
       : `${xudir}/nodekey.dat`;

@@ -1,9 +1,9 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-class GetHostsPacket extends Packet<undefined> {
+class GetNodesPacket extends Packet<undefined> {
   public get type() {
-    return PacketType.GET_HOSTS;
+    return PacketType.GET_NODES;
   }
 
   public get direction() {
@@ -11,4 +11,4 @@ class GetHostsPacket extends Packet<undefined> {
   }
 }
 
-export default GetHostsPacket;
+export default GetNodesPacket;

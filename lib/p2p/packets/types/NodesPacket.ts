@@ -1,10 +1,10 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { HostFactory } from '../../../types/db';
+import { NodeConnectionInfo } from '../../../types/p2p';
 
-class HostsPacket extends Packet<HostFactory[]> {
+class NodesPacket extends Packet<NodeConnectionInfo[]> {
   public get type() {
-    return PacketType.HOSTS;
+    return PacketType.NODES;
   }
 
   public get direction() {
@@ -12,4 +12,4 @@ class HostsPacket extends Packet<HostFactory[]> {
   }
 }
 
-export default HostsPacket;
+export default NodesPacket;

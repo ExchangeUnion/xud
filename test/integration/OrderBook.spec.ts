@@ -8,6 +8,7 @@ import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import Logger from '../../lib/Logger';
 import { orders } from '../../lib/types';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -20,14 +21,17 @@ describe('OrderBook', () => {
     const loggers = Logger.createLoggers();
 
     db = new DB(config.testDb, loggers.db);
+
+    const nodeKey = NodeKey.load(config.xudir);
+
     await db.init();
     await db.truncate();
 
     orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
     const p2pRepository = new P2PRepository(loggers.p2p, db);
 
-    await p2pRepository.addHost(
-      { address: '127.0.0.1', port: 8885 },
+    await p2pRepository.addNode(
+      { nodePubKey: nodeKey.nodePubKey, addresses: [] },
     );
     await orderBookRepository.addCurrencies([
       { id: 'BTC' },

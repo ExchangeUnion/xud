@@ -17,6 +17,10 @@ const { argv } = require('yargs')
       describe: 'Hostname for SQL database',
       type: 'string',
     },
+    'db.password': {
+      describe: 'Password for SQL database',
+      type: 'string',
+    },
     'db.port': {
       describe: 'Port for SQL database',
       type: 'number',
@@ -66,6 +70,10 @@ const { argv } = require('yargs')
     'lndltc.port': {
       describe: 'Port of the lndLtc gRPC interface',
       type: 'number',
+    },
+    'p2p.addresses': {
+      describe: 'String array of reachable addresses',
+      type: 'array',
     },
     'p2p.listen': {
       describe: 'Listen for incoming peers',

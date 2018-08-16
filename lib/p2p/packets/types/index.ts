@@ -5,5 +5,5 @@ export { default as PongPacket } from './PongPacket';
 export { default as GetOrdersPacket } from './GetOrdersPacket';
 export { default as OrdersPacket } from './OrdersPacket';
 export { default as OrderInvalidationPacket } from './OrderInvalidationPacket';
-export { default as GetHostsPacket } from './GetHostsPacket';
-export { default as HostsPacket } from './HostsPacket';
+export { default as GetNodesPacket } from './GetNodesPacket';
+export { default as NodesPacket } from './NodesPacket';
