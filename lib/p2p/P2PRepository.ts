@@ -13,7 +13,7 @@ class P2PRepository {
     return this.models.Node.findAll();
   }
 
-  public addNode = async (node: db.NodeFactory) => {
+  public addNode = (node: db.NodeFactory) => {
     return this.models.Node.create(<db.NodeAttributes>node);
   }
 
@@ -22,7 +22,7 @@ class P2PRepository {
   }
 
   public updateNode = async (node: db.NodeInstance) => {
-    return this.models.Node.update(node);
+    return node.save();
   }
 }
 

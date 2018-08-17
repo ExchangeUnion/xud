@@ -1,6 +1,6 @@
 import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
-import { NodeConnectionInfo } from '../types/p2p';
+import { NodeConnectionInfo, Address } from '../types/p2p';
 
 /** Represents a list of nodes for managing network peers activity */
 class NodeList {
@@ -46,8 +46,8 @@ class NodeList {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       node.banned = true;
-      const updatedNodes = await this.repository.updateNode(node);
-      return updatedNodes.length > 0;
+      await this.repository.updateNode(node);
+      return true;
     }
     return false;
   }
@@ -75,6 +75,21 @@ class NodeList {
     const node = await this.repository.addNode(nodeFactory);
     this.nodes.set(node.nodePubKey, node);
     return node;
+  }
+
+  /**
+   * Update a node's addresses.
+   * @return true if the specified node exists and was updated, false otherwise
+   */
+  public updateAddresses = async (nodePubKey: string, addresses: Address[] = []) => {
+    const node = this.nodes.get(nodePubKey);
+    if (node) {
+      node.addresses = addresses;
+      await this.repository.updateNode(node);
+      return true;
+    }
+
+    return false;
   }
 }
 

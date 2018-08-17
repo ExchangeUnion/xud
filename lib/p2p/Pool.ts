@@ -279,6 +279,9 @@ class Pool extends EventEmitter {
           nodePubKey: peer.nodePubKey!,
           addresses: peer.addresses!,
         });
+      } else {
+        // the node is known, update its listening addresses
+        await this.nodes.updateAddresses(peer.nodePubKey!, peer.addresses);
       }
     }
   }
