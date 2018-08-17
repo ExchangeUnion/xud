@@ -1,16 +1,15 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import Host from './Host';
-import SocketAddress from './SocketAddress';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
-import { HostFactory } from '../types/db';
-import { HandshakeState } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import errors from './errors';
+import addressUtils from '../utils/addressUtils';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -27,12 +26,12 @@ interface Peer {
   on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  once(event: 'open', listener: (handshakeState: HandshakeState) => void): this;
+  once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'ban', listener: () => void): this;
   emit(event: 'connect'): boolean;
   emit(event: 'ban'): boolean;
-  emit(event: 'open', handshakeState: HandshakeState): boolean;
+  emit(event: 'open'): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
@@ -41,27 +40,26 @@ interface Peer {
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   // TODO: properties documentation
-  public socketAddress!: SocketAddress;
+  public socketAddress!: Address;
   public inbound!: boolean;
-  public connected: boolean = false;
-  private host?: Host;
-  private opened: boolean = false;
+  public connected = false;
+  private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
-  private closed: boolean = false;
+  private closed = false;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
-  private banScore: number = 0;
-  private lastRecv: number = 0;
-  private lastSend: number = 0;
+  private banScore = 0;
+  private lastRecv = 0;
+  private lastSend = 0;
   private handshakeState?: HandshakeState;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   /** Interval to check required responses from peer. */
-  private static STALL_INTERVAL: number = 5000;
+  private static STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static PING_INTERVAL = 30000;
   /** Socket connection timeout for outbound peers. */
@@ -69,30 +67,17 @@ class Peer extends EventEmitter {
   /** Response timeout for response packets. */
   private static RESPONSE_TIMEOUT = 10000;
 
-  public get id(): string {
-    assert(this.socketAddress);
-    return this.socketAddress.toString();
-  }
-
-  public get hostId(): number | null {
-    if (this.host) {
-      return this.host.id;
-    } else {
-      return null;
-    }
-  }
-
   public get nodePubKey(): string | undefined {
-    if (this.handshakeState) {
-      return this.handshakeState.nodePubKey;
-    } else {
-      return undefined;
-    }
+    return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
+  }
+
+  public get addresses(): Address[] | undefined {
+    return this.handshakeState ? this.handshakeState.addresses : undefined;
   }
 
   public get info(): PeerInfo {
     return {
-      address: this.id,
+      address: addressUtils.toString(this.socketAddress),
       nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
       inbound: this.inbound,
       pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
@@ -107,9 +92,10 @@ class Peer extends EventEmitter {
     this.bindParser(this.parser);
   }
 
-  public static fromOutbound(socketAddress: SocketAddress, logger: Logger): Peer {
+  /** Create an outbound connection to a node. */
+  public static fromOutbound(address: Address, logger: Logger): Peer {
     const peer = new Peer(logger);
-    peer.connect(socketAddress);
+    peer.connect(address);
     return peer;
   }
 
@@ -120,24 +106,43 @@ class Peer extends EventEmitter {
   }
 
   public getStatus = (): string => {
+    let status: string;
     if (this.connected) {
-      return `Connected to peer (${this.id})`;
+      status = this.nodePubKey ?
+        `Connected to peer ${this.nodePubKey}` :
+        `Connected pre-handshake to peer ${addressUtils.toString(this.socketAddress)}`;
     } else {
-      return 'Not connected';
+      status = 'Not connected';
     }
+    return status;
   }
 
-  public open = async (handshakeData: HandshakeState): Promise<void> => {
+  /**
+   * Prepare a connection for use by ensuring it is active, exchanging [[HelloPacket]] with handshake data,
+   * and emit the `open` event if everything succeeds. Throw an error on unexpected handshake data.
+   * @param handshakeData our handshake data to send to the peer
+   * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
+   */
+  public open = async (handshakeData: HandshakeState, nodePubKey?: string): Promise<void> => {
     assert(!this.opened);
+    assert(!this.closed);
+
     this.opened = true;
 
     await this.initConnection();
     this.initStall();
     await this.initHello(handshakeData);
+
+    // TODO: Check that the peer's version is compatible with ours
+    if (nodePubKey && this.nodePubKey !== nodePubKey) {
+      this.close();
+      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.socketAddress));
+    }
+
     this.finalizeOpen();
 
     // let the pool know that this peer is ready to go
-    this.emit('open', this.handshakeState!);
+    this.emit('open');
   }
 
   /**
@@ -181,10 +186,6 @@ class Peer extends EventEmitter {
     this.emit('close');
   }
 
-  public setHost = (host: Host): void => {
-    this.host = host;
-  }
-
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
     this.packetCount += 1;
@@ -199,8 +200,8 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
-  public sendHosts = (hosts: HostFactory[], reqId: string): void => {
-    const packet = new packets.HostsPacket(hosts, reqId);
+  public sendNodes = (nodes: NodeConnectionInfo[], reqId: string): void => {
+    const packet = new packets.NodesPacket(nodes, reqId);
     this.sendPacket(packet);
   }
 
@@ -215,7 +216,7 @@ class Peer extends EventEmitter {
     this.banScore += score;
 
     if (this.banScore >= 100) { // TODO: make configurable
-      this.logger.debug(`Ban threshold exceeded (${this.id})`);
+      this.logger.debug(`Ban threshold exceeded (${this.nodePubKey})`);
       this.emit('ban');
       return true;
     }
@@ -223,6 +224,10 @@ class Peer extends EventEmitter {
     return false;
   }
 
+  /**
+   * Ensure we are connected (for inbound connections) or listen for the `connect` socket event (for outbound connections)
+   * and set the [[connectTime]] timestamp. If an outbound connection attempt errors or times out, throw an error.
+   */
   private initConnection = (): Promise<void> => {
     assert(this.socket);
 
@@ -318,7 +323,7 @@ class Peer extends EventEmitter {
 
     for (const [packetType, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.error(`Peer (${this.id}) is stalling (${packetType})`);
+        this.error(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
         this.close();
         return;
       }
@@ -357,7 +362,7 @@ class Peer extends EventEmitter {
   private fulfillResponseEntry = (packet: Packet): boolean => {
     const { reqId } = packet.header;
     if (!reqId) {
-      this.logger.debug(`Peer (${this.id}) sent a response packet without reqId`);
+      this.logger.debug(`Peer (${this.nodePubKey}) sent a response packet without reqId`);
       // TODO: penalize
       return false;
     }
@@ -365,7 +370,7 @@ class Peer extends EventEmitter {
     const entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      this.logger.debug(`Peer (${this.id}) sent an unsolicited response packet (${reqId})`);
+      this.logger.debug(`Peer (${this.nodePubKey}) sent an unsolicited response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
@@ -376,12 +381,12 @@ class Peer extends EventEmitter {
     return true;
   }
 
-  private connect = (socketAddress: SocketAddress): void => {
+  private connect = (address: Address): void => {
     assert(!this.socket);
 
-    const socket = net.connect(socketAddress.port, socketAddress.address);
+    const socket = net.connect(address.port, address.host);
 
-    this.socketAddress = socketAddress;
+    this.socketAddress = address;
     this.inbound = false;
     this.connected = false;
 
@@ -391,7 +396,7 @@ class Peer extends EventEmitter {
   private accept = (socket: Socket): void => {
     assert(!this.socket);
 
-    this.socketAddress = SocketAddress.fromSocket(socket);
+    this.socketAddress = addressUtils.fromSocket(socket);
     this.inbound = true;
     this.connected = true;
 
@@ -414,18 +419,27 @@ class Peer extends EventEmitter {
 
     this.socket.once('close', (hadError) => {
       // emitted once the socket is fully closed
-      if (hadError) {
-        this.logger.warn(`Socket closed due to error (${this.id})`);
-      } else {
-        this.logger.info(`Socket closed (${this.id})`);
+      if (this.connected) {
+        // don't log anything on close if we've never connected as the connection failure is logged elsewhere
+        if (this.nodePubKey === undefined) {
+          this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.socketAddress)})`);
+        } else if (hadError) {
+          this.logger.warn(`Peer ${this.nodePubKey} socket closed due to error`);
+        } else {
+          this.logger.info(`Peer ${this.nodePubKey} socket closed`);
+        }
       }
       this.close();
     });
 
-    this.socket.on('data', (data: Buffer) => {
+    this.socket.on('data', (data) => {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
-      this.logger.debug(`Received data (${this.id}): ${dataStr}`);
+      if (this.nodePubKey !== undefined) {
+        this.logger.debug(`Received data (${this.nodePubKey}): ${dataStr}`);
+      } else {
+        this.logger.debug(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
+      }
       this.parser.feed(dataStr);
     });
 
@@ -513,7 +527,7 @@ class Peer extends EventEmitter {
     const entry = this.responseMap.get(PacketType.HELLO);
 
     if (!entry) {
-      this.logger.debug(`Peer (${this.id}) sent an unsolicited Hello packet`);
+      this.logger.debug(`Peer (${this.nodePubKey}) sent an unsolicited Hello packet`);
       // TODO: penalize
     } else {
       this.responseMap.delete(PacketType.HELLO);
@@ -546,7 +560,7 @@ class Peer extends EventEmitter {
 
 /** A class representing a wait for an anticipated response packet from a peer. */
 class PendingResponseEntry {
-  public timeout: number = 0;
+  public timeout = 0;
   /** An array of tasks to resolve or reject. */
   public jobs: Job[] = [];
 

@@ -50,9 +50,9 @@ abstract class Packet<T = any> implements PacketInterface {
   constructor(packet: PacketInterface);
 
   /**
-  * Create a packet from a packet body.
-  * @param reqId the id of the requesting packet to set on the header if this packet is a response
-  */
+   * Create a packet from a packet body.
+   * @param reqId the id of the requesting packet to set on the header if this packet is a response
+   */
   constructor(body?: T, reqId?: string);
 
   constructor(bodyOrPacket?: T | PacketInterface, reqId?: string) {

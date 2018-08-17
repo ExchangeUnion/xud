@@ -6,8 +6,8 @@ enum PacketType {
   ORDER_INVALIDATION = 'ORDER_INVALIDATION',
   GET_ORDERS = 'GET_ORDERS',
   ORDERS = 'ORDERS',
-  GET_HOSTS = 'GET_HOSTS',
-  HOSTS = 'HOSTS',
+  GET_NODES = 'GET_NODES',
+  NODES = 'NODES',
 }
 
 export default PacketType;

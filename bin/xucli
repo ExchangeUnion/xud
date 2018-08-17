@@ -18,7 +18,7 @@ require('yargs')
       type: 'string',
     },
   })
-  .commandDir('../dist/cli/commands')
+  .commandDir('../dist/cli/commands/', { recurse: true })
   .demandCommand(1, '')
   .strict()
   .argv; // we must read the argv property for the command line args to initialize properly

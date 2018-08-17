@@ -1,6 +1,8 @@
-import { expect } from 'chai';
+import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
-import { errorCodes } from '../../lib/p2p/errors';
+import chaiAsPromised from 'chai-as-promised';
+
+chai.use(chaiAsPromised);
 
 const createConfig = (instanceId: number, p2pPort: number) => ({
   instanceId,
@@ -34,33 +36,50 @@ describe('P2P Sanity Tests', () => {
   before(async () => {
     nodeOneConfig = createConfig(1, 9001);
     nodeOne = new Xud(nodeOneConfig);
-    await nodeOne.start();
 
-    nodeTwoConfig = createConfig(2, 9001);
+    nodeTwoConfig = createConfig(2, 9002);
     nodeTwo = new Xud(nodeTwoConfig);
-    await nodeTwo.start();
+
+    await Promise.all([nodeTwo.start(), nodeOne.start()]);
   });
 
   it('should connect successfully', async () => {
-    const result = await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port });
-    expect(result).to.be.equal(`Connected to peer (localhost:${nodeTwoConfig.p2p.port})`);
+    const result = await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port, nodePubKey: nodeTwo.nodePubKey });
+    expect(result).to.be.equal(`Connected to peer ${nodeTwo.nodePubKey}`);
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult.length).to.equal(1);
   });
 
-  it('should fail connecting to the same address', async () => {
-    try {
-      await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port });
-    } catch (err) {
-      expect(err.code).to.be.equal(errorCodes.ADDRESS_ALREADY_CONNECTED);
-    }
+  it('should fail connecting to the same node', async () => {
+    expect(nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port, nodePubKey: nodeTwo.nodePubKey }))
+    .to.be.rejectedWith('already connected');
   });
 
-  it('should fail connecting to a non-existing nodenode', async () => {
-    const result = await nodeOne.service.connect({ host:'localhost', port: 9002 });
+  it('should disconnect successfully', async () => {
+    const result = await nodeOne.service.disconnect({ nodePubKey: nodeTwo.nodePubKey });
+    expect(result).to.be.equal(`success`);
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult.length).to.equal(0);
+  });
+
+  it('should fail when connecting to an unexpected node pub key', async () => {
+    const result = await nodeOne.service.connect({ host: 'localhost', port: nodeTwoConfig.p2p.port, nodePubKey: 'thewrongpubkey' });
+    expect(result).to.be.equal('Not connected');
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult.length).to.equal(0);
+  });
+
+  it('should fail when connecting to self', async () => {
+    expect(nodeOne.service.connect({ host: 'localhost', port: nodeOneConfig.p2p.port, nodePubKey: nodeOne.nodePubKey }))
+    .to.be.rejectedWith('Cannot attempt connection to self');
+  });
+
+  it('should fail connecting to a non-existing node', async () => {
+    const result = await nodeOne.service.connect({ host:'localhost', port: 9003, nodePubKey: 'notarealnodepubkey' });
     expect(result).to.be.equal('Not connected');
   });
 
   after(async () => {
-    await nodeOne.shutdown();
-    await nodeTwo.shutdown();
+    await Promise.all([nodeOne.shutdown(), nodeTwo.shutdown()]);
   });
 });

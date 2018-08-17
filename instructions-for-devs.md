@@ -53,9 +53,11 @@ Use `./xucli --help` to get up-to-date, optional command line arguments to overr
 Options:
   --help                 Show help                                     [boolean]
   --version              Show version number                           [boolean]
+  --initDb               Whether to initialize the db with data        [boolean]
   --xudir, -x            Data directory for xud                         [string]
   --db.database          SQL database name                              [string]
   --db.host              Hostname for SQL database                      [string]
+  --db.password          Password for SQL database                      [string]
   --db.port              Port for SQL database                          [number]
   --db.username          User for SQL database                          [string]
   --lndbtc.certpath      Path to the SSL certificate for lndBtc         [string]
@@ -68,6 +70,7 @@ Options:
   --lndltc.host          Host of the lndLtc gRPC interface              [string]
   --lndltc.macaroonpath  Path of the admin macaroon for lndLtc          [string]
   --lndltc.port          Port of the lndLtc gRPC interface              [number]
+  --p2p.addresses        String array of reachable addresses             [array]
   --p2p.listen           Listen for incoming peers                     [boolean]
   --p2p.port, -p         Port to listen for incoming peers              [number]
   --raiden.disable       Disable raiden integration                    [boolean]
@@ -88,18 +91,20 @@ xucli <command>
 
 Commands:
   xucli cancelorder <pair_id> <order_id>    cancel an order
-  xucli connect <host> [port]               connect to an xu node
-  xucli disconnect <host> [port]            disconnect from an xu node
+  xucli connect <node_pub_key> <host>       connect to an xu node
+  [port]
+  xucli disconnect <node_pub_key>           disconnect from an xu node
   xucli executeSwap <identifier> <role>     execute an atomic swap
   <sending_amount> <sending_token>
   <receiving_amount> <receiving_token>
   xucli getinfo                             get general info from the xud node
-  xucli getorders [pair_id] [max_results]   get orders from the order book
+  xucli getorders <pair_id> [max_results]   get orders from the order book
   xucli getpairs                            get order book's available pairs
-  xucli placeorder <pair_id> <order_id>     place an order
-  <quantity> [price]
+  xucli listpeers                           list connected peers
+  xucli placeorder <pair_id> <order_id>     place an order, if price is 0 or
+  <quantity> [price]                        unspecified a market order is placed
   xucli shutdown                            gracefully shutdown the xud node
-  xucli subscribepeerorders                 subscribe to incoming peer orders
+  xucli subscribepeerorders                 subscribe to peer order events
   xucli subscribeswaps                      subscribe to executed swaps
 
 Options:
@@ -107,8 +112,6 @@ Options:
   --version       Show version number                                  [boolean]
   --rpc.port, -p  RPC service port                      [number] [default: 8886]
   --rpc.host, -h  RPC service hostname           [string] [default: "localhost"]
-
-
 ```
 
 Examples:
@@ -127,14 +130,16 @@ Examples:
 
 ```
 
-
 ## Configuration (optional)
 
-This *optional* configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). Default settings which can be overridden are shown below.
+This *optional* configuration file uses [TOML](https://github.com/toml-lang/toml) and by default should be saved at  `~/.xud/xud.conf` on Linux or `AppData\Local\Xud\xud.conf` on Windows (run `xud` at least once for this folder to be created). All options with default values are shown below.
 
 ```toml
+initDb = true # Whether to initalize a new database with default values
+
 [rpc]
 port = 8886
+host = "localhost"
 
 [webproxy]
 disable = false
@@ -149,8 +154,9 @@ host = "localhost"
 
 [p2p]
 listen = true
-port = 8885
-#make sure this port is reachable from the internet
+port = 8885 # The port to listen for incoming peer connections when listen = true
+# A string array of reachable socket addresses for this node, port defaults to p2p.port if unspecified
+addresses = [ "4.8.15.16:8885" ]
 
 [lndbtc]
 disable = false
@@ -159,6 +165,8 @@ host = "localhost"
 [lndltc]
 disable = false
 host = "localhost"
+certpath = "" # The default value is platform-specific
+macaroonpath = "" # The default value is platform-specific
 
 [raiden]
 disable = false

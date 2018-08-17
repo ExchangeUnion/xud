@@ -40,10 +40,10 @@ const fromRaw = (raw: string): Packet => {
         return new packetTypes.GetOrdersPacket(packet);
       case PacketType.ORDERS:
         return new packetTypes.OrdersPacket(packet);
-      case PacketType.GET_HOSTS:
-        return new packetTypes.GetHostsPacket(packet);
-      case PacketType.HOSTS:
-        return new packetTypes.HostsPacket(packet);
+      case PacketType.GET_NODES:
+        return new packetTypes.GetNodesPacket(packet);
+      case PacketType.NODES:
+        return new packetTypes.NodesPacket(packet);
       default:
         throw new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, packet.header.type!);
     }
@@ -61,7 +61,7 @@ interface Parser {
 
 /** Protocol packet parser */
 class Parser extends EventEmitter {
-  private buffer: string = '';
+  private buffer = '';
 
   private static MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
 

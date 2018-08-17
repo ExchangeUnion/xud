@@ -9,24 +9,20 @@ class P2PRepository {
     this.models = db.models;
   }
 
-  public getHosts = async (): Promise<db.HostInstance[]> => {
-    return this.models.Host.findAll();
+  public getNodes = async (): Promise<db.NodeInstance[]> => {
+    return this.models.Node.findAll();
   }
 
-  public getBannedHosts = async (): Promise<db.BannedHostInstance[]> => {
-    return this.models.BannedHost.findAll();
+  public addNode = async (node: db.NodeFactory) => {
+    return this.models.Node.create(<db.NodeAttributes>node);
   }
 
-  public addHost = async (host: db.HostFactory): Promise<db.HostInstance> => {
-    return this.models.Host.create(<db.HostAttributes>host);
+  public addNodes = async (nodes: db.NodeFactory[]) => {
+    return this.models.Node.bulkCreate(<db.NodeAttributes[]>nodes);
   }
 
-  public addHosts = async (hosts: db.HostFactory[]): Promise<db.HostInstance[]> => {
-    return this.models.Host.bulkCreate(<db.HostAttributes[]>hosts);
-  }
-
-  public addBannedHost = async (host: db.BannedHostFactory): Promise<db.BannedHostInstance> => {
-    return this.models.BannedHost.create(<db.BannedHostAttributes>host);
+  public updateNode = async (node: db.NodeInstance) => {
+    return this.models.Node.update(node);
   }
 }
 

@@ -11,7 +11,7 @@ describe('Parser', () => {
     parser = new Parser(delimiter);
   });
 
-  function wait(num: number = 1): Promise<Packet[]> {
+  function wait(num = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
       setTimeout(() => reject('timeout'), 0); // expecting results to be fulfilled synchronously
       const parsedPackets: Packet[] = [];
@@ -93,7 +93,7 @@ describe('Parser', () => {
   const helloPacket = new HelloPacket({
     version: '1.0.0',
     nodePubKey: '0479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F8179',
-    listenPort: 4001,
+    addresses: [{ host: '1.1.1.1', port: 8885 }],
     pairs: ['BTC/LTC'],
     raidenAddress: '8483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8',
   });

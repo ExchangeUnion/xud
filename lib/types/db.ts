@@ -1,4 +1,5 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
+import { Address } from './p2p';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
@@ -25,25 +26,18 @@ export type CurrencyAttributes = CurrencyFactory & {
 
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
-export type HostFactory = {
-  address: string;
-  port: number;
+export type NodeFactory = {
+  nodePubKey: string;
+  addresses: Address[];
 };
 
-export type HostAttributes = HostFactory & {
+export type NodeAttributes = NodeFactory & {
   id: number;
-  pubKey: string;
+  banned: boolean;
+  addressesText: string;
 };
 
-export type HostInstance = HostAttributes & Sequelize.Instance<HostAttributes>;
-
-export type BannedHostFactory = {
-  address: string;
-};
-
-export type BannedHostAttributes = BannedHostFactory;
-
-export type BannedHostInstance = HostAttributes & Sequelize.Instance<HostAttributes>;
+export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes>;
 
 export type PairFactory = {
   baseCurrency: string;

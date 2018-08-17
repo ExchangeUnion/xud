@@ -19,7 +19,8 @@ class Config {
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
-  public instanceId: any;
+  public instanceId = 0;
+  public initDb: boolean;
 
   constructor(private args?: Arguments | Object) {
     const platform = os.platform();
@@ -46,10 +47,11 @@ class Config {
     }
 
     // default configuration
-    this.instanceId = 0;
+    this.initDb = true;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
+      addresses: [],
     };
     this.db = {
       host: 'localhost',
@@ -91,7 +93,7 @@ class Config {
     };
   }
 
-  public async load() {
+  public load() {
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(`${this.xudir}xud.conf`)) {

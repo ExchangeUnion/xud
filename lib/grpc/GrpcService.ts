@@ -1,5 +1,6 @@
+/* tslint:disable no-floating-promises no-null-keyword */
+import grpc, { status } from 'grpc';
 import Logger from '../Logger';
-import grpc, { status, ServiceError } from 'grpc';
 import Service from '../service/Service';
 import { isObject } from '../utils/utils';
 import { TokenSwapPayload } from '../raidenclient/RaidenClient';
@@ -42,13 +43,14 @@ class GrpcService {
       let code: grpc.status | undefined;
       switch (err.code) {
         case serviceErrorCodes.INVALID_ARGUMENT:
+        case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
           code = status.INVALID_ARGUMENT;
           break;
         case orderErrorCodes.INVALID_PAIR_ID:
           code = status.NOT_FOUND;
           break;
         case orderErrorCodes.DUPLICATE_ORDER:
-        case p2pErrorCodes.ADDRESS_ALREADY_CONNECTED:
+        case p2pErrorCodes.NODE_ALREADY_CONNECTED:
           code = status.ALREADY_EXISTS;
           break;
         case p2pErrorCodes.NOT_CONNECTED:

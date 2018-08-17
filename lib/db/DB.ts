@@ -6,6 +6,7 @@ import Bluebird from 'bluebird';
 
 import Logger from '../Logger';
 import { db } from '../types';
+import { SwapProtocol } from '../types/enums';
 
 type SequelizeConfig = {
   host: string;
@@ -20,8 +21,7 @@ type DBConfig = SequelizeConfig & {
 };
 
 type Models = {
-  Host: Sequelize.Model<db.HostInstance, db.HostAttributes>;
-  BannedHost: Sequelize.Model<db.BannedHostInstance, db.BannedHostAttributes>;
+  Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
@@ -57,12 +57,11 @@ class DB {
         throw err;
       }
     }
-    const { Host, BannedHost, Currency, Pair } = this.models;
+    const { Node, Currency, Pair } = this.models;
     const options = { logging: this.logger.verbose };
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Host.sync(options),
-      BannedHost.sync(options),
+      Node.sync(options),
       Currency.sync(options),
     ]);
     await Promise.all([
@@ -70,11 +69,33 @@ class DB {
     ]);
 
     if (newDb) {
-      // populate new databases with seed nodes
-      await Host.bulkCreate(<db.HostAttributes[]>[
-        { address: 'xud1.test.exchangeunion.com', port: 8885 },
-        { address: 'xud2.test.exchangeunion.com', port: 8885 },
-        { address: 'xud3.test.exchangeunion.com', port: 8885 },
+      // populate new databases with default data
+      // TODO: make seed peers configurable
+      await Node.bulkCreate(<db.NodeAttributes[]>[
+        {
+          nodePubKey: '02b66438730d1fcdf4a4ae5d3d73e847a272f160fee2938e132b52cab0a0d9cfc6',
+          addresses: [{ host: 'xud1.test.exchangeunion.com', port: 8885 }],
+        },
+        {
+          nodePubKey: '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0a',
+          addresses: [{ host: 'xud2.test.exchangeunion.com', port: 8885 }],
+        },
+        {
+          nodePubKey: '03fd337659e99e628d0487e4f87acf93e353db06f754dccc402f2de1b857a319d0',
+          addresses: [{ host: 'xud3.test.exchangeunion.com', port: 8885 }],
+        },
+      ]);
+
+      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
+        { id: 'BTC' },
+        { id: 'LTC' },
+        { id: 'ZRX' },
+        { id: 'GNT' },
+      ]);
+
+      await Pair.bulkCreate(<db.PairAttributes[]>[
+        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+        { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
       ]);
     }
   }
@@ -93,8 +114,7 @@ class DB {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
-      await this.sequelize.query('truncate table hosts', options);
-      await this.sequelize.query('truncate table bannedHosts', options);
+      await this.sequelize.query('truncate table nodes', options);
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', options);
     });
   }

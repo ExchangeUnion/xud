@@ -1,14 +1,14 @@
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
-import OrderBook, { OrderArrays } from '../orderbook/OrderBook';
+import OrderBook from '../orderbook/OrderBook';
 import LndClient from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
-import SocketAddress from '../p2p/SocketAddress';
 import errors from './errors';
 import lndErrors from '../lndclient/errors';
+import { Address } from '../types/p2p';
 
 /**
  * The components required by the API service layer.
@@ -28,17 +28,20 @@ export type ServiceComponents = {
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
-  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
-  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_HOST: ({ host }: { host: string }) => { if (host === '') throw errors.INVALID_ARGUMENT('host must be specified'); },
-  VALID_PORT: ({ port }: { port: number }) => {
-    if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+  HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
+  HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
+    if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
+  HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   MAX_RESULTS_NOT_NEGATIVE: ({ maxResults }: { maxResults: number }) => {
     if (maxResults < 0) throw errors.INVALID_ARGUMENT('maxResults cannot be negative');
   },
   NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+  VALID_PORT: ({ port }: { port: number }) => {
+    if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+  },
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -129,29 +132,27 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given host and port.
    */
-  public connect = async (args: { host: string, port: number }) => {
-    const { host, port } = args;
+  public connect = async (args: Address & { nodePubKey: string }) => {
+    const { host, port, nodePubKey } = args;
+    argChecks.HAS_NODE_PUB_KEY(args);
     argChecks.HAS_HOST(args);
     argChecks.VALID_PORT(args);
-
-    const peer = await this.pool.addOutbound(new SocketAddress(host, port));
+    const peer = await this.pool.addOutbound({ host, port }, nodePubKey);
     return peer.getStatus();
   }
 
   /*
    * Disconnect from a connected peer XU node on a given host and port.
    */
-  public disconnect = async (args: { host: string, port: number}) => {
-    const { host, port } = args;
-    argChecks.HAS_HOST(args);
-    argChecks.VALID_PORT(args);
-
-    await this.pool.closePeer(host, port);
-    return `disconnected from ${host}:${port}`;
+  public disconnect = async (args: { nodePubKey: string }) => {
+    const { nodePubKey } = args;
+    argChecks.HAS_NODE_PUB_KEY(args);
+    await this.pool.closePeer(nodePubKey);
+    return 'success';
   }
 
   /**
-   * Execute an atomic swap. Demonstration and testing purposes only.
+   * Execute an atomic swap
    */
   public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
     return this.raidenClient.tokenSwap(target_address, payload);
@@ -169,8 +170,8 @@ class Service extends EventEmitter {
     info.numPeers = this.pool.peerCount;
     info.numPairs = pairIds.length;
 
-    let peerOrdersCount: number = 0;
-    let ownOrdersCount: number = 0;
+    let peerOrdersCount = 0;
+    let ownOrdersCount = 0;
     pairIds.forEach((pairId) => {
       const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
       const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
@@ -266,11 +267,9 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to executed swaps.
+   * Subscribe to executed swaps
    */
-  public subscribeSwaps = async (callback: Function) => {
-    this.raidenClient.on('swap', order => callback(order));
-  }
+  public subscribeSwaps = async (_callback: Function) => {};
 }
 
 export default Service;

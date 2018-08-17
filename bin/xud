@@ -4,6 +4,11 @@ const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
+    initDb: {
+      describe: 'Whether to initialize the db with data',
+      type: 'boolean',
+      default: undefined,
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
@@ -15,6 +20,10 @@ const { argv } = require('yargs')
     },
     'db.host': {
       describe: 'Hostname for SQL database',
+      type: 'string',
+    },
+    'db.password': {
+      describe: 'Password for SQL database',
       type: 'string',
     },
     'db.port': {
@@ -66,6 +75,10 @@ const { argv } = require('yargs')
     'lndltc.port': {
       describe: 'Port of the lndLtc gRPC interface',
       type: 'number',
+    },
+    'p2p.addresses': {
+      describe: 'String array of reachable addresses',
+      type: 'array',
     },
     'p2p.listen': {
       describe: 'Listen for incoming peers',
