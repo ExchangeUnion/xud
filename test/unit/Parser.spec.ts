@@ -1,7 +1,10 @@
-import { expect } from 'chai';
-import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
+import chai, { expect } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import Parser from '../../lib/p2p/Parser';
 import { PingPacket, HelloPacket } from '../../lib/p2p/packets/types';
 import { Packet } from '../../lib/p2p/packets';
+
+chai.use(chaiAsPromised);
 
 describe('Parser', () => {
   const delimiter = Packet.PROTOCOL_DELIMITER;
@@ -105,48 +108,28 @@ describe('Parser', () => {
   testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
   testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
 
-  it(`should not try to parse an empty string`, (done) => {
-    wait()
-      .then(() => expect.fail())
-      .catch((err) => {
-        expect(err).to.equal('timeout');
-        done();
-      });
+  it(`should not try to parse an empty string`, () => {
+    expect(wait()).to.eventually.be.rejectedWith('timeout');
 
     parser.feed('');
   });
 
-  it(`should try parse a standalone delimiter and fail`, (done) => {
-    wait()
-      .then(() => expect.fail())
-      .catch((err) => {
-        expect(err.type).to.equal(ParserErrorType.UNPARSEABLE_MESSAGE);
-        done();
-      });
+  it(`should try parse a standalone delimiter and fail`, () => {
+    expect(wait()).to.be.rejected; // UNPARSEABLE_MESSAGE
 
     parser.feed(delimiter);
   });
 
-  it(`should buffer a max buffer length`, (done) => {
+  it(`should buffer a max buffer length`, () => {
     parser = new Parser(delimiter, 10);
-    wait()
-      .then(() => expect.fail())
-      .catch((err) => {
-        expect(err).to.equal('timeout');
-        done();
-      });
+    expect(wait()).to.eventually.be.rejectedWith('timeout');
 
     parser.feed(Buffer.allocUnsafe(10).toString());
   });
 
-  it(`should not buffer when max buffer size exceeds`, (done) => {
+  it(`should not buffer when max buffer size exceeds`, () => {
     parser = new Parser(delimiter, 10);
-    wait()
-      .then(() => expect.fail())
-      .catch((err) => {
-        expect(err.type).to.equal(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED);
-        done();
-      });
+    expect(wait()).to.be.rejected; // MAX_BUFFER_SIZE_EXCEEDED
 
     parser.feed(Buffer.allocUnsafe(11).toString());
   });
