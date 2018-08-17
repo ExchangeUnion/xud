@@ -6,6 +6,10 @@ import { NodeConnectionInfo, Address } from '../types/p2p';
 class NodeList {
   private nodes = new Map<string, NodeInstance>();
 
+  public get count() {
+    return this.nodes.size;
+  }
+
   constructor(private repository: P2PRepository) {}
 
   /**
