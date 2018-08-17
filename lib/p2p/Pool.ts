@@ -1,4 +1,5 @@
 import net, { Server, Socket } from 'net';
+import http from 'http';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import Peer, { PeerInfo } from './Peer';
@@ -71,6 +72,50 @@ class Pool extends EventEmitter {
   public init = async (handshakeData: HandshakeState): Promise<void> => {
     if (this.connected) {
       return;
+    }
+
+    if (this.listenPort) {
+      if (!handshakeData.addresses) {
+        handshakeData.addresses = [];
+      }
+
+      // Append the external IP if no address was specified by the user
+      if (handshakeData.addresses.length === 0) {
+        try {
+          // TODO: verify that this address is reachable
+          const externalip = await new Promise<string>((resolve, reject) => {
+            http.get('http://ipv4.icanhazip.com/', (res) => {
+              let body = '';
+
+              res.on('data', (chunk) => {
+                body += chunk;
+              });
+              res.on('end', () => {
+                // Removes new line at the end of the string
+                body = body.trimRight();
+                resolve(body);
+              });
+              res.on('error', (err: Error) => {
+                reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+              });
+
+            }).on('error', (err: Error) => {
+              reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+            });
+          });
+
+          this.logger.verbose(`retrieved external IP: ${externalip}`);
+
+          handshakeData.addresses.push({
+            host: externalip,
+            port: this.listenPort,
+          });
+
+        } catch (error) {
+          this.logger.error(error.message);
+          return;
+        }
+      }
     }
 
     this.handshakeData = handshakeData;
