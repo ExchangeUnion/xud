@@ -237,7 +237,7 @@
     },
     "/v1/shutdown": {
       "post": {
-        "summary": "Shutdown the xud daemon.",
+        "summary": "Begin shutting down xud.",
         "operationId": "Shutdown",
         "responses": {
           "200": {

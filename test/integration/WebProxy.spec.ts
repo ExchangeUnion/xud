@@ -44,6 +44,6 @@ describe('WebProxy', () => {
   });
 
   after(async () => {
-    await xud.shutdown();
+    await xud['shutdown']();
   });
 });

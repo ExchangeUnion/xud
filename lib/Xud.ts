@@ -10,13 +10,19 @@ import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
+import { EventEmitter } from 'events';
 
 const version: string = require('../package.json').version;
+
+interface Xud {
+  on(event: 'shutdown', listener: () => void): this;
+  emit(event: 'shutdown'): boolean;
+}
 
 bootstrap();
 
 /** Class representing a complete Exchange Union daemon. */
-class Xud {
+class Xud extends EventEmitter {
   public service!: Service;
   private logger!: Logger;
   private config: Config;
@@ -38,6 +44,8 @@ class Xud {
    * Create an Exchange Union daemon.
    */
   constructor()  {
+    super();
+
     this.config = new Config();
   }
 
@@ -102,7 +110,7 @@ class Xud {
         raidenClient: this.raidenClient,
         pool: this.pool,
         config: this.config,
-        shutdown: this.shutdown,
+        shutdown: this.beginShutdown,
       });
 
       // start rpc server last
@@ -132,36 +140,40 @@ class Xud {
     }
   }
 
-  /**
-   * Gracefully end all running processes and disconnects from peers.
-   */
-  public shutdown = async () => {
-    // ensure we stop listening for new peers before disconnecting from peers
-    if (this.pool) {
-      await this.pool.disconnect();
-    }
+  private shutdown = async () => {
+    this.logger.info('XUD is shutting down');
+
+    this.lndbtcClient.close();
+    this.lndltcClient.close();
+
     // TODO: ensure we are not in the middle of executing any trades
-    const msg = 'XUD shutdown gracefully';
-    await (async () => {
-      // we use an immediately invoked function here exit the process AFTER the
-      // shutdown method returns a response.
-      this.lndbtcClient.close();
-      this.lndltcClient.close();
+    const closePromises: Promise<void>[] = [];
 
-      const closePromises: Promise<void>[] = [];
-      if (this.rpcServer) {
-        closePromises.push(this.rpcServer.close());
-      }
-      if (this.grpcAPIProxy) {
-        closePromises.push(this.grpcAPIProxy.close());
-      }
-      await Promise.all(closePromises);
+    if (this.pool) {
+      closePromises.push(this.pool.disconnect());
+    }
+    if (this.rpcServer) {
+      closePromises.push(this.rpcServer.close());
+    }
+    if (this.grpcAPIProxy) {
+      closePromises.push(this.grpcAPIProxy.close());
+      await this.grpcAPIProxy.close();
+    }
+    await Promise.all(closePromises);
 
-      await this.db.close();
-      this.logger.info(msg);
-    })();
+    await this.db.close();
+    this.logger.info('XUD shutdown gracefully');
 
-    return msg;
+    this.emit('shutdown');
+  }
+
+  /**
+   * Initiate graceful shutdown of xud. Emits the `shutdown` event when shutdown is complete.
+   */
+  public beginShutdown = () => {
+    // we begin the shutdown process but return a response before it completes.
+    void (this.shutdown());
+    return 'Shutting down XUD';
   }
 }
 
