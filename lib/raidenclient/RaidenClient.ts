@@ -55,6 +55,7 @@ type TokenSwapPayload = {
   receivingAmount: number;
   /** The address for the token being received */
   receivingToken: string;
+   // TODO: Either move this type definition out of RaidenClient or remove nodepubkey as it's not part of the actual raiden tokenswap payload
   /** The xud pubkey of the swap peer */
   nodePubKey: string;
 };

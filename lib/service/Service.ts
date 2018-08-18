@@ -1,5 +1,3 @@
-/* tslint:enable no-any */
-
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
@@ -25,7 +23,7 @@ export type ServiceComponents = {
   pool: Pool;
   config: Config
   /** The function to be called to shutdown the parent process */
-  shutdown: Function;
+  shutdown: () => Promise<string>;
   /** The version of the local xud instance. */
   version: string;
 };
@@ -106,7 +104,7 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given host and port.
    */
-  public connect = async (args: Address & { nodePubKey: string }) => {
+  public connect = async (args: { host: string, port: number, nodePubKey: string }) => {
     const { host, port, nodePubKey } = args;
     argChecks.HAS_NODE_PUB_KEY(args);
     argChecks.HAS_HOST(args);
@@ -128,16 +126,18 @@ class Service extends EventEmitter {
   /**
    * Execute an atomic swap
    */
-  public executeSwap = ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload })  => {
+  public executeSwap = ({ targetAddress, payload }: { targetAddress: string, payload?: TokenSwapPayload })  => {
     let body: packets.DealRequestPacketBody;
     let takerPubKey: string | undefined;
     let takerCoin: CurrencyType;
     let makerCoin: CurrencyType;
 
-    if (target_address) {
+    if (!payload) {
+      return 'no payload provided';
+    }
+    if (targetAddress) {
       return 'target address provided';
     }
-
     if (!payload.role || payload.role.toUpperCase() !== 'TAKER') {
       return 'role, if provided, must be of "taker"';
     }
@@ -270,12 +270,14 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (order: OwnOrder) => {
-    argChecks.PRICE_NON_NEGATIVE(order);
-    argChecks.NON_ZERO_QUANTITY(order);
-    argChecks.HAS_PAIR_ID(order);
+  public placeOrder = async (args: { order?: OwnOrder }) => {
+    const { order } = args;
+    // TODO: change placeOrder api call to not use an order object and remove assertions below
+    argChecks.PRICE_NON_NEGATIVE(order!);
+    argChecks.NON_ZERO_QUANTITY(order!);
+    argChecks.HAS_PAIR_ID(order!);
 
-    return order.price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
+    return order!.price > 0 ? this.orderBook.addLimitOrder(order!) : this.orderBook.addMarketOrder(order!);
   }
 
   /*
