@@ -1,13 +1,14 @@
+/* tslint:enable no-any */
+
 import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
-import LndClient from '../lndclient/LndClient';
-import RaidenClient, { TokenSwapPayload } from '../raidenclient/RaidenClient';
+import LndClient, { LndInfo } from '../lndclient/LndClient';
+import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/RaidenClient';
 import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import lndErrors from '../lndclient/errors';
 import { Address } from '../types/p2p';
 import * as packets from '../p2p/packets/types';
 import { CurrencyType, SwapDealRole } from '../types/enums';
@@ -27,6 +28,16 @@ export type ServiceComponents = {
   shutdown: Function;
   /** The version of the local xud instance. */
   version: string;
+};
+
+type XudInfo = {
+  numPeers: number;
+  numPairs: number;
+  version: string;
+  orders: { peer: number, own: number};
+  lndbtc?: LndInfo;
+  lndltc?: LndInfo;
+  raiden?: RaidenInfo;
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -49,7 +60,7 @@ const argChecks = {
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
-  public shutdown: Function;
+  public shutdown: () => Promise<string>;
   private orderBook: OrderBook;
   private lndBtcClient: LndClient;
   private lndLtcClient: LndClient;
@@ -71,46 +82,6 @@ class Service extends EventEmitter {
     this.config = components.config;
 
     this.version = components.version;
-  }
-
-  private getLndInfo = async (lndClient: LndClient)  => {
-    let info: any = {};
-
-    if (lndClient.isDisabled()) {
-      info = {
-        error: String(lndErrors.LND_IS_DISABLED.message),
-      };
-      return info;
-    }
-    if (!lndClient.isConnected()) {
-      this.logger.error(`LND error: ${lndErrors.LND_IS_DISCONNECTED.message}`);
-      info = {
-        error: String(lndErrors.LND_IS_DISCONNECTED.message),
-      };
-      return info;
-    }
-
-    try {
-      const lnd = await lndClient.getInfo();
-
-      info = {
-        channels: {
-          active: lnd.numActiveChannels,
-          pending: lnd.numPendingChannels,
-        },
-        chains: lnd.chainsList,
-        blockheight: lnd.blockHeight,
-        uris: lnd.urisList,
-        version: lnd.version,
-      };
-
-    } catch (err) {
-      this.logger.error(`LND error: ${err}`);
-      info = {
-        error: String(err),
-      };
-    }
-    return info;
   }
 
   /*
@@ -231,14 +202,8 @@ class Service extends EventEmitter {
   /**
    * Get general information about this Exchange Union node.
    */
-  public getInfo = async () => {
-    const info: any = {};
-
-    info.version = this.version;
-
+  public getInfo = async (): Promise<XudInfo> => {
     const pairIds = this.orderBook.pairIds;
-    info.numPeers = this.pool.peerCount;
-    info.numPairs = pairIds.length;
 
     let peerOrdersCount = 0;
     let ownOrdersCount = 0;
@@ -250,33 +215,23 @@ class Service extends EventEmitter {
       ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
     });
 
-    info.orders = {
-      peer: peerOrdersCount,
-      own: ownOrdersCount,
+    const lndbtc = this.lndBtcClient.isDisabled() ? undefined : await this.lndBtcClient.getLndInfo();
+    const lndltc = this.lndLtcClient.isDisabled() ? undefined : await this.lndLtcClient.getLndInfo();
+
+    const raiden = this.raidenClient.isDisabled() ? undefined : await this.raidenClient.getRaidenInfo();
+
+    return {
+      lndbtc,
+      lndltc,
+      raiden,
+      version: this.version,
+      numPeers: this.pool.peerCount,
+      numPairs: pairIds.length,
+      orders: {
+        peer: peerOrdersCount,
+        own: ownOrdersCount,
+      },
     };
-
-    info.lndbtc = await this.getLndInfo(this.lndBtcClient);
-    info.lndltc = await this.getLndInfo(this.lndLtcClient);
-    if (!this.config.raiden.disable) {
-      try {
-        const channels = await this.raidenClient.getChannels();
-
-        info.raiden = {
-          address: this.raidenClient.address!,
-          channels: channels.length,
-          // Hardcoded for now until they expose it to their API
-          version: 'v0.3.0',
-        };
-
-      } catch (err) {
-        info.raiden = {
-          error: String(err),
-        };
-      }
-
-    }
-
-    return info;
   }
 
   /**
