@@ -38,7 +38,7 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   private nodes: NodeList;
   private peers: PeerList = new PeerList();
-  private server: Server = net.createServer();
+  private server?: Server;
   private connected = false;
   /** The local handshake data to be sent to newly connected peers. */
   private handshakeData!: HandshakeState;
@@ -52,6 +52,7 @@ class Pool extends EventEmitter {
 
     if (config.listen) {
       this.listenPort = config.port;
+      this.server = net.createServer();
       this.addresses = [];
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
@@ -80,9 +81,9 @@ class Pool extends EventEmitter {
     await this.nodes.load();
     await this.connectNodes(this.nodes);
 
-    if (this.listenPort) {
-      this.bindServer(this.server);
-      this.listen(this.listenPort);
+    if (this.server && this.listenPort) {
+      this.bindServer();
+      await this.listen(this.listenPort);
     }
 
     this.connected = true;
@@ -93,7 +94,7 @@ class Pool extends EventEmitter {
       return;
     }
 
-    if (this.listenPort) {
+    if (this.server && this.server.listening) {
       await this.unlisten();
     }
 
@@ -180,7 +181,6 @@ class Pool extends EventEmitter {
   private openPeer = async (peer: Peer, nodePubKey?: string): Promise<void> => {
     this.bindPeer(peer);
     await peer.open(this.handshakeData, nodePubKey);
-    this.peers.add(peer);
   }
 
   public closePeer = async (nodePubKey: string): Promise<void> => {
@@ -270,6 +270,8 @@ class Pool extends EventEmitter {
       // TODO: Penalize peers that attempt to create duplicate connections to us
       peer.close();
     } else {
+      this.peers.add(peer);
+
       // request peer's orders and known nodes
       peer.sendPacket(new GetOrdersPacket());
       peer.sendPacket(new GetNodesPacket());
@@ -279,22 +281,20 @@ class Pool extends EventEmitter {
           nodePubKey: peer.nodePubKey!,
           addresses: peer.addresses!,
         });
+      } else {
+        // the node is known, update its listening addresses
+        await this.nodes.updateAddresses(peer.nodePubKey!, peer.addresses);
       }
     }
   }
 
-  private bindServer = (server: Server) => {
-    server.on('error', (err) => {
-      console.log('err: ' + err);
+  private bindServer = () => {
+    this.server!.on('error', (err) => {
+      this.logger.error(err);
     });
 
-    server.on('connection', async (socket) => {
+    this.server!.on('connection', async (socket) => {
       await this.handleSocket(socket);
-    });
-
-    server.on('listening', () => {
-      const { address, port } = this.server.address();
-      this.logger.info(`p2p server listening on ${address}:${port}`);
     });
   }
 
@@ -333,12 +333,36 @@ class Pool extends EventEmitter {
     this.peers.forEach(peer => peer.close());
   }
 
-  private listen = (port: number): void => {
-    this.server.listen(port, '0.0.0.0');
+  /**
+   * Start listening for incoming p2p connections on the given port.
+   * @return a promise that resolves once the server is listening, or rejects if it fails to listen
+   */
+  private listen = (port: number) => {
+    return new Promise<void>((resolve, reject) => {
+      const listenErrHandler = (err: Error) => {
+        reject(err);
+      };
+
+      this.server!.listen(port, '0.0.0.0').on('listening', () => {
+        const { address, port } = this.server!.address();
+        this.logger.info(`p2p server listening on ${address}:${port}`);
+
+        this.server!.removeListener('error', listenErrHandler);
+        resolve();
+      }).on('error', listenErrHandler);
+    });
   }
 
-  private unlisten = async (): Promise<void> => {
-    this.server.close();
+  /**
+   * Stop listening for incoming p2p connections.
+   * @return a promise that resolves once the server is no longer listening
+   */
+  private unlisten = () => {
+    return new Promise<void>((resolve) => {
+      this.server!.close(() => {
+        resolve();
+      });
+    });
   }
 }
 

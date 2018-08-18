@@ -80,6 +80,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   after(async () => {
+    await nodeOne['db'].models.Node.truncate(); // clean up the db
     await Promise.all([nodeOne.shutdown(), nodeTwo.shutdown()]);
   });
 });
