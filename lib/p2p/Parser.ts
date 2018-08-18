@@ -11,6 +11,7 @@ enum ParserErrorType {
   INVALID_MESSAGE,
   UNKNOWN_PACKET_TYPE,
   UNPARSEABLE_MESSAGE,
+  MAX_BUFFER_SIZE_EXCEEDED,
 }
 
 const fromRaw = (raw: string): Packet => {
@@ -60,20 +61,38 @@ interface Parser {
 
 /** Protocol packet parser */
 class Parser extends EventEmitter {
-  public feed = (data: Buffer): void => {
-    const dataStr = data.toString();
-    const packetLines = dataStr.split('\r\n');
-    packetLines.forEach((packetStr) => {
-      if (!packetStr) {
-        return;
-      }
-      try {
-        const packet = fromRaw(packetStr);
-        this.emit('packet', packet);
-      } catch (err) {
-        this.emit('error', err);
-      }
-    });
+  private buffer = '';
+
+  private static MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
+
+  constructor(private delimiter: string, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
+    super();
+  }
+
+  public feed = (data: string): void => {
+    const total = Buffer.byteLength(this.buffer) + Buffer.byteLength(data);
+    if (total > this.maxBufferSize) {
+      this.buffer = '';
+      this.emit('error', new ParserError(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED, total.toString()));
+      return;
+    }
+    this.buffer += data;
+    const index = this.buffer.indexOf(this.delimiter);
+    if (index > -1) {
+      this.parsePacket(this.buffer.slice(0, index));
+      const next = this.buffer.slice(index + this.delimiter.length);
+      this.buffer = '';
+      this.feed(next);
+    }
+  }
+
+  private parsePacket = (packetStr: string): void => {
+    try {
+      const packet = fromRaw(packetStr);
+      this.emit('packet', packet);
+    } catch (err) {
+      this.emit('error', err);
+    }
   }
 }
 

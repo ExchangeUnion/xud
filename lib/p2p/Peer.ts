@@ -45,7 +45,7 @@ class Peer extends EventEmitter {
   public connected = false;
   private opened = false;
   private socket?: Socket;
-  private parser: Parser = new Parser();
+  private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
   private closed = false;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
@@ -207,8 +207,7 @@ class Peer extends EventEmitter {
 
   private sendRaw = (packetStr: string) => {
     if (this.socket) {
-      this.socket.write(`${packetStr}\r\n`);
-
+      this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
       this.lastSend = Date.now();
     }
   }
@@ -435,12 +434,13 @@ class Peer extends EventEmitter {
 
     this.socket.on('data', (data) => {
       this.lastRecv = Date.now();
+      const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
-        this.logger.debug(`Received data (${this.nodePubKey}): ${data.toString()}`);
+        this.logger.debug(`Received data (${this.nodePubKey}): ${dataStr}`);
       } else {
         this.logger.debug(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
       }
-      this.parser.feed(data);
+      this.parser.feed(dataStr);
     });
 
     this.socket.setNoDelay(true);
