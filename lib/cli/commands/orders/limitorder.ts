@@ -24,13 +24,10 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new PlaceOrderRequest();
 
-  const order = new Order();
-  order.setPairId(argv.pair_id);
-  order.setLocalId(argv.order_id);
-  order.setQuantity(argv.quantity);
-  order.setPrice(argv.price);
-
-  request.setOrder(order);
+  request.setPairId(argv.pair_id);
+  request.setOrderId(argv.order_id);
+  request.setQuantity(argv.quantity);
+  request.setPrice(argv.price);
 
   loadXudClient(argv).placeOrder(request, callback);
 };
