@@ -7,7 +7,6 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
-import { Arguments } from 'yargs';
 
 class Config {
   public p2p: PoolConfig;
@@ -22,7 +21,7 @@ class Config {
   public instanceId = 0;
   public initDb: boolean;
 
-  constructor(private args?: Arguments | Object) {
+  constructor() {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {
@@ -93,25 +92,29 @@ class Config {
     };
   }
 
-  public load() {
+  public load(args?: { [argName: string]: any }) {
+    if (args && args['xudir']) {
+      this.xudir = args['xudir'];
+    }
+
+    const configPath = path.join(this.xudir, 'xud.conf');
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
-    } else if (fs.existsSync(`${this.xudir}xud.conf`)) {
-      const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
+    } else if (fs.existsSync(configPath)) {
+      const configText = fs.readFileSync(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
 
-        // merge parsed json properties from config file to this config object
+        // merge parsed json properties from config file to the default config
         deepMerge(this, props);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
       }
     }
 
-    if (this.args) {
+    if (args) {
       // override our config file with command line arguments
-      deepMerge(this, this.args);
-      this.args = undefined;
+      deepMerge(this, args);
     }
   }
 }

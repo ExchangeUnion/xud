@@ -32,15 +32,14 @@ describe('P2P Pool Tests', () => {
   };
 
   before(async () => {
-    const config = new Config({
-      p2p: {
-        listen: false,
-      },
+    const config = new Config();
+    config.load({ p2p: {
+      listen: false,
+    },
       db: {
         database: 'xud_test',
       },
     });
-    config.load();
     db = new DB(config.testDb, loggers.db);
     pool = new Pool(config.p2p, loggers.p2p, db);
 

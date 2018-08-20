@@ -27,8 +27,8 @@ describe('WebProxy', () => {
       },
     };
 
-    xud = new Xud(config);
-    await xud.start();
+    xud = new Xud();
+    await xud.start(config);
   });
 
   it('should respond with http status 200', (done) => {

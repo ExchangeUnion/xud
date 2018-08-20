@@ -10,7 +10,6 @@ import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
-import { Arguments } from 'yargs';
 
 const version: string = require('../package.json').version;
 
@@ -37,17 +36,17 @@ class Xud {
 
   /**
    * Create an Exchange Union daemon.
-   * @param args optional command line arguments to override configuration parameters.
    */
-  constructor(args?: Arguments | Object)  {
-    this.config = new Config(args);
+  constructor()  {
+    this.config = new Config();
   }
 
   /**
    * Start all processes necessary for the operation of an Exchange Union node.
+   * @param args optional arguments to override configuration parameters.
    */
-  public start = async () => {
-    this.config.load();
+  public start = async (args?: { [argName: string]: any }) => {
+    this.config.load(args);
     const loggers = Logger.createLoggers(this.config.instanceId);
     this.logger = loggers.global;
     this.logger.info('config loaded');
