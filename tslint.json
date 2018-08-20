@@ -15,7 +15,22 @@
         "parameter": "nospace",
         "property-declaration": "nospace",
         "variable-declaration": "nospace"
+      },
+      {
+        "call-signature": "onespace",
+        "index-signature": "onespace",
+        "parameter": "onespace",
+        "property-declaration": "onespace",
+        "variable-declaration": "onespace"
       }
+    ],
+    "whitespace": [true,
+      "check-type-operator",
+      "check-module",
+      "check-rest-spread",
+      "check-type",
+      "check-preblock",
+      "check-branch", "check-decl", "check-operator", "check-preblock", "check-separator" // preserved from tslint-config-airbnb
     ],
     "member-access": true,
     "member-ordering": [

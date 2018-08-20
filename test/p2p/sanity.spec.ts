@@ -75,7 +75,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail connecting to a non-existing node', async () => {
-    const result = await nodeOne.service.connect({ host:'localhost', port: 9003, nodePubKey: 'notarealnodepubkey' });
+    const result = await nodeOne.service.connect({ host: 'localhost', port: 9003, nodePubKey: 'notarealnodepubkey' });
     expect(result).to.be.equal('Not connected');
   });
 
