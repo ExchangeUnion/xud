@@ -31,6 +31,7 @@ class LndClient extends BaseClient {
   private credentials!: ChannelCredentials;
   private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
   private reconnectionTimer?: NodeJS.Timer;
+  private identityPubKey?: string;
 
   /**
    * Create an lnd client.
@@ -66,6 +67,10 @@ class LndClient extends BaseClient {
     }
   }
 
+  public get pubKey() {
+    return this.identityPubKey;
+  }
+
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
@@ -82,17 +87,21 @@ class LndClient extends BaseClient {
     });
   }
 
-  public connect = async () => {
+  /**
+   * Verify that the lnd gRPC service can be reached by attempting a `getInfo` call.
+   * If successful, subscribe to invoice events and store the lnd identity pubkey.
+   * If not, set a timer to attempt to reach the service again in 5 seconds.
+   */
+  public verifyConnection = async () => {
     if (this.isDisabled()) {
-      this.logger.error(`can't connect to lnd. lnd is disabled`);
-      return;
+      throw(errors.LND_IS_DISABLED);
     }
     if (this.isConnected()) {
-      this.logger.error(`can't connect to lnd, lnd is already connected`);
+      this.logger.warn(`not verifying connection to lnd, lnd is already connected`);
       return;
     }
     if (this.isDisconnected()) {
-      this.logger.info(`trying to connect to lnd with uri: ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
@@ -100,12 +109,17 @@ class LndClient extends BaseClient {
         if (getInfoResponse) {
           // mark connection as active
           this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+          this.identityPubKey = getInfoResponse.identityPubkey;
           this.subscribeInvoices();
-          this.reconnectionTimer = undefined;
+          if (this.reconnectionTimer) {
+            clearTimeout(this.reconnectionTimer);
+            this.reconnectionTimer = undefined;
+          }
         }
       } catch (err) {
-        this.logger.error(`could not fetch info from lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
-        this.reconnectionTimer = setTimeout(this.connect, 5000);
+        this.setStatus(ClientStatus.DISCONNECTED);
+        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
+        this.reconnectionTimer = setTimeout(this.verifyConnection, 5000);
       }
     }
   }
@@ -240,7 +254,7 @@ class LndClient extends BaseClient {
       .on('end', async () => {
         this.logger.info('invoice ended');
         this.setStatus(ClientStatus.DISCONNECTED);
-        await this.connect();
+        await this.verifyConnection();
       })
       .on('status', (status: string) => {
         this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
@@ -248,7 +262,7 @@ class LndClient extends BaseClient {
       .on('error', async (error) => {
         this.logger.error(`invoice error: ${error}`);
         this.setStatus(ClientStatus.DISCONNECTED);
-        await this.connect();
+        await this.verifyConnection();
       });
   }
 

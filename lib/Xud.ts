@@ -61,14 +61,15 @@ class Xud {
       await this.db.init();
 
       const initPromises: Promise<void>[] = [];
+
       // setup LND clients and connect if configured
       this.lndbtcClient = new LndClient(this.config.lndbtc, loggers.lnd);
       if (!this.lndbtcClient.isDisabled()) {
-        initPromises.push(this.lndbtcClient.connect());
+        initPromises.push(this.lndbtcClient.verifyConnection());
       }
       this.lndltcClient = new LndClient(this.config.lndltc, loggers.lnd);
       if (!this.lndltcClient.isDisabled()) {
-        initPromises.push(this.lndltcClient.connect());
+        initPromises.push(this.lndltcClient.verifyConnection());
       }
 
       // setup raiden client and connect if configured
@@ -90,6 +91,8 @@ class Xud {
         pairs: this.orderBook.pairIds,
         nodePubKey: this.nodeKey.nodePubKey,
         raidenAddress: this.raidenClient.address,
+        lndbtcPubKey: this.lndbtcClient.pubKey,
+        lndltcPubKey: this.lndltcClient.pubKey,
       });
 
       this.service = new Service(loggers.global, {
