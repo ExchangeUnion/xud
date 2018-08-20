@@ -1,5 +1,5 @@
 {
-  "extends": "tslint-config-airbnb",
+  "extends": ["tslint-config-airbnb", "tslint-no-circular-imports"],
   "rules": {
     "variable-name": false,
     "import-name": false,
