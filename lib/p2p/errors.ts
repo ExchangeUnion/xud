@@ -5,6 +5,7 @@ const errorCodes = {
   NOT_CONNECTED: codesPrefix.concat('.2'),
   UNEXPECTED_NODE_PUB_KEY: codesPrefix.concat('.3'),
   ATTEMPTED_CONNECTION_TO_SELF: codesPrefix.concat('.4'),
+  EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
 };
 
 const errors = {
@@ -24,6 +25,10 @@ const errors = {
     message: 'Cannot attempt connection to self',
     code: errorCodes.ATTEMPTED_CONNECTION_TO_SELF,
   },
+  EXTERNAL_IP_UNRETRIEVABLE: (err: Error) => ({
+    message: `could not retrieve external IP: ${err.message}`,
+    code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
+  }),
 };
 
 export { errorCodes };

@@ -11,6 +11,7 @@ import DB from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
+import { getExternalIp } from '../utils/utils';
 
 type PoolConfig = {
   listen: boolean;
@@ -72,6 +73,30 @@ class Pool extends EventEmitter {
   public init = async (handshakeData: HandshakeState): Promise<void> => {
     if (this.connected) {
       return;
+    }
+
+    if (this.listenPort) {
+      if (!handshakeData.addresses) {
+        handshakeData.addresses = [];
+      }
+
+      // Append the external IP if no address was specified by the user
+      if (handshakeData.addresses.length === 0) {
+        try {
+          // TODO: verify that this address is reachable
+          const externlIp = await getExternalIp();
+
+          this.logger.info(`retrieved external IP: ${externlIp}`);
+
+          handshakeData.addresses.push({
+            host: externlIp,
+            port: this.listenPort,
+          });
+
+        } catch (error) {
+          this.logger.error(error.message);
+        }
+      }
     }
 
     this.handshakeData = handshakeData;

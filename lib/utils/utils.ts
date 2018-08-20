@@ -1,3 +1,32 @@
+import http from 'http';
+import errors from '../p2p/errors';
+
+/**
+ * Gets the external IP of the node
+ */
+export const getExternalIp = () => {
+  return new Promise<string>((resolve, reject) => {
+    http.get('http://ipv4.icanhazip.com/', (res) => {
+      let body = '';
+
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
+      res.on('end', () => {
+        // Removes new line at the end of the string
+        body = body.trimRight();
+        resolve(body);
+      });
+      res.on('error', (err: Error) => {
+        reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+      });
+
+    }).on('error', (err: Error) => {
+      reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+    });
+  });
+};
+
 /**
  * Check whether a variable is a non-array object
  */
