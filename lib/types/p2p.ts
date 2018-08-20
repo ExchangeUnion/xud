@@ -14,6 +14,8 @@ export type HandshakeState = {
   addresses?: Address[];
   pairs: string[];
   raidenAddress?: string;
+  lndbtcPubKey?: string;
+  lndltcPubKey?: string;
 };
 
 export function isHandshakeState(obj: any): obj is HandshakeState {
