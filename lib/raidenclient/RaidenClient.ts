@@ -40,13 +40,15 @@ type TokenSwapPayload = {
   /** Either "maker" for initiating a swap or "taker" for filling one */
   role: string;
   /** The amount being sent */
-  sending_amount: number;
+  sendingAmount: number;
   /** The address for the token being sent */
-  sending_token: string;
+  sendingToken: string;
   /** The amount being received */
-  receiving_amount: number;
+  receivingAmount: number;
   /** The address for the token being received */
-  receiving_token: string;
+  receivingToken: string;
+  /** The xud pubkey of the swap peer */
+  nodePubKey: string;
 };
 
 /**

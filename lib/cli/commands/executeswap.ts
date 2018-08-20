@@ -2,7 +2,7 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { ExecuteSwapRequest, SwapPayload } from '../../proto/xudrpc_pb';
 
-export const command = 'executeSwap <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token>';
+export const command = 'executeSwap <role> <sending_amount> <sending_token> <receiving_amount> <receiving_token> <node_pub_key>';
 
 export const describe = 'execute an atomic swap';
 
@@ -35,6 +35,8 @@ export const handler = (argv: Arguments) => {
   payload.setSendingToken(argv.sending_token);
   payload.setReceivingAmount(argv.receiving_amount);
   payload.setReceivingToken(argv.receiving_token);
+  payload.setNodePubKey(argv.node_pub_key);
+  payload.setRole(argv.role);
   request.setPayload(payload);
 
   loadXudClient(argv).executeSwap(request, callback);

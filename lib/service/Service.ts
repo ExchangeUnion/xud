@@ -9,7 +9,10 @@ import { EventEmitter } from 'events';
 import errors from './errors';
 import lndErrors from '../lndclient/errors';
 import { Address } from '../types/p2p';
-
+import * as packets from '../p2p/packets/types';
+import { CurrencyType, SwapDealRole } from '../types/enums';
+import { SwapDeal } from '../orderbook/SwapDeals';
+import { randomBytes } from 'crypto';
 /**
  * The components required by the API service layer.
  */
@@ -154,8 +157,75 @@ class Service extends EventEmitter {
   /**
    * Execute an atomic swap
    */
-  public executeSwap = async ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload }) => {
-    return this.raidenClient.tokenSwap(target_address, payload);
+  public executeSwap = ({ target_address, payload }: { target_address: string, payload: TokenSwapPayload })  => {
+    let body: packets.DealRequestPacketBody;
+    let takerPubKey: string | undefined;
+    let takerCoin: CurrencyType;
+    let makerCoin: CurrencyType;
+
+    if (target_address) {
+      return 'target address provided';
+    }
+
+    if (!payload.role || payload.role.toUpperCase() !== 'TAKER') {
+      return 'role, if provided, must be of "taker"';
+    }
+
+    if (!payload.receivingToken ||
+      (payload.receivingToken.toUpperCase() !== 'BTC' && payload.receivingToken.toUpperCase() !== 'LTC')) {
+      return 'receivingToken can only be LTC or BTC';
+    }
+
+    switch (payload.receivingToken.toUpperCase()){
+      case 'BTC':
+        takerPubKey = this.lndBtcClient.pubKey;
+        takerCoin = CurrencyType.BTC;
+        makerCoin = CurrencyType.LTC;
+        break;
+      case 'LTC':
+        takerPubKey = this.lndLtcClient.pubKey;
+        takerCoin = CurrencyType.LTC;
+        makerCoin = CurrencyType.BTC;
+        break;
+      default:
+        return 'Invalid receiving token';
+    }
+
+    if (!takerPubKey) {
+      return 'Taker\'s LND is not connected';
+    }
+
+    body =  {
+      takerCoin,
+      makerCoin,
+      takerPubKey,
+      takerDealId: randomBytes(32).toString('hex'),
+      takerAmount: payload.receivingAmount,
+      makerAmount: payload.sendingAmount,
+    };
+
+    const deal: SwapDeal = {
+      myRole : SwapDealRole.Taker,
+      takerAmount : body.takerAmount,
+      takerCoin : body.takerCoin,
+      takerPubKey: body.takerPubKey,
+      takerDealId: body.takerDealId,
+      makerAmount: body.makerAmount,
+      makerCoin: body.makerCoin,
+      createTime: Date.now(),
+    };
+    this.pool.swapDeals.add(deal);
+    this.logger.debug(' swap deal: ' + JSON.stringify(deal));
+
+    this.logger.debug('sending to peer ' + payload.nodePubKey + ': ' + JSON.stringify(body));
+    const packet = new packets.DealRequest(body);
+
+    const error = this.pool.sendToPeer(payload.nodePubKey, packet);
+    if (error) {
+      return error.message;
+    }
+    // Todo: wait for swap to complete and provide the preimage back to the caller
+    return 'Success';
   }
 
   /**

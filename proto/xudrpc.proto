@@ -266,6 +266,7 @@ message SwapPayload {
   string sending_token = 3 [json_name = "sending_token"];
   uint64 receiving_amount = 4 [json_name = "receiving_amount"];
   string receiving_token = 5 [json_name = "receiving_token"];
+  string node_pub_key = 6 [json_name = "node_pub_key"];
 }
 
 message ShutdownRequest {}

@@ -11,6 +11,8 @@ import DB from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
+import SwapDeals from '../orderbook/SwapDeals';
+import LndClient from '../lndclient/LndClient';
 import { getExternalIp } from '../utils/utils';
 
 type PoolConfig = {
@@ -37,6 +39,8 @@ interface NodeConnectionIterator {
 
 /** A class representing a pool of peers that handles network activity. */
 class Pool extends EventEmitter {
+  // TODO: Make private once the call to add a swap deal is moved from Peer.ts to Pool.ts
+  public swapDeals: SwapDeals;
   private nodes: NodeList;
   private peers: PeerList = new PeerList();
   private server?: Server;
@@ -48,8 +52,10 @@ class Pool extends EventEmitter {
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses?: Address[];
 
-  constructor(config: PoolConfig, private logger: Logger, db: DB) {
+  constructor(config: PoolConfig, private logger: Logger, db: DB,
+              public lndBtcClient?: LndClient, public lndLtcClient?: LndClient) {
     super();
+    this.swapDeals = new SwapDeals(logger);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -180,7 +186,7 @@ class Pool extends EventEmitter {
       throw err;
     }
 
-    const peer = Peer.fromOutbound(address, this.logger);
+    const peer = Peer.fromOutbound(address, this.logger, this);
     await this.tryOpenPeer(peer, nodePubKey);
     return peer;
   }
@@ -218,6 +224,15 @@ class Pool extends EventEmitter {
     }
   }
 
+  public sendToPeer = (pubKey: string, packet: Packet): Error | undefined => {
+    const peer = this.peers.get(pubKey);
+    if (!peer) {
+      return new Error('Peer Not found');
+    }
+    peer.sendPacket(packet);
+    return undefined;
+  }
+
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
@@ -233,7 +248,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger);
+    const peer = Peer.fromInbound(socket, this.logger, this);
     await this.tryOpenPeer(peer);
   }
 

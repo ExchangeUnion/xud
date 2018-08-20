@@ -797,6 +797,9 @@ export class SwapPayload extends jspb.Message {
     getReceivingToken(): string;
     setReceivingToken(value: string): void;
 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): SwapPayload.AsObject;
@@ -815,6 +818,7 @@ export namespace SwapPayload {
         sendingToken: string,
         receivingAmount: number,
         receivingToken: string,
+        nodePubKey: string,
     }
 }
 
