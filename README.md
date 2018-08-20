@@ -6,7 +6,7 @@
 
 [Exchange Union](https://www.exchangeunion.com/) (XU) is a decentralized exchange layer built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable trustless and instant cryptocurrency swaps and order fulfillment between exchanges.
 
-This repo contains the early stages of the Exchange Union Daemon ("xud") which encompasses the following components:
+This repo contains the early stages of the Exchange Union Daemon (`xud`) which encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
 * Order book data stored in a local mysql/mariadb database.
