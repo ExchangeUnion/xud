@@ -5,18 +5,16 @@ import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
+import { XudService } from '../proto/xudrpc_grpc_pb';
 
 class GrpcServer {
   private server: Server;
 
   constructor(private logger: Logger, service: Service) {
     this.server = new grpc.Server();
-    const xudrpcProtoPath = path.join(__dirname, '..', '..', 'proto', 'xudrpc.proto');
-    const protoDescriptor = grpc.load(xudrpcProtoPath, 'proto', { convertFieldsToCamelCase: true });
-    const { xudrpc }: any = protoDescriptor;
 
     const grpcService = new GrpcService(logger, service);
-    this.server.addService(xudrpc.Xud.service, {
+    this.server.addService(XudService, {
       cancelOrder: grpcService.cancelOrder,
       connect: grpcService.connect,
       disconnect: grpcService.disconnect,

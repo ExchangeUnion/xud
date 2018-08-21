@@ -33,6 +33,14 @@ type RaidenClientConfig = {
   port: number;
 };
 
+/** General information about the state of this raiden client. */
+type RaidenInfo = {
+  error?: string;
+  address?: string;
+  channels?: number;
+  version?: string;
+};
+
 /**
  * The payload for the [[tokenSwap]] call.
  */
@@ -47,6 +55,7 @@ type TokenSwapPayload = {
   receivingAmount: number;
   /** The address for the token being received */
   receivingToken: string;
+   // TODO: Either move this type definition out of RaidenClient or remove nodepubkey as it's not part of the actual raiden tokenswap payload
   /** The xud pubkey of the swap peer */
   nodePubKey: string;
 };
@@ -111,7 +120,7 @@ class RaidenClient extends BaseClient {
   /**
    * Check for connectivity and get our Raiden account address
    */
-  public async init() {
+  public init = async () => {
     if (this.isDisabled()) {
       this.logger.error(`can't init raiden. raiden is disabled`);
       return;
@@ -122,6 +131,31 @@ class RaidenClient extends BaseClient {
     } catch (err) {
       this.logger.error('could not get raiden address', err);
     }
+  }
+
+  public getRaidenInfo = async (): Promise<RaidenInfo> => {
+    let channels: number | undefined;
+    let address: string | undefined;
+    let error: string | undefined;
+    const version = 'v0.3.0'; // Hardcoded for now until they expose it to their API;
+
+    if (this.isDisabled()) {
+      error = errors.RAIDEN_IS_DISABLED.message;
+    } else {
+      try {
+        channels = (await this.getChannels()).length;
+        address = this.address!;
+      } catch (err) {
+        error = err.message;
+      }
+    }
+
+    return {
+      channels,
+      address,
+      error,
+      version,
+    };
   }
 
   /**
@@ -298,4 +332,4 @@ class RaidenClient extends BaseClient {
 }
 
 export default RaidenClient;
-export { RaidenClientConfig, TokenSwapPayload, OpenChannelPayload };
+export { RaidenClientConfig, RaidenInfo, TokenSwapPayload, OpenChannelPayload };

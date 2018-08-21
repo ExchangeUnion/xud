@@ -15,6 +15,22 @@ type LndClientConfig = {
   port: number;
 };
 
+/** General information about the state of this lnd client. */
+type LndInfo = {
+  error?: string;
+  channels?: ChannelCount;
+  chains?: string[];
+  blockheight?: number;
+  uris?: string[];
+  version?: string;
+};
+
+type ChannelCount = {
+  active: number,
+  inactive?: number,
+  pending: number,
+};
+
 interface GrpcResponse {
   toObject: Function;
 }
@@ -87,6 +103,43 @@ class LndClient extends BaseClient {
     });
   }
 
+  public getLndInfo = async (): Promise<LndInfo> => {
+    let channels: ChannelCount | undefined;
+    let chains: string[] | undefined;
+    let blockheight: number | undefined;
+    let uris: string[] | undefined;
+    let version: string | undefined;
+    let error: string | undefined;
+    if (this.isDisabled()) {
+      error = errors.LND_IS_DISABLED.message;
+    } else if (!this.isConnected()) {
+      error = errors.LND_IS_DISCONNECTED.message;
+    } else {
+      try {
+        const lnd = await this.getInfo();
+        channels = {
+          active: lnd.numActiveChannels,
+          pending: lnd.numPendingChannels,
+        };
+        chains = lnd.chainsList,
+        blockheight = lnd.blockHeight,
+        uris = lnd.urisList,
+        version = lnd.version;
+      } catch (err) {
+        this.logger.error(`LND error: ${err}`);
+        error = err.message;
+      }
+    }
+
+    return {
+      channels,
+      chains,
+      blockheight,
+      uris,
+      version,
+    };
+  }
+
   /**
    * Verify that the lnd gRPC service can be reached by attempting a `getInfo` call.
    * If successful, subscribe to invoice events and store the lnd identity pubkey.
@@ -128,7 +181,7 @@ class LndClient extends BaseClient {
    * Return general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
-  public getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
+  private getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse.AsObject>('getInfo', new lndrpc.GetInfoRequest());
   }
 
@@ -278,4 +331,4 @@ class LndClient extends BaseClient {
 }
 
 export default LndClient;
-export { LndClientConfig };
+export { LndClientConfig, LndInfo };
