@@ -35,12 +35,12 @@ describe('P2P Sanity Tests', () => {
 
   before(async () => {
     nodeOneConfig = createConfig(1, 9001);
-    nodeOne = new Xud(nodeOneConfig);
+    nodeOne = new Xud();
 
     nodeTwoConfig = createConfig(2, 9002);
-    nodeTwo = new Xud(nodeTwoConfig);
+    nodeTwo = new Xud();
 
-    await Promise.all([nodeTwo.start(), nodeOne.start()]);
+    await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
   });
 
   it('should connect successfully', async () => {

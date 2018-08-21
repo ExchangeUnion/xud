@@ -127,6 +127,6 @@ delete argv.version;
 delete argv.help;
 delete argv.$0;
 
-const xud = new Xud(argv);
+const xud = new Xud();
 
-xud.start();
+xud.start(argv);
