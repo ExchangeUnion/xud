@@ -8,7 +8,7 @@ import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import * as packets from '../p2p/packets/types';
-import { CurrencyType, SwapDealRole } from '../types/enums';
+import { SwapDealRole } from '../types/enums';
 import { SwapDeal } from '../orderbook/SwapDeals';
 import { randomBytes } from 'crypto';
 import { parseUri, getUri, UriParts } from '../utils/utils';
@@ -138,8 +138,8 @@ class Service extends EventEmitter {
   public executeSwap = ({ targetAddress, payload }: { targetAddress: string, payload?: TokenSwapPayload })  => {
     let body: packets.DealRequestPacketBody;
     let takerPubKey: string | undefined;
-    let takerCoin: CurrencyType;
-    let makerCoin: CurrencyType;
+    let takerCurrency: string;
+    let makerCurrency: string;
 
     if (!payload) {
       return 'no payload provided';
@@ -159,13 +159,13 @@ class Service extends EventEmitter {
     switch (payload.receivingToken.toUpperCase()){
       case 'BTC':
         takerPubKey = this.lndBtcClient.pubKey;
-        takerCoin = CurrencyType.BTC;
-        makerCoin = CurrencyType.LTC;
+        takerCurrency = 'BTC';
+        makerCurrency = 'LTC';
         break;
       case 'LTC':
         takerPubKey = this.lndLtcClient.pubKey;
-        takerCoin = CurrencyType.LTC;
-        makerCoin = CurrencyType.BTC;
+        takerCurrency = 'LTC';
+        makerCurrency = 'BTC';
         break;
       default:
         return 'Invalid receiving token';
@@ -175,9 +175,9 @@ class Service extends EventEmitter {
       return 'Taker\'s LND is not connected';
     }
 
-    body =  {
-      takerCoin,
-      makerCoin,
+    body = {
+      takerCurrency,
+      makerCurrency,
       takerPubKey,
       takerDealId: randomBytes(32).toString('hex'),
       takerAmount: payload.receivingAmount,
@@ -187,23 +187,22 @@ class Service extends EventEmitter {
     const deal: SwapDeal = {
       myRole : SwapDealRole.Taker,
       takerAmount : body.takerAmount,
-      takerCoin : body.takerCoin,
+      takerCurrency : body.takerCurrency,
       takerPubKey: body.takerPubKey,
       takerDealId: body.takerDealId,
       makerAmount: body.makerAmount,
-      makerCoin: body.makerCoin,
+      makerCurrency: body.makerCurrency,
       createTime: Date.now(),
     };
+
     this.pool.swapDeals.add(deal);
-    this.logger.debug(' swap deal: ' + JSON.stringify(deal));
+    this.logger.debug('swap deal: ' + JSON.stringify(deal));
 
     this.logger.debug('sending to peer ' + payload.nodePubKey + ': ' + JSON.stringify(body));
     const packet = new packets.DealRequest(body);
 
-    const error = this.pool.sendToPeer(payload.nodePubKey, packet);
-    if (error) {
-      return error.message;
-    }
+    this.pool.sendToPeer(payload.nodePubKey, packet);
+
     // Todo: wait for swap to complete and provide the preimage back to the caller
     return 'Success';
   }
@@ -326,7 +325,7 @@ class Service extends EventEmitter {
   public subscribeSwaps = async (_callback: Function) => {};
 
   /**
-   * resolveHash resolve hash to preImage.
+   * resolveHash resolve hash to preimage.
    */
   public resolveHash = async (args: { hash: string }) => {
     const { hash } = args;
@@ -347,10 +346,10 @@ class Service extends EventEmitter {
 	  this.logger.debug('Executing taker code');
       let cmdLnd = this.lndBtcClient;
 
-      switch (deal.makerCoin) {
-        case CurrencyType.BTC:
+      switch (deal.makerCurrency) {
+        case 'BTC':
           break;
-        case CurrencyType.LTC:
+        case 'LTC':
           cmdLnd = this.lndLtcClient;
           break;
       }
@@ -381,7 +380,7 @@ class Service extends EventEmitter {
 	// If we are here we are the maker
     this.logger.debug('Executing maker code');
 
-    return String(deal.preImage);
+    return String(deal.r_preimage);
   }
 
 }
