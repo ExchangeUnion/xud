@@ -15,7 +15,7 @@
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
-    "postinstall": "npm run compile",
+    "prepublishOnly": "npm run compile",
     "proto": "cross-os proto && cross-os swagger && cross-os protodocs",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
@@ -91,6 +91,15 @@
     "url": "https://github.com/ExchangeUnion/xud/issues"
   },
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
+  "files": [
+    "bin",
+    "dist",
+    "docs",
+    "proto",
+    "tasks",
+    ".env",
+    "*.md"
+  ],
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
     "body-parser": "^1.18.3",
@@ -100,6 +109,7 @@
     "dotenv": "^5.0.1",
     "express": "^4.16.3",
     "fastpriorityqueue": "^0.6.1",
+    "google-protobuf": "^3.5.0",
     "grpc": "^1.13.1",
     "gulp": "^4.0.0",
     "mysql2": "^1.5.3",
@@ -107,7 +117,6 @@
     "sequelize": "^4.37.3",
     "swagger-ui-express": "^3.0.10",
     "toml": "^2.3.3",
-    "typescript": "^2.9.1",
     "uuid": "^3.2.1",
     "winston": "^3.0.0-rc3",
     "yargs": "^11.0.0"
@@ -138,7 +147,8 @@
     "ts-node": "^6.0.2",
     "tslint": "^5.10.0",
     "tslint-config-airbnb": "^5.9.2",
-    "typedoc": "^0.11.1"
+    "typedoc": "^0.11.1",
+    "typescript": "^2.9.1"
   },
   "engines": {
     "node": ">=8.11.3"
