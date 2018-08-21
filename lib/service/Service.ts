@@ -270,14 +270,20 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (args: { order?: OwnOrder }) => {
-    const { order } = args;
-    // TODO: change placeOrder api call to not use an order object and remove assertions below
-    argChecks.PRICE_NON_NEGATIVE(order!);
-    argChecks.NON_ZERO_QUANTITY(order!);
-    argChecks.HAS_PAIR_ID(order!);
+  public placeOrder = async (args: { pairId: string, price: number, quantity: number, orderId: string }) => {
+    const { pairId, price, quantity, orderId } = args;
+    argChecks.PRICE_NON_NEGATIVE(args);
+    argChecks.NON_ZERO_QUANTITY(args);
+    argChecks.HAS_PAIR_ID(args);
 
-    return order!.price > 0 ? this.orderBook.addLimitOrder(order!) : this.orderBook.addMarketOrder(order!);
+    const order = {
+      pairId,
+      price,
+      quantity,
+      localId: orderId,
+    };
+
+    return price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
   }
 
   /*

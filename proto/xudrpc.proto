@@ -244,7 +244,14 @@ message Peer {
 }
 
 message PlaceOrderRequest {
-  Order order = 1 [json_name = "order"];
+  // The price of the order, precise to 6 decimal places.
+  double price = 1 [json_name = "price"];
+  // The quantity of the order, precise to 6 decimal places.
+  double quantity = 2 [json_name = "quantity"];
+  // The trading pair that the order is for
+  string pair_id = 3 [json_name = "pair_id"];
+  // The local id to assign to the order
+  string order_id = 4 [json_name = "order_id"];
 }
 message PlaceOrderResponse {
   // A list of orders matching the newly placed order

@@ -632,8 +632,23 @@
     "xudrpcPlaceOrderRequest": {
       "type": "object",
       "properties": {
-        "order": {
-          "$ref": "#/definitions/xudrpcOrder"
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The price of the order, precise to 6 decimal places."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "The quantity of the order, precise to 6 decimal places."
+        },
+        "pair_id": {
+          "type": "string",
+          "title": "The trading pair that the order is for"
+        },
+        "order_id": {
+          "type": "string",
+          "title": "The local id to assign to the order"
         }
       }
     },

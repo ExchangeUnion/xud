@@ -695,11 +695,17 @@ export namespace Peer {
 }
 
 export class PlaceOrderRequest extends jspb.Message { 
+    getPrice(): number;
+    setPrice(value: number): void;
 
-    hasOrder(): boolean;
-    clearOrder(): void;
-    getOrder(): Order | undefined;
-    setOrder(value?: Order): void;
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getOrderId(): string;
+    setOrderId(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -714,7 +720,10 @@ export class PlaceOrderRequest extends jspb.Message {
 
 export namespace PlaceOrderRequest {
     export type AsObject = {
-        order?: Order.AsObject,
+        price: number,
+        quantity: number,
+        pairId: string,
+        orderId: string,
     }
 }
 

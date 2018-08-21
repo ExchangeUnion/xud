@@ -446,7 +446,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order | [Order](#xudrpc.Order) |  |  |
+| price | [double](#double) |  | The price of the order, precise to 6 decimal places. |
+| quantity | [double](#double) |  | The quantity of the order, precise to 6 decimal places. |
+| pair_id | [string](#string) |  | The trading pair that the order is for |
+| order_id | [string](#string) |  | The local id to assign to the order |
 
 
 
