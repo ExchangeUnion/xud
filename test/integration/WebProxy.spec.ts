@@ -13,6 +13,9 @@ describe('WebProxy', () => {
         disable: false,
         port: 8080,
       },
+      p2p: {
+        listen: false,
+      },
       lndbtc: {
         disable: true,
       },
@@ -44,6 +47,6 @@ describe('WebProxy', () => {
   });
 
   after(async () => {
-    await xud.shutdown();
+    await xud['shutdown']();
   });
 });

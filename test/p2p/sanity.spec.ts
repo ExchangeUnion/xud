@@ -1,6 +1,9 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
+import DB from '../../lib/db/DB';
+import Logger from '../../lib/Logger';
+import Config from '../../lib/Config';
 
 chai.use(chaiAsPromised);
 
@@ -23,7 +26,7 @@ const createConfig = (instanceId: number, p2pPort: number) => ({
     disable: true,
   },
   db: {
-    database: 'xud_test',
+    database: instanceId === 1 ? 'xud_test' : `xud_test${instanceId}`,
   },
 });
 
@@ -35,9 +38,18 @@ describe('P2P Sanity Tests', () => {
 
   before(async () => {
     nodeOneConfig = createConfig(1, 9001);
-    nodeOne = new Xud();
-
     nodeTwoConfig = createConfig(2, 9002);
+    const loggers = Logger.createLoggers();
+
+    // make sure the nodes table is empty
+    const dbConfig = new Config().testDb;
+    const dbOne = new DB(dbConfig, loggers.db);
+    const dbTwo = new DB({ ...dbConfig, database: 'xud_test2' }, loggers.db);
+    await Promise.all([dbOne.init(), dbTwo.init()]);
+    await Promise.all([dbOne.models.Node.truncate(), dbTwo.models.Node.truncate()]);
+    await Promise.all([dbOne.close(), dbTwo.close()]);
+
+    nodeOne = new Xud();
     nodeTwo = new Xud();
 
     await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
@@ -80,7 +92,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   after(async () => {
-    await nodeOne['db'].models.Node.truncate(); // clean up the db
-    await Promise.all([nodeOne.shutdown(), nodeTwo.shutdown()]);
+    await Promise.all([nodeOne['db'].models.Node.truncate(), nodeTwo['db'].models.Node.truncate()]);
+    await Promise.all([nodeOne['shutdown'](), nodeTwo['shutdown']()]);
   });
 });

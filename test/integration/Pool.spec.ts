@@ -1,5 +1,4 @@
 import chai, { expect } from 'chai';
-import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Pool from '../../lib/p2p/Pool';
 import Logger from '../../lib/Logger';
@@ -33,17 +32,17 @@ describe('P2P Pool Tests', () => {
 
   before(async () => {
     const config = new Config();
-    config.load({ p2p: {
-      listen: false,
-    },
-      db: {
-        database: 'xud_test',
+    config.load({
+      p2p: {
+        listen: false,
       },
     });
     db = new DB(config.testDb, loggers.db);
+    await db.init();
+    await db.models.Node.truncate();
+
     pool = new Pool(config.p2p, loggers.p2p, db);
 
-    await db.init();
     await pool.init({
       nodePubKey: 'test',
       version: 'test',
@@ -100,7 +99,7 @@ describe('P2P Pool Tests', () => {
   });
 
   after(async () => {
-    await db.models.Node.truncate(); // clean up the db
+    await db.models.Node.truncate();
     await db.close();
     await pool.disconnect();
   });

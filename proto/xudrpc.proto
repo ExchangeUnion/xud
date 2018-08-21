@@ -75,7 +75,7 @@ service Xud {
     };
   }
   
-  /* Shutdown the xud daemon. */
+  /* Begin shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
       post: "/v1/shutdown"

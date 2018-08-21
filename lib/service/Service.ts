@@ -22,10 +22,10 @@ export type ServiceComponents = {
   raidenClient: RaidenClient;
   pool: Pool;
   config: Config
-  /** The function to be called to shutdown the parent process */
-  shutdown: () => Promise<string>;
   /** The version of the local xud instance. */
   version: string;
+  /** The function to be called to shutdown the parent process */
+  shutdown: () => string;
 };
 
 type XudInfo = {
@@ -58,7 +58,7 @@ const argChecks = {
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
-  public shutdown: () => Promise<string>;
+  public shutdown: () => string;
   private orderBook: OrderBook;
   private lndBtcClient: LndClient;
   private lndLtcClient: LndClient;

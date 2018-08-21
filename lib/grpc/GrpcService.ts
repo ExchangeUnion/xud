@@ -277,9 +277,9 @@ class GrpcService {
     }
   }
 
-  public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = async (_, callback) => {
+  public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     try {
-      const shutdownResponse = await this.service.shutdown();
+      const shutdownResponse = this.service.shutdown();
       const response = new xudrpc.ShutdownResponse();
       response.setResult(shutdownResponse);
       callback(null, response);

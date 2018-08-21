@@ -113,8 +113,8 @@ class Pool extends EventEmitter {
     await this.connectNodes(this.nodes);
 
     if (this.server && this.listenPort) {
-      this.bindServer();
       await this.listen(this.listenPort);
+      this.bindServer();
     }
 
     this.connected = true;
@@ -125,6 +125,7 @@ class Pool extends EventEmitter {
       return;
     }
 
+    // ensure we stop listening for new peers before disconnecting from peers
     if (this.server && this.server.listening) {
       await this.unlisten();
     }
