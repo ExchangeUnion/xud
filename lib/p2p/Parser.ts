@@ -44,6 +44,14 @@ const fromRaw = (raw: string): Packet => {
         return new packetTypes.GetNodesPacket(packet);
       case PacketType.NODES:
         return new packetTypes.NodesPacket(packet);
+      case PacketType.DEAL_REQUEST:
+        return new packetTypes.DealRequest(packet);
+      case PacketType.DEAL_RESPONSE:
+        return new packetTypes.DealResponse(packet);
+      case PacketType.SWAP_REQUEST:
+        return new packetTypes.SwapRequest(packet);
+      case PacketType.SWAP_RESPONSE:
+        return new packetTypes.SwapResponse(packet);
       default:
         throw new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, packet.header.type!);
     }

@@ -8,6 +8,10 @@ enum PacketType {
   ORDERS = 'ORDERS',
   GET_NODES = 'GET_NODES',
   NODES = 'NODES',
+  DEAL_REQUEST = 'DEAL_REQUEST',
+  DEAL_RESPONSE = 'DEAL_RESPONSE',
+  SWAP_REQUEST = 'SWAP_REQUEST',
+  SWAP_RESPONSE = 'SWAP_RESPONSE',
 }
 
 export default PacketType;

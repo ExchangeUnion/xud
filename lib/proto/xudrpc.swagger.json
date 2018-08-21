@@ -719,6 +719,9 @@
         },
         "receiving_token": {
           "type": "string"
+        },
+        "node_pub_key": {
+          "type": "string"
         }
       }
     }

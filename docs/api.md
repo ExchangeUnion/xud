@@ -1,5 +1,5 @@
 # Protocol Documentation
-<a name="top"/>
+<a name="top"></a>
 
 ## Table of Contents
 
@@ -48,14 +48,14 @@
 
 
 
-<a name="xudrpc.proto"/>
+<a name="xudrpc.proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
 ## xudrpc.proto
 
 
 
-<a name="xudrpc.CancelOrderRequest"/>
+<a name="xudrpc.CancelOrderRequest"></a>
 
 ### CancelOrderRequest
 
@@ -71,7 +71,7 @@
 
 
 
-<a name="xudrpc.CancelOrderResponse"/>
+<a name="xudrpc.CancelOrderResponse"></a>
 
 ### CancelOrderResponse
 
@@ -86,7 +86,7 @@
 
 
 
-<a name="xudrpc.ConnectRequest"/>
+<a name="xudrpc.ConnectRequest"></a>
 
 ### ConnectRequest
 
@@ -103,7 +103,7 @@
 
 
 
-<a name="xudrpc.ConnectResponse"/>
+<a name="xudrpc.ConnectResponse"></a>
 
 ### ConnectResponse
 
@@ -118,7 +118,7 @@
 
 
 
-<a name="xudrpc.DisconnectRequest"/>
+<a name="xudrpc.DisconnectRequest"></a>
 
 ### DisconnectRequest
 
@@ -133,7 +133,7 @@
 
 
 
-<a name="xudrpc.DisconnectResponse"/>
+<a name="xudrpc.DisconnectResponse"></a>
 
 ### DisconnectResponse
 
@@ -148,7 +148,7 @@
 
 
 
-<a name="xudrpc.ExecuteSwapRequest"/>
+<a name="xudrpc.ExecuteSwapRequest"></a>
 
 ### ExecuteSwapRequest
 
@@ -164,7 +164,7 @@
 
 
 
-<a name="xudrpc.ExecuteSwapResponse"/>
+<a name="xudrpc.ExecuteSwapResponse"></a>
 
 ### ExecuteSwapResponse
 
@@ -179,7 +179,7 @@
 
 
 
-<a name="xudrpc.GetInfoRequest"/>
+<a name="xudrpc.GetInfoRequest"></a>
 
 ### GetInfoRequest
 
@@ -189,7 +189,7 @@
 
 
 
-<a name="xudrpc.GetInfoResponse"/>
+<a name="xudrpc.GetInfoResponse"></a>
 
 ### GetInfoResponse
 
@@ -210,7 +210,7 @@
 
 
 
-<a name="xudrpc.GetOrdersRequest"/>
+<a name="xudrpc.GetOrdersRequest"></a>
 
 ### GetOrdersRequest
 
@@ -226,7 +226,7 @@
 
 
 
-<a name="xudrpc.GetOrdersResponse"/>
+<a name="xudrpc.GetOrdersResponse"></a>
 
 ### GetOrdersResponse
 
@@ -242,7 +242,7 @@
 
 
 
-<a name="xudrpc.GetPairsRequest"/>
+<a name="xudrpc.GetPairsRequest"></a>
 
 ### GetPairsRequest
 
@@ -252,7 +252,7 @@
 
 
 
-<a name="xudrpc.GetPairsResponse"/>
+<a name="xudrpc.GetPairsResponse"></a>
 
 ### GetPairsResponse
 
@@ -267,7 +267,7 @@
 
 
 
-<a name="xudrpc.ListPeersRequest"/>
+<a name="xudrpc.ListPeersRequest"></a>
 
 ### ListPeersRequest
 
@@ -277,7 +277,7 @@
 
 
 
-<a name="xudrpc.ListPeersResponse"/>
+<a name="xudrpc.ListPeersResponse"></a>
 
 ### ListPeersResponse
 
@@ -292,7 +292,7 @@
 
 
 
-<a name="xudrpc.LndChannels"/>
+<a name="xudrpc.LndChannels"></a>
 
 ### LndChannels
 
@@ -309,7 +309,7 @@
 
 
 
-<a name="xudrpc.LndInfo"/>
+<a name="xudrpc.LndInfo"></a>
 
 ### LndInfo
 
@@ -329,7 +329,7 @@
 
 
 
-<a name="xudrpc.Order"/>
+<a name="xudrpc.Order"></a>
 
 ### Order
 
@@ -352,7 +352,7 @@
 
 
 
-<a name="xudrpc.OrderMatch"/>
+<a name="xudrpc.OrderMatch"></a>
 
 ### OrderMatch
 
@@ -368,7 +368,7 @@
 
 
 
-<a name="xudrpc.Orders"/>
+<a name="xudrpc.Orders"></a>
 
 ### Orders
 
@@ -384,7 +384,7 @@
 
 
 
-<a name="xudrpc.OrdersCount"/>
+<a name="xudrpc.OrdersCount"></a>
 
 ### OrdersCount
 
@@ -400,7 +400,7 @@
 
 
 
-<a name="xudrpc.Pair"/>
+<a name="xudrpc.Pair"></a>
 
 ### Pair
 
@@ -418,7 +418,7 @@
 
 
 
-<a name="xudrpc.Peer"/>
+<a name="xudrpc.Peer"></a>
 
 ### Peer
 
@@ -438,7 +438,7 @@
 
 
 
-<a name="xudrpc.PlaceOrderRequest"/>
+<a name="xudrpc.PlaceOrderRequest"></a>
 
 ### PlaceOrderRequest
 
@@ -453,7 +453,7 @@
 
 
 
-<a name="xudrpc.PlaceOrderResponse"/>
+<a name="xudrpc.PlaceOrderResponse"></a>
 
 ### PlaceOrderResponse
 
@@ -469,7 +469,7 @@
 
 
 
-<a name="xudrpc.RaidenInfo"/>
+<a name="xudrpc.RaidenInfo"></a>
 
 ### RaidenInfo
 
@@ -487,7 +487,7 @@
 
 
 
-<a name="xudrpc.ShutdownRequest"/>
+<a name="xudrpc.ShutdownRequest"></a>
 
 ### ShutdownRequest
 
@@ -497,7 +497,7 @@
 
 
 
-<a name="xudrpc.ShutdownResponse"/>
+<a name="xudrpc.ShutdownResponse"></a>
 
 ### ShutdownResponse
 
@@ -512,7 +512,7 @@
 
 
 
-<a name="xudrpc.SubscribePeerOrdersRequest"/>
+<a name="xudrpc.SubscribePeerOrdersRequest"></a>
 
 ### SubscribePeerOrdersRequest
 
@@ -522,7 +522,7 @@
 
 
 
-<a name="xudrpc.SubscribePeerOrdersResponse"/>
+<a name="xudrpc.SubscribePeerOrdersResponse"></a>
 
 ### SubscribePeerOrdersResponse
 
@@ -537,7 +537,7 @@
 
 
 
-<a name="xudrpc.SubscribeSwapsRequest"/>
+<a name="xudrpc.SubscribeSwapsRequest"></a>
 
 ### SubscribeSwapsRequest
 
@@ -547,7 +547,7 @@
 
 
 
-<a name="xudrpc.SubscribeSwapsResponse"/>
+<a name="xudrpc.SubscribeSwapsResponse"></a>
 
 ### SubscribeSwapsResponse
 
@@ -562,7 +562,7 @@
 
 
 
-<a name="xudrpc.SwapPayload"/>
+<a name="xudrpc.SwapPayload"></a>
 
 ### SwapPayload
 
@@ -575,6 +575,7 @@
 | sending_token | [string](#string) |  |  |
 | receiving_amount | [uint64](#uint64) |  |  |
 | receiving_token | [string](#string) |  |  |
+| node_pub_key | [string](#string) |  |  |
 
 
 
@@ -587,25 +588,25 @@
  
 
 
-<a name="xudrpc.Xud"/>
+<a name="xudrpc.Xud"></a>
 
 ### Xud
 
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderRequest) | Cancel placed order from the orderbook. |
-| Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectRequest) | Connect to an XU node. |
-| Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectRequest) | Disconnect from a connected peer XU node. |
-| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapRequest) | Execute an atomic swap |
-| GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoRequest) | Get general information about this Exchange Union node. |
-| GetPairs | [GetPairsRequest](#xudrpc.GetPairsRequest) | [GetPairsResponse](#xudrpc.GetPairsRequest) | Get the list of the order book&#39;s available pairs. |
-| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersRequest) | Get a list of standing orders from the order book. |
-| ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersRequest) | Get a list of connected peers. |
-| PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderRequest) | Add an order to the order book. If price is zero or unspecified a market order will get added. |
-| Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownRequest) | Shutdown the xud daemon. |
-| SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersRequest) | Subscribe to peer order events. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsRequest) | Subscribe executed swaps. |
+| CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
+| Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
+| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse) | Execute an atomic swap |
+| GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
+| GetPairs | [GetPairsRequest](#xudrpc.GetPairsRequest) | [GetPairsResponse](#xudrpc.GetPairsResponse) | Get the list of the order book&#39;s available pairs. |
+| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a list of standing orders from the order book. |
+| ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
+| PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | Add an order to the order book. If price is zero or unspecified a market order will get added. |
+| Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Shutdown the xud daemon. |
+| SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse) | Subscribe to peer order events. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse) | Subscribe executed swaps. |
 
  
 

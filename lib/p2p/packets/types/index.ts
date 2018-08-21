@@ -7,3 +7,7 @@ export { default as OrdersPacket } from './OrdersPacket';
 export { default as OrderInvalidationPacket } from './OrderInvalidationPacket';
 export { default as GetNodesPacket } from './GetNodesPacket';
 export { default as NodesPacket } from './NodesPacket';
+export { default as DealRequest, DealRequestPacketBody } from './DealRequestPacket';
+export { default as DealResponse, DealResponsePacketBody } from './DealResponsePacket';
+export { default as SwapRequest, SwapRequestPacketBody } from './SwapRequestPacket';
+export { default as SwapResponse, SwapResponsePacketBody } from './SwapResponsePacket';
