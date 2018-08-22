@@ -43,7 +43,7 @@ export const getUri = (uriParts: UriParts): string => {
 };
 
 /**
- * Splits a URI into the public key, host and port
+ * Splits a URI into the public key, host and port.
  */
 export const parseUri = (uri: string): UriParts => {
   // A regex that splits the string by the symbols "@" and ":"
