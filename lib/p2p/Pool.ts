@@ -50,7 +50,7 @@ class Pool extends EventEmitter {
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
-  private addresses?: Address[];
+  private addresses: Address[] = [];
 
   constructor(config: PoolConfig, private logger: Logger, db: DB,
               public lndBtcClient?: LndClient, public lndLtcClient?: LndClient) {
@@ -60,7 +60,6 @@ class Pool extends EventEmitter {
     if (config.listen) {
       this.listenPort = config.port;
       this.server = net.createServer();
-      this.addresses = [];
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
         this.addresses!.push(address);
@@ -82,19 +81,15 @@ class Pool extends EventEmitter {
     }
 
     if (this.listenPort) {
-      if (!handshakeData.addresses) {
-        handshakeData.addresses = [];
-      }
-
       // Append the external IP if no address was specified by the user
-      if (handshakeData.addresses.length === 0) {
+      if (this.addresses.length === 0) {
         try {
           // TODO: verify that this address is reachable
           const externlIp = await getExternalIp();
 
           this.logger.info(`retrieved external IP: ${externlIp}`);
 
-          handshakeData.addresses.push({
+          this.addresses.push({
             host: externlIp,
             port: this.listenPort,
           });
