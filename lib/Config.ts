@@ -92,7 +92,7 @@ class Config {
     };
   }
 
-  public load(args?: { [argName: string]: any }) {
+  public load(args?: { [argName: string]: any }): Config {
     if (args && args['xudir']) {
       this.xudir = args['xudir'];
     }
@@ -116,6 +116,8 @@ class Config {
       // override our config file with command line arguments
       deepMerge(this, args);
     }
+
+    return this;
   }
 }
 
