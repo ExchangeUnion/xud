@@ -1,12 +1,13 @@
-import { NodeFactory } from './db';
-
 export type Address = {
   host: string;
   port: number;
 };
 
 /** Information used for connecting to a remote node. */
-export type NodeConnectionInfo = NodeFactory;
+export type NodeConnectionInfo = {
+  nodePubKey: string;
+  addresses: Address[];
+};
 
 export type HandshakeState = {
   version: string;
