@@ -1,8 +1,8 @@
 import http from 'http';
-import errors from './errors';
 import p2pErrors from '../p2p/errors';
+import { assert } from 'chai';
 
-type UriParts = {
+export type UriParts = {
   nodePubKey: string;
   host: string;
   port: number;
@@ -49,9 +49,7 @@ export const parseUri = (uri: string): UriParts => {
   // A regex that splits the string by the symbols "@" and ":"
   const split = uri.split(/[@:]+/);
 
-  if (split.length !== 3) {
-    throw errors.INVALID_URI(uri);
-  }
+  assert(split.length === 3);
 
   return {
     nodePubKey: split[0],

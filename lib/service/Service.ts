@@ -11,7 +11,7 @@ import * as packets from '../p2p/packets/types';
 import { CurrencyType, SwapDealRole } from '../types/enums';
 import { SwapDeal } from '../orderbook/SwapDeals';
 import { randomBytes } from 'crypto';
-import { parseUri, getUri } from '../utils/utils';
+import { parseUri, getUri, UriParts } from '../utils/utils';
 
 /**
  * The components required by the API service layer.
@@ -108,7 +108,13 @@ class Service extends EventEmitter {
    * Connect to an XU node on a given node uri.
    */
   public connect = async (args: { nodeUri: string }) => {
-    const { nodePubKey, host, port } = parseUri(args.nodeUri);
+    let uriParts: UriParts;
+    try {
+      uriParts = parseUri(args.nodeUri);
+    } catch (err) {
+      throw errors.INVALID_ARGUMENT('uri is invalid');
+    }
+    const { nodePubKey, host, port } = uriParts;
     argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
