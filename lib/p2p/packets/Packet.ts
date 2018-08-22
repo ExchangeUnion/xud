@@ -84,10 +84,9 @@ abstract class Packet<T = any> implements PacketInterface {
    * @returns JSON string representing the packet
    */
   public toRaw(): string {
-    const { body } = this;
     // explicitly set the type on the header before serializing
     const header: PacketHeader = { ...this.header, type: this.type };
-    return body ? JSON.stringify({ header, body }) : JSON.stringify({ header });
+    return this.body ? JSON.stringify({ header, body: this.body }) : JSON.stringify({ header });
   }
 }
 

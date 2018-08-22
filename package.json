@@ -146,7 +146,7 @@
     "nodemon": "^1.17.5",
     "ts-node": "^6.0.2",
     "tslint": "^5.10.0",
-    "tslint-config-airbnb": "^5.9.2",
+    "tslint-config-airbnb": "^5.10.0",
     "typedoc": "^0.11.1",
     "typescript": "^2.9.1"
   },
