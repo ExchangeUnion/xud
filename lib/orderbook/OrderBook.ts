@@ -235,7 +235,7 @@ class OrderBook extends EventEmitter {
    * Add peer order
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
-  private addPeerOrder = (order: orders.PeerOrder): boolean => {
+  private addPeerOrder = (order: orders.StampedPeerOrder): boolean => {
     const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
@@ -374,10 +374,7 @@ class OrderBook extends EventEmitter {
   }
 
   private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
-    // TODO: Remove functionality of attaching invoices to orders per new swap approach.
-    const invoice = 'dummyInvoice'; // temporarily testing invoices while lnd is not available
-
-    const { createdAt, localId, ...outgoingOrder } = { ...order, invoice };
+    const { createdAt, localId, ...outgoingOrder } = order;
     return outgoingOrder;
   }
 
@@ -393,7 +390,7 @@ class OrderBook extends EventEmitter {
         });
       }
     }
-    this.matchesProcessor.add(match);
+    this.matchesProcessor.process(match);
   }
 }
 

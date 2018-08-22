@@ -9,6 +9,7 @@ export type DealRequestPacketBody = {
   makerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
   takerPubKey: string;
+  orderId?: string; // TODO: make this non-nullable and remove amount/currency
 };
 
 class DealRequestPacket extends Packet<DealRequestPacketBody> {
