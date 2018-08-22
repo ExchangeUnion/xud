@@ -8,6 +8,7 @@ chai.use(chaiAsPromised);
 
 describe('Parser', () => {
   const delimiter = Packet.PROTOCOL_DELIMITER;
+  const timeoutError = 'timeout';
   let parser: Parser;
 
   beforeEach(() => {
@@ -16,7 +17,7 @@ describe('Parser', () => {
 
   function wait(num = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      setTimeout(() => reject('timeout'), 0); // expecting results to be fulfilled synchronously
+      setTimeout(() => reject(timeoutError), 0); // expecting results to be fulfilled synchronously
       const parsedPackets: Packet[] = [];
       parser.on('packet', (parsedPacket: Packet) => {
         parsedPackets.push(parsedPacket);
@@ -109,7 +110,7 @@ describe('Parser', () => {
   testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
 
   it(`should not try to parse an empty string`, () => {
-    expect(wait()).to.eventually.be.rejectedWith('timeout');
+    expect(wait()).to.be.rejected;
 
     parser.feed('');
   });
@@ -122,7 +123,7 @@ describe('Parser', () => {
 
   it(`should buffer a max buffer length`, () => {
     parser = new Parser(delimiter, 10);
-    expect(wait()).to.eventually.be.rejectedWith('timeout');
+    expect(wait()).to.be.rejected;
 
     parser.feed(Buffer.allocUnsafe(10).toString());
   });
