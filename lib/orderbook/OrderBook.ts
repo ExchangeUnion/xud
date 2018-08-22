@@ -142,7 +142,9 @@ class OrderBook extends EventEmitter {
 
   public addMarketOrder = (order: orders.OwnMarketOrder): matchingEngine.MatchingResult => {
     const price = order.quantity > 0 ? Number.MAX_VALUE : 0;
-    return this.addOwnOrder({ ...order, price }, true);
+    const result = this.addOwnOrder({ ...order, price }, true);
+    delete result.remainingOrder;
+    return result;
   }
 
   public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
