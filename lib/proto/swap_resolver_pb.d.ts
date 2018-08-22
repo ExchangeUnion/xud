@@ -46,8 +46,3 @@ export namespace ResolveResp {
         preimage: string,
     }
 }
-
-export enum CoinType {
-    BTC = 0,
-    LTC = 1,
-}

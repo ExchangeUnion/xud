@@ -11,11 +11,6 @@ service SwapResolver {
 
 }
 
-enum CoinType {
-    BTC = 0;
-    LTC = 1;
-}
-
 message ResolveReq {
   string hash = 1 ;
 }
