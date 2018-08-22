@@ -6,6 +6,7 @@ import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
+import { SwapResolverService } from '../proto/swap_resolver_grpc_pb';
 
 class GrpcServer {
   private server: Server;
@@ -27,6 +28,10 @@ class GrpcServer {
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
       listPeers: grpcService.listPeers,
+    });
+
+    this.server.addService(SwapResolverService, {
+      resolveHash: grpcService.resolveHash,
     });
   }
 

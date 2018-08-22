@@ -303,6 +303,67 @@ class Service extends EventEmitter {
    * Subscribe to executed swaps
    */
   public subscribeSwaps = async (_callback: Function) => {};
+
+  /**
+   * resolveHash resolve hash to preImage.
+   */
+  public resolveHash = async (args: { hash: string }) => {
+    const { hash } = args;
+
+    this.logger.info('ResolveHash stating with for hash: ' + hash);
+
+    const deal: SwapDeal | undefined = this.pool.swapDeals.findByHash(hash);
+
+    if (!deal) {
+      this.logger.error('Something went wrong. Can\'t find deal: ' + hash);
+      return 'Somthing is worng';
+    }
+
+	// If I'm the taker I need to forward the payment to the other chanin
+	// TODO: check that I got the right amount before sending out the agreed amount
+    // TODO: calculate CLTV
+    if (deal.myRole === SwapDealRole.Taker) {
+	  this.logger.debug('Executing taker code');
+      let cmdLnd = this.lndBtcClient;
+
+      switch (deal.makerCoin) {
+        case CurrencyType.BTC:
+          break;
+        case CurrencyType.LTC:
+          cmdLnd = this.lndLtcClient;
+          break;
+      }
+
+      // resp, err := cmdLnd.SendPaymentSync(lncctx,&lnrpc.SendRequest{
+      //   DestString:deal.makerPubKey,
+      //   Amt:deal.makerAmount,
+      //   PaymentHash:deal.hash[:],
+      // })
+      // if err != nil{
+      //   err = fmt.Errorf("Got error sending  %d %v by taker - %v",
+      //         deal.makerAmount,deal.makerCoin.String(),err)
+      //   log.Printf(err.Error())
+      //   return nil, err
+      // }
+      // if resp.PaymentError != ""{
+      //   err = fmt.Errorf("Got PaymentError sending %d %v by taker - %v",
+      //       deal.makerAmount,deal.makerCoin.String(), resp.PaymentError)
+      //   log.Printf(err.Error())
+      //   return nil, err
+      // }
+
+      // this.logger.info('sendPayment response from maker to taker:' + JSON.stringify(resp))
+
+      return 'preImage to here';
+
+    }
+
+	// If we are here we are the maker
+    this.logger.debug('Executing maker code');
+
+    return String(deal.preImage);
+  }
+
 }
 
 export default Service;

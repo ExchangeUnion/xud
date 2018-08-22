@@ -3,6 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
+import * as resolverrpc from '../proto/swap_resolver_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
@@ -301,6 +302,21 @@ class GrpcService {
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SubscribeSwapsResponse> = (call) => {
     this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
   }
+
+  /*
+   * Resolving LND hash. See [[Service.resolveHash]]
+   */
+  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveReq, resolverrpc.ResolveResp> = async (call, callback) => {
+    try {
+      const resolveResponse = await this.service.resolveHash(call.request.toObject());
+      const response = new resolverrpc.ResolveResp();
+      response.setPreimage(resolveResponse);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
 }
 
 export default GrpcService;
