@@ -110,7 +110,7 @@ describe('Parser', () => {
   testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
 
   it(`should not try to parse an empty string`, () => {
-    expect(wait()).to.eventually.be.rejectedWith(timeoutError);
+    expect(wait()).to.be.rejected;
 
     parser.feed('');
   });
@@ -123,7 +123,7 @@ describe('Parser', () => {
 
   it(`should buffer a max buffer length`, () => {
     parser = new Parser(delimiter, 10);
-    expect(wait()).to.eventually.be.rejectedWith(timeoutError);
+    expect(wait()).to.be.rejected;
 
     parser.feed(Buffer.allocUnsafe(10).toString());
   });
