@@ -41,12 +41,13 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   // TODO: Make private once the call to add a swap deal is moved from Peer.ts to Pool.ts
   public swapDeals: SwapDeals;
+  /** The local handshake data to be sent to newly connected peers. */
+  public handshakeData!: HandshakeState;
+
   private nodes: NodeList;
   private peers: PeerList = new PeerList();
   private server?: Server;
   private connected = false;
-  /** The local handshake data to be sent to newly connected peers. */
-  private handshakeData!: HandshakeState;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */

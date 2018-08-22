@@ -53,14 +53,8 @@ export namespace CancelOrderResponse {
 }
 
 export class ConnectRequest extends jspb.Message { 
-    getHost(): string;
-    setHost(value: string): void;
-
-    getPort(): number;
-    setPort(value: number): void;
-
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeUri(): string;
+    setNodeUri(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -75,9 +69,7 @@ export class ConnectRequest extends jspb.Message {
 
 export namespace ConnectRequest {
     export type AsObject = {
-        host: string,
-        port: number,
-        nodePubKey: string,
+        nodeUri: string,
     }
 }
 
@@ -211,14 +203,22 @@ export namespace GetInfoRequest {
 }
 
 export class GetInfoResponse extends jspb.Message { 
+    getVersion(): string;
+    setVersion(value: string): void;
+
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+    clearUrisList(): void;
+    getUrisList(): Array<string>;
+    setUrisList(value: Array<string>): void;
+    addUris(value: string, index?: number): string;
+
     getNumPeers(): number;
     setNumPeers(value: number): void;
 
     getNumPairs(): number;
     setNumPairs(value: number): void;
-
-    getVersion(): string;
-    setVersion(value: string): void;
 
 
     hasOrders(): boolean;
@@ -257,9 +257,11 @@ export class GetInfoResponse extends jspb.Message {
 
 export namespace GetInfoResponse {
     export type AsObject = {
+        version: string,
+        nodePubKey: string,
+        urisList: Array<string>,
         numPeers: number,
         numPairs: number,
-        version: string,
         orders?: OrdersCount.AsObject,
         lndbtc?: LndInfo.AsObject,
         lndltc?: LndInfo.AsObject,

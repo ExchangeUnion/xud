@@ -110,9 +110,7 @@ message CancelOrderResponse {
 }
 
 message ConnectRequest {
-  string host = 1 [json_name = "host"];
-  uint32 port = 2 [json_name = "port"];
-  string node_pub_key = 3 [json_name = "node_pub_key"];
+  string node_uri = 1 [json_name = "node_uri"];
 }
 message ConnectResponse {
   // A message describing the result of the connection request
@@ -136,13 +134,15 @@ message ExecuteSwapResponse {
 
 message GetInfoRequest {}
 message GetInfoResponse {
-  int32 num_peers = 1 [json_name = "num_peers"];
-  int32 num_pairs = 2 [json_name = "num_pairs"];
-  string version = 3 [json_name = "version"];
-  OrdersCount orders = 4 [json_name = "orders"];
-  LndInfo lndbtc = 5 [json_name = "lndbtc"];
-  LndInfo lndltc = 6 [json_name = "lndltc"];
-  RaidenInfo raiden = 7 [json_name = "raiden"];
+  string version = 1 [json_name = "version"];
+  string node_pub_key = 2 [json_name = "node_pub_key"];
+  repeated string uris = 3 [json_name = "uris"];
+  int32 num_peers = 4 [json_name = "num_peers"];
+  int32 num_pairs = 5 [json_name = "num_pairs"];
+  OrdersCount orders = 6 [json_name = "orders"];
+  LndInfo lndbtc = 7 [json_name = "lndbtc"];
+  LndInfo lndltc = 8 [json_name = "lndltc"];
+  RaidenInfo raiden = 9 [json_name = "raiden"];
 }
 
 message GetOrdersRequest {

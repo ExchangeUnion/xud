@@ -7,11 +7,12 @@ import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { Address } from '../types/p2p';
 import * as packets from '../p2p/packets/types';
 import { CurrencyType, SwapDealRole } from '../types/enums';
 import { SwapDeal } from '../orderbook/SwapDeals';
 import { randomBytes } from 'crypto';
+import { parseUri, getUri } from '../utils/utils';
+
 /**
  * The components required by the API service layer.
  */
@@ -29,9 +30,11 @@ export type ServiceComponents = {
 };
 
 type XudInfo = {
+  version: string;
+  nodePubKey: string;
+  uris: string[];
   numPeers: number;
   numPairs: number;
-  version: string;
   orders: { peer: number, own: number};
   lndbtc?: LndInfo;
   lndltc?: LndInfo;
@@ -102,13 +105,13 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Connect to an XU node on a given host and port.
+   * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: { host: string, port: number, nodePubKey: string }) => {
-    const { host, port, nodePubKey } = args;
-    argChecks.HAS_NODE_PUB_KEY(args);
-    argChecks.HAS_HOST(args);
-    argChecks.VALID_PORT(args);
+  public connect = async (args: { nodeUri: string }) => {
+    const { nodePubKey, host, port } = parseUri(args.nodeUri);
+    argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
+    argChecks.HAS_HOST({ host });
+    argChecks.VALID_PORT({ port });
     const peer = await this.pool.addOutbound({ host, port }, nodePubKey);
     return peer.getStatus();
   }
@@ -203,6 +206,16 @@ class Service extends EventEmitter {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
+    const { nodePubKey, addresses } = this.pool.handshakeData;
+
+    const uris: string[] = [];
+
+    if (addresses && addresses.length > 0) {
+      addresses.forEach((address) => {
+        uris.push(getUri({ nodePubKey, host: address.host, port: address.port }));
+      });
+    }
+
     const pairIds = this.orderBook.pairIds;
 
     let peerOrdersCount = 0;
@@ -224,6 +237,8 @@ class Service extends EventEmitter {
       lndbtc,
       lndltc,
       raiden,
+      nodePubKey,
+      uris,
       version: this.version,
       numPeers: this.pool.peerCount,
       numPairs: pairIds.length,

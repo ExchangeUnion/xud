@@ -130,6 +130,8 @@ class GrpcService {
     try {
       const getInfoResponse = await this.service.getInfo();
       const response = new xudrpc.GetInfoResponse();
+      response.setNodePubKey(getInfoResponse.nodePubKey);
+      response.setUrisList(getInfoResponse.uris);
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
