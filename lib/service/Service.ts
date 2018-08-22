@@ -310,7 +310,7 @@ class Service extends EventEmitter {
   public resolveHash = async (args: { hash: string }) => {
     const { hash } = args;
 
-    this.logger.info('ResolveHash stating with for hash: ' + hash);
+    this.logger.info('ResolveHash stating with hash: ' + hash);
 
     const deal: SwapDeal | undefined = this.pool.swapDeals.findByHash(hash);
 
@@ -355,7 +355,6 @@ class Service extends EventEmitter {
       // this.logger.info('sendPayment response from maker to taker:' + JSON.stringify(resp))
 
       return 'preImage to here';
-
     }
 
 	// If we are here we are the maker

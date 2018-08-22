@@ -1,15 +1,8 @@
 
 syntax = "proto3";
 
-//import "google/api/annotations.proto";
-
-//option java_multiple_files = true;
-//option java_package = "io.grpc.examples.routeguide";
-//option java_outer_classname = "RouteGuideProto";
-
 package swapresolver;
 
-// Interface exported by the server.
 service SwapResolver {
   // ResolveHash is used by LND to request translation of Rhash to a pre-image.
   // the resolver may return the preimage and error indicating that there is no
@@ -23,7 +16,6 @@ enum CoinType {
     LTC = 1;
 }
 
-// 6
 message ResolveReq {
   string hash = 1 ;
 }
@@ -32,75 +24,4 @@ message ResolveResp {
   string preimage = 1;
 }
 
-// Todo: this should be in a different proto file to keep the concep of resolver clean
-service P2P {
-  // TakeOrder is called to initiate a swap between maker and taker
-  // it is a temporary service needed until the integration with XUD
-  // intended to be called from CLI to simulate order taking by taker
-  rpc TakeOrder(TakeOrderReq) returns (TakeOrderResp) {}
-
-  // SuggestDeal is called by the taker to inform the maker that he
-  // would like to execute a swap. The maker may reject the request
-  // for now, the maker can only accept/reject and can't rediscuss the
-  // deal or suggest partial amount. If accepted the maker should respond
-  // with a hash that would be used for teh swap.
-  rpc SuggestDeal(SuggestDealReq) returns (SuggestDealResp) {}
-
-  // Swap initiates the swap. It is called by the taker to confirm that
-  // he has the hash and confirm the deal.
-  rpc Swap(SwapReq) returns (SwapResp) {}
-
-}
-
-// 1 - CLI to taker
-message TakeOrderReq{
-  string orderid = 1 ;  // global order ID on XUD system
-  int64 taker_amount = 2 ;
-  CoinType taker_coin = 3 ;
-  int64 maker_amount = 4 ;
-  CoinType maker_coin =5 ;
-}
-
-// 14 taker to CLI
-message TakeOrderResp{
-  bytes r_preimage = 1;
-}
-
-// 2 - from taker to maker
-message SuggestDealReq{
-  string orderid = 1 ;  // global order ID on XUD system
-  string taker_deal_id = 2 ;
-  int64 taker_amount = 3 ;
-  CoinType taker_coin = 4 ;
-  int64 maker_amount = 5 ;
-  CoinType maker_coin = 6 ;
-  string taker_pubkey = 7 ; // on taker coin network
-}
-// 3 from maker back to taker
-message SuggestDealResp{
-  string orderid = 1 ;
-  bytes r_hash = 2 ;
-  string maker_deal_id = 3 ;
-  string maker_pubkey = 4 ; // on maker coin network
-
-}
-
-// 4 from taker to maker
-message SwapReq{
-  string maker_deal_id = 1 ;
-}
-
-// 5 maker to LND
-// 6 LND to taker
-// 7 taker to LND
-// 8 LND to maker
-// 9 maker to LND (preimager
-// 10 LND to taker
-// 11 taker to LND
-// 12 LND to maker
-
-// 13 maker to taker
-message SwapResp{
-  bytes r_preimage = 1;
-}
 
