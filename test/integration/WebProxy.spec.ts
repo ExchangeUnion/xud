@@ -13,7 +13,13 @@ describe('WebProxy', () => {
         disable: false,
         port: 8080,
       },
-      lnd: {
+      p2p: {
+        listen: false,
+      },
+      lndbtc: {
+        disable: true,
+      },
+      lndltc: {
         disable: true,
       },
       raiden: {
@@ -24,8 +30,8 @@ describe('WebProxy', () => {
       },
     };
 
-    xud = new Xud(config);
-    await xud.start();
+    xud = new Xud();
+    await xud.start(config);
   });
 
   it('should respond with http status 200', (done) => {
@@ -41,6 +47,6 @@ describe('WebProxy', () => {
   });
 
   after(async () => {
-    await xud.shutdown();
+    await xud['shutdown']();
   });
 });

@@ -1,11 +1,7 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-type PingPacketBody = {
-  ts: number;
-};
-
-class PingPacket extends Packet<PingPacketBody> {
+class PingPacket extends Packet<undefined> {
   public get type() {
     return PacketType.PING;
   }

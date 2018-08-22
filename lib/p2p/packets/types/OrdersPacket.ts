@@ -2,9 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { orders } from '../../../types';
 
-type OrdersPacketBody = {
-  orders: orders.OutgoingOrder[],
-};
+type OrdersPacketBody = orders.OutgoingOrder[];
 
 class OrdersPacket extends Packet<OrdersPacketBody> {
   public get type() {

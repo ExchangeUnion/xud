@@ -1,13 +1,13 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-type GetHostsPacketBody = {
-  ts: number;
+export type SwapRequestPacketBody = {
+  makerDealId: string;
 };
 
-class GetHostsPacket extends Packet<GetHostsPacketBody> {
+class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
   public get type() {
-    return PacketType.GET_HOSTS;
+    return PacketType.SWAP_REQUEST;
   }
 
   public get direction() {
@@ -15,4 +15,4 @@ class GetHostsPacket extends Packet<GetHostsPacketBody> {
   }
 }
 
-export default GetHostsPacket;
+export default SwapRequestPacket;

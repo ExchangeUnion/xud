@@ -6,6 +6,7 @@ import Bluebird from 'bluebird';
 
 import Logger from '../Logger';
 import { db } from '../types';
+import { SwapProtocol } from '../types/enums';
 
 type SequelizeConfig = {
   host: string;
@@ -20,18 +21,17 @@ type DBConfig = SequelizeConfig & {
 };
 
 type Models = {
-  Host: Sequelize.Model<db.HostInstance, db.HostAttributes>;
-  BannedHost: Sequelize.Model<db.BannedHostInstance, db.BannedHostAttributes>;
+  Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
 };
 
+/** A class representing a connection to a SQL database. */
 class DB {
-  public sequelize!: Sequelize.Sequelize;
-  public models!: Models;
-  private logger: Logger = Logger.db;
+  public sequelize: Sequelize.Sequelize;
+  public models: Models;
 
-  constructor(private config: DBConfig) {
+  constructor(private config: DBConfig, private logger: Logger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
 
     this.sequelize = this.createSequelizeInstance(this.config);
@@ -43,30 +43,61 @@ class DB {
   }
 
   public init = async (): Promise<void> => {
+    let newDb = false;
     try {
       await this.sequelize.authenticate();
       const { host, port, database } = this.config;
       this.logger.info(`connected to database. host:${host} port:${port} database:${database}`);
     } catch (err) {
       if (DB.isDbDoesNotExistError(err)) {
+        newDb = true;
         await this.createDatabase();
       } else {
         this.logger.error('unable to connect to the database', err);
         throw err;
       }
     }
-    const { Host, BannedHost, Currency, Pair } = this.models;
+    const { Node, Currency, Pair } = this.models;
     const options = { logging: this.logger.verbose };
-
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Host.sync(options),
-      BannedHost.sync(options),
+      Node.sync(options),
       Currency.sync(options),
     ]);
     await Promise.all([
       Pair.sync(options),
     ]);
+
+    if (newDb) {
+      // populate new databases with default data
+      // TODO: make seed peers configurable
+      await Node.bulkCreate(<db.NodeAttributes[]>[
+        {
+          nodePubKey: '02b66438730d1fcdf4a4ae5d3d73e847a272f160fee2938e132b52cab0a0d9cfc6',
+          addresses: [{ host: 'xud1.test.exchangeunion.com', port: 8885 }],
+        },
+        {
+          nodePubKey: '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0a',
+          addresses: [{ host: 'xud2.test.exchangeunion.com', port: 8885 }],
+        },
+        {
+          nodePubKey: '03fd337659e99e628d0487e4f87acf93e353db06f754dccc402f2de1b857a319d0',
+          addresses: [{ host: 'xud3.test.exchangeunion.com', port: 8885 }],
+        },
+      ]);
+
+      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
+        { id: 'BTC' },
+        { id: 'LTC' },
+        { id: 'ZRX' },
+        { id: 'GNT' },
+      ]);
+
+      await Pair.bulkCreate(<db.PairAttributes[]>[
+        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+        { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
+      ]);
+    }
   }
 
   public close = (): Bluebird<void> => {
@@ -83,8 +114,7 @@ class DB {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
-      await this.sequelize.query('truncate table hosts', options);
-      await this.sequelize.query('truncate table bannedHosts', options);
+      await this.sequelize.query('truncate table nodes', options);
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', options);
     });
   }

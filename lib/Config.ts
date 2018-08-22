@@ -13,12 +13,15 @@ class Config {
   public xudir: string;
   public db: DBConfig;
   public testDb: DBConfig;
-  public rpc: { host: string, port: number };
-  public lnd: LndClientConfig;
+  public rpc: { disable: boolean, host: string, port: number };
+  public lndbtc: LndClientConfig;
+  public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
+  public instanceId = 0;
+  public initDb: boolean;
 
-  constructor(private args?: object) {
+  constructor() {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {
@@ -43,9 +46,11 @@ class Config {
     }
 
     // default configuration
+    this.initDb = true;
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
+      addresses: [],
     };
     this.db = {
       host: 'localhost',
@@ -58,6 +63,7 @@ class Config {
       database: 'xud_test',
     };
     this.rpc = {
+      disable: false,
       host: 'localhost',
       port: 8886,
     };
@@ -65,12 +71,19 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.lnd = {
+    this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
+    };
+    this.lndltc = {
+      disable: false,
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
+      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      host: 'localhost',
+      port: 10010,
     };
     this.raiden = {
       disable: false,
@@ -79,25 +92,29 @@ class Config {
     };
   }
 
-  public async load() {
+  public load(args?: { [argName: string]: any }) {
+    if (args && args['xudir']) {
+      this.xudir = args['xudir'];
+    }
+
+    const configPath = path.join(this.xudir, 'xud.conf');
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
-    } else if (fs.existsSync(`${this.xudir}xud.conf`)) {
-      const configText = fs.readFileSync(`${this.xudir}xud.conf`, 'utf8');
+    } else if (fs.existsSync(configPath)) {
+      const configText = fs.readFileSync(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
 
-        // merge parsed json properties from config file to this config object
+        // merge parsed json properties from config file to the default config
         deepMerge(this, props);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
       }
     }
 
-    if (this.args) {
+    if (args) {
       // override our config file with command line arguments
-      deepMerge(this, this.args);
-      this.args = undefined;
+      deepMerge(this, args);
     }
   }
 }

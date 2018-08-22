@@ -6,7 +6,7 @@
     "max-line-length": [true, 150],
     "no-else-after-return": false,
     "function-name": false,
-    "no-this-assignment": [true, {"allow-destructuring": true}],
+    "no-unused-variable": false, // TODO: rule disabled during early development stages, should be reenabled later
     "align": false,
     "typedef-whitespace": [
       true, {
@@ -15,13 +15,47 @@
         "parameter": "nospace",
         "property-declaration": "nospace",
         "variable-declaration": "nospace"
+      },
+      {
+        "call-signature": "onespace",
+        "index-signature": "onespace",
+        "parameter": "onespace",
+        "property-declaration": "onespace",
+        "variable-declaration": "onespace"
       }
     ],
-    "member-access": true
-  },
-  "linterOptions": {
-    "exclude": [
-        "lib/lndclient/lndrpc_pb.d.ts"
-    ]
+    "whitespace": [true,
+      "check-type-operator",
+      "check-module",
+      "check-rest-spread",
+      "check-type",
+      "check-preblock",
+      "check-branch", "check-decl", "check-operator", "check-preblock", "check-separator" // preserved from tslint-config-airbnb
+    ],
+    "member-access": true,
+    "member-ordering": [
+      true,
+      {
+        "order": [
+          "public-instance-field",
+          "public-static-field",
+          "protected-instance-field",
+          "protected-static-field",
+          "private-instance-field",
+          "private-static-field",
+          "public-constructor",
+          "protected-constructor",
+          "private-constructor",
+          "static-method",
+          "instance-method"
+        ]
+      }
+    ],
+    "no-floating-promises": [true, "Bluebird"],
+    "no-null-keyword": true,
+    "jsdoc-format": true,
+    "no-unnecessary-type-assertion": true,
+    "await-promise": [true, "Bluebird"],
+    "no-inferrable-types": true
   }
 }

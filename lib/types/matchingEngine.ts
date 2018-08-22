@@ -1,4 +1,4 @@
-import { StampedOrder } from './orders';
+import { StampedOrder, StampedOwnOrder } from './orders';
 
 export type OrderMatch = {
   maker: StampedOrder;
@@ -7,5 +7,5 @@ export type OrderMatch = {
 
 export type MatchingResult = {
   matches: OrderMatch[];
-  remainingOrder: StampedOrder;
+  remainingOrder?: StampedOwnOrder;
 };

@@ -1,8 +1,7 @@
 import Peer from './Peer';
-import SocketAddress from './SocketAddress';
 
 class PeerList {
-  private peers: { [ socketAddress: string ]: Peer } = {};
+  private peers = new Map<string, Peer>();
 
   get length(): number {
     let length = 0;
@@ -16,35 +15,37 @@ class PeerList {
     return length;
   }
 
-  public get = (socketAddress: SocketAddress): Peer => {
-    return this.peers[socketAddress.toString()];
+  public get = (nodePubKey: string): Peer | undefined => {
+    return this.peers.get(nodePubKey);
   }
 
-  public has = (socketAddress: SocketAddress): boolean => {
-    return !!this.peers[socketAddress.toString()];
+  public has = (nodePubKey: string): boolean => {
+    return this.peers.has(nodePubKey);
   }
 
+  /**
+   * Add a peer to the list.
+   * @returns `true` if the peer was added, `false` if it could not be added due to a missing or duplicate nodePubKey
+   */
   public add = (peer: Peer): boolean => {
-    if (this.has(peer.socketAddress)) {
+    if (!peer.nodePubKey || this.has(peer.nodePubKey)) {
       return false;
     } else {
-      this.peers[peer.socketAddress.toString()] = peer;
+      this.peers.set(peer.nodePubKey, peer);
       return true;
     }
   }
 
-  public remove = (socketAddress: SocketAddress): Peer | null => {
-    const peer = this.get(socketAddress);
-    if (peer) {
-      delete this.peers[socketAddress.toString()];
-      return peer;
-    } else {
-      return null;
-    }
+  /**
+   * Remove a peer from the list by its nodePubKey.
+   * @returns `true` if the peer was removed, `false` if no peer was removed
+   */
+  public remove = (nodePubKey: string): boolean => {
+    return this.peers.delete(nodePubKey);
   }
 
-  public forEach = (cb: (peer: Peer) => void) => {
-    Object.keys(this.peers).map(key => cb(this.peers[key]));
+  public forEach = (callback: (peer: Peer) => void) => {
+    this.peers.forEach(callback);
   }
 }
 

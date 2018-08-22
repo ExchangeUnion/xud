@@ -1,14 +1,10 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import Host from '../../Host';
+import { NodeConnectionInfo } from '../../../types/p2p';
 
-type HostsPacketBody = {
-  hosts: Host[],
-};
-
-class HostsPacket extends Packet<HostsPacketBody> {
+class NodesPacket extends Packet<NodeConnectionInfo[]> {
   public get type() {
-    return PacketType.HOSTS;
+    return PacketType.NODES;
   }
 
   public get direction() {
@@ -16,4 +12,4 @@ class HostsPacket extends Packet<HostsPacketBody> {
   }
 }
 
-export default HostsPacket;
+export default NodesPacket;

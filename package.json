@@ -1,6 +1,6 @@
 {
   "name": "xud",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-prealpha.1",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -10,21 +10,22 @@
   "scripts": {
     "compile": "cross-os precompile && tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
-    "db:init": "gulp db.init",
     "dev": "npm run compile && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
     "docs": "typedoc --out typedoc --module commonjs --target es6 lib",
     "lint": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
-    "postinstall": "npm run compile",
-    "proto": "cross-os proto && cross-os swagger",
+    "prepublishOnly": "npm run compile",
+    "proto": "cross-os proto && cross-os swagger && cross-os protodocs",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
-    "test": "npm run test:unit && npm run test:int",
+    "test": "npm run test:unit && npm run test:int && npm run test:p2p",
     "test:int": "mocha -r ts-node/register test/integration/*",
     "test:int:watch": "mocha -r ts-node/register test/integration/*  --watch --watch-extensions ts",
     "test:unit": "mocha -r ts-node/register test/unit/*",
-    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts"
+    "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
+    "test:p2p": "mocha -r ts-node/register test/p2p/*",
+    "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts"
   },
   "cross-os": {
     "postcompile": {
@@ -38,14 +39,19 @@
       "win32": "rd /q /s dist || cd ."
     },
     "proto": {
-      "linux": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "darwin": "protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='import_style=commonjs,binary:lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "win32": "protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"import_style=commonjs,binary:lib\\proto\"  --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\*.proto proto\\google\\api\\*.proto proto\\google\\protobuf\\*.proto"
+      "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\lndrpc.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
     },
     "swagger": {
-      "linux": "protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
-      "darwin": "protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
-      "win32": "protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
+      "linux": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --swagger_out=\"lib\\proto\" -I=\"proto\" proto\\xudrpc.proto"
+    },
+    "protodocs": {
+      "linux": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --doc_out=\"docs\" --doc_opt=markdown,api.md -I=\"proto\" proto\\xudrpc.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
@@ -74,32 +80,43 @@
     "atomic swaps",
     "cross-chain"
   ],
-  "author": "Daniel McNally",
+  "author": "Daniel McNally <mcnallydp@gmail.com>",
   "contributors": [
-    "Moshe Shababo"
+    "Moshe Shababo",
+    "Balamurali Pandranki <balamurali@live.com> (https://balamurali.me)",
+    "michael1011"
   ],
   "license": "AGPL-3.0",
   "bugs": {
     "url": "https://github.com/ExchangeUnion/xud/issues"
   },
   "homepage": "https://github.com/ExchangeUnion/xud#readme",
+  "files": [
+    "bin",
+    "dist",
+    "docs",
+    "proto",
+    "tasks",
+    ".env",
+    "*.md"
+  ],
   "dependencies": {
+    "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cross-os": "^1.3.0",
     "crypto-js": "^3.1.9-1",
     "dotenv": "^5.0.1",
     "express": "^4.16.3",
-    "fastpriorityqueue": "git://github.com/ExchangeUnion/FastPriorityQueue.js.git#master",
-    "grpc": "^1.12.2",
+    "fastpriorityqueue": "^0.6.1",
+    "google-protobuf": "^3.5.0",
+    "grpc": "^1.13.1",
     "gulp": "^4.0.0",
     "mysql2": "^1.5.3",
-    "protocol-buffers-schema": "^3.3.2",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
     "swagger-ui-express": "^3.0.10",
     "toml": "^2.3.3",
-    "typescript": "^2.9.1",
     "uuid": "^3.2.1",
     "winston": "^3.0.0-rc3",
     "yargs": "^11.0.0"
@@ -107,12 +124,20 @@
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
     "@types/chai": "^4.1.3",
+    "@types/chai-as-promised": "^7.1.0",
     "@types/chai-http": "^3.0.4",
-    "@types/express": "^4.11.1",
+    "@types/crypto-js": "^3.1.43",
+    "@types/dotenv": "^4.0.3",
+    "@types/express": "^4.16.0",
+    "@types/gulp": "^4.0.5",
     "@types/mocha": "^5.2.0",
+    "@types/secp256k1": "^3.5.0",
     "@types/sequelize": "^4.27.20",
+    "@types/swagger-ui-express": "^3.0.0",
+    "@types/uuid": "^3.4.3",
     "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "concurrently": "^3.5.1",
     "grpc-tools": "^1.6.6",
@@ -120,12 +145,12 @@
     "mocha": "^5.0.5",
     "nodemon": "^1.17.5",
     "ts-node": "^6.0.2",
-    "ts-protoc-gen": "^0.6.0",
     "tslint": "^5.10.0",
-    "tslint-config-airbnb": "^5.9.2",
-    "typedoc": "^0.11.1"
+    "tslint-config-airbnb": "^5.10.0",
+    "typedoc": "^0.11.1",
+    "typescript": "^2.9.1"
   },
   "engines": {
-    "node": ">=7.6.0"
+    "node": ">=8.11.3"
   }
 }

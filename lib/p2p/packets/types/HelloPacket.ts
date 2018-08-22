@@ -1,14 +1,8 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
+import { HandshakeState } from '../../../types/p2p';
 
-type HelloPacketBody = {
-  version: string;
-  nodePubKey: string;
-  listenPort: number;
-  pairs: string[];
-};
-
-class HelloPacket extends Packet<HelloPacketBody> {
+class HelloPacket extends Packet<HandshakeState> {
   public get type() {
     return PacketType.HELLO;
   }

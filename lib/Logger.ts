@@ -12,7 +12,7 @@ enum Level {
   DEBUG = 'debug',
 }
 
-enum Context {
+export enum Context {
   GLOBAL = 'GLOBAL',
   DB = 'DB',
   RPC = 'RPC',
@@ -32,11 +32,22 @@ const contextFileMap = {
   [Context.RAIDEN]: 'xud.log',
 };
 
+type Loggers = {
+  global: Logger,
+  db: Logger,
+  rpc: Logger,
+  p2p: Logger,
+  orderbook: Logger,
+  lnd: Logger,
+  raiden: Logger,
+};
+
 class Logger {
   private level: string;
   private logDir: string;
   private context: Context;
   private logger: any;
+  private instanceId: number;
 
   private static defaultLogDir = 'logs';
 
@@ -44,23 +55,19 @@ class Logger {
   ? Level.INFO
   : Level.DEBUG;
 
-  public static global = new Logger({ context: Context.GLOBAL });
-  public static db = new Logger({ context: Context.DB });
-  public static rpc = new Logger({ context: Context.RPC });
-  public static p2p = new Logger({ context: Context.P2P });
-  public static orderbook = new Logger({ context: Context.ORDERBOOK });
-  public static lnd = new Logger({ context: Context.LND });
-  public static raiden = new Logger({ context: Context.RAIDEN });
-
-  constructor({ level, logDir, context }: { level?: string, logDir?: string, context: Context}) {
+  constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
     this.level = level || Logger.defaultLevel;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
+    this.instanceId = instanceId || 0;
 
     const { format } = winston;
-    const logFormat = format.printf(
-        info => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
-
+    let logFormat: any;
+    if (this.instanceId > 0) {
+      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
+    } else {
+      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
+    }
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
     }
@@ -74,6 +81,18 @@ class Logger {
         }),
       ],
     });
+  }
+
+  public static createLoggers = (instanceId = 0): Loggers => {
+    return {
+      global: new Logger({ instanceId, context: Context.GLOBAL }),
+      db: new Logger({ instanceId, context: Context.DB }),
+      rpc: new Logger({ instanceId, context: Context.RPC }),
+      p2p: new Logger({ instanceId, context: Context.P2P }),
+      orderbook: new Logger({ instanceId, context: Context.ORDERBOOK }),
+      lnd: new Logger({ instanceId, context: Context.LND }),
+      raiden: new Logger({ instanceId, context: Context.RAIDEN }),
+    };
   }
 
   private log = (level: string, msg: string) => {
@@ -109,4 +128,5 @@ class Logger {
     this.log(Level.DEBUG, msg);
   }
 }
+
 export default Logger;
