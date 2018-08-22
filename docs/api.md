@@ -94,9 +94,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  |  |
-| port | [uint32](#uint32) |  |  |
-| node_pub_key | [string](#string) |  |  |
+| node_uri | [string](#string) |  |  |
 
 
 
@@ -197,9 +195,11 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+| node_pub_key | [string](#string) |  |  |
+| uris | [string](#string) | repeated |  |
 | num_peers | [int32](#int32) |  |  |
 | num_pairs | [int32](#int32) |  |  |
-| version | [string](#string) |  |  |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  |  |
 | lndbtc | [LndInfo](#xudrpc.LndInfo) |  |  |
 | lndltc | [LndInfo](#xudrpc.LndInfo) |  |  |

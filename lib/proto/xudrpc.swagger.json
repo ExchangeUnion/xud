@@ -324,14 +324,7 @@
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
-        "host": {
-          "type": "string"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "node_pub_key": {
+        "node_uri": {
           "type": "string"
         }
       }
@@ -383,6 +376,18 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
+        "version": {
+          "type": "string"
+        },
+        "node_pub_key": {
+          "type": "string"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "num_peers": {
           "type": "integer",
           "format": "int32"
@@ -390,9 +395,6 @@
         "num_pairs": {
           "type": "integer",
           "format": "int32"
-        },
-        "version": {
-          "type": "string"
         },
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
