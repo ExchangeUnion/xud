@@ -62,7 +62,7 @@ class Pool extends EventEmitter {
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
-        this.addresses!.push(address);
+        this.addresses.push(address);
       });
     }
     this.nodes = new NodeList(new P2PRepository(logger, db));
