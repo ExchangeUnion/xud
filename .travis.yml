@@ -10,7 +10,7 @@ services:
   - mysql
 
 script:
-  - npm run lint
+  - npm run lintNoFix
   - npm run test
 
 before_install:
