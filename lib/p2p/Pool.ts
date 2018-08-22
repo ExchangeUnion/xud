@@ -5,15 +5,17 @@ import Peer, { PeerInfo } from './Peer';
 import NodeList from './NodeList';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, NodesPacket, OrdersPacket, GetNodesPacket } from './packets';
+import * as packets from './packets/types';
+import { Packet, PacketType } from './packets';
 import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import SwapDeals from '../orderbook/SwapDeals';
-import LndClient from '../lndclient/LndClient';
+import SwapDeals, { SwapDeal } from '../orderbook/SwapDeals';
 import { getExternalIp } from '../utils/utils';
+import { randomBytes, createHash } from 'crypto';
+import { SwapDealRole } from '../types/enums';
 
 type PoolConfig = {
   listen: boolean;
@@ -39,11 +41,9 @@ interface NodeConnectionIterator {
 
 /** A class representing a pool of peers that handles network activity. */
 class Pool extends EventEmitter {
-  // TODO: Make private once the call to add a swap deal is moved from Peer.ts to Pool.ts
-  public swapDeals: SwapDeals;
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
-
+  public swapDeals = new SwapDeals();
   private nodes: NodeList;
   private peers: PeerList = new PeerList();
   private server?: Server;
@@ -53,10 +53,8 @@ class Pool extends EventEmitter {
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
 
-  constructor(config: PoolConfig, private logger: Logger, db: DB,
-              public lndBtcClient?: LndClient, public lndLtcClient?: LndClient) {
+  constructor(config: PoolConfig, private logger: Logger, db: DB) {
     super();
-    this.swapDeals = new SwapDeals(logger);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -183,7 +181,7 @@ class Pool extends EventEmitter {
       throw err;
     }
 
-    const peer = Peer.fromOutbound(address, this.logger, this);
+    const peer = Peer.fromOutbound(address, this.logger);
     await this.tryOpenPeer(peer, nodePubKey);
     return peer;
   }
@@ -221,31 +219,30 @@ class Pool extends EventEmitter {
     }
   }
 
-  public sendToPeer = (pubKey: string, packet: Packet): Error | undefined => {
-    const peer = this.peers.get(pubKey);
+  public sendToPeer = (nodePubKey: string, packet: Packet) => {
+    const peer = this.peers.get(nodePubKey);
     if (!peer) {
-      return new Error('Peer Not found');
+      throw errors.NOT_CONNECTED(nodePubKey);
     }
     peer.sendPacket(packet);
-    return undefined;
   }
 
   public broadcastOrder = (order: OutgoingOrder) => {
-    const orderPacket = new OrderPacket(order);
+    const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
 
     // TODO: send only to peers which accepts the pairId
   }
 
   public broadcastOrderInvalidation = (order: OrderIdentifier) => {
-    const orderInvalidationPacket = new OrderInvalidationPacket(order);
+    const orderInvalidationPacket = new packets.OrderInvalidationPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
 
     // TODO: send only to peers which accepts the pairId
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger, this);
+    const peer = Peer.fromInbound(socket, this.logger);
     await this.tryOpenPeer(peer);
   }
 
@@ -268,12 +265,12 @@ class Pool extends EventEmitter {
   private handlePacket = async (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order = (packet as OrderPacket).body!;
+        const order = (packet as packets.OrderPacket).body!;
         this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', (packet as OrderInvalidationPacket).body!);
+        this.emit('packet.orderInvalidation', (packet as packets.OrderInvalidationPacket).body!);
         break;
       }
       case PacketType.GET_ORDERS: {
@@ -281,7 +278,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.ORDERS: {
-        const orders = (packet as OrdersPacket).body!;
+        const orders = (packet as packets.OrdersPacket).body!;
         orders.forEach((order) => {
           this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
         });
@@ -292,11 +289,139 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.NODES: {
-        const nodes = (packet as NodesPacket).body!;
+        const nodes = (packet as packets.NodesPacket).body!;
         await this.connectNodes(nodes);
         break;
       }
+      case PacketType.DEAL_REQUEST: {
+        this.handleDealRequest(packet, peer);
+        break;
+      }
+      case PacketType.DEAL_RESPONSE: {
+        this.handleDealResponse(packet, peer);
+        break;
+      }
+      case PacketType.SWAP_REQUEST: {
+        this.handleSwapRequest(packet, peer);
+        break;
+      }
+      case PacketType.SWAP_RESPONSE: {
+        this.handleSwapResponse(packet);
+        break;
+      }
     }
+  }
+
+  private handleDealRequest = (requestPacket: packets.DealRequest, peer: Peer)  => {
+    this.logger.debug('[SWAP] Received packet: ' + JSON.stringify(requestPacket));
+    const requestBody = requestPacket.body;
+    if (!requestBody) {
+      return;
+    }
+    const r_preimage = randomBytes(32).toString('hex');
+    const hash = createHash('sha256');
+    const r_hash = hash.update(r_preimage).digest('hex');
+    const makerDealId = randomBytes(32).toString('hex');
+    let makerPubKey: string | undefined;
+
+    switch (requestBody.makerCurrency){
+      case 'BTC':
+        makerPubKey = this.handshakeData.lndbtcPubKey;
+        break;
+      case 'LTC':
+        makerPubKey = this.handshakeData.lndltcPubKey;
+        break;
+      default:
+        return;
+    }
+
+    if (!makerPubKey) {
+      // TODO: proper error handling.
+      return;
+    }
+
+    const deal: SwapDeal = {
+      ...requestBody,
+      makerDealId,
+      makerPubKey,
+      r_preimage,
+      r_hash,
+      myRole: SwapDealRole.Maker,
+      createTime: Date.now(),
+    };
+
+    const responseBody = {
+      makerPubKey,
+      makerDealId,
+      r_hash,
+      takerDealId: requestBody.takerDealId,
+    };
+
+    this.swapDeals.add(deal);
+    this.logger.debug('[SWAP] Deal: ' + JSON.stringify(deal));
+
+    this.logger.debug('[SWAP] Responding to peer: ' + JSON.stringify(responseBody));
+
+    const responsePacket = new packets.DealResponse(responseBody, requestPacket.header.id);
+
+    peer.sendPacket(responsePacket);
+  }
+
+  private handleDealResponse = (dealResponsePacket: packets.DealResponse, peer: Peer): void  => {
+    if (!dealResponsePacket.body) {
+      return;
+    }
+    const deal = this.swapDeals.get(SwapDealRole.Taker, dealResponsePacket.body.takerDealId);
+    if (!deal) {
+      return;
+    }
+
+    deal.makerPubKey = dealResponsePacket.body.makerPubKey;
+    deal.makerDealId = dealResponsePacket.body.makerDealId;
+    deal.r_hash = dealResponsePacket.body.r_hash;
+    this.logger.debug('[SWAP] Updated deal: ' + JSON.stringify(this.swapDeals.get(SwapDealRole.Taker, dealResponsePacket.body.takerDealId)));
+
+    const body: packets.SwapRequestPacketBody = {
+      makerDealId: deal.makerDealId,
+    };
+    const swapRequestPacket = new packets.SwapRequest(body);
+
+    peer.sendPacket(swapRequestPacket);
+  }
+
+  private handleSwapRequest = (requestPacket: packets.SwapRequest, peer: Peer): void  => {
+    this.logger.debug('[SWAP] Received packet: ' + JSON.stringify(requestPacket));
+    if (!requestPacket.body) {
+      return;
+    }
+
+    const deal = this.swapDeals.get(SwapDealRole.Maker, requestPacket.body.makerDealId);
+    if (!deal) {
+      return;
+    }
+    if (!deal.r_preimage) {
+      // TODO: Handle this unexpected case, if we are the maker we should have the preimage.
+      return;
+    }
+    const body: packets.SwapResponsePacketBody = {
+      r_preimage: deal.r_preimage,
+    };
+    const swapResponsePacket = new packets.SwapResponse(body, requestPacket.header.id);
+
+    this.logger.debug('sending back to peer: '  + JSON.stringify(body));
+
+    peer.sendPacket(swapResponsePacket);
+  }
+
+  private handleSwapResponse = (response: packets.SwapResponse): void  => {
+    // TODO: Remove this method as it only exists for debugging/logging purposes
+    if (!response) {
+      return;
+    }
+    if (!response.body) {
+      return;
+    }
+    this.logger.debug('[SWAP] Swap completed. preimage = ' + response.body.r_preimage);
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
@@ -310,8 +435,8 @@ class Pool extends EventEmitter {
       this.peers.add(peer);
 
       // request peer's orders and known nodes
-      peer.sendPacket(new GetOrdersPacket());
-      peer.sendPacket(new GetNodesPacket());
+      peer.sendPacket(new packets.GetOrdersPacket());
+      peer.sendPacket(new packets.GetNodesPacket());
 
       if (!this.nodes.has(peer.nodePubKey!)) {
         await this.nodes.createNode({

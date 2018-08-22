@@ -17,7 +17,7 @@ describe('P2P Pool Tests', () => {
   const nodePubKeyOne = NodeKey['generate']().nodePubKey;
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {
-    const peer = new Peer(loggers.p2p, pool);
+    const peer = new Peer(loggers.p2p);
     peer.socketAddress = addresses[0];
     peer['handshakeState'] = {
       addresses,

@@ -1,24 +1,23 @@
-import Logger from '../Logger';
-import { CurrencyType, SwapDealRole } from '../types/enums';
+import { SwapDealRole } from '../types/enums';
 
-export type SwapDeal = {
-  // TODO: consider to change myRole to isTaker or is Maker and make it boolean
-  myRole: SwapDealRole;
-  /** global order it in XU network */
+type SwapDeal = {
+  /** The role of the local node in the swap. */
+  myRole: SwapDealRole; // TODO: consider changing myRole to boolean named isTaker or isMaker
+  /** Global order id in the XU network. */
   orderId?: string;
   takerDealId: string;
   takerAmount: number;
-  /** takerCoin is the name of the coin the taker is expecting to get */
-  takerCoin: CurrencyType;
+  /** The currency the taker is expecting to receive. */
+  takerCurrency: string;
   takerPubKey: string;
   makerDealId?: string;
   makerAmount: number;
-  /** makerCoin is the name of the coin the maker is expecting to get */
-  // TODO: consider to use currency instead of CurrencyType
-  makerCoin: CurrencyType;
+  /** The currency the maker is expecting to receive. */
+  makerCurrency: string;
   makerPubKey?: string;
+  /** The hash of the preimage. */
   r_hash?: string;
-  preImage?: string;
+  r_preimage?: string;
   createTime: number;
   executeTime?: number;
   competionTime?: number
@@ -26,9 +25,6 @@ export type SwapDeal = {
 
 export class SwapDeals {
   private deals: SwapDeal[] = [];
-
-  constructor(private logger: Logger) {
-  }
 
   public get = (role: SwapDealRole, dealId: string): SwapDeal | undefined => {
     for (const deal of this.deals) {
@@ -57,3 +53,4 @@ export class SwapDeals {
 }
 
 export default SwapDeals;
+export { SwapDeal };
