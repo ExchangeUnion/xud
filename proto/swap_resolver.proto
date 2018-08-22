@@ -1,4 +1,3 @@
-
 syntax = "proto3";
 
 package swapresolver;
@@ -7,16 +6,13 @@ service SwapResolver {
   // ResolveHash is used by LND to request translation of Rhash to a pre-image.
   // the resolver may return the preimage and error indicating that there is no
   // such hash/deal
-  rpc ResolveHash(ResolveReq) returns (ResolveResp) {}
-
+  rpc ResolveHash(ResolveRequest) returns (ResolveResponse) {}
 }
 
-message ResolveReq {
+message ResolveRequest {
   string hash = 1 ;
 }
 
-message ResolveResp {
+message ResolveResponse {
   string preimage = 1;
 }
-
-

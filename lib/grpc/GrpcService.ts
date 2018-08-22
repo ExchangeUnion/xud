@@ -306,10 +306,10 @@ class GrpcService {
   /*
    * Resolving LND hash. See [[Service.resolveHash]]
    */
-  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveReq, resolverrpc.ResolveResp> = async (call, callback) => {
+  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveRequest, resolverrpc.ResolveResponse> = async (call, callback) => {
     try {
       const resolveResponse = await this.service.resolveHash(call.request.toObject());
-      const response = new resolverrpc.ResolveResp();
+      const response = new resolverrpc.ResolveResponse();
       response.setPreimage(resolveResponse);
       callback(null, response);
     } catch (err) {
