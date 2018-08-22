@@ -42,6 +42,15 @@ export class SwapDeals {
     return undefined;
   }
 
+  public findByHash = (hash: string): SwapDeal | undefined => {
+    for (const deal of this.deals) {
+      if (hash === deal.r_hash) {
+        return deal;
+      }
+    }
+    return undefined;
+  }
+
   public add = (deal: SwapDeal) => {
     this.deals.push(deal);
   }
