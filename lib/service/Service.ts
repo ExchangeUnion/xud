@@ -3,16 +3,14 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/RaidenClient';
-import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import * as packets from '../p2p/packets/types';
 import { SwapDealRole } from '../types/enums';
-import { SwapDeal } from '../orderbook/SwapDeals';
-import { randomBytes } from 'crypto';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
+import Swaps, { SwapDeal } from '../swaps/Swaps';
 
 /**
  * The components required by the API service layer.
@@ -26,6 +24,7 @@ export type ServiceComponents = {
   config: Config
   /** The version of the local xud instance. */
   version: string;
+  swaps: Swaps; // TODO: remove once we remove the executeSwap demo call
   /** The function to be called to shutdown the parent process */
   shutdown: () => string;
 };
@@ -74,6 +73,7 @@ class Service extends EventEmitter {
   private pool: Pool;
   private config: Config;
   private version: string;
+  private swaps: Swaps;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(private logger: Logger, components: ServiceComponents) {
@@ -86,6 +86,7 @@ class Service extends EventEmitter {
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.config = components.config;
+    this.swaps = components.swaps;
 
     this.version = components.version;
   }
@@ -160,7 +161,6 @@ class Service extends EventEmitter {
    * Execute an atomic swap
    */
   public executeSwap = ({ targetAddress, payload }: { targetAddress: string, payload?: TokenSwapPayload })  => {
-    let body: packets.DealRequestPacketBody;
     let takerPubKey: string | undefined;
     let takerCurrency: string;
     let makerCurrency: string;
@@ -199,35 +199,10 @@ class Service extends EventEmitter {
       return 'Taker\'s LND is not connected';
     }
 
-    body = {
-      takerCurrency,
-      makerCurrency,
-      takerPubKey,
-      takerDealId: randomBytes(32).toString('hex'),
-      takerAmount: payload.receivingAmount,
-      makerAmount: payload.sendingAmount,
-    };
+    const peer = this.pool.getPeer(payload.nodePubKey);
+    this.swaps.executeSwap(takerCurrency, makerCurrency, takerPubKey, payload.receivingAmount, payload.sendingAmount, peer);
 
-    const deal: SwapDeal = {
-      myRole : SwapDealRole.Taker,
-      takerAmount : body.takerAmount,
-      takerCurrency : body.takerCurrency,
-      takerPubKey: body.takerPubKey,
-      takerDealId: body.takerDealId,
-      makerAmount: body.makerAmount,
-      makerCurrency: body.makerCurrency,
-      createTime: Date.now(),
-    };
-
-    this.pool.swapDeals.add(deal);
-    this.logger.debug('swap deal: ' + JSON.stringify(deal));
-
-    this.logger.debug('sending to peer ' + payload.nodePubKey + ': ' + JSON.stringify(body));
-    const packet = new packets.DealRequest(body);
-
-    this.pool.sendToPeer(payload.nodePubKey, packet);
-
-    // Todo: wait for swap to complete and provide the preimage back to the caller
+    // TODO: wait for swap to complete and provide the preimage back to the caller
     return 'Success';
   }
 
@@ -354,17 +329,18 @@ class Service extends EventEmitter {
   public resolveHash = async (args: { hash: string }) => {
     const { hash } = args;
 
-    this.logger.info('ResolveHash stating with hash: ' + hash);
+    this.logger.info('ResolveHash starting with hash: ' + hash);
 
-    const deal: SwapDeal | undefined = this.pool.swapDeals.findByHash(hash);
+    const deal: SwapDeal | undefined = this.swaps.getDealByHash(hash);
 
     if (!deal) {
-      this.logger.error('Something went wrong. Can\'t find deal: ' + hash);
-      return 'Somthing is worng';
+      const msg = `Something went wrong. Can't find deal: ${hash}`;
+      this.logger.error(msg);
+      return msg;
     }
 
-	// If I'm the taker I need to forward the payment to the other chanin
-	// TODO: check that I got the right amount before sending out the agreed amount
+    // If I'm the taker I need to forward the payment to the other chain
+    // TODO: check that I got the right amount before sending out the agreed amount
     // TODO: calculate CLTV
     if (deal.myRole === SwapDealRole.Taker) {
 	  this.logger.debug('Executing taker code');
@@ -397,7 +373,6 @@ class Service extends EventEmitter {
         const hexString = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
         this.logger.debug('got preimage ' + hexString);
         return hexString;
-
       } catch (err) {
         this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()));
         return 'Got exception from sendPaymentSync';

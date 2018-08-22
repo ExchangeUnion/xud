@@ -29,6 +29,7 @@ export enum Context {
   ORDERBOOK = 'ORDERBOOK',
   LND = 'LND',
   RAIDEN = 'RAIDEN',
+  SWAPS = 'SWAPS',
 }
 
 type Loggers = {
@@ -39,6 +40,7 @@ type Loggers = {
   orderbook: Logger,
   lnd: Logger,
   raiden: Logger,
+  swaps: Logger,
 };
 
 class Logger {
@@ -91,6 +93,7 @@ class Logger {
       orderbook: new Logger({ ...object, context: Context.ORDERBOOK }),
       lnd: new Logger({ ...object, context: Context.LND }),
       raiden: new Logger({ ...object, context: Context.RAIDEN }),
+      swaps: new Logger({ ...object, context: Context.SWAPS }),
     };
   }
 
@@ -125,16 +128,25 @@ class Logger {
     }
   }
 
-  public error = (msg: Error | string, err?: Error) => {
+  public error = (msg: Error | string, err?: any) => {
     let errMsg: string;
     if (msg instanceof Error) {
       // treat msg as an error object
-      errMsg = msg.stack ? msg.stack : '';
-    } else if (err) {
-      errMsg = `${msg} ${err.stack}`;
+      errMsg = msg.stack ? msg.stack : `${msg.name} - ${msg.message}`;
     } else {
       errMsg = msg;
+      if (err) {
+        errMsg += ': ';
+        if (err instanceof Error) {
+          errMsg += err.stack ? err.stack : `${err.name} - ${err.message}`;
+        } else if (err.code && err.message) {
+          errMsg += `${err.code} - ${err.message}`;
+        } else {
+          errMsg += JSON.stringify(err);
+        }
+      }
     }
+
     this.log(Level.ERROR, errMsg);
   }
 
