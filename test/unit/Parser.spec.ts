@@ -8,7 +8,7 @@ chai.use(chaiAsPromised);
 
 describe('Parser', () => {
   const delimiter = Packet.PROTOCOL_DELIMITER;
-  const timeoutError = 'timeout'
+  const timeoutError = 'timeout';
   let parser: Parser;
 
   beforeEach(() => {
