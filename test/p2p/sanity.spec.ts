@@ -8,7 +8,7 @@ import { getUri } from '../../lib/utils/utils';
 
 chai.use(chaiAsPromised);
 
-const createConfig = (instanceId: number, p2pPort: number) => ({
+const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
   instanceId,
   p2p: {
     listen: true,
@@ -27,7 +27,7 @@ const createConfig = (instanceId: number, p2pPort: number) => ({
     disable: true,
   },
   db: {
-    database: instanceId === 1 ? 'xud_test' : `xud_test${instanceId}`,
+    database: `${config.testDb.database}_${instanceId}`,
   },
 });
 
@@ -40,14 +40,14 @@ describe('P2P Sanity Tests', () => {
   let nodeTwoUri: string;
 
   before(async () => {
-    nodeOneConfig = createConfig(1, 9001);
-    nodeTwoConfig = createConfig(2, 9002);
+    const config = new Config().load();
+    nodeOneConfig = createConfig(1, 9001, config);
+    nodeTwoConfig = createConfig(2, 9002, config);
     const loggers = Logger.createLoggers();
 
     // make sure the nodes table is empty
-    const dbConfig = new Config().testDb;
-    const dbOne = new DB(dbConfig, loggers.db);
-    const dbTwo = new DB({ ...dbConfig, database: 'xud_test2' }, loggers.db);
+    const dbOne = new DB({ ...config.testDb, ...nodeOneConfig.db }, loggers.db);
+    const dbTwo = new DB({ ...config.testDb, ...nodeTwoConfig.db }, loggers.db);
     await Promise.all([dbOne.init(), dbTwo.init()]);
     await Promise.all([dbOne.models.Node.truncate(), dbTwo.models.Node.truncate()]);
     await Promise.all([dbOne.close(), dbTwo.close()]);
