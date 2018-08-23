@@ -119,9 +119,9 @@ class GrpcService {
    */
   public disconnect: grpc.handleUnaryCall<xudrpc.DisconnectRequest, xudrpc.DisconnectResponse> = async (call, callback) => {
     try {
-      const disconnectResponse = await this.service.disconnect(call.request.toObject());
+      await this.service.disconnect(call.request.toObject());
       const response = new xudrpc.DisconnectResponse();
-      response.setResult(disconnectResponse);
+      response.setResult('success');
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

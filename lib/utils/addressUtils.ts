@@ -29,6 +29,9 @@ const addressUtils = {
 
   /** Convert an [[Address]] to a string in the "{host}:{port}" format. */
   toString: (address: Address) => `${address.host}:${address.port}`,
+
+  /** Checks whether two [[Address]] instances are equal, based solely on `host` and `port` fields */
+  areEqual: (a: Address, b: Address) => a.host === b.host && a.port === b.port,
 };
 
 export default addressUtils;

@@ -1,4 +1,6 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
+import { Address } from '../types/p2p';
+
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
   NODE_ALREADY_CONNECTED: codesPrefix.concat('.1'),
@@ -6,6 +8,7 @@ const errorCodes = {
   UNEXPECTED_NODE_PUB_KEY: codesPrefix.concat('.3'),
   ATTEMPTED_CONNECTION_TO_SELF: codesPrefix.concat('.4'),
   EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
+  CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
 };
 
 const errors = {
@@ -29,6 +32,10 @@ const errors = {
     message: `could not retrieve external IP: ${err.message}`,
     code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
   }),
+  CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: {
+    message: `Connection retry attempts to peer exceeded maximum time allotment`,
+    code: errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED,
+  },
 };
 
 export { errorCodes };
