@@ -206,6 +206,32 @@ class LndClient extends BaseClient {
   }
 
   /**
+   * Sends a payment over the Lightning Network.
+   * @param r_hash the payment hash to use for the payment
+   * @param amount the number of satoshis (or equivalent) to send
+   * @param destination the pub key of the recipient
+   * @param finalCltvDelta the CLTV delta from the current height for the time lock of the final hop (default: 9)
+   */
+  public sendPayment = (r_hash: Buffer | string, amount: number, destination: Buffer | string, finalCltvDelta = 9):
+  Promise<lndrpc.SendResponse.AsObject> => {
+    const request = new lndrpc.SendRequest();
+    if (typeof r_hash === 'string') {
+      request.setPaymentHashString(r_hash);
+    } else {
+      request.setPaymentHash(r_hash);
+    }
+    request.setAmt(amount);
+    if (typeof destination === 'string') {
+      request.setDestString(destination);
+    } else {
+      request.setDest(destination);
+    }
+    request.setFinalCltvDelta(finalCltvDelta);
+
+    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse.AsObject>('sendPaymentSync', request);
+  }
+
+  /**
    * Get a new address for the internal lnd wallet.
    */
   public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
