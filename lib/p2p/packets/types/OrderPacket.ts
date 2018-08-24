@@ -1,15 +1,8 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
+import { OutgoingOrder } from '../../../types/orders';
 
-type OrderPacketBody = {
-  id: string;
-  pairId: string;
-  quantity: number;
-  price: number;
-  invoice: string;
-};
-
-class OrderPacket extends Packet<OrderPacketBody> {
+class OrderPacket extends Packet<OutgoingOrder> {
   public get type() {
     return PacketType.ORDER;
   }

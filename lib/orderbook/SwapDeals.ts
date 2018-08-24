@@ -3,8 +3,8 @@ import { SwapDealRole } from '../types/enums';
 type SwapDeal = {
   /** The role of the local node in the swap. */
   myRole: SwapDealRole; // TODO: consider changing myRole to boolean named isTaker or isMaker
-  /** Global order id in the XU network. */
-  orderId?: string;
+  /** The global XU order id for the maker's order. */
+  orderId?: string; // TODO: make this non-nullable and remove amount/currency
   takerDealId: string;
   takerAmount: number;
   /** The currency the taker is expecting to receive. */
@@ -20,7 +20,7 @@ type SwapDeal = {
   r_preimage?: string;
   createTime: number;
   executeTime?: number;
-  competionTime?: number
+  completeTime?: number
 };
 
 export class SwapDeals {

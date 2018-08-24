@@ -7,7 +7,7 @@ import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
+import { OutgoingOrder, OrderIdentifier, StampedPeerOrder } from '../types/orders';
 import DB from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
@@ -24,11 +24,11 @@ type PoolConfig = {
 };
 
 interface Pool {
-  on(event: 'packet.order', listener: (order: PeerOrder) => void): this;
+  on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
-  emit(event: 'packet.order', order: PeerOrder): boolean;
+  emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
@@ -231,6 +231,14 @@ class Pool extends EventEmitter {
     peer.sendPacket(packet);
   }
 
+  public getPeer = (nodePubKey: string) => {
+    const peer = this.peers.get(nodePubKey);
+    if (!peer) {
+      throw errors.NOT_CONNECTED(nodePubKey);
+    }
+    return peer;
+  }
+
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
@@ -270,7 +278,7 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.ORDER: {
         const order = (packet as packets.OrderPacket).body!;
-        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
+        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
@@ -284,7 +292,7 @@ class Pool extends EventEmitter {
       case PacketType.ORDERS: {
         const orders = (packet as packets.OrdersPacket).body!;
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
+          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         });
         break;
       }
