@@ -44,7 +44,9 @@ class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
   public swapDeals = new SwapDeals();
+  /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
+  /** A collection of opened, active peers. */
   private peers: PeerList = new PeerList();
   private server?: Server;
   private connected = false;
@@ -285,7 +287,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GET_NODES: {
-        peer.sendNodes(this.nodes.toConnectionInfoArray(), packet.header.id);
+        this.handleGetNodes(peer, packet.header.id);
         break;
       }
       case PacketType.NODES: {
@@ -310,6 +312,23 @@ class Pool extends EventEmitter {
         break;
       }
     }
+  }
+
+  /**
+   * Responds to a [[GetNodesPacket]] by populating and sending a [[NodesPacket]].
+   */
+  private handleGetNodes = (peer: Peer, reqId: string) => {
+    const connectedNodesInfo: NodeConnectionInfo[] = [];
+    this.peers.forEach((connectedPeer) => {
+      if (connectedPeer.nodePubKey !== peer.nodePubKey && connectedPeer.addresses && connectedPeer.addresses.length > 0) {
+        // don't send the peer itself or any peers for whom we don't have listening addresses
+        connectedNodesInfo.push({
+          nodePubKey: connectedPeer.nodePubKey!,
+          addresses: connectedPeer.addresses,
+        });
+      }
+    });
+    peer.sendNodes(connectedNodesInfo, reqId);
   }
 
   private handleDealRequest = (requestPacket: packets.DealRequest, peer: Peer)  => {

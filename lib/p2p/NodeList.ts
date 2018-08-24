@@ -13,25 +13,6 @@ class NodeList {
   constructor(private repository: P2PRepository) {}
 
   /**
-   * Return a [[NodeConnectionInfo]] array for nodes that haven't been banned and have known addresses.
-   */
-  public toConnectionInfoArray = (): NodeConnectionInfo[] => {
-    const nodeConnectionInfos: NodeConnectionInfo[] = Array.from({ length: this.nodes.size });
-    let unbannedNodeCount = 0;
-    this.nodes.forEach((node) => {
-      if (!node.banned && node.addresses.length > 0) {
-        nodeConnectionInfos[unbannedNodeCount] = {
-          nodePubKey: node.nodePubKey,
-          addresses: node.addresses,
-        };
-        unbannedNodeCount += 1;
-      }
-    });
-    nodeConnectionInfos.length = unbannedNodeCount;
-    return nodeConnectionInfos;
-  }
-
-  /**
    * Check if a node with a given nodePubKey exists.
    */
   public has = (nodePubKey: string) => {
