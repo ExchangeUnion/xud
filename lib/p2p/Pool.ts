@@ -411,6 +411,11 @@ class Pool extends EventEmitter {
 
     const deal = this.swapDeals.get(SwapDealRole.Maker, requestPacket.body.makerDealId);
     if (!deal) {
+      // TODO: respond with a failure message, possibly penalize peer
+      return;
+    }
+    if (!deal.r_hash) {
+      // TODO: respond with a failure message, possibly penalize peer
       return;
     }
 
@@ -430,14 +435,14 @@ class Pool extends EventEmitter {
     const request = new lndrpc.SendRequest();
   	request.setAmt(deal.takerAmount);
   	request.setDestString(deal.takerPubKey);
-  	request.setPaymentHashString(String(deal.r_hash));
+  	request.setPaymentHashString(deal.r_hash);
 
     // TODO: use timeout on call
 
     try {
       const response = await cmdLnd.sendPaymentSync(request);
       if (response.getPaymentError()) {
-        this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
+        this.logger.error(`Got error from sendPaymentSync: ${response.getPaymentError()} ${JSON.stringify(request.toObject())}`);
         return;
       }
 
@@ -446,12 +451,11 @@ class Pool extends EventEmitter {
       };
       const swapResponsePacket = new packets.SwapResponse(body, requestPacket.header.id);
 
-      this.logger.debug('sending back to peer: '  + JSON.stringify(body));
+      this.logger.debug(`Responding to peer: ${JSON.stringify(body)}`);
 
       peer.sendPacket(swapResponsePacket);
-
     } catch (err) {
-      this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()));
+      this.logger.error(`Got exception from sendPaymentSync ${JSON.stringify(request.toObject())}`, err);
     }
   }
 

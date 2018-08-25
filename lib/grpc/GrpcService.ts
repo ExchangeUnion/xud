@@ -312,7 +312,7 @@ class GrpcService {
     try {
       const resolveResponse = await this.service.resolveHash(call.request.toObject());
       const response = new resolverrpc.ResolveResponse();
-      response.setPreimage(String(resolveResponse));
+      response.setPreimage(resolveResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

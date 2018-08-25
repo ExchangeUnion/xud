@@ -9,12 +9,16 @@ type SwapDeal = {
   takerAmount: number;
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
+  /** The lnd pub key of the taker. */
   takerPubKey: string;
   makerDealId?: string;
   makerAmount: number;
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
+  /** The lnd pub key of the maker. */
   makerPubKey?: string;
+  /** The xud node pub key of remote node. */
+  peerPubKey?: string; // TODO: make required
   /** The hash of the preimage. */
   r_hash?: string;
   r_preimage?: string;
