@@ -103,6 +103,22 @@ class LndClient extends BaseClient {
     });
   }
 
+  private unaryCallNative = <T, U>(methodName: string, params: T): Promise<U> => {
+    return new Promise((resolve, reject) => {
+      if (this.isDisabled()) {
+        reject(errors.LND_IS_DISABLED);
+        return;
+      }
+      (this.lightning as LightningMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  }
+
   public getLndInfo = async (): Promise<LndInfo> => {
     let channels: ChannelCount | undefined;
     let chains: string[] | undefined;
@@ -203,6 +219,14 @@ class LndClient extends BaseClient {
     const request = new lndrpc.SendRequest();
     request.setPaymentRequest(paymentRequest);
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse.AsObject>('sendPaymentSync', request);
+  }
+
+  /**
+   * Send a payment through the Lightning Network.
+   * @param lndrpc.SendRequest (see lndrpc.proto)
+   */
+  public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+    return this.unaryCallNative<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
   /**
