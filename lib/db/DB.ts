@@ -93,7 +93,7 @@ class DB {
       ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
-        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+        { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
         { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
       ]);
     }

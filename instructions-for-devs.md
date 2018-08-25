@@ -119,13 +119,13 @@ Examples:
 ./xucli connect xud1.test.exchangeunion.com 8885
 # Manually connect to another xud instance
 
-./xucli placeorder BTC/LTC 1337 1 99
+./xucli placeorder LTC/BTC 1337 1 99
 # Places a new limit order BUYING 1 BTC for 99 LTC, assigning the orderId 1337
 
-./xucli placeorder BTC/LTC 1338 -1 99
+./xucli placeorder LTC/BTC 1338 -1 99
 # Places a new limit order SELLING 1 BTC for 99 LTC, assigning the orderId 1338
 
-./xucli placeorder BTC/LTC 1339 1
+./xucli placeorder LTC/BTC 1339 1
 # Places a new market order BUYING 1 BTC for the best LTC market price, assigning the orderId 1339
 
 ```

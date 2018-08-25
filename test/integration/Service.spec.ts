@@ -11,7 +11,7 @@ describe('API Service', () => {
 
   const placeOrderArgs = {
     orderId: '1',
-    pairId: 'BTC/LTC',
+    pairId: 'LTC/BTC',
     price: 100,
     quantity: 1,
   };
@@ -50,7 +50,7 @@ describe('API Service', () => {
 
   it('should get orders', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       maxResults: 0,
     };
     const orders = service.getOrders(args);
@@ -62,7 +62,7 @@ describe('API Service', () => {
 
   it('should cancel an order', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       orderId: '1',
     };
     const cancelOrderPromise = service.cancelOrder(args);
