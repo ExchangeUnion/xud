@@ -91,12 +91,12 @@ class DB {
         { id: 'LTC' },
         { id: 'ZRX' },
         { id: 'GNT' },
-      ]);
+      ], this.options);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
         { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
         { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
-      ]);
+      ], this.options);
     }
   }
 
