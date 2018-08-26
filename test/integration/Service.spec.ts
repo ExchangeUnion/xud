@@ -1,7 +1,6 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import Logger from '../../lib/Logger';
 import Service from '../../lib/service/Service';
 
 chai.use(chaiAsPromised);
@@ -18,8 +17,8 @@ describe('API Service', () => {
   };
 
   before(async () => {
-    const loggers = Logger.createLoggers();
     const config = {
+      logLevel: 'warn',
       p2p: {
         listen: false,
       },

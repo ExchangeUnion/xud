@@ -183,7 +183,6 @@ class Pool extends EventEmitter {
       throw err;
     } else if (this.peers.has(nodePubKey)) {
       const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address.host);
-      this.logger.warn(err.message);
       throw err;
     }
 
@@ -280,11 +279,14 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.ORDER: {
         const order = (packet as packets.OrderPacket).body!;
+        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
         this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', (packet as packets.OrderInvalidationPacket).body!);
+        const order = (packet as packets.OrderInvalidationPacket).body!;
+        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
+        this.emit('packet.orderInvalidation', order);
         break;
       }
       case PacketType.GET_ORDERS: {
@@ -293,6 +295,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.ORDERS: {
         const orders = (packet as packets.OrdersPacket).body!;
+        this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
         orders.forEach((order) => {
           this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         });

@@ -4,25 +4,27 @@ import { db } from '../types';
 
 class P2PRepository {
   private models: Models;
+  private options: any;
 
-  constructor(private logger: Logger, private db: DB) {
+  constructor(private logger: Logger, db: DB) {
     this.models = db.models;
+    this.options = db.options;
   }
 
   public getNodes = async (): Promise<db.NodeInstance[]> => {
-    return this.models.Node.findAll();
+    return this.models.Node.findAll(this.options);
   }
 
   public addNode = (node: db.NodeFactory) => {
-    return this.models.Node.create(<db.NodeAttributes>node);
+    return this.models.Node.create(<db.NodeAttributes>node, this.options);
   }
 
   public addNodes = async (nodes: db.NodeFactory[]) => {
-    return this.models.Node.bulkCreate(<db.NodeAttributes[]>nodes);
+    return this.models.Node.bulkCreate(<db.NodeAttributes[]>nodes, this.options);
   }
 
   public updateNode = async (node: db.NodeInstance) => {
-    return node.save();
+    return node.save(this.options);
   }
 }
 

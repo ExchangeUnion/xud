@@ -30,6 +30,7 @@ type Models = {
 class DB {
   public sequelize: Sequelize.Sequelize;
   public models: Models;
+  public options = { logging: this.logger.trace };
 
   constructor(private config: DBConfig, private logger: Logger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
@@ -58,14 +59,13 @@ class DB {
       }
     }
     const { Node, Currency, Pair } = this.models;
-    const options = { logging: this.logger.verbose };
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Node.sync(options),
-      Currency.sync(options),
+      Node.sync(this.options),
+      Currency.sync(this.options),
     ]);
     await Promise.all([
-      Pair.sync(options),
+      Pair.sync(this.options),
     ]);
 
     if (newDb) {
@@ -110,7 +110,7 @@ class DB {
 
   public truncate = async (): Promise<void> => {
     await this.sequelize.transaction(async (t) => {
-      const options = { raw: true, transaction: t };
+      const options = this.options && { raw: true, transaction: t };
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);

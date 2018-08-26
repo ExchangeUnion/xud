@@ -436,9 +436,9 @@ class Peer extends EventEmitter {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
-        this.logger.debug(`Received data (${this.nodePubKey}): ${dataStr}`);
+        this.logger.trace(`Received data (${this.nodePubKey}): ${dataStr}`);
       } else {
-        this.logger.debug(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
+        this.logger.trace(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
       }
       this.parser.feed(dataStr);
     });
