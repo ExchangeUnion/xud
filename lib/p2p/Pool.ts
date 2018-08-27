@@ -8,7 +8,7 @@ import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderIdentifier, StampedPeerOrder } from '../types/orders';
-import DB from '../db/DB';
+import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
@@ -55,7 +55,7 @@ class Pool extends EventEmitter {
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
 
-  constructor(config: PoolConfig, private logger: Logger, db: DB, private lndBtcClient?: LndClient, private lndLtcClient?: LndClient) {
+  constructor(config: PoolConfig, private logger: Logger, models: Models, private lndBtcClient?: LndClient, private lndLtcClient?: LndClient) {
     super();
 
     if (config.listen) {
@@ -66,7 +66,7 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(logger, db));
+    this.nodes = new NodeList(new P2PRepository(logger, models));
   }
 
   public get peerCount(): number {

@@ -10,7 +10,7 @@ import { orders, matchingEngine, db } from '../types';
 import Logger from '../Logger';
 import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
-import DB from '../db/DB';
+import { Models } from '../db/DB';
 import RaidenClient from '../raidenclient/RaidenClient';
 
 /** A mapping of strings (such as pair ids) to [[Orders]] objects. */
@@ -55,12 +55,12 @@ class OrderBook extends EventEmitter {
   /** A map between an order's local id and its global id. */
   private localIdMap: Map<string, string> = new Map<string, string>();
 
-  constructor(private logger: Logger, db: DB, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
+  constructor(private logger: Logger, models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
 
     this.matchesProcessor = new MatchesProcessor(logger, pool, raidenClient);
 
-    this.repository = new OrderBookRepository(logger, db);
+    this.repository = new OrderBookRepository(logger, models);
     if (pool) {
       pool.on('packet.order', this.addPeerOrder);
       pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));

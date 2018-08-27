@@ -30,7 +30,6 @@ type Models = {
 class DB {
   public sequelize: Sequelize.Sequelize;
   public models: Models;
-  public options = { logging: this.logger.trace };
 
   constructor(private config: DBConfig, private logger: Logger) {
     assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
@@ -61,11 +60,11 @@ class DB {
     const { Node, Currency, Pair } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Node.sync(this.options),
-      Currency.sync(this.options),
+      Node.sync(),
+      Currency.sync(),
     ]);
     await Promise.all([
-      Pair.sync(this.options),
+      Pair.sync(),
     ]);
 
     if (newDb) {
@@ -91,12 +90,12 @@ class DB {
         { id: 'LTC' },
         { id: 'ZRX' },
         { id: 'GNT' },
-      ], this.options);
+      ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
         { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
         { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
-      ], this.options);
+      ]);
     }
   }
 
@@ -110,7 +109,7 @@ class DB {
 
   public truncate = async (): Promise<void> => {
     await this.sequelize.transaction(async (t) => {
-      const options = this.options && { raw: true, transaction: t };
+      const options = { raw: true, transaction: t };
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
       await this.sequelize.query('truncate table pairs', options);
       await this.sequelize.query('truncate table currencies', options);
@@ -122,6 +121,7 @@ class DB {
   private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
     return new Sequelize({
       ...config,
+      logging: this.logger.trace,
       dialect: 'mysql',
       operatorsAliases: false,
       dialectOptions: {
