@@ -387,7 +387,7 @@ class Service extends EventEmitter {
         return 'Do not have r_preImage. Strange.';
       }
       this.logger.debug(('deal.preimage = ' + deal.r_preimage));
-      return String(deal.r_preimage);
+      return deal.r_preimage;
     }
 
   }
