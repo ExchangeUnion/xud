@@ -14,16 +14,13 @@ enum Level {
   TRACE = 'trace',
 }
 
-const LevelPriorities = () => {
-  const priorities: any = {};
-
-  let i = 0;
-  for (const level in Level) {
-    priorities[Level[level]] = i;
-    i += 1;
-  }
-
-  return priorities;
+const LevelPriorities = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  verbose: 3,
+  debug: 4,
+  trace: 5,
 };
 
 export enum Context {
@@ -76,7 +73,7 @@ class Logger {
       fs.mkdirSync(this.logDir);
     }
     this.logger = winston.createLogger({
-      levels: LevelPriorities(),
+      levels: LevelPriorities,
       transports: [
         new winston.transports.Console({
           level: this.level,

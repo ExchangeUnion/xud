@@ -41,7 +41,7 @@ describe('P2P Pool Tests', () => {
     await db.init();
     await db.models.Node.truncate();
 
-    pool = new Pool(config.p2p, loggers.p2p, db);
+    pool = new Pool(config.p2p, loggers.p2p, db.models);
 
     await pool.init({
       nodePubKey: 'test',
