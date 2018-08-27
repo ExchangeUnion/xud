@@ -1,5 +1,5 @@
 import Logger from '../Logger';
-import{ Models } from '../db/DB';
+import { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
