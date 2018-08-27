@@ -17,6 +17,7 @@ class GrpcServer {
     const grpcService = new GrpcService(logger, service);
     this.server.addService(XudService, {
       cancelOrder: grpcService.cancelOrder,
+      channelBalance: grpcService.channelBalance,
       connect: grpcService.connect,
       disconnect: grpcService.disconnect,
       executeSwap: grpcService.executeSwap,

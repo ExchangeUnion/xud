@@ -83,6 +83,21 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.channelBalance]]
+   */
+  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+    try {
+      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
+      const response = new xudrpc.ChannelBalanceResponse();
+      response.setBalance(channelBalanceResponse.balance);
+      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.connect]]
    */
   public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {
