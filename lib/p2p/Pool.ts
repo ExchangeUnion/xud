@@ -8,7 +8,7 @@ import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderIdentifier, StampedPeerOrder } from '../types/orders';
-import DB from '../db/DB';
+import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
@@ -55,7 +55,7 @@ class Pool extends EventEmitter {
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
 
-  constructor(config: PoolConfig, private logger: Logger, db: DB, private lndBtcClient?: LndClient, private lndLtcClient?: LndClient) {
+  constructor(config: PoolConfig, private logger: Logger, models: Models, private lndBtcClient?: LndClient, private lndLtcClient?: LndClient) {
     super();
 
     if (config.listen) {
@@ -66,7 +66,7 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(logger, db));
+    this.nodes = new NodeList(new P2PRepository(logger, models));
   }
 
   public get peerCount(): number {
@@ -183,7 +183,6 @@ class Pool extends EventEmitter {
       throw err;
     } else if (this.peers.has(nodePubKey)) {
       const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address.host);
-      this.logger.warn(err.message);
       throw err;
     }
 
@@ -280,11 +279,14 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.ORDER: {
         const order = (packet as packets.OrderPacket).body!;
+        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
         this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', (packet as packets.OrderInvalidationPacket).body!);
+        const order = (packet as packets.OrderInvalidationPacket).body!;
+        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
+        this.emit('packet.orderInvalidation', order);
         break;
       }
       case PacketType.GET_ORDERS: {
@@ -293,6 +295,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.ORDERS: {
         const orders = (packet as packets.OrdersPacket).body!;
+        this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
         orders.forEach((order) => {
           this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         });

@@ -7,10 +7,12 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
+import { Level } from './Logger';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
+  public logLevel: string;
   public db: DBConfig;
   public testDb: DBConfig;
   public rpc: { disable: boolean, host: string, port: number };
@@ -47,6 +49,7 @@ class Config {
 
     // default configuration
     this.initDb = true;
+    this.logLevel = this.getDefaultLogLevel();
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
@@ -117,7 +120,15 @@ class Config {
       deepMerge(this, args);
     }
 
+    if (!Object.values(Level).includes(this.logLevel)) {
+      this.logLevel = this.getDefaultLogLevel();
+    }
+
     return this;
+  }
+
+  private getDefaultLogLevel = (): string => {
+    return process.env.NODE_ENV === 'production' ? Level.INFO : Level.DEBUG;
   }
 }
 

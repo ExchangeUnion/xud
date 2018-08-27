@@ -6,7 +6,7 @@ import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import { orders } from '../../lib/types';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
@@ -18,7 +18,7 @@ describe('OrderBook', () => {
   before(async () => {
     const config = new Config();
     await config.load();
-    const loggers = Logger.createLoggers();
+    const loggers = Logger.createLoggers(Level.WARN);
 
     db = new DB(config.testDb, loggers.db);
 
@@ -28,7 +28,7 @@ describe('OrderBook', () => {
     await db.truncate();
 
     orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
-    const p2pRepository = new P2PRepository(loggers.p2p, db);
+    const p2pRepository = new P2PRepository(loggers.p2p, db.models);
 
     await p2pRepository.addNode(
       { nodePubKey: nodeKey.nodePubKey, addresses: [] },

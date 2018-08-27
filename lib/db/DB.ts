@@ -58,14 +58,13 @@ class DB {
       }
     }
     const { Node, Currency, Pair } = this.models;
-    const options = { logging: this.logger.verbose };
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Node.sync(options),
-      Currency.sync(options),
+      Node.sync(),
+      Currency.sync(),
     ]);
     await Promise.all([
-      Pair.sync(options),
+      Pair.sync(),
     ]);
 
     if (newDb) {
@@ -122,6 +121,7 @@ class DB {
   private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
     return new Sequelize({
       ...config,
+      logging: this.logger.trace,
       dialect: 'mysql',
       operatorsAliases: false,
       dialectOptions: {

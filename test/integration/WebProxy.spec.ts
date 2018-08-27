@@ -13,6 +13,7 @@ describe('WebProxy', () => {
         disable: false,
         port: 8080,
       },
+      logLevel: 'warn',
       p2p: {
         listen: false,
       },
