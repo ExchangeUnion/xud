@@ -205,7 +205,10 @@ class OrderBook extends EventEmitter {
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining = false): matchingEngine.MatchingResult => {
-    if (this.localIdMap.has(order.localId)) {
+    if (order.localId === '') {
+      // we were given a blank local id, so generate one
+      order.localId = uuidv1();
+    } else if (this.localIdMap.has(order.localId)) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
