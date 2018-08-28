@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import DB from '../../lib/db/DB';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import Config from '../../lib/Config';
 import { getUri } from '../../lib/utils/utils';
 
@@ -10,6 +10,7 @@ chai.use(chaiAsPromised);
 
 const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
   instanceId,
+  logLevel: 'warn',
   p2p: {
     listen: true,
     port: p2pPort,
@@ -43,7 +44,7 @@ describe('P2P Sanity Tests', () => {
     const config = new Config().load();
     nodeOneConfig = createConfig(1, 9001, config);
     nodeTwoConfig = createConfig(2, 9002, config);
-    const loggers = Logger.createLoggers();
+    const loggers = Logger.createLoggers(Level.WARN);
 
     // make sure the nodes table is empty
     const dbOne = new DB({ ...config.testDb, ...nodeOneConfig.db }, loggers.db);

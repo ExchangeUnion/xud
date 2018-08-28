@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
-const PAIR_ID = 'BTC/LTC';
-const loggers = Logger.createLoggers();
+const PAIR_ID = 'LTC/BTC';
+const loggers = Logger.createLoggers(Level.WARN);
 
 const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOwnOrder => ({
   price,

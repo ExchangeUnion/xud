@@ -12,6 +12,7 @@ import { SwapDealRole } from '../types/enums';
 import { SwapDeal } from '../orderbook/SwapDeals';
 import { randomBytes } from 'crypto';
 import { parseUri, getUri, UriParts } from '../utils/utils';
+import * as lndrpc from '../proto/lndrpc_pb';
 
 /**
  * The components required by the API service layer.
@@ -354,35 +355,41 @@ class Service extends EventEmitter {
           break;
       }
 
-      // resp, err := cmdLnd.SendPaymentSync(lncctx,&lnrpc.SendRequest{
-      //   DestString:deal.makerPubKey,
-      //   Amt:deal.makerAmount,
-      //   PaymentHash:deal.hash[:],
-      // })
-      // if err != nil{
-      //   err = fmt.Errorf("Got error sending  %d %v by taker - %v",
-      //         deal.makerAmount,deal.makerCoin.String(),err)
-      //   log.Printf(err.Error())
-      //   return nil, err
-      // }
-      // if resp.PaymentError != ""{
-      //   err = fmt.Errorf("Got PaymentError sending %d %v by taker - %v",
-      //       deal.makerAmount,deal.makerCoin.String(), resp.PaymentError)
-      //   log.Printf(err.Error())
-      //   return nil, err
-      // }
+      if (!deal.makerPubKey) {
+        return 'makerPubKey is missing';
+      }
 
-      // this.logger.info('sendPayment response from maker to taker:' + JSON.stringify(resp))
+      const request = new lndrpc.SendRequest();
+      request.setAmt(deal.makerAmount);
+      request.setDestString(deal.makerPubKey);
+      request.setPaymentHashString(String(deal.r_hash));
 
-      return 'preImage to here';
+      try {
+        const response = await cmdLnd.sendPaymentSync(request);
+        if (response.getPaymentError()) {
+          this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
+          return response.getPaymentError();
+        }
+
+        const hexString = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        this.logger.debug('got preimage ' + hexString);
+        return hexString;
+
+      } catch (err) {
+        this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()));
+        return 'Got exception from sendPaymentSync';
+      }
+    } else {
+      // If we are here we are the maker
+      this.logger.debug('Executing maker code');
+      if (!deal.r_preimage) {
+        this.logger.error('Do not have r_preImage. Strange.');
+        return 'Do not have r_preImage. Strange.';
+      }
+      this.logger.debug(('deal.preimage = ' + deal.r_preimage));
+      return deal.r_preimage;
     }
 
-	// If we are here we are the maker
-    this.logger.debug('Executing maker code');
-
-    return String(deal.r_preimage);
   }
-
 }
-
 export default Service;

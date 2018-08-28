@@ -1,7 +1,6 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import Logger from '../../lib/Logger';
 import Service from '../../lib/service/Service';
 
 chai.use(chaiAsPromised);
@@ -12,14 +11,14 @@ describe('API Service', () => {
 
   const placeOrderArgs = {
     orderId: '1',
-    pairId: 'BTC/LTC',
+    pairId: 'LTC/BTC',
     price: 100,
     quantity: 1,
   };
 
   before(async () => {
-    const loggers = Logger.createLoggers();
     const config = {
+      logLevel: 'warn',
       p2p: {
         listen: false,
       },
@@ -51,7 +50,7 @@ describe('API Service', () => {
 
   it('should get orders', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       maxResults: 0,
     };
     const orders = service.getOrders(args);
@@ -63,7 +62,7 @@ describe('API Service', () => {
 
   it('should cancel an order', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       orderId: '1',
     };
     const cancelOrderPromise = service.cancelOrder(args);

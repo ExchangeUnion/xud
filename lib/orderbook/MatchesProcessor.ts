@@ -39,18 +39,19 @@ class MatchesProcessor {
       let makerCurrency: string;
       let takerAmount: number;
       let makerAmount: number;
+       // TODO: use configurable amount of subunits/satoshis per token for each currency
       if (taker.quantity > 0) {
         // we are buying the base currency
         takerCurrency = baseCurrency;
         makerCurrency = quoteCurrency;
-        takerAmount = taker.quantity;
-        makerAmount = taker.quantity * maker.price;
+        takerAmount = taker.quantity * 100000000;
+        makerAmount = taker.quantity * maker.price * 100000000;
       } else {
         // we are selling the base currency
         takerCurrency = quoteCurrency;
         makerCurrency = baseCurrency;
-        takerAmount = taker.quantity * maker.price;
-        makerAmount = taker.quantity;
+        takerAmount = taker.quantity * maker.price * -100000000;
+        makerAmount = taker.quantity * -100000000;
       }
 
       const dealRequestBody: packets.DealRequestPacketBody = {
@@ -58,7 +59,7 @@ class MatchesProcessor {
         makerCurrency,
         takerAmount,
         makerAmount,
-        takerPubKey: this.pool.handshakeData.nodePubKey,
+        takerPubKey: takerCurrency === 'BTC' ? this.pool.handshakeData.lndbtcPubKey! : this.pool.handshakeData.lndltcPubKey!,
         takerDealId: uuidv1(),
         orderId: maker.id,
       };
@@ -66,6 +67,7 @@ class MatchesProcessor {
       const deal: SwapDeal = {
         ...dealRequestBody,
         myRole : SwapDealRole.Taker,
+        peerPubKey: this.pool.handshakeData.nodePubKey,
         createTime: Date.now(),
       };
 

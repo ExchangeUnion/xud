@@ -1,13 +1,10 @@
 import Logger from '../Logger';
-import DB, { Models } from '../db/DB';
+import { Models } from '../db/DB';
 import { db } from '../types';
 
 class P2PRepository {
-  private models: Models;
 
-  constructor(private logger: Logger, private db: DB) {
-    this.models = db.models;
-  }
+  constructor(private logger: Logger, private models: Models) {}
 
   public getNodes = async (): Promise<db.NodeInstance[]> => {
     return this.models.Node.findAll();

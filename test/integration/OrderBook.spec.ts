@@ -6,7 +6,7 @@ import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import { orders } from '../../lib/types';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
@@ -18,7 +18,7 @@ describe('OrderBook', () => {
   before(async () => {
     const config = new Config();
     await config.load();
-    const loggers = Logger.createLoggers();
+    const loggers = Logger.createLoggers(Level.WARN);
 
     db = new DB(config.testDb, loggers.db);
 
@@ -28,7 +28,7 @@ describe('OrderBook', () => {
     await db.truncate();
 
     orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
-    const p2pRepository = new P2PRepository(loggers.p2p, db);
+    const p2pRepository = new P2PRepository(loggers.p2p, db.models);
 
     await p2pRepository.addNode(
       { nodePubKey: nodeKey.nodePubKey, addresses: [] },
@@ -38,7 +38,7 @@ describe('OrderBook', () => {
       { id: 'LTC' },
     ]);
     await orderBookRepository.addPairs([
-      { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+      { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
     ]);
 
     orderBook = new OrderBook(loggers.orderbook, db.models);
@@ -74,13 +74,13 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: 'BTC/LTC', quantity: 5, price: 55 };
+    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55 };
     await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
     await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order: orders.OwnOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -6, price: 55 };
+    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -6, price: 55 };
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.undefined;
 
@@ -98,7 +98,7 @@ describe('OrderBook', () => {
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order: orders.OwnMarketOrder = { pairId: 'BTC/LTC', localId: uuidv1(), quantity: -10 };
+    const order: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -10 };
     const result = await orderBook.addMarketOrder(order);
     const { taker } = result.matches[0];
     expect(result.remainingOrder).to.be.undefined;

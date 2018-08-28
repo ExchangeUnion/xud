@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import Pool from '../../lib/p2p/Pool';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import Config from '../../lib/Config';
 import NodeKey from '../../lib/nodekey/NodeKey';
@@ -13,7 +13,7 @@ chai.use(chaiAsPromised);
 describe('P2P Pool Tests', () => {
   let db: DB;
   let pool: Pool;
-  const loggers = Logger.createLoggers();
+  const loggers = Logger.createLoggers(Level.WARN);
   const nodePubKeyOne = NodeKey['generate']().nodePubKey;
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {
@@ -41,7 +41,7 @@ describe('P2P Pool Tests', () => {
     await db.init();
     await db.models.Node.truncate();
 
-    pool = new Pool(config.p2p, loggers.p2p, db);
+    pool = new Pool(config.p2p, loggers.p2p, db.models);
 
     await pool.init({
       nodePubKey: 'test',

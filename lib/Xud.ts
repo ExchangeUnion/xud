@@ -55,7 +55,7 @@ class Xud extends EventEmitter {
    */
   public start = async (args?: { [argName: string]: any }) => {
     this.config.load(args);
-    const loggers = Logger.createLoggers(this.config.instanceId);
+    const loggers = Logger.createLoggers(this.config.logLevel, this.config.instanceId);
     this.logger = loggers.global;
     this.logger.info('config loaded');
 
@@ -84,7 +84,7 @@ class Xud extends EventEmitter {
       if (!this.raidenClient.isDisabled()) {
         initPromises.push(this.raidenClient.init());
       }
-      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db);
+      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db.models, this.lndbtcClient, this.lndltcClient);
 
       this.orderBook = new OrderBook(this.logger, this.db.models, this.pool, this.lndbtcClient, this.raidenClient);
       initPromises.push(this.orderBook.init());
