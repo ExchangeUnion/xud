@@ -44,7 +44,7 @@
     },
     "/v1/channelbalance": {
       "get": {
-        "summary": "Get the total funds available across all channels for a given currency.",
+        "summary": "Get the total balance available across all channels for a given currency.",
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
@@ -353,12 +353,12 @@
         "balance": {
           "type": "string",
           "format": "int64",
-          "title": "Sum of channels balances denominated in satoshis"
+          "title": "Sum of channels balances denominated in satoshis or equivalent"
         },
         "pending_open_balance": {
           "type": "string",
           "format": "int64",
-          "title": "Sum of channels pending balances denominated in satoshis"
+          "title": "Sum of channels pending balances denominated in satoshis or equivalent"
         }
       }
     },

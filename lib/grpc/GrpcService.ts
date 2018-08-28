@@ -8,6 +8,7 @@ import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { OrderArrays } from '../orderbook/OrderBook';
 
@@ -53,6 +54,8 @@ class GrpcService {
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case lndErrorCodes.LND_IS_DISABLED:
+      case lndErrorCodes.LND_IS_DISCONNECTED:
         code = status.FAILED_PRECONDITION;
         break;
     }
