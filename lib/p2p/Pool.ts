@@ -84,22 +84,27 @@ class Pool extends EventEmitter {
       return;
     }
 
-    if (this.listenPort) {
-      // Append the external IP if no address was specified by the user
+    if (this.server) {
+      let externalIp: string | undefined;
+      // Fetch the external IP if no address was specified by the user
       if (this.addresses.length === 0) {
         try {
-          const externlIp = await getExternalIp();
+          externalIp = await getExternalIp();
 
-          this.logger.info(`retrieved external IP: ${externlIp}`);
-
-          this.addresses.push({
-            host: externlIp,
-            port: this.listenPort,
-          });
-
+          this.logger.info(`retrieved external IP: ${externalIp}`);
         } catch (error) {
           this.logger.error(error.message);
         }
+      }
+
+      await this.listen();
+      this.bindServer();
+
+      if (externalIp) {
+        this.addresses.push({
+          host: externalIp,
+          port: this.listenPort!,
+        });
       }
     }
 
@@ -114,13 +119,7 @@ class Pool extends EventEmitter {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
     });
 
-    if (this.server && this.listenPort) {
-      await this.listen(this.listenPort);
-      this.bindServer();
-    }
-
     this.verifyReachability();
-
     this.connected = true;
   }
 
@@ -592,18 +591,24 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Start listening for incoming p2p connections on the given port.
+   * Start listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
+   * a random available port is used and will be assigned to `this.listenPort`.
    * @return a promise that resolves once the server is listening, or rejects if it fails to listen
    */
-  private listen = (port: number) => {
+  private listen = () => {
     return new Promise<void>((resolve, reject) => {
       const listenErrHandler = (err: Error) => {
         reject(err);
       };
 
-      this.server!.listen(port, '0.0.0.0').on('listening', () => {
+      this.server!.listen(this.listenPort || 0, '0.0.0.0').on('listening', () => {
         const { address, port } = this.server!.address();
         this.logger.info(`p2p server listening on ${address}:${port}`);
+
+        if (this.listenPort === 0) {
+          // we didn't specify a port and grabbed any available port
+          this.listenPort = port;
+        }
 
         this.server!.removeListener('error', listenErrHandler);
         resolve();

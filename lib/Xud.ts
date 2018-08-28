@@ -30,7 +30,7 @@ class Xud extends EventEmitter {
   private lndbtcClient!: LndClient;
   private lndltcClient!: LndClient;
   private raidenClient!: RaidenClient;
-  private pool?: Pool;
+  private pool!: Pool;
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
   private nodeKey!: NodeKey;
