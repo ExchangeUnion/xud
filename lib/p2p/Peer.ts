@@ -200,6 +200,7 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
+  /** Sends a [[NodesPacket]] containing node connection info to this peer. */
   public sendNodes = (nodes: NodeConnectionInfo[], reqId: string): void => {
     const packet = new packets.NodesPacket(nodes, reqId);
     this.sendPacket(packet);
