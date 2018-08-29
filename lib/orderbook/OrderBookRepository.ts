@@ -4,11 +4,8 @@ import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
 
 class OrderbookRepository {
-  private models: Models;
 
-  constructor(private logger: Logger, models: Models) {
-    this.models = models;
-  }
+  constructor(private logger: Logger, private models: Models) {}
 
   public getPairs = async (): Promise<db.PairInstance[]> => {
     return this.models.Pair.findAll({ raw: true });

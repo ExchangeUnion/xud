@@ -9,6 +9,7 @@ import * as annotations_pb from "./annotations_pb";
 
 interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     cancelOrder: IXudService_ICancelOrder;
+    channelBalance: IXudService_IChannelBalance;
     connect: IXudService_IConnect;
     disconnect: IXudService_IDisconnect;
     executeSwap: IXudService_IExecuteSwap;
@@ -30,6 +31,15 @@ interface IXudService_ICancelOrder extends grpc.MethodDefinition<xudrpc_pb.Cance
     requestDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.CancelOrderResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderResponse>;
+}
+interface IXudService_IChannelBalance extends grpc.MethodDefinition<xudrpc_pb.ChannelBalanceRequest, xudrpc_pb.ChannelBalanceResponse> {
+    path: string; // "/xudrpc.Xud/ChannelBalance"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.ChannelBalanceRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ChannelBalanceRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ChannelBalanceResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ChannelBalanceResponse>;
 }
 interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse> {
     path: string; // "/xudrpc.Xud/Connect"
@@ -135,6 +145,7 @@ export const XudService: IXudService;
 
 export interface IXudServer {
     cancelOrder: grpc.handleUnaryCall<xudrpc_pb.CancelOrderRequest, xudrpc_pb.CancelOrderResponse>;
+    channelBalance: grpc.handleUnaryCall<xudrpc_pb.ChannelBalanceRequest, xudrpc_pb.ChannelBalanceResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
     disconnect: grpc.handleUnaryCall<xudrpc_pb.DisconnectRequest, xudrpc_pb.DisconnectResponse>;
     executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.ExecuteSwapResponse>;
@@ -152,6 +163,9 @@ export interface IXudClient {
     cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    channelBalance(request: xudrpc_pb.ChannelBalanceRequest, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
+    channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
+    channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
@@ -190,6 +204,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
     public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
+    public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
+    public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;

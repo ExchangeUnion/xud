@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/v1/channelbalance": {
+      "get": {
+        "summary": "Get the total balance available across all channels for a given currency.",
+        "operationId": "ChannelBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcChannelBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Connect to an XU node.",
@@ -321,17 +347,25 @@
         }
       }
     },
+    "xudrpcChannelBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels balances denominated in satoshis or equivalent"
+        },
+        "pending_open_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels pending balances denominated in satoshis or equivalent"
+        }
+      }
+    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
-        "host": {
-          "type": "string"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "node_pub_key": {
+        "node_uri": {
           "type": "string"
         }
       }
@@ -383,6 +417,18 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
+        "version": {
+          "type": "string"
+        },
+        "node_pub_key": {
+          "type": "string"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "num_peers": {
           "type": "integer",
           "format": "int32"
@@ -390,9 +436,6 @@
         "num_pairs": {
           "type": "integer",
           "format": "int32"
-        },
-        "version": {
-          "type": "string"
         },
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"

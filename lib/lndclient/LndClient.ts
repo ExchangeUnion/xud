@@ -103,6 +103,22 @@ class LndClient extends BaseClient {
     });
   }
 
+  private unaryCallNative = <T, U>(methodName: string, params: T): Promise<U> => {
+    return new Promise((resolve, reject) => {
+      if (this.isDisabled()) {
+        reject(errors.LND_IS_DISABLED);
+        return;
+      }
+      (this.lightning as LightningMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  }
+
   public getLndInfo = async (): Promise<LndInfo> => {
     let channels: ChannelCount | undefined;
     let chains: string[] | undefined;
@@ -206,6 +222,14 @@ class LndClient extends BaseClient {
   }
 
   /**
+   * Send a payment through the Lightning Network.
+   * @param lndrpc.SendRequest (see lndrpc.proto)
+   */
+  public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+    return this.unaryCallNative<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
+  }
+
+  /**
    * Get a new address for the internal lnd wallet.
    */
   public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
@@ -222,7 +246,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Return the total funds available across all channels.
+   * Return the total balance available across all channels.
    */
   public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
     return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', new lndrpc.ChannelBalanceRequest());

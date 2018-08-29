@@ -7,11 +7,13 @@ import { OwnOrder } from '../types/orders';
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { Address } from '../types/p2p';
 import * as packets from '../p2p/packets/types';
-import { CurrencyType, SwapDealRole } from '../types/enums';
+import { SwapDealRole } from '../types/enums';
 import { SwapDeal } from '../orderbook/SwapDeals';
 import { randomBytes } from 'crypto';
+import { parseUri, getUri, UriParts } from '../utils/utils';
+import * as lndrpc from '../proto/lndrpc_pb';
+
 /**
  * The components required by the API service layer.
  */
@@ -29,9 +31,11 @@ export type ServiceComponents = {
 };
 
 type XudInfo = {
+  version: string;
+  nodePubKey: string;
+  uris: string[];
   numPeers: number;
   numPairs: number;
-  version: string;
   orders: { peer: number, own: number};
   lndbtc?: LndInfo;
   lndltc?: LndInfo;
@@ -51,6 +55,10 @@ const argChecks = {
   },
   NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+  SUPPORTED_CURRENCY: ({ currency }: { currency: string }) => {
+    const supportedCurrencies = ['BTC', 'LTC']; // TODO: detect supported currencies automatically instead of hardcoding
+    if (!supportedCurrencies.includes(currency)) throw errors.INVALID_ARGUMENT(`currency ${currency} is not supported`);
+  },
   VALID_PORT: ({ port }: { port: number }) => {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
@@ -101,14 +109,39 @@ class Service extends EventEmitter {
     return { canceled: removed };
   }
 
+  public channelBalance = (args: { currency: string }) => {
+    argChecks.SUPPORTED_CURRENCY(args);
+    const { currency } = args;
+
+    let cmdLnd: LndClient;
+    switch (currency.toUpperCase()) {
+      case 'BTC':
+        cmdLnd = this.lndBtcClient;
+        break;
+      case 'LTC':
+        cmdLnd = this.lndLtcClient;
+        break;
+      default:
+        return { balance: 0, pendingOpenBalance: 0 };
+    }
+
+    return cmdLnd.channelBalance();
+  }
+
   /**
-   * Connect to an XU node on a given host and port.
+   * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: { host: string, port: number, nodePubKey: string }) => {
-    const { host, port, nodePubKey } = args;
-    argChecks.HAS_NODE_PUB_KEY(args);
-    argChecks.HAS_HOST(args);
-    argChecks.VALID_PORT(args);
+  public connect = async (args: { nodeUri: string }) => {
+    let uriParts: UriParts;
+    try {
+      uriParts = parseUri(args.nodeUri);
+    } catch (err) {
+      throw errors.INVALID_ARGUMENT('uri is invalid');
+    }
+    const { nodePubKey, host, port } = uriParts;
+    argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
+    argChecks.HAS_HOST({ host });
+    argChecks.VALID_PORT({ port });
     const peer = await this.pool.addOutbound({ host, port }, nodePubKey);
     return peer.getStatus();
   }
@@ -129,8 +162,8 @@ class Service extends EventEmitter {
   public executeSwap = ({ targetAddress, payload }: { targetAddress: string, payload?: TokenSwapPayload })  => {
     let body: packets.DealRequestPacketBody;
     let takerPubKey: string | undefined;
-    let takerCoin: CurrencyType;
-    let makerCoin: CurrencyType;
+    let takerCurrency: string;
+    let makerCurrency: string;
 
     if (!payload) {
       return 'no payload provided';
@@ -150,13 +183,13 @@ class Service extends EventEmitter {
     switch (payload.receivingToken.toUpperCase()){
       case 'BTC':
         takerPubKey = this.lndBtcClient.pubKey;
-        takerCoin = CurrencyType.BTC;
-        makerCoin = CurrencyType.LTC;
+        takerCurrency = 'BTC';
+        makerCurrency = 'LTC';
         break;
       case 'LTC':
         takerPubKey = this.lndLtcClient.pubKey;
-        takerCoin = CurrencyType.LTC;
-        makerCoin = CurrencyType.BTC;
+        takerCurrency = 'LTC';
+        makerCurrency = 'BTC';
         break;
       default:
         return 'Invalid receiving token';
@@ -166,9 +199,9 @@ class Service extends EventEmitter {
       return 'Taker\'s LND is not connected';
     }
 
-    body =  {
-      takerCoin,
-      makerCoin,
+    body = {
+      takerCurrency,
+      makerCurrency,
       takerPubKey,
       takerDealId: randomBytes(32).toString('hex'),
       takerAmount: payload.receivingAmount,
@@ -178,23 +211,22 @@ class Service extends EventEmitter {
     const deal: SwapDeal = {
       myRole : SwapDealRole.Taker,
       takerAmount : body.takerAmount,
-      takerCoin : body.takerCoin,
+      takerCurrency : body.takerCurrency,
       takerPubKey: body.takerPubKey,
       takerDealId: body.takerDealId,
       makerAmount: body.makerAmount,
-      makerCoin: body.makerCoin,
+      makerCurrency: body.makerCurrency,
       createTime: Date.now(),
     };
+
     this.pool.swapDeals.add(deal);
-    this.logger.debug(' swap deal: ' + JSON.stringify(deal));
+    this.logger.debug('swap deal: ' + JSON.stringify(deal));
 
     this.logger.debug('sending to peer ' + payload.nodePubKey + ': ' + JSON.stringify(body));
     const packet = new packets.DealRequest(body);
 
-    const error = this.pool.sendToPeer(payload.nodePubKey, packet);
-    if (error) {
-      return error.message;
-    }
+    this.pool.sendToPeer(payload.nodePubKey, packet);
+
     // Todo: wait for swap to complete and provide the preimage back to the caller
     return 'Success';
   }
@@ -203,6 +235,16 @@ class Service extends EventEmitter {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
+    const { nodePubKey, addresses } = this.pool.handshakeData;
+
+    const uris: string[] = [];
+
+    if (addresses && addresses.length > 0) {
+      addresses.forEach((address) => {
+        uris.push(getUri({ nodePubKey, host: address.host, port: address.port }));
+      });
+    }
+
     const pairIds = this.orderBook.pairIds;
 
     let peerOrdersCount = 0;
@@ -224,6 +266,8 @@ class Service extends EventEmitter {
       lndbtc,
       lndltc,
       raiden,
+      nodePubKey,
+      uris,
       version: this.version,
       numPeers: this.pool.peerCount,
       numPairs: pairIds.length,
@@ -303,6 +347,72 @@ class Service extends EventEmitter {
    * Subscribe to executed swaps
    */
   public subscribeSwaps = async (_callback: Function) => {};
-}
 
+  /**
+   * resolveHash resolve hash to preimage.
+   */
+  public resolveHash = async (args: { hash: string }) => {
+    const { hash } = args;
+
+    this.logger.info('ResolveHash stating with hash: ' + hash);
+
+    const deal: SwapDeal | undefined = this.pool.swapDeals.findByHash(hash);
+
+    if (!deal) {
+      this.logger.error('Something went wrong. Can\'t find deal: ' + hash);
+      return 'Somthing is worng';
+    }
+
+	// If I'm the taker I need to forward the payment to the other chanin
+	// TODO: check that I got the right amount before sending out the agreed amount
+    // TODO: calculate CLTV
+    if (deal.myRole === SwapDealRole.Taker) {
+	  this.logger.debug('Executing taker code');
+      let cmdLnd = this.lndBtcClient;
+
+      switch (deal.makerCurrency) {
+        case 'BTC':
+          break;
+        case 'LTC':
+          cmdLnd = this.lndLtcClient;
+          break;
+      }
+
+      if (!deal.makerPubKey) {
+        return 'makerPubKey is missing';
+      }
+
+      const request = new lndrpc.SendRequest();
+      request.setAmt(deal.makerAmount);
+      request.setDestString(deal.makerPubKey);
+      request.setPaymentHashString(String(deal.r_hash));
+
+      try {
+        const response = await cmdLnd.sendPaymentSync(request);
+        if (response.getPaymentError()) {
+          this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
+          return response.getPaymentError();
+        }
+
+        const hexString = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        this.logger.debug('got preimage ' + hexString);
+        return hexString;
+
+      } catch (err) {
+        this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()));
+        return 'Got exception from sendPaymentSync';
+      }
+    } else {
+      // If we are here we are the maker
+      this.logger.debug('Executing maker code');
+      if (!deal.r_preimage) {
+        this.logger.error('Do not have r_preImage. Strange.');
+        return 'Do not have r_preImage. Strange.';
+      }
+      this.logger.debug(('deal.preimage = ' + deal.r_preimage));
+      return deal.r_preimage;
+    }
+
+  }
+}
 export default Service;

@@ -1,8 +1,15 @@
 import http from 'http';
-import errors from '../p2p/errors';
+import p2pErrors from '../p2p/errors';
+import { assert } from 'chai';
+
+export type UriParts = {
+  nodePubKey: string;
+  host: string;
+  port: number;
+};
 
 /**
- * Gets the external IP of the node
+ * Gets the external IP of the node.
  */
 export const getExternalIp = () => {
   return new Promise<string>((resolve, reject) => {
@@ -18,13 +25,37 @@ export const getExternalIp = () => {
         resolve(body);
       });
       res.on('error', (err: Error) => {
-        reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+        reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
       });
 
     }).on('error', (err: Error) => {
-      reject(errors.EXTERNAL_IP_UNRETRIEVABLE(err));
+      reject(p2pErrors.EXTERNAL_IP_UNRETRIEVABLE(err));
     });
   });
+};
+
+/**
+ * Creates a URI from the public key, host and port.
+ */
+export const getUri = (uriParts: UriParts): string => {
+  const { nodePubKey, host, port } = uriParts;
+  return `${nodePubKey}@${host}:${port}`;
+};
+
+/**
+ * Splits a URI into the public key, host and port.
+ */
+export const parseUri = (uri: string): UriParts => {
+  // A regex that splits the string by the symbols "@" and ":"
+  const split = uri.split(/[@:]+/);
+
+  assert(split.length === 3);
+
+  return {
+    nodePubKey: split[0],
+    host: split[1],
+    port: Number(split[2]),
+  };
 };
 
 /**

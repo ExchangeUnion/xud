@@ -10,11 +10,6 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-// TODO: avoid circular import
-import Pool from './Pool';
-import { CurrencyType, SwapDealRole } from '../types/enums';
-import { SwapDeal } from '../orderbook/SwapDeals';
-import { randomBytes, createHash } from 'crypto';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -91,21 +86,21 @@ class Peer extends EventEmitter {
     };
   }
 
-  constructor(private logger: Logger, private pool: Pool) {
+  constructor(private logger: Logger) {
     super();
 
     this.bindParser(this.parser);
   }
 
   /** Create an outbound connection to a node. */
-  public static fromOutbound(address: Address, logger: Logger, pool: Pool): Peer {
-    const peer = new Peer(logger, pool);
+  public static fromOutbound(address: Address, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.connect(address);
     return peer;
   }
 
-  public static fromInbound(socket: Socket, logger: Logger, pool: Pool): Peer {
-    const peer = new Peer(logger, pool);
+  public static fromInbound(socket: Socket, logger: Logger): Peer {
+    const peer = new Peer(logger);
     peer.accept(socket);
     return peer;
   }
@@ -205,6 +200,7 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
+  /** Sends a [[NodesPacket]] containing node connection info to this peer. */
   public sendNodes = (nodes: NodeConnectionInfo[], reqId: string): void => {
     const packet = new packets.NodesPacket(nodes, reqId);
     this.sendPacket(packet);
@@ -441,9 +437,9 @@ class Peer extends EventEmitter {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
-        this.logger.debug(`Received data (${this.nodePubKey}): ${dataStr}`);
+        this.logger.trace(`Received data (${this.nodePubKey}): ${dataStr}`);
       } else {
-        this.logger.debug(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
+        this.logger.trace(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
       }
       this.parser.feed(dataStr);
     });
@@ -500,22 +496,6 @@ class Peer extends EventEmitter {
           this.handlePing(packet);
           break;
         }
-        case PacketType.DEAL_REQUEST: {
-          this.handleDealRequest(packet);
-          break;
-        }
-        case PacketType.DEAL_RESPONSE: {
-          this.handleDealResponse(packet);
-          break;
-        }
-        case PacketType.SWAP_REQUEST: {
-          this.handleSwapRequest(packet);
-          break;
-        }
-        case PacketType.SWAP_RESPONSE: {
-          this.handleSwapResponse(packet);
-          break;
-        }
         default:
           this.emit('packet', packet);
           break;
@@ -568,116 +548,6 @@ class Peer extends EventEmitter {
 
   private handlePing = (packet: packets.PingPacket): void  => {
     this.sendPong(packet.header.id);
-  }
-
-  private handleDealRequest = (request: packets.DealRequest)  => {
-    this.logger.debug('Got this: ' + JSON.stringify(request));
-    const requestBody = request.body;
-    if (!requestBody) {
-      return;
-    }
-    const preImage = randomBytes(32).toString('hex');
-    const hash = createHash('sha256');
-    const r_hash = hash.update(preImage).digest('hex');
-    const makerDealId = randomBytes(32).toString('hex');
-    let makerPubKey: string | undefined;
-
-    switch (requestBody.makerCoin){
-      case CurrencyType.BTC:
-        makerPubKey = this.pool.lndBtcClient ? this.pool.lndBtcClient.pubKey : undefined;
-        break;
-      case CurrencyType.LTC:
-        makerPubKey = this.pool.lndLtcClient ? this.pool.lndLtcClient.pubKey : undefined;
-        break;
-      default:
-        return;
-    }
-
-    if (!makerPubKey) {
-      // TODO: proper error handling.
-      return;
-    }
-
-    const deal: SwapDeal = {
-      makerDealId,
-      makerPubKey,
-      preImage,
-      r_hash,
-      myRole: SwapDealRole.Maker,
-      takerAmount: requestBody.takerAmount,
-      takerCoin: requestBody.takerCoin,
-      takerPubKey: requestBody.takerPubKey,
-      takerDealId: requestBody.takerDealId,
-      makerAmount: requestBody.makerAmount,
-      makerCoin: requestBody.makerCoin,
-      createTime: Date.now(),
-    };
-
-    const body: packets.DealResponsePacketBody = {
-      makerPubKey,
-      makerDealId,
-      r_hash,
-      takerDealId: requestBody.takerDealId,
-    };
-
-    this.pool.swapDeals.add(deal);
-    this.logger.debug('swap deal: ' + JSON.stringify(deal));
-
-    this.logger.debug('sending back to peer: '  + JSON.stringify(body));
-
-    const packet = new packets.DealResponse(body, request.header.id);
-
-    this.sendPacket(packet);
-  }
-
-  private handleDealResponse = (response: packets.DealResponse): void  => {
-    if (!response.body) {
-      return;
-    }
-    const deal = this.pool.swapDeals.get(SwapDealRole.Taker, response.body.takerDealId);
-    if (!deal) {
-      return;
-    }
-
-    deal.makerPubKey = response.body.makerPubKey;
-    deal.makerDealId = response.body.makerDealId;
-    deal.r_hash = response.body.r_hash;
-    this.logger.debug('updated deal: ' + JSON.stringify(this.pool.swapDeals.get(SwapDealRole.Taker, response.body.takerDealId)));
-
-    const body: packets.SwapRequestPacketBody = {
-      makerDealId: deal.makerDealId,
-    };
-    const packet = new packets.SwapRequest(body);
-
-    this.sendPacket(packet);
-  }
-
-  private handleSwapRequest = (request: packets.SwapRequest): void  => {
-    if (!request.body) {
-      return;
-    }
-    const deal = this.pool.swapDeals.get(SwapDealRole.Maker, request.body.makerDealId);
-    if (!deal) {
-      return;
-    }
-    const body: packets.SwapResponsePacketBody = {
-      r_preimage: deal.preImage,
-    };
-    const packet = new packets.SwapResponse(body, request.header.id);
-
-    this.logger.debug('sending back to peer: '  + JSON.stringify(body));
-
-    this.sendPacket(packet);
-  }
-
-  private handleSwapResponse = (response: packets.SwapResponse): void  => {
-    if (!response) {
-      return;
-    }
-    if (!response.body) {
-      return;
-    }
-    this.logger.debug('Swap completed. r_preimage = ' + response.body.r_preimage);
   }
 
   private sendPong = (pingId: string): packets.PongPacket => {

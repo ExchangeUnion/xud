@@ -3,10 +3,12 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
+import * as resolverrpc from '../proto/swap_resolver_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { OrderArrays } from '../orderbook/OrderBook';
 
@@ -52,6 +54,8 @@ class GrpcService {
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case lndErrorCodes.LND_IS_DISABLED:
+      case lndErrorCodes.LND_IS_DISCONNECTED:
         code = status.FAILED_PRECONDITION;
         break;
     }
@@ -75,6 +79,21 @@ class GrpcService {
       const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
       const response = new xudrpc.CancelOrderResponse();
       response.setCanceled(cancelOrderResponse.canceled);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.channelBalance]]
+   */
+  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+    try {
+      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
+      const response = new xudrpc.ChannelBalanceResponse();
+      response.setBalance(channelBalanceResponse.balance);
+      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -130,6 +149,8 @@ class GrpcService {
     try {
       const getInfoResponse = await this.service.getInfo();
       const response = new xudrpc.GetInfoResponse();
+      response.setNodePubKey(getInfoResponse.nodePubKey);
+      response.setUrisList(getInfoResponse.uris);
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
@@ -301,6 +322,21 @@ class GrpcService {
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SubscribeSwapsResponse> = (call) => {
     this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
   }
+
+  /*
+   * Resolving LND hash. See [[Service.resolveHash]]
+   */
+  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveRequest, resolverrpc.ResolveResponse> = async (call, callback) => {
+    try {
+      const resolveResponse = await this.service.resolveHash(call.request.toObject());
+      const response = new resolverrpc.ResolveResponse();
+      response.setPreimage(resolveResponse);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
 }
 
 export default GrpcService;
