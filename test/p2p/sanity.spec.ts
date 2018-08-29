@@ -14,6 +14,7 @@ const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
   p2p: {
     listen: true,
     port: p2pPort,
+    addresses: [`localhost:${p2pPort}`],
   },
   rpc: {
     disable: true,

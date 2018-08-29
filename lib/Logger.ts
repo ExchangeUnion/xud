@@ -57,17 +57,22 @@ class Logger {
   private level: string;
   private logDir: string;
   private context: Context;
-  private logger: any;
+  private logger?: any;
   private instanceId: number;
 
   private static defaultLogDir = 'logs';
 
-  constructor({ level, instanceId, logDir, context }: {level: string, instanceId?: number, logDir?: string, context: Context}) {
-    this.level = level;
+  constructor({ instanceId, level, logDir, context, dummy }:
+    {instanceId?: number, level: string, logDir?: string, context: Context, dummy?: boolean}) {
 
+    this.level = level;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
     this.instanceId = instanceId || 0;
+
+    if (dummy) {
+      return;
+    }
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
@@ -101,6 +106,10 @@ class Logger {
     };
   }
 
+  public static get dummyLogger(): Logger {
+    return new Logger({ level: Level.ERROR, context: Context.GLOBAL, dummy: true });
+  }
+
   private getLogFormat = (colorize: boolean) => {
     const { format } = winston;
 
@@ -127,7 +136,9 @@ class Logger {
   }
 
   private log = (level: string, msg: string) => {
-    this.logger.log(level, msg);
+    if (this.logger) {
+      this.logger.log(level, msg);
+    }
   }
 
   public error = (msg: Error | string, err?: Error) => {
