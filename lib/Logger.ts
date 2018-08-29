@@ -62,15 +62,15 @@ class Logger {
 
   private static defaultLogDir = 'logs';
 
-  constructor({ instanceId, level, logDir, context, dummy }:
-    {instanceId?: number, level: string, logDir?: string, context: Context, dummy?: boolean}) {
+  constructor({ instanceId, level, logDir, context, disabled }:
+    {instanceId?: number, level?: string, logDir?: string, context?: Context, disabled?: boolean}) {
 
-    this.level = level;
+    this.level = level || Level.TRACE;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
     this.instanceId = instanceId || 0;
 
-    if (dummy) {
+    if (disabled) {
       return;
     }
 
@@ -106,8 +106,8 @@ class Logger {
     };
   }
 
-  public static get dummyLogger(): Logger {
-    return new Logger({ level: Level.ERROR, context: Context.GLOBAL, dummy: true });
+  public static get disabledLogger(): Logger {
+    return new Logger({ disabled: true });
   }
 
   private getLogFormat = (colorize: boolean) => {

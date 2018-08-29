@@ -144,14 +144,14 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = Peer.fromOutbound(address, Logger.dummyLogger);
+        const peer = Peer.fromOutbound(address, Logger.disabledLogger);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
         if (err.code === errors.ATTEMPTED_CONNECTION_TO_SELF.code) {
           this.logger.verbose(`Verified reachability of advertised address: ${externalAddress}`);
         } else {
-          this.logger.warn(`Could not connect to advertised address: ${externalAddress}`);
+          this.logger.warn(`Could not verify reachability of advertised address: ${externalAddress}`);
         }
       }
     });
@@ -558,6 +558,8 @@ class Pool extends EventEmitter {
     });
 
     peer.on('error', (err) => {
+      // The only situation in which the node should be connected to itself is the
+      // reachability check of the advertised addresses and we don't have to log that
       if (peer.nodePubKey !== this.handshakeData.nodePubKey) {
         this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
       }
