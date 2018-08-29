@@ -10,14 +10,16 @@ Developers & Testers:
 ```bash
 git clone https://github.com/ExchangeUnion/xud
 cd xud
-npm install
+npm run compile
+npm i
 ```
 For everyone else, we recommend using the [latest release](https://github.com/ExchangeUnion/xud/releases), below an example using the `v1.0.0-prealpha.1` release tag:
 ```bash
 git clone https://github.com/ExchangeUnion/xud 
 cd xud
 git checkout tags/v1.0.0-prealpha.1 -b v1.0.0-prealpha.1
-npm install
+npm run compile
+npm i
 ```
 
 
