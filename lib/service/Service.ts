@@ -55,6 +55,10 @@ const argChecks = {
   },
   NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+  SUPPORTED_CURRENCY: ({ currency }: { currency: string }) => {
+    const supportedCurrencies = ['BTC', 'LTC']; // TODO: detect supported currencies automatically instead of hardcoding
+    if (!supportedCurrencies.includes(currency)) throw errors.INVALID_ARGUMENT(`currency ${currency} is not supported`);
+  },
   VALID_PORT: ({ port }: { port: number }) => {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
@@ -103,6 +107,25 @@ class Service extends EventEmitter {
       });
     }
     return { canceled: removed };
+  }
+
+  public channelBalance = (args: { currency: string }) => {
+    argChecks.SUPPORTED_CURRENCY(args);
+    const { currency } = args;
+
+    let cmdLnd: LndClient;
+    switch (currency.toUpperCase()) {
+      case 'BTC':
+        cmdLnd = this.lndBtcClient;
+        break;
+      case 'LTC':
+        cmdLnd = this.lndLtcClient;
+        break;
+      default:
+        return { balance: 0, pendingOpenBalance: 0 };
+    }
+
+    return cmdLnd.channelBalance();
   }
 
   /**

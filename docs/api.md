@@ -6,6 +6,8 @@
 - [xudrpc.proto](#xudrpc.proto)
     - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
     - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
+    - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
+    - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [DisconnectRequest](#xudrpc.DisconnectRequest)
@@ -80,6 +82,37 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | canceled | [bool](#bool) |  | Indicates whether an order was successfully canceled |
+
+
+
+
+
+
+<a name="xudrpc.ChannelBalanceRequest"></a>
+
+### ChannelBalanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol of the currency to query for |
+
+
+
+
+
+
+<a name="xudrpc.ChannelBalanceResponse"></a>
+
+### ChannelBalanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| balance | [int64](#int64) |  | Sum of channels balances denominated in satoshis or equivalent |
+| pending_open_balance | [int64](#int64) |  | Sum of channels pending balances denominated in satoshis or equivalent |
 
 
 
@@ -599,6 +632,7 @@
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse) | Execute an atomic swap |

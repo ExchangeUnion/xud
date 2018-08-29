@@ -4,12 +4,19 @@ import "annotations.proto";
 
 package xudrpc;
 
-service Xud {  
+service Xud {
   /* Cancel placed order from the orderbook. */
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
     option (google.api.http) = {
       post: "/v1/cancelorder"
       body: "*"
+    };
+  }
+
+  /* Get the total balance available across all channels for a given currency. */
+  rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
+    option (google.api.http) = {
+      get: "/v1/channelbalance"
     };
   }
   
@@ -96,6 +103,17 @@ service Xud {
       get: "/v1/subscribeswaps"
     };
   }
+}
+
+message ChannelBalanceRequest {
+  // The ticker symbol of the currency to query for 
+  string currency = 1 [json_name = "currency"];
+}
+message ChannelBalanceResponse {
+  // Sum of channels balances denominated in satoshis or equivalent
+  int64 balance = 1 [json_name = "balance"];
+  // Sum of channels pending balances denominated in satoshis or equivalent
+  int64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
 message CancelOrderRequest {

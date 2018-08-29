@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/v1/channelbalance": {
+      "get": {
+        "summary": "Get the total balance available across all channels for a given currency.",
+        "operationId": "ChannelBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcChannelBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Connect to an XU node.",
@@ -318,6 +344,21 @@
           "type": "boolean",
           "format": "boolean",
           "title": "Indicates whether an order was successfully canceled"
+        }
+      }
+    },
+    "xudrpcChannelBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels balances denominated in satoshis or equivalent"
+        },
+        "pending_open_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels pending balances denominated in satoshis or equivalent"
         }
       }
     },

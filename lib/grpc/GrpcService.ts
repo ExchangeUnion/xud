@@ -8,6 +8,7 @@ import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { OrderArrays } from '../orderbook/OrderBook';
 
@@ -53,6 +54,8 @@ class GrpcService {
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case lndErrorCodes.LND_IS_DISABLED:
+      case lndErrorCodes.LND_IS_DISCONNECTED:
         code = status.FAILED_PRECONDITION;
         break;
     }
@@ -76,6 +79,21 @@ class GrpcService {
       const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
       const response = new xudrpc.CancelOrderResponse();
       response.setCanceled(cancelOrderResponse.canceled);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.channelBalance]]
+   */
+  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+    try {
+      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
+      const response = new xudrpc.ChannelBalanceResponse();
+      response.setBalance(channelBalanceResponse.balance);
+      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
