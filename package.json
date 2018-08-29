@@ -1,6 +1,6 @@
 {
   "name": "xud",
-  "version": "1.0.0-prealpha.1",
+  "version": "1.0.0-prealpha.2",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
