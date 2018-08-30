@@ -54,6 +54,8 @@ type Loggers = {
 };
 
 class Logger {
+  public static disabledLogger = new Logger({ disabled: true });
+
   private level: string;
   private logDir: string;
   private context: Context;
@@ -104,10 +106,6 @@ class Logger {
       lnd: new Logger({ instanceId, level, context: Context.LND }),
       raiden: new Logger({ instanceId, level, context: Context.RAIDEN }),
     };
-  }
-
-  public static get disabledLogger(): Logger {
-    return new Logger({ disabled: true });
   }
 
   private getLogFormat = (colorize: boolean) => {
