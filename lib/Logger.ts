@@ -54,20 +54,27 @@ type Loggers = {
 };
 
 class Logger {
+  public static disabledLogger = new Logger({ disabled: true });
+
   private level: string;
   private logDir: string;
   private context: Context;
-  private logger: any;
+  private logger?: any;
   private instanceId: number;
 
   private static defaultLogDir = 'logs';
 
-  constructor({ level, instanceId, logDir, context }: {level: string, instanceId?: number, logDir?: string, context: Context}) {
-    this.level = level;
+  constructor({ instanceId, level, logDir, context, disabled }:
+    {instanceId?: number, level?: string, logDir?: string, context?: Context, disabled?: boolean}) {
 
+    this.level = level || Level.TRACE;
     this.logDir = logDir || Logger.defaultLogDir;
     this.context = context || Context.GLOBAL;
     this.instanceId = instanceId || 0;
+
+    if (disabled) {
+      return;
+    }
 
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
@@ -127,7 +134,9 @@ class Logger {
   }
 
   private log = (level: string, msg: string) => {
-    this.logger.log(level, msg);
+    if (this.logger) {
+      this.logger.log(level, msg);
+    }
   }
 
   public error = (msg: Error | string, err?: Error) => {

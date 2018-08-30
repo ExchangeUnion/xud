@@ -18,6 +18,7 @@ import { randomBytes, createHash } from 'crypto';
 import { SwapDealRole } from '../types/enums';
 import LndClient from '../lndclient/LndClient';
 import * as lndrpc from '../proto/lndrpc_pb';
+import { assert } from 'chai';
 
 type PoolConfig = {
   listen: boolean;
@@ -87,7 +88,6 @@ class Pool extends EventEmitter {
       // Append the external IP if no address was specified by the user
       if (this.addresses.length === 0) {
         try {
-          // TODO: verify that this address is reachable
           const externlIp = await getExternalIp();
 
           this.logger.info(`retrieved external IP: ${externlIp}`);
@@ -119,6 +119,8 @@ class Pool extends EventEmitter {
       this.bindServer();
     }
 
+    this.verifyReachability();
+
     this.connected = true;
   }
 
@@ -135,6 +137,24 @@ class Pool extends EventEmitter {
     this.closePeers();
 
     this.connected = false;
+  }
+
+  private verifyReachability = () => {
+    this.handshakeData.addresses!.forEach(async (address) => {
+      const externalAddress = addressUtils.toString(address);
+      this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
+      try {
+        const peer = Peer.fromOutbound(address, Logger.disabledLogger);
+        await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
+        assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
+      } catch (err) {
+        if (err.code === errors.ATTEMPTED_CONNECTION_TO_SELF.code) {
+          this.logger.verbose(`Verified reachability of advertised address: ${externalAddress}`);
+        } else {
+          this.logger.warn(`Could not verify reachability of advertised address: ${externalAddress}`);
+        }
+      }
+    });
   }
 
   /**
@@ -493,6 +513,10 @@ class Pool extends EventEmitter {
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
+    if (peer.nodePubKey === this.handshakeData.nodePubKey) {
+      return;
+    }
+
     if (this.nodes.isBanned(peer.nodePubKey!)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
       peer.close();
@@ -534,7 +558,11 @@ class Pool extends EventEmitter {
     });
 
     peer.on('error', (err) => {
-      this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+      // The only situation in which the node should be connected to itself is the
+      // reachability check of the advertised addresses and we don't have to log that
+      if (peer.nodePubKey !== this.handshakeData.nodePubKey) {
+        this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+      }
     });
 
     peer.once('open', async () => {
