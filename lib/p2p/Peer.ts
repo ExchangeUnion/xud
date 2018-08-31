@@ -234,17 +234,17 @@ class Peer extends EventEmitter {
    * Ensure we are connected (for inbound connections) or listen for the `connect` socket event (for outbound connections)
    * and set the [[connectTime]] timestamp. If an outbound connection attempt errors or times out, throw an error.
    */
-  private initConnection = (): Promise<void> => {
+  private initConnection = async () => {
     assert(this.socket);
 
     if (this.connected) {
       assert(this.inbound);
       this.connectTime = Date.now();
       this.logger.debug(this.getStatus());
-      return Promise.resolve();
+      return;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const cleanup = () => {
         if (this.connectTimeout) {
           clearTimeout(this.connectTimeout);
