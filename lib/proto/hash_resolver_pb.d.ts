@@ -1,5 +1,5 @@
-// package: swapresolver
-// file: swap_resolver.proto
+// package: hashresolver
+// file: hash_resolver.proto
 
 /* tslint:disable */
 
