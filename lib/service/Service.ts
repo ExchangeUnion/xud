@@ -26,7 +26,7 @@ export type ServiceComponents = {
   version: string;
   swaps: Swaps; // TODO: remove once we remove the executeSwap demo call
   /** The function to be called to shutdown the parent process */
-  shutdown: () => string;
+  shutdown: () => void;
 };
 
 type XudInfo = {
@@ -65,7 +65,7 @@ const argChecks = {
 
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
-  public shutdown: () => string;
+  public shutdown: () => void;
   private orderBook: OrderBook;
   private lndBtcClient: LndClient;
   private lndLtcClient: LndClient;
@@ -99,15 +99,7 @@ class Service extends EventEmitter {
     argChecks.HAS_ORDER_ID(args);
     argChecks.HAS_PAIR_ID(args);
 
-    const { removed, globalId } = this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
-
-    if (removed) {
-      this.pool.broadcastOrderInvalidation({
-        pairId,
-        orderId: globalId!,
-      });
-    }
-    return { canceled: removed };
+    this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
   }
 
   public channelBalance = (args: { currency: string }) => {
@@ -144,8 +136,7 @@ class Service extends EventEmitter {
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
 
-    const peer = await this.pool.addOutbound({ host, port }, nodePubKey, false);
-    return peer.getStatus();
+    await this.pool.addOutbound({ host, port }, nodePubKey, false);
   }
 
   /*

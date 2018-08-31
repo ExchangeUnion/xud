@@ -338,14 +338,7 @@
       }
     },
     "xudrpcCancelOrderResponse": {
-      "type": "object",
-      "properties": {
-        "canceled": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Indicates whether an order was successfully canceled"
-        }
-      }
+      "type": "object"
     },
     "xudrpcChannelBalanceResponse": {
       "type": "object",
@@ -371,13 +364,7 @@
       }
     },
     "xudrpcConnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the connection request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcDisconnectRequest": {
       "type": "object",
@@ -388,12 +375,7 @@
       }
     },
     "xudrpcDisconnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "xudrpcExecuteSwapRequest": {
       "type": "object",
@@ -733,13 +715,7 @@
       "type": "object"
     },
     "xudrpcShutdownResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the shutdown request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcSubscribePeerOrdersResponse": {
       "type": "object",

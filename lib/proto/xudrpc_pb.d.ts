@@ -78,9 +78,6 @@ export namespace CancelOrderRequest {
 }
 
 export class CancelOrderResponse extends jspb.Message { 
-    getCanceled(): boolean;
-    setCanceled(value: boolean): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CancelOrderResponse.AsObject;
@@ -94,7 +91,6 @@ export class CancelOrderResponse extends jspb.Message {
 
 export namespace CancelOrderResponse {
     export type AsObject = {
-        canceled: boolean,
     }
 }
 
@@ -120,9 +116,6 @@ export namespace ConnectRequest {
 }
 
 export class ConnectResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ConnectResponse.AsObject;
@@ -136,7 +129,6 @@ export class ConnectResponse extends jspb.Message {
 
 export namespace ConnectResponse {
     export type AsObject = {
-        result: string,
     }
 }
 
@@ -162,9 +154,6 @@ export namespace DisconnectRequest {
 }
 
 export class DisconnectResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): DisconnectResponse.AsObject;
@@ -178,7 +167,6 @@ export class DisconnectResponse extends jspb.Message {
 
 export namespace DisconnectResponse {
     export type AsObject = {
-        result: string,
     }
 }
 
@@ -897,9 +885,6 @@ export namespace ShutdownRequest {
 }
 
 export class ShutdownResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ShutdownResponse.AsObject;
@@ -913,7 +898,6 @@ export class ShutdownResponse extends jspb.Message {
 
 export namespace ShutdownResponse {
     export type AsObject = {
-        result: string,
     }
 }
 

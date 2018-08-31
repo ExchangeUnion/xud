@@ -219,7 +219,7 @@ class Pool extends EventEmitter {
       this.logger.warn(err.message);
       throw err;
     } else if (this.peers.has(nodePubKey)) {
-      const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address.host);
+      const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
       throw err;
     }
 

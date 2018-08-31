@@ -66,10 +66,7 @@ describe('API Service', () => {
       pairId: 'LTC/BTC',
       orderId: '1',
     };
-    const cancelOrderPromise = service.cancelOrder(args);
-    expect(cancelOrderPromise).to.be.fulfilled;
-    const canceledOrder = await cancelOrderPromise;
-    expect(canceledOrder.canceled).to.be.true;
+    await expect(service.cancelOrder(args)).to.be.fulfilled;
   });
 
   it('should shutdown', async () => {
@@ -77,7 +74,6 @@ describe('API Service', () => {
     const shutdownPromise = new Promise((resolve) => {
       xud.on('shutdown', () => resolve());
     });
-    expect(shutdownPromise).to.be.fulfilled;
-    await shutdownPromise;
+    await expect(shutdownPromise).to.be.fulfilled;
   });
 });

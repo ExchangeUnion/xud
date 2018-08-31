@@ -122,25 +122,17 @@ message CancelOrderRequest {
   // The trading pair that the order to cancel is for
   string pair_id = 2 [json_name = "pair_id"];
 }
-message CancelOrderResponse {
-  // Indicates whether an order was successfully canceled
-  bool canceled = 1 [json_name = "canceled"];
-}
+message CancelOrderResponse { }
 
 message ConnectRequest {
   string node_uri = 1 [json_name = "node_uri"];
 }
-message ConnectResponse {
-  // A message describing the result of the connection request
-  string result = 1 [json_name = "result"];
-}
+message ConnectResponse { }
 
 message DisconnectRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message DisconnectResponse {
-  string result = 1 [json_name = "result"];
-}
+message DisconnectResponse { }
 
 message ExecuteSwapRequest {
   string target_address = 1 [json_name = "target_address"];
@@ -295,10 +287,7 @@ message SwapPayload {
 }
 
 message ShutdownRequest {}
-message ShutdownResponse {
-  // A message describing the result of the shutdown request
-  string result = 1 [json_name = "result"];
-}
+message ShutdownResponse { }
 
 message SubscribePeerOrdersRequest {}
 message SubscribePeerOrdersResponse {
