@@ -9,6 +9,15 @@ export class ResolveRequest extends jspb.Message {
     getHash(): string;
     setHash(value: string): void;
 
+    getTimeout(): number;
+    setTimeout(value: number): void;
+
+    getHeightNow(): number;
+    setHeightNow(value: number): void;
+
+    getAmount(): number;
+    setAmount(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ResolveRequest.AsObject;
@@ -23,6 +32,9 @@ export class ResolveRequest extends jspb.Message {
 export namespace ResolveRequest {
     export type AsObject = {
         hash: string,
+        timeout: number,
+        heightNow: number,
+        amount: number,
     }
 }
 

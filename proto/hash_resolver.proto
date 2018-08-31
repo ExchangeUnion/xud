@@ -11,6 +11,9 @@ service HashResolver {
 
 message ResolveRequest {
   string hash = 1 ;
+  uint32 timeout = 2;
+  uint32 height_now = 3;
+  int64  amount = 4;
 }
 
 message ResolveResponse {
