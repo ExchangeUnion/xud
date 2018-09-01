@@ -27,17 +27,18 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
 
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
-  if (isNaN(numericPrice)) {
+
+  request.setQuantity(isSell ? argv.quantity * -1 : argv.quantity);
+  request.setPairId(argv.pair_id);
+
+  if (!isNaN(numericPrice)) {
     request.setPrice(numericPrice);
-  } else if (priceStr.equals('mkt') || priceStr.equals('market')) {
-    request.setPairId(argv.pair_id);
     if (argv.order_id) {
       request.setOrderId(argv.order_id);
     }
-    request.setQuantity(isSell ? argv.quantity * -1 : argv.quantity);
-
-    loadXudClient(argv).placeOrder(request, callback);
-  } else {
+  } else if (priceStr !== ('mkt') && priceStr !== ('market')) {
     console.log('price must be numeric for limit orders or "mkt"/"market" for market orders');
+    return;
   }
+  loadXudClient(argv).placeOrder(request, callback);
 };
