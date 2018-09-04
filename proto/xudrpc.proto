@@ -5,6 +5,22 @@ import "annotations.proto";
 package xudrpc;
 
 service Xud {
+  /* Add a currency to the list of supported currencies. */
+  rpc AddCurrency(AddCurrencyRequest) returns (AddCurrencyResponse) {
+    option (google.api.http) = {
+      post: "/v1/addcurrency"
+      body: "*"
+    };
+  }
+
+  /* Add a trading pair to the list of supported trading pairs. */
+  rpc AddPair(AddPairRequest) returns (AddPairResponse) {
+    option (google.api.http) = {
+      post: "/v1/addpair"
+      body: "*"
+    };
+  }
+
   /* Cancel placed order from the orderbook. */
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
     option (google.api.http) = {
@@ -51,17 +67,24 @@ service Xud {
     };
   }
   
-  /* Get the list of the order book's available pairs. */
-  rpc GetPairs(GetPairsRequest) returns (GetPairsResponse) {
-    option (google.api.http) = {
-      get: "/v1/pairs"
-    };
-  }
-  
   /* Get a list of standing orders from the order book. */
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
+    };
+  }
+  
+  /* Get the list of the order book's supported currencies. */
+  rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
+    option (google.api.http) = {
+      get: "/v1/currencies"
+    };
+  }
+  
+  /* Get the list of the order book's suported trading pairs. */
+  rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
+    option (google.api.http) = {
+      get: "/v1/pairs"
     };
   }
   
@@ -78,6 +101,22 @@ service Xud {
   rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
     option (google.api.http) = {
       post: "/v1/placeorder"
+      body: "*"
+    };
+  }
+
+  /* Remove a currency. */
+  rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
+    option (google.api.http) = {
+      post: "/v1/removecurrency"
+      body: "*"
+    };
+  }
+
+  /* Remove a trading pair. */
+  rpc RemovePair(RemovePairRequest) returns (RemovePairResponse) {
+    option (google.api.http) = {
+      post: "/v1/removepair"
       body: "*"
     };
   }
@@ -104,6 +143,32 @@ service Xud {
     };
   }
 }
+
+message AddCurrencyRequest {
+  // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
+  string currency = 1 [json_name = "currency"];
+  enum SwapClient {
+    LND = 0;
+    RAIDEN = 1;
+  }
+  // The payment channel network client to use for executing swaps
+  SwapClient swap_client = 2 [json_name = "swap_client"];
+  // The contract address for layered tokens such as ERC20
+  string token_address = 3 [json_name = "token_address"];
+  // The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others
+  // where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought
+  // of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified.
+  uint32 decimal_places = 4 [json_name = "decimal_places"];
+}
+message AddCurrencyResponse { }
+
+message AddPairRequest {
+  // The base currency that is bought and sold for this trading pair
+  string base_currency = 1 [json_name = "base_currency"];
+  // The currency used to quote a price for the base currency
+  string quote_currency = 2 [json_name = "quote_currency"];
+}
+message AddPairResponse { }
 
 message ChannelBalanceRequest {
   // The ticker symbol of the currency to query for 
@@ -168,9 +233,16 @@ message GetOrdersResponse {
   Orders own_orders = 2 [json_name = "own_orders"];
 }
 
-message GetPairsRequest {}
-message GetPairsResponse {
-  repeated Pair pairs = 1 [json_name = "pairs"];
+message ListCurrenciesRequest {}
+message ListCurrenciesResponse {
+  // The ticker symbols of supported currencies
+  repeated string currencies = 1 [json_name = "currencies"];
+}
+
+message ListPairsRequest {}
+message ListPairsResponse {
+  // The supported trading pair tickers in formats like "LTC/BTC"
+  repeated string pairs = 1 [json_name = "pairs"];
 }
 
 message ListPeersRequest {}
@@ -231,13 +303,6 @@ message OrdersCount {
   int32 own = 2 [json_name = "own"];
 }
 
-message Pair {
-  string id = 1 [json_name = "id"];
-  string base_currency = 2 [json_name = "base_currency"];
-  string quote_currency = 3 [json_name = "quote_currency"];
-  string swap_protocol = 4 [json_name = "swap_protocol"];
-}
-
 message Peer {
   // The socket address with host and port for this peer
   string address = 1 [json_name = "address"];
@@ -276,6 +341,18 @@ message RaidenInfo {
   int32 channels = 3 [json_name = "channels"];
   string version = 4 [json_name = "version"];
 }
+
+message RemoveCurrencyRequest {
+  // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
+  string currency = 1 [json_name = "currency"];
+}
+message RemoveCurrencyResponse { }
+
+message RemovePairRequest {
+  // The trading pair ticker to remove, such as "LTC/BTC"
+  string pair_id = 1 [json_name = "pair_id"];
+}
+message RemovePairResponse { }
 
 message SwapPayload {
   string role = 1 [json_name = "role"];

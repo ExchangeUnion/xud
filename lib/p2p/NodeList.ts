@@ -32,7 +32,7 @@ class NodeList {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       node.banned = true;
-      await this.repository.updateNode(node);
+      await node.save();
       return true;
     }
     return false;
@@ -80,7 +80,7 @@ class NodeList {
         }
       });
 
-      await this.repository.updateNode(node);
+      await node.save();
       return true;
     }
 
@@ -93,7 +93,7 @@ class NodeList {
       const index = node.addresses.findIndex(existingAddress => addressUtils.areEqual(address, existingAddress));
       if (index > -1) {
         node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
-        await this.repository.updateNode(node);
+        await node.save();
         return true;
       }
     }
