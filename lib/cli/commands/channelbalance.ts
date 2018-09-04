@@ -15,6 +15,6 @@ export const builder = {
 
 export const handler = (argv: Arguments) => {
   const request = new ChannelBalanceRequest();
-  request.setCurrency(argv.currency);
+  request.setCurrency(argv.currency.toUpperCase());
   loadXudClient(argv).channelBalance(request, callback);
 };
