@@ -267,7 +267,7 @@ class MatchingEngine {
 
           // add the remaining order to the queue and the list
           matchAgainst.add(splitOrder.remaining);
-          list.set(makerOrder.id, splitOrder.remaining);
+          list.set(splitOrder.remaining.id, splitOrder.remaining);
 
           remainingOrder = undefined;
         } else if (makerOrderAbsQuantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split

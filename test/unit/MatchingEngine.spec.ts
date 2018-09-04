@@ -169,8 +169,7 @@ describe('MatchingEngine.match', () => {
   it('should fully match with two maker orders', () => {
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -5));
-    const matchAgainst = [engine.queues.sell];
-    const { remainingOrder } = engine.match(createOwnOrder(5, 10));
+    const { remainingOrder } = engine['match'](createOwnOrder(5, 10));
     expect(remainingOrder).to.be.undefined;
   });
 
@@ -178,7 +177,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createPeerOrder(5, -4));
     engine.addPeerOrder(createPeerOrder(5, -5));
     const matchAgainst = [engine.queues.sell];
-    const { remainingOrder } = engine.match(createOwnOrder(5, 10));
+    const { remainingOrder } = engine['match'](createOwnOrder(5, 10));
     expect(remainingOrder).to.not.be.undefined;
     expect(remainingOrder!.quantity).to.equal(1);
   });
@@ -187,7 +186,7 @@ describe('MatchingEngine.match', () => {
     engine.addPeerOrder(createPeerOrder(5, -5));
     engine.addPeerOrder(createPeerOrder(5, -6));
     const matchAgainst = [engine.queues.sell];
-    const { matches, remainingOrder } = engine.match(createOwnOrder(5, 10));
+    const { matches, remainingOrder } = engine['match'](createOwnOrder(5, 10));
     expect(remainingOrder).to.be.undefined;
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(-5);
