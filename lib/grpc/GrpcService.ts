@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { OrderArrays } from '../orderbook/OrderBook';
+import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
 /**
  * Convert a [[StampedOrder]] to an xudrpc Order message.
@@ -202,16 +202,16 @@ class GrpcService {
       const getOrdersResponse = this.service.getOrders(call.request.toObject());
       const response = new xudrpc.GetOrdersResponse();
 
-      const getOrdersList = (orders: StampedOrder[]) => {
+      const getOrdersList = <T extends StampedOrder>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(getOrder(order)));
+        orders.forEach(order => ordersList.push(getOrder(<StampedOrder>order)));
         return ordersList;
       };
 
-      const getOrders = (orderArrays: OrderArrays) => {
+      const getOrders = <T extends StampedOrder>(orderArrays: OrderSidesArrays<T>) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(getOrdersList(orderArrays.buyOrders));
-        orders.setSellOrdersList(getOrdersList(orderArrays.sellOrders));
+        orders.setBuyOrdersList(getOrdersList(orderArrays.buy));
+        orders.setSellOrdersList(getOrdersList(orderArrays.sell));
         return orders;
       };
 

@@ -1,3 +1,4 @@
+import assert from 'assert';
 import uuidv1 from 'uuid/v1';
 import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
@@ -13,15 +14,6 @@ import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
 import RaidenClient from '../raidenclient/RaidenClient';
 
-/** A mapping of strings (such as pair ids) to [[Orders]] objects. */
-type OrdersMap = Map<string, Orders>;
-
-/** A type containing two properties mapping order ids to orders for buy and sell orders. */
-type Orders = {
-  buyOrders: Map<string, orders.StampedOrder>;
-  sellOrders: Map<string, orders.StampedOrder>;
-};
-
 interface OrderBook {
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
   on(event: 'peerOrder.invalidation', listener: (order: orders.OrderIdentifier) => void): this;
@@ -29,31 +21,20 @@ interface OrderBook {
   emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier): boolean;
 }
 
-/** A type containing two arrays for buy and sell orders. */
-type OrderArrays = {
-  buyOrders: orders.StampedOrder[],
-  sellOrders: orders.StampedOrder[],
-};
-
 /** A class representing an orderbook containing all orders for all active trading pairs. */
 class OrderBook extends EventEmitter {
   /** An array of supported pair instances for the orderbook. */
   public pairs: db.PairInstance[] = [];
   /** An array of supported pair ids for the orderbook. */
   public pairIds: string[] = [];
-
   /** A map between active trading pair ids and matching engines. */
   public matchingEngines = new Map<string, MatchingEngine>();
+  /** A map between own orders local id and their global id. */
+  private localIdMap: Map<string, string> = new Map<string, string>();
 
   private repository: OrderBookRepository;
-  private matchesProcessor: MatchesProcessor;
-  /** A map between active trading pair ids and local buy and sell orders. */
-  private ownOrders: OrdersMap = new Map<string, Orders>();
-  /** A map between active trading pair ids and peer buy and sell orders. */
-  private peerOrders: OrdersMap = new Map<string, Orders>();
 
-  /** A map between an order's local id and its global id. */
-  private localIdMap: Map<string, string> = new Map<string, string>();
+  private matchesProcessor: MatchesProcessor;
 
   constructor(private logger: Logger, models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
     super();
@@ -73,67 +54,37 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private swapHandler = (order: orders.StampedOrder) => {
-    if (order.quantity === 0) {
-      // full order execution
-      if (orders.isPeerOrder(order)) {
-        this.removeOrder(this.peerOrders, order.id, order.pairId);
-      } else {
-        this.removeOwnOrder(order.pairId, order.id);
-      }
-    } else {
-      // TODO: partial order execution, update existing order
-    }
-  }
-
   public init = async () => {
     this.pairs = await this.repository.getPairs();
 
     this.pairs.forEach((pair) => {
       this.pairIds.push(pair.id);
       this.matchingEngines.set(pair.id, new MatchingEngine(this.logger, pair.id));
-      this.ownOrders.set(pair.id, this.initOrders());
-      this.peerOrders.set(pair.id, this.initOrders());
     });
-  }
-
-  private initOrders = (): Orders => {
-    return {
-      buyOrders: new Map <string, orders.StampedOrder>(),
-      sellOrders: new Map <string, orders.StampedOrder>(),
-    };
   }
 
   /**
    * Get lists of buy and sell orders of peers.
    */
-  public getPeerOrders = (pairId: string, maxResults: number): OrderArrays => {
-    return this.getOrders(pairId, maxResults, this.peerOrders);
-  }
-
-  /*
-  * Get lists of this node's own buy and sell orders.
-  */
-  public getOwnOrders = (pairId: string, maxResults: number): OrderArrays => {
-    return this.getOrders(pairId, maxResults, this.ownOrders);
-  }
-
-  private getOrders = (pairId: string, maxResults: number, ordersMap: OrdersMap): OrderArrays => {
-    const orders = ordersMap.get(pairId);
-    if (!orders) {
+  public getPeerOrders = (pairId: string, limit: number) => {
+    const matchingEngine = this.matchingEngines.get(pairId);
+    if (!matchingEngine) {
       throw errors.INVALID_PAIR_ID(pairId);
     }
-    if (maxResults > 0) {
-      return {
-        buyOrders: Array.from(orders.buyOrders.values()).slice(0, maxResults),
-        sellOrders: Array.from(orders.sellOrders.values()).slice(0, maxResults),
-      };
-    } else {
-      return {
-        buyOrders: Array.from(orders.buyOrders.values()),
-        sellOrders: Array.from(orders.sellOrders.values()),
-      };
+
+    return matchingEngine.getPeerOrders(limit);
+  }
+
+  /**
+   * Get lists of this node's own buy and sell orders.
+   */
+  public getOwnOrders = (pairId: string, limit?: number) => {
+    const matchingEngine = this.matchingEngines.get(pairId);
+    if (!matchingEngine) {
+      throw errors.INVALID_PAIR_ID(pairId);
     }
+
+    return matchingEngine.getOwnOrders(limit);
   }
 
   public addLimitOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
@@ -147,64 +98,8 @@ class OrderBook extends EventEmitter {
     return result;
   }
 
-  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
-    const id = this.localIdMap.get(localId);
-
-    if (id === undefined) {
-      return { removed: false, globalId: id };
-    } else {
-      this.localIdMap.delete(localId);
-      return {
-        removed: this.removeOwnOrder(pairId, id),
-        globalId: id,
-      };
-    }
-  }
-
-  private removeOwnOrder = (pairId: string, orderId: string): boolean => {
-    const matchingEngine = this.matchingEngines.get(pairId);
-    if (!matchingEngine) {
-      this.logger.warn(`Invalid pairId: ${pairId}`);
-      return false;
-    }
-
-    if (matchingEngine.removeOwnOrder(orderId)) {
-      this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
-      return this.removeOrder(this.ownOrders, orderId, pairId);
-    } else {
-      return false;
-    }
-  }
-
-  private removePeerOrder = (orderId: string, pairId: string, quantityToDecrease?: number): boolean => {
-    const matchingEngine = this.matchingEngines.get(pairId);
-    const ordersMap = this.peerOrders.get(pairId);
-    if (!matchingEngine || !ordersMap) {
-      this.logger.warn(`Invalid pairId: ${pairId}`);
-      return false;
-    }
-
-    const order = matchingEngine.removePeerOrder(orderId, quantityToDecrease);
-    if (order) {
-      let result;
-
-      if (!quantityToDecrease || quantityToDecrease === 0) {
-        result = this.removeOrder(this.peerOrders, orderId, pairId);
-      } else {
-        result = this.updateOrderQuantity(order, quantityToDecrease);
-      }
-
-      if (result) {
-        this.emit('peerOrder.invalidation', { orderId, pairId, quantity: quantityToDecrease });
-        return true;
-      }
-    }
-
-    this.logger.warn(`Invalid orderId: ${orderId}`);
-    return false;
-  }
-
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining = false): matchingEngine.MatchingResult => {
+
     if (order.localId === '') {
       // we were given a blank local id, so generate one
       order.localId = uuidv1();
@@ -224,12 +119,11 @@ class OrderBook extends EventEmitter {
     if (matches.length > 0) {
       matches.forEach(({ maker, taker }) => {
         this.handleMatch({ maker, taker });
-        this.updateOrderQuantity(maker, maker.quantity);
       });
     }
     if (remainingOrder && !discardRemaining) {
+      this.localIdMap.set(remainingOrder.localId, remainingOrder.id);
       this.broadcastOrder(remainingOrder);
-      this.addOrder(this.ownOrders, remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
     }
 
@@ -250,13 +144,11 @@ class OrderBook extends EventEmitter {
 
     const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
 
-    if (!this.addOrder(this.peerOrders, stampedOrder)) {
+    if (!matchingEngine.addPeerOrder(stampedOrder)) {
       this.logger.debug(`incoming peer order is duplicated: ${order.id}`);
       // TODO: penalize peer
       return false;
     }
-
-    matchingEngine.addPeerOrder(stampedOrder);
 
     this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
     this.emit('peerOrder.incoming', stampedOrder);
@@ -264,92 +156,65 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
+  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
+    const orderId = this.localIdMap.get(localId);
+
+    if (orderId === undefined) {
+      return { removed: false, globalId: orderId };
+    } else {
+      return {
+        removed: this.removeOwnOrder(orderId, pairId),
+        globalId: orderId,
+      };
+    }
+  }
+
+  private removeOwnOrder = (orderId: string, pairId: string): boolean => {
+    const matchingEngine = this.matchingEngines.get(pairId);
+    if (!matchingEngine) {
+      this.logger.warn(`invalid pairId: ${pairId}`);
+      return false;
+    }
+
+    const order = matchingEngine.removeOwnOrder(orderId);
+    if (!order) {
+      this.logger.warn(`invalid orderId: ${pairId}`);
+      return false;
+    }
+
+    this.localIdMap.delete(order.localId);
+    this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
+    return true;
+  }
+
+  private removePeerOrder = (orderId: string, pairId: string, quantityToDecrease?: number): orders.StampedPeerOrder | undefined => {
+    const matchingEngine = this.matchingEngines.get(pairId);
+    if (!matchingEngine) {
+      this.logger.warn(`incoming order invalidation: invalid pairId (${pairId})`);
+      return;
+    }
+    const order = matchingEngine.removePeerOrderQuantity(orderId, quantityToDecrease);
+    if (!order) {
+      this.logger.warn(`incoming order invalidation: invalid orderId (${orderId})`);
+      return;
+    } else {
+      assert(order.quantity === quantityToDecrease, 'order quantity must equal quantityToDecrease');
+      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: order.quantity });
+      return order;
+    }
+  }
+
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     this.matchingEngines.forEach((matchingEngine) => {
       const orders = matchingEngine.removePeerOrders(peer.nodePubKey!);
 
       orders.forEach((order) => {
-        this.removeOrder(this.peerOrders, order.id, order.pairId);
         this.emit('peerOrder.invalidation', {
           orderId: order.id,
           pairId: order.pairId,
         });
       });
     });
-  }
-
-  private updateOrderQuantity = (order: orders.StampedOrder, quantityToDecrease: number) => {
-    const isOwnOrder = orders.isOwnOrder(order);
-    const orderMap = this.getOrderMap(isOwnOrder ? this.ownOrders : this.peerOrders, order);
-
-    const orderToUpdate = orderMap.get(order.id);
-    if (!orderToUpdate) {
-      return false;
-    }
-    orderToUpdate.quantity -= quantityToDecrease;
-    if (orderToUpdate.quantity === 0) {
-      if (isOwnOrder) {
-        const { localId } = order as orders.StampedOwnOrder;
-        this.localIdMap.delete(localId);
-      }
-      orderMap.delete(order.id);
-    }
-
-    return true;
-  }
-
-  /**
-   * Add an order to an order map
-   * @returns false if an order with the same id already exist, otherwise true
-   */
-  private addOrder = (ordersMap: OrdersMap, order: orders.StampedOrder) => {
-    if (this.isOwnOrdersMap(ordersMap)) {
-      const { localId } = order as orders.StampedOwnOrder;
-      this.localIdMap.set(localId, order.id);
-    }
-
-    const orderMap = this.getOrderMap(ordersMap, order);
-    if (orderMap.has(order.id)) {
-      return false;
-    } else {
-      orderMap.set(order.id, order);
-      return true;
-    }
-  }
-
-  private removeOrder = (ordersMap: OrdersMap, orderId: string, pairId: string): boolean => {
-    if (!this.pairIds.includes(pairId)) {
-      throw errors.INVALID_PAIR_ID(pairId);
-    }
-    const orders = ordersMap.get(pairId);
-
-    if (orders) {
-      if (orders.buyOrders.has(orderId)) {
-        orders.buyOrders.delete(orderId);
-        return true;
-      } else if (orders.sellOrders.has(orderId)) {
-        orders.sellOrders.delete(orderId);
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private getOrderMap = (ordersMap: OrdersMap, order: orders.StampedOrder): Map<string, orders.StampedOrder> => {
-    const orders = ordersMap.get(order.pairId);
-    if (!orders) {
-      throw errors.INVALID_PAIR_ID(order.pairId);
-    }
-    if (order.quantity > 0) {
-      return orders.buyOrders;
-    } else {
-      return orders.sellOrders;
-    }
-  }
-
-  private isOwnOrdersMap = (ordersMap: OrdersMap) => {
-    return ordersMap === this.ownOrders;
   }
 
   /**
@@ -360,10 +225,10 @@ class OrderBook extends EventEmitter {
     // TODO: just send supported pairs
 
     const outgoingOrders: orders.OutgoingOrder[] = [];
-    this.pairIds.forEach((pairId) => {
-      const orders = this.getOwnOrders(pairId, 0);
-      orders['buyOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
-      orders['sellOrders'].forEach(order => outgoingOrders.push(this.createOutgoingOrder(order as orders.StampedOwnOrder)));
+    this.matchingEngines.forEach((matchingEngine) => {
+      const orders = matchingEngine.getOwnOrders();
+      orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+      orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
     });
     peer.sendOrders(outgoingOrders, reqId);
   }
@@ -399,7 +264,19 @@ class OrderBook extends EventEmitter {
     }
     this.matchesProcessor.process(match);
   }
+
+  private swapHandler = (order: orders.StampedOrder) => {
+    if (order.quantity === 0) {
+      // full order execution
+      if (orders.isPeerOrder(order)) {
+        this.removePeerOrder(order.id, order.pairId);
+      } else {
+        this.removeOwnOrder(order.id, order.pairId);
+      }
+    } else {
+      // TODO: partial order execution, update existing order
+    }
+  }
 }
 
 export default OrderBook;
-export { Orders, OrderArrays };
