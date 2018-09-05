@@ -43,7 +43,7 @@ const isEmpty = (engine: MatchingEngine) => {
 const init = () => {
   engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
   isEmpty(engine);
-}
+};
 
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
