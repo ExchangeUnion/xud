@@ -11,6 +11,7 @@ chai.use(chaiAsPromised);
 const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
   instanceId,
   logLevel: 'warn',
+  logPath: '',
   p2p: {
     listen: true,
     port: p2pPort,

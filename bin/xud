@@ -19,6 +19,10 @@ const { argv } = require('yargs')
       type: 'string',
       alias: 'l',
     },
+    logPath: {
+      describe: 'Path to the log file',
+      type: 'string',
+    },
     'db.database': {
       describe: 'SQL database name',
       type: 'string',
