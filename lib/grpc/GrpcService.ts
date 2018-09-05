@@ -3,7 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import * as resolverrpc from '../proto/swap_resolver_pb';
+import * as resolverrpc from '../proto/hash_resolver_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';

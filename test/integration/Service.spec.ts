@@ -19,6 +19,7 @@ describe('API Service', () => {
   before(async () => {
     const config = {
       logLevel: 'warn',
+      logPath: '',
       p2p: {
         listen: false,
       },

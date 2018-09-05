@@ -205,7 +205,10 @@ class OrderBook extends EventEmitter {
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining = false): matchingEngine.MatchingResult => {
-    if (this.localIdMap.has(order.localId)) {
+    if (order.localId === '') {
+      // we were given a blank local id, so generate one
+      order.localId = uuidv1();
+    } else if (this.localIdMap.has(order.localId)) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
@@ -315,17 +318,19 @@ class OrderBook extends EventEmitter {
   }
 
   private removeOrder = (ordersMap: OrdersMap, orderId: string, pairId: string): boolean => {
-    const orders = ordersMap.get(pairId);
-
-    if (!orders) {
+    if (!this.pairIds.includes(pairId)) {
       throw errors.INVALID_PAIR_ID(pairId);
     }
-    if (orders.buyOrders.has(orderId)) {
-      orders.buyOrders.delete(orderId);
-      return true;
-    } else if (orders.sellOrders.has(orderId)) {
-      orders.sellOrders.delete(orderId);
-      return true;
+    const orders = ordersMap.get(pairId);
+
+    if (orders) {
+      if (orders.buyOrders.has(orderId)) {
+        orders.buyOrders.delete(orderId);
+        return true;
+      } else if (orders.sellOrders.has(orderId)) {
+        orders.sellOrders.delete(orderId);
+        return true;
+      }
     }
 
     return false;

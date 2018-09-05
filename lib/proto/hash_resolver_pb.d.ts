@@ -1,5 +1,5 @@
-// package: swapresolver
-// file: swap_resolver.proto
+// package: hashresolver
+// file: hash_resolver.proto
 
 /* tslint:disable */
 
@@ -8,6 +8,15 @@ import * as jspb from "google-protobuf";
 export class ResolveRequest extends jspb.Message { 
     getHash(): string;
     setHash(value: string): void;
+
+    getTimeout(): number;
+    setTimeout(value: number): void;
+
+    getHeightNow(): number;
+    setHeightNow(value: number): void;
+
+    getAmount(): number;
+    setAmount(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -23,6 +32,9 @@ export class ResolveRequest extends jspb.Message {
 export namespace ResolveRequest {
     export type AsObject = {
         hash: string,
+        timeout: number,
+        heightNow: number,
+        amount: number,
     }
 }
 

@@ -17,7 +17,7 @@ export const builder = {
 
 export const handler = (argv: Arguments) => {
   const request = new CancelOrderRequest();
-  request.setPairId(argv.pair_id);
+  request.setPairId(argv.pair_id.toUpperCase());
   request.setOrderId(argv.order_id);
   loadXudClient(argv).cancelOrder(request, callback);
 };
