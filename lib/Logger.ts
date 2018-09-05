@@ -59,7 +59,7 @@ class Logger {
   private level: string;
   private logDir: string;
   private context: Context;
-  private logger?: any;
+  private logger?: winston.Logger;
   private instanceId: number;
 
   private static defaultLogDir = 'logs';
@@ -79,12 +79,12 @@ class Logger {
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir);
     }
+
     this.logger = winston.createLogger({
       levels: LevelPriorities,
       transports: [
         new winston.transports.Console({
           level: this.level,
-          colorize: true,
           format: this.getLogFormat(true),
         }),
         new winston.transports.File({
@@ -112,10 +112,10 @@ class Logger {
     const { format } = winston;
 
     if (this.instanceId > 0) {
-      return format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}]` +
+      return format.printf(info => `${getTsString()} [${this.context}][${this.instanceId}]` +
         `${this.getLevel(info.level, colorize)}: ${info.message}`);
     } else {
-      return format.printf((info: any) => `${getTsString()} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
+      return format.printf(info => `${getTsString()} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
     }
   }
 
