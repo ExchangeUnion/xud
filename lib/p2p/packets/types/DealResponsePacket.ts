@@ -3,11 +3,11 @@ import PacketType from '../PacketType';
 
 // TODO: proper error handling
 export type DealResponsePacketBody = {
-  r_hash: string;
+  r_hash?: string;
   takerDealId: string,
-  makerDealId: string;
+  makerDealId?: string;
   /** Maker's lnd pubkey on the maker currency's network. */
-  makerPubKey: string;
+  makerPubKey?: string;
 };
 
 class DealResponsePacket extends Packet<DealResponsePacketBody> {
