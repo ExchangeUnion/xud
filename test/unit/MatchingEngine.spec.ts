@@ -32,10 +32,18 @@ const createPeerOrder = (
   pairId: PAIR_ID,
 });
 
+let engine: MatchingEngine;
+
 const isEmpty = (engine: MatchingEngine) => {
+  expect(engine.ownOrders.buy).to.be.empty;
   expect(engine.ownOrders.sell).to.be.empty;
   expect(engine.queues.sell.isEmpty()).to.be.true;
 };
+
+const init = () => {
+  engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
+  isEmpty(engine);
+}
 
 describe('MatchingEngine.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
@@ -159,12 +167,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
 });
 
 describe('MatchingEngine.match', () => {
-  let engine: MatchingEngine;
-
-  beforeEach(() => {
-    engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
-    isEmpty(engine);
-  });
+  beforeEach(init);
 
   it('should fully match with two maker orders', () => {
     engine.addPeerOrder(createPeerOrder(5, -5));
@@ -198,12 +201,7 @@ describe('MatchingEngine.match', () => {
 });
 
 describe('MatchingEngine.removeOwnOrder', () => {
-  let engine: MatchingEngine;
-
-  beforeEach(() => {
-    engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
-    isEmpty(engine);
-  });
+  beforeEach(init);
 
   it('should add a new ownOrder and then remove it', async () => {
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, -5), false);
@@ -219,12 +217,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
 });
 
 describe('MatchingEngine.removePeerOrders', () => {
-  let engine: MatchingEngine;
-
-  beforeEach(() => {
-    engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
-    isEmpty(engine);
-  });
+  beforeEach(init);
 
   it('should add new peerOrders and then remove some of them', () => {
     const firstPeerPubKey = '026a848ebd1792001ff10c6e212f6077aec5669af3de890e1ae196b4e9730d75b9';
@@ -263,12 +256,7 @@ describe('MatchingEngine.removePeerOrders', () => {
 });
 
 describe('MatchingEngine queues and lists integrity', () => {
-  let engine: MatchingEngine;
-
-  beforeEach(() => {
-    engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
-    isEmpty(engine);
-  });
+  beforeEach(init);
 
   it('queue and list should both remove an own order', () => {
     const ownOrder = createOwnOrder(100, -10);

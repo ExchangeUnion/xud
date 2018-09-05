@@ -12,14 +12,14 @@ type SplitOrder = {
 
 type orderId = string;
 
-type OrderList<T> = Map<orderId, T>;
+type OrderList<T extends orders.StampedOrder> = Map<orderId, T>;
 
-type OrderSidesLists<T> = {
+type OrderSidesLists<T extends orders.StampedOrder> = {
   buy: OrderList<T>,
   sell: OrderList<T>,
 };
 
-type OrderSidesArrays<T> = {
+type OrderSidesArrays<T extends orders.StampedOrder> = {
   buy: T[],
   sell: T[],
 };
@@ -201,15 +201,14 @@ class MatchingEngine {
   }
 
   private getOrderList = (order: StampedOrder): OrderList<StampedOrder> => {
-    switch (isOwnOrder(order)) {
-      case true:
-        return order.quantity > 0 ? this.ownOrders.buy : this.ownOrders.sell;
-      case false:
-        return order.quantity > 0 ? this.peerOrders.buy : this.peerOrders.sell;
+    if (isOwnOrder(order)) {
+      return order.quantity > 0 ? this.ownOrders.buy : this.ownOrders.sell;
+    } else {
+      return order.quantity > 0 ? this.peerOrders.buy : this.peerOrders.sell;
     }
   }
 
-  private getOrders = <T>(lists: OrderSidesLists<T>, limit?: number): OrderSidesArrays<T> => {
+  private getOrders = <T extends orders.StampedOrder>(lists: OrderSidesLists<T>, limit?: number): OrderSidesArrays<T> => {
     return {
       buy: Array.from(lists.buy.values()).slice(0, limit || lists.buy.size),
       sell: Array.from(lists.sell.values()).slice(0, limit || lists.sell.size),

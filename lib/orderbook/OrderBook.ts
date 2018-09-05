@@ -99,7 +99,6 @@ class OrderBook extends EventEmitter {
   }
 
   private addOwnOrder = (order: orders.OwnOrder, discardRemaining = false): matchingEngine.MatchingResult => {
-
     if (order.localId === '') {
       // we were given a blank local id, so generate one
       order.localId = uuidv1();
@@ -159,8 +158,8 @@ class OrderBook extends EventEmitter {
   public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
     const orderId = this.localIdMap.get(localId);
 
-    if (orderId === undefined) {
-      return { removed: false, globalId: orderId };
+    if (!orderId) {
+      return { removed: false };
     } else {
       return {
         removed: this.removeOwnOrder(orderId, pairId),
@@ -205,6 +204,7 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
+    // TODO: remove only from pairs which are supported by the peer
     this.matchingEngines.forEach((matchingEngine) => {
       const orders = matchingEngine.removePeerOrders(peer.nodePubKey!);
 
