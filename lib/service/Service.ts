@@ -6,7 +6,6 @@ import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/Raid
 import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import * as packets from '../p2p/packets/types';
 import { SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
@@ -21,7 +20,6 @@ export type ServiceComponents = {
   lndLtcClient: LndClient;
   raidenClient: RaidenClient;
   pool: Pool;
-  config: Config
   /** The version of the local xud instance. */
   version: string;
   swaps: Swaps; // TODO: remove once we remove the executeSwap demo call
@@ -71,7 +69,6 @@ class Service extends EventEmitter {
   private lndLtcClient: LndClient;
   private raidenClient: RaidenClient;
   private pool: Pool;
-  private config: Config;
   private version: string;
   private swaps: Swaps;
 
@@ -85,7 +82,6 @@ class Service extends EventEmitter {
     this.lndLtcClient = components.lndLtcClient;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
-    this.config = components.config;
     this.swaps = components.swaps;
 
     this.version = components.version;
@@ -322,7 +318,7 @@ class Service extends EventEmitter {
 
     this.logger.info('ResolveHash starting with hash: ' + hash);
 
-    const deal: SwapDeal | undefined = this.swaps.getDealByHash(hash);
+    const deal = this.swaps.getDeal(hash);
 
     if (!deal) {
       const msg = `Something went wrong. Can't find deal: ${hash}`;

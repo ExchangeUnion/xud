@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 export type DealRequestPacketBody = {
-  takerDealId: string;
+  dealId: string;
   takerAmount: number;
   takerCurrency: string;
   makerAmount: number;

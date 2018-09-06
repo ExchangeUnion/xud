@@ -4,8 +4,7 @@ import PacketType from '../PacketType';
 // TODO: proper error handling
 export type DealResponsePacketBody = {
   r_hash?: string;
-  takerDealId: string,
-  makerDealId?: string;
+  dealId: string,
   /** Maker's lnd pubkey on the maker currency's network. */
   makerPubKey?: string;
 };

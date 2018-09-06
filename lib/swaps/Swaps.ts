@@ -17,14 +17,13 @@ type SwapDeal = {
   peerPubKey: string;
   /** Global order id in the XU network. */
   orderId?: string;
-  takerDealId: string;
+  dealId: string;
   /** The number of satoshis (or equivalent) the taker is expecting to receive. */
   takerAmount: number;
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
   /** The lnd pub key of the taker. */
   takerPubKey: string;
-  makerDealId?: string;
   /** The number of satoshis (or equivalent) the maker is expecting to receive. */
   makerAmount: number;
   /** The currency the maker is expecting to receive. */
@@ -40,7 +39,8 @@ type SwapDeal = {
 };
 
 export class Swaps extends EventEmitter {
-  private deals: SwapDeal[] = [];
+  /** A mapping containing two entries for each deal, one using dealId as a key and one using r_hash as a key. */
+  private deals = new Map<string, SwapDeal>();
 
   constructor(private logger: Logger, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
@@ -55,29 +55,20 @@ export class Swaps extends EventEmitter {
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
   }
 
-  private getDeal = (role: SwapDealRole, dealId: string): SwapDeal | undefined => {
-    for (const deal of this.deals) {
-      if (role === SwapDealRole.Maker && deal.makerDealId === dealId) {
-        return deal;
-      }
-      if (role === SwapDealRole.Taker && deal.takerDealId === dealId) {
-        return deal;
-      }
-    }
-    return undefined;
+  /**
+   * Gets a deal by its dealId or r_hash value.
+   * @param dealIdOrHash The dealId or r_hash value of the deal to get.
+   * @returns A deal if one is found, otherwise undefined.
+   */
+  public getDeal = (dealIdOrHash: string): SwapDeal | undefined => {
+    return this.deals.get(dealIdOrHash);
   }
 
   public addDeal = (deal: SwapDeal) => {
-    this.deals.push(deal);
-  }
-
-  public getDealByHash = (r_hash: string): SwapDeal | undefined => {
-    for (const deal of this.deals) {
-      if (r_hash === deal.r_hash) {
-        return deal;
-      }
+    this.deals.set(deal.dealId, deal);
+    if (deal.r_hash) {
+      this.deals.set(deal.r_hash, deal);
     }
-    return undefined;
   }
 
   /**
@@ -115,7 +106,7 @@ export class Swaps extends EventEmitter {
       takerAmount,
       makerAmount,
       takerPubKey: takerCurrency === 'BTC' ? this.pool.handshakeData.lndbtcPubKey! : this.pool.handshakeData.lndltcPubKey!,
-      takerDealId: uuidv1(),
+      dealId: uuidv1(),
       orderId: maker.id,
     };
 
@@ -147,7 +138,7 @@ export class Swaps extends EventEmitter {
       takerPubKey,
       takerAmount,
       makerAmount,
-      takerDealId: uuidv1(),
+      dealId: uuidv1(),
     };
 
     const deal: SwapDeal = {
@@ -190,17 +181,15 @@ export class Swaps extends EventEmitter {
     if (!makerPubKey) {
       // we don't support this currency, respond with an empty packet to reject the deal
       // TODO: check if we support taker currency as well
-      responsePacket = new packets.DealResponsePacket({ takerDealId: requestBody.takerDealId }, requestPacket.header.id);
+      responsePacket = new packets.DealResponsePacket({ dealId: requestBody.dealId }, requestPacket.header.id);
     } else {
       // accept the deal
       const r_preimage = randomBytes(32);
       const hash = createHash('sha256');
       const r_hash = hash.update(r_preimage).digest('hex');
-      const makerDealId = randomBytes(32).toString('hex');
 
       const deal: SwapDeal = {
         ...requestBody,
-        makerDealId,
         makerPubKey,
         r_hash,
         r_preimage: r_preimage.toString('hex'),
@@ -214,9 +203,8 @@ export class Swaps extends EventEmitter {
 
       const responseBody: packets.DealResponsePacketBody = {
         makerPubKey,
-        makerDealId,
         r_hash,
-        takerDealId: requestBody.takerDealId,
+        dealId: requestBody.dealId,
       };
 
       responsePacket = new packets.DealResponsePacket(responseBody, requestPacket.header.id);
@@ -231,7 +219,7 @@ export class Swaps extends EventEmitter {
    */
   private handleDealResponse = (responsePacket: packets.DealResponsePacket, peer: Peer): void  => {
     const responseBody = responsePacket.body!;
-    const deal = this.getDeal(SwapDealRole.Taker, responseBody.takerDealId);
+    const deal = this.getDeal(responseBody.dealId);
     if (!deal) {
       // TODO: add error handling for an unknown deal id
       return;
@@ -244,12 +232,12 @@ export class Swaps extends EventEmitter {
     }
 
     deal.makerPubKey = responseBody.makerPubKey;
-    deal.makerDealId = responseBody.makerDealId;
     deal.r_hash = responseBody.r_hash;
+    this.deals.set(deal.r_hash, deal);
     this.logger.debug('[SWAP] Updated deal: ' + JSON.stringify(deal));
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
-      makerDealId: deal.makerDealId!,
+      dealId: deal.dealId,
     };
 
     const swapRequestPacket = new packets.SwapRequestPacket(swapRequestBody);
@@ -268,7 +256,7 @@ export class Swaps extends EventEmitter {
     this.logger.debug(`Received swap request: ${JSON.stringify(requestBody)}`);
 
     let responseBody: packets.SwapResponsePacketBody = {};
-    const deal = this.getDeal(SwapDealRole.Maker, requestBody.makerDealId);
+    const deal = this.getDeal(requestBody.dealId);
     if (deal && deal.r_hash) {
       // we know this deal, proceed with the swap
       let cmdLnd: LndClient;

@@ -114,7 +114,6 @@ class Xud extends EventEmitter {
         lndLtcClient: this.lndltcClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
-        config: this.config,
         swaps: this.swaps,
         shutdown: this.beginShutdown,
       });
