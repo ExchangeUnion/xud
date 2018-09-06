@@ -99,14 +99,14 @@ export class Swaps extends EventEmitter {
       // we are buying the base currency
       takerCurrency = baseCurrency;
       makerCurrency = quoteCurrency;
-      takerAmount = taker.quantity * 100000000;
-      makerAmount = taker.quantity * maker.price * 100000000;
+      takerAmount = Math.round(taker.quantity * 100000000);
+      makerAmount = Math.round(taker.quantity * maker.price * 100000000);
     } else {
       // we are selling the base currency
       takerCurrency = quoteCurrency;
       makerCurrency = baseCurrency;
-      takerAmount = taker.quantity * maker.price * -100000000;
-      makerAmount = taker.quantity * -100000000;
+      takerAmount = Math.round(taker.quantity * maker.price * -100000000);
+      makerAmount = Math.round(taker.quantity * -100000000);
     }
 
     const dealRequestBody: packets.DealRequestPacketBody = {
