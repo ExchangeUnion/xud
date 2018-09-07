@@ -3,7 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import * as resolverrpc from '../proto/hash_resolver_pb';
+import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
@@ -326,10 +326,10 @@ class GrpcService {
   /*
    * Resolving LND hash. See [[Service.resolveHash]]
    */
-  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveRequest, resolverrpc.ResolveResponse> = async (call, callback) => {
+  public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
     try {
       const resolveResponse = await this.service.resolveHash(call.request.toObject());
-      const response = new resolverrpc.ResolveResponse();
+      const response = new ResolveResponse();
       response.setPreimage(resolveResponse);
       callback(null, response);
     } catch (err) {
