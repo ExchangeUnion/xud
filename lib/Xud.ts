@@ -11,7 +11,7 @@ import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
-import { Swaps } from './swaps/Swaps';
+import Swaps from './swaps/Swaps';
 
 const version: string = require('../package.json').version;
 

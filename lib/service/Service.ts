@@ -3,13 +3,12 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/RaidenClient';
-import Config from '../Config';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import Swaps, { SwapDeal } from '../swaps/Swaps';
+import Swaps from '../swaps/Swaps';
 
 /**
  * The components required by the API service layer.
@@ -346,7 +345,7 @@ class Service extends EventEmitter {
       }
 
       const request = new lndrpc.SendRequest();
-      request.setAmt(deal.makerAmount);
+      request.setAmt(deal.makerAmount!);
       request.setDestString(deal.makerPubKey);
       request.setPaymentHashString(String(deal.r_hash));
 

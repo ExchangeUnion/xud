@@ -5,6 +5,7 @@ import PacketType from '../PacketType';
 export type DealResponsePacketBody = {
   r_hash?: string;
   dealId: string,
+  quantity: number;
   /** Maker's lnd pubkey on the maker currency's network. */
   makerPubKey?: string;
 };
