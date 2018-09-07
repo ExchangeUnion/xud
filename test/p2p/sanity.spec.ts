@@ -41,11 +41,12 @@ describe('P2P Sanity Tests', () => {
   let nodeTwoConfig: any;
   let nodeTwo: Xud;
   let nodeTwoUri: string;
+  let nodeTwoPort: number;
 
   before(async () => {
     const config = new Config().load();
-    nodeOneConfig = createConfig(1, 9001, config);
-    nodeTwoConfig = createConfig(2, 9002, config);
+    nodeOneConfig = createConfig(1, 0, config);
+    nodeTwoConfig = createConfig(2, 0, config);
     const loggers = Logger.createLoggers(Level.WARN);
 
     // make sure the nodes table is empty
@@ -62,8 +63,9 @@ describe('P2P Sanity Tests', () => {
 
     await nodeOne['db'].models.Node.truncate();
 
-    nodeOneUri = getUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOneConfig.p2p.port });
-    nodeTwoUri = getUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoConfig.p2p.port });
+    nodeTwoPort = nodeTwo['pool']['listenPort']!;
+    nodeOneUri = getUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
+    nodeTwoUri = getUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoPort });
   });
 
   it('should connect successfully', async () => {
@@ -89,7 +91,7 @@ describe('P2P Sanity Tests', () => {
     const result = await nodeOne.service.connect({ nodeUri: getUri({
       nodePubKey: 'thewrongpubkey',
       host: 'localhost',
-      port: nodeTwoConfig.p2p.port,
+      port: nodeTwoPort,
     }) });
     expect(result).to.be.equal('Not connected');
     const listPeersResult = await nodeOne.service.listPeers();
