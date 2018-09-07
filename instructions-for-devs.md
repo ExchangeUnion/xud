@@ -13,8 +13,7 @@ cd xud
 npm i
 npm run compile
 ```
-
-For everyone else, we recommend installing the latest release from the npm:
+For everyone else, we recommend installing the lnpm:
 ```bash
 sudo npm i -g xud --unsafe-perm
 ```
