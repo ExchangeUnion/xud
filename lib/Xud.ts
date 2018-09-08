@@ -179,7 +179,6 @@ class Xud extends EventEmitter {
   public beginShutdown = () => {
     // we begin the shutdown process but return a response before it completes.
     void (this.shutdown());
-    return 'Shutting down XUD';
   }
 }
 

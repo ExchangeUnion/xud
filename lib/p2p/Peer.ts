@@ -288,7 +288,7 @@ class Peer extends EventEmitter {
 
         if (!retry) {
           this.close();
-          reject(err);
+          reject(errors.COULD_NOT_CONNECT(this.address, err));
           return;
         }
 
@@ -366,7 +366,7 @@ class Peer extends EventEmitter {
 
     for (const [packetType, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.error(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
+        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
         this.close();
         return;
       }
@@ -433,7 +433,7 @@ class Peer extends EventEmitter {
     this.socket = socket;
 
     this.socket.once('error', (err) => {
-      this.error(err);
+      this.emitError(err);
       // socket close event will be called immediately after the socket error
     });
 
@@ -519,7 +519,7 @@ class Peer extends EventEmitter {
     }
   }
 
-  private error = (err: Error | string): void => {
+  private emitError = (err: Error | string): void => {
     if (this.closed) {
       return;
     }

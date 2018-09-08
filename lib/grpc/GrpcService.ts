@@ -44,9 +44,11 @@ class GrpcService {
     switch (err.code) {
       case serviceErrorCodes.INVALID_ARGUMENT:
       case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
+      case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.INVALID_PAIR_ID:
+      case p2pErrorCodes.COULD_NOT_CONNECT:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
@@ -78,7 +80,6 @@ class GrpcService {
     try {
       const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
       const response = new xudrpc.CancelOrderResponse();
-      response.setCanceled(cancelOrderResponse.canceled);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -107,7 +108,6 @@ class GrpcService {
     try {
       const connectResponse = await this.service.connect(call.request.toObject());
       const response = new xudrpc.ConnectResponse();
-      response.setResult(connectResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -121,7 +121,6 @@ class GrpcService {
     try {
       await this.service.disconnect(call.request.toObject());
       const response = new xudrpc.DisconnectResponse();
-      response.setResult('success');
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -302,7 +301,6 @@ class GrpcService {
     try {
       const shutdownResponse = this.service.shutdown();
       const response = new xudrpc.ShutdownResponse();
-      response.setResult(shutdownResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

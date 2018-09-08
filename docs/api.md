@@ -79,11 +79,6 @@
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| canceled | [bool](#bool) |  | Indicates whether an order was successfully canceled |
-
-
 
 
 
@@ -140,11 +135,6 @@
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the connection request |
-
-
 
 
 
@@ -168,11 +158,6 @@
 
 ### DisconnectResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  |  |
 
 
 
@@ -537,11 +522,6 @@
 
 ### ShutdownResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the shutdown request |
 
 
 

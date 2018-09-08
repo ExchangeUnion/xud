@@ -1,4 +1,5 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
+import addressUtils from '../utils/addressUtils';
 import { Address } from '../types/p2p';
 
 const codesPrefix = errorCodesPrefix.P2P;
@@ -9,23 +10,24 @@ const errorCodes = {
   ATTEMPTED_CONNECTION_TO_SELF: codesPrefix.concat('.4'),
   EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
   CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
+  COULD_NOT_CONNECT: codesPrefix.concat('.7'),
 };
 
 const errors = {
-  NODE_ALREADY_CONNECTED: (nodePubKey: string, address: string) => ({
-    message: `Node ${nodePubKey} at (${address}) already connected`,
+  NODE_ALREADY_CONNECTED: (nodePubKey: string, address: Address) => ({
+    message: `Node ${nodePubKey} at ${addressUtils.toString(address)} already connected`,
     code: errorCodes.NODE_ALREADY_CONNECTED,
   }),
   NOT_CONNECTED: (nodePubKey: string) => ({
-    message: `Node (${nodePubKey}) is not connected`,
+    message: `node (${nodePubKey}) is not connected`,
     code: errorCodes.NOT_CONNECTED,
   }),
   UNEXPECTED_NODE_PUB_KEY: (nodePubKey: string, expectedNodePubKey: string, address: string) => ({
-    message: `Node at ${address} sent pub key ${nodePubKey}, expected ${expectedNodePubKey}`,
+    message: `node at ${address} sent pub key ${nodePubKey}, expected ${expectedNodePubKey}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
   ATTEMPTED_CONNECTION_TO_SELF: {
-    message: 'Cannot attempt connection to self',
+    message: 'cannot attempt connection to self',
     code: errorCodes.ATTEMPTED_CONNECTION_TO_SELF,
   },
   EXTERNAL_IP_UNRETRIEVABLE: (err: Error) => ({
@@ -36,6 +38,10 @@ const errors = {
     message: `Connection retry attempts to peer exceeded maximum time allotment`,
     code: errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED,
   },
+  COULD_NOT_CONNECT: (address: Address, err: Error) => ({
+    message: `could not connect to peer at ${addressUtils.toString(address)}: ${err.message}`,
+    code: errorCodes.COULD_NOT_CONNECT,
+  }),
 };
 
 export { errorCodes };
