@@ -145,7 +145,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = Peer.fromOutbound(address, Logger.disabledLogger);
+        const peer = new Peer(Logger.disabledLogger, address);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
@@ -223,7 +223,7 @@ class Pool extends EventEmitter {
       throw err;
     }
 
-    const peer = Peer.fromOutbound(address, this.logger);
+    const peer = new Peer(this.logger, address);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
   }
@@ -250,11 +250,11 @@ class Pool extends EventEmitter {
       await peer.open(this.handshakeData, nodePubKey, retryConnecting);
     } catch (err) {
       // we don't have `nodePubKey` for inbound connections, which might fail on handshake
-      const id = nodePubKey || addressUtils.toString(peer.socketAddress);
+      const id = nodePubKey || addressUtils.toString(peer.address);
       this.logger.warn(`error while opening connection to peer (${id}): ${err.message}`);
 
       if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
-        await this.nodes.removeAddress(nodePubKey!, peer.socketAddress);
+        await this.nodes.removeAddress(nodePubKey!, peer.address);
       }
 
       throw err;
@@ -265,7 +265,7 @@ class Pool extends EventEmitter {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
       peer.close();
-      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.socketAddress)}`);
+      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
     }
@@ -396,7 +396,7 @@ class Pool extends EventEmitter {
 
       // if outbound, update the `lastConnected` field for the address we're actually connected to
       const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
-        if (addressUtils.areEqual(peer.socketAddress, address)) {
+        if (addressUtils.areEqual(peer.address, address)) {
           return { ...address, lastConnected: Date.now() };
         } else {
           return address;
