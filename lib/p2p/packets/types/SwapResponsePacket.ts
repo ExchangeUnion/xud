@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 export type SwapResponsePacketBody = {
-  // TODO: add deal id
+  dealId: string;
   r_preimage?: string;
 };
 

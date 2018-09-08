@@ -2,17 +2,15 @@ import uuidv1 from 'uuid/v1';
 import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
 import MatchingEngine from './MatchingEngine';
-import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
 import Logger from '../Logger';
-import LndClient from '../lndclient/LndClient';
 import { ms } from '../utils/utils';
 import { Models } from '../db/DB';
-import RaidenClient from '../raidenclient/RaidenClient';
 import Swaps from '../swaps/Swaps';
+import { SwapDealRole } from '../types/enums';
 
 /** A mapping of strings (such as pair ids) to [[Orders]] objects. */
 type OrdersMap = Map<string, Orders>;
@@ -47,7 +45,6 @@ class OrderBook extends EventEmitter {
   public matchingEngines = new Map<string, MatchingEngine>();
 
   private repository: OrderBookRepository;
-  private matchesProcessor: MatchesProcessor;
   /** A map between active trading pair ids and local buy and sell orders. */
   private ownOrders: OrdersMap = new Map<string, Orders>();
   /** A map between active trading pair ids and peer buy and sell orders. */
@@ -59,27 +56,32 @@ class OrderBook extends EventEmitter {
   constructor(private logger: Logger, models: Models, private pool?: Pool, private swaps?: Swaps) {
     super();
 
-    this.matchesProcessor = new MatchesProcessor(logger, pool, swaps);
-
     this.repository = new OrderBookRepository(logger, models);
-    if (pool) {
-      pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
-      pool.on('packet.getOrders', this.sendOrders);
-      pool.on('peer.close', this.removePeerOrders);
+
+    this.bindPool();
+    this.bindSwaps();
+  }
+
+  private bindPool = () => {
+    if (this.pool) {
+      this.pool.on('packet.order', this.addPeerOrder);
+      this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
+      this.pool.on('packet.getOrders', this.sendOrders);
+      this.pool.on('peer.close', this.removePeerOrders);
     }
   }
 
-  private swapHandler = (order: orders.StampedOrder) => {
-    if (order.quantity === 0) {
-      // full order execution
-      if (orders.isPeerOrder(order)) {
-        this.removeOrder(this.peerOrders, order.id, order.pairId);
-      } else {
-        this.removeOwnOrder(order.pairId, order.id);
-      }
-    } else {
-      // TODO: partial order execution, update existing order
+  private bindSwaps = () => {
+    if (this.swaps) {
+      this.swaps.on('swap.completed', (deal) => {
+        if (deal.myRole === SwapDealRole.Maker) {
+          // assume full order execution of an own order
+          this.removeOwnOrder(deal.pairId, deal.orderId);
+
+          // TODO: handle partial order execution, updating existing order
+        }
+      });
+      // TODO: bind to other swap events
     }
   }
 
@@ -169,6 +171,10 @@ class OrderBook extends EventEmitter {
     }
   }
 
+  /**
+   * Attempts to remove a local order from the order book.
+   * @returns true if an order was removed, otherwise false
+   */
   private removeOwnOrder = (pairId: string, orderId: string): boolean => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
@@ -405,7 +411,17 @@ class OrderBook extends EventEmitter {
         });
       }
     }
-    this.matchesProcessor.process(match);
+
+    if (orders.isPeerOrder(match.maker)) {
+      // we matched a remote order
+      if (this.swaps) {
+        // TODO: handle the resolution of the swap
+        this.swaps.beginSwap(match.maker, match.taker as orders.StampedOwnOrder);
+      }
+    } else {
+      // internal match
+      // TODO: notify client
+    }
   }
 }
 

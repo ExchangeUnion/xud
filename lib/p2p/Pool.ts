@@ -358,18 +358,22 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.DEAL_REQUEST: {
+        this.logger.debug(`received dealRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.dealRequest', packet, peer);
         break;
       }
       case PacketType.DEAL_RESPONSE: {
+        this.logger.debug(`received dealResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.dealResponse', packet, peer);
         break;
       }
       case PacketType.SWAP_REQUEST: {
+        this.logger.debug(`received swapRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
       case PacketType.SWAP_RESPONSE: {
+        this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapResponse', packet);
         break;
       }

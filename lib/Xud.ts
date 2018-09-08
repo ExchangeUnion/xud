@@ -11,7 +11,7 @@ import Pool from './p2p/Pool';
 import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
-import { Swaps } from './swaps/Swaps';
+import Swaps from './swaps/Swaps';
 
 const version: string = require('../package.json').version;
 
@@ -114,7 +114,6 @@ class Xud extends EventEmitter {
         lndLtcClient: this.lndltcClient,
         raidenClient: this.raidenClient,
         pool: this.pool,
-        config: this.config,
         swaps: this.swaps,
         shutdown: this.beginShutdown,
       });
