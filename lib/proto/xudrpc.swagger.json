@@ -42,6 +42,32 @@
         ]
       }
     },
+    "/v1/channelbalance": {
+      "get": {
+        "summary": "Get the total balance available across all channels for a given currency.",
+        "operationId": "ChannelBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcChannelBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Connect to an XU node.",
@@ -312,38 +338,33 @@
       }
     },
     "xudrpcCancelOrderResponse": {
+      "type": "object"
+    },
+    "xudrpcChannelBalanceResponse": {
       "type": "object",
       "properties": {
-        "canceled": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Indicates whether an order was successfully canceled"
+        "balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels balances denominated in satoshis or equivalent"
+        },
+        "pending_open_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "Sum of channels pending balances denominated in satoshis or equivalent"
         }
       }
     },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
-        "host": {
-          "type": "string"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "node_pub_key": {
+        "node_uri": {
           "type": "string"
         }
       }
     },
     "xudrpcConnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the connection request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcDisconnectRequest": {
       "type": "object",
@@ -354,12 +375,7 @@
       }
     },
     "xudrpcDisconnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "xudrpcExecuteSwapRequest": {
       "type": "object",
@@ -383,6 +399,18 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
+        "version": {
+          "type": "string"
+        },
+        "node_pub_key": {
+          "type": "string"
+        },
+        "uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "num_peers": {
           "type": "integer",
           "format": "int32"
@@ -390,9 +418,6 @@
         "num_pairs": {
           "type": "integer",
           "format": "int32"
-        },
-        "version": {
-          "type": "string"
         },
         "orders": {
           "$ref": "#/definitions/xudrpcOrdersCount"
@@ -690,13 +715,7 @@
       "type": "object"
     },
     "xudrpcShutdownResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the shutdown request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcSubscribePeerOrdersResponse": {
       "type": "object",

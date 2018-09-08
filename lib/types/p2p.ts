@@ -1,12 +1,15 @@
-import { NodeFactory } from './db';
-
 export type Address = {
   host: string;
   port: number;
+  /** Epoch timestamp of last successful connection with this address */
+  lastConnected?: number;
 };
 
 /** Information used for connecting to a remote node. */
-export type NodeConnectionInfo = NodeFactory;
+export type NodeConnectionInfo = {
+  nodePubKey: string;
+  addresses: Address[];
+};
 
 export type HandshakeState = {
   version: string;

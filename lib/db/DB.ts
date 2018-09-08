@@ -58,14 +58,13 @@ class DB {
       }
     }
     const { Node, Currency, Pair } = this.models;
-    const options = { logging: this.logger.verbose };
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
-      Node.sync(options),
-      Currency.sync(options),
+      Node.sync(),
+      Currency.sync(),
     ]);
     await Promise.all([
-      Pair.sync(options),
+      Pair.sync(),
     ]);
 
     if (newDb) {
@@ -94,7 +93,7 @@ class DB {
       ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
-        { baseCurrency: 'BTC', quoteCurrency: 'LTC', swapProtocol: SwapProtocol.LND },
+        { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
         { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
       ]);
     }
@@ -122,6 +121,7 @@ class DB {
   private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
     return new Sequelize({
       ...config,
+      logging: this.logger.trace,
       dialect: 'mysql',
       operatorsAliases: false,
       dialectOptions: {

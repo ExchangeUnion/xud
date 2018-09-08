@@ -1,6 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import winston from 'winston';
+import colors from 'colors/safe';
 
 import { getTsString } from './utils/utils';
 
@@ -10,7 +9,17 @@ enum Level {
   INFO = 'info',
   VERBOSE = 'verbose',
   DEBUG = 'debug',
+  TRACE = 'trace',
 }
+
+const LevelPriorities = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  verbose: 3,
+  debug: 4,
+  trace: 5,
+};
 
 export enum Context {
   GLOBAL = 'GLOBAL',
@@ -20,17 +29,8 @@ export enum Context {
   ORDERBOOK = 'ORDERBOOK',
   LND = 'LND',
   RAIDEN = 'RAIDEN',
+  SWAPS = 'SWAPS',
 }
-
-const contextFileMap = {
-  [Context.GLOBAL]: 'xud.log',
-  [Context.DB]: 'xud.log',
-  [Context.RPC]: 'xud.log',
-  [Context.P2P]: 'xud.log',
-  [Context.ORDERBOOK]: 'xud.log',
-  [Context.LND]: 'xud.log',
-  [Context.RAIDEN]: 'xud.log',
-};
 
 type Loggers = {
   global: Logger,
@@ -40,75 +40,113 @@ type Loggers = {
   orderbook: Logger,
   lnd: Logger,
   raiden: Logger,
+  swaps: Logger,
 };
 
 class Logger {
+  public static disabledLogger = new Logger({ disabled: true });
+
   private level: string;
-  private logDir: string;
   private context: Context;
-  private logger: any;
+  private logger?: winston.Logger;
   private instanceId: number;
 
-  private static defaultLogDir = 'logs';
+  constructor({ level, filename, context, instanceId, disabled }:
+    {instanceId?: number, level?: string, filename?: string, context?: Context, disabled?: boolean}) {
 
-  private static defaultLevel = process.env.NODE_ENV === 'production'
-  ? Level.INFO
-  : Level.DEBUG;
-
-  constructor({ instanceId, level, logDir, context }: {instanceId?: number, level?: string, logDir?: string, context: Context}) {
-    this.level = level || Logger.defaultLevel;
-    this.logDir = logDir || Logger.defaultLogDir;
+    this.level = level || Level.TRACE;
     this.context = context || Context.GLOBAL;
     this.instanceId = instanceId || 0;
 
-    const { format } = winston;
-    let logFormat: any;
-    if (this.instanceId > 0) {
-      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}] ${info.level}: ${info.message}`);
-    } else {
-      logFormat = format.printf((info: any) => `${getTsString()} [${this.context}] ${info.level}: ${info.message}`);
+    if (disabled) {
+      return;
     }
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir);
+
+    const transports: any[] = [
+      new winston.transports.Console({
+        level: this.level,
+        format: this.getLogFormat(true),
+      }),
+    ];
+
+    if (filename !== '') {
+      transports.push(new winston.transports.File({
+        filename,
+        level: this.level,
+        format: this.getLogFormat(false),
+      }));
     }
+
     this.logger = winston.createLogger({
-      level: this.level,
-      format: logFormat,
-      transports: [
-        new winston.transports.Console({ format: format.combine(format.colorize(), logFormat) }),
-        new winston.transports.File({
-          filename: path.join(this.logDir, contextFileMap[this.context]),
-        }),
-      ],
+      transports,
+      levels: LevelPriorities,
     });
   }
 
-  public static createLoggers = (instanceId = 0): Loggers => {
+  public static createLoggers = (level: string, filename = '', instanceId = 0): Loggers => {
+    const object = { instanceId, level, filename };
     return {
-      global: new Logger({ instanceId, context: Context.GLOBAL }),
-      db: new Logger({ instanceId, context: Context.DB }),
-      rpc: new Logger({ instanceId, context: Context.RPC }),
-      p2p: new Logger({ instanceId, context: Context.P2P }),
-      orderbook: new Logger({ instanceId, context: Context.ORDERBOOK }),
-      lnd: new Logger({ instanceId, context: Context.LND }),
-      raiden: new Logger({ instanceId, context: Context.RAIDEN }),
+      global: new Logger({ ...object, context: Context.GLOBAL }),
+      db: new Logger({ ...object, context: Context.DB }),
+      rpc: new Logger({ ...object, context: Context.RPC }),
+      p2p: new Logger({ ...object, context: Context.P2P }),
+      orderbook: new Logger({ ...object, context: Context.ORDERBOOK }),
+      lnd: new Logger({ ...object, context: Context.LND }),
+      raiden: new Logger({ ...object, context: Context.RAIDEN }),
+      swaps: new Logger({ ...object, context: Context.SWAPS }),
     };
   }
 
-  private log = (level: string, msg: string) => {
-    this.logger.log(level, msg);
+  private getLogFormat = (colorize: boolean) => {
+    const { format } = winston;
+
+    if (this.instanceId > 0) {
+      return format.printf(info => `${getTsString()} [${this.context}][${this.instanceId}] ` +
+        `${this.getLevel(info.level, colorize)}: ${info.message}`);
+    } else {
+      return format.printf(info => `${getTsString()} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
+    }
   }
 
-  public error = (msg: Error | string, err?: Error) => {
+  private getLevel = (level: string, colorize: boolean): string => {
+    if (colorize) {
+      switch (level) {
+        case 'error': return colors.red(level);
+        case 'warn': return colors.yellow(level);
+        case 'info': return colors.green(level);
+        case 'verbose': return colors.cyan(level);
+        case 'debug': return colors.blue(level);
+        case 'trace': return colors.magenta(level);
+      }
+    }
+    return level;
+  }
+
+  private log = (level: string, msg: string) => {
+    if (this.logger) {
+      this.logger.log(level, msg);
+    }
+  }
+
+  public error = (msg: Error | string, err?: any) => {
     let errMsg: string;
     if (msg instanceof Error) {
       // treat msg as an error object
-      errMsg = msg.stack ? msg.stack : '';
-    } else if (err) {
-      errMsg = `${msg} ${err.stack}`;
+      errMsg = msg.stack ? msg.stack : `${msg.name} - ${msg.message}`;
     } else {
       errMsg = msg;
+      if (err) {
+        errMsg += ': ';
+        if (err instanceof Error) {
+          errMsg += err.stack ? err.stack : `${err.name} - ${err.message}`;
+        } else if (err.code && err.message) {
+          errMsg += `${err.code} - ${err.message}`;
+        } else {
+          errMsg += JSON.stringify(err);
+        }
+      }
     }
+
     this.log(Level.ERROR, errMsg);
   }
 
@@ -127,6 +165,11 @@ class Logger {
   public debug = (msg: string) => {
     this.log(Level.DEBUG, msg);
   }
+
+  public trace = (msg: string) => {
+    this.log(Level.TRACE, msg);
+  }
 }
 
 export default Logger;
+export { Level };

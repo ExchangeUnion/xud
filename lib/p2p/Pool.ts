@@ -1,19 +1,19 @@
 import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
-import errors from './errors';
+import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
 import NodeList from './NodeList';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
-import { Packet, PacketType, OrderPacket, OrderInvalidationPacket, GetOrdersPacket, NodesPacket, OrdersPacket, GetNodesPacket } from './packets';
-import { PeerOrder, OutgoingOrder, OrderIdentifier } from '../types/orders';
-import DB from '../db/DB';
+import * as packets from './packets/types';
+import { Packet, PacketType } from './packets';
+import { OutgoingOrder, OrderIdentifier, StampedPeerOrder } from '../types/orders';
+import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import SwapDeals from '../orderbook/SwapDeals';
-import LndClient from '../lndclient/LndClient';
 import { getExternalIp } from '../utils/utils';
+import assert from 'assert';
 
 type PoolConfig = {
   listen: boolean;
@@ -22,14 +22,22 @@ type PoolConfig = {
 };
 
 interface Pool {
-  on(event: 'packet.order', listener: (order: PeerOrder) => void): this;
+  on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
-  emit(event: 'packet.order', order: PeerOrder): boolean;
+  on(event: 'packet.dealRequest', listener: (packet: packets.DealRequestPacket, peer: Peer) => void): this;
+  on(event: 'packet.dealResponse', listener: (packet: packets.DealResponsePacket, peer: Peer) => void): this;
+  on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket) => void): this;
+  emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
+  emit(event: 'packet.dealRequest', packet: packets.DealRequestPacket, peer: Peer): boolean;
+  emit(event: 'packet.dealResponse', packet: packets.DealResponsePacket, peer: Peer): boolean;
+  emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
+  emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
@@ -39,23 +47,21 @@ interface NodeConnectionIterator {
 
 /** A class representing a pool of peers that handles network activity. */
 class Pool extends EventEmitter {
-  // TODO: Make private once the call to add a swap deal is moved from Peer.ts to Pool.ts
-  public swapDeals: SwapDeals;
+  /** The local handshake data to be sent to newly connected peers. */
+  public handshakeData!: HandshakeState;
+  /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
+  /** A collection of opened, active peers. */
   private peers: PeerList = new PeerList();
   private server?: Server;
   private connected = false;
-  /** The local handshake data to be sent to newly connected peers. */
-  private handshakeData!: HandshakeState;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
 
-  constructor(config: PoolConfig, private logger: Logger, db: DB,
-              public lndBtcClient?: LndClient, public lndLtcClient?: LndClient) {
+  constructor(config: PoolConfig, private logger: Logger, models: Models) {
     super();
-    this.swapDeals = new SwapDeals(logger);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -65,7 +71,7 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(logger, db));
+    this.nodes = new NodeList(new P2PRepository(logger, models));
   }
 
   public get peerCount(): number {
@@ -80,23 +86,27 @@ class Pool extends EventEmitter {
       return;
     }
 
-    if (this.listenPort) {
-      // Append the external IP if no address was specified by the user
+    if (this.server) {
+      let externalIp: string | undefined;
+      // Fetch the external IP if no address was specified by the user
       if (this.addresses.length === 0) {
         try {
-          // TODO: verify that this address is reachable
-          const externlIp = await getExternalIp();
+          externalIp = await getExternalIp();
 
-          this.logger.info(`retrieved external IP: ${externlIp}`);
-
-          this.addresses.push({
-            host: externlIp,
-            port: this.listenPort,
-          });
-
+          this.logger.info(`retrieved external IP: ${externalIp}`);
         } catch (error) {
           this.logger.error(error.message);
         }
+      }
+
+      await this.listen();
+      this.bindServer();
+
+      if (externalIp) {
+        this.addresses.push({
+          host: externalIp,
+          port: this.listenPort!,
+        });
       }
     }
 
@@ -105,13 +115,13 @@ class Pool extends EventEmitter {
 
     this.logger.info('Connecting to known / previously connected peers');
     await this.nodes.load();
-    await this.connectNodes(this.nodes);
+    this.connectNodes(this.nodes, false, true).then(() => {
+      this.logger.info('Completed start-up connections to known peers.');
+    }).catch((reason) => {
+      this.logger.error('Unexpected error connecting to known peers on startup', reason);
+    });
 
-    if (this.server && this.listenPort) {
-      await this.listen(this.listenPort);
-      this.bindServer();
-    }
-
+    this.verifyReachability();
     this.connected = true;
   }
 
@@ -130,21 +140,40 @@ class Pool extends EventEmitter {
     this.connected = false;
   }
 
+  private verifyReachability = () => {
+    this.handshakeData.addresses!.forEach(async (address) => {
+      const externalAddress = addressUtils.toString(address);
+      this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
+      try {
+        const peer = new Peer(Logger.disabledLogger, address);
+        await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
+        assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
+      } catch (err) {
+        if (err.code === errors.ATTEMPTED_CONNECTION_TO_SELF.code) {
+          this.logger.verbose(`Verified reachability of advertised address: ${externalAddress}`);
+        } else {
+          this.logger.warn(`Could not verify reachability of advertised address: ${externalAddress}`);
+        }
+      }
+    });
+  }
+
   /**
    * Iterate over a collection of nodes and attempt to connect to them.
    * If the node is banned, already connected, or has no listening addresses, then do nothing.
    * @param nodes a collection of nodes with a `forEach` iterator to attempt to connect to
    * @param ignoreKnown whether to ignore nodes we are already aware of, defaults to false
+   * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-  private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false) => {
+  private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves, that it has listening addresses,
       // and that either we haven't heard of it, or we're not ignoring known nodes and it's not banned
       if (node.nodePubKey !== this.handshakeData.nodePubKey && node.addresses.length > 0 &&
         (!this.nodes.has(node.nodePubKey) || (!ignoreKnown && !this.nodes.isBanned(node.nodePubKey)))) {
-        connectionPromises.push(this.connectNode(node));
+        connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
     return Promise.all(connectionPromises);
@@ -153,14 +182,27 @@ class Pool extends EventEmitter {
   /**
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
-  private connectNode = async ({ addresses, nodePubKey }: NodeConnectionInfo) => {
-    for (let n = 0; n < addresses.length; n += 1) {
+  private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
+    const { addresses, nodePubKey } = node;
+
+    // sort by lastConnected desc
+    const sortedAddresses = [...addresses].sort((a, b) => {
+      if (!a.lastConnected) return 1;
+      if (!b.lastConnected) return -1;
+      return b.lastConnected - a.lastConnected;
+    });
+
+    for (const address of sortedAddresses) {
       try {
-        await this.addOutbound(addresses[n], nodePubKey);
-        break; // once we've successfully established an outbound connection, stop attempting new connections
-      } catch (err) {
-        this.logger.info(err);
-      }
+        await this.addOutbound(address, nodePubKey, false);
+        return; // once we've successfully established an outbound connection, stop attempting new connections
+      } catch (err) {}
+    }
+
+    if (retryConnecting && sortedAddresses.length && sortedAddresses[0].lastConnected) {
+      try {
+        await this.addOutbound(sortedAddresses[0], nodePubKey, true);
+      } catch (err) {}
     }
   }
 
@@ -171,19 +213,18 @@ class Pool extends EventEmitter {
    * @param nodePubKey the nodePubKey of the node to connect to
    * @returns the connected peer
    */
-  public addOutbound = async (address: Address, nodePubKey: string): Promise<Peer> => {
+  public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean): Promise<Peer> => {
     if (nodePubKey === this.handshakeData.nodePubKey) {
       const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
       this.logger.warn(err.message);
       throw err;
     } else if (this.peers.has(nodePubKey)) {
-      const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address.host);
-      this.logger.warn(err.message);
+      const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
       throw err;
     }
 
-    const peer = Peer.fromOutbound(address, this.logger, this);
-    await this.tryOpenPeer(peer, nodePubKey);
+    const peer = new Peer(this.logger, address);
+    await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
   }
 
@@ -197,54 +238,71 @@ class Pool extends EventEmitter {
     return peerInfos;
   }
 
-  private tryOpenPeer = async (peer: Peer, nodePubKey?: string): Promise<void> => {
+  private tryOpenPeer = async (peer: Peer, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
     try {
-      await this.openPeer(peer, nodePubKey);
-    } catch (err) {
-      this.logger.warn(`error while opening connection to peer ${nodePubKey}: ${err.message}`);
-    }
+      await this.openPeer(peer, nodePubKey, retryConnecting);
+    } catch (err) {}
   }
 
-  private openPeer = async (peer: Peer, nodePubKey?: string): Promise<void> => {
+  private openPeer = async (peer: Peer, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
     this.bindPeer(peer);
-    await peer.open(this.handshakeData, nodePubKey);
+    try {
+      await peer.open(this.handshakeData, nodePubKey, retryConnecting);
+    } catch (err) {
+      // we don't have `nodePubKey` for inbound connections, which might fail on handshake
+      const id = nodePubKey || addressUtils.toString(peer.address);
+      this.logger.warn(`error while opening connection to peer (${id}): ${err.message}`);
+
+      if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
+        await this.nodes.removeAddress(nodePubKey!, peer.address);
+      }
+
+      throw err;
+    }
   }
 
   public closePeer = async (nodePubKey: string): Promise<void> => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
       peer.close();
-      this.logger.info(`Disconnected from ${peer.nodePubKey} @ ${addressUtils.toString(peer.socketAddress)}`);
+      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
     }
   }
 
-  public sendToPeer = (pubKey: string, packet: Packet): Error | undefined => {
-    const peer = this.peers.get(pubKey);
+  public sendToPeer = (nodePubKey: string, packet: Packet) => {
+    const peer = this.peers.get(nodePubKey);
     if (!peer) {
-      return new Error('Peer Not found');
+      throw errors.NOT_CONNECTED(nodePubKey);
     }
     peer.sendPacket(packet);
-    return undefined;
+  }
+
+  public getPeer = (nodePubKey: string) => {
+    const peer = this.peers.get(nodePubKey);
+    if (!peer) {
+      throw errors.NOT_CONNECTED(nodePubKey);
+    }
+    return peer;
   }
 
   public broadcastOrder = (order: OutgoingOrder) => {
-    const orderPacket = new OrderPacket(order);
+    const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderPacket));
 
     // TODO: send only to peers which accepts the pairId
   }
 
   public broadcastOrderInvalidation = (order: OrderIdentifier) => {
-    const orderInvalidationPacket = new OrderInvalidationPacket(order);
+    const orderInvalidationPacket = new packets.OrderInvalidationPacket(order);
     this.peers.forEach(peer => peer.sendPacket(orderInvalidationPacket));
 
     // TODO: send only to peers which accepts the pairId
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger, this);
+    const peer = Peer.fromInbound(socket, this.logger);
     await this.tryOpenPeer(peer);
   }
 
@@ -267,12 +325,15 @@ class Pool extends EventEmitter {
   private handlePacket = async (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.ORDER: {
-        const order = (packet as OrderPacket).body!;
-        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
+        const order = (packet as packets.OrderPacket).body!;
+        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
+        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         break;
       }
       case PacketType.ORDER_INVALIDATION: {
-        this.emit('packet.orderInvalidation', (packet as OrderInvalidationPacket).body!);
+        const order = (packet as packets.OrderInvalidationPacket).body!;
+        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
+        this.emit('packet.orderInvalidation', order);
         break;
       }
       case PacketType.GET_ORDERS: {
@@ -280,25 +341,50 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.ORDERS: {
-        const orders = (packet as OrdersPacket).body!;
+        const orders = (packet as packets.OrdersPacket).body!;
+        this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as PeerOrder);
+          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         });
         break;
       }
       case PacketType.GET_NODES: {
-        peer.sendNodes(this.nodes.toConnectionInfoArray(), packet.header.id);
+        this.handleGetNodes(peer, packet.header.id);
         break;
       }
       case PacketType.NODES: {
-        const nodes = (packet as NodesPacket).body!;
+        const nodes = (packet as packets.NodesPacket).body!;
         await this.connectNodes(nodes);
+        break;
+      }
+      case PacketType.DEAL_REQUEST: {
+        this.logger.debug(`received dealRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.dealRequest', packet, peer);
+        break;
+      }
+      case PacketType.DEAL_RESPONSE: {
+        this.logger.debug(`received dealResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.dealResponse', packet, peer);
+        break;
+      }
+      case PacketType.SWAP_REQUEST: {
+        this.logger.debug(`received swapRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapRequest', packet, peer);
+        break;
+      }
+      case PacketType.SWAP_RESPONSE: {
+        this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapResponse', packet);
         break;
       }
     }
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
+    if (peer.nodePubKey === this.handshakeData.nodePubKey) {
+      return;
+    }
+
     if (this.nodes.isBanned(peer.nodePubKey!)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
       peer.close();
@@ -309,19 +395,46 @@ class Pool extends EventEmitter {
       this.peers.add(peer);
 
       // request peer's orders and known nodes
-      peer.sendPacket(new GetOrdersPacket());
-      peer.sendPacket(new GetNodesPacket());
+      peer.sendPacket(new packets.GetOrdersPacket());
+      peer.sendPacket(new packets.GetNodesPacket());
 
+      // if outbound, update the `lastConnected` field for the address we're actually connected to
+      const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
+        if (addressUtils.areEqual(peer.address, address)) {
+          return { ...address, lastConnected: Date.now() };
+        } else {
+          return address;
+        }
+      });
+
+      // upserting the node entry
       if (!this.nodes.has(peer.nodePubKey!)) {
         await this.nodes.createNode({
+          addresses,
           nodePubKey: peer.nodePubKey!,
-          addresses: peer.addresses!,
         });
       } else {
         // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, peer.addresses);
+        await this.nodes.updateAddresses(peer.nodePubKey!, addresses);
       }
     }
+  }
+
+  /**
+   * Responds to a [[GetNodesPacket]] by populating and sending a [[NodesPacket]].
+   */
+  private handleGetNodes = (peer: Peer, reqId: string) => {
+    const connectedNodesInfo: NodeConnectionInfo[] = [];
+    this.peers.forEach((connectedPeer) => {
+      if (connectedPeer.nodePubKey !== peer.nodePubKey && connectedPeer.addresses && connectedPeer.addresses.length > 0) {
+        // don't send the peer itself or any peers for whom we don't have listening addresses
+        connectedNodesInfo.push({
+          nodePubKey: connectedPeer.nodePubKey!,
+          addresses: connectedPeer.addresses,
+        });
+      }
+    });
+    peer.sendNodes(connectedNodesInfo, reqId);
   }
 
   private bindServer = () => {
@@ -340,7 +453,11 @@ class Pool extends EventEmitter {
     });
 
     peer.on('error', (err) => {
-      this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+      // The only situation in which the node should be connected to itself is the
+      // reachability check of the advertised addresses and we don't have to log that
+      if (peer.nodePubKey !== this.handshakeData.nodePubKey) {
+        this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+      }
     });
 
     peer.once('open', async () => {
@@ -370,18 +487,24 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Start listening for incoming p2p connections on the given port.
+   * Start listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
+   * a random available port is used and will be assigned to `this.listenPort`.
    * @return a promise that resolves once the server is listening, or rejects if it fails to listen
    */
-  private listen = (port: number) => {
+  private listen = () => {
     return new Promise<void>((resolve, reject) => {
       const listenErrHandler = (err: Error) => {
         reject(err);
       };
 
-      this.server!.listen(port, '0.0.0.0').on('listening', () => {
+      this.server!.listen(this.listenPort || 0, '0.0.0.0').on('listening', () => {
         const { address, port } = this.server!.address();
         this.logger.info(`p2p server listening on ${address}:${port}`);
+
+        if (this.listenPort === 0) {
+          // we didn't specify a port and grabbed any available port
+          this.listenPort = port;
+        }
 
         this.server!.removeListener('error', listenErrHandler);
         resolve();

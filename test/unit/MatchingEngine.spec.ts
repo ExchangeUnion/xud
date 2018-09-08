@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
-import Logger from '../../lib/Logger';
+import Logger, { Level } from '../../lib/Logger';
 import MatchingEngine from '../../lib/orderbook/MatchingEngine';
 import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
-const PAIR_ID = 'BTC/LTC';
-const loggers = Logger.createLoggers();
+const PAIR_ID = 'LTC/BTC';
+const loggers = Logger.createLoggers(Level.WARN);
 
 const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOwnOrder => ({
   price,
@@ -26,7 +26,6 @@ peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345
   peerPubKey,
   id: uuidv1(),
   pairId: PAIR_ID,
-  invoice: '',
 });
 
 describe('MatchingEngine.getMatchingQuantity', () => {

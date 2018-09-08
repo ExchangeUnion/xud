@@ -6,6 +6,52 @@
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
 
+export class ChannelBalanceRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ChannelBalanceRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ChannelBalanceRequest): ChannelBalanceRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ChannelBalanceRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ChannelBalanceRequest;
+    static deserializeBinaryFromReader(message: ChannelBalanceRequest, reader: jspb.BinaryReader): ChannelBalanceRequest;
+}
+
+export namespace ChannelBalanceRequest {
+    export type AsObject = {
+        currency: string,
+    }
+}
+
+export class ChannelBalanceResponse extends jspb.Message { 
+    getBalance(): number;
+    setBalance(value: number): void;
+
+    getPendingOpenBalance(): number;
+    setPendingOpenBalance(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ChannelBalanceResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ChannelBalanceResponse): ChannelBalanceResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ChannelBalanceResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ChannelBalanceResponse;
+    static deserializeBinaryFromReader(message: ChannelBalanceResponse, reader: jspb.BinaryReader): ChannelBalanceResponse;
+}
+
+export namespace ChannelBalanceResponse {
+    export type AsObject = {
+        balance: number,
+        pendingOpenBalance: number,
+    }
+}
+
 export class CancelOrderRequest extends jspb.Message { 
     getOrderId(): string;
     setOrderId(value: string): void;
@@ -32,9 +78,6 @@ export namespace CancelOrderRequest {
 }
 
 export class CancelOrderResponse extends jspb.Message { 
-    getCanceled(): boolean;
-    setCanceled(value: boolean): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CancelOrderResponse.AsObject;
@@ -48,19 +91,12 @@ export class CancelOrderResponse extends jspb.Message {
 
 export namespace CancelOrderResponse {
     export type AsObject = {
-        canceled: boolean,
     }
 }
 
 export class ConnectRequest extends jspb.Message { 
-    getHost(): string;
-    setHost(value: string): void;
-
-    getPort(): number;
-    setPort(value: number): void;
-
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeUri(): string;
+    setNodeUri(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -75,16 +111,11 @@ export class ConnectRequest extends jspb.Message {
 
 export namespace ConnectRequest {
     export type AsObject = {
-        host: string,
-        port: number,
-        nodePubKey: string,
+        nodeUri: string,
     }
 }
 
 export class ConnectResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ConnectResponse.AsObject;
@@ -98,7 +129,6 @@ export class ConnectResponse extends jspb.Message {
 
 export namespace ConnectResponse {
     export type AsObject = {
-        result: string,
     }
 }
 
@@ -124,9 +154,6 @@ export namespace DisconnectRequest {
 }
 
 export class DisconnectResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): DisconnectResponse.AsObject;
@@ -140,7 +167,6 @@ export class DisconnectResponse extends jspb.Message {
 
 export namespace DisconnectResponse {
     export type AsObject = {
-        result: string,
     }
 }
 
@@ -211,14 +237,22 @@ export namespace GetInfoRequest {
 }
 
 export class GetInfoResponse extends jspb.Message { 
+    getVersion(): string;
+    setVersion(value: string): void;
+
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+    clearUrisList(): void;
+    getUrisList(): Array<string>;
+    setUrisList(value: Array<string>): void;
+    addUris(value: string, index?: number): string;
+
     getNumPeers(): number;
     setNumPeers(value: number): void;
 
     getNumPairs(): number;
     setNumPairs(value: number): void;
-
-    getVersion(): string;
-    setVersion(value: string): void;
 
 
     hasOrders(): boolean;
@@ -257,9 +291,11 @@ export class GetInfoResponse extends jspb.Message {
 
 export namespace GetInfoResponse {
     export type AsObject = {
+        version: string,
+        nodePubKey: string,
+        urisList: Array<string>,
         numPeers: number,
         numPairs: number,
-        version: string,
         orders?: OrdersCount.AsObject,
         lndbtc?: LndInfo.AsObject,
         lndltc?: LndInfo.AsObject,
@@ -849,9 +885,6 @@ export namespace ShutdownRequest {
 }
 
 export class ShutdownResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ShutdownResponse.AsObject;
@@ -865,7 +898,6 @@ export class ShutdownResponse extends jspb.Message {
 
 export namespace ShutdownResponse {
     export type AsObject = {
-        result: string,
     }
 }
 

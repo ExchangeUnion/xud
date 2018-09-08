@@ -19,7 +19,7 @@ export const builder = {
 
 export const handler = (argv: Arguments) => {
   const request = new GetOrdersRequest();
-  request.setPairId(argv.pair_id);
+  request.setPairId(argv.pair_id.toUpperCase());
   request.setMaxResults(argv.max_results);
   loadXudClient(argv).getOrders(request, callback);
 };

@@ -10,14 +10,12 @@ Developers & Testers:
 ```bash
 git clone https://github.com/ExchangeUnion/xud
 cd xud
-npm install
+npm i
+npm run compile
 ```
-For everyone else, we recommend using the [latest release](https://github.com/ExchangeUnion/xud/releases), below an example using the `v1.0.0-prealpha.1` release tag:
+For everyone else, we recommend installing the lnpm:
 ```bash
-git clone https://github.com/ExchangeUnion/xud 
-cd xud
-git checkout tags/v1.0.0-prealpha.1 -b v1.0.0-prealpha.1
-npm install
+sudo npm i -g xud --unsafe-perm
 ```
 
 
@@ -33,7 +31,7 @@ mysql> GRANT ALL ON *.* TO 'xud'@'localhost';
 
 ## 2. Start `xud`
 
-Open a new terminal and launch a `xud` process.
+Open a new terminal and launch `xud`. Note: If you installed xud from npm, you can type `xud` and `xucli` from anywhere.
 
 ```bash
 ~/xud/bin $ ./xud
@@ -46,7 +44,7 @@ Open a new terminal and launch a `xud` process.
 
 *Optional*: Configure `xud` [as a daemon](#daemonize-xud).
 
-Use `./xucli --help` to get up-to-date, optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
+Use `xud --help` to get up-to-date, optional command line arguments to override defaults and settings in the [configuration](#configuration-optional) file for a specific `xud` instance
 
 ```bash
 ~/xud/bin $ ./xud --help
@@ -83,7 +81,7 @@ Options:
 
 ## 3. Interact with `xud` via Command-Line Interface
 
-Once `xud` is running, you can use `xucli` to interact with it. For getting up-to-date CLI commands, use `./xucli --help` as shown below:
+Once `xud` is running, you can use `xucli` to interact with it. For getting up-to-date CLI commands, use `xucli --help`:
 
 ```bash
 ~/xud/bin$ ./xucli --help
@@ -119,13 +117,13 @@ Examples:
 ./xucli connect xud1.test.exchangeunion.com 8885
 # Manually connect to another xud instance
 
-./xucli placeorder BTC/LTC 1337 1 99
+./xucli placeorder LTC/BTC 1337 1 99
 # Places a new limit order BUYING 1 BTC for 99 LTC, assigning the orderId 1337
 
-./xucli placeorder BTC/LTC 1338 -1 99
+./xucli placeorder LTC/BTC 1338 -1 99
 # Places a new limit order SELLING 1 BTC for 99 LTC, assigning the orderId 1338
 
-./xucli placeorder BTC/LTC 1339 1
+./xucli placeorder LTC/BTC 1339 1
 # Places a new market order BUYING 1 BTC for the best LTC market price, assigning the orderId 1339
 
 ```

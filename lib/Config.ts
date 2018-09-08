@@ -7,10 +7,13 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { DBConfig } from './db/DB';
+import { Level } from './Logger';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
+  public logLevel: string;
+  public logPath: string;
   public db: DBConfig;
   public testDb: DBConfig;
   public rpc: { disable: boolean, host: string, port: number };
@@ -47,6 +50,9 @@ class Config {
 
     // default configuration
     this.initDb = true;
+    this.logLevel = this.getDefaultLogLevel();
+    this.logPath = this.getDefaultLogPath();
+
     this.p2p = {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
@@ -92,9 +98,10 @@ class Config {
     };
   }
 
-  public load(args?: { [argName: string]: any }) {
+  public load(args?: { [argName: string]: any }): Config {
     if (args && args['xudir']) {
       this.xudir = args['xudir'];
+      this.logPath = this.getDefaultLogPath();
     }
 
     const configPath = path.join(this.xudir, 'xud.conf');
@@ -116,6 +123,30 @@ class Config {
       // override our config file with command line arguments
       deepMerge(this, args);
     }
+
+    if (!Object.values(Level).includes(this.logLevel)) {
+      this.logLevel = this.getDefaultLogLevel();
+    }
+
+    this.createLogDir(this.logPath);
+
+    return this;
+  }
+
+  private createLogDir = (logPath: string) => {
+    const dir = path.dirname(logPath);
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+  }
+
+  private getDefaultLogPath = (): string => {
+    return path.resolve(this.xudir, 'logs', 'xud.log');
+  }
+
+  private getDefaultLogLevel = (): string => {
+    return process.env.NODE_ENV === 'production' ? Level.INFO : Level.DEBUG;
   }
 }
 

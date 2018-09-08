@@ -1,7 +1,6 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import Logger from '../../lib/Logger';
 import Service from '../../lib/service/Service';
 
 chai.use(chaiAsPromised);
@@ -12,14 +11,15 @@ describe('API Service', () => {
 
   const placeOrderArgs = {
     orderId: '1',
-    pairId: 'BTC/LTC',
+    pairId: 'LTC/BTC',
     price: 100,
     quantity: 1,
   };
 
   before(async () => {
-    const loggers = Logger.createLoggers();
     const config = {
+      logLevel: 'warn',
+      logPath: '',
       p2p: {
         listen: false,
       },
@@ -51,7 +51,7 @@ describe('API Service', () => {
 
   it('should get orders', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       maxResults: 0,
     };
     const orders = service.getOrders(args);
@@ -63,13 +63,10 @@ describe('API Service', () => {
 
   it('should cancel an order', async () => {
     const args = {
-      pairId: 'BTC/LTC',
+      pairId: 'LTC/BTC',
       orderId: '1',
     };
-    const cancelOrderPromise = service.cancelOrder(args);
-    expect(cancelOrderPromise).to.be.fulfilled;
-    const canceledOrder = await cancelOrderPromise;
-    expect(canceledOrder.canceled).to.be.true;
+    await expect(service.cancelOrder(args)).to.be.fulfilled;
   });
 
   it('should shutdown', async () => {
@@ -77,7 +74,6 @@ describe('API Service', () => {
     const shutdownPromise = new Promise((resolve) => {
       xud.on('shutdown', () => resolve());
     });
-    expect(shutdownPromise).to.be.fulfilled;
-    await shutdownPromise;
+    await expect(shutdownPromise).to.be.fulfilled;
   });
 });

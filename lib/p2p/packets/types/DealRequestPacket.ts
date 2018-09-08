@@ -1,15 +1,17 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { CurrencyType } from '../../../types/enums';
 
 export type DealRequestPacketBody = {
-  takerDealId: string;
+  dealId: string;
+  proposedQuantity: number;
+  pairId: string;
   takerAmount: number;
-  takerCoin: CurrencyType;
+  takerCurrency: string;
   makerAmount: number;
-  makerCoin: CurrencyType;
+  makerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
   takerPubKey: string;
+  orderId: string;
 };
 
 class DealRequestPacket extends Packet<DealRequestPacketBody> {

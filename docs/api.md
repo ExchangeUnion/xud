@@ -6,6 +6,8 @@
 - [xudrpc.proto](#xudrpc.proto)
     - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
     - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
+    - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
+    - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [DisconnectRequest](#xudrpc.DisconnectRequest)
@@ -77,9 +79,35 @@
 
 
 
+
+
+
+
+<a name="xudrpc.ChannelBalanceRequest"></a>
+
+### ChannelBalanceRequest
+
+
+
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| canceled | [bool](#bool) |  | Indicates whether an order was successfully canceled |
+| currency | [string](#string) |  | The ticker symbol of the currency to query for |
+
+
+
+
+
+
+<a name="xudrpc.ChannelBalanceResponse"></a>
+
+### ChannelBalanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| balance | [int64](#int64) |  | Sum of channels balances denominated in satoshis or equivalent |
+| pending_open_balance | [int64](#int64) |  | Sum of channels pending balances denominated in satoshis or equivalent |
 
 
 
@@ -94,9 +122,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  |  |
-| port | [uint32](#uint32) |  |  |
-| node_pub_key | [string](#string) |  |  |
+| node_uri | [string](#string) |  |  |
 
 
 
@@ -107,11 +133,6 @@
 
 ### ConnectResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the connection request |
 
 
 
@@ -137,11 +158,6 @@
 
 ### DisconnectResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  |  |
 
 
 
@@ -197,9 +213,11 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| version | [string](#string) |  |  |
+| node_pub_key | [string](#string) |  |  |
+| uris | [string](#string) | repeated |  |
 | num_peers | [int32](#int32) |  |  |
 | num_pairs | [int32](#int32) |  |  |
-| version | [string](#string) |  |  |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  |  |
 | lndbtc | [LndInfo](#xudrpc.LndInfo) |  |  |
 | lndltc | [LndInfo](#xudrpc.LndInfo) |  |  |
@@ -506,11 +524,6 @@
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the shutdown request |
-
-
 
 
 
@@ -599,6 +612,7 @@
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse) | Execute an atomic swap |
@@ -608,8 +622,8 @@
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | Add an order to the order book. If price is zero or unspecified a market order will get added. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin shutting down xud. |
-| SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse) | Subscribe to peer order events. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse) | Subscribe executed swaps. |
+| SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse) stream | Subscribe to peer order events. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse) stream | Subscribe executed swaps. |
 
  
 
