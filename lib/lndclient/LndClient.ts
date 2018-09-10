@@ -246,7 +246,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Return the total funds available across all channels.
+   * Return the total balance available across all channels.
    */
   public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
     return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', new lndrpc.ChannelBalanceRequest());

@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import winston from 'winston';
 import colors from 'colors/safe';
 
@@ -31,17 +29,8 @@ export enum Context {
   ORDERBOOK = 'ORDERBOOK',
   LND = 'LND',
   RAIDEN = 'RAIDEN',
+  SWAPS = 'SWAPS',
 }
-
-const contextFileMap = {
-  [Context.GLOBAL]: 'xud.log',
-  [Context.DB]: 'xud.log',
-  [Context.RPC]: 'xud.log',
-  [Context.P2P]: 'xud.log',
-  [Context.ORDERBOOK]: 'xud.log',
-  [Context.LND]: 'xud.log',
-  [Context.RAIDEN]: 'xud.log',
-};
 
 type Loggers = {
   global: Logger,
@@ -51,53 +40,60 @@ type Loggers = {
   orderbook: Logger,
   lnd: Logger,
   raiden: Logger,
+  swaps: Logger,
 };
 
 class Logger {
+  public static disabledLogger = new Logger({ disabled: true });
+
   private level: string;
-  private logDir: string;
   private context: Context;
-  private logger: any;
+  private logger?: winston.Logger;
   private instanceId: number;
 
-  private static defaultLogDir = 'logs';
+  constructor({ level, filename, context, instanceId, disabled }:
+    {instanceId?: number, level?: string, filename?: string, context?: Context, disabled?: boolean}) {
 
-  constructor({ level, instanceId, logDir, context }: {level: string, instanceId?: number, logDir?: string, context: Context}) {
-    this.level = level;
-
-    this.logDir = logDir || Logger.defaultLogDir;
+    this.level = level || Level.TRACE;
     this.context = context || Context.GLOBAL;
     this.instanceId = instanceId || 0;
 
-    if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir);
+    if (disabled) {
+      return;
     }
+
+    const transports: any[] = [
+      new winston.transports.Console({
+        level: this.level,
+        format: this.getLogFormat(true),
+      }),
+    ];
+
+    if (filename !== '') {
+      transports.push(new winston.transports.File({
+        filename,
+        level: this.level,
+        format: this.getLogFormat(false),
+      }));
+    }
+
     this.logger = winston.createLogger({
+      transports,
       levels: LevelPriorities,
-      transports: [
-        new winston.transports.Console({
-          level: this.level,
-          colorize: true,
-          format: this.getLogFormat(true),
-        }),
-        new winston.transports.File({
-          level: this.level,
-          filename: path.join(this.logDir, contextFileMap[this.context]),
-          format: this.getLogFormat(false),
-        }),
-      ],
     });
   }
 
-  public static createLoggers = (level: string, instanceId = 0): Loggers => {
+  public static createLoggers = (level: string, filename = '', instanceId = 0): Loggers => {
+    const object = { instanceId, level, filename };
     return {
-      global: new Logger({ instanceId, level, context: Context.GLOBAL }),
-      db: new Logger({ instanceId, level, context: Context.DB }),
-      rpc: new Logger({ instanceId, level, context: Context.RPC }),
-      p2p: new Logger({ instanceId, level, context: Context.P2P }),
-      orderbook: new Logger({ instanceId, level, context: Context.ORDERBOOK }),
-      lnd: new Logger({ instanceId, level, context: Context.LND }),
-      raiden: new Logger({ instanceId, level, context: Context.RAIDEN }),
+      global: new Logger({ ...object, context: Context.GLOBAL }),
+      db: new Logger({ ...object, context: Context.DB }),
+      rpc: new Logger({ ...object, context: Context.RPC }),
+      p2p: new Logger({ ...object, context: Context.P2P }),
+      orderbook: new Logger({ ...object, context: Context.ORDERBOOK }),
+      lnd: new Logger({ ...object, context: Context.LND }),
+      raiden: new Logger({ ...object, context: Context.RAIDEN }),
+      swaps: new Logger({ ...object, context: Context.SWAPS }),
     };
   }
 
@@ -105,10 +101,10 @@ class Logger {
     const { format } = winston;
 
     if (this.instanceId > 0) {
-      return format.printf((info: any) => `${getTsString()} [${this.context}][${this.instanceId}]` +
+      return format.printf(info => `${getTsString()} [${this.context}][${this.instanceId}] ` +
         `${this.getLevel(info.level, colorize)}: ${info.message}`);
     } else {
-      return format.printf((info: any) => `${getTsString()} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
+      return format.printf(info => `${getTsString()} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
     }
   }
 
@@ -127,19 +123,30 @@ class Logger {
   }
 
   private log = (level: string, msg: string) => {
-    this.logger.log(level, msg);
+    if (this.logger) {
+      this.logger.log(level, msg);
+    }
   }
 
-  public error = (msg: Error | string, err?: Error) => {
+  public error = (msg: Error | string, err?: any) => {
     let errMsg: string;
     if (msg instanceof Error) {
       // treat msg as an error object
-      errMsg = msg.stack ? msg.stack : '';
-    } else if (err) {
-      errMsg = `${msg} ${err.stack}`;
+      errMsg = msg.stack ? msg.stack : `${msg.name} - ${msg.message}`;
     } else {
       errMsg = msg;
+      if (err) {
+        errMsg += ': ';
+        if (err instanceof Error) {
+          errMsg += err.stack ? err.stack : `${err.name} - ${err.message}`;
+        } else if (err.code && err.message) {
+          errMsg += `${err.code} - ${err.message}`;
+        } else {
+          errMsg += JSON.stringify(err);
+        }
+      }
     }
+
     this.log(Level.ERROR, errMsg);
   }
 

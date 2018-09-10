@@ -2,14 +2,16 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 export type DealRequestPacketBody = {
-  takerDealId: string;
+  dealId: string;
+  proposedQuantity: number;
+  pairId: string;
   takerAmount: number;
   takerCurrency: string;
   makerAmount: number;
   makerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
   takerPubKey: string;
-  orderId?: string; // TODO: make this non-nullable and remove amount/currency
+  orderId: string;
 };
 
 class DealRequestPacket extends Packet<DealRequestPacketBody> {

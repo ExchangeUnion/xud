@@ -3,11 +3,12 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import * as resolverrpc from '../proto/swap_resolver_pb';
+import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { OrderArrays } from '../orderbook/OrderBook';
 
@@ -43,9 +44,11 @@ class GrpcService {
     switch (err.code) {
       case serviceErrorCodes.INVALID_ARGUMENT:
       case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
+      case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.INVALID_PAIR_ID:
+      case p2pErrorCodes.COULD_NOT_CONNECT:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
@@ -53,6 +56,8 @@ class GrpcService {
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case lndErrorCodes.LND_IS_DISABLED:
+      case lndErrorCodes.LND_IS_DISCONNECTED:
         code = status.FAILED_PRECONDITION;
         break;
     }
@@ -75,7 +80,21 @@ class GrpcService {
     try {
       const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
       const response = new xudrpc.CancelOrderResponse();
-      response.setCanceled(cancelOrderResponse.canceled);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.channelBalance]]
+   */
+  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+    try {
+      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
+      const response = new xudrpc.ChannelBalanceResponse();
+      response.setBalance(channelBalanceResponse.balance);
+      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -89,7 +108,6 @@ class GrpcService {
     try {
       const connectResponse = await this.service.connect(call.request.toObject());
       const response = new xudrpc.ConnectResponse();
-      response.setResult(connectResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -101,9 +119,8 @@ class GrpcService {
    */
   public disconnect: grpc.handleUnaryCall<xudrpc.DisconnectRequest, xudrpc.DisconnectResponse> = async (call, callback) => {
     try {
-      const disconnectResponse = await this.service.disconnect(call.request.toObject());
+      await this.service.disconnect(call.request.toObject());
       const response = new xudrpc.DisconnectResponse();
-      response.setResult(disconnectResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -284,7 +301,6 @@ class GrpcService {
     try {
       const shutdownResponse = this.service.shutdown();
       const response = new xudrpc.ShutdownResponse();
-      response.setResult(shutdownResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -308,10 +324,10 @@ class GrpcService {
   /*
    * Resolving LND hash. See [[Service.resolveHash]]
    */
-  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveRequest, resolverrpc.ResolveResponse> = async (call, callback) => {
+  public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
     try {
       const resolveResponse = await this.service.resolveHash(call.request.toObject());
-      const response = new resolverrpc.ResolveResponse();
+      const response = new ResolveResponse();
       response.setPreimage(resolveResponse);
       callback(null, response);
     } catch (err) {

@@ -4,12 +4,19 @@ import "annotations.proto";
 
 package xudrpc;
 
-service Xud {  
+service Xud {
   /* Cancel placed order from the orderbook. */
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
     option (google.api.http) = {
       post: "/v1/cancelorder"
       body: "*"
+    };
+  }
+
+  /* Get the total balance available across all channels for a given currency. */
+  rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
+    option (google.api.http) = {
+      get: "/v1/channelbalance"
     };
   }
   
@@ -98,31 +105,34 @@ service Xud {
   }
 }
 
+message ChannelBalanceRequest {
+  // The ticker symbol of the currency to query for 
+  string currency = 1 [json_name = "currency"];
+}
+message ChannelBalanceResponse {
+  // Sum of channels balances denominated in satoshis or equivalent
+  int64 balance = 1 [json_name = "balance"];
+  // Sum of channels pending balances denominated in satoshis or equivalent
+  int64 pending_open_balance = 2 [json_name = "pending_open_balance"];
+}
+
 message CancelOrderRequest {
   // The local id of the order to cancel
   string order_id = 1 [json_name = "order_id"];
   // The trading pair that the order to cancel is for
   string pair_id = 2 [json_name = "pair_id"];
 }
-message CancelOrderResponse {
-  // Indicates whether an order was successfully canceled
-  bool canceled = 1 [json_name = "canceled"];
-}
+message CancelOrderResponse { }
 
 message ConnectRequest {
   string node_uri = 1 [json_name = "node_uri"];
 }
-message ConnectResponse {
-  // A message describing the result of the connection request
-  string result = 1 [json_name = "result"];
-}
+message ConnectResponse { }
 
 message DisconnectRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message DisconnectResponse {
-  string result = 1 [json_name = "result"];
-}
+message DisconnectResponse { }
 
 message ExecuteSwapRequest {
   string target_address = 1 [json_name = "target_address"];
@@ -277,10 +287,7 @@ message SwapPayload {
 }
 
 message ShutdownRequest {}
-message ShutdownResponse {
-  // A message describing the result of the shutdown request
-  string result = 1 [json_name = "result"];
-}
+message ShutdownResponse { }
 
 message SubscribePeerOrdersRequest {}
 message SubscribePeerOrdersResponse {

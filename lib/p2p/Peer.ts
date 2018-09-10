@@ -40,7 +40,6 @@ interface Peer {
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   // TODO: properties documentation
-  public socketAddress!: Address;
   public inbound!: boolean;
   public connected = false;
   private opened = false;
@@ -62,10 +61,16 @@ class Peer extends EventEmitter {
   private static STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static PING_INTERVAL = 30000;
-  /** Socket connection timeout for outbound peers. */
-  private static CONNECTION_TIMEOUT = 10000;
   /** Response timeout for response packets. */
   private static RESPONSE_TIMEOUT = 10000;
+  /** Socket connection timeout for outbound peers. */
+  private static CONNECTION_TIMEOUT = 10000;
+  /** Connection retries min delay. */
+  private static CONNECTION_RETRIES_MIN_DELAY = 5000;
+  /** Connection retries max delay. */
+  private static CONNECTION_RETRIES_MAX_DELAY = 3600000;
+  /** Connection retries max period. */
+  private static CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
   public get nodePubKey(): string | undefined {
     return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
@@ -77,7 +82,7 @@ class Peer extends EventEmitter {
 
   public get info(): PeerInfo {
     return {
-      address: addressUtils.toString(this.socketAddress),
+      address: addressUtils.toString(this.address),
       nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
       inbound: this.inbound,
       pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
@@ -86,22 +91,23 @@ class Peer extends EventEmitter {
     };
   }
 
-  constructor(private logger: Logger) {
+  constructor(private logger: Logger, public address: Address) {
     super();
 
     this.bindParser(this.parser);
   }
 
-  /** Create an outbound connection to a node. */
-  public static fromOutbound(address: Address, logger: Logger): Peer {
-    const peer = new Peer(logger);
-    peer.connect(address);
-    return peer;
-  }
+  /**
+   * Creates a Peer from an inbound socket connection.
+   */
+  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket));
 
-  public static fromInbound(socket: Socket, logger: Logger): Peer {
-    const peer = new Peer(logger);
-    peer.accept(socket);
+    peer.inbound = true;
+    peer.connected = true;
+
+    peer.bindSocket(socket);
+
     return peer;
   }
 
@@ -110,7 +116,7 @@ class Peer extends EventEmitter {
     if (this.connected) {
       status = this.nodePubKey ?
         `Connected to peer ${this.nodePubKey}` :
-        `Connected pre-handshake to peer ${addressUtils.toString(this.socketAddress)}`;
+        `Connected pre-handshake to peer ${addressUtils.toString(this.address)}`;
     } else {
       status = 'Not connected';
     }
@@ -122,21 +128,29 @@ class Peer extends EventEmitter {
    * and emit the `open` event if everything succeeds. Throw an error on unexpected handshake data.
    * @param handshakeData our handshake data to send to the peer
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
+   * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeData: HandshakeState, nodePubKey?: string): Promise<void> => {
+  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
+    assert(this.inbound || nodePubKey);
+    assert(!retryConnecting || !this.inbound);
 
     this.opened = true;
 
-    await this.initConnection();
+    await this.initConnection(retryConnecting);
     this.initStall();
     await this.initHello(handshakeData);
 
     // TODO: Check that the peer's version is compatible with ours
-    if (nodePubKey && this.nodePubKey !== nodePubKey) {
-      this.close();
-      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.socketAddress));
+    if (nodePubKey) {
+      if (this.nodePubKey !== nodePubKey) {
+        this.close();
+        throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
+      } else if (this.nodePubKey === handshakeData.nodePubKey) {
+        this.close();
+        throw errors.ATTEMPTED_CONNECTION_TO_SELF;
+      }
     }
 
     this.finalizeOpen();
@@ -229,36 +243,39 @@ class Peer extends EventEmitter {
    * Ensure we are connected (for inbound connections) or listen for the `connect` socket event (for outbound connections)
    * and set the [[connectTime]] timestamp. If an outbound connection attempt errors or times out, throw an error.
    */
-  private initConnection = (): Promise<void> => {
-    assert(this.socket);
-
+  private initConnection = async (retry = false) => {
     if (this.connected) {
+      // in case of an inbound peer, we will already be connected
+      assert(this.socket);
       assert(this.inbound);
       this.connectTime = Date.now();
       this.logger.debug(this.getStatus());
-      return Promise.resolve();
+      return;
     }
 
     return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      let retryDelay = Peer.CONNECTION_RETRIES_MIN_DELAY;
+      let retries = 0;
+
+      const socket = net.connect(this.address.port, this.address.host);
+      this.inbound = false;
+
       const cleanup = () => {
         if (this.connectTimeout) {
           clearTimeout(this.connectTimeout);
           this.connectTimeout = undefined;
         }
-        if (this.socket) {
-          this.socket.removeListener('error', onError);
-          this.socket.removeListener('connect', onConnect);
-        }
-      };
-
-      const onError = (err: Error) => {
-        cleanup();
-        reject(err);
+        socket.removeListener('error', onError);
+        socket.removeListener('connect', onConnect);
       };
 
       const onConnect = () => {
         this.connectTime = Date.now();
         this.connected = true;
+
+        this.bindSocket(socket);
+
         this.logger.debug(this.getStatus());
         this.emit('connect');
 
@@ -266,16 +283,41 @@ class Peer extends EventEmitter {
         resolve();
       };
 
-      const onTimeout = () => {
+      const onError = (err: Error) => {
         cleanup();
-        reject(new Error('Connection timed out.'));
+
+        if (!retry) {
+          this.close();
+          reject(errors.COULD_NOT_CONNECT(this.address, err));
+          return;
+        }
+
+        if (Date.now() - startTime + retryDelay > Peer.CONNECTION_RETRIES_MAX_PERIOD) {
+          this.close();
+          reject(errors.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED);
+          return;
+        }
+
+        this.logger.debug(
+          `Connection attempt #${retries + 1} to peer (${addressUtils.toString(this.address)}) ` +
+          `failed: ${err.message}. retrying in ${retryDelay / 1000} sec...`,
+        );
+
+        setTimeout(() => {
+          retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
+          retries = retries + 1;
+          socket.connect(this.address);
+          bind();
+        }, retryDelay);
       };
 
-      this.socket!.once('connect', onConnect);
+      const bind = () => {
+        socket.once('connect', onConnect);
+        socket.once('error', onError);
+        this.connectTimeout = setTimeout(() => onError(new Error('Connection timed out')), Peer.CONNECTION_TIMEOUT);
+      };
 
-      this.socket!.once('error', onError);
-
-      this.connectTimeout = setTimeout(onTimeout, Peer.CONNECTION_TIMEOUT);
+      bind();
     });
   }
 
@@ -324,7 +366,7 @@ class Peer extends EventEmitter {
 
     for (const [packetType, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.error(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
+        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
         this.close();
         return;
       }
@@ -382,53 +424,27 @@ class Peer extends EventEmitter {
     return true;
   }
 
-  private connect = (address: Address): void => {
-    assert(!this.socket);
-
-    const socket = net.connect(address.port, address.host);
-
-    this.socketAddress = address;
-    this.inbound = false;
-    this.connected = false;
-
-    this.bindSocket(socket);
-  }
-
-  private accept = (socket: Socket): void => {
-    assert(!this.socket);
-
-    this.socketAddress = addressUtils.fromSocket(socket);
-    this.inbound = true;
-    this.connected = true;
-
-    this.bindSocket(socket);
-  }
-
+  /**
+   * Binds listeners to a newly connected socket for `error`, `close`, and `data` events.
+   */
   private bindSocket = (socket: Socket) => {
     assert(!this.socket);
 
     this.socket = socket;
 
     this.socket.once('error', (err) => {
-      if (!this.connected) {
-        return;
-      }
-
-      this.error(err);
+      this.emitError(err);
       // socket close event will be called immediately after the socket error
     });
 
     this.socket.once('close', (hadError) => {
       // emitted once the socket is fully closed
-      if (this.connected) {
-        // don't log anything on close if we've never connected as the connection failure is logged elsewhere
-        if (this.nodePubKey === undefined) {
-          this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.socketAddress)})`);
-        } else if (hadError) {
-          this.logger.warn(`Peer ${this.nodePubKey} socket closed due to error`);
-        } else {
-          this.logger.info(`Peer ${this.nodePubKey} socket closed`);
-        }
+      if (this.nodePubKey === undefined) {
+        this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.address)})`);
+      } else if (hadError) {
+        this.logger.warn(`Peer ${this.nodePubKey} socket closed due to error`);
+      } else {
+        this.logger.info(`Peer ${this.nodePubKey} socket closed`);
       }
       this.close();
     });
@@ -439,7 +455,7 @@ class Peer extends EventEmitter {
       if (this.nodePubKey !== undefined) {
         this.logger.trace(`Received data (${this.nodePubKey}): ${dataStr}`);
       } else {
-        this.logger.trace(`Received data (${addressUtils.toString(this.socketAddress)}): ${data.toString()}`);
+        this.logger.trace(`Received data (${addressUtils.toString(this.address)}): ${data.toString()}`);
       }
       this.parser.feed(dataStr);
     });
@@ -503,7 +519,7 @@ class Peer extends EventEmitter {
     }
   }
 
-  private error = (err: Error | string): void => {
+  private emitError = (err: Error | string): void => {
     if (this.closed) {
       return;
     }

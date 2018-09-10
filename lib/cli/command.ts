@@ -22,6 +22,11 @@ export const callback = (error: Error | null, response: grpcResponse) => {
   if (error) {
     console.error(`${error.name}: ${error.message}`);
   } else {
-    console.log(JSON.stringify(response.toObject(), undefined, 2));
+    const responseObj = response.toObject();
+    if (Object.keys(responseObj).length === 0) {
+      console.log('success');
+    } else {
+      console.log(JSON.stringify(responseObj, undefined, 2));
+    }
   }
 };
