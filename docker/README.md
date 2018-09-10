@@ -2,11 +2,11 @@ This document is written for people who are eager to do something with
 the Exchange Union Daemon (`xud`). This folder uses `docker-compose` to
 package `xud`, `mysql`, `lnd` & `btcd` together to make deploying these services as easy as
 typing a few commands. All configuration between `xud`, `mysql` and other containers are handled
-automatically by their `docker-compose` config file. 
+automatically by their `docker-compose` config file.
 
 The goal of this is that `docker-compose` to be able to spin up / lauch `xud` along with its dependencies.
 
-Please notice that this setup is purely for testing the xud, its is not recommended for production use.
+Please note that this setup is purely for testing xud, it is not recommended for production use.
 
 ### Prerequisites
 * docker-compose 
@@ -41,9 +41,9 @@ $ docker-compose down
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
 
 * How to see `xud` | `mysql` logs?
-    ```bash
-        docker-compose logs <xud|db>
-    ```
+```bash
+$ docker-compose logs <xud|db>
+```
 * How do i change ports & hosts?
 
-    Please refer official docs here [Docker Container Networking](https://docs.docker.com/config/containers/container-networking/)
+ Please refer official docs here [Docker Container Networking](https://docs.docker.com/config/containers/container-networking/)
