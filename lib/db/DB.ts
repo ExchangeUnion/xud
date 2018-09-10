@@ -6,7 +6,7 @@ import Bluebird from 'bluebird';
 
 import Logger from '../Logger';
 import { db } from '../types';
-import { SwapProtocol } from '../types/enums';
+import { SwapClients } from '../types/enums';
 
 type SequelizeConfig = {
   host: string;
@@ -86,15 +86,15 @@ class DB {
       ]);
 
       await Currency.bulkCreate(<db.CurrencyAttributes[]>[
-        { id: 'BTC' },
-        { id: 'LTC' },
-        { id: 'ZRX' },
-        { id: 'GNT' },
+        { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
+        { id: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
+        { id: 'ZRX', swapClient: SwapClients.RAIDEN, decimalPlaces: 18 },
+        { id: 'GNT', swapClient: SwapClients.RAIDEN, decimalPlaces: 18 },
       ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
-        { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
-        { baseCurrency: 'ZRX', quoteCurrency: 'GNT', swapProtocol: SwapProtocol.RAIDEN },
+        { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
+        { baseCurrency: 'ZRX', quoteCurrency: 'GNT' },
       ]);
     }
   }

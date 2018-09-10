@@ -5,9 +5,10 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapDealRole } from '../types/enums';
+import { SwapDealRole, SwapClients } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
+import { Pair } from '../types/orders';
 import Swaps from '../swaps/Swaps';
 
 /**
@@ -51,12 +52,16 @@ const argChecks = {
   },
   NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
-  SUPPORTED_CURRENCY: ({ currency }: { currency: string }) => {
-    const supportedCurrencies = ['BTC', 'LTC']; // TODO: detect supported currencies automatically instead of hardcoding
-    if (!supportedCurrencies.includes(currency)) throw errors.INVALID_ARGUMENT(`currency ${currency} is not supported`);
+  VALID_CURRENCY: ({ currency }: { currency: string }) => {
+    if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/))  {
+      throw errors.INVALID_ARGUMENT('currency must consist of 2 to 5 upper case English letters or numbers');
+    }
   },
   VALID_PORT: ({ port }: { port: number }) => {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
+  },
+  VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
+    if (!SwapClients[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
 };
 
@@ -86,6 +91,25 @@ class Service extends EventEmitter {
     this.version = components.version;
   }
 
+  /** Adds a currency. */
+  public addCurrency = async (args: { currency: string, swapClient: SwapClients | number, decimalPlaces: number, tokenAddress?: string}) => {
+    argChecks.VALID_CURRENCY(args);
+    argChecks.VALID_SWAP_CLIENT(args);
+    const { currency, swapClient, tokenAddress, decimalPlaces } = args;
+
+    await this.orderBook.addCurrency({
+      tokenAddress,
+      swapClient,
+      decimalPlaces,
+      id: currency,
+    });
+  }
+
+  /** Adds a trading pair. */
+  public addPair = async (args: { baseCurrency: string, quoteCurrency: string }) => {
+    await this.orderBook.addPair(args);
+  }
+
   /*
    * Cancel placed order from the orderbook.
    */
@@ -97,8 +121,8 @@ class Service extends EventEmitter {
     this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
   }
 
+  /** Gets the total lightning network channel balance for a given currency. */
   public channelBalance = (args: { currency: string }) => {
-    argChecks.SUPPORTED_CURRENCY(args);
     const { currency } = args;
 
     let cmdLnd: LndClient;
@@ -110,6 +134,7 @@ class Service extends EventEmitter {
         cmdLnd = this.lndLtcClient;
         break;
       default:
+        // TODO: throw an error here indicating that lnd is disabled for this currency
         return { balance: 0, pendingOpenBalance: 0 };
     }
 
@@ -206,17 +231,17 @@ class Service extends EventEmitter {
       });
     }
 
-    const pairIds = this.orderBook.pairIds;
-
     let peerOrdersCount = 0;
     let ownOrdersCount = 0;
-    pairIds.forEach((pairId) => {
+    let numPairs = 0;
+    for (const pairId of this.orderBook.pairIds) {
       const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
       const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
 
       peerOrdersCount += Object.keys(peerOrders.buyOrders).length + Object.keys(peerOrders.sellOrders).length;
       ownOrdersCount += Object.keys(ownOrders.buyOrders).length + Object.keys(ownOrders.sellOrders).length;
-    });
+      numPairs += 1;
+    }
 
     const lndbtc = this.lndBtcClient.isDisabled() ? undefined : await this.lndBtcClient.getLndInfo();
     const lndltc = this.lndLtcClient.isDisabled() ? undefined : await this.lndLtcClient.getLndInfo();
@@ -229,9 +254,9 @@ class Service extends EventEmitter {
       raiden,
       nodePubKey,
       uris,
+      numPairs,
       version: this.version,
       numPeers: this.pool.peerCount,
-      numPairs: pairIds.length,
       orders: {
         peer: peerOrdersCount,
         own: ownOrdersCount,
@@ -256,11 +281,21 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get the list of the order book's available pairs.
-   * @returns A list of available trading pairs
+   * Get the list of the order book's supported currencies
+   * @returns A list of supported currency ticker symbols
    */
-  public getPairs = () => {
-    return this.orderBook.pairs;
+  public listCurrencies = () => {
+    const pairs = new Map<string, Pair>();
+    return Array.from(this.orderBook.currencies.keys());
+  }
+
+  /**
+   * Get the list of the order book's supported pairs.
+   * @returns A list of supported trading pair tickers
+   */
+  public listPairs = () => {
+    const pairs = new Map<string, Pair>();
+    return Array.from(this.orderBook.pairIds);
   }
 
   /**
@@ -289,6 +324,22 @@ class Service extends EventEmitter {
     };
 
     return price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
+  }
+
+  /** Removes a currency. */
+  public removeCurrency = async (args: { currency: string }) => {
+    argChecks.VALID_CURRENCY(args);
+    const { currency } = args;
+
+    await this.orderBook.removeCurrency(currency);
+  }
+
+  /** Removes a trading pair. */
+  public removePair = async (args: { pairId: string }) => {
+    argChecks.HAS_PAIR_ID(args);
+    const { pairId } = args;
+
+    return this.orderBook.removePair(pairId);
   }
 
   /*

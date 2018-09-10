@@ -2,13 +2,13 @@ import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
-import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import Logger, { Level } from '../../lib/Logger';
 import { orders } from '../../lib/types';
 import NodeKey from '../../lib/nodekey/NodeKey';
+import { SwapClients } from '../../lib/types/enums';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -34,11 +34,11 @@ describe('OrderBook', () => {
       { nodePubKey: nodeKey.nodePubKey, addresses: [] },
     );
     await orderBookRepository.addCurrencies([
-      { id: 'BTC' },
-      { id: 'LTC' },
+      { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
+      { id: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
     ]);
     await orderBookRepository.addPairs([
-      { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
+      { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
     ]);
 
     orderBook = new OrderBook(loggers.orderbook, db.models);
@@ -67,7 +67,6 @@ describe('OrderBook', () => {
   };
 
   it('should have pairs and matchingEngines equivalent loaded', () => {
-    expect(orderBook.pairs).to.be.an('array');
     orderBook.pairs.forEach((pair) => {
       expect(orderBook.matchingEngines).to.have.key(pair.id);
     });

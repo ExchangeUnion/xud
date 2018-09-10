@@ -17,10 +17,6 @@ class P2PRepository {
   public addNodes = async (nodes: db.NodeFactory[]) => {
     return this.models.Node.bulkCreate(<db.NodeAttributes[]>nodes);
   }
-
-  public updateNode = async (node: db.NodeInstance) => {
-    return node.save();
-  }
 }
 
 export default P2PRepository;

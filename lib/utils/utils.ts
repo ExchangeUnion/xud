@@ -1,6 +1,7 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
 import { assert } from 'chai';
+import { Pair } from '../types/orders';
 
 export type UriParts = {
   nodePubKey: string;
@@ -133,4 +134,11 @@ export const groupBy = (arr: object[], keyGetter: (item: any) => string | number
  */
 export const ms = (): number => {
   return Date.now();
+};
+
+/**
+ * Convert a pair's base currency and quote currency to a ticker symbol pair id.
+ */
+export const derivePairId = (pair: Pair) => {
+  return `${pair.baseCurrency}/${pair.quoteCurrency}`;
 };

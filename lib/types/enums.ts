@@ -1,6 +1,7 @@
-export enum SwapProtocol {
-  LND = 'LND',
-  RAIDEN = 'RAIDEN',
+/** An enumeration of payment channel network clients that support token swaps. */
+export enum SwapClients {
+  LND,
+  RAIDEN,
 }
 
 export enum OrderingDirection {
