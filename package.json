@@ -1,6 +1,6 @@
 {
   "name": "xud",
-  "version": "1.0.0-prealpha.2",
+  "version": "1.0.0-prealpha.3",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -120,7 +120,7 @@
     "swagger-ui-express": "^3.0.10",
     "toml": "^2.3.3",
     "uuid": "^3.2.1",
-    "winston": "^3.0.0-rc3",
+    "winston": "^3.1.0",
     "yargs": "^11.0.0"
   },
   "devDependencies": {

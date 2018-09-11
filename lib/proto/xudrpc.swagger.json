@@ -15,6 +15,60 @@
     "application/json"
   ],
   "paths": {
+    "/v1/addcurrency": {
+      "post": {
+        "summary": "Add a currency to the list of supported currencies.",
+        "operationId": "AddCurrency",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcAddCurrencyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcAddCurrencyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/addpair": {
+      "post": {
+        "summary": "Add a trading pair to the list of supported trading pairs.",
+        "operationId": "AddPair",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcAddPairResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcAddPairRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/cancelorder": {
       "post": {
         "summary": "Cancel placed order from the orderbook.",
@@ -90,6 +144,23 @@
             }
           }
         ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/currencies": {
+      "get": {
+        "summary": "Get the list of the order book's supported currencies.",
+        "operationId": "ListCurrencies",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListCurrenciesResponse"
+            }
+          }
+        },
         "tags": [
           "Xud"
         ]
@@ -202,13 +273,13 @@
     },
     "/v1/pairs": {
       "get": {
-        "summary": "Get the list of the order book's available pairs.",
-        "operationId": "GetPairs",
+        "summary": "Get the list of the order book's suported trading pairs.",
+        "operationId": "ListPairs",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcGetPairsResponse"
+              "$ref": "#/definitions/xudrpcListPairsResponse"
             }
           }
         },
@@ -253,6 +324,60 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/removecurrency": {
+      "post": {
+        "summary": "Remove a currency.",
+        "operationId": "RemoveCurrency",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveCurrencyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/removepair": {
+      "post": {
+        "summary": "Remove a trading pair.",
+        "operationId": "RemovePair",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemovePairResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemovePairRequest"
             }
           }
         ],
@@ -324,6 +449,55 @@
     }
   },
   "definitions": {
+    "AddCurrencyRequestSwapClient": {
+      "type": "string",
+      "enum": [
+        "LND",
+        "RAIDEN"
+      ],
+      "default": "LND"
+    },
+    "xudrpcAddCurrencyRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
+        },
+        "swap_client": {
+          "$ref": "#/definitions/AddCurrencyRequestSwapClient",
+          "title": "The payment channel network client to use for executing swaps"
+        },
+        "token_address": {
+          "type": "string",
+          "title": "The contract address for layered tokens such as ERC20"
+        },
+        "decimal_places": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others\nwhere the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought\nof as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified."
+        }
+      }
+    },
+    "xudrpcAddCurrencyResponse": {
+      "type": "object"
+    },
+    "xudrpcAddPairRequest": {
+      "type": "object",
+      "properties": {
+        "base_currency": {
+          "type": "string",
+          "title": "The base currency that is bought and sold for this trading pair"
+        },
+        "quote_currency": {
+          "type": "string",
+          "title": "The currency used to quote a price for the base currency"
+        }
+      }
+    },
+    "xudrpcAddPairResponse": {
+      "type": "object"
+    },
     "xudrpcCancelOrderRequest": {
       "type": "object",
       "properties": {
@@ -338,14 +512,7 @@
       }
     },
     "xudrpcCancelOrderResponse": {
-      "type": "object",
-      "properties": {
-        "canceled": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Indicates whether an order was successfully canceled"
-        }
-      }
+      "type": "object"
     },
     "xudrpcChannelBalanceResponse": {
       "type": "object",
@@ -371,13 +538,7 @@
       }
     },
     "xudrpcConnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the connection request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcDisconnectRequest": {
       "type": "object",
@@ -388,12 +549,7 @@
       }
     },
     "xudrpcDisconnectResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string"
-        }
-      }
+      "type": "object"
     },
     "xudrpcExecuteSwapRequest": {
       "type": "object",
@@ -464,14 +620,27 @@
         }
       }
     },
-    "xudrpcGetPairsResponse": {
+    "xudrpcListCurrenciesResponse": {
+      "type": "object",
+      "properties": {
+        "currencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "The ticker symbols of supported currencies"
+        }
+      }
+    },
+    "xudrpcListPairsResponse": {
       "type": "object",
       "properties": {
         "pairs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/xudrpcPair"
-          }
+            "type": "string"
+          },
+          "title": "The supported trading pair tickers in formats like \"LTC/BTC\""
         }
       }
     },
@@ -621,23 +790,6 @@
         }
       }
     },
-    "xudrpcPair": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "base_currency": {
-          "type": "string"
-        },
-        "quote_currency": {
-          "type": "string"
-        },
-        "swap_protocol": {
-          "type": "string"
-        }
-      }
-    },
     "xudrpcPeer": {
       "type": "object",
       "properties": {
@@ -729,17 +881,35 @@
         }
       }
     },
+    "xudrpcRemoveCurrencyRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
+        }
+      }
+    },
+    "xudrpcRemoveCurrencyResponse": {
+      "type": "object"
+    },
+    "xudrpcRemovePairRequest": {
+      "type": "object",
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "title": "The trading pair ticker to remove, such as \"LTC/BTC\""
+        }
+      }
+    },
+    "xudrpcRemovePairResponse": {
+      "type": "object"
+    },
     "xudrpcShutdownRequest": {
       "type": "object"
     },
     "xudrpcShutdownResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string",
-          "title": "A message describing the result of the shutdown request"
-        }
-      }
+      "type": "object"
     },
     "xudrpcSubscribePeerOrdersResponse": {
       "type": "object",

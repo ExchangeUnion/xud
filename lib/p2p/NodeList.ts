@@ -1,6 +1,7 @@
 import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
-import { NodeConnectionInfo, Address } from '../types/p2p';
+import { Address } from '../types/p2p';
+import addressUtils from '../utils/addressUtils';
 
 /** Represents a list of nodes for managing network peers activity */
 class NodeList {
@@ -31,7 +32,7 @@ class NodeList {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       node.banned = true;
-      await this.repository.updateNode(node);
+      await node.save();
       return true;
     }
     return false;
@@ -69,9 +70,32 @@ class NodeList {
   public updateAddresses = async (nodePubKey: string, addresses: Address[] = []) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
-      node.addresses = addresses;
-      await this.repository.updateNode(node);
+      // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
+      node.addresses = addresses.map((newAddress) => {
+        const oldAddress = node.addresses.find(address => addressUtils.areEqual(address, newAddress));
+        if (oldAddress && !newAddress.lastConnected) {
+          return oldAddress;
+        } else {
+          return newAddress;
+        }
+      });
+
+      await node.save();
       return true;
+    }
+
+    return false;
+  }
+
+  public removeAddress = async (nodePubKey: string, address: Address) => {
+    const node = this.nodes.get(nodePubKey);
+    if (node) {
+      const index = node.addresses.findIndex(existingAddress => addressUtils.areEqual(address, existingAddress));
+      if (index > -1) {
+        node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
+        await node.save();
+        return true;
+      }
     }
 
     return false;

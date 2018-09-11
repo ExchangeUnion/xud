@@ -3,16 +3,17 @@ import uuidv1 from 'uuid/v1';
 import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
 import MatchingEngine from './MatchingEngine';
-import MatchesProcessor from './MatchesProcessor';
 import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import { orders, matchingEngine, db } from '../types';
 import Logger from '../Logger';
-import LndClient from '../lndclient/LndClient';
-import { ms } from '../utils/utils';
+import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
-import RaidenClient from '../raidenclient/RaidenClient';
+import Swaps from '../swaps/Swaps';
+import { SwapDealRole } from '../types/enums';
+import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
+import { Pair } from '../types/orders';
 
 interface OrderBook {
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
@@ -23,10 +24,11 @@ interface OrderBook {
 
 /** A class representing an orderbook containing all orders for all active trading pairs. */
 class OrderBook extends EventEmitter {
-  /** An array of supported pair instances for the orderbook. */
-  public pairs: db.PairInstance[] = [];
-  /** An array of supported pair ids for the orderbook. */
-  public pairIds: string[] = [];
+  /** A map of supported currency tickers to currency instances. */
+  public currencies = new Map<string, CurrencyInstance>();
+  /** A map of supported trading pair tickers to pair instances. */
+  public pairs = new Map<string, PairInstance>();
+
   /** A map between active trading pair ids and matching engines. */
   public matchingEngines = new Map<string, MatchingEngine>();
   /** A map between own orders local id and their global id. */
@@ -34,32 +36,54 @@ class OrderBook extends EventEmitter {
 
   private repository: OrderBookRepository;
 
-  private matchesProcessor: MatchesProcessor;
+  /** Gets an iterable of supported pair ids. */
+  public get pairIds() {
+    return this.pairs.keys();
+  }
 
-  constructor(private logger: Logger, models: Models, private pool?: Pool, private lndClient?: LndClient, private raidenClient?: RaidenClient) {
+  constructor(private logger: Logger, models: Models, private pool?: Pool, private swaps?: Swaps) {
     super();
 
-    this.matchesProcessor = new MatchesProcessor(logger, pool, raidenClient);
-
     this.repository = new OrderBookRepository(logger, models);
-    if (pool) {
-      pool.on('packet.order', this.addPeerOrder);
-      pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
-      pool.on('packet.getOrders', this.sendOrders);
-      pool.on('peer.close', this.removePeerOrders);
-    }
 
-    if (raidenClient) {
-      raidenClient.on('swap', this.swapHandler);
+    this.bindPool();
+    this.bindSwaps();
+  }
+
+  private bindPool = () => {
+    if (this.pool) {
+      this.pool.on('packet.order', this.addPeerOrder);
+      this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
+      this.pool.on('packet.getOrders', this.sendOrders);
+      this.pool.on('peer.close', this.removePeerOrders);
     }
   }
 
-  public init = async () => {
-    this.pairs = await this.repository.getPairs();
+  private bindSwaps = () => {
+    if (this.swaps) {
+      this.swaps.on('swap.completed', (deal) => {
+        if (deal.myRole === SwapDealRole.Maker) {
+          // assume full order execution of an own order
+          this.removeOwnOrder(deal.pairId, deal.orderId);
 
-    this.pairs.forEach((pair) => {
-      this.pairIds.push(pair.id);
+          // TODO: handle partial order execution, updating existing order
+        }
+      });
+      // TODO: bind to other swap events
+    }
+  }
+
+  /** Loads the supported pairs and currencies from the database. */
+  public init = async () => {
+    const promises = [await this.repository.getPairs(), await this.repository.getCurrencies()];
+    const results = await Promise.all(promises);
+    const pairs = results[0] as db.PairInstance[];
+    const currencies = results[1] as db.CurrencyInstance[];
+
+    currencies.forEach(currency => this.currencies.set(currency.id, currency));
+    pairs.forEach((pair) => {
       this.matchingEngines.set(pair.id, new MatchingEngine(this.logger, pair.id));
+      this.pairs.set(pair.id, pair);
     });
   }
 
@@ -69,7 +93,7 @@ class OrderBook extends EventEmitter {
   public getPeerOrders = (pairId: string, limit: number) => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
-      throw errors.INVALID_PAIR_ID(pairId);
+      throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
 
     return matchingEngine.getPeerOrders(limit);
@@ -81,10 +105,60 @@ class OrderBook extends EventEmitter {
   public getOwnOrders = (pairId: string, limit?: number) => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
-      throw errors.INVALID_PAIR_ID(pairId);
+      throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
 
     return matchingEngine.getOwnOrders(limit);
+  }
+
+  public addPair = async (pair: Pair) => {
+    const pairId = derivePairId(pair);
+    if (this.pairs.has(pairId)) {
+      throw errors.PAIR_ALREADY_EXISTS(pairId);
+    }
+    if (!this.currencies.has(pair.baseCurrency)) {
+      throw errors.CURRENCY_DOES_NOT_EXIST(pair.baseCurrency);
+    }
+    if (!this.currencies.has(pair.quoteCurrency)) {
+      throw errors.CURRENCY_DOES_NOT_EXIST(pair.quoteCurrency);
+    }
+
+    const pairInstance = await this.repository.addPair(pair);
+    this.pairs.set(pairInstance.id, pairInstance);
+    return pairInstance;
+  }
+
+  public addCurrency = async (currency: CurrencyFactory) => {
+    if (this.currencies.has(currency.id)) {
+      throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
+    }
+    const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
+    this.currencies.set(currencyInstance.id, currencyInstance);
+  }
+
+  public removeCurrency = (currencyId: string) => {
+    const currency = this.currencies.get(currencyId);
+    if (currency) {
+      for (const pair of this.pairs.values()) {
+        if (currencyId === pair.baseCurrency || currencyId === pair.quoteCurrency) {
+          throw errors.CURRENCY_CANNOT_BE_REMOVED(currencyId, pair.id);
+        }
+      }
+      this.currencies.delete(currencyId);
+      return currency.destroy();
+    } else {
+      throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
+    }
+  }
+
+  public removePair = (pairId: string) => {
+    const pair = this.pairs.get(pairId);
+    if (pair) {
+      this.pairs.delete(pairId);
+      return pair.destroy();
+    } else {
+      throw errors.PAIR_DOES_NOT_EXIST(pairId);
+    }
   }
 
   public addLimitOrder = (order: orders.OwnOrder): matchingEngine.MatchingResult => {
@@ -108,7 +182,7 @@ class OrderBook extends EventEmitter {
 
     const matchingEngine = this.matchingEngines.get(order.pairId);
     if (!matchingEngine) {
-      throw errors.INVALID_PAIR_ID(order.pairId);
+      throw errors.PAIR_DOES_NOT_EXIST(order.pairId);
     }
 
     const stampedOrder: orders.StampedOwnOrder = { ...order, id: uuidv1(), createdAt: ms() };
@@ -155,19 +229,24 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  public removeOwnOrderByLocalId = (pairId: string, localId: string): { removed: boolean, globalId?: string } => {
+  /**
+   * Removes an order from the order book by its local id. Throws an error if the specified pairId
+   * is not supported or if the order to cancel could not be found.
+   */
+  public removeOwnOrderByLocalId = (pairId: string, localId: string) => {
     const orderId = this.localIdMap.get(localId);
 
-    if (!orderId) {
-      return { removed: false };
-    } else {
-      return {
-        removed: this.removeOwnOrder(orderId, pairId),
-        globalId: orderId,
-      };
+    if (orderId === undefined) {
+      throw errors.ORDER_NOT_FOUND(localId);
     }
+
+    this.removeOwnOrder(orderId, pairId);
   }
 
+  /**
+   * Attempts to remove a local order from the order book.
+   * @returns true if an order was removed, otherwise false
+   */
   private removeOwnOrder = (orderId: string, pairId: string): boolean => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
@@ -183,6 +262,14 @@ class OrderBook extends EventEmitter {
 
     this.localIdMap.delete(order.localId);
     this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
+
+    if (this.pool) {
+      this.pool.broadcastOrderInvalidation({
+        orderId,
+        pairId,
+      });
+    }
+
     return true;
   }
 
@@ -262,19 +349,16 @@ class OrderBook extends EventEmitter {
         });
       }
     }
-    this.matchesProcessor.process(match);
-  }
 
-  private swapHandler = (order: orders.StampedOrder) => {
-    if (order.quantity === 0) {
-      // full order execution
-      if (orders.isPeerOrder(order)) {
-        this.removePeerOrder(order.id, order.pairId);
-      } else {
-        this.removeOwnOrder(order.id, order.pairId);
+    if (orders.isPeerOrder(match.maker)) {
+      // we matched a remote order
+      if (this.swaps) {
+        // TODO: handle the resolution of the swap
+        this.swaps.beginSwap(match.maker, match.taker as orders.StampedOwnOrder);
       }
     } else {
-      // TODO: partial order execution, update existing order
+      // internal match
+      // TODO: notify client
     }
   }
 }

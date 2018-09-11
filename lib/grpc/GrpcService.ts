@@ -3,7 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import * as resolverrpc from '../proto/hash_resolver_pb';
+import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
 import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
@@ -44,18 +44,25 @@ class GrpcService {
     switch (err.code) {
       case serviceErrorCodes.INVALID_ARGUMENT:
       case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
+      case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
         code = status.INVALID_ARGUMENT;
         break;
-      case orderErrorCodes.INVALID_PAIR_ID:
+      case orderErrorCodes.PAIR_DOES_NOT_EXIST:
+      case p2pErrorCodes.COULD_NOT_CONNECT:
+      case orderErrorCodes.PAIR_DOES_NOT_EXIST:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
       case p2pErrorCodes.NODE_ALREADY_CONNECTED:
+      case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
+      case orderErrorCodes.PAIR_ALREADY_EXISTS:
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
       case lndErrorCodes.LND_IS_DISABLED:
       case lndErrorCodes.LND_IS_DISCONNECTED:
+      case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
+      case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
         code = status.FAILED_PRECONDITION;
         break;
     }
@@ -72,13 +79,40 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.addCurrency]]
+   */
+  public addCurrency: grpc.handleUnaryCall<xudrpc.AddCurrencyRequest, xudrpc.AddCurrencyResponse> = async (call, callback) => {
+    try {
+      await this.service.addCurrency(call.request.toObject());
+      const response = new xudrpc.AddCurrencyResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.addPair]]
+   */
+  public addPair: grpc.handleUnaryCall<xudrpc.AddPairRequest, xudrpc.AddPairResponse> = async (call, callback) => {
+    try {
+      await this.service.addPair(call.request.toObject());
+      const response = new xudrpc.AddPairResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.cancelOrder]]
    */
   public cancelOrder: grpc.handleUnaryCall<xudrpc.CancelOrderRequest, xudrpc.CancelOrderResponse> = async (call, callback) => {
     try {
       const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
       const response = new xudrpc.CancelOrderResponse();
-      response.setCanceled(cancelOrderResponse.canceled);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -107,7 +141,6 @@ class GrpcService {
     try {
       const connectResponse = await this.service.connect(call.request.toObject());
       const response = new xudrpc.ConnectResponse();
-      response.setResult(connectResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -119,9 +152,8 @@ class GrpcService {
    */
   public disconnect: grpc.handleUnaryCall<xudrpc.DisconnectRequest, xudrpc.DisconnectResponse> = async (call, callback) => {
     try {
-      const disconnectResponse = await this.service.disconnect(call.request.toObject());
+      await this.service.disconnect(call.request.toObject());
       const response = new xudrpc.DisconnectResponse();
-      response.setResult(disconnectResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -225,23 +257,29 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.getPairs]]
+   * See [[Service.listCurrencies]]
    */
-  public getPairs: grpc.handleUnaryCall<xudrpc.GetPairsRequest, xudrpc.GetPairsResponse> = (_, callback) => {
+  public listCurrencies: grpc.handleUnaryCall<xudrpc.ListCurrenciesRequest, xudrpc.ListCurrenciesResponse> = (_, callback) => {
     try {
-      const getPairsResponse = this.service.getPairs();
-      const response = new xudrpc.GetPairsResponse();
+      const listCurrenciesResponse = this.service.listCurrencies();
+      const response = new xudrpc.ListCurrenciesResponse();
+      response.setCurrenciesList(listCurrenciesResponse);
 
-      const pairs: xudrpc.Pair[] = [];
-      getPairsResponse.forEach((pairInstance) => {
-        const pair = new xudrpc.Pair();
-        pair.setBaseCurrency(pairInstance.baseCurrency);
-        pair.setId(pairInstance.id);
-        pair.setQuoteCurrency(pairInstance.quoteCurrency);
-        pair.setSwapProtocol(pairInstance.swapProtocol);
-        pairs.push(pair);
-      });
-      response.setPairsList(pairs);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.listPairs]]
+   */
+  public listPairs: grpc.handleUnaryCall<xudrpc.ListPairsRequest, xudrpc.ListPairsResponse> = (_, callback) => {
+    try {
+      const listPairsResponse = this.service.listPairs();
+      const response = new xudrpc.ListPairsResponse();
+      response.setPairsList(listPairsResponse);
+
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -298,11 +336,52 @@ class GrpcService {
     }
   }
 
+  /**
+   * See [[Service.addCurrency]]
+   */
+  public removeCurrency: grpc.handleUnaryCall<xudrpc.RemoveCurrencyRequest, xudrpc.RemoveCurrencyResponse> = async (call, callback) => {
+    try {
+      await this.service.removeCurrency(call.request.toObject());
+      const response = new xudrpc.RemoveCurrencyResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.addPair]]
+   */
+  public removePair: grpc.handleUnaryCall<xudrpc.RemovePairRequest, xudrpc.RemovePairResponse> = async (call, callback) => {
+    try {
+      await this.service.removePair(call.request.toObject());
+      const response = new xudrpc.RemovePairResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /*
+   * Resolving LND hash. See [[Service.resolveHash]]
+   */
+  public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
+    try {
+      const resolveResponse = await this.service.resolveHash(call.request.toObject());
+      const response = new ResolveResponse();
+      response.setPreimage(resolveResponse);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
   public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     try {
-      const shutdownResponse = this.service.shutdown();
+      this.service.shutdown();
       const response = new xudrpc.ShutdownResponse();
-      response.setResult(shutdownResponse);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -322,21 +401,6 @@ class GrpcService {
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SubscribeSwapsResponse> = (call) => {
     this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
   }
-
-  /*
-   * Resolving LND hash. See [[Service.resolveHash]]
-   */
-  public resolveHash: grpc.handleUnaryCall<resolverrpc.ResolveRequest, resolverrpc.ResolveResponse> = async (call, callback) => {
-    try {
-      const resolveResponse = await this.service.resolveHash(call.request.toObject());
-      const response = new resolverrpc.ResolveResponse();
-      response.setPreimage(resolveResponse);
-      callback(null, response);
-    } catch (err) {
-      callback(this.getGrpcError(err), null);
-    }
-  }
-
 }
 
 export default GrpcService;

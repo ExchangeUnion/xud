@@ -29,7 +29,7 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
   const priceStr = argv.price.toLowerCase();
 
   request.setQuantity(isSell ? argv.quantity * -1 : argv.quantity);
-  request.setPairId(argv.pair_id);
+  request.setPairId(argv.pair_id.toUpperCase());
 
   if (!isNaN(numericPrice)) {
     request.setPrice(numericPrice);

@@ -11,6 +11,7 @@ interface IWalletUnlockerService extends grpc.ServiceDefinition<grpc.UntypedServ
     genSeed: IWalletUnlockerService_IGenSeed;
     initWallet: IWalletUnlockerService_IInitWallet;
     unlockWallet: IWalletUnlockerService_IUnlockWallet;
+    changePassword: IWalletUnlockerService_IChangePassword;
 }
 
 interface IWalletUnlockerService_IGenSeed extends grpc.MethodDefinition<lndrpc_pb.GenSeedRequest, lndrpc_pb.GenSeedResponse> {
@@ -40,6 +41,15 @@ interface IWalletUnlockerService_IUnlockWallet extends grpc.MethodDefinition<lnd
     responseSerialize: grpc.serialize<lndrpc_pb.UnlockWalletResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.UnlockWalletResponse>;
 }
+interface IWalletUnlockerService_IChangePassword extends grpc.MethodDefinition<lndrpc_pb.ChangePasswordRequest, lndrpc_pb.ChangePasswordResponse> {
+    path: string; // "/lnrpc.WalletUnlocker/ChangePassword"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<lndrpc_pb.ChangePasswordRequest>;
+    requestDeserialize: grpc.deserialize<lndrpc_pb.ChangePasswordRequest>;
+    responseSerialize: grpc.serialize<lndrpc_pb.ChangePasswordResponse>;
+    responseDeserialize: grpc.deserialize<lndrpc_pb.ChangePasswordResponse>;
+}
 
 export const WalletUnlockerService: IWalletUnlockerService;
 
@@ -47,6 +57,7 @@ export interface IWalletUnlockerServer {
     genSeed: grpc.handleUnaryCall<lndrpc_pb.GenSeedRequest, lndrpc_pb.GenSeedResponse>;
     initWallet: grpc.handleUnaryCall<lndrpc_pb.InitWalletRequest, lndrpc_pb.InitWalletResponse>;
     unlockWallet: grpc.handleUnaryCall<lndrpc_pb.UnlockWalletRequest, lndrpc_pb.UnlockWalletResponse>;
+    changePassword: grpc.handleUnaryCall<lndrpc_pb.ChangePasswordRequest, lndrpc_pb.ChangePasswordResponse>;
 }
 
 export interface IWalletUnlockerClient {
@@ -59,6 +70,9 @@ export interface IWalletUnlockerClient {
     unlockWallet(request: lndrpc_pb.UnlockWalletRequest, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: lndrpc_pb.ChangePasswordRequest, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: lndrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    changePassword(request: lndrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class WalletUnlockerClient extends grpc.Client implements IWalletUnlockerClient {
@@ -72,6 +86,9 @@ export class WalletUnlockerClient extends grpc.Client implements IWalletUnlocker
     public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: lndrpc_pb.ChangePasswordRequest, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: lndrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
+    public changePassword(request: lndrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
 }
 
 interface ILightningService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
@@ -91,11 +108,14 @@ interface ILightningService extends grpc.ServiceDefinition<grpc.UntypedServiceIm
     getInfo: ILightningService_IGetInfo;
     pendingChannels: ILightningService_IPendingChannels;
     listChannels: ILightningService_IListChannels;
+    closedChannels: ILightningService_IClosedChannels;
     openChannelSync: ILightningService_IOpenChannelSync;
     openChannel: ILightningService_IOpenChannel;
     closeChannel: ILightningService_ICloseChannel;
     sendPayment: ILightningService_ISendPayment;
     sendPaymentSync: ILightningService_ISendPaymentSync;
+    sendToRoute: ILightningService_ISendToRoute;
+    sendToRouteSync: ILightningService_ISendToRouteSync;
     addInvoice: ILightningService_IAddInvoice;
     listInvoices: ILightningService_IListInvoices;
     lookupInvoice: ILightningService_ILookupInvoice;
@@ -260,6 +280,15 @@ interface ILightningService_IListChannels extends grpc.MethodDefinition<lndrpc_p
     responseSerialize: grpc.serialize<lndrpc_pb.ListChannelsResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.ListChannelsResponse>;
 }
+interface ILightningService_IClosedChannels extends grpc.MethodDefinition<lndrpc_pb.ClosedChannelsRequest, lndrpc_pb.ClosedChannelsResponse> {
+    path: string; // "/lnrpc.Lightning/ClosedChannels"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<lndrpc_pb.ClosedChannelsRequest>;
+    requestDeserialize: grpc.deserialize<lndrpc_pb.ClosedChannelsRequest>;
+    responseSerialize: grpc.serialize<lndrpc_pb.ClosedChannelsResponse>;
+    responseDeserialize: grpc.deserialize<lndrpc_pb.ClosedChannelsResponse>;
+}
 interface ILightningService_IOpenChannelSync extends grpc.MethodDefinition<lndrpc_pb.OpenChannelRequest, lndrpc_pb.ChannelPoint> {
     path: string; // "/lnrpc.Lightning/OpenChannelSync"
     requestStream: boolean; // false
@@ -302,6 +331,24 @@ interface ILightningService_ISendPaymentSync extends grpc.MethodDefinition<lndrp
     responseStream: boolean; // false
     requestSerialize: grpc.serialize<lndrpc_pb.SendRequest>;
     requestDeserialize: grpc.deserialize<lndrpc_pb.SendRequest>;
+    responseSerialize: grpc.serialize<lndrpc_pb.SendResponse>;
+    responseDeserialize: grpc.deserialize<lndrpc_pb.SendResponse>;
+}
+interface ILightningService_ISendToRoute extends grpc.MethodDefinition<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse> {
+    path: string; // "/lnrpc.Lightning/SendToRoute"
+    requestStream: boolean; // true
+    responseStream: boolean; // true
+    requestSerialize: grpc.serialize<lndrpc_pb.SendToRouteRequest>;
+    requestDeserialize: grpc.deserialize<lndrpc_pb.SendToRouteRequest>;
+    responseSerialize: grpc.serialize<lndrpc_pb.SendResponse>;
+    responseDeserialize: grpc.deserialize<lndrpc_pb.SendResponse>;
+}
+interface ILightningService_ISendToRouteSync extends grpc.MethodDefinition<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse> {
+    path: string; // "/lnrpc.Lightning/SendToRouteSync"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<lndrpc_pb.SendToRouteRequest>;
+    requestDeserialize: grpc.deserialize<lndrpc_pb.SendToRouteRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.SendResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.SendResponse>;
 }
@@ -487,11 +534,14 @@ export interface ILightningServer {
     getInfo: grpc.handleUnaryCall<lndrpc_pb.GetInfoRequest, lndrpc_pb.GetInfoResponse>;
     pendingChannels: grpc.handleUnaryCall<lndrpc_pb.PendingChannelsRequest, lndrpc_pb.PendingChannelsResponse>;
     listChannels: grpc.handleUnaryCall<lndrpc_pb.ListChannelsRequest, lndrpc_pb.ListChannelsResponse>;
+    closedChannels: grpc.handleUnaryCall<lndrpc_pb.ClosedChannelsRequest, lndrpc_pb.ClosedChannelsResponse>;
     openChannelSync: grpc.handleUnaryCall<lndrpc_pb.OpenChannelRequest, lndrpc_pb.ChannelPoint>;
     openChannel: grpc.handleServerStreamingCall<lndrpc_pb.OpenChannelRequest, lndrpc_pb.OpenStatusUpdate>;
     closeChannel: grpc.handleServerStreamingCall<lndrpc_pb.CloseChannelRequest, lndrpc_pb.CloseStatusUpdate>;
     sendPayment: grpc.handleBidiStreamingCall<lndrpc_pb.SendRequest, lndrpc_pb.SendResponse>;
     sendPaymentSync: grpc.handleUnaryCall<lndrpc_pb.SendRequest, lndrpc_pb.SendResponse>;
+    sendToRoute: grpc.handleBidiStreamingCall<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    sendToRouteSync: grpc.handleUnaryCall<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
     addInvoice: grpc.handleUnaryCall<lndrpc_pb.Invoice, lndrpc_pb.AddInvoiceResponse>;
     listInvoices: grpc.handleUnaryCall<lndrpc_pb.ListInvoiceRequest, lndrpc_pb.ListInvoiceResponse>;
     lookupInvoice: grpc.handleUnaryCall<lndrpc_pb.PaymentHash, lndrpc_pb.Invoice>;
@@ -560,6 +610,9 @@ export interface ILightningClient {
     listChannels(request: lndrpc_pb.ListChannelsRequest, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
     listChannels(request: lndrpc_pb.ListChannelsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
     listChannels(request: lndrpc_pb.ListChannelsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
+    closedChannels(request: lndrpc_pb.ClosedChannelsRequest, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
+    closedChannels(request: lndrpc_pb.ClosedChannelsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
+    closedChannels(request: lndrpc_pb.ClosedChannelsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
     openChannelSync(request: lndrpc_pb.OpenChannelRequest, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
     openChannelSync(request: lndrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
     openChannelSync(request: lndrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
@@ -573,6 +626,12 @@ export interface ILightningClient {
     sendPaymentSync(request: lndrpc_pb.SendRequest, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     sendPaymentSync(request: lndrpc_pb.SendRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     sendPaymentSync(request: lndrpc_pb.SendRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    sendToRoute(): grpc.ClientDuplexStream<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    sendToRoute(options: Partial<grpc.CallOptions>): grpc.ClientDuplexStream<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    sendToRoute(metadata: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientDuplexStream<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     addInvoice(request: lndrpc_pb.Invoice, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
     addInvoice(request: lndrpc_pb.Invoice, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
     addInvoice(request: lndrpc_pb.Invoice, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
@@ -676,6 +735,9 @@ export class LightningClient extends grpc.Client implements ILightningClient {
     public listChannels(request: lndrpc_pb.ListChannelsRequest, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
     public listChannels(request: lndrpc_pb.ListChannelsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
     public listChannels(request: lndrpc_pb.ListChannelsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ListChannelsResponse) => void): grpc.ClientUnaryCall;
+    public closedChannels(request: lndrpc_pb.ClosedChannelsRequest, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
+    public closedChannels(request: lndrpc_pb.ClosedChannelsRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
+    public closedChannels(request: lndrpc_pb.ClosedChannelsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ClosedChannelsResponse) => void): grpc.ClientUnaryCall;
     public openChannelSync(request: lndrpc_pb.OpenChannelRequest, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
     public openChannelSync(request: lndrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
     public openChannelSync(request: lndrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ChannelPoint) => void): grpc.ClientUnaryCall;
@@ -688,6 +750,11 @@ export class LightningClient extends grpc.Client implements ILightningClient {
     public sendPaymentSync(request: lndrpc_pb.SendRequest, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     public sendPaymentSync(request: lndrpc_pb.SendRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     public sendPaymentSync(request: lndrpc_pb.SendRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    public sendToRoute(options?: Partial<grpc.CallOptions>): grpc.ClientDuplexStream<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    public sendToRoute(metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientDuplexStream<lndrpc_pb.SendToRouteRequest, lndrpc_pb.SendResponse>;
+    public sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    public sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
+    public sendToRouteSync(request: lndrpc_pb.SendToRouteRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.SendResponse) => void): grpc.ClientUnaryCall;
     public addInvoice(request: lndrpc_pb.Invoice, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
     public addInvoice(request: lndrpc_pb.Invoice, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
     public addInvoice(request: lndrpc_pb.Invoice, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.AddInvoiceResponse) => void): grpc.ClientUnaryCall;
@@ -740,4 +807,37 @@ export class LightningClient extends grpc.Client implements ILightningClient {
     public forwardingHistory(request: lndrpc_pb.ForwardingHistoryRequest, callback: (error: Error | null, response: lndrpc_pb.ForwardingHistoryResponse) => void): grpc.ClientUnaryCall;
     public forwardingHistory(request: lndrpc_pb.ForwardingHistoryRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ForwardingHistoryResponse) => void): grpc.ClientUnaryCall;
     public forwardingHistory(request: lndrpc_pb.ForwardingHistoryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ForwardingHistoryResponse) => void): grpc.ClientUnaryCall;
+}
+
+interface IHashResolverService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
+    resolveHash: IHashResolverService_IResolveHash;
+}
+
+interface IHashResolverService_IResolveHash extends grpc.MethodDefinition<lndrpc_pb.ResolveRequest, lndrpc_pb.ResolveResponse> {
+    path: string; // "/lnrpc.HashResolver/ResolveHash"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<lndrpc_pb.ResolveRequest>;
+    requestDeserialize: grpc.deserialize<lndrpc_pb.ResolveRequest>;
+    responseSerialize: grpc.serialize<lndrpc_pb.ResolveResponse>;
+    responseDeserialize: grpc.deserialize<lndrpc_pb.ResolveResponse>;
+}
+
+export const HashResolverService: IHashResolverService;
+
+export interface IHashResolverServer {
+    resolveHash: grpc.handleUnaryCall<lndrpc_pb.ResolveRequest, lndrpc_pb.ResolveResponse>;
+}
+
+export interface IHashResolverClient {
+    resolveHash(request: lndrpc_pb.ResolveRequest, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
+    resolveHash(request: lndrpc_pb.ResolveRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
+    resolveHash(request: lndrpc_pb.ResolveRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
+}
+
+export class HashResolverClient extends grpc.Client implements IHashResolverClient {
+    constructor(address: string, credentials: grpc.ChannelCredentials, options?: object);
+    public resolveHash(request: lndrpc_pb.ResolveRequest, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
+    public resolveHash(request: lndrpc_pb.ResolveRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
+    public resolveHash(request: lndrpc_pb.ResolveRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: lndrpc_pb.ResolveResponse) => void): grpc.ClientUnaryCall;
 }

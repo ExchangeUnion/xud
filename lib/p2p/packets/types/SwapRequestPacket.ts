@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 export type SwapRequestPacketBody = {
-  makerDealId: string;
+  dealId: string;
 };
 
 class SwapRequestPacket extends Packet<SwapRequestPacketBody> {

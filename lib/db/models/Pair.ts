@@ -1,15 +1,12 @@
 import Sequelize from 'sequelize';
 import { db } from '../../types';
-import { SwapProtocol } from '../../types/enums';
+import { derivePairId } from '../../utils/utils';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.PairAttributes> = {
     id: { type: DataTypes.STRING, primaryKey: true },
     baseCurrency: { type: DataTypes.STRING, allowNull: false },
     quoteCurrency: { type: DataTypes.STRING, allowNull: false },
-    swapProtocol: {
-      type: DataTypes.ENUM, values: Object.values(SwapProtocol), allowNull: false,
-    },
   };
 
   const options: Sequelize.DefineOptions<db.PairInstance> = {
@@ -28,11 +25,8 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
       foreignKey: 'quoteCurrency',
     });
 
-    const derivePairId = (pair: db.PairInstance) => {
-      pair.id = `${pair.baseCurrency}/${pair.quoteCurrency}`;
-    };
-    models.Pair.beforeBulkCreate(pairs => pairs.forEach(pair => derivePairId(pair)));
-    models.Pair.beforeCreate(pair => derivePairId(pair));
+    models.Pair.beforeBulkCreate(pairs => pairs.forEach(pair => pair.id = derivePairId(pair)));
+    models.Pair.beforeCreate(pair => pair.id = derivePairId(pair));
   };
 
   return Pair;

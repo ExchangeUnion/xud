@@ -6,6 +6,8 @@ automatically by their `docker-compose` config file.
 
 The goal of this is that `docker-compose` to be able to spin up / lauch `xud` along with its dependencies.
 
+Please note that this setup is purely for testing xud, it is not recommended for production use.
+
 ### Prerequisites
 * docker-compose 
 * docker 
@@ -40,5 +42,8 @@ $ docker-compose down
 
 * How to see `xud` | `mysql` logs?
 ```bash
-docker-compose logs <xud|db>
+$ docker-compose logs <xud|db>
 ```
+* How do i change ports & hosts?
+
+ Please refer official docs here [Docker Container Networking](https://docs.docker.com/config/containers/container-networking/)

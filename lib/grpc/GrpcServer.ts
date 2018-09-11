@@ -6,7 +6,7 @@ import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
-import { HashResolverService } from '../proto/hash_resolver_grpc_pb';
+import { HashResolverService } from '../proto/lndrpc_grpc_pb';
 
 class GrpcServer {
   private server: Server;
@@ -16,6 +16,8 @@ class GrpcServer {
 
     const grpcService = new GrpcService(logger, service);
     this.server.addService(XudService, {
+      addCurrency: grpcService.addCurrency,
+      addPair: grpcService.addPair,
       cancelOrder: grpcService.cancelOrder,
       channelBalance: grpcService.channelBalance,
       connect: grpcService.connect,
@@ -23,12 +25,15 @@ class GrpcServer {
       executeSwap: grpcService.executeSwap,
       getInfo: grpcService.getInfo,
       getOrders: grpcService.getOrders,
-      getPairs: grpcService.getPairs,
+      listCurrencies: grpcService.listCurrencies,
+      listPairs: grpcService.listPairs,
+      listPeers: grpcService.listPeers,
       placeOrder: grpcService.placeOrder,
+      removeCurrency: grpcService.removeCurrency,
+      removePair: grpcService.removePair,
       shutdown: grpcService.shutdown,
       subscribePeerOrders: grpcService.subscribePeerOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
-      listPeers: grpcService.listPeers,
     });
 
     this.server.addService(HashResolverService, {

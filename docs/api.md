@@ -4,6 +4,10 @@
 ## Table of Contents
 
 - [xudrpc.proto](#xudrpc.proto)
+    - [AddCurrencyRequest](#xudrpc.AddCurrencyRequest)
+    - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
+    - [AddPairRequest](#xudrpc.AddPairRequest)
+    - [AddPairResponse](#xudrpc.AddPairResponse)
     - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
     - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
@@ -18,8 +22,10 @@
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
     - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
-    - [GetPairsRequest](#xudrpc.GetPairsRequest)
-    - [GetPairsResponse](#xudrpc.GetPairsResponse)
+    - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
+    - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
+    - [ListPairsRequest](#xudrpc.ListPairsRequest)
+    - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [LndChannels](#xudrpc.LndChannels)
@@ -28,11 +34,14 @@
     - [OrderMatch](#xudrpc.OrderMatch)
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
-    - [Pair](#xudrpc.Pair)
     - [Peer](#xudrpc.Peer)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
     - [RaidenInfo](#xudrpc.RaidenInfo)
+    - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
+    - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
+    - [RemovePairRequest](#xudrpc.RemovePairRequest)
+    - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest)
@@ -41,6 +50,7 @@
     - [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse)
     - [SwapPayload](#xudrpc.SwapPayload)
   
+    - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
   
   
     - [Xud](#xudrpc.Xud)
@@ -54,6 +64,60 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## xudrpc.proto
+
+
+
+<a name="xudrpc.AddCurrencyRequest"></a>
+
+### AddCurrencyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
+| swap_client | [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient) |  | The payment channel network client to use for executing swaps |
+| token_address | [string](#string) |  | The contract address for layered tokens such as ERC20 |
+| decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
+
+
+
+
+
+
+<a name="xudrpc.AddCurrencyResponse"></a>
+
+### AddCurrencyResponse
+
+
+
+
+
+
+
+<a name="xudrpc.AddPairRequest"></a>
+
+### AddPairRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| base_currency | [string](#string) |  | The base currency that is bought and sold for this trading pair |
+| quote_currency | [string](#string) |  | The currency used to quote a price for the base currency |
+
+
+
+
+
+
+<a name="xudrpc.AddPairResponse"></a>
+
+### AddPairResponse
+
+
+
+
 
 
 
@@ -77,11 +141,6 @@
 
 ### CancelOrderResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| canceled | [bool](#bool) |  | Indicates whether an order was successfully canceled |
 
 
 
@@ -140,11 +199,6 @@
 
 
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the connection request |
-
-
 
 
 
@@ -168,11 +222,6 @@
 
 ### DisconnectResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  |  |
 
 
 
@@ -275,25 +324,50 @@
 
 
 
-<a name="xudrpc.GetPairsRequest"></a>
+<a name="xudrpc.ListCurrenciesRequest"></a>
 
-### GetPairsRequest
-
-
+### ListCurrenciesRequest
 
 
 
 
 
-<a name="xudrpc.GetPairsResponse"></a>
 
-### GetPairsResponse
+
+<a name="xudrpc.ListCurrenciesResponse"></a>
+
+### ListCurrenciesResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| pairs | [Pair](#xudrpc.Pair) | repeated |  |
+| currencies | [string](#string) | repeated | The ticker symbols of supported currencies |
+
+
+
+
+
+
+<a name="xudrpc.ListPairsRequest"></a>
+
+### ListPairsRequest
+
+
+
+
+
+
+
+<a name="xudrpc.ListPairsResponse"></a>
+
+### ListPairsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pairs | [string](#string) | repeated | The supported trading pair tickers in formats like &#34;LTC/BTC&#34; |
 
 
 
@@ -433,24 +507,6 @@
 
 
 
-<a name="xudrpc.Pair"></a>
-
-### Pair
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| base_currency | [string](#string) |  |  |
-| quote_currency | [string](#string) |  |  |
-| swap_protocol | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.Peer"></a>
 
 ### Peer
@@ -523,6 +579,56 @@
 
 
 
+<a name="xudrpc.RemoveCurrencyRequest"></a>
+
+### RemoveCurrencyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
+
+
+
+
+
+
+<a name="xudrpc.RemoveCurrencyResponse"></a>
+
+### RemoveCurrencyResponse
+
+
+
+
+
+
+
+<a name="xudrpc.RemovePairRequest"></a>
+
+### RemovePairRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pair_id | [string](#string) |  | The trading pair ticker to remove, such as &#34;LTC/BTC&#34; |
+
+
+
+
+
+
+<a name="xudrpc.RemovePairResponse"></a>
+
+### RemovePairResponse
+
+
+
+
+
+
+
 <a name="xudrpc.ShutdownRequest"></a>
 
 ### ShutdownRequest
@@ -537,11 +643,6 @@
 
 ### ShutdownResponse
 
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  | A message describing the result of the shutdown request |
 
 
 
@@ -619,6 +720,18 @@
 
  
 
+
+<a name="xudrpc.AddCurrencyRequest.SwapClient"></a>
+
+### AddCurrencyRequest.SwapClient
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LND | 0 |  |
+| RAIDEN | 1 |  |
+
+
  
 
  
@@ -631,16 +744,21 @@
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
+| AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Add a currency to the list of supported currencies. |
+| AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Add a trading pair to the list of supported trading pairs. |
 | CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse) | Execute an atomic swap |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
-| GetPairs | [GetPairsRequest](#xudrpc.GetPairsRequest) | [GetPairsResponse](#xudrpc.GetPairsResponse) | Get the list of the order book&#39;s available pairs. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a list of standing orders from the order book. |
+| ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
+| ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Get the list of the order book&#39;s suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | Add an order to the order book. If price is zero or unspecified a market order will get added. |
+| RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Remove a currency. |
+| RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Remove a trading pair. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin shutting down xud. |
 | SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse) stream | Subscribe to peer order events. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse) stream | Subscribe executed swaps. |

@@ -1,6 +1,8 @@
 export type Address = {
   host: string;
   port: number;
+  /** Epoch timestamp of last successful connection with this address */
+  lastConnected?: number;
 };
 
 /** Information used for connecting to a remote node. */

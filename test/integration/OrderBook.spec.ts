@@ -2,14 +2,13 @@ import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
-import { SwapProtocol } from '../../lib/types/enums';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { orders } from '../../lib/types/index';
+import { orders } from '../../lib/types';
 import NodeKey from '../../lib/nodekey/NodeKey';
-import { StampedOwnOrder }  from '../../lib/types/orders';
+import { SwapClients } from '../../lib/types/enums';
 
 describe('OrderBook', () => {
   let db: DB;
@@ -35,11 +34,11 @@ describe('OrderBook', () => {
       { nodePubKey: nodeKey.nodePubKey, addresses: [] },
     );
     await orderBookRepository.addCurrencies([
-      { id: 'BTC' },
-      { id: 'LTC' },
+      { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
+      { id: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
     ]);
     await orderBookRepository.addPairs([
-      { baseCurrency: 'LTC', quoteCurrency: 'BTC', swapProtocol: SwapProtocol.LND },
+      { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
     ]);
 
     orderBook = new OrderBook(loggers.orderbook, db.models);
@@ -60,7 +59,6 @@ describe('OrderBook', () => {
   };
 
   it('should have pairs and matchingEngines equivalent loaded', () => {
-    expect(orderBook.pairs).to.be.an('array');
     orderBook.pairs.forEach((pair) => {
       expect(orderBook.matchingEngines).to.have.key(pair.id);
     });
@@ -82,8 +80,8 @@ describe('OrderBook', () => {
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
-    const firstMakerOrder = getOwnOrder(<StampedOwnOrder>firstMatch.maker);
-    const secondMakerOrder = getOwnOrder(<StampedOwnOrder>secondMatch.maker);
+    const firstMakerOrder = getOwnOrder(<orders.StampedOwnOrder>firstMatch.maker);
+    const secondMakerOrder = getOwnOrder(<orders.StampedOwnOrder>secondMatch.maker);
     expect(firstMakerOrder).to.be.undefined;
     expect(secondMakerOrder).to.not.be.undefined;
     expect(secondMakerOrder!.quantity).to.equal(4);
@@ -94,7 +92,7 @@ describe('OrderBook', () => {
     const result = await orderBook.addMarketOrder(order);
     const { taker } = result.matches[0];
     expect(result.remainingOrder).to.be.undefined;
-    expect(getOwnOrder(<StampedOwnOrder>taker)).to.be.undefined;
+    expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
@@ -104,9 +102,9 @@ describe('OrderBook', () => {
 
     expect(() => orderBook.addLimitOrder(order)).to.throw();
 
-    expect(orderBook.removeOwnOrderByLocalId(order.pairId, order.localId).removed).to.be.true;
+    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.not.throw();
 
-    expect(orderBook.removeOwnOrderByLocalId(order.pairId, order.localId).removed).to.be.false;
+    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.throw();
 
     expect(() => orderBook.addLimitOrder(order)).to.not.throw();
 
