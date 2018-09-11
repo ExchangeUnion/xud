@@ -482,16 +482,20 @@ class Peer extends EventEmitter {
 
   /** Check if a given packet is solicited and fulfill the pending response entry if it's a response. */
   private isPacketSolicited = (packet: Packet): boolean => {
-    let solicted = true;
+    let solicited = true;
 
+    if (!this.opened && packet.type !== PacketType.HELLO) {
+      // until the connection is opened, we only accept hello packets
+      solicited = false;
+    }
     if (packet.direction === PacketDirection.RESPONSE) {
       // lookup a pending response entry for this packet by its reqId
       if (!this.fulfillResponseEntry(packet)) {
-        solicted = false;
+        solicited = false;
       }
     }
 
-    return solicted;
+    return solicited;
   }
 
   private handlePacket = (packet: Packet): void => {
@@ -509,6 +513,8 @@ class Peer extends EventEmitter {
           this.emit('packet', packet);
           break;
       }
+    } else {
+      // TODO: penalize for unsolicited packets
     }
   }
 
