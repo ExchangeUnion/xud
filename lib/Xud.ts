@@ -68,7 +68,7 @@ class Xud extends EventEmitter {
       this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
       this.db = new DB(loggers.db, this.config.dbPath);
-      await this.db.init();
+      await this.db.init(this.config.initDb);
 
       const initPromises: Promise<void>[] = [];
 

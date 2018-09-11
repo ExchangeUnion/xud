@@ -161,6 +161,9 @@ class OrderBook extends EventEmitter {
 
     const pairInstance = await this.repository.addPair(pair);
     this.pairs.set(pairInstance.id, pairInstance);
+    this.matchingEngines.set(pairInstance.id, new MatchingEngine(this.logger, pairInstance.id));
+    this.ownOrders.set(pairInstance.id, this.initOrders());
+    this.peerOrders.set(pairInstance.id, this.initOrders());
     return pairInstance;
   }
 
@@ -191,6 +194,9 @@ class OrderBook extends EventEmitter {
     const pair = this.pairs.get(pairId);
     if (pair) {
       this.pairs.delete(pairId);
+      this.matchingEngines.delete(pairId);
+      this.ownOrders.delete(pairId);
+      this.peerOrders.delete(pairId);
       return pair.destroy();
     } else {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
