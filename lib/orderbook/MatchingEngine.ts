@@ -31,11 +31,11 @@ type OrderSidesQueues = {
 
 /** A class to represent a matching engine responsible for matching orders for a given trading pair according to their price and quantity. */
 class MatchingEngine {
-  /** Active buy/sell orders priority queue. */
+  /** A pair of priority queues for the buy and sell sides of this trading pair */
   public queues: OrderSidesQueues;
-  /** A map between active own buy/sell order ids and orders. */
+  /** a pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
   public ownOrders: OrderSidesLists<orders.StampedOwnOrder>;
-  /** A map between active peer buy/sell order ids and orders. */
+  /** a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
   public peerOrders: OrderSidesLists<orders.StampedPeerOrder>;
 
   constructor(private logger: Logger, public pairId: string) {
@@ -141,6 +141,10 @@ class MatchingEngine {
     }
   }
 
+  /**
+   * Remove a quantity from a peer order. if the entire quantity is met, the order will be removed entirely.
+   * @returns undefined if the order wasn't found, otherwise the removed order or order portion
+   */
   public removePeerOrderQuantity = (orderId: string, quantityToDecrease?: number): StampedPeerOrder | undefined => {
     const order = this.peerOrders.buy.get(orderId) || this.peerOrders.sell.get(orderId);
     if (!order) {
@@ -148,9 +152,11 @@ class MatchingEngine {
     }
 
     if (quantityToDecrease && quantityToDecrease < Math.abs(order.quantity)) {
+      // if quantityToDecrease is below the order quantity, mutate the order quantity, and return a simulation of the removed order portion
       order.quantity = order.quantity - quantityToDecrease;
       return { ...order, quantity: quantityToDecrease };
     } else {
+      // otherwise, remove the order entirely, and return it
       this.removePeerOrder(order);
       return order;
     }
@@ -233,21 +239,21 @@ class MatchingEngine {
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: StampedOwnOrder | undefined = { ...takerOrder };
 
-    const matchAgainst = isBuyOrder ? this.queues.sell : this.queues.buy;
+    const queue = isBuyOrder ? this.queues.sell : this.queues.buy;
     const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder: StampedOrder) => isBuyOrder
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
       : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
 
     // as long as we have remaining quantity to match and orders to match against, keep checking for matches
-    while (remainingOrder && !matchAgainst.isEmpty()) {
-      const oppositeOrder = matchAgainst.peek()!;
+    while (remainingOrder && !queue.isEmpty()) {
+      const oppositeOrder = queue.peek()!;
       const matchingQuantity = getMatchingQuantity(remainingOrder, oppositeOrder);
       if (matchingQuantity <= 0) {
         // there's no match with the best available maker order, so end the matching routine
         break;
       } else {
         // get the order from the top of the queue, and remove its ref from the list as well
-        const makerOrder = matchAgainst.poll()!;
+        const makerOrder = queue.poll()!;
         const list = this.getOrderList(makerOrder);
         list.delete(makerOrder.id);
 
@@ -265,7 +271,7 @@ class MatchingEngine {
           matches.push({ maker: splitOrder.matched, taker: remainingOrder });
 
           // add the remaining order to the queue and the list
-          matchAgainst.add(splitOrder.remaining);
+          queue.add(splitOrder.remaining);
           list.set(splitOrder.remaining.id, splitOrder.remaining);
 
           remainingOrder = undefined;
