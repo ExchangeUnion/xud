@@ -4,15 +4,15 @@ const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
+    dbPath: {
+      describe: 'The file path for the database, or ":memory:" if the database should be kept in memory',
+      type: 'string',
+      alias: 'd',
+    },
     initDb: {
       describe: 'Whether to initialize the db with data',
       type: 'boolean',
       default: undefined,
-    },
-    xudir: {
-      describe: 'Data directory for xud',
-      type: 'string',
-      alias: 'x',
     },
     logLevel: {
       describe: 'Verbosity of the logger',
@@ -23,26 +23,10 @@ const { argv } = require('yargs')
       describe: 'Path to the log file',
       type: 'string',
     },
-    'db.database': {
-      describe: 'SQL database name',
+    xudir: {
+      describe: 'Data directory for xud',
       type: 'string',
-      alias: 'd',
-    },
-    'db.host': {
-      describe: 'Hostname for SQL database',
-      type: 'string',
-    },
-    'db.password': {
-      describe: 'Password for SQL database',
-      type: 'string',
-    },
-    'db.port': {
-      describe: 'Port for SQL database',
-      type: 'number',
-    },
-    'db.username': {
-      describe: 'User for SQL database ',
-      type: 'string',
+      alias: 'x',
     },
     'lndbtc.certpath': {
       describe: 'Path to the SSL certificate for lndBtc',

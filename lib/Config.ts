@@ -6,7 +6,6 @@ import { deepMerge } from './utils/utils';
 import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
-import { DBConfig } from './db/DB';
 import { Level } from './Logger';
 
 class Config {
@@ -14,15 +13,16 @@ class Config {
   public xudir: string;
   public logLevel: string;
   public logPath: string;
-  public db: DBConfig;
-  public testDb: DBConfig;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
   public instanceId = 0;
+  /** Whether to intialize a new database with default values. */
   public initDb: boolean;
+  /** The file path for the database, or ':memory:' if the database should be kept in memory. */
+  public dbPath: string;
 
   constructor() {
     const platform = os.platform();
@@ -50,6 +50,7 @@ class Config {
 
     // default configuration
     this.initDb = true;
+    this.dbPath = path.join(this.xudir, 'xud.db');
     this.logLevel = this.getDefaultLogLevel();
     this.logPath = this.getDefaultLogPath();
 
@@ -57,16 +58,6 @@ class Config {
       listen: true,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
-    };
-    this.db = {
-      host: 'localhost',
-      port: 3306,
-      username: 'xud',
-      database: 'xud',
-    };
-    this.testDb = {
-      ...this.db,
-      database: 'xud_test',
     };
     this.rpc = {
       disable: false,

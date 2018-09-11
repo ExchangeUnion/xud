@@ -10,15 +10,18 @@ describe('API Service', () => {
   let xud: Xud;
   let service: Service;
 
+  const pairId = 'LTC/BTC';
   const placeOrderArgs = {
+    pairId,
     orderId: '1',
-    pairId: 'LTC/BTC',
     price: 100,
     quantity: 1,
   };
 
   before(async () => {
     const config = {
+      initDb: false,
+      dbPath: ':memory:',
       logLevel: 'warn',
       logPath: '',
       p2p: {
@@ -36,9 +39,6 @@ describe('API Service', () => {
       raiden: {
         disable: true,
       },
-      db: {
-        database: 'xud_test',
-      },
     };
 
     xud = new Xud();
@@ -46,13 +46,33 @@ describe('API Service', () => {
     service = xud.service;
   });
 
-  it('should place an order', () => {
-    expect(service.placeOrder(placeOrderArgs)).to.be.fulfilled;
+  it('should add two currencies', async () => {
+    const addCurrencyPromises = [service.addCurrency({ currency: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 0 }),
+      service.addCurrency({ currency: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 0 })];
+    await expect(Promise.all(addCurrencyPromises)).to.be.fulfilled;
+  });
+
+  it('should add a trading pair', async () => {
+    const addPairPromise = service.addPair({
+      baseCurrency: 'LTC',
+      quoteCurrency: 'BTC',
+    });
+    await expect(addPairPromise).to.be.fulfilled;
+  });
+
+  it('should list pairs', () => {
+    const pairs = service.listPairs();
+    expect(pairs).to.have.lengthOf(1);
+    expect(pairs).to.include(pairId);
+  });
+
+  it('should place an order', async () => {
+    await expect(service.placeOrder(placeOrderArgs)).to.be.fulfilled;
   });
 
   it('should get orders', async () => {
     const args = {
-      pairId: 'LTC/BTC',
+      pairId,
       maxResults: 0,
     };
     const orders = service.getOrders(args);
@@ -64,24 +84,10 @@ describe('API Service', () => {
 
   it('should cancel an order', async () => {
     const args = {
-      pairId: 'LTC/BTC',
+      pairId,
       orderId: '1',
     };
     await expect(service.cancelOrder(args)).to.be.fulfilled;
-  });
-
-  it('should add two currencies', async () => {
-    const addCurrencyPromises = [service.addCurrency({ currency: 'ABC', swapClient: SwapClients.LND, decimalPlaces: 0 }),
-      service.addCurrency({ currency: 'XYZ', swapClient: SwapClients.LND, decimalPlaces: 0 })];
-    await expect(Promise.all(addCurrencyPromises)).to.be.fulfilled;
-  });
-
-  it('should add a trading pair', async () => {
-    const addPairPromise = service.addPair({
-      baseCurrency: 'ABC',
-      quoteCurrency: 'XYZ',
-    });
-    await expect(addPairPromise).to.be.fulfilled;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {
@@ -95,39 +101,39 @@ describe('API Service', () => {
   });
 
   it('should fail adding a currency with an invalid swap client', async () => {
-    const addCurrencyPromise = service.addCurrency({ currency: 'BTC', swapClient: -1, decimalPlaces: 0 });
+    const addCurrencyPromise = service.addCurrency({ currency: 'BBQ', swapClient: -1, decimalPlaces: 0 });
     await expect(addCurrencyPromise).to.be.rejectedWith('swap client is not recognized');
   });
 
   it('should fail adding a currency that already exists', async () => {
-    const addCurrencyPromise = service.addCurrency({ currency: 'ABC', swapClient: SwapClients.LND, decimalPlaces: 0 });
-    await expect(addCurrencyPromise).to.be.rejectedWith('currency ABC already exists');
+    const addCurrencyPromise = service.addCurrency({ currency: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 0 });
+    await expect(addCurrencyPromise).to.be.rejectedWith('currency LTC already exists');
   });
 
   it('should fail adding a pair that already exists', async () => {
     const addPairPromise = service.addPair({
-      baseCurrency: 'ABC',
-      quoteCurrency: 'XYZ',
+      baseCurrency: 'LTC',
+      quoteCurrency: 'BTC',
     });
-    await expect(addPairPromise).to.be.rejectedWith('pair ABC/XYZ already exists');
+    await expect(addPairPromise).to.be.rejectedWith('pair LTC/BTC already exists');
   });
 
   it('should fail adding a pair with a currency that does not exist', async () => {
-    const addCurrencyPromise = service.addPair({ baseCurrency: 'XXX', quoteCurrency: 'ABC' });
+    const addCurrencyPromise = service.addPair({ baseCurrency: 'XXX', quoteCurrency: 'LTC' });
     await expect(addCurrencyPromise).to.be.rejectedWith('currency XXX does not exist');
   });
 
   it('should fail removing a currency used in an existing trading pair', async () => {
-    const removeCurrencyPromise = service.removeCurrency({ currency: 'ABC' });
-    await expect(removeCurrencyPromise).to.be.rejectedWith('currency ABC cannot be removed because it is used for ABC/XYZ');
+    const removeCurrencyPromise = service.removeCurrency({ currency: 'LTC' });
+    await expect(removeCurrencyPromise).to.be.rejectedWith('currency LTC cannot be removed because it is used for LTC/BTC');
   });
 
   it('should remove a trading pair', async () => {
-    await expect(service.removePair({ pairId: 'ABC/XYZ' })).to.be.fulfilled;
+    await expect(service.removePair({ pairId })).to.be.fulfilled;
   });
 
   it('should remove two currencies', async () => {
-    const removeCurrencyPromises = [service.removeCurrency({ currency: 'ABC' }), service.removeCurrency({ currency: 'XYZ' })];
+    const removeCurrencyPromises = [service.removeCurrency({ currency: 'LTC' }), service.removeCurrency({ currency: 'BTC' })];
     await expect(Promise.all(removeCurrencyPromises)).to.be.fulfilled;
   });
 
