@@ -161,20 +161,6 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.executeSwap]]
-   */
-  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.ExecuteSwapResponse> = (call, callback) => {
-    try {
-      const executeSwapResponse = this.service.executeSwap(call.request.toObject());
-      const response = new xudrpc.ExecuteSwapResponse();
-      response.setResult(executeSwapResponse);
-      callback(null, response);
-    } catch (err) {
-      callback(this.getGrpcError(err), null);
-    }
-  }
-
-  /**
    * See [[Service.getInfo]]
    */
   public getInfo: grpc.handleUnaryCall<xudrpc.GetInfoRequest, xudrpc.GetInfoResponse> = async (_, callback) => {
