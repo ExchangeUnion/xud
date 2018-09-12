@@ -105,8 +105,9 @@ class Peer extends EventEmitter {
 
     peer.inbound = true;
     peer.connected = true;
+    peer.socket = socket;
 
-    peer.bindSocket(socket);
+    peer.bindSocket();
 
     return peer;
   }
@@ -130,7 +131,7 @@ class Peer extends EventEmitter {
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
+  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || nodePubKey);
@@ -258,7 +259,7 @@ class Peer extends EventEmitter {
       let retryDelay = Peer.CONNECTION_RETRIES_MIN_DELAY;
       let retries = 0;
 
-      const socket = net.connect(this.address.port, this.address.host);
+      this.socket = net.connect(this.address.port, this.address.host);
       this.inbound = false;
 
       const cleanup = () => {
@@ -266,15 +267,15 @@ class Peer extends EventEmitter {
           clearTimeout(this.connectTimeout);
           this.connectTimeout = undefined;
         }
-        socket.removeListener('error', onError);
-        socket.removeListener('connect', onConnect);
+        this.socket!.removeListener('error', onError);
+        this.socket!.removeListener('connect', onConnect);
       };
 
       const onConnect = () => {
         this.connectTime = Date.now();
         this.connected = true;
 
-        this.bindSocket(socket);
+        this.bindSocket();
 
         this.logger.debug(this.getStatus());
 
@@ -307,14 +308,14 @@ class Peer extends EventEmitter {
         setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
           retries = retries + 1;
-          socket.connect(this.address);
+          this.socket!.connect(this.address);
           bind();
         }, retryDelay);
       };
 
       const bind = () => {
-        socket.once('connect', onConnect);
-        socket.once('error', onError);
+        this.socket!.once('connect', onConnect);
+        this.socket!.once('error', onError);
         this.connectTimeout = setTimeout(() => onError(new Error('Connection timed out')), Peer.CONNECTION_TIMEOUT);
       };
 
@@ -420,17 +421,15 @@ class Peer extends EventEmitter {
   /**
    * Binds listeners to a newly connected socket for `error`, `close`, and `data` events.
    */
-  private bindSocket = (socket: Socket) => {
-    assert(!this.socket);
+  private bindSocket = () => {
+    assert(this.socket);
 
-    this.socket = socket;
-
-    this.socket.once('error', (err) => {
+    this.socket!.once('error', (err) => {
       this.emitError(err);
       // socket close event will be called immediately after the socket error
     });
 
-    this.socket.once('close', (hadError) => {
+    this.socket!.once('close', (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.address)})`);
@@ -442,7 +441,7 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket.on('data', (data) => {
+    this.socket!.on('data', (data) => {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
@@ -453,7 +452,7 @@ class Peer extends EventEmitter {
       this.parser.feed(dataStr);
     });
 
-    this.socket.setNoDelay(true);
+    this.socket!.setNoDelay(true);
   }
 
   private bindParser = (parser: Parser): void => {
