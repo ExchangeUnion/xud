@@ -27,9 +27,6 @@ describe('WebProxy', () => {
       raiden: {
         disable: true,
       },
-      db: {
-        database: 'xud_test',
-      },
     };
 
     xud = new Xud();

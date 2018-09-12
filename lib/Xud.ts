@@ -12,6 +12,7 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
+import path from 'path';
 
 const version: string = require('../package.json').version;
 
@@ -66,8 +67,8 @@ class Xud extends EventEmitter {
       this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
       this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
-      this.db = new DB(this.config.db, loggers.db);
-      await this.db.init();
+      this.db = new DB(loggers.db, this.config.dbPath);
+      await this.db.init(this.config.initDb);
 
       const initPromises: Promise<void>[] = [];
 

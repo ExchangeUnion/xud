@@ -36,9 +36,8 @@ describe('P2P Pool Tests', () => {
         listen: false,
       },
     });
-    db = new DB(config.testDb, loggers.db);
+    db = new DB(loggers.db);
     await db.init();
-    await db.models.Node.truncate();
 
     pool = new Pool(config.p2p, loggers.p2p, db.models);
 
@@ -98,7 +97,6 @@ describe('P2P Pool Tests', () => {
   });
 
   after(async () => {
-    await db.models.Node.truncate();
     await db.close();
     await pool.disconnect();
   });

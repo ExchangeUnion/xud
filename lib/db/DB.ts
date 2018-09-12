@@ -8,18 +8,6 @@ import Logger from '../Logger';
 import { db } from '../types';
 import { SwapClients } from '../types/enums';
 
-type SequelizeConfig = {
-  host: string;
-  port: number;
-  username: string;
-  password?: string;
-  database?: string;
-};
-
-type DBConfig = SequelizeConfig & {
-  database: string;
-};
-
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
@@ -31,31 +19,31 @@ class DB {
   public sequelize: Sequelize.Sequelize;
   public models: Models;
 
-  constructor(private config: DBConfig, private logger: Logger) {
-    assert(Number.isInteger(config.port) && config.port > 1023 && config.port < 65536, 'port must be an integer between 1024 and 65535');
-
-    this.sequelize = this.createSequelizeInstance(this.config);
+  /**
+   * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
+   */
+  constructor(private logger: Logger, private storage?: string) {
+    this.sequelize = new Sequelize({
+      storage,
+      logging: this.logger.trace,
+      dialect: 'sqlite',
+      operatorsAliases: false,
+    });
     this.models = this.loadModels();
   }
 
-  private static isDbDoesNotExistError(err: Error): boolean {
-    return err instanceof Sequelize.ConnectionError && (<any>err).original.code === 'ER_BAD_DB_ERROR';
-  }
-
-  public init = async (): Promise<void> => {
-    let newDb = false;
+  /**
+   * Initialize the connection to the database.
+   * @param initDb whether to intialize a new database with default values if no database exists
+   */
+  public init = async (initDb = false): Promise<void> => {
+    const newDb = !this.storage || !fs.existsSync(this.storage);
     try {
       await this.sequelize.authenticate();
-      const { host, port, database } = this.config;
-      this.logger.info(`connected to database. host:${host} port:${port} database:${database}`);
+      this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
     } catch (err) {
-      if (DB.isDbDoesNotExistError(err)) {
-        newDb = true;
-        await this.createDatabase();
-      } else {
-        this.logger.error('unable to connect to the database', err);
-        throw err;
-      }
+      this.logger.error('unable to connect to the database', err);
+      throw err;
     }
     const { Node, Currency, Pair } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
@@ -67,7 +55,7 @@ class DB {
       Pair.sync(),
     ]);
 
-    if (newDb) {
+    if (newDb && initDb) {
       // populate new databases with default data
       // TODO: make seed peers configurable
       await Node.bulkCreate(<db.NodeAttributes[]>[
@@ -107,29 +95,6 @@ class DB {
     return this.sequelize.drop();
   }
 
-  public truncate = async (): Promise<void> => {
-    await this.sequelize.transaction(async (t) => {
-      const options = { raw: true, transaction: t };
-      await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 0', options);
-      await this.sequelize.query('truncate table pairs', options);
-      await this.sequelize.query('truncate table currencies', options);
-      await this.sequelize.query('truncate table nodes', options);
-      await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', options);
-    });
-  }
-
-  private createSequelizeInstance = (config: SequelizeConfig): Sequelize.Sequelize => {
-    return new Sequelize({
-      ...config,
-      logging: this.logger.trace,
-      dialect: 'mysql',
-      operatorsAliases: false,
-      dialectOptions: {
-        multipleStatements: true,
-      },
-    });
-  }
-
   private loadModels = (): Models => {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
@@ -149,20 +114,7 @@ class DB {
 
     return <Models>models;
   }
-
-  private createDatabase = async (): Promise<void> => {
-    try {
-      const { database, ...databaselessConfig } = this.config;
-      const sequelize = this.createSequelizeInstance(databaselessConfig);
-      await sequelize.authenticate();
-      await sequelize.query(`CREATE DATABASE ${database} CHARACTER SET utf8 COLLATE utf8_general_ci;`);
-      await sequelize.close();
-    } catch (err) {
-      this.logger.error('unable to create the database', err);
-      throw err;
-    }
-  }
 }
 
 export default DB;
-export { DBConfig, Models };
+export { Models };
