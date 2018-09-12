@@ -268,55 +268,6 @@ export namespace DisconnectResponse {
     }
 }
 
-export class ExecuteSwapRequest extends jspb.Message { 
-    getTargetAddress(): string;
-    setTargetAddress(value: string): void;
-
-
-    hasPayload(): boolean;
-    clearPayload(): void;
-    getPayload(): SwapPayload | undefined;
-    setPayload(value?: SwapPayload): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
-    static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
-}
-
-export namespace ExecuteSwapRequest {
-    export type AsObject = {
-        targetAddress: string,
-        payload?: SwapPayload.AsObject,
-    }
-}
-
-export class ExecuteSwapResponse extends jspb.Message { 
-    getResult(): string;
-    setResult(value: string): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ExecuteSwapResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: ExecuteSwapResponse): ExecuteSwapResponse.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ExecuteSwapResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ExecuteSwapResponse;
-    static deserializeBinaryFromReader(message: ExecuteSwapResponse, reader: jspb.BinaryReader): ExecuteSwapResponse;
-}
-
-export namespace ExecuteSwapResponse {
-    export type AsObject = {
-        result: string,
-    }
-}
-
 export class GetInfoRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;

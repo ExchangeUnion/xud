@@ -22,7 +22,7 @@ export type ServiceComponents = {
   pool: Pool;
   /** The version of the local xud instance. */
   version: string;
-  swaps: Swaps; // TODO: remove once we remove the executeSwap demo call
+  swaps: Swaps; // TODO: remove once/if resolveHash becomes part of Swaps.ts
   /** The function to be called to shutdown the parent process */
   shutdown: () => void;
 };
@@ -166,55 +166,6 @@ class Service extends EventEmitter {
     const { nodePubKey } = args;
     argChecks.HAS_NODE_PUB_KEY(args);
     await this.pool.closePeer(nodePubKey);
-  }
-
-  /**
-   * Execute an atomic swap
-   */
-  public executeSwap = ({ targetAddress, payload }: { targetAddress: string, payload?: TokenSwapPayload })  => {
-    let takerPubKey: string | undefined;
-    let takerCurrency: string;
-    let makerCurrency: string;
-
-    if (!payload) {
-      return 'no payload provided';
-    }
-    if (targetAddress) {
-      return 'target address provided';
-    }
-    if (!payload.role || payload.role.toUpperCase() !== 'TAKER') {
-      return 'role, if provided, must be of "taker"';
-    }
-
-    if (!payload.receivingToken ||
-      (payload.receivingToken.toUpperCase() !== 'BTC' && payload.receivingToken.toUpperCase() !== 'LTC')) {
-      return 'receivingToken can only be LTC or BTC';
-    }
-
-    switch (payload.receivingToken.toUpperCase()){
-      case 'BTC':
-        takerPubKey = this.lndBtcClient.pubKey;
-        takerCurrency = 'BTC';
-        makerCurrency = 'LTC';
-        break;
-      case 'LTC':
-        takerPubKey = this.lndLtcClient.pubKey;
-        takerCurrency = 'LTC';
-        makerCurrency = 'BTC';
-        break;
-      default:
-        return 'Invalid receiving token';
-    }
-
-    if (!takerPubKey) {
-      return 'Taker\'s LND is not connected';
-    }
-
-    const peer = this.pool.getPeer(payload.nodePubKey);
-    this.swaps.executeSwap(takerCurrency, makerCurrency, takerPubKey, payload.receivingAmount, payload.sendingAmount, peer);
-
-    // TODO: wait for swap to complete and provide the preimage back to the caller
-    return 'Success';
   }
 
   /**

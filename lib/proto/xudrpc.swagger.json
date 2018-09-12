@@ -193,33 +193,6 @@
         ]
       }
     },
-    "/v1/executeswap": {
-      "post": {
-        "summary": "Execute an atomic swap",
-        "operationId": "ExecuteSwap",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcExecuteSwapResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcExecuteSwapRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/info": {
       "get": {
         "summary": "Get general information about this Exchange Union node.",
@@ -550,25 +523,6 @@
     },
     "xudrpcDisconnectResponse": {
       "type": "object"
-    },
-    "xudrpcExecuteSwapRequest": {
-      "type": "object",
-      "properties": {
-        "target_address": {
-          "type": "string"
-        },
-        "payload": {
-          "$ref": "#/definitions/xudrpcSwapPayload"
-        }
-      }
-    },
-    "xudrpcExecuteSwapResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "type": "string"
-        }
-      }
     },
     "xudrpcGetInfoResponse": {
       "type": "object",
@@ -925,31 +879,6 @@
         "order": {
           "type": "string",
           "title": "The order which was executed for the swap with updated remaining quantity"
-        }
-      }
-    },
-    "xudrpcSwapPayload": {
-      "type": "object",
-      "properties": {
-        "role": {
-          "type": "string"
-        },
-        "sending_amount": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "sending_token": {
-          "type": "string"
-        },
-        "receiving_amount": {
-          "type": "string",
-          "format": "uint64"
-        },
-        "receiving_token": {
-          "type": "string"
-        },
-        "node_pub_key": {
-          "type": "string"
         }
       }
     }
