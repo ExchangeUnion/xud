@@ -8,6 +8,7 @@
     "xucli": "./bin/xucli"
   },
   "scripts": {
+    "createExampleConfig":"cd dist && node -e 'require(\"./utils/utils.js\").convertConfigToToml()'",
     "compile": "cross-os precompile && tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
     "dev": "npm run compile && npm start",
