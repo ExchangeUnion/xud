@@ -1,49 +1,12 @@
 import http from 'http';
-import fs from 'fs';
 import p2pErrors from '../p2p/errors';
 import { assert } from 'chai';
 import { Pair } from '../types/orders';
-import Config from '../Config';
 
 export type UriParts = {
   nodePubKey: string;
   host: string;
   port: number;
-};
-
-/**
- * Create TOML config file dynamically from configuration class.
- */
-export const convertConfigToToml = () => {
-  let result = '';
-
-  const recursivelyConvertJsonToToml = (json: any, prefix: string) => {
-    const nestedPairs: any = [];
-    const simplePairs: any = [];
-
-    if (!json) return;
-
-    Object.keys(json).sort().forEach((key: any) => {
-      if (Object.prototype.toString.call(json[key]) !== '[object Function]') {
-        (isPlainObject(json[key]) ? nestedPairs : simplePairs).push([key, json[key]]);
-      }
-    });
-
-    if (!(prefix === '' || simplePairs.length === 0)) {
-      result += '[' + prefix + ']\n';
-    }
-
-    simplePairs.forEach((value: any) => {
-      result += value[0] + ' = ' + value[1] + '\n';
-    });
-    nestedPairs.forEach((value: any) => {
-      recursivelyConvertJsonToToml(value[1], (prefix === null || prefix === '') ? value[0] : [prefix, value[0]].join('.'));
-    });
-  };
-
-  recursivelyConvertJsonToToml(new Config(), '');
-
-  fs.writeFileSync('../xud.conf', result);
 };
 
 /**
@@ -180,7 +143,7 @@ export const derivePairId = (pair: Pair) => {
   return `${pair.baseCurrency}/${pair.quoteCurrency}`;
 };
 
-const isPlainObject = (obj: any) => {
+export const isPlainObject = (obj: any) => {
   if (typeof obj !== 'object' || obj === null || Object.prototype.toString.call(obj) !== '[object Object]') {
     return false;
   }
