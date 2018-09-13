@@ -8,8 +8,10 @@ import { getUri } from '../../lib/utils/utils';
 
 chai.use(chaiAsPromised);
 
-const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
+const createConfig = (instanceId: number, p2pPort: number) => ({
   instanceId,
+  initDb: false,
+  dbPath: ':memory:',
   logLevel: 'warn',
   logPath: '',
   p2p: {
@@ -29,9 +31,6 @@ const createConfig = (instanceId: number, p2pPort: number, config: Config) => ({
   raiden: {
     disable: true,
   },
-  db: {
-    database: `${config.testDb.database}_${instanceId}`,
-  },
 });
 
 describe('P2P Sanity Tests', () => {
@@ -45,23 +44,14 @@ describe('P2P Sanity Tests', () => {
 
   before(async () => {
     const config = new Config().load();
-    nodeOneConfig = createConfig(1, 0, config);
-    nodeTwoConfig = createConfig(2, 0, config);
+    nodeOneConfig = createConfig(1, 0);
+    nodeTwoConfig = createConfig(2, 0);
     const loggers = Logger.createLoggers(Level.WARN);
-
-    // make sure the nodes table is empty
-    const dbOne = new DB({ ...config.testDb, ...nodeOneConfig.db }, loggers.db);
-    const dbTwo = new DB({ ...config.testDb, ...nodeTwoConfig.db }, loggers.db);
-    await Promise.all([dbOne.init(), dbTwo.init()]);
-    await Promise.all([dbOne.models.Node.truncate(), dbTwo.models.Node.truncate()]);
-    await Promise.all([dbOne.close(), dbTwo.close()]);
 
     nodeOne = new Xud();
     nodeTwo = new Xud();
 
     await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
-
-    await nodeOne['db'].models.Node.truncate();
 
     nodeTwoPort = nodeTwo['pool']['listenPort']!;
     nodeOneUri = getUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
@@ -113,7 +103,6 @@ describe('P2P Sanity Tests', () => {
   });
 
   after(async () => {
-    await Promise.all([nodeOne['db'].models.Node.truncate(), nodeTwo['db'].models.Node.truncate()]);
     await Promise.all([nodeOne['shutdown'](), nodeTwo['shutdown']()]);
   });
 });

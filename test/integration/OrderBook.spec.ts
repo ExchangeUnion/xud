@@ -20,12 +20,11 @@ describe('OrderBook', () => {
     await config.load();
     const loggers = Logger.createLoggers(Level.WARN);
 
-    db = new DB(config.testDb, loggers.db);
+    db = new DB(loggers.db);
 
     const nodeKey = NodeKey.load(config.xudir);
 
     await db.init();
-    await db.truncate();
 
     orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
     const p2pRepository = new P2PRepository(loggers.p2p, db.models);
