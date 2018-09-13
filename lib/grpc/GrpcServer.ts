@@ -22,7 +22,6 @@ class GrpcServer {
       channelBalance: grpcService.channelBalance,
       connect: grpcService.connect,
       disconnect: grpcService.disconnect,
-      executeSwap: grpcService.executeSwap,
       getInfo: grpcService.getInfo,
       getOrders: grpcService.getOrders,
       listCurrencies: grpcService.listCurrencies,

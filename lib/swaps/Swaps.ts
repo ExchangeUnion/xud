@@ -170,35 +170,6 @@ class Swaps extends EventEmitter {
     return dealId;
   }
 
-  public executeSwap = (takerCurrency: string, makerCurrency: string, takerPubKey: string,
-  takerAmount: number, makerAmount: number, peer: Peer) => {
-    // TODO: Remove this method after we remove Service.executeSwap()
-    const dealRequestBody: packets.DealRequestPacketBody = {
-      takerCurrency,
-      makerCurrency,
-      takerPubKey,
-      takerAmount,
-      makerAmount,
-      dealId: uuidv1(),
-      pairId: '',
-      orderId: '',
-      proposedQuantity: 0,
-    };
-
-    const deal: SwapDeal = {
-      ...dealRequestBody,
-      myRole : SwapDealRole.Taker,
-      peerPubKey: peer.nodePubKey!,
-      createTime: Date.now(),
-    };
-
-    const packet = new packets.DealRequestPacket(dealRequestBody);
-    peer.sendPacket(packet);
-
-    this.logger.debug('New swap deal: ' + JSON.stringify(deal));
-    return deal;
-  }
-
   /**
    * Handles a request from a peer to create a swap deal. Creates a preimage to be used for the swap, creates a deal,
    * and stores the deal in the local collection of deals. Responds to the peer with a deal response packet.

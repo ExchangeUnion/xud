@@ -24,8 +24,7 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'packet', listener: (packet: Packet) => void): this;
-  on(event: 'error', listener: (err: Error) => void): this;
+  on(event: 'handshake', listener: () => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'ban', listener: () => void): this;
@@ -35,6 +34,7 @@ interface Peer {
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
+  emit(event: 'handshake'): boolean;
 }
 
 /** Represents a remote XU peer */
@@ -105,8 +105,9 @@ class Peer extends EventEmitter {
 
     peer.inbound = true;
     peer.connected = true;
+    peer.socket = socket;
 
-    peer.bindSocket(socket);
+    peer.bindSocket();
 
     return peer;
   }
@@ -130,7 +131,7 @@ class Peer extends EventEmitter {
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
+  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || nodePubKey);
@@ -155,7 +156,7 @@ class Peer extends EventEmitter {
 
     this.finalizeOpen();
 
-    // let the pool know that this peer is ready to go
+    // let listeners know that this peer is ready to go
     this.emit('open');
   }
 
@@ -258,7 +259,7 @@ class Peer extends EventEmitter {
       let retryDelay = Peer.CONNECTION_RETRIES_MIN_DELAY;
       let retries = 0;
 
-      const socket = net.connect(this.address.port, this.address.host);
+      this.socket = net.connect(this.address.port, this.address.host);
       this.inbound = false;
 
       const cleanup = () => {
@@ -266,17 +267,18 @@ class Peer extends EventEmitter {
           clearTimeout(this.connectTimeout);
           this.connectTimeout = undefined;
         }
-        socket.removeListener('error', onError);
-        socket.removeListener('connect', onConnect);
+        this.socket!.removeListener('error', onError);
+        this.socket!.removeListener('connect', onConnect);
       };
 
       const onConnect = () => {
         this.connectTime = Date.now();
         this.connected = true;
 
-        this.bindSocket(socket);
+        this.bindSocket();
 
         this.logger.debug(this.getStatus());
+
         this.emit('connect');
 
         cleanup();
@@ -306,14 +308,14 @@ class Peer extends EventEmitter {
         setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
           retries = retries + 1;
-          socket.connect(this.address);
+          this.socket!.connect(this.address);
           bind();
         }, retryDelay);
       };
 
       const bind = () => {
-        socket.once('connect', onConnect);
-        socket.once('error', onError);
+        this.socket!.once('connect', onConnect);
+        this.socket!.once('error', onError);
         this.connectTimeout = setTimeout(() => onError(new Error('Connection timed out')), Peer.CONNECTION_TIMEOUT);
       };
 
@@ -328,15 +330,6 @@ class Peer extends EventEmitter {
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
   }
 
-  private initHello = async (handshakeData: HandshakeState) => {
-    const packet = this.sendHello(handshakeData);
-
-    if (!this.handshakeState) {
-      // wait for an incoming HelloPacket
-      await this.wait(PacketType.HELLO, Peer.RESPONSE_TIMEOUT);
-    }
-  }
-
   private finalizeOpen = (): void => {
     assert(!this.closed);
 
@@ -345,7 +338,8 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Wait for a packet to be received from peer. Executed on timeout or once packet is received.
+   * Waits for a packet to be received from peer.
+   * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
   private wait = (packetId: string, timeout?: number) => {
     const entry = this.getOrAddPendingResponseEntry(packetId);
@@ -427,17 +421,15 @@ class Peer extends EventEmitter {
   /**
    * Binds listeners to a newly connected socket for `error`, `close`, and `data` events.
    */
-  private bindSocket = (socket: Socket) => {
-    assert(!this.socket);
+  private bindSocket = () => {
+    assert(this.socket);
 
-    this.socket = socket;
-
-    this.socket.once('error', (err) => {
+    this.socket!.once('error', (err) => {
       this.emitError(err);
       // socket close event will be called immediately after the socket error
     });
 
-    this.socket.once('close', (hadError) => {
+    this.socket!.once('close', (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.address)})`);
@@ -449,7 +441,7 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket.on('data', (data) => {
+    this.socket!.on('data', (data) => {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
@@ -460,7 +452,7 @@ class Peer extends EventEmitter {
       this.parser.feed(dataStr);
     });
 
-    this.socket.setNoDelay(true);
+    this.socket!.setNoDelay(true);
   }
 
   private bindParser = (parser: Parser): void => {
@@ -489,16 +481,20 @@ class Peer extends EventEmitter {
 
   /** Check if a given packet is solicited and fulfill the pending response entry if it's a response. */
   private isPacketSolicited = (packet: Packet): boolean => {
-    let solicted = true;
+    let solicited = true;
 
+    if (!this.opened && packet.type !== PacketType.HELLO) {
+      // until the connection is opened, we only accept hello packets
+      solicited = false;
+    }
     if (packet.direction === PacketDirection.RESPONSE) {
       // lookup a pending response entry for this packet by its reqId
       if (!this.fulfillResponseEntry(packet)) {
-        solicted = false;
+        solicited = false;
       }
     }
 
-    return solicted;
+    return solicited;
   }
 
   private handlePacket = (packet: Packet): void => {
@@ -516,6 +512,8 @@ class Peer extends EventEmitter {
           this.emit('packet', packet);
           break;
       }
+    } else {
+      // TODO: penalize for unsolicited packets
     }
   }
 
@@ -531,27 +529,33 @@ class Peer extends EventEmitter {
     }
   }
 
-  private sendHello = (handshakeData: HandshakeState): packets.HelloPacket => {
-    // TODO: use real values
+  /**
+   * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
+   */
+  private initHello = async (handshakeData: HandshakeState) => {
     const packet = new packets.HelloPacket(handshakeData);
 
     this.sendPacket(packet);
+
+    if (!this.handshakeState) {
+      // we must wait to receive handshake data before opening the connection
+      await this.wait(PacketType.HELLO, Peer.RESPONSE_TIMEOUT);
+    }
 
     return packet;
   }
 
   private handleHello = (packet: packets.HelloPacket): void => {
+    this.handshakeState = packet.body;
+
     const entry = this.responseMap.get(PacketType.HELLO);
 
-    if (!entry) {
-      this.logger.debug(`Peer (${this.nodePubKey}) sent an unsolicited Hello packet`);
-      // TODO: penalize
-    } else {
+    if (entry) {
       this.responseMap.delete(PacketType.HELLO);
       entry.resolve(packet);
-
-      this.handshakeState = packet.body;
     }
+
+    this.emit('handshake');
   }
 
   private sendPing = (): packets.PingPacket => {

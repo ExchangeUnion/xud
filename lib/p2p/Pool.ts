@@ -238,13 +238,13 @@ class Pool extends EventEmitter {
     return peerInfos;
   }
 
-  private tryOpenPeer = async (peer: Peer, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
+  private tryOpenPeer = async (peer: Peer, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     try {
       await this.openPeer(peer, nodePubKey, retryConnecting);
     } catch (err) {}
   }
 
-  private openPeer = async (peer: Peer, nodePubKey?: string, retryConnecting?: boolean): Promise<void> => {
+  private openPeer = async (peer: Peer, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     this.bindPeer(peer);
     try {
       await peer.open(this.handshakeData, nodePubKey, retryConnecting);

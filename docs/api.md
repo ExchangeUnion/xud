@@ -16,8 +16,6 @@
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [DisconnectRequest](#xudrpc.DisconnectRequest)
     - [DisconnectResponse](#xudrpc.DisconnectResponse)
-    - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
-    - [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
@@ -222,37 +220,6 @@
 
 ### DisconnectResponse
 
-
-
-
-
-
-
-<a name="xudrpc.ExecuteSwapRequest"></a>
-
-### ExecuteSwapRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| target_address | [string](#string) |  |  |
-| payload | [SwapPayload](#xudrpc.SwapPayload) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.ExecuteSwapResponse"></a>
-
-### ExecuteSwapResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| result | [string](#string) |  |  |
 
 
 
@@ -750,7 +717,6 @@
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
-| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [ExecuteSwapResponse](#xudrpc.ExecuteSwapResponse) | Execute an atomic swap |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a list of standing orders from the order book. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |

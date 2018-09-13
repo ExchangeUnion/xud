@@ -92,9 +92,6 @@ Commands:
   xucli connect <node_pub_key> <host>       connect to an xu node
   [port]
   xucli disconnect <node_pub_key>           disconnect from an xu node
-  xucli executeSwap <identifier> <role>     execute an atomic swap
-  <sending_amount> <sending_token>
-  <receiving_amount> <receiving_token>
   xucli getinfo                             get general info from the xud node
   xucli getorders <pair_id> [max_results]   get orders from the order book
   xucli getpairs                            get order book's available pairs
