@@ -45,25 +45,17 @@ describe('OrderBook', () => {
     await orderBook.init();
   });
 
-  const getOwnOrder = (order: orders.StampedOrder): orders.StampedOwnOrder | undefined => {
+  const getOwnOrder = (order: orders.StampedOwnOrder): orders.StampedOwnOrder | undefined => {
     const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
-    let array: orders.StampedOwnOrder[];
+    const arr = order.quantity > 0 ? ownOrders.buy : ownOrders.sell;
 
-    if (order.quantity > 0) {
-      array = ownOrders.buyOrders as orders.StampedOwnOrder[];
-    } else {
-      array = ownOrders.sellOrders as orders.StampedOwnOrder[];
+    for (const orderItem of arr) {
+      if (orderItem.id === order.id) {
+        return orderItem;
+      }
     }
 
-    let result: orders.StampedOwnOrder | undefined;
-
-    array.forEach((ownOrder) => {
-      if (ownOrder.id === order.id) {
-        result = ownOrder;
-      }
-    });
-
-    return result;
+    return;
   };
 
   it('should have pairs and matchingEngines equivalent loaded', () => {
@@ -88,9 +80,8 @@ describe('OrderBook', () => {
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
-    const firstMakerOrder = getOwnOrder(firstMatch.maker);
-    const secondMakerOrder = getOwnOrder(secondMatch.maker);
-    console.log(JSON.stringify(secondMatch));
+    const firstMakerOrder = getOwnOrder(<orders.StampedOwnOrder>firstMatch.maker);
+    const secondMakerOrder = getOwnOrder(<orders.StampedOwnOrder>secondMatch.maker);
     expect(firstMakerOrder).to.be.undefined;
     expect(secondMakerOrder).to.not.be.undefined;
     expect(secondMakerOrder!.quantity).to.equal(4);
@@ -101,7 +92,23 @@ describe('OrderBook', () => {
     const result = await orderBook.addMarketOrder(order);
     const { taker } = result.matches[0];
     expect(result.remainingOrder).to.be.undefined;
-    expect(getOwnOrder(taker)).to.be.undefined;
+    expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
+  });
+
+  it('should not add a new own order with a duplicated localId', async () => {
+    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -10, price: 100 };
+
+    expect(() => orderBook.addLimitOrder(order)).to.not.throw();
+
+    expect(() => orderBook.addLimitOrder(order)).to.throw();
+
+    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.not.throw();
+
+    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.throw();
+
+    expect(() => orderBook.addLimitOrder(order)).to.not.throw();
+
+    expect(() => orderBook.addLimitOrder(order)).to.throw();
   });
 
   after(async () => {
