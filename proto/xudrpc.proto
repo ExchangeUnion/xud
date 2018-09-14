@@ -59,7 +59,7 @@ service Xud {
     };
   }
   
-  /* Get a list of standing orders from the order book. */
+  /* Get a map between pair ids and their buy and sell orders from the order book. */
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
@@ -176,8 +176,6 @@ message ChannelBalanceResponse {
 message CancelOrderRequest {
   // The local id of the order to cancel
   string order_id = 1 [json_name = "order_id"];
-  // The trading pair that the order to cancel is for
-  string pair_id = 2 [json_name = "pair_id"];
 }
 message CancelOrderResponse { }
 
@@ -209,12 +207,12 @@ message GetOrdersRequest {
   string pair_id = 1 [json_name = "pair_id"];
   // The maximum number of orders to return from either side of the order book
   uint32 max_results = 2 [json_name = "max_results"];
+  // Whether own orders should be included in result or not
+  bool include_own_orders = 3 [json_name = "include_own_orders"];
 }
 message GetOrdersResponse {
-  // A list of peer orders
-  Orders peer_orders = 1 [json_name = "peer_orders"];
-  // A list of orders placed locally
-  Orders own_orders = 2 [json_name = "own_orders"];
+  // A map between pair ids and their buy and sell orders
+  map<string, Orders> orders = 1 [json_name = "orders"];
 }
 
 message ListCurrenciesRequest {}

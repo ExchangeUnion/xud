@@ -1,6 +1,5 @@
 import grpc, { Server } from 'grpc';
 import assert from 'assert';
-import path from 'path';
 import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';

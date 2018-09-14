@@ -154,9 +154,6 @@ export class CancelOrderRequest extends jspb.Message {
     getOrderId(): string;
     setOrderId(value: string): void;
 
-    getPairId(): string;
-    setPairId(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CancelOrderRequest.AsObject;
@@ -171,7 +168,6 @@ export class CancelOrderRequest extends jspb.Message {
 export namespace CancelOrderRequest {
     export type AsObject = {
         orderId: string,
-        pairId: string,
     }
 }
 
@@ -359,6 +355,9 @@ export class GetOrdersRequest extends jspb.Message {
     getMaxResults(): number;
     setMaxResults(value: number): void;
 
+    getIncludeOwnOrders(): boolean;
+    setIncludeOwnOrders(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GetOrdersRequest.AsObject;
@@ -374,21 +373,14 @@ export namespace GetOrdersRequest {
     export type AsObject = {
         pairId: string,
         maxResults: number,
+        includeOwnOrders: boolean,
     }
 }
 
 export class GetOrdersResponse extends jspb.Message { 
 
-    hasPeerOrders(): boolean;
-    clearPeerOrders(): void;
-    getPeerOrders(): Orders | undefined;
-    setPeerOrders(value?: Orders): void;
-
-
-    hasOwnOrders(): boolean;
-    clearOwnOrders(): void;
-    getOwnOrders(): Orders | undefined;
-    setOwnOrders(value?: Orders): void;
+    getOrdersMap(): jspb.Map<string, Orders>;
+    clearOrdersMap(): void;
 
 
     serializeBinary(): Uint8Array;
@@ -403,8 +395,8 @@ export class GetOrdersResponse extends jspb.Message {
 
 export namespace GetOrdersResponse {
     export type AsObject = {
-        peerOrders?: Orders.AsObject,
-        ownOrders?: Orders.AsObject,
+
+        ordersMap: Array<[string, Orders.AsObject]>,
     }
 }
 

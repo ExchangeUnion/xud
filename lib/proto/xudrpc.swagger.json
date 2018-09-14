@@ -212,7 +212,7 @@
     },
     "/v1/orders": {
       "get": {
-        "summary": "Get a list of standing orders from the order book.",
+        "summary": "Get a map between pair ids and their buy and sell orders from the order book.",
         "operationId": "GetOrders",
         "responses": {
           "200": {
@@ -237,6 +237,14 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "include_own_orders",
+            "description": "Whether own orders should be included in result or not.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -477,10 +485,6 @@
         "order_id": {
           "type": "string",
           "title": "The local id of the order to cancel"
-        },
-        "pair_id": {
-          "type": "string",
-          "title": "The trading pair that the order to cancel is for"
         }
       }
     },
@@ -564,13 +568,12 @@
     "xudrpcGetOrdersResponse": {
       "type": "object",
       "properties": {
-        "peer_orders": {
-          "$ref": "#/definitions/xudrpcOrders",
-          "title": "A list of peer orders"
-        },
-        "own_orders": {
-          "$ref": "#/definitions/xudrpcOrders",
-          "title": "A list of orders placed locally"
+        "orders": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcOrders"
+          },
+          "title": "A map between pair ids and their buy and sell orders"
         }
       }
     },

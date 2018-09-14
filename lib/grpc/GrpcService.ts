@@ -226,15 +226,14 @@ class GrpcService {
         return ordersList;
       };
 
-      const getOrders = <T extends StampedOrder>(orderArrays: OrderSidesArrays<T>) => {
+      const ordersMap = response.getOrdersMap();
+      getOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
         orders.setBuyOrdersList(getOrdersList(orderArrays.buy));
         orders.setSellOrdersList(getOrdersList(orderArrays.sell));
-        return orders;
-      };
 
-      response.setOwnOrders(getOrders(getOrdersResponse.ownOrders));
-      response.setPeerOrders(getOrders(getOrdersResponse.peerOrders));
+        ordersMap.set(pairId, orders);
+      });
 
       callback(null, response);
     } catch (err) {

@@ -2,19 +2,20 @@ import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
-import RaidenClient, { TokenSwapPayload, RaidenInfo } from '../raidenclient/RaidenClient';
+import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapDealRole, SwapClients } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair } from '../types/orders';
+import { Pair, StampedOrder } from '../types/orders';
 import Swaps from '../swaps/Swaps';
+import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
 /**
  * The components required by the API service layer.
  */
-export type ServiceComponents = {
+type ServiceComponents = {
   orderBook: OrderBook;
   lndBtcClient: LndClient;
   lndLtcClient: LndClient;
@@ -113,12 +114,11 @@ class Service extends EventEmitter {
   /*
    * Cancel placed order from the orderbook.
    */
-  public cancelOrder = async (args: { orderId: string, pairId: string }) => {
-    const { orderId, pairId } = args;
+  public cancelOrder = async (args: { orderId: string }) => {
+    const { orderId } = args;
     argChecks.HAS_ORDER_ID(args);
-    argChecks.HAS_PAIR_ID(args);
 
-    this.orderBook.removeOwnOrderByLocalId(pairId, orderId);
+    this.orderBook.removeOwnOrderByLocalId(orderId);
   }
 
   /** Gets the total lightning network channel balance for a given currency. */
@@ -216,17 +216,33 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get a list of standing orders from the order book for a specified trading pair.
+   * Get a map between pair ids and its orders from the order book.
    */
-  public getOrders = (args: { pairId: string, maxResults: number }) => {
-    const { pairId, maxResults } = args;
-    argChecks.HAS_PAIR_ID(args);
+  public getOrders = (args: { pairId: string, maxResults: number, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, maxResults, includeOwnOrders } = args;
     argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
 
-    const result = {
-      peerOrders: this.orderBook.getPeerOrders(pairId, maxResults),
-      ownOrders: this.orderBook.getOwnOrders(pairId, maxResults),
+    const result = new Map<string, OrderSidesArrays<any>>();
+    const getOrderTypes = (pairId: string) => {
+      const orders = this.orderBook.getPeerOrders(pairId, maxResults);
+
+      if (includeOwnOrders) {
+        const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId, maxResults);
+
+        orders.buy = [...orders.buy, ...ownOrders.buy];
+        orders.sell = [...orders.sell, ...ownOrders.sell];
+      }
+
+      return orders;
     };
+
+    if (pairId) {
+      result.set(pairId, getOrderTypes(pairId));
+    } else {
+      Array.from(this.orderBook.pairIds).forEach((pairId) => {
+        result.set(pairId, getOrderTypes(pairId));
+      });
+    }
 
     return result;
   }
@@ -245,7 +261,6 @@ class Service extends EventEmitter {
    * @returns A list of supported trading pair tickers
    */
   public listPairs = () => {
-    const pairs = new Map<string, Pair>();
     return Array.from(this.orderBook.pairIds);
   }
 
@@ -379,3 +394,4 @@ class Service extends EventEmitter {
   }
 }
 export default Service;
+export { ServiceComponents };
