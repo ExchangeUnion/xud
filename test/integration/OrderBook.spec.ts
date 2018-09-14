@@ -101,9 +101,9 @@ describe('OrderBook', () => {
 
     expect(() => orderBook.addLimitOrder(order)).to.throw();
 
-    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.not.throw();
+    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
 
-    expect(() => orderBook.removeOwnOrderByLocalId(order.pairId, order.localId)).to.throw();
+    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
 
     expect(() => orderBook.addLimitOrder(order)).to.not.throw();
 

@@ -13,7 +13,7 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair } from '../types/orders';
+import { Pair, OrderIdentifier } from '../types/orders';
 
 interface OrderBook {
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
@@ -32,7 +32,7 @@ class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and matching engines. */
   public matchingEngines = new Map<string, MatchingEngine>();
   /** A map between own orders local id and their global id. */
-  private localIdMap: Map<string, string> = new Map<string, string>();
+  private localIdMap = new Map<string, OrderIdentifier>();
 
   private repository: OrderBookRepository;
 
@@ -200,7 +200,10 @@ class OrderBook extends EventEmitter {
       });
     }
     if (remainingOrder && !discardRemaining) {
-      this.localIdMap.set(remainingOrder.localId, remainingOrder.id);
+      this.localIdMap.set(remainingOrder.localId, {
+        orderId: remainingOrder.id,
+        pairId: remainingOrder.pairId,
+      });
       this.broadcastOrder(remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
     }
@@ -238,14 +241,14 @@ class OrderBook extends EventEmitter {
    * Removes an order from the order book by its local id. Throws an error if the specified pairId
    * is not supported or if the order to cancel could not be found.
    */
-  public removeOwnOrderByLocalId = (pairId: string, localId: string) => {
-    const orderId = this.localIdMap.get(localId);
+  public removeOwnOrderByLocalId = (localId: string) => {
+    const order = this.localIdMap.get(localId);
 
-    if (orderId === undefined) {
+    if (!order) {
       throw errors.ORDER_NOT_FOUND(localId);
     }
 
-    this.removeOwnOrder(orderId, pairId);
+    this.removeOwnOrder(order.orderId, order.pairId);
   }
 
   /**

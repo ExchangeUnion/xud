@@ -74,17 +74,23 @@ describe('API Service', () => {
     const args = {
       pairId,
       maxResults: 0,
+      includeOwnOrders: true,
     };
     const orders = service.getOrders(args);
-    expect(orders.ownOrders.buy).to.have.length(1);
-    expect(orders.ownOrders.buy[0].price).to.equal(placeOrderArgs.price);
-    expect(orders.ownOrders.buy[0].quantity).to.equal(placeOrderArgs.quantity);
-    expect(orders.ownOrders.buy[0].pairId).to.equal(placeOrderArgs.pairId);
+
+    const pairOrders = orders.get(args.pairId);
+    expect(pairOrders).to.not.be.undefined;
+
+    expect(pairOrders!.buy).to.have.length(1);
+
+    const order = pairOrders!.buy[0];
+    expect(order.price).to.equal(placeOrderArgs.price);
+    expect(order.quantity).to.equal(placeOrderArgs.quantity);
+    expect(order.pairId).to.equal(placeOrderArgs.pairId);
   });
 
   it('should cancel an order', async () => {
     const args = {
-      pairId,
       orderId: '1',
     };
     await expect(service.cancelOrder(args)).to.be.fulfilled;

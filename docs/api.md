@@ -20,6 +20,7 @@
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
     - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
+    - [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
     - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
     - [ListPairsRequest](#xudrpc.ListPairsRequest)
@@ -128,7 +129,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to cancel |
-| pair_id | [string](#string) |  | The trading pair that the order to cancel is for |
 
 
 
@@ -269,6 +269,7 @@
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders |
 | max_results | [uint32](#uint32) |  | The maximum number of orders to return from either side of the order book |
+| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not |
 
 
 
@@ -283,8 +284,23 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| peer_orders | [Orders](#xudrpc.Orders) |  | A list of peer orders |
-| own_orders | [Orders](#xudrpc.Orders) |  | A list of orders placed locally |
+| orders | [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry) | repeated | A map between pair ids and their buy and sell orders |
+
+
+
+
+
+
+<a name="xudrpc.GetOrdersResponse.OrdersEntry"></a>
+
+### GetOrdersResponse.OrdersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [Orders](#xudrpc.Orders) |  |  |
 
 
 
@@ -718,7 +734,7 @@
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
-| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a list of standing orders from the order book. |
+| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a map between pair ids and their buy and sell orders from the order book. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Get the list of the order book&#39;s suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
