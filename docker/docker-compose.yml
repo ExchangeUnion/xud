@@ -19,20 +19,6 @@ services:
       - lnd
       - db
     entrypoint: "npm start"
-  db:
-    image: mysql:5.7
-    restart: always
-    environment:
-      MYSQL_DATABASE: "xud"
-      MYSQL_USER: "xud"
-      MYSQL_PASSWORD: "xud"
-      MYSQL_ROOT_PASSWORD: "xud"
-    volumes:
-      - db-data:/var/lib/mysql
-    ports:
-      - "3306"
-    networks:
-      - xud
   # btc is an image of bitcoin node which used as base image for btcd and
   # btccli. The environment variables default values determined on stage of
   # container start within starting script.
@@ -70,10 +56,6 @@ services:
     networks:
       - xud
 volumes:
-  # db-data volume is needed for maintaining mysql persistence
-  # during db container recreation.
-  db-data:
-    driver: local
   # shared volume is need to store the btcd rpc certificates and use it within
   # btcctl and lnd containers.
   shared:
