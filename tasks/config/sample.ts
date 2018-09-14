@@ -19,7 +19,7 @@ export default async () => {
     });
 
     if (!(prefix === '' || simplePairs.length === 0)) {
-      result += '[' + prefix + ']\n';
+      result += '\n[' + prefix + ']\n';
     }
 
     simplePairs.forEach((value: any) => {

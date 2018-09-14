@@ -146,8 +146,7 @@ export const derivePairId = (pair: Pair) => {
 /**
  * A simplified copy of lodash's isPlainObject;
  *
- * Checks is the object is a plain object;
- * A plain object's;
+ * A plain object is;
  * - prototype should be [object Object]
  * - it's prototype should
  * - shouldn't be null
