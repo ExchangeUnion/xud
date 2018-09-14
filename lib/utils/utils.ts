@@ -143,6 +143,22 @@ export const derivePairId = (pair: Pair) => {
   return `${pair.baseCurrency}/${pair.quoteCurrency}`;
 };
 
+/**
+ * A simplified copy of lodash's isPlainObject;
+ *
+ * Checks is the object is a plain object;
+ * A plain object's;
+ * - prototype should be [object Object]
+ * - it's prototype should
+ * - shouldn't be null
+ * - its type should be 'object' (does extra check because typeof null == object)
+ *
+ * Examples;
+ * isPlainObject(new Foo); => false
+ * isPlainObject([1, 2, 3]); => false
+ * isPlainObject({ 'x': 0, 'y': 0 }); => true
+ * isPlainObject(Object.create(null)); => true
+ */
 export const isPlainObject = (obj: any) => {
   if (typeof obj !== 'object' || obj === null || Object.prototype.toString.call(obj) !== '[object Object]') {
     return false;
