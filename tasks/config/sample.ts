@@ -23,7 +23,14 @@ export default async () => {
     }
 
     simplePairs.forEach((value: any) => {
-      result += value[0] + ' = ' + value[1] + '\n';
+      result += value[0] + ' = ';
+      if (typeof value[1] === 'string') {
+        result += '"' + value[1] + '"\n';
+      }else if (Array.isArray(value[1])) {
+        result += '[]\n';
+      } else {
+        result += value[1] + '\n';
+      }
     });
     nestedPairs.forEach((value: any) => {
       recursivelyConvertJsonToToml(value[1], (prefix === null || prefix === '') ? value[0] : [prefix, value[0]].join('.'));

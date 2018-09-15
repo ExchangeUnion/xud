@@ -148,7 +148,6 @@ export const derivePairId = (pair: Pair) => {
  *
  * A plain object is;
  * - prototype should be [object Object]
- * - it's prototype should
  * - shouldn't be null
  * - its type should be 'object' (does extra check because typeof null == object)
  *
