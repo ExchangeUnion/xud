@@ -72,6 +72,7 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
+  /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
     return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
   }
@@ -91,6 +92,9 @@ class Peer extends EventEmitter {
     };
   }
 
+  /**
+   * @param address The socket address for the connection to this peer.
+   */
   constructor(private logger: Logger, public address: Address) {
     super();
 
@@ -154,7 +158,8 @@ class Peer extends EventEmitter {
       }
     }
 
-    this.finalizeOpen();
+    // Setup the ping interval
+    this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // let listeners know that this peer is ready to go
     this.emit('open');
@@ -328,13 +333,6 @@ class Peer extends EventEmitter {
     assert(!this.stallTimer);
 
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
-  }
-
-  private finalizeOpen = (): void => {
-    assert(!this.closed);
-
-    // Setup the ping interval
-    this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
   }
 
   /**
