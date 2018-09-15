@@ -9,6 +9,7 @@ cache:
     - "node_modules"
 
 script:
+  - npm run compile
   - npm run lintNoFix
   - npm run test
 
