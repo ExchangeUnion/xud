@@ -1,43 +1,48 @@
-import { SwapDealRole } from '../types/enums';
+import { SwapDealRole, SwapDealState, SwapDealPhase } from '../types/enums';
 import Peer from '../p2p/Peer';
-import uuidv1 from 'uuid/v1';
 import * as packets from '../p2p/packets/types';
-import { randomBytes, createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import Logger from '../Logger';
 import * as lndrpc from '../proto/lndrpc_pb';
 import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
-import { StampedPeerOrder, StampedOwnOrder } from '../types/orders';
+import { StampedOwnOrder, StampedPeerOrder } from '../types/orders';
+import assert from 'assert';
 
 type SwapDeal = {
   /** The role of the local node in the swap. */
   myRole: SwapDealRole;
-  /** The xud node pub key of the counterparty to this swap deal. */
-  peerPubKey: string;
+  /** The most updated deal phase */
+  phase: SwapDealPhase;
+  /** The most updated deal state. State works
+   * together with the phase to indicates the phase of the deal in it's
+   * life cycle and if the deal is active, errored or completed.
+   */
+  state: SwapDealState;
+  /** The reason for being in current state */
+  stateReason: String;
   /** Global order id in the XU network. */
   orderId: string;
-  dealId: string;
   /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
+  // TODO: is it needed here? if yes, should be in satoshis
   proposedQuantity: number;
   /** The accepted quantity of the order to execute as accepted by the maker. Negative when the taker is selling. */
   quantity?: number;
-  /** The trading pair of the order. */
+  /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
   pairId: string;
   /** The number of satoshis (or equivalent) the taker is expecting to receive. */
-  takerAmount?: number;
+  takerAmount: number;
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
-  takerPubKey: string;
+  takerPubKey?: string;
   /** The number of satoshis (or equivalent) the maker is expecting to receive. */
-  makerAmount?: number;
+  makerAmount: number;
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
-  /** Maker's lnd pubkey on the maker currency's network. */
-  makerPubKey?: string;
   /** The hash of the preimage. */
-  r_hash?: string;
+  r_hash: string;
   r_preimage?: string;
   createTime: number;
   executeTime?: number;
@@ -45,18 +50,19 @@ type SwapDeal = {
 };
 
 interface Swaps {
+  // TODO: put swap.rejected and swap.accepted to work or delete them.
   on(event: 'swap.rejected', listener: (deal: SwapDeal) => void): this;
   on(event: 'swap.accepted', listener: (deal: SwapDeal, quantity: number) => void): this;
-  on(event: 'swap.completed', listener: (deal: SwapDeal) => void): this;
+  on(event: 'swap.paid', listener: (deal: SwapDeal) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
   emit(event: 'swap.rejected', deal: SwapDeal): boolean;
   emit(event: 'swap.accepted', deal: SwapDeal, quantity: number): boolean;
-  emit(event: 'swap.completed', deal: SwapDeal): boolean;
+  emit(event: 'swap.paid', deal: SwapDeal): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
 }
 
 class Swaps extends EventEmitter {
-  /** A mapping containing two entries for each deal, one using dealId as a key and one using r_hash as a key. */
+  /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
 
   constructor(private logger: Logger, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
@@ -88,46 +94,46 @@ class Swaps extends EventEmitter {
   }
 
   private bind() {
-    this.pool.on('packet.dealRequest', this.handleDealRequest);
-    this.pool.on('packet.dealResponse', this.handleDealResponse);
     this.pool.on('packet.swapRequest', this.handleSwapRequest);
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
+    this.pool.on('packet.swapComplete', this.handleSwapComplete);
+    this.pool.on('packet.swapError', this.handleSwapError);
   }
 
   /**
-   * Gets a deal by its dealId or r_hash value.
-   * @param dealIdOrHash The dealId or r_hash value of the deal to get.
+   * Gets a deal by its r_hash value.
+   * @param r_hash The r_hash value of the deal to get.
    * @returns A deal if one is found, otherwise undefined.
    */
-  public getDeal = (dealIdOrHash: string): SwapDeal | undefined => {
-    return this.deals.get(dealIdOrHash);
+  public getDeal = (r_hash: string): SwapDeal | undefined => {
+    return this.deals.get(r_hash);
   }
 
   public addDeal = (deal: SwapDeal) => {
-    this.deals.set(deal.dealId, deal);
-    if (deal.r_hash) {
-      this.deals.set(deal.r_hash, deal);
-    }
+    this.deals.set(deal.r_hash, deal);
+    this.logger.debug('New deal: ' + JSON.stringify(deal));
   }
 
   public removeDeal = (deal: SwapDeal) => {
-    this.deals.delete(deal.dealId);
-    if (deal.r_hash) {
-      this.deals.delete(deal.r_hash);
-    }
+    this.deals.delete(deal.r_hash);
   }
 
   /**
-   * Begins a swap to fill an order by sending a [[DealRequestPacket]] to the maker.
+   * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
    * @param maker the remote maker order we are filling
    * @param taker our local taker order
-   * @returns the deal id for the swap
+   * @returns the r_hash for the swap
    */
   public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
+    // TODO: check lndPubKeys. Error if we or maker do not have full set of keys
+    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
+    // TODO: what is the status of the order here? is it off the book? What if partial match
+    //       do we create another order which has the same orderId?
+    // TODO: check that pairID is LTC/BTC or handleSwapResponse fails
+
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
-    const dealId = uuidv1();
 
     let takerCurrency: string;
     let makerCurrency: string;
@@ -141,218 +147,280 @@ class Swaps extends EventEmitter {
       makerCurrency = baseCurrency;
     }
     const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
+    const preimage = randomBytes(32);
 
-    const dealRequestBody: packets.DealRequestPacketBody = {
-      dealId,
+    const swapRequestBody: packets.SwapRequestPacketBody = {
       takerCurrency,
       makerCurrency,
       takerAmount,
       makerAmount,
-      takerPubKey: takerCurrency === 'BTC' ? this.pool.handshakeData.lndbtcPubKey! : this.pool.handshakeData.lndltcPubKey!,
+      r_hash: createHash('sha256').update(preimage).digest('hex'),
       orderId: maker.id,
       pairId: maker.pairId,
       proposedQuantity: taker.quantity,
     };
 
     const deal: SwapDeal = {
-      ...dealRequestBody,
-      myRole : SwapDealRole.Taker,
-      peerPubKey: this.pool.handshakeData.nodePubKey,
+      ...swapRequestBody,
+      phase: SwapDealPhase.SwapCreated,
+      state: SwapDealState.Active,
+      stateReason: '',
+      r_preimage: preimage.toString('hex'),
+      myRole: SwapDealRole.Taker,
       createTime: Date.now(),
     };
 
     this.addDeal(deal);
-    this.logger.debug('Initiating swap deal: ' + JSON.stringify(deal));
 
-    const packet = new packets.DealRequestPacket(dealRequestBody);
+    peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 
-    peer.sendPacket(packet);
-    return dealId;
+    this.setDealPhase(deal, SwapDealPhase.SwapRequested);
+    return deal.r_hash;
   }
 
   /**
-   * Handles a request from a peer to create a swap deal. Creates a preimage to be used for the swap, creates a deal,
-   * and stores the deal in the local collection of deals. Responds to the peer with a deal response packet.
+   * Handles a request from a peer to create a swap deal. Creates a deal,
+   * and stores the deal in the local collection of deals. Responds to the peer with a swap response packet.
    */
-  private handleDealRequest = (requestPacket: packets.DealRequestPacket, peer: Peer)  => {
-    const requestBody = requestPacket.body;
-    if (!requestBody) {
-      return;
-    }
+  private handleSwapRequest = (requestPacket: packets.SwapRequestPacket, peer: Peer)  => {
+    assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
+    const requestBody = requestPacket.body!;
 
-    /** The lnd pub key to use for the local (maker) side of the deal */
-    let makerPubKey: string | undefined;
-    switch (requestBody.makerCurrency){
-      case 'BTC':
-        makerPubKey = this.pool.handshakeData.lndbtcPubKey;
-        break;
-      case 'LTC':
-        makerPubKey = this.pool.handshakeData.lndltcPubKey;
-        break;
-    }
+    // TODO: we always accept proposed quantity currently, put in checks to make sure we have the full amount available
+    // TODO: consider reduced quantity
+    // TODO: check that the order is still valid and take it off the order book to prevent double execution
+    // TODO: check that we have route to taker.
+    // TODO: extract data needed for proper timelock calculation and share with taker
 
-    let responsePacket: packets.DealResponsePacket;
-    if (!makerPubKey) {
-      // we don't support this currency, respond with an empty packet to reject the deal
-      // TODO: check if we support taker currency as well
-      responsePacket = new packets.DealResponsePacket({ dealId: requestBody.dealId, quantity: 0 }, requestPacket.header.id);
-    } else {
-      // accept the deal
-      const r_preimage = randomBytes(32);
-      const hash = createHash('sha256');
-      const r_hash = hash.update(r_preimage).digest('hex');
+    // accept the deal
+    const deal: SwapDeal = {
+      ...requestBody,
+      quantity: requestBody.proposedQuantity,
+      phase: SwapDealPhase.SwapCreated,
+      state: SwapDealState.Active,
+      stateReason: '',
+      takerPubKey: peer.getLndPubKey(requestBody.takerCurrency),
+      r_hash: requestBody.r_hash,
+      myRole: SwapDealRole.Maker,
+      createTime: Date.now(),
+    };
 
-      // TODO: we always accept proposed quantity currently, put in checks to make sure we have the full amount available
-      const quantity = requestBody.proposedQuantity;
+    this.addDeal(deal);
 
-      const deal: SwapDeal = {
-        ...requestBody,
-        makerPubKey,
-        quantity,
-        r_hash,
-        r_preimage: r_preimage.toString('hex'),
-        peerPubKey: peer.nodePubKey!,
-        myRole: SwapDealRole.Maker,
-        createTime: Date.now(),
-      };
+    const responseBody: packets.SwapResponsePacketBody = {
+      r_hash: requestBody.r_hash,
+      quantity: requestBody.proposedQuantity,
+    };
 
-      this.addDeal(deal);
-      this.logger.debug('[SWAP] New deal: ' + JSON.stringify(deal));
-
-      const responseBody: packets.DealResponsePacketBody = {
-        makerPubKey,
-        quantity,
-        r_hash,
-        dealId: requestBody.dealId,
-      };
-
-      responsePacket = new packets.DealResponsePacket(responseBody, requestPacket.header.id);
-    }
-    this.logger.debug('Sending deal response to peer: ' + JSON.stringify(responsePacket.body));
-    peer.sendPacket(responsePacket);
+    peer.sendPacket(new packets.SwapResponsePacket(responseBody, requestPacket.header.id));
+    this.setDealPhase(deal, SwapDealPhase.SwapAgreed);
   }
 
   /**
    * Handles a response from a peer to confirm a swap deal and updates the deal. If the deal is
-   * accepted, sends a [[SwapRequestPacket]] to initiate the deal.
+   * accepted, initiates the swap.
    */
-  private handleDealResponse = (responsePacket: packets.DealResponsePacket, peer: Peer): void  => {
-    const { dealId, quantity, r_hash, makerPubKey } = responsePacket.body!;
-    const deal = this.getDeal(dealId);
+  private handleSwapResponse = async (responsePacket: packets.SwapResponsePacket, peer: Peer) => {
+    assert(responsePacket.body, 'SwapResponsePacket does not contain a body');
+    const { quantity, r_hash } = responsePacket.body!;
+    const deal = this.getDeal(r_hash);
     if (!deal) {
-      // TODO: add error handling for an unknown deal id
-      this.logger.warn(`received deal response for unrecognized deal ${dealId}`);
-      return;
-    }
-
-    if (!r_hash) {
-      // Our deal request doesn't have a payment hash and therefore was rejected
-      this.removeDeal(deal);
-      this.emit('swap.rejected', deal);
+      this.logger.error(`received swap response for unrecognized deal r_hash ${r_hash}`);
       return;
     }
 
     if (quantity) {
-      // TODO: require a non-zero quantity value on accepted deal responses
+      // TODO: require a non-zero quantity value on accepted swap responses
       if (quantity > deal.proposedQuantity) {
         // TODO: this should not happen, abort deal and penalize peer
       } else if (quantity < deal.proposedQuantity) {
-        // TODO: the maker accepted only part of our deal request, adjust the deal amounts with Swaps.calculateSwapAmounts
+        // TODO: the maker accepted only part of our swap request, adjust the deal amounts with Swaps.calculateSwapAmounts
       }
-      this.emit('swap.accepted', deal, quantity);
     }
-    deal.makerPubKey = makerPubKey;
-    deal.r_hash = r_hash;
-    this.deals.set(r_hash, deal);
-    this.logger.debug('[SWAP] Updated deal: ' + JSON.stringify(deal));
 
-    const swapRequestBody: packets.SwapRequestPacketBody = { dealId };
-    const swapRequestPacket = new packets.SwapRequestPacket(swapRequestBody);
+    let cmdLnd: LndClient;
+    // running as taker
+    switch (deal.makerCurrency) {
+      case 'BTC':
+        cmdLnd =  this.lndBtcClient;
+        break;
+      case 'LTC':
+        cmdLnd = this.lndLtcClient;
+        break;
+      default:
+        // Can't be if we check that pairID is LTC/BTC only (for now). Still...
+        return;
+    }
+    const request = new lndrpc.SendRequest();
+    const makerPubKey = peer.getLndPubKey(deal.makerCurrency)!;
+    request.setAmt(deal.makerAmount);
+    request.setDestString(makerPubKey);
+    request.setPaymentHashString(deal.r_hash);
 
-    this.logger.debug('Sending swap request to peer: ' + JSON.stringify(swapRequestBody));
+    // TODO: use timeout on call
 
-    peer.sendPacket(swapRequestPacket);
+    try {
+      this.setDealPhase(deal,  SwapDealPhase.AmountSent);
+      const sendPaymentResponse = await cmdLnd.sendPaymentSync(request);
+      if (sendPaymentResponse.getPaymentError()) {
+        throw new Error(sendPaymentResponse.getPaymentError());
+      }
+
+      const r_preimage = Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+      // TODO: check r_preimage vs deal.preImage
+      // swap succeeded!
+      this.setDealPhase(deal, SwapDealPhase.SwapCompleted);
+      const responseBody: packets.SwapCompletePacketBody = { r_hash };
+
+      this.logger.debug('Sending swap complete to peer: ' + JSON.stringify(responseBody));
+      peer.sendPacket(new packets.SwapCompletePacket(responseBody));
+
+    } catch (err) {
+      this.logger.error(`Got exception from sendPaymentSync ${JSON.stringify(request.toObject())}`, err.message);
+      this.setDealState(deal, SwapDealState.Error, err.message);
+      const errorBody: packets.SwapErrorPacketBody = { r_hash, errorMessage: err.message };
+
+      this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
+      peer.sendPacket(new packets.SwapErrorPacket(errorBody));
+    }
+
   }
 
   /**
-   * Handles a request from a peer to perform a swap. Performs the actual swap via lnd and sends
-   * a [[SwapResponsePacketBody]] containing the preimage after it's complete.
+   * resolveHash resolve hash to preimage.
    */
-  private handleSwapRequest = async (requestPacket: packets.SwapRequestPacket, peer: Peer) => {
-    const { dealId } = requestPacket.body!;
-    let responseBody: packets.SwapResponsePacketBody = { dealId };
-    const deal = this.getDeal(dealId);
-    if (deal && deal.r_hash) {
-      // we know this deal, proceed with the swap
-      let cmdLnd: LndClient;
+  public resolveHash = async (args: { hash: string }) => {
+    const { hash } = args;
+
+    this.logger.info('ResolveHash starting with hash: ' + hash);
+
+    const deal = this.getDeal(hash);
+
+    if (!deal) {
+      const msg = `Something went wrong. Can't find deal: ${hash}`;
+      this.logger.error(msg);
+      return msg;
+    }
+
+    // If I'm the maker I need to forward the payment to the other chain
+    // TODO: check that I got the right amount before sending out the agreed amount
+    // TODO: calculate CLTV
+    if (deal.myRole === SwapDealRole.Maker) {
+	  this.logger.debug('Executing maker code');
+      let cmdLnd = this.lndLtcClient;
 
       switch (deal.makerCurrency) {
         case 'BTC':
-          cmdLnd =  this.lndLtcClient;
           break;
         case 'LTC':
           cmdLnd = this.lndBtcClient;
           break;
-        default:
-          // TODO: handle unsupported currency
-          return;
       }
 
       const request = new lndrpc.SendRequest();
-      request.setAmt(deal.takerAmount!);
-      request.setDestString(deal.takerPubKey);
+      request.setAmt(deal.takerAmount);
+      request.setDestString(deal.takerPubKey!);
       request.setPaymentHashString(deal.r_hash);
 
-      // TODO: use timeout on call
-
       try {
-        const sendPaymentResponse = await cmdLnd.sendPaymentSync(request);
-        if (sendPaymentResponse.getPaymentError()) {
-          throw sendPaymentResponse.getPaymentError();
+        this.setDealPhase(deal, SwapDealPhase.AmountSent);
+        const response = await cmdLnd.sendPaymentSync(request);
+        if (response.getPaymentError()) {
+          this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
+          this.setDealState(deal, SwapDealState.Error, response.getPaymentError());
+          return response.getPaymentError();
         }
 
-        // swap succeeded!
-        const r_preimage = Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
-        this.logger.debug(`swap succeeded! ${r_preimage}`);
-        this.emit('swap.completed', deal);
-        responseBody = {
-          r_preimage,
-          dealId,
-        };
+        deal.r_preimage = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        this.setDealPhase(deal, SwapDealPhase.AmountReceived);
+        return deal.r_preimage;
       } catch (err) {
-        this.logger.error(`Got exception from sendPaymentSync ${JSON.stringify(request.toObject())}`, err);
-        this.emit('swap.failed', deal);
+        this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()) + err.message);
+        this.setDealState(deal, SwapDealState.Error, err.message);
+        return 'Got exception from sendPaymentSync' + err.message;
       }
     } else {
-      // this is not a valid deal
-      this.logger.warn(`received swap request for unrecognized deal ${dealId}`);
-      // TODO: respond with a failure message, possibly penalize peer
+      // If we are here we are the taker
+      this.logger.debug('Executing taker code');
+      this.setDealPhase(deal, SwapDealPhase.AmountReceived);
+      return deal.r_preimage;
     }
 
-    const responsePacket = new packets.SwapResponsePacket(responseBody, requestPacket.header.id);
-
-    this.logger.debug('Sending swap response to peer: ' + JSON.stringify(responseBody));
-
-    peer.sendPacket(responsePacket);
   }
 
-  private handleSwapResponse = (response: packets.SwapResponsePacket): void  => {
-    // TODO: Remove this method/packet after we detect successful swap on invoice event
-    const { dealId, r_preimage } = response.body!;
-    const deal = this.getDeal(dealId);
-    if (!deal) {
-      this.logger.warn(`received swap response for unknown deal ${dealId}`);
-      return;
-    }
-    if (!r_preimage) {
+  private setDealState = (deal: SwapDeal, newState: SwapDealState, newStateReason: string): void => {
+    assert(deal.state === SwapDealState.Active, 'deal is not Active. Can not change deal state');
+    deal.state = newState;
+    deal.stateReason = newStateReason;
+    if (deal.state === SwapDealState.Error) {
       this.emit('swap.failed', deal);
-      return;
+    }
+  }
+
+  private setDealPhase = (deal: SwapDeal, newPhase: SwapDealPhase): void => {
+    assert(deal.state === SwapDealState.Active, 'deal is not Active. Can not change deal phase');
+
+    switch (newPhase) {
+      case SwapDealPhase.SwapCreated:
+        assert(false, 'can not set deal phase to SwapCreated.');
+        break;
+      case SwapDealPhase.SwapRequested:
+        assert(deal.myRole === SwapDealRole.Taker, 'SwapRequested can only be set by the taker');
+        assert(deal.phase === SwapDealPhase.SwapCreated, 'SwapRequested can be only be set after SwapCreated');
+        this.logger.debug('Requesting deal: ' + JSON.stringify(deal));
+        break;
+      case SwapDealPhase.SwapAgreed:
+        assert(deal.myRole === SwapDealRole.Maker, 'SwapAgreed can only be set by the maker');
+        assert(deal.phase === SwapDealPhase.SwapCreated, 'SwapAgreed can be only be set after SwapCreated');
+        this.logger.debug('Sending swap response to peer ');
+        break;
+      case SwapDealPhase.AmountSent:
+        assert(deal.myRole === SwapDealRole.Taker && deal.phase === SwapDealPhase.SwapRequested ||
+          deal.myRole === SwapDealRole.Maker && deal.phase === SwapDealPhase.SwapAgreed,
+            'AmountSent can only be set after SwapRequested (taker) or SwapAgreed (maker)');
+        deal.executeTime = Date.now();
+        break;
+      case SwapDealPhase.AmountReceived:
+        assert(deal.phase === SwapDealPhase.AmountSent, 'AmountReceived can be only be set after AmountSent');
+        this.logger.debug('Amount received for preImage ' + deal.r_preimage);
+        break;
+      case SwapDealPhase.SwapCompleted:
+        assert(deal.phase === SwapDealPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
+        deal.competionTime = Date.now();
+        this.setDealState(deal, SwapDealState.Completed, 'Swap completed. preimage = ' + deal.r_preimage);
+        this.logger.debug('Swap completed. preimage = ' + deal.r_preimage);
+        break;
+      default:
+        assert(false, 'unknown deal phase');
     }
 
-    deal.r_preimage = r_preimage;
-    this.emit('swap.completed', deal);
-    this.logger.debug('[SWAP] Swap completed. preimage = ' + r_preimage);
+    deal.phase = newPhase;
+
+    if (deal.phase === SwapDealPhase.AmountReceived) {
+      this.emit('swap.paid', deal);
+    }
   }
+
+  private handleSwapComplete = (response: packets.SwapCompletePacket): void  => {
+    const { r_hash } = response.body!;
+    const deal = this.getDeal(r_hash);
+    if (!deal) {
+      this.logger.error(`received swap complete for unknown deal r_hash ${r_hash}`);
+      return;
+    }
+    this.setDealPhase(deal, SwapDealPhase.SwapCompleted);
+  }
+
+  private handleSwapError = (error: packets.SwapErrorPacket): void  => {
+    const { r_hash, errorMessage } = error.body!;
+    const deal = this.getDeal(r_hash);
+    if (!deal) {
+      this.logger.error(`received swap error for unknown deal r_hash ${r_hash}`);
+      return;
+    }
+    this.setDealState(deal, SwapDealState.Error, errorMessage);
+  }
+
 }
 
 export default Swaps;

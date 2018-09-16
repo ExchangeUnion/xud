@@ -1,9 +1,10 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
+// TODO: proper error handling
 export type SwapResponsePacketBody = {
-  dealId: string;
-  r_preimage?: string;
+  r_hash: string;
+  quantity: number;
 };
 
 class SwapResponsePacket extends Packet<SwapResponsePacketBody> {

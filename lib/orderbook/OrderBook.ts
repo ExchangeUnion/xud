@@ -61,10 +61,10 @@ class OrderBook extends EventEmitter {
 
   private bindSwaps = () => {
     if (this.swaps) {
-      this.swaps.on('swap.completed', (deal) => {
+      this.swaps.on('swap.paid', (deal) => {
         if (deal.myRole === SwapDealRole.Maker) {
           // assume full order execution of an own order
-          this.removeOwnOrder(deal.pairId, deal.orderId);
+          this.removeOwnOrder(deal.orderId, deal.pairId);
 
           // TODO: handle partial order execution, updating existing order
         }
