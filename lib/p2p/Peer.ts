@@ -112,6 +112,20 @@ class Peer extends EventEmitter {
     return peer;
   }
 
+  public getLndPubKey(chain: string): string | undefined {
+    if (!this.handshakeState) {
+      return;
+    }
+    switch (chain) {
+      case 'BTC':
+        return this.handshakeState.lndbtcPubKey;
+      case 'LTC':
+        return this.handshakeState.lndltcPubKey;
+      default:
+        return;
+    }
+  }
+
   public getStatus = (): string => {
     let status: string;
     if (this.connected) {

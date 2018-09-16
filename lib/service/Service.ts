@@ -23,7 +23,7 @@ type ServiceComponents = {
   pool: Pool;
   /** The version of the local xud instance. */
   version: string;
-  swaps: Swaps; // TODO: remove once/if resolveHash becomes part of Swaps.ts
+  swaps: Swaps;
   /** The function to be called to shutdown the parent process */
   shutdown: () => void;
 };
@@ -330,67 +330,7 @@ class Service extends EventEmitter {
    * resolveHash resolve hash to preimage.
    */
   public resolveHash = async (args: { hash: string }) => {
-    const { hash } = args;
-
-    this.logger.info('ResolveHash starting with hash: ' + hash);
-
-    const deal = this.swaps.getDeal(hash);
-
-    if (!deal) {
-      const msg = `Something went wrong. Can't find deal: ${hash}`;
-      this.logger.error(msg);
-      return msg;
-    }
-
-    // If I'm the taker I need to forward the payment to the other chain
-    // TODO: check that I got the right amount before sending out the agreed amount
-    // TODO: calculate CLTV
-    if (deal.myRole === SwapDealRole.Taker) {
-	  this.logger.debug('Executing taker code');
-      let cmdLnd = this.lndBtcClient;
-
-      switch (deal.makerCurrency) {
-        case 'BTC':
-          break;
-        case 'LTC':
-          cmdLnd = this.lndLtcClient;
-          break;
-      }
-
-      if (!deal.makerPubKey) {
-        return 'makerPubKey is missing';
-      }
-
-      const request = new lndrpc.SendRequest();
-      request.setAmt(deal.makerAmount!);
-      request.setDestString(deal.makerPubKey);
-      request.setPaymentHashString(String(deal.r_hash));
-
-      try {
-        const response = await cmdLnd.sendPaymentSync(request);
-        if (response.getPaymentError()) {
-          this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
-          return response.getPaymentError();
-        }
-
-        const hexString = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
-        this.logger.debug('got preimage ' + hexString);
-        return hexString;
-      } catch (err) {
-        this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()));
-        return 'Got exception from sendPaymentSync';
-      }
-    } else {
-      // If we are here we are the maker
-      this.logger.debug('Executing maker code');
-      if (!deal.r_preimage) {
-        this.logger.error('Do not have r_preImage. Strange.');
-        return 'Do not have r_preImage. Strange.';
-      }
-      this.logger.debug(('deal.preimage = ' + deal.r_preimage));
-      return deal.r_preimage;
-    }
-
+    return this.swaps.resolveHash(args);
   }
 }
 export default Service;

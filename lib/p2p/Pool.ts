@@ -26,18 +26,18 @@ interface Pool {
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
-  on(event: 'packet.dealRequest', listener: (packet: packets.DealRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.dealResponse', listener: (packet: packets.DealResponsePacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket) => void): this;
+  on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
+  on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
+  on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
-  emit(event: 'packet.dealRequest', packet: packets.DealRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.dealResponse', packet: packets.DealResponsePacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket): boolean;
+  emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
+  emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
+  emit(event: 'packet.swapError', packet: packets.SwapErrorPacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
@@ -357,16 +357,6 @@ class Pool extends EventEmitter {
         await this.connectNodes(nodes);
         break;
       }
-      case PacketType.DEAL_REQUEST: {
-        this.logger.debug(`received dealRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.dealRequest', packet, peer);
-        break;
-      }
-      case PacketType.DEAL_RESPONSE: {
-        this.logger.debug(`received dealResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.dealResponse', packet, peer);
-        break;
-      }
       case PacketType.SWAP_REQUEST: {
         this.logger.debug(`received swapRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapRequest', packet, peer);
@@ -374,7 +364,17 @@ class Pool extends EventEmitter {
       }
       case PacketType.SWAP_RESPONSE: {
         this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapResponse', packet);
+        this.emit('packet.swapResponse', packet, peer);
+        break;
+      }
+      case PacketType.SWAP_COMPLETE: {
+        this.logger.debug(`received swapComplete from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapComplete', packet);
+        break;
+      }
+      case PacketType.SWAP_ERROR: {
+        this.logger.debug(`received swapError from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapError', packet);
         break;
       }
     }
