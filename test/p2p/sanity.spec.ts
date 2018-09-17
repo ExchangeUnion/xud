@@ -10,7 +10,7 @@ chai.use(chaiAsPromised);
 
 const createConfig = (instanceId: number, p2pPort: number) => ({
   instanceId,
-  initDb: false,
+  initDb: true,
   dbPath: ':memory:',
   logLevel: 'warn',
   logPath: '',
@@ -53,14 +53,6 @@ describe('P2P Sanity Tests', () => {
 
     await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
 
-    await nodeOne.service.addCurrency({ currency: 'BTC', swapClient: 0, decimalPlaces: 6 });
-    await nodeOne.service.addCurrency({ currency: 'LTC', swapClient: 0, decimalPlaces: 6 });
-    await nodeTwo.service.addCurrency({ currency: 'BTC', swapClient: 0, decimalPlaces: 6 });
-    await nodeTwo.service.addCurrency({ currency: 'LTC', swapClient: 0, decimalPlaces: 6 });
-
-    await nodeOne.service.addPair({ baseCurrency: 'BTC', quoteCurrency: 'LTC' });
-    await nodeTwo.service.addPair({ baseCurrency: 'BTC', quoteCurrency: 'LTC' });
-
     nodeTwoPort = nodeTwo['pool']['listenPort']!;
     nodeOneUri = getUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
     nodeTwoUri = getUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoPort });
@@ -80,11 +72,11 @@ describe('P2P Sanity Tests', () => {
       .to.be.rejectedWith('already connected');
   });
 
-  it('should place a ownOrder', async () => {
+  it('should place an ownOrder', async () => {
     await expect(nodeOne.service.placeOrder({ pairId: 'BTC/LTC', price: 600, quantity: 0.1, orderId: uuidv1() })).to.be.fulfilled;
   });
 
-  it('should verify that the order gets transmitted between nodes' , async() => {
+  it('should verify that the order gets transmitted between nodes', async () => {
     const nodeTwoOrders = await nodeTwo.service.getOrders({ pairId: 'BTC/LTC', maxResults: 10, includeOwnOrders: false });
     expect(nodeTwoOrders.get('BTC/LTC')!.buy.length).to.equal(1);
   });
@@ -97,7 +89,7 @@ describe('P2P Sanity Tests', () => {
     expect(listPeersResult).to.be.empty;
   });
 
-  it('should drop orders upon peer disconnection' , async() => {
+  it('should drop orders upon peer disconnection', async () => {
     const nodeTwoOrders = await nodeTwo.service.getOrders({ pairId: 'BTC/LTC', maxResults: 10, includeOwnOrders: false });
     expect(nodeTwoOrders.get('BTC/LTC')!.buy).to.be.empty;
   });
