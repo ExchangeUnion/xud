@@ -17,7 +17,6 @@ services:
     depends_on:
       - btc
       - lnd
-      - db
     entrypoint: "npm start"
   # btc is an image of bitcoin node which used as base image for btcd and
   # btccli. The environment variables default values determined on stage of
