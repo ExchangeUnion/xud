@@ -243,6 +243,7 @@ message LndInfo {
   int32 blockheight = 4 [json_name = "blockheight"];
   repeated string uris = 5 [json_name = "uris"];
   string version = 6 [json_name = "version"];
+  string alias = 7 [json_name = "alias"];
 }
 
 message Order {
