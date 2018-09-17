@@ -268,7 +268,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders |
-| max_results | [uint32](#uint32) |  | The maximum number of orders to return from either side of the order book |
 | include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not |
 
 

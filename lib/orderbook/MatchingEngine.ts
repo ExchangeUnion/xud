@@ -214,19 +214,19 @@ class MatchingEngine {
     }
   }
 
-  private getOrders = <T extends orders.StampedOrder>(lists: OrderSidesLists<T>, limit?: number): OrderSidesArrays<T> => {
+  private getOrders = <T extends orders.StampedOrder>(lists: OrderSidesLists<T>): OrderSidesArrays<T> => {
     return {
-      buy: Array.from(lists.buy.values()).slice(0, limit || lists.buy.size),
-      sell: Array.from(lists.sell.values()).slice(0, limit || lists.sell.size),
+      buy: Array.from(lists.buy.values()),
+      sell: Array.from(lists.sell.values()),
     };
   }
 
-  public getPeerOrders = (limit?: number): OrderSidesArrays<StampedPeerOrder> => {
-    return this.getOrders(this.peerOrders, limit);
+  public getPeerOrders = () => {
+    return this.getOrders(this.peerOrders);
   }
 
-  public getOwnOrders = (limit?: number) => {
-    return this.getOrders(this.ownOrders, limit);
+  public getOwnOrders = () => {
+    return this.getOrders(this.ownOrders);
   }
 
   /**

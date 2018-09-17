@@ -231,14 +231,6 @@
             "type": "string"
           },
           {
-            "name": "max_results",
-            "description": "The maximum number of orders to return from either side of the order book.",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
             "name": "include_own_orders",
             "description": "Whether own orders should be included in result or not.",
             "in": "query",
