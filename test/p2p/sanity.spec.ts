@@ -80,8 +80,11 @@ describe('P2P Sanity Tests', () => {
       .to.be.rejectedWith('already connected');
   });
 
+  it('should place a ownOrder', async () => {
+    await expect(nodeOne.service.placeOrder({ pairId: 'BTC/LTC', price: 600, quantity: 0.1, orderId: uuidv1() })).to.be.fulfilled;
+  });
+
   it('should verify that the order gets transmitted between nodes' , async() => {
-    await nodeOne.service.placeOrder({ pairId: 'BTC/LTC', price: 600, quantity: 0.1, orderId: uuidv1() });
     const nodeTwoOrders = await nodeTwo.service.getOrders({ pairId: 'BTC/LTC', maxResults: 10, includeOwnOrders: false });
     expect(nodeTwoOrders.get('BTC/LTC')!.buy.length).to.equal(1);
   });
