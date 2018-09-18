@@ -2,11 +2,13 @@
 
 By contributing code to this project, you affirm that it is your original work and implicitly grant permission for it to be distributed under the [AGPL-3.0](LICENSE) license.
 
+Check out our [Developer Guide](https://github.com/ExchangeUnion/xud/wiki/Developer-Guide) for recommendations on developing with `xud`.
+
 Read about how you can earn XUC for your contributions in our [how-to guide](https://github.com/ExchangeUnion/Docs/blob/master/How-to-contribute.md).
 
 ## Contribution Guidelines
 
-If you are new to contributing to open sources projects on GitHub, check out [this how-to](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github/).
+Read the following sections before contributing to `xud`. If you are new to contributing to open sources projects on GitHub, you can also check out [this how-to](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github/).
 
 ### Feature Branches & Pull Requests
 
@@ -15,6 +17,11 @@ We use [feature branches](https://www.atlassian.com/git/tutorials/comparing-work
 Pull requests will be reviewed and changes may be requested. If changes are required, make new commits directly to the feature branch. If there have been conflicting commits to `master` since a feature branch was created, either merge master into the branch or rebase the branch onto master using `git rebase`.
 
 When multiple commmits pertain to the same issue or feature, uou should squash then into a single commit or a maintainer will squash them before merging. For more complex pull requests that touch many parts of the code or implement multiple distinct changes to the code, please collapse commits according to their scope and affected changes. This can be performed through an interactive rebase with `git rebase -i`. Use `git commit --amend` when fixing minor typos or bugs with the most recent commit. These practices help maintain a clean and coherent commit history while preserving contribution authorship.
+
+Further recommended reading:
+
+- [How to Write the Perfect Pull Request](https://blog.github.com/2015-01-21-how-to-write-the-perfect-pull-request/)
+- [Pull Request Etiquette](https://gist.github.com/mikepea/863f63d6e37281e329f8)
 
 ### Commit Messages
 
