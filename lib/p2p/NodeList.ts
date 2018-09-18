@@ -2,7 +2,6 @@ import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
 import { Address } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { add } from 'winston';
 
 /** Represents a list of nodes for managing network peers activity */
 class NodeList {
