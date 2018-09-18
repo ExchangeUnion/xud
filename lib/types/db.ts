@@ -30,6 +30,7 @@ export type NodeAttributes = NodeFactory & {
   id: number;
   banned: boolean;
   addressesText: string;
+  lastAddressText: string;
 };
 
 export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes>;

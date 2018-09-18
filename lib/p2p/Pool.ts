@@ -412,10 +412,11 @@ class Pool extends EventEmitter {
         await this.nodes.createNode({
           addresses,
           nodePubKey: peer.nodePubKey!,
+          lastAddress: peer.address,
         });
       } else {
         // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses);
+        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address);
       }
     }
   }
@@ -431,6 +432,7 @@ class Pool extends EventEmitter {
         connectedNodesInfo.push({
           nodePubKey: connectedPeer.nodePubKey!,
           addresses: connectedPeer.addresses,
+          lastAddress: connectedPeer.address,
         });
       }
     });

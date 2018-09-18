@@ -2,6 +2,7 @@ import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
 import { Address } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
+import { add } from 'winston';
 
 /** Represents a list of nodes for managing network peers activity */
 class NodeList {
@@ -67,7 +68,7 @@ class NodeList {
    * Update a node's addresses.
    * @return true if the specified node exists and was updated, false otherwise
    */
-  public updateAddresses = async (nodePubKey: string, addresses: Address[] = []) => {
+  public updateAddresses = async (nodePubKey: string, addresses: Address[] = [], lastAddress: Address) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
@@ -79,6 +80,7 @@ class NodeList {
           return newAddress;
         }
       });
+      node.lastAddress = lastAddress;
 
       await node.save();
       return true;
@@ -95,6 +97,14 @@ class NodeList {
         node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
         await node.save();
         return true;
+      }
+
+      if (addressUtils.areEqual(address, node.lastAddress)) {
+        node.lastAddress = [...node.addresses].sort((a, b) => {
+          if (!a.lastConnected) return 1;
+          if (!b.lastConnected) return -1;
+          return b.lastConnected - a.lastConnected;
+        })[0];
       }
     }
 

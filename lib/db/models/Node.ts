@@ -7,6 +7,16 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     nodePubKey: { type: DataTypes.STRING, unique: true, allowNull: false },
     addressesText: { type: Sequelize.TEXT, allowNull: false },
+    lastAddressText: { type: Sequelize.TEXT, allowNull: false },
+    lastAddress: {
+      type: Sequelize.VIRTUAL,
+      get(this: db.NodeInstance) {
+        return JSON.parse(this.lastAddressText);
+      },
+      set(this: db.NodeInstance, value: Address) {
+        this.setDataValue('lastAddressText', value ? JSON.stringify(value) : '');
+      },
+    },
     addresses: {
       type: Sequelize.VIRTUAL,
       get(this: db.NodeInstance) {
