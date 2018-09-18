@@ -20,14 +20,17 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
         }
       },
     },
-    lastAddressText: { type: Sequelize.TEXT, allowNull: false },
+    lastAddressText: { type: Sequelize.TEXT, allowNull: true },
     lastAddress: {
       type: Sequelize.VIRTUAL,
+      allowNull: true,
       get(this: db.NodeInstance) {
-        return JSON.parse(this.lastAddressText);
+        return this.lastAddressText ? JSON.parse(this.lastAddressText) : undefined;
       },
       set(this: db.NodeInstance, value: Address) {
-        this.setDataValue('lastAddressText', value ? JSON.stringify(value) : '');
+        if (value) {
+          this.setDataValue('lastAddressText', JSON.stringify(value));
+        }
       },
     },
     banned: { type: DataTypes.BOOLEAN, allowNull: true },

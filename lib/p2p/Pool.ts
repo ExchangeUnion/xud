@@ -204,7 +204,7 @@ class Pool extends EventEmitter {
   private connectWithAdvertisedAddresses = async(node: NodeConnectionInfo, retryConnecting = false) => {
     const { addresses, nodePubKey } = node;
 
-      // sort by lastConnected desc
+    // sort by lastConnected desc
     const sortedAddresses = [...addresses].sort((a, b) => {
       if (!a.lastConnected) return 1;
       if (!b.lastConnected) return -1;
@@ -431,11 +431,11 @@ class Pool extends EventEmitter {
         await this.nodes.createNode({
           addresses,
           nodePubKey: peer.nodePubKey!,
-          lastAddress: peer.address,
+          lastAddress: peer.inbound ? undefined : peer.address,
         });
       } else {
         // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.address);
+        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
       }
     }
   }

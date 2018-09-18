@@ -9,7 +9,7 @@ export type Address = {
 export type NodeConnectionInfo = {
   nodePubKey: string;
   addresses: Address[];
-  lastAddress: Address;
+  lastAddress: Address | undefined;
 };
 
 export type HandshakeState = {

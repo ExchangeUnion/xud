@@ -67,7 +67,7 @@ class NodeList {
    * Update a node's addresses.
    * @return true if the specified node exists and was updated, false otherwise
    */
-  public updateAddresses = async (nodePubKey: string, addresses: Address[] = [], lastAddress: Address) => {
+  public updateAddresses = async (nodePubKey: string, addresses: Address[] = [], lastAddress?: Address) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
@@ -79,7 +79,10 @@ class NodeList {
           return newAddress;
         }
       });
-      node.lastAddress = lastAddress;
+
+      if (lastAddress) {
+        node.lastAddress = lastAddress;
+      }
 
       await node.save();
       return true;
@@ -98,7 +101,7 @@ class NodeList {
         return true;
       }
 
-      if (addressUtils.areEqual(address, node.lastAddress)) {
+      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) {
         node.lastAddress = [...node.addresses].sort((a, b) => {
           if (!a.lastConnected) return 1;
           if (!b.lastConnected) return -1;
