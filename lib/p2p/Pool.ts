@@ -172,7 +172,8 @@ class Pool extends EventEmitter {
       // check that this node is not ourselves, that it has listening addresses,
       // and that either we haven't heard of it, or we're not ignoring known nodes and it's not banned
       if (node.nodePubKey !== this.handshakeData.nodePubKey && node.addresses.length > 0 &&
-        (!this.nodes.has(node.nodePubKey) || (!ignoreKnown && !this.nodes.isBanned(node.nodePubKey)))) {
+        (!this.nodes.has(node.nodePubKey) || (!ignoreKnown && !this.nodes.isBanned(node.nodePubKey))) &&
+        !this.peers.has(node.nodePubKey)) {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -251,7 +252,7 @@ class Pool extends EventEmitter {
     } catch (err) {
       // we don't have `nodePubKey` for inbound connections, which might fail on handshake
       const id = nodePubKey || addressUtils.toString(peer.address);
-      this.logger.warn(`error while opening connection to peer (${id}): ${err.message}`);
+      this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
 
       if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
         await this.nodes.removeAddress(nodePubKey!, peer.address);
@@ -354,6 +355,13 @@ class Pool extends EventEmitter {
       }
       case PacketType.NODES: {
         const nodes = (packet as packets.NodesPacket).body!;
+        let newNodesCount = 0;
+        nodes.forEach((node) => {
+          if (!this.nodes.has(node.nodePubKey)) {
+            newNodesCount += 1;
+          }
+        });
+        this.logger.verbose(`received ${nodes.length} nodes (${newNodesCount} new) from ${peer.nodePubKey}`);
         await this.connectNodes(nodes);
         break;
       }
@@ -392,6 +400,7 @@ class Pool extends EventEmitter {
       // TODO: Penalize peers that attempt to create duplicate connections to us
       peer.close();
     } else {
+      this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
       this.peers.add(peer);
 
       // request peer's orders and known nodes
