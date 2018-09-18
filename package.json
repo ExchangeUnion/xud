@@ -96,11 +96,10 @@
   "files": [
     "bin",
     "dist",
-    "docs",
-    "proto",
     "tasks",
     ".env",
-    "*.md"
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
