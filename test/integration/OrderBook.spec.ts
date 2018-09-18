@@ -45,7 +45,7 @@ describe('OrderBook', () => {
   });
 
   const getOwnOrder = (order: orders.StampedOwnOrder): orders.StampedOwnOrder | undefined => {
-    const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
+    const ownOrders = orderBook.getOwnOrders(order.pairId);
     const arr = order.quantity > 0 ? ownOrders.buy : ownOrders.sell;
 
     for (const orderItem of arr) {

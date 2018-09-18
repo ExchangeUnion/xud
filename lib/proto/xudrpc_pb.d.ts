@@ -352,9 +352,6 @@ export class GetOrdersRequest extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
-    getMaxResults(): number;
-    setMaxResults(value: number): void;
-
     getIncludeOwnOrders(): boolean;
     setIncludeOwnOrders(value: boolean): void;
 
@@ -372,7 +369,6 @@ export class GetOrdersRequest extends jspb.Message {
 export namespace GetOrdersRequest {
     export type AsObject = {
         pairId: string,
-        maxResults: number,
         includeOwnOrders: boolean,
     }
 }

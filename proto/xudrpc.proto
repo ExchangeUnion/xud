@@ -205,10 +205,8 @@ message GetInfoResponse {
 message GetOrdersRequest {
   // The trading pair for which to retrieve orders
   string pair_id = 1 [json_name = "pair_id"];
-  // The maximum number of orders to return from either side of the order book
-  uint32 max_results = 2 [json_name = "max_results"];
   // Whether own orders should be included in result or not
-  bool include_own_orders = 3 [json_name = "include_own_orders"];
+  bool include_own_orders = 2 [json_name = "include_own_orders"];
 }
 message GetOrdersResponse {
   // A map between pair ids and their buy and sell orders
