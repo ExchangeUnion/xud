@@ -30,7 +30,7 @@ describe('OrderBook', () => {
     const p2pRepository = new P2PRepository(loggers.p2p, db.models);
 
     await p2pRepository.addNode(
-      { nodePubKey: nodeKey.nodePubKey, addresses: [], lastAddress: { host: '', port: 0 } },
+      { nodePubKey: nodeKey.nodePubKey, addresses: [] },
     );
     await orderBookRepository.addCurrencies([
       { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },

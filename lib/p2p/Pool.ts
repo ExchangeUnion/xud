@@ -188,7 +188,7 @@ class Pool extends EventEmitter {
     }
   }
 
-  private connectWithLastAddress = async(node: NodeConnectionInfo) => {
+  private connectWithLastAddress = async (node: NodeConnectionInfo) => {
     const { lastAddress, nodePubKey } = node;
 
     if (!lastAddress) return false;
@@ -201,7 +201,7 @@ class Pool extends EventEmitter {
     return false;
   }
 
-  private connectWithAdvertisedAddresses = async(node: NodeConnectionInfo, retryConnecting = false) => {
+  private connectWithAdvertisedAddresses = async (node: NodeConnectionInfo, retryConnecting = false) => {
     const { addresses, nodePubKey } = node;
 
     // sort by lastConnected desc
@@ -451,7 +451,6 @@ class Pool extends EventEmitter {
         connectedNodesInfo.push({
           nodePubKey: connectedPeer.nodePubKey!,
           addresses: connectedPeer.addresses,
-          lastAddress: connectedPeer.address,
         });
       }
     });
