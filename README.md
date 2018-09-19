@@ -49,6 +49,10 @@ Note: If you installed `xud` globally, you can run `xud` and `xucli` from anywhe
 
 Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
 
+## License
+
+All files in this repository are licensed under the [GNU Affero General Public License v3.0](LICENSE) unless explicitly stated otherwise in the header of a given file.
+
 ## Development & Testing Discussion
 
 Comments, questions, and any development-related discussions are welcome in our [Gitter chat](https://gitter.im/exchangeunion/Lobby)
