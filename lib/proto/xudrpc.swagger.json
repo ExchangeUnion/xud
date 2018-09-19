@@ -111,7 +111,7 @@
         "parameters": [
           {
             "name": "currency",
-            "description": "The ticker symbol of the currency to query for.",
+            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all\nsupported currencies are queried.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -483,7 +483,7 @@
     "xudrpcCancelOrderResponse": {
       "type": "object"
     },
-    "xudrpcChannelBalanceResponse": {
+    "xudrpcChannelBalance": {
       "type": "object",
       "properties": {
         "balance": {
@@ -495,6 +495,18 @@
           "type": "string",
           "format": "int64",
           "title": "Sum of channels pending balances denominated in satoshis or equivalent"
+        }
+      }
+    },
+    "xudrpcChannelBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcChannelBalance"
+          },
+          "title": "A map between currency ticker symbols and their channel balances"
         }
       }
     },

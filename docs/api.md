@@ -10,8 +10,10 @@
     - [AddPairResponse](#xudrpc.AddPairResponse)
     - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
     - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
+    - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
+    - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [DisconnectRequest](#xudrpc.DisconnectRequest)
@@ -145,6 +147,22 @@
 
 
 
+<a name="xudrpc.ChannelBalance"></a>
+
+### ChannelBalance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| balance | [int64](#int64) |  | Sum of channels balances denominated in satoshis or equivalent |
+| pending_open_balance | [int64](#int64) |  | Sum of channels pending balances denominated in satoshis or equivalent |
+
+
+
+
+
+
 <a name="xudrpc.ChannelBalanceRequest"></a>
 
 ### ChannelBalanceRequest
@@ -153,7 +171,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| currency | [string](#string) |  | The ticker symbol of the currency to query for |
+| currency | [string](#string) |  | The ticker symbol of the currency to query for, if unspecified then balances for all supported currencies are queried |
 
 
 
@@ -168,8 +186,23 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| balance | [int64](#int64) |  | Sum of channels balances denominated in satoshis or equivalent |
-| pending_open_balance | [int64](#int64) |  | Sum of channels pending balances denominated in satoshis or equivalent |
+| balances | [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry) | repeated | A map between currency ticker symbols and their channel balances |
+
+
+
+
+
+
+<a name="xudrpc.ChannelBalanceResponse.BalancesEntry"></a>
+
+### ChannelBalanceResponse.BalancesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [ChannelBalance](#xudrpc.ChannelBalance) |  |  |
 
 
 

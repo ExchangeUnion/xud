@@ -126,8 +126,13 @@ class GrpcService {
     try {
       const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
       const response = new xudrpc.ChannelBalanceResponse();
-      response.setBalance(channelBalanceResponse.balance);
-      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
+      const balancesMap = response.getBalancesMap();
+      channelBalanceResponse.forEach((channelBalance, currency) => {
+        const balance = new xudrpc.ChannelBalance();
+        balance.setBalance(channelBalance.balance);
+        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+        balancesMap.set(currency, balance);
+      });
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
