@@ -30,7 +30,8 @@ class GrpcServer {
       removeCurrency: grpcService.removeCurrency,
       removePair: grpcService.removePair,
       shutdown: grpcService.shutdown,
-      subscribePeerOrders: grpcService.subscribePeerOrders,
+      subscribeAddedOrders: grpcService.subscribeAddedOrders,
+      subscribeRemovedOrders: grpcService.subscribeRemovedOrders,
       subscribeSwaps: grpcService.subscribeSwaps,
     });
 

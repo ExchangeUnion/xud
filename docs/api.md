@@ -33,6 +33,7 @@
     - [LndInfo](#xudrpc.LndInfo)
     - [Order](#xudrpc.Order)
     - [OrderMatch](#xudrpc.OrderMatch)
+    - [OrderRemoval](#xudrpc.OrderRemoval)
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
@@ -45,14 +46,14 @@
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
-    - [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest)
-    - [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse)
+    - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
+    - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
-    - [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse)
-    - [SwapPayload](#xudrpc.SwapPayload)
+    - [SwapResult](#xudrpc.SwapResult)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
+    - [SwapResult.Role](#xudrpc.SwapResult.Role)
   
   
     - [Xud](#xudrpc.Xud)
@@ -461,16 +462,15 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| price | [double](#double) |  | The price of the order, precise to 6 decimal places. |
-| quantity | [double](#double) |  | The quantity of the order, precise to 6 decimal places. |
-| pair_id | [string](#string) |  | The trading pair that this order is for |
-| peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order |
-| id | [string](#string) |  | A UUID for this order |
-| local_id | [string](#string) |  | The local id for this order |
-| created_at | [int64](#int64) |  | The epoch time when this order was created |
-| invoice | [string](#string) |  | Lightning invoice |
-| canceled | [bool](#bool) |  | Indicates whether an order was canceled |
-| side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell |
+| price | [double](#double) |  | The price of the order. |
+| quantity | [double](#double) |  | The quantity of the order. |
+| pair_id | [string](#string) |  | The trading pair that this order is for. |
+| id | [string](#string) |  | A UUID for this order. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order. |
+| local_id | [string](#string) |  | The local id for this order. |
+| created_at | [int64](#int64) |  | The epoch time when this order was created. |
+| side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
+| is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
 
 
 
@@ -487,6 +487,25 @@
 | ----- | ---- | ----- | ----------- |
 | maker | [Order](#xudrpc.Order) |  |  |
 | taker | [Order](#xudrpc.Order) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.OrderRemoval"></a>
+
+### OrderRemoval
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| quantity | [double](#double) |  | The quantity of the order being removed. |
+| pair_id | [string](#string) |  | The trading pair that the order is for. |
+| order_id | [string](#string) |  | The global UUID for the order. |
+| local_id | [string](#string) |  | The local id for the order, if applicable. |
+| is_own_order | [bool](#bool) |  | Whether the order being removed is a local own order or a remote peer order. |
 
 
 
@@ -553,8 +572,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| price | [double](#double) |  | The price of the order, precise to 6 decimal places. |
-| quantity | [double](#double) |  | The quantity of the order, precise to 6 decimal places. |
+| price | [double](#double) |  | The price of the order. |
+| quantity | [double](#double) |  | The quantity of the order. |
 | pair_id | [string](#string) |  | The trading pair that the order is for |
 | order_id | [string](#string) |  | The local id to assign to the order |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell |
@@ -668,25 +687,20 @@
 
 
 
-<a name="xudrpc.SubscribePeerOrdersRequest"></a>
+<a name="xudrpc.SubscribeAddedOrdersRequest"></a>
 
-### SubscribePeerOrdersRequest
-
-
+### SubscribeAddedOrdersRequest
 
 
 
 
 
-<a name="xudrpc.SubscribePeerOrdersResponse"></a>
-
-### SubscribePeerOrdersResponse
 
 
+<a name="xudrpc.SubscribeRemovedOrdersRequest"></a>
 
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| order | [Order](#xudrpc.Order) |  |  |
+### SubscribeRemovedOrdersRequest
+
 
 
 
@@ -703,35 +717,22 @@
 
 
 
-<a name="xudrpc.SubscribeSwapsResponse"></a>
+<a name="xudrpc.SwapResult"></a>
 
-### SubscribeSwapsResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| order | [string](#string) |  | The order which was executed for the swap with updated remaining quantity |
-
-
-
-
-
-
-<a name="xudrpc.SwapPayload"></a>
-
-### SwapPayload
+### SwapResult
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| role | [string](#string) |  |  |
-| sending_amount | [uint64](#uint64) |  |  |
-| sending_token | [string](#string) |  |  |
-| receiving_amount | [uint64](#uint64) |  |  |
-| receiving_token | [string](#string) |  |  |
-| node_pub_key | [string](#string) |  |  |
+| order_id | [string](#string) |  | The global UUID for the order that was swapped. |
+| local_id | [string](#string) |  | The local id for the order that was swapped. |
+| pair_id | [string](#string) |  | The trading pair that this order is for. |
+| r_hash | [string](#string) |  | The hex-encoded r_hash for the swap payments. |
+| amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
+| amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
+| role | [SwapResult.Role](#xudrpc.SwapResult.Role) |  | Our role in the swap, either MAKER or TAKER |
 
 
 
@@ -763,6 +764,18 @@
 | SELL | 1 |  |
 
 
+
+<a name="xudrpc.SwapResult.Role"></a>
+
+### SwapResult.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TAKER | 0 |  |
+| MAKER | 1 |  |
+
+
  
 
  
@@ -782,7 +795,7 @@
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
-| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Get a map between pair ids and their buy and sell orders from the order book. |
+| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Get the list of the order book&#39;s suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
@@ -790,8 +803,9 @@
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Remove a currency. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Remove a trading pair. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin shutting down xud. |
-| SubscribePeerOrders | [SubscribePeerOrdersRequest](#xudrpc.SubscribePeerOrdersRequest) | [SubscribePeerOrdersResponse](#xudrpc.SubscribePeerOrdersResponse) stream | Subscribe to peer order events. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SubscribeSwapsResponse](#xudrpc.SubscribeSwapsResponse) stream | Subscribe executed swaps. |
+| SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
+| SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) stream | Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to get real-time notifications when its orders are filled by a remote taker. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through Exchange Union network. |
 
  
 

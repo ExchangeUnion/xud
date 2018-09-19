@@ -13,13 +13,17 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier } from '../types/orders';
+import { Pair, OrderPortion, OrderIdentifier } from '../types/orders';
 
 interface OrderBook {
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
-  on(event: 'peerOrder.invalidation', listener: (order: orders.OrderIdentifier) => void): this;
+  on(event: 'peerOrder.invalidation', listener: (order: orders.OrderPortion) => void): this;
+  /** Adds a listener to be called when all or part of a local order is filled. */
+  on(event: 'ownOrder.filled', listener: (order: orders.OrderPortion) => void): this;
   emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder): boolean;
-  emit(event: 'peerOrder.invalidation', order: orders.OrderIdentifier): boolean;
+  emit(event: 'peerOrder.invalidation', order: orders.OrderPortion): boolean;
+  /** Notifies listeners that all or part of a local order was filled. */
+  emit(event: 'ownOrder.filled', order: orders.OrderPortion): boolean;
 }
 
 /** A class representing an orderbook containing all orders for all active trading pairs. */
@@ -61,10 +65,10 @@ class OrderBook extends EventEmitter {
 
   private bindSwaps = () => {
     if (this.swaps) {
-      this.swaps.on('swap.paid', (deal) => {
-        if (deal.myRole === SwapDealRole.Maker) {
+      this.swaps.on('swap.paid', (swapResult) => {
+        if (swapResult.role === SwapDealRole.Maker) {
           // assume full order execution of an own order
-          this.removeOwnOrder(deal.orderId, deal.pairId, deal.takerPubKey);
+          this.removeOwnOrder(swapResult.orderId, swapResult.pairId, swapResult.peerPubKey);
 
           // TODO: handle partial order execution, updating existing order
         }
@@ -263,39 +267,40 @@ class OrderBook extends EventEmitter {
       return false;
     }
 
-    const order = matchingEngine.removeOwnOrder(orderId);
-    if (!order) {
+    const removedOrder = matchingEngine.removeOwnOrder(orderId);
+    if (!removedOrder) {
       this.logger.warn(`invalid orderId: ${pairId}`);
       return false;
     }
 
-    this.localIdMap.delete(order.localId);
+    this.localIdMap.delete(removedOrder.localId);
     this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
 
     if (this.pool) {
       this.pool.broadcastOrderInvalidation({
         orderId,
         pairId,
+        quantity: removedOrder.quantity,
       }, takerPubKey);
     }
 
     return true;
   }
 
-  private removePeerOrder = (orderId: string, pairId: string, quantityToDecrease?: number): orders.StampedPeerOrder | undefined => {
+  private removePeerOrder = (orderId: string, pairId: string, quantityToRemove?: number): orders.StampedPeerOrder | undefined => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       this.logger.warn(`incoming order invalidation: invalid pairId (${pairId})`);
       return;
     }
-    const order = matchingEngine.removePeerOrderQuantity(orderId, quantityToDecrease);
-    if (!order) {
+    const removedOrder = matchingEngine.removePeerOrderQuantity(orderId, quantityToRemove);
+    if (!removedOrder) {
       this.logger.warn(`incoming order invalidation: invalid orderId (${orderId})`);
       return;
     } else {
-      assert(order.quantity === quantityToDecrease, 'order quantity must equal quantityToDecrease');
-      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: order.quantity });
-      return order;
+      assert(removedOrder.quantity === quantityToRemove, 'order quantity must equal quantityToRemove');
+      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: removedOrder.quantity });
+      return removedOrder;
     }
   }
 
@@ -308,6 +313,7 @@ class OrderBook extends EventEmitter {
         this.emit('peerOrder.invalidation', {
           orderId: order.id,
           pairId: order.pairId,
+          quantity: order.quantity,
         });
       });
     });
@@ -351,11 +357,13 @@ class OrderBook extends EventEmitter {
     if (this.pool) {
       const { maker } = match;
       if (orders.isOwnOrder(maker)) {
-        this.pool.broadcastOrderInvalidation({
+        const orderIdentifier: OrderPortion = {
           orderId: maker.id,
           pairId: maker.pairId,
           quantity: maker.quantity,
-        });
+        };
+        this.pool.broadcastOrderInvalidation(orderIdentifier);
+        this.emit('ownOrder.filled', { ...orderIdentifier, localId: maker.localId });
       }
     }
 

@@ -139,19 +139,22 @@ class MatchingEngine {
   }
 
   /**
-   * Remove a quantity from a peer order. if the entire quantity is met, the order will be removed entirely.
-   * @returns undefined if the order wasn't found, otherwise the removed order or order portion
+   * Removes a quantity from a peer order. If the entire quantity is met, the order will be removed entirely.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrderQuantity = (orderId: string, quantityToDecrease?: number): StampedPeerOrder | undefined => {
+  public removePeerOrderQuantity = (orderId: string, quantityToRemove?: number): StampedPeerOrder | undefined => {
     const order = this.peerOrders.buy.get(orderId) || this.peerOrders.sell.get(orderId);
     if (!order) {
       return;
     }
 
-    if (quantityToDecrease && quantityToDecrease < order.quantity) {
-      // if quantityToDecrease is below the order quantity, mutate the order quantity, and return a simulation of the removed order portion
-      order.quantity = order.quantity - quantityToDecrease;
-      return { ...order, quantity: quantityToDecrease };
+    if (quantityToRemove && quantityToRemove < order.quantity) {
+      // if quantityToRemove is below the order quantity, reduce the order quantity
+      // and return a copy of the order with the quantity that was removed
+      order.quantity = order.quantity - quantityToRemove;
+      return { ...order, quantity: quantityToRemove };
     } else {
       // otherwise, remove the order entirely, and return it
       this.removePeerOrder(order);
@@ -180,6 +183,10 @@ class MatchingEngine {
     return removedOrders;
   }
 
+  /**
+   * Removes an own order by its global order id.
+   * @returns the removed order, or undefined if no order with the provided id could be found
+   */
   public removeOwnOrder = (orderId: string): StampedOwnOrder | undefined => {
     const order = this.ownOrders.buy.get(orderId) || this.ownOrders.sell.get(orderId);
     if (!order) {
