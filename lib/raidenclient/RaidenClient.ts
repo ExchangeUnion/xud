@@ -113,7 +113,7 @@ class RaidenClient extends BaseClient {
     this.host = host;
 
     if (!disable) {
-      this.setStatus(ClientStatus.DISCONNECTED);
+      this.setStatus(ClientStatus.Disconnected);
     }
   }
 
@@ -127,7 +127,7 @@ class RaidenClient extends BaseClient {
     }
     try {
       this.address = await this.getAddress();
-      this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+      this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error('could not get raiden address', err);
     }

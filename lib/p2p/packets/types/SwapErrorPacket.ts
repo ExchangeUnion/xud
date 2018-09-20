@@ -9,11 +9,11 @@ export type SwapErrorPacketBody = {
 
 class SwapErrorPacket extends Packet<SwapErrorPacketBody> {
   public get type() {
-    return PacketType.SWAP_ERROR;
+    return PacketType.SwapError;
   }
 
   public get direction() {
-    return PacketDirection.UNILATERAL;
+    return PacketDirection.Unilateral;
   }
 }
 

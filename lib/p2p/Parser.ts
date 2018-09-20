@@ -8,10 +8,10 @@ class ParserError {
 }
 
 enum ParserErrorType {
-  INVALID_MESSAGE,
-  UNKNOWN_PACKET_TYPE,
-  UNPARSEABLE_MESSAGE,
-  MAX_BUFFER_SIZE_EXCEEDED,
+  InvalidMessage,
+  UnknownPacketType,
+  UnparseableMessage,
+  MaxBufferSizeExceeded,
 }
 
 const fromRaw = (raw: string): Packet => {
@@ -19,44 +19,44 @@ const fromRaw = (raw: string): Packet => {
   try {
     json = JSON.parse(raw);
   } catch (err) {
-    throw new ParserError(ParserErrorType.UNPARSEABLE_MESSAGE, `${raw}: ${err}`);
+    throw new ParserError(ParserErrorType.UnparseableMessage, `${raw}: ${err}`);
   }
 
   // check that we have the required fields for an incoming packet
   if (typeof json.header === 'object' && typeof json.header.type === 'string' && typeof json.header.id === 'string') {
     const packet = json as PacketInterface;
     switch (packet.header.type) {
-      case PacketType.HELLO:
+      case PacketType.Hello:
         return new packetTypes.HelloPacket(packet);
-      case PacketType.PING:
+      case PacketType.Ping:
         return new packetTypes.PingPacket(packet);
-      case PacketType.PONG:
+      case PacketType.Pong:
         return new packetTypes.PongPacket(packet);
-      case PacketType.ORDER:
+      case PacketType.Order:
         return new packetTypes.OrderPacket(packet);
-      case PacketType.ORDER_INVALIDATION:
+      case PacketType.OrderInvalidation:
         return new packetTypes.OrderInvalidationPacket(packet);
-      case PacketType.GET_ORDERS:
+      case PacketType.GetOrders:
         return new packetTypes.GetOrdersPacket(packet);
-      case PacketType.ORDERS:
+      case PacketType.Orders:
         return new packetTypes.OrdersPacket(packet);
-      case PacketType.GET_NODES:
+      case PacketType.GetNodes:
         return new packetTypes.GetNodesPacket(packet);
-      case PacketType.NODES:
+      case PacketType.Nodes:
         return new packetTypes.NodesPacket(packet);
-      case PacketType.SWAP_REQUEST:
+      case PacketType.SwapRequest:
         return new packetTypes.SwapRequestPacket(packet);
-      case PacketType.SWAP_RESPONSE:
+      case PacketType.SwapResponse:
         return new packetTypes.SwapResponsePacket(packet);
-      case PacketType.SWAP_COMPLETE:
+      case PacketType.SwapComplete:
         return new packetTypes.SwapCompletePacket(packet);
-      case PacketType.SWAP_ERROR:
+      case PacketType.SwapError:
         return new packetTypes.SwapErrorPacket(packet);
       default:
-        throw new ParserError(ParserErrorType.UNKNOWN_PACKET_TYPE, packet.header.type!);
+        throw new ParserError(ParserErrorType.UnknownPacketType, packet.header.type!);
     }
   } else {
-    throw new ParserError(ParserErrorType.INVALID_MESSAGE, `${raw}`);
+    throw new ParserError(ParserErrorType.InvalidMessage, `${raw}`);
   }
 };
 
@@ -81,7 +81,7 @@ class Parser extends EventEmitter {
     const total = Buffer.byteLength(this.buffer) + Buffer.byteLength(data);
     if (total > this.maxBufferSize) {
       this.buffer = '';
-      this.emit('error', new ParserError(ParserErrorType.MAX_BUFFER_SIZE_EXCEEDED, total.toString()));
+      this.emit('error', new ParserError(ParserErrorType.MaxBufferSizeExceeded, total.toString()));
       return;
     }
     this.buffer += data;

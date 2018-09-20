@@ -74,10 +74,10 @@ class DB {
       ]);
 
       await Currency.bulkCreate(<db.CurrencyAttributes[]>[
-        { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
-        { id: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
-        { id: 'ZRX', swapClient: SwapClients.RAIDEN, decimalPlaces: 18 },
-        { id: 'GNT', swapClient: SwapClients.RAIDEN, decimalPlaces: 18 },
+        { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+        { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+        { id: 'ZRX', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
+        { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
       ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[

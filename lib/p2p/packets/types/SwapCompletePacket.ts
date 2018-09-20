@@ -7,11 +7,11 @@ export type SwapCompletePacketBody = {
 
 class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
   public get type() {
-    return PacketType.SWAP_COMPLETE;
+    return PacketType.SwapComplete;
   }
 
   public get direction() {
-    return PacketDirection.UNILATERAL;
+    return PacketDirection.Unilateral;
   }
 }
 

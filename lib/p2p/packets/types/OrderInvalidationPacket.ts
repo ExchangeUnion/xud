@@ -6,11 +6,11 @@ type OrderInvalidationPacketBody = OrderIdentifier;
 
 class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
   public get type() {
-    return PacketType.ORDER_INVALIDATION;
+    return PacketType.OrderInvalidation;
   }
 
   public get direction() {
-    return PacketDirection.UNILATERAL;
+    return PacketDirection.Unilateral;
   }
 }
 

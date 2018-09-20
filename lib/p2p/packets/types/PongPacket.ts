@@ -3,11 +3,11 @@ import PacketType from '../PacketType';
 
 class PongPacket extends Packet<undefined> {
   public get type() {
-    return PacketType.PONG;
+    return PacketType.Pong;
   }
 
   public get direction() {
-    return PacketDirection.RESPONSE;
+    return PacketDirection.Response;
   }
 }
 

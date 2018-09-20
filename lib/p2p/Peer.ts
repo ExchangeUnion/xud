@@ -224,7 +224,7 @@ class Peer extends EventEmitter {
     this.sendRaw(packet.toRaw());
     this.packetCount += 1;
 
-    if (packet.direction === PacketDirection.REQUEST) {
+    if (packet.direction === PacketDirection.Request) {
       this.addResponseTimeout(packet.header.id, Peer.RESPONSE_TIMEOUT);
     }
   }
@@ -476,15 +476,15 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UNPARSEABLE_MESSAGE:
+        case ParserErrorType.UnparseableMessage:
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
           this.increaseBan(10);
           break;
-        case ParserErrorType.INVALID_MESSAGE:
+        case ParserErrorType.InvalidMessage:
           this.logger.warn(`Invalid peer message: ${err.payload}`);
           this.increaseBan(10);
           break;
-        case ParserErrorType.UNKNOWN_PACKET_TYPE:
+        case ParserErrorType.UnknownPacketType:
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
           this.increaseBan(20);
       }
@@ -495,11 +495,11 @@ class Peer extends EventEmitter {
   private isPacketSolicited = (packet: Packet): boolean => {
     let solicited = true;
 
-    if (!this.opened && packet.type !== PacketType.HELLO) {
+    if (!this.opened && packet.type !== PacketType.Hello) {
       // until the connection is opened, we only accept hello packets
       solicited = false;
     }
-    if (packet.direction === PacketDirection.RESPONSE) {
+    if (packet.direction === PacketDirection.Response) {
       // lookup a pending response entry for this packet by its reqId
       if (!this.fulfillResponseEntry(packet)) {
         solicited = false;
@@ -512,11 +512,11 @@ class Peer extends EventEmitter {
   private handlePacket = (packet: Packet): void => {
     if (this.isPacketSolicited(packet)) {
       switch (packet.type) {
-        case PacketType.HELLO: {
+        case PacketType.Hello: {
           this.handleHello(packet);
           break;
         }
-        case PacketType.PING: {
+        case PacketType.Ping: {
           this.handlePing(packet);
           break;
         }
@@ -551,7 +551,7 @@ class Peer extends EventEmitter {
 
     if (!this.handshakeState) {
       // we must wait to receive handshake data before opening the connection
-      await this.wait(PacketType.HELLO, Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.Hello, Peer.RESPONSE_TIMEOUT);
     }
 
     return packet;
@@ -560,10 +560,10 @@ class Peer extends EventEmitter {
   private handleHello = (packet: packets.HelloPacket): void => {
     this.handshakeState = packet.body;
 
-    const entry = this.responseMap.get(PacketType.HELLO);
+    const entry = this.responseMap.get(PacketType.Hello);
 
     if (entry) {
-      this.responseMap.delete(PacketType.HELLO);
+      this.responseMap.delete(PacketType.Hello);
       entry.resolve(packet);
     }
 

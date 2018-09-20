@@ -3,11 +3,11 @@ import PacketType from '../PacketType';
 
 class GetOrdersPacket extends Packet<undefined> {
   public get type() {
-    return PacketType.GET_ORDERS;
+    return PacketType.GetOrders;
   }
 
   public get direction() {
-    return PacketDirection.REQUEST;
+    return PacketDirection.Request;
   }
 }
 

@@ -9,11 +9,11 @@ export type SwapResponsePacketBody = {
 
 class SwapResponsePacket extends Packet<SwapResponsePacketBody> {
   public get type() {
-    return PacketType.SWAP_RESPONSE;
+    return PacketType.SwapResponse;
   }
 
   public get direction() {
-    return PacketDirection.RESPONSE;
+    return PacketDirection.Response;
   }
 }
 

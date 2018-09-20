@@ -28,11 +28,11 @@ function isPacketInterface(obj: any): obj is PacketInterface {
 
 enum PacketDirection {
   /** A packet that is pushed to a peer without expecting any response. */
-  UNILATERAL,
+  Unilateral,
   /** A packet requesting a response. */
-  REQUEST,
+  Request,
   /** A packet that is sent in response to an incoming packet. */
-  RESPONSE,
+  Response,
 }
 
 abstract class Packet<T = any> implements PacketInterface {
