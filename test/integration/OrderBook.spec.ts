@@ -94,6 +94,14 @@ describe('OrderBook', () => {
     expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
   });
 
+  it('should create, partially match, and cancel an order', async () => {
+    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 10 };
+    await orderBook.addLimitOrder(order);
+    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -5 };
+    await orderBook.addMarketOrder(takerOrder);
+    expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
+  });
+
   it('should not add a new own order with a duplicated localId', async () => {
     const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -10, price: 100 };
 
