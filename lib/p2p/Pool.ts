@@ -183,12 +183,12 @@ class Pool extends EventEmitter {
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
   private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
-    if (!await this.tryConnectWithLastAddress(node)) {
-      await this.tryConnectWithAdvertisedAddresses(node, retryConnecting);
+    if (!await this.tryConnectWithLastAddress(node, retryConnecting)) {
+      await this.tryConnectWithAdvertisedAddresses(node);
     }
   }
 
-  private tryConnectWithLastAddress = async (node: NodeConnectionInfo) => {
+  private tryConnectWithLastAddress = async (node: NodeConnectionInfo, retryConnecting = false) => {
     const { lastAddress, nodePubKey } = node;
 
     if (!lastAddress) return false;
@@ -198,10 +198,16 @@ class Pool extends EventEmitter {
       return true;
     } catch (err) {}
 
+    if (retryConnecting) {
+      try {
+        await this.addOutbound(lastAddress, nodePubKey, true);
+      } catch (err) {}
+    }
+
     return false;
   }
 
-  private tryConnectWithAdvertisedAddresses = async (node: NodeConnectionInfo, retryConnecting = false) => {
+  private tryConnectWithAdvertisedAddresses = async (node: NodeConnectionInfo) => {
     const { addresses, nodePubKey } = node;
 
     // sort by lastConnected desc
@@ -211,12 +217,6 @@ class Pool extends EventEmitter {
       try {
         await this.addOutbound(address, nodePubKey, false);
         return; // once we've successfully established an outbound connection, stop attempting new connections
-      } catch (err) {}
-    }
-
-    if (retryConnecting && sortedAddresses.length && sortedAddresses[0].lastConnected) {
-      try {
-        await this.addOutbound(sortedAddresses[0], nodePubKey, true);
       } catch (err) {}
     }
   }
