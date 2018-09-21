@@ -10,6 +10,7 @@ export type SwapRequestPacketBody = {
   makerCurrency: string;
   orderId: string;
   r_hash: string;
+  takerCltvDelta: number;
 };
 
 class SwapRequestPacket extends Packet<SwapRequestPacketBody> {

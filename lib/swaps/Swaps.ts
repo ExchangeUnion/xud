@@ -1,4 +1,4 @@
-import { SwapDealRole, SwapDealState, SwapDealPhase } from '../types/enums';
+import { SwapDealPhase, SwapDealRole, SwapDealState } from '../types/enums';
 import Peer from '../p2p/Peer';
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
@@ -21,7 +21,7 @@ type SwapDeal = {
    */
   state: SwapDealState;
   /** The reason for being in current state */
-  stateReason: String;
+  stateReason: string;
   /** Global order id in the XU network. */
   orderId: string;
   /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
@@ -37,10 +37,14 @@ type SwapDeal = {
   takerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
   takerPubKey?: string;
+  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to taker. */
+  takerCltvDelta: number;
   /** The number of satoshis (or equivalent) the maker is expecting to receive. */
   makerAmount: number;
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
+  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
+  makerCltvDelta?: number;
   /** The hash of the preimage. */
   r_hash: string;
   r_preimage?: string;
@@ -146,6 +150,16 @@ class Swaps extends EventEmitter {
       takerCurrency = quoteCurrency;
       makerCurrency = baseCurrency;
     }
+
+    let takerCltvDelta = 0;
+    switch (takerCurrency) {
+      case 'BTC':
+        takerCltvDelta = this.lndBtcClient.cltvDelta;
+        break;
+      case 'LTC':
+        takerCltvDelta = this.lndLtcClient.cltvDelta;
+        break;
+    }
     const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
     const preimage = randomBytes(32);
 
@@ -154,6 +168,7 @@ class Swaps extends EventEmitter {
       makerCurrency,
       takerAmount,
       makerAmount,
+      takerCltvDelta,
       r_hash: createHash('sha256').update(preimage).digest('hex'),
       orderId: maker.id,
       pairId: maker.pairId,
@@ -192,9 +207,22 @@ class Swaps extends EventEmitter {
     // TODO: check that we have route to taker.
     // TODO: extract data needed for proper timelock calculation and share with taker
 
+    let makerCltvDelta = 0;
+    // cltvDelta can't be zero for both the LtcClient and BtcClient (constractor)
+    const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
+    switch (requestBody.makerCurrency) {
+      case 'BTC':
+        makerCltvDelta = this.lndBtcClient.cltvDelta + requestBody.takerCltvDelta / cltvDeltaFactor;
+        break;
+      case 'LTC':
+        makerCltvDelta = this.lndLtcClient.cltvDelta + requestBody.takerCltvDelta * cltvDeltaFactor;
+        break;
+    }
+
     // accept the deal
     const deal: SwapDeal = {
       ...requestBody,
+      makerCltvDelta: Math.round(makerCltvDelta),
       quantity: requestBody.proposedQuantity,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
@@ -208,6 +236,7 @@ class Swaps extends EventEmitter {
     this.addDeal(deal);
 
     const responseBody: packets.SwapResponsePacketBody = {
+      makerCltvDelta,
       r_hash: requestBody.r_hash,
       quantity: requestBody.proposedQuantity,
     };
@@ -222,12 +251,15 @@ class Swaps extends EventEmitter {
    */
   private handleSwapResponse = async (responsePacket: packets.SwapResponsePacket, peer: Peer) => {
     assert(responsePacket.body, 'SwapResponsePacket does not contain a body');
-    const { quantity, r_hash } = responsePacket.body!;
+    const { quantity, r_hash, makerCltvDelta } = responsePacket.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
       this.logger.error(`received swap response for unrecognized deal r_hash ${r_hash}`);
       return;
     }
+
+    // update deal with taker's makerCltvDelta
+    deal.makerCltvDelta = makerCltvDelta;
 
     if (quantity) {
       // TODO: require a non-zero quantity value on accepted swap responses
@@ -256,6 +288,7 @@ class Swaps extends EventEmitter {
     request.setAmt(deal.makerAmount);
     request.setDestString(makerPubKey);
     request.setPaymentHashString(deal.r_hash);
+    request.setFinalCltvDelta(deal.makerCltvDelta);
 
     // TODO: use timeout on call
 
@@ -287,10 +320,59 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Verify that the request from LND is valid. check the received amount vs
+   * the expected amount and the CltvDelta vs the expected on.
+   */
+  private validateRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
+    const amount = resolveRequest.getAmount();
+    let expectedAmount = 0;
+    let cltvDelta = 0;
+    let source: string;
+    let destination: string;
+
+    switch (deal.myRole) {
+      case SwapDealRole.Maker:
+        expectedAmount = deal.makerAmount;
+        cltvDelta = deal.makerCltvDelta!;
+        source = 'Taker';
+        destination = 'Maker';
+        break;
+      case SwapDealRole.Taker:
+        expectedAmount = deal.takerAmount;
+        cltvDelta = deal.takerCltvDelta;
+        source = 'Maker';
+        destination = 'Taker';
+        break;
+      default:
+        this.setDealState(deal, SwapDealState.Error,
+          'Unknown role detected');
+        return false;
+    }
+    // convert expected amount to mSat
+    expectedAmount = expectedAmount * 1000;
+
+    if (amount < expectedAmount) {
+      this.logger.error('received ' + amount + ' mSat, expected ' + expectedAmount + ' mSat');
+      this.setDealState(deal, SwapDealState.Error,
+          'Amount sent from ' + source + ' to ' + 'destination' + 'is too small');
+      return false;
+    }
+
+    if (cltvDelta > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
+      this.logger.error('got timeout ' + resolveRequest.getTimeout() + ' at height ' + resolveRequest.getHeightNow());
+      this.logger.error('cltvDelta is ' + (resolveRequest.getTimeout() - resolveRequest.getHeightNow()) +
+          ' expected delta of ' + cltvDelta);
+      this.setDealState(deal, SwapDealState.Error,
+          'cltvDelta sent from ' + source + ' to ' + 'destination' + 'is too small');
+      return false;
+    }
+    return true;
+  }
+  /**
    * resolveHash resolve hash to preimage.
    */
-  public resolveHash = async (args: { hash: string }) => {
-    const { hash } = args;
+  public resolveHash = async (resolveRequest: lndrpc.ResolveRequest) => {
+    const hash = resolveRequest.getHash();
 
     this.logger.info('ResolveHash starting with hash: ' + hash);
 
@@ -302,11 +384,14 @@ class Swaps extends EventEmitter {
       return msg;
     }
 
-    // If I'm the maker I need to forward the payment to the other chain
-    // TODO: check that I got the right amount before sending out the agreed amount
-    // TODO: calculate CLTV
+    if (!this.validateRequest(deal, resolveRequest)) {
+      return deal.stateReason;
+    }
+
     if (deal.myRole === SwapDealRole.Maker) {
+      // As the maker, I need to forward the payment to the other chain
 	  this.logger.debug('Executing maker code');
+
       let cmdLnd = this.lndLtcClient;
 
       switch (deal.makerCurrency) {
@@ -321,6 +406,7 @@ class Swaps extends EventEmitter {
       request.setAmt(deal.takerAmount);
       request.setDestString(deal.takerPubKey!);
       request.setPaymentHashString(deal.r_hash);
+      request.setFinalCltvDelta(deal.takerCltvDelta);
 
       try {
         this.setDealPhase(deal, SwapDealPhase.AmountSent);
@@ -342,6 +428,7 @@ class Swaps extends EventEmitter {
     } else {
       // If we are here we are the taker
       this.logger.debug('Executing taker code');
+
       this.setDealPhase(deal, SwapDealPhase.AmountReceived);
       return deal.r_preimage;
     }
@@ -349,6 +436,13 @@ class Swaps extends EventEmitter {
   }
 
   private setDealState = (deal: SwapDeal, newState: SwapDealState, newStateReason: string): void => {
+    // If we are already in error state and got another error report we
+    // aggregate all error reasons by concatenation
+    if (deal.state === newState && deal.state === SwapDealState.Error) {
+      deal.stateReason = deal.stateReason + '; ' + newStateReason;
+      this.logger.debug('new deal state reason: ' + deal.stateReason);
+      return;
+    }
     assert(deal.state === SwapDealState.Active, 'deal is not Active. Can not change deal state');
     deal.state = newState;
     deal.stateReason = newStateReason;

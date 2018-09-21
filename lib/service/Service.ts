@@ -325,8 +325,8 @@ class Service extends EventEmitter {
   /**
    * resolveHash resolve hash to preimage.
    */
-  public resolveHash = async (args: { hash: string }) => {
-    return this.swaps.resolveHash(args);
+  public resolveHash = async (request: lndrpc.ResolveRequest) => {
+    return this.swaps.resolveHash(request);
   }
 }
 export default Service;

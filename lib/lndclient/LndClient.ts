@@ -5,6 +5,7 @@ import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
+import assert from 'assert';
 
 /** The configurable options for the lnd client. */
 type LndClientConfig = {
@@ -13,6 +14,7 @@ type LndClientConfig = {
   macaroonpath: string;
   host: string;
   port: number;
+  cltvdelta: number;
 };
 
 /** General information about the state of this lnd client. */
@@ -41,6 +43,7 @@ interface LightningMethodIndex extends LightningClient {
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
+  public readonly cltvDelta: number = 0;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
@@ -57,7 +60,7 @@ class LndClient extends BaseClient {
     super(logger);
 
     let shouldEnable = true;
-    const { disable, certpath, macaroonpath } = config;
+    const { disable, certpath, macaroonpath, cltvdelta } = config;
 
     if (disable) {
       shouldEnable = false;
@@ -71,7 +74,10 @@ class LndClient extends BaseClient {
       shouldEnable = false;
     }
     if (shouldEnable) {
+      this.cltvDelta = cltvdelta;
+      assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
       this.uri = `${config.host}:${config.port}`;
+      this.cltvDelta = cltvdelta;
       const lndCert = fs.readFileSync(certpath);
       this.credentials = grpc.credentials.createSsl(lndCert);
 

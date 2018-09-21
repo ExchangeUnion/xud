@@ -74,6 +74,7 @@ class Config {
       macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
+      cltvdelta: 144,
     };
     this.lndltc = {
       disable: false,
@@ -81,6 +82,7 @@ class Config {
       macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
+      cltvdelta: 576,
     };
     this.raiden = {
       disable: false,

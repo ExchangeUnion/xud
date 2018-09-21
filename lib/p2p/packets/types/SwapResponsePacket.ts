@@ -5,6 +5,7 @@ import PacketType from '../PacketType';
 export type SwapResponsePacketBody = {
   r_hash: string;
   quantity: number;
+  makerCltvDelta: number;
 };
 
 class SwapResponsePacket extends Packet<SwapResponsePacketBody> {
