@@ -32,6 +32,14 @@ const addressUtils = {
 
   /** Checks whether two [[Address]] instances are equal, based solely on `host` and `port` fields */
   areEqual: (a: Address, b: Address) => a.host === b.host && a.port === b.port,
+
+  sortByLastConnected: (addresses: Address[]) => {
+    return [...addresses].sort((a, b) => {
+      if (!a.lastConnected) return 1;
+      if (!b.lastConnected) return -1;
+      return b.lastConnected - a.lastConnected;
+    });
+  },
 };
 
 export default addressUtils;

@@ -183,12 +183,12 @@ class Pool extends EventEmitter {
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
   private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
-    if (!await this.connectWithLastAddress(node)) {
-      await this.connectWithAdvertisedAddresses(node, retryConnecting);
+    if (!await this.tryConnectWithLastAddress(node)) {
+      await this.tryConnectWithAdvertisedAddresses(node, retryConnecting);
     }
   }
 
-  private connectWithLastAddress = async (node: NodeConnectionInfo) => {
+  private tryConnectWithLastAddress = async (node: NodeConnectionInfo) => {
     const { lastAddress, nodePubKey } = node;
 
     if (!lastAddress) return false;
@@ -201,15 +201,11 @@ class Pool extends EventEmitter {
     return false;
   }
 
-  private connectWithAdvertisedAddresses = async (node: NodeConnectionInfo, retryConnecting = false) => {
+  private tryConnectWithAdvertisedAddresses = async (node: NodeConnectionInfo, retryConnecting = false) => {
     const { addresses, nodePubKey } = node;
 
     // sort by lastConnected desc
-    const sortedAddresses = [...addresses].sort((a, b) => {
-      if (!a.lastConnected) return 1;
-      if (!b.lastConnected) return -1;
-      return b.lastConnected - a.lastConnected;
-    });
+    const sortedAddresses = addressUtils.sortByLastConnected(addresses);
 
     for (const address of sortedAddresses) {
       try {

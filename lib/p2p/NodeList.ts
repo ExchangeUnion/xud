@@ -101,12 +101,9 @@ class NodeList {
         return true;
       }
 
+      // if the lastAddress is removed, then re-assigning lastAddress with the latest connected advertised address
       if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) {
-        node.lastAddress = [...node.addresses].sort((a, b) => {
-          if (!a.lastConnected) return 1;
-          if (!b.lastConnected) return -1;
-          return b.lastConnected - a.lastConnected;
-        })[0];
+        node.lastAddress = addressUtils.sortByLastConnected(node.addresses)[0];
       }
     }
 
