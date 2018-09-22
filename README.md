@@ -1,16 +1,16 @@
-# Exchange Union
+# XUD
 
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
 [![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 
-[Exchange Union](https://www.exchangeunion.com/) (XU) is a decentralized exchange layer built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable trustless and instant cryptocurrency swaps and order fulfillment between exchanges. This repository contains the Exchange Union Daemon (`xud`) software which encompasses the following components:
+XUD stands for Exchange Union Daemon and powers [Exchange Union](https://www.exchangeunion.com/), a decentralized exchange built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable instant & trustless cryptocurrency swaps and order fulfillment between exchanges. This repository contains `xud` which encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
-* Decentralized order book to aggregate orders from the known network.
-* Matching engine to match incoming local orders with existing local and remote orders and initiate atomic swaps.
+* Decentralized order book to locally aggregate orders from the known network.
+* Matching engine to match new local orders with existing local and remote orders and initiate atomic swaps.
 * Peer-to-peer networking with other XU nodes.
-* gRPC API with web proxy to serve other applications, also accessible by command-line interface.
+* gRPC API with web proxy to serve other applications, also accessible via the command-line interface `xucli`.
 
 ## Install
 
@@ -43,7 +43,7 @@ Issue commands to `xud` with the `xucli` command line tool. To see a list of ava
 
 You can find more information on how to use `xud` in the wiki at [Running xud](https://github.com/ExchangeUnion/xud/wiki/Running-xud) and [Command Line Interface](https://github.com/ExchangeUnion/xud/wiki/Command-Line-Interface).
 
-Note: If you installed `xud` globally, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
+Note: If you installed `xud` globally, e.g. via npm, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
 
 ## Code Documentation
 
