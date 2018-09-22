@@ -31,11 +31,7 @@ describe('P2P Pool Tests', () => {
 
   before(async () => {
     const config = new Config();
-    config.load({
-      p2p: {
-        listen: false,
-      },
-    });
+    config.p2p.listen = false;
     db = new DB(loggers.db);
     await db.init();
 
