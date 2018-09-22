@@ -49,7 +49,7 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
-  public outgoingConnections: any = {};
+  private pendingOutgoingConnections = new Set<string>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
@@ -171,28 +171,29 @@ class Pool extends EventEmitter {
   private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      const is_not_ignored = false;
-      let has_no_pending_connections = true;
+      let isNotIgnored = false;
+      let hasNoPendingConnections = true;
 
       // check that this node is not ourselves
-      const is_not_us = node.nodePubKey !== this.handshakeData.nodePubKey;
+      const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
 
       // that it has listening addresses,
-      const has_addresses = node.addresses.length > 0;
+      const hasAddresses = node.addresses.length > 0;
 
-      // and that either we haven't heard of it, or we're not ignoring known nodes and it's not banned
-      const is_unknown_node = !this.nodes.has(node.nodePubKey);
-      if (!is_unknown_node) {
-        const is_not_ignored = !ignoreKnown && !this.nodes.isBanned(node.nodePubKey);
+      // ignore nodes that are banned or, if ignoreKnown is true, that we already know
+      const isKnownNode = this.nodes.has(node.nodePubKey);
+      if (isKnownNode) {
+        isNotIgnored = !ignoreKnown && !this.nodes.isBanned(node.nodePubKey);
+      }
 
-        // Check we're not already trying to connect to this node.
-        if (node.nodePubKey in this.outgoingConnections) {
-          has_no_pending_connections = false;
-        }
+      // Check we're not already trying to connect to this node.
+      if (this.pendingOutgoingConnections.has(node.nodePubKey)) {
+        hasNoPendingConnections = false;
       }
 
       // Validate this node.
-      if (is_not_us && has_addresses && is_not_ignored && has_no_pending_connections) {
+      if (isNotUs && hasAddresses && isNotIgnored && hasNoPendingConnections) {
+        this.pendingOutgoingConnections.add(node.nodePubKey);
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -467,10 +468,10 @@ class Pool extends EventEmitter {
     });
   }
 
-  private clearOutgoingConnection = (nodePubKey: any) => {
-    if (nodePubKey !== null) {
-      if (nodePubKey in this.outgoingConnections) {
-        delete this.outgoingConnections[nodePubKey];
+  private clearPendingOutgoingConnection = (nodePubKey?: string) => {
+    if (nodePubKey !== undefined) {
+      if (this.pendingOutgoingConnections.has(nodePubKey)) {
+        this.pendingOutgoingConnections.delete(nodePubKey);
       }
     }
   }
@@ -490,14 +491,14 @@ class Pool extends EventEmitter {
 
     peer.once('open', async () => {
       await this.handleOpen(peer);
-      this.clearOutgoingConnection(peer.nodePubKey);
+      this.clearPendingOutgoingConnection(peer.nodePubKey);
     });
 
     peer.once('close', () => {
       if (peer.nodePubKey) {
         this.peers.remove(peer.nodePubKey);
       }
-      this.clearOutgoingConnection(peer.nodePubKey);
+      this.clearPendingOutgoingConnection(peer.nodePubKey);
       this.emit('peer.close', peer);
     });
 
