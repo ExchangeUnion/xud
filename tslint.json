@@ -57,5 +57,10 @@
     "no-unnecessary-type-assertion": true,
     "await-promise": [true, "Bluebird"],
     "no-inferrable-types": true
+  },
+  "linterOptions": {
+      "exclude": [
+          "*.py"
+      ]
   }
 }
