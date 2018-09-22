@@ -360,7 +360,7 @@ class GrpcService {
    */
   public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
     try {
-      const resolveResponse = await this.service.resolveHash(call.request.toObject());
+      const resolveResponse = await this.service.resolveHash(call.request);
       const response = new ResolveResponse();
       if (resolveResponse) {
         response.setPreimage(resolveResponse);
