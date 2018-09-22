@@ -50,7 +50,7 @@ class Config {
 
     // default configuration
     this.initDb = true;
-    this.dbPath = path.join(this.xudir, 'xud.db');
+    this.dbPath = this.getDefaultDbPath();
     this.logLevel = this.getDefaultLogLevel();
     this.logPath = this.getDefaultLogPath();
 
@@ -90,18 +90,20 @@ class Config {
   }
 
   public load(args?: { [argName: string]: any }): Config {
-    if (args && args['xudir']) {
-      this.xudir = args['xudir'];
-      this.logPath = this.getDefaultLogPath();
-    }
-
     const configPath = path.join(this.xudir, 'xud.conf');
+    if (args && args.xudir) {
+      this.updateDefaultPaths(args.xudir);
+    }
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(configPath)) {
       const configText = fs.readFileSync(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
+
+        if (props.xudir && (!args || !args.xudir)) {
+          this.updateDefaultPaths(props.xudir);
+        }
 
         // merge parsed json properties from config file to the default config
         deepMerge(this, props);
@@ -130,6 +132,22 @@ class Config {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir);
     }
+  }
+
+  /**
+   * Updates the default values for all fields derived from the xu directory when a custom
+   * xu directory is specified by the config file or command line arguments.
+   */
+  private updateDefaultPaths = (xudir: string) => {
+    // if we have a custom xu directory, update the default values for all fields that are
+    // derived from the xu directory.
+    this.xudir = xudir;
+    this.logPath = this.getDefaultLogPath();
+    this.dbPath = this.getDefaultDbPath();
+  }
+
+  private getDefaultDbPath = () => {
+    return path.join(this.xudir, 'xud.db');
   }
 
   private getDefaultLogPath = (): string => {

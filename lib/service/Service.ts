@@ -48,9 +48,6 @@ const argChecks = {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
-  MAX_RESULTS_NOT_NEGATIVE: ({ maxResults }: { maxResults: number }) => {
-    if (maxResults < 0) throw errors.INVALID_ARGUMENT('maxResults cannot be negative');
-  },
   NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
@@ -122,23 +119,36 @@ class Service extends EventEmitter {
   }
 
   /** Gets the total lightning network channel balance for a given currency. */
-  public channelBalance = (args: { currency: string }) => {
+  public channelBalance = async (args: { currency: string }) => {
     const { currency } = args;
+    const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
+    const getBalance = (currency: string) => {
+      let cmdLnd: LndClient;
+      switch (currency.toUpperCase()) {
+        case 'BTC':
+          cmdLnd = this.lndBtcClient;
+          break;
+        case 'LTC':
+          cmdLnd = this.lndLtcClient;
+          break;
+        default:
+          // TODO: throw an error here indicating that lnd is disabled for this currency
+          return { balance: 0, pendingOpenBalance: 0 };
+      }
 
-    let cmdLnd: LndClient;
-    switch (currency.toUpperCase()) {
-      case 'BTC':
-        cmdLnd = this.lndBtcClient;
-        break;
-      case 'LTC':
-        cmdLnd = this.lndLtcClient;
-        break;
-      default:
-        // TODO: throw an error here indicating that lnd is disabled for this currency
-        return { balance: 0, pendingOpenBalance: 0 };
+      return cmdLnd.channelBalance();
+    };
+
+    if (currency) {
+      argChecks.VALID_CURRENCY(args);
+      balances.set(currency, await getBalance(currency));
+    } else {
+      for (const currency of this.orderBook.currencies.keys()) {
+        balances.set(currency, await getBalance(currency));
+      }
     }
 
-    return cmdLnd.channelBalance();
+    return balances;
   }
 
   /**
@@ -186,8 +196,8 @@ class Service extends EventEmitter {
     let ownOrdersCount = 0;
     let numPairs = 0;
     for (const pairId of this.orderBook.pairIds) {
-      const peerOrders = this.orderBook.getPeerOrders(pairId, 0);
-      const ownOrders = this.orderBook.getOwnOrders(pairId, 0);
+      const peerOrders = this.orderBook.getPeerOrders(pairId);
+      const ownOrders = this.orderBook.getOwnOrders(pairId);
 
       peerOrdersCount += Object.keys(peerOrders.buy).length + Object.keys(peerOrders.sell).length;
       ownOrdersCount += Object.keys(ownOrders.buy).length + Object.keys(ownOrders.sell).length;
@@ -218,16 +228,15 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public getOrders = (args: { pairId: string, maxResults: number, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, maxResults, includeOwnOrders } = args;
-    argChecks.MAX_RESULTS_NOT_NEGATIVE(args);
+  public getOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, includeOwnOrders } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
     const getOrderTypes = (pairId: string) => {
-      const orders = this.orderBook.getPeerOrders(pairId, maxResults);
+      const orders = this.orderBook.getPeerOrders(pairId);
 
       if (includeOwnOrders) {
-        const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId, maxResults);
+        const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
 
         orders.buy = [...orders.buy, ...ownOrders.buy];
         orders.sell = [...orders.sell, ...ownOrders.sell];
