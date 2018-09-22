@@ -314,7 +314,7 @@ class RaidenClient extends BaseClient {
    * @param channel_address the address of the channel to deposit to
    * @param balance the amount to deposit to the channel
    */
-  public depositToChannel = async(channel_address: string, balance: number): Promise<void> => {
+  public depositToChannel = async (channel_address: string, balance: number): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'PATCH', { balance });
   }

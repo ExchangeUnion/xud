@@ -73,7 +73,6 @@ describe('API Service', () => {
   it('should get orders', async () => {
     const args = {
       pairId,
-      maxResults: 0,
       includeOwnOrders: true,
     };
     const orders = service.getOrders(args);
