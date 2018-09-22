@@ -119,23 +119,36 @@ class Service extends EventEmitter {
   }
 
   /** Gets the total lightning network channel balance for a given currency. */
-  public channelBalance = (args: { currency: string }) => {
+  public channelBalance = async (args: { currency: string }) => {
     const { currency } = args;
+    const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
+    const getBalance = (currency: string) => {
+      let cmdLnd: LndClient;
+      switch (currency.toUpperCase()) {
+        case 'BTC':
+          cmdLnd = this.lndBtcClient;
+          break;
+        case 'LTC':
+          cmdLnd = this.lndLtcClient;
+          break;
+        default:
+          // TODO: throw an error here indicating that lnd is disabled for this currency
+          return { balance: 0, pendingOpenBalance: 0 };
+      }
 
-    let cmdLnd: LndClient;
-    switch (currency.toUpperCase()) {
-      case 'BTC':
-        cmdLnd = this.lndBtcClient;
-        break;
-      case 'LTC':
-        cmdLnd = this.lndLtcClient;
-        break;
-      default:
-        // TODO: throw an error here indicating that lnd is disabled for this currency
-        return { balance: 0, pendingOpenBalance: 0 };
+      return cmdLnd.channelBalance();
+    };
+
+    if (currency) {
+      argChecks.VALID_CURRENCY(args);
+      balances.set(currency, await getBalance(currency));
+    } else {
+      for (const currency of this.orderBook.currencies.keys()) {
+        balances.set(currency, await getBalance(currency));
+      }
     }
 
-    return cmdLnd.channelBalance();
+    return balances;
   }
 
   /**

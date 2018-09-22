@@ -152,7 +152,7 @@ message AddCurrencyRequest {
   // of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
-message AddCurrencyResponse { }
+message AddCurrencyResponse {}
 
 message AddPairRequest {
   // The base currency that is bought and sold for this trading pair
@@ -160,34 +160,40 @@ message AddPairRequest {
   // The currency used to quote a price for the base currency
   string quote_currency = 2 [json_name = "quote_currency"];
 }
-message AddPairResponse { }
+message AddPairResponse {}
 
-message ChannelBalanceRequest {
-  // The ticker symbol of the currency to query for 
-  string currency = 1 [json_name = "currency"];
+message CancelOrderRequest {
+  // The local id of the order to cancel
+  string order_id = 1 [json_name = "order_id"];
 }
-message ChannelBalanceResponse {
+message CancelOrderResponse {}
+
+message ChannelBalance {
   // Sum of channels balances denominated in satoshis or equivalent
   int64 balance = 1 [json_name = "balance"];
   // Sum of channels pending balances denominated in satoshis or equivalent
   int64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
-message CancelOrderRequest {
-  // The local id of the order to cancel
-  string order_id = 1 [json_name = "order_id"];
+message ChannelBalanceRequest {
+  // The ticker symbol of the currency to query for, if unspecified then balances for all
+  // supported currencies are queried
+  string currency = 1 [json_name = "currency"];
 }
-message CancelOrderResponse { }
+message ChannelBalanceResponse {
+  // A map between currency ticker symbols and their channel balances
+  map<string, ChannelBalance> balances = 1 [json_name = "orders"];
+}
 
 message ConnectRequest {
   string node_uri = 1 [json_name = "node_uri"];
 }
-message ConnectResponse { }
+message ConnectResponse {}
 
 message DisconnectRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message DisconnectResponse { }
+message DisconnectResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {
@@ -327,13 +333,13 @@ message RemoveCurrencyRequest {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
 }
-message RemoveCurrencyResponse { }
+message RemoveCurrencyResponse {}
 
 message RemovePairRequest {
   // The trading pair ticker to remove, such as "LTC/BTC"
   string pair_id = 1 [json_name = "pair_id"];
 }
-message RemovePairResponse { }
+message RemovePairResponse {}
 
 message SwapPayload {
   string role = 1 [json_name = "role"];
@@ -345,7 +351,7 @@ message SwapPayload {
 }
 
 message ShutdownRequest {}
-message ShutdownResponse { }
+message ShutdownResponse {}
 
 message SubscribePeerOrdersRequest {}
 message SubscribePeerOrdersResponse {
