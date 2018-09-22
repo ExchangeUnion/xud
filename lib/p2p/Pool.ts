@@ -183,8 +183,10 @@ class Pool extends EventEmitter {
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
   private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
-    if (!await this.tryConnectWithLastAddress(node, retryConnecting)) {
-      await this.tryConnectWithAdvertisedAddresses(node);
+    if (!await this.tryConnectWithLastAddress(node)) {
+      if (!await this.tryConnectWithAdvertisedAddresses(node) && retryConnecting) {
+        await this.tryConnectWithLastAddress(node, true);
+      }
     }
   }
 
@@ -194,15 +196,9 @@ class Pool extends EventEmitter {
     if (!lastAddress) return false;
 
     try {
-      await this.addOutbound(lastAddress, nodePubKey, false);
+      await this.addOutbound(lastAddress, nodePubKey, retryConnecting);
       return true;
     } catch (err) {}
-
-    if (retryConnecting) {
-      try {
-        await this.addOutbound(lastAddress, nodePubKey, true);
-      } catch (err) {}
-    }
 
     return false;
   }
