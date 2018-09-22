@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
-import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
@@ -16,13 +15,11 @@ describe('OrderBook', () => {
   let orderBookRepository: OrderBookRepository;
 
   before(async () => {
-    const config = new Config();
-    await config.load();
     const loggers = Logger.createLoggers(Level.WARN);
 
     db = new DB(loggers.db);
 
-    const nodeKey = NodeKey.load(config.xudir);
+    const nodeKey = NodeKey['generate']();
 
     await db.init();
 
@@ -45,7 +42,7 @@ describe('OrderBook', () => {
   });
 
   const getOwnOrder = (order: orders.StampedOwnOrder): orders.StampedOwnOrder | undefined => {
-    const ownOrders = orderBook.getOwnOrders(order.pairId, 0);
+    const ownOrders = orderBook.getOwnOrders(order.pairId);
     const arr = order.quantity > 0 ? ownOrders.buy : ownOrders.sell;
 
     for (const orderItem of arr) {

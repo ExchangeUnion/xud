@@ -90,25 +90,25 @@ class OrderBook extends EventEmitter {
   /**
    * Get lists of buy and sell orders of peers.
    */
-  public getPeerOrders = (pairId: string, limit: number) => {
+  public getPeerOrders = (pairId: string) => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
 
-    return matchingEngine.getPeerOrders(limit);
+    return matchingEngine.getPeerOrders();
   }
 
   /**
    * Get lists of this node's own buy and sell orders.
    */
-  public getOwnOrders = (pairId: string, limit?: number) => {
+  public getOwnOrders = (pairId: string) => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
 
-    return matchingEngine.getOwnOrders(limit);
+    return matchingEngine.getOwnOrders();
   }
 
   public addPair = async (pair: Pair) => {

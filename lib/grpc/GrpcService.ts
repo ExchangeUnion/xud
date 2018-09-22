@@ -126,8 +126,13 @@ class GrpcService {
     try {
       const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
       const response = new xudrpc.ChannelBalanceResponse();
-      response.setBalance(channelBalanceResponse.balance);
-      response.setPendingOpenBalance(channelBalanceResponse.pendingOpenBalance);
+      const balancesMap = response.getBalancesMap();
+      channelBalanceResponse.forEach((channelBalance, currency) => {
+        const balance = new xudrpc.ChannelBalance();
+        balance.setBalance(channelBalance.balance);
+        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+        balancesMap.set(currency, balance);
+      });
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -187,6 +192,7 @@ class GrpcService {
         if (lndInfo.error) lnd.setError(lndInfo.error);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
+        if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
         return lnd;
       });
       if (getInfoResponse.lndbtc) response.setLndbtc(getLndInfo(getInfoResponse.lndbtc));

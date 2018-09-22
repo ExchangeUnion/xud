@@ -1,9 +1,7 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import DB from '../../lib/db/DB';
 import Logger, { Level } from '../../lib/Logger';
-import Config from '../../lib/Config';
 import { getUri } from '../../lib/utils/utils';
 
 chai.use(chaiAsPromised);
@@ -43,10 +41,8 @@ describe('P2P Sanity Tests', () => {
   let nodeTwoPort: number;
 
   before(async () => {
-    const config = new Config().load();
     nodeOneConfig = createConfig(1, 0);
     nodeTwoConfig = createConfig(2, 0);
-    const loggers = Logger.createLoggers(Level.WARN);
 
     nodeOne = new Xud();
     nodeTwo = new Xud();
