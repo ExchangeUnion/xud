@@ -92,10 +92,10 @@ class Config {
   }
 
   public load(args?: { [argName: string]: any }): Config {
-    const configPath = path.join(this.xudir, 'xud.conf');
     if (args && args.xudir) {
       this.updateDefaultPaths(args.xudir);
     }
+    const configPath = path.join(this.xudir, 'xud.conf');
     if (!fs.existsSync(this.xudir)) {
       fs.mkdirSync(this.xudir);
     } else if (fs.existsSync(configPath)) {
