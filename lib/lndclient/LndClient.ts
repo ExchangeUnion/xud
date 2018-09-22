@@ -23,6 +23,7 @@ type LndInfo = {
   blockheight?: number;
   uris?: string[];
   version?: string;
+  alias?: string;
 };
 
 type ChannelCount = {
@@ -126,6 +127,7 @@ class LndClient extends BaseClient {
     let uris: string[] | undefined;
     let version: string | undefined;
     let error: string | undefined;
+    let alias: string | undefined;
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
@@ -141,6 +143,7 @@ class LndClient extends BaseClient {
         blockheight = lnd.blockHeight,
         uris = lnd.urisList,
         version = lnd.version;
+        alias = lnd.alias;
       } catch (err) {
         this.logger.error(`LND error: ${err}`);
         error = err.message;
@@ -148,11 +151,13 @@ class LndClient extends BaseClient {
     }
 
     return {
+      error,
       channels,
       chains,
       blockheight,
       uris,
       version,
+      alias,
     };
   }
 

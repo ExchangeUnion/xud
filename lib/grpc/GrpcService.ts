@@ -187,6 +187,7 @@ class GrpcService {
         if (lndInfo.error) lnd.setError(lndInfo.error);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
+        if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
         return lnd;
       });
       if (getInfoResponse.lndbtc) response.setLndbtc(getLndInfo(getInfoResponse.lndbtc));

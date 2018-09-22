@@ -648,6 +648,9 @@
         },
         "version": {
           "type": "string"
+        },
+        "alias": {
+          "type": "string"
         }
       }
     },

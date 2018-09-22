@@ -412,6 +412,7 @@
 | blockheight | [int32](#int32) |  |  |
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |
+| alias | [string](#string) |  |  |
 
 
 
