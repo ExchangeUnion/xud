@@ -10,7 +10,7 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
@@ -134,6 +134,18 @@ class Pool extends EventEmitter {
 
     this.verifyReachability();
     this.connected = true;
+  }
+
+  /**
+   * Updates the handshake data and sends a new Hello packet to currently connected
+   * peers to notify them of the change.
+   */
+  public updateHandshake = (handshakeUpdate: HandshakeStateUpdate) => {
+    this.handshakeData = { ...this.handshakeData, ...handshakeUpdate };
+    const packet = new packets.HelloPacket(this.handshakeData);
+    this.peers.forEach((peer) => {
+      peer.sendPacket(packet);
+    });
   }
 
   public disconnect = async (): Promise<void> => {

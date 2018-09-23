@@ -12,7 +12,6 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
-import path from 'path';
 
 const version: string = require('../package.json').version;
 
@@ -141,9 +140,24 @@ class Xud extends EventEmitter {
       } else {
         this.logger.warn('RPC server is disabled.');
       }
+
+      this.bind();
     } catch (err) {
       this.logger.error(err);
     }
+  }
+
+  private bind = () => {
+    this.lndbtcClient.on('connectionVerified', (newPubKey) => {
+      if (newPubKey) {
+        this.pool.updateHandshake({ lndbtcPubKey: newPubKey });
+      }
+    });
+    this.lndltcClient.on('connectionVerified', (newPubKey) => {
+      if (newPubKey) {
+        this.pool.updateHandshake({ lndltcPubKey: newPubKey });
+      }
+    });
   }
 
   private shutdown = async () => {
