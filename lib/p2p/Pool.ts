@@ -210,6 +210,8 @@ class Pool extends EventEmitter {
     const sortedAddresses = addressUtils.sortByLastConnected(addresses);
 
     for (const address of sortedAddresses) {
+      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) continue;
+
       try {
         await this.addOutbound(address, nodePubKey, false);
         return; // once we've successfully established an outbound connection, stop attempting new connections
