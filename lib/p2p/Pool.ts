@@ -16,8 +16,14 @@ import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 
 type PoolConfig = {
+  /** Whether or not to listen for incoming connections from peers. */
   listen: boolean;
+  /** Which port to listen on. If 0, a random unused port will be used. */
   port: number;
+  /**
+   * An array of IP addresses or host names which can be used to connect to this server.
+   * It will be advertised with peers for them to try to connect to the server in the future.
+   */
   addresses: string[];
 };
 

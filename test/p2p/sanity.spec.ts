@@ -1,10 +1,24 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import Logger, { Level } from '../../lib/Logger';
 import { getUri } from '../../lib/utils/utils';
+import net from 'net';
 
 chai.use(chaiAsPromised);
+
+const getUnusedPort = async () => {
+  return new Promise<number>((resolve, reject) => {
+    const server = net.createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, () => {
+      const { port } = server.address();
+      server.close(() => {
+        resolve(port);
+      });
+    });
+  });
+};
 
 const createConfig = (instanceId: number, p2pPort: number) => ({
   instanceId,
@@ -94,8 +108,9 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail connecting to a non-existing node', async () => {
-    const connectPromise = nodeOne.service.connect({ nodeUri: getUri({ nodePubKey: 'notarealnodepubkey', host: 'localhost', port: 9003 }) });
-    await expect(connectPromise).to.be.rejectedWith('could not connect to peer at localhost:9003');
+    const port = await getUnusedPort();
+    const connectPromise = nodeOne.service.connect({ nodeUri: getUri({ port, nodePubKey: 'notarealnodepubkey', host: 'localhost' }) });
+    await expect(connectPromise).to.be.rejectedWith(`could not connect to peer at localhost:${port}`);
   });
 
   after(async () => {
