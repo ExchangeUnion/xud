@@ -6,10 +6,5 @@
     "no-unnecessary-type-assertion": false,
     "await-promise": false,
     "no-circular-imports": false
-  },
-  "linterOptions": {
-      "exclude": [
-          "*.py"
-      ]
   }
 }
