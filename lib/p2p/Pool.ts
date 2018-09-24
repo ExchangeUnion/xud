@@ -49,6 +49,7 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
+  /** A set of pub keys of nodes for which we have pending outgoing connections. */
   private pendingOutgoingConnections = new Set<string>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
@@ -476,14 +477,6 @@ class Pool extends EventEmitter {
     });
   }
 
-  private clearPendingOutgoingConnection = (nodePubKey?: string) => {
-    if (nodePubKey !== undefined) {
-      if (this.pendingOutgoingConnections.has(nodePubKey)) {
-        this.pendingOutgoingConnections.delete(nodePubKey);
-      }
-    }
-  }
-
   private bindPeer = (peer: Peer) => {
     peer.on('packet', async (packet) => {
       await this.handlePacket(peer, packet);
@@ -499,13 +492,13 @@ class Pool extends EventEmitter {
 
     peer.once('open', async () => {
       await this.handleOpen(peer);
-      this.clearPendingOutgoingConnection(peer.nodePubKey);
+      this.pendingOutgoingConnections.delete(peer.nodePubKey!);
     });
 
     peer.once('close', () => {
       if (peer.nodePubKey) {
         this.peers.remove(peer.nodePubKey);
-        this.clearPendingOutgoingConnection(peer.nodePubKey);
+        this.pendingOutgoingConnections.delete(peer.nodePubKey);
       }
       this.emit('peer.close', peer);
     });
