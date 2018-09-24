@@ -11,18 +11,18 @@ import { Level } from './Logger';
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
-  public logLevel: string;
-  public logPath: string;
+  public loglevel: string;
+  public logpath: string;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
-  public instanceId = 0;
+  public instanceid = 0;
   /** Whether to intialize a new database with default values. */
-  public initDb: boolean;
+  public initdb: boolean;
   /** The file path for the database, or ':memory:' if the database should be kept in memory. */
-  public dbPath: string;
+  public dbpath: string;
 
   constructor() {
     const platform = os.platform();
@@ -49,10 +49,10 @@ class Config {
     }
 
     // default configuration
-    this.initDb = true;
-    this.dbPath = this.getDefaultDbPath();
-    this.logLevel = this.getDefaultLogLevel();
-    this.logPath = this.getDefaultLogPath();
+    this.initdb = true;
+    this.dbpath = this.getDefaultDbPath();
+    this.loglevel = this.getDefaultLogLevel();
+    this.logpath = this.getDefaultLogPath();
 
     this.p2p = {
       listen: true,
@@ -119,11 +119,11 @@ class Config {
       deepMerge(this, args);
     }
 
-    if (!Object.values(Level).includes(this.logLevel)) {
-      this.logLevel = this.getDefaultLogLevel();
+    if (!Object.values(Level).includes(this.loglevel)) {
+      this.loglevel = this.getDefaultLogLevel();
     }
 
-    this.createLogDir(this.logPath);
+    this.createLogDir(this.logpath);
 
     return this;
   }
@@ -144,8 +144,8 @@ class Config {
     // if we have a custom xu directory, update the default values for all fields that are
     // derived from the xu directory.
     this.xudir = xudir;
-    this.logPath = this.getDefaultLogPath();
-    this.dbPath = this.getDefaultDbPath();
+    this.logpath = this.getDefaultLogPath();
+    this.dbpath = this.getDefaultDbPath();
   }
 
   private getDefaultDbPath = () => {

@@ -58,17 +58,17 @@ class Xud extends EventEmitter {
    */
   public start = async (args?: { [argName: string]: any }) => {
     this.config.load(args);
-    const loggers = Logger.createLoggers(this.config.logLevel, this.config.logPath, this.config.instanceId);
+    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid);
     this.logger = loggers.global;
     this.logger.info('config loaded');
 
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceId);
+      this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceid);
       this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
-      this.db = new DB(loggers.db, this.config.dbPath);
-      await this.db.init(this.config.initDb);
+      this.db = new DB(loggers.db, this.config.dbpath);
+      await this.db.init(this.config.initdb);
 
       const initPromises: Promise<void>[] = [];
 

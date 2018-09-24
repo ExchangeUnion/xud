@@ -20,10 +20,10 @@ describe('API Service', () => {
 
   before(async () => {
     const config = {
-      initDb: false,
-      dbPath: ':memory:',
-      logLevel: 'warn',
-      logPath: '',
+      initdb: false,
+      dbpath: ':memory:',
+      loglevel: 'warn',
+      logpath: '',
       p2p: {
         listen: false,
       },
