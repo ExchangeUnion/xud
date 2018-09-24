@@ -31,21 +31,21 @@ class Config {
     let lndDefaultDatadir;
     switch (platform) {
       case 'win32': { // windows
-        const homeDir = process.env.LOCALAPPDATA;
-        this.xudir = `${homeDir}/Xud/`;
-        lndDefaultDatadir = `${homeDir}/Lnd/`;
+        const homeDir = process.env.LOCALAPPDATA!;
+        this.xudir = path.join(homeDir, 'Xud');
+        lndDefaultDatadir = path.join(homeDir, 'Lnd');
         break;
       }
       case 'darwin': { // mac
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/Library/Application Support/Lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         break;
       }
       default: { // linux
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/.lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, '.lnd');
         break;
       }
     }
@@ -74,7 +74,7 @@ class Config {
     this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
       cltvdelta: 144,
@@ -82,7 +82,7 @@ class Config {
     this.lndltc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
