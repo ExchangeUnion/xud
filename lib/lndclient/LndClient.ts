@@ -142,14 +142,14 @@ class LndClient extends BaseClient {
       try {
         const lnd = await this.getInfo();
         channels = {
-          active: lnd.numActiveChannels,
-          pending: lnd.numPendingChannels,
+          active: lnd.getNumActiveChannels(),
+          pending: lnd.getNumPendingChannels(),
         };
-        chains = lnd.chainsList,
-        blockheight = lnd.blockHeight,
-        uris = lnd.urisList,
-        version = lnd.version;
-        alias = lnd.alias;
+        chains = lnd.getChainsList(),
+        blockheight = lnd.getBlockHeight(),
+        uris = lnd.getUrisList(),
+        version = lnd.getVersion();
+        alias = lnd.getAlias();
       } catch (err) {
         this.logger.error(`LND error: ${err}`);
         error = err.message;
@@ -189,7 +189,7 @@ class LndClient extends BaseClient {
         if (getInfoResponse) {
           // mark connection as active
           this.setStatus(ClientStatus.ConnectionVerified);
-          this.identityPubKey = getInfoResponse.identityPubkey;
+          this.identityPubKey = getInfoResponse.getIdentityPubkey();
           this.subscribeInvoices();
           if (this.reconnectionTimer) {
             clearTimeout(this.reconnectionTimer);
@@ -208,8 +208,8 @@ class LndClient extends BaseClient {
    * Return general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
-  private getInfo = (): Promise<lndrpc.GetInfoResponse.AsObject> => {
-    return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse.AsObject>('getInfo', new lndrpc.GetInfoRequest());
+  public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
+    return this.unaryCallNative<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
   /**
