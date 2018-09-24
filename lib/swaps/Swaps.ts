@@ -48,6 +48,8 @@ type SwapDeal = {
   /** The hash of the preimage. */
   r_hash: string;
   r_preimage?: string;
+  /** The routes the maker should use to send to the taker. */
+  makerToTakerRoutes?: lndrpc.Route[];
   createTime: number;
   executeTime?: number;
   competionTime?: number
@@ -105,6 +107,63 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Verifies that the order still exists on orderBook
+   */
+  // TODO: replace the dummy implementation with real order book integration
+  private isOrderOnBook = (pairId: string, orderId: string): boolean => {
+    this.logger.debug('checking order book for ' + pairId + ':' + orderId);
+    return true;
+  }
+
+  /**
+   * Verifies that the order still exists on orderBook
+   */
+  // TODO: replace the dummy implementation with real order book integration
+  private checkAndHoldAmount = (deal: SwapDeal): number => {
+    this.logger.debug('checking and holding amount for swap ' + deal.pairId + ':' + deal.orderId + ':' + deal.takerAmount);
+    return deal.takerAmount;
+  }
+
+  /**
+   * Sends an error to peer. set reqId if packet is a response to a request.
+   */
+  private sendErrorToPeer = (peer: Peer, r_hash: string, errorMessage: string, reqId?: string) => {
+    const errorBody: packets.SwapErrorPacketBody = {
+      r_hash,
+      errorMessage,
+    };
+    this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
+    peer.sendPacket(new packets.SwapErrorPacket(errorBody, reqId));
+    return;
+  }
+
+  /**
+   * Verifies LND setup. Make sure we are connected to BTC and LTC and that
+   * the peer is also connected to these networks. Returns an error message
+   * or undefined in case all is good.
+   */
+  private verifyLndSetup = (deal: SwapDeal, peer: Peer) => {
+    if (!peer.getLndPubKey(deal.takerCurrency)) {
+      return 'peer did not provide an LND PubKey for ' + deal.takerCurrency;
+    }
+
+    if (!peer.getLndPubKey(deal.makerCurrency)) {
+      return 'peer did not provide an LND PubKey for ' + deal.makerCurrency;
+    }
+
+    // verify that this node is connected to BTC and LTC networks
+    if (!this.lndLtcClient.isConnected()) {
+      return 'Can not swap. Not connected to LTC network';
+    }
+
+    if (!this.lndBtcClient.isConnected()) {
+      return 'Can not swap. Not connected to BTC network';
+    }
+
+    return;
+  }
+
+  /**
    * Gets a deal by its r_hash value.
    * @param r_hash The r_hash value of the deal to get.
    * @returns A deal if one is found, otherwise undefined.
@@ -131,7 +190,6 @@ class Swaps extends EventEmitter {
   public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
-    // TODO: check lndPubKeys. Error if we or maker do not have full set of keys
     // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
     // TODO: what is the status of the order here? is it off the book? What if partial match
     //       do we create another order which has the same orderId?
@@ -187,6 +245,14 @@ class Swaps extends EventEmitter {
 
     this.addDeal(deal);
 
+    // Verify LND setup. Make sure we are connected to BTC and LTC and that
+    // the peer is also connected to these networks.
+    const errMsg = this.verifyLndSetup(deal, peer);
+    if (errMsg) {
+      this.logger.error(errMsg);
+      this.setDealState(deal, SwapDealState.Error, errMsg);
+      return;
+    }
     peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 
     this.setDealPhase(deal, SwapDealPhase.SwapRequested);
@@ -197,32 +263,25 @@ class Swaps extends EventEmitter {
    * Handles a request from a peer to create a swap deal. Creates a deal,
    * and stores the deal in the local collection of deals. Responds to the peer with a swap response packet.
    */
-  private handleSwapRequest = (requestPacket: packets.SwapRequestPacket, peer: Peer)  => {
+  private handleSwapRequest = async (requestPacket: packets.SwapRequestPacket, peer: Peer)  => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     const requestBody = requestPacket.body!;
 
-    // TODO: we always accept proposed quantity currently, put in checks to make sure we have the full amount available
     // TODO: consider reduced quantity
-    // TODO: check that the order is still valid and take it off the order book to prevent double execution
-    // TODO: check that we have route to taker.
-    // TODO: extract data needed for proper timelock calculation and share with taker
+    // TODO: max cltv to limit routes
+    // TODO: consider the time gap between taking the routes and using them.
+    // TODO: multi route support (currenlt only 1)
 
-    let makerCltvDelta = 0;
-    // cltvDelta can't be zero for both the LtcClient and BtcClient (constractor)
-    const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
-    switch (requestBody.makerCurrency) {
-      case 'BTC':
-        makerCltvDelta = this.lndBtcClient.cltvDelta + requestBody.takerCltvDelta / cltvDeltaFactor;
-        break;
-      case 'LTC':
-        makerCltvDelta = this.lndLtcClient.cltvDelta + requestBody.takerCltvDelta * cltvDeltaFactor;
-        break;
+    // check that we have such an order on book. If not, issue an error and forget
+    if (!this.isOrderOnBook(requestBody.pairId, requestBody.orderId)) {
+      this.sendErrorToPeer(peer, requestBody.r_hash,
+          'order does not exist on book', requestPacket.header.id);
+      return;
     }
 
     // accept the deal
     const deal: SwapDeal = {
       ...requestBody,
-      makerCltvDelta: Math.round(makerCltvDelta),
       quantity: requestBody.proposedQuantity,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
@@ -233,10 +292,89 @@ class Swaps extends EventEmitter {
       createTime: Date.now(),
     };
 
+    // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
 
+    // Verifies LND setup. Make sure we are connected to BTC and LTC and that
+    // the peer is also connected to these networks.
+    const errMsg = this.verifyLndSetup(deal, peer);
+    if (errMsg) {
+      this.setDealState(deal, SwapDealState.Error, errMsg);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+      return;
+    }
+
+    const heldAmount = this.checkAndHoldAmount(deal);
+    assert(heldAmount === 0 || heldAmount === deal.takerAmount,
+        'Partial amount is not yet supported');
+    if (heldAmount === 0) {
+      this.setDealState(deal, SwapDealState.Error, 'Can not swap. No capacity is available');
+      this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+      return;
+    }
+
+    let lndclient: LndClient;
+    switch (deal.takerCurrency) {
+      case 'BTC':
+        lndclient = this.lndBtcClient;
+        break;
+      case 'LTC':
+        lndclient = this.lndLtcClient;
+        break;
+      default:
+        this.setDealState(deal, SwapDealState.Error, 'Can not swap. Unsupported Taker currency.');
+        this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+        return;
+    }
+
+    let height: number;
+    try {
+      const req = new lndrpc.QueryRoutesRequest();
+      req.setAmt(requestBody.takerAmount);
+      req.setFinalCltvDelta(requestBody.takerCltvDelta);
+      req.setNumRoutes(1);
+      req.setPubKey(peer.getLndPubKey(requestBody.takerCurrency)!);
+      const routes = await lndclient.queryRoutes(req);
+      deal.makerToTakerRoutes = routes.getRoutesList();
+      this.logger.debug('got ' + deal.makerToTakerRoutes.length + ' routes to destination: ' + deal.makerToTakerRoutes);
+      if (deal.makerToTakerRoutes.length === 0) {
+        this.setDealState(deal, SwapDealState.Error, 'Can not swap. unable to find route to destination.');
+        this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+        return;
+      }
+    } catch (err) {
+      this.setDealState(deal, SwapDealState.Error, 'Can not swap. unable to find route to destination: ' + err.message);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+      return;
+    }
+
+    try {
+      const info = await lndclient.getInfo();
+      height = info.getBlockHeight();
+      this.logger.debug('got block height of ' + height);
+    } catch (err) {
+      this.setDealState(deal, SwapDealState.Error, 'Can not swap. Unable to fetch block height: ' + err.message);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
+      return;
+    }
+
+    const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
+
+    // cltvDelta can't be zero for both the LtcClient and BtcClient (checked in constructor)
+    const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
+    switch (requestBody.makerCurrency) {
+      case 'BTC':
+        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + routeCltvDelta / cltvDeltaFactor;
+        break;
+      case 'LTC':
+        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + routeCltvDelta * cltvDeltaFactor;
+        break;
+    }
+
+    this.logger.debug('total timelock of route = ' + routeCltvDelta + 'makerCltvDelta = ' + deal.makerCltvDelta);
+
     const responseBody: packets.SwapResponsePacketBody = {
-      makerCltvDelta,
+      makerCltvDelta: deal.makerCltvDelta!,
       r_hash: requestBody.r_hash,
       quantity: requestBody.proposedQuantity,
     };
@@ -311,16 +449,14 @@ class Swaps extends EventEmitter {
     } catch (err) {
       this.logger.error(`Got exception from sendPaymentSync ${JSON.stringify(request.toObject())}`, err.message);
       this.setDealState(deal, SwapDealState.Error, err.message);
-      const errorBody: packets.SwapErrorPacketBody = { r_hash, errorMessage: err.message };
-
-      this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
-      peer.sendPacket(new packets.SwapErrorPacket(errorBody));
+      this.sendErrorToPeer(peer, r_hash, err.message);
+      return;
     }
 
   }
 
   /**
-   * Verify that the request from LND is valid. check the received amount vs
+   * Verifies that the request from LND is valid. check the received amount vs
    * the expected amount and the CltvDelta vs the expected on.
    */
   private validateRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
@@ -402,15 +538,13 @@ class Swaps extends EventEmitter {
           break;
       }
 
-      const request = new lndrpc.SendRequest();
-      request.setAmt(deal.takerAmount);
-      request.setDestString(deal.takerPubKey!);
+      const request = new lndrpc.SendToRouteRequest();
+      request.setRoutesList(deal.makerToTakerRoutes!);
       request.setPaymentHashString(deal.r_hash);
-      request.setFinalCltvDelta(deal.takerCltvDelta);
 
       try {
         this.setDealPhase(deal, SwapDealPhase.AmountSent);
-        const response = await cmdLnd.sendPaymentSync(request);
+        const response = await cmdLnd.sendToRouteSync(request);
         if (response.getPaymentError()) {
           this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
           this.setDealState(deal, SwapDealState.Error, response.getPaymentError());

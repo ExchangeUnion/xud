@@ -12,7 +12,11 @@ class SwapErrorPacket extends Packet<SwapErrorPacketBody> {
     return PacketType.SwapError;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
+    // SwapErrorPacket may serve as a response to SwapRequest packet
+    if (this.header.reqId) {
+      return PacketDirection.Response;
+    }
     return PacketDirection.Unilateral;
   }
 }

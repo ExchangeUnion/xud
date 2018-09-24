@@ -293,6 +293,20 @@ class LndClient extends BaseClient {
   }
 
   /**
+   * List all routes to destination.
+   */
+  public queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
+    return this.unaryCallNative<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
+  }
+
+  /**
+   * Send amount to destination using pre-defined routes.
+   */
+  public sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
+    return this.unaryCallNative<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
+  }
+
+  /**
    * Attempt to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
