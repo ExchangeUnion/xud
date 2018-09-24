@@ -190,25 +190,38 @@ class Pool extends EventEmitter {
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
   private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
+    if (!await this.tryConnectWithLastAddress(node)) {
+      if (!await this.tryConnectWithAdvertisedAddresses(node) && retryConnecting) {
+        await this.tryConnectWithLastAddress(node, true);
+      }
+    }
+  }
+
+  private tryConnectWithLastAddress = async (node: NodeConnectionInfo, retryConnecting = false) => {
+    const { lastAddress, nodePubKey } = node;
+
+    if (!lastAddress) return false;
+
+    try {
+      await this.addOutbound(lastAddress, nodePubKey, retryConnecting);
+      return true;
+    } catch (err) {}
+
+    return false;
+  }
+
+  private tryConnectWithAdvertisedAddresses = async (node: NodeConnectionInfo) => {
     const { addresses, nodePubKey } = node;
 
     // sort by lastConnected desc
-    const sortedAddresses = [...addresses].sort((a, b) => {
-      if (!a.lastConnected) return 1;
-      if (!b.lastConnected) return -1;
-      return b.lastConnected - a.lastConnected;
-    });
+    const sortedAddresses = addressUtils.sortByLastConnected(addresses);
 
     for (const address of sortedAddresses) {
+      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) continue;
+
       try {
         await this.addOutbound(address, nodePubKey, false);
         return; // once we've successfully established an outbound connection, stop attempting new connections
-      } catch (err) {}
-    }
-
-    if (retryConnecting && sortedAddresses.length && sortedAddresses[0].lastConnected) {
-      try {
-        await this.addOutbound(sortedAddresses[0], nodePubKey, true);
       } catch (err) {}
     }
   }
@@ -427,10 +440,11 @@ class Pool extends EventEmitter {
         await this.nodes.createNode({
           addresses,
           nodePubKey: peer.nodePubKey!,
+          lastAddress: peer.inbound ? undefined : peer.address,
         });
       } else {
         // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses);
+        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
       }
     }
   }
