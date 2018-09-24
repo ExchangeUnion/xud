@@ -22,6 +22,8 @@ type SwapDeal = {
   state: SwapDealState;
   /** The reason for being in current state */
   stateReason: string;
+  /** The xud node pub key of the counterparty to this swap deal. */
+  peerPubKey: string;
   /** Global order id in the XU network. */
   orderId: string;
   /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
@@ -235,6 +237,7 @@ class Swaps extends EventEmitter {
 
     const deal: SwapDeal = {
       ...swapRequestBody,
+      peerPubKey: peer.nodePubKey!,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
       stateReason: '',
@@ -282,6 +285,7 @@ class Swaps extends EventEmitter {
     // accept the deal
     const deal: SwapDeal = {
       ...requestBody,
+      peerPubKey: peer.nodePubKey!,
       quantity: requestBody.proposedQuantity,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
