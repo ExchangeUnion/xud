@@ -4,11 +4,11 @@ import { NodeConnectionInfo } from '../../../types/p2p';
 
 class NodesPacket extends Packet<NodeConnectionInfo[]> {
   public get type() {
-    return PacketType.NODES;
+    return PacketType.Nodes;
   }
 
   public get direction() {
-    return PacketDirection.RESPONSE;
+    return PacketDirection.Response;
   }
 }
 

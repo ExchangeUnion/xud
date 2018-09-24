@@ -4,11 +4,11 @@ import { OutgoingOrder } from '../../../types/orders';
 
 class OrderPacket extends Packet<OutgoingOrder> {
   public get type() {
-    return PacketType.ORDER;
+    return PacketType.Order;
   }
 
   public get direction() {
-    return PacketDirection.UNILATERAL;
+    return PacketDirection.Unilateral;
   }
 }
 

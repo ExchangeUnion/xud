@@ -7,7 +7,7 @@ import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
 
 const PAIR_ID = 'LTC/BTC';
-const loggers = Logger.createLoggers(Level.WARN);
+const loggers = Logger.createLoggers(Level.Warn);
 
 const createOwnOrder = (price: number, quantity: number, createdAt = ms()): orders.StampedOwnOrder => ({
   price,
@@ -81,7 +81,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
 
 describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5, 10),
       createOwnOrder(5.5, -10),
@@ -90,7 +90,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize higher price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5.5, 10),
       createOwnOrder(5, -10),
@@ -99,7 +99,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize higher price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5.5, 10),
       createOwnOrder(5, -10),
@@ -108,7 +108,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize lower price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5, 10),
       createOwnOrder(5.5, -10),
@@ -117,7 +117,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.ASC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5, 10, ms() - 1),
       createOwnOrder(5, -10, ms()),
@@ -126,7 +126,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.DESC);
+    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5, 10, ms() - 1),
       createOwnOrder(5, -10, ms()),

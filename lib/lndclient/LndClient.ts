@@ -86,7 +86,7 @@ class LndClient extends BaseClient {
       this.meta = new grpc.Metadata();
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
       // mark connection as disconnected
-      this.setStatus(ClientStatus.DISCONNECTED);
+      this.setStatus(ClientStatus.Disconnected);
     }
   }
 
@@ -188,7 +188,7 @@ class LndClient extends BaseClient {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse) {
           // mark connection as active
-          this.setStatus(ClientStatus.CONNECTION_VERIFIED);
+          this.setStatus(ClientStatus.ConnectionVerified);
           this.identityPubKey = getInfoResponse.identityPubkey;
           this.subscribeInvoices();
           if (this.reconnectionTimer) {
@@ -197,7 +197,7 @@ class LndClient extends BaseClient {
           }
         }
       } catch (err) {
-        this.setStatus(ClientStatus.DISCONNECTED);
+        this.setStatus(ClientStatus.Disconnected);
         this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
         this.reconnectionTimer = setTimeout(this.verifyConnection, 5000);
       }
@@ -341,7 +341,7 @@ class LndClient extends BaseClient {
       })
       .on('end', async () => {
         this.logger.info('invoice ended');
-        this.setStatus(ClientStatus.DISCONNECTED);
+        this.setStatus(ClientStatus.Disconnected);
         await this.verifyConnection();
       })
       .on('status', (status: string) => {
@@ -349,7 +349,7 @@ class LndClient extends BaseClient {
       })
       .on('error', async (error) => {
         this.logger.error(`invoice error: ${error}`);
-        this.setStatus(ClientStatus.DISCONNECTED);
+        this.setStatus(ClientStatus.Disconnected);
         await this.verifyConnection();
       });
   }

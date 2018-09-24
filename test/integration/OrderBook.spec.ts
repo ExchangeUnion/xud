@@ -15,7 +15,7 @@ describe('OrderBook', () => {
   let orderBookRepository: OrderBookRepository;
 
   before(async () => {
-    const loggers = Logger.createLoggers(Level.WARN);
+    const loggers = Logger.createLoggers(Level.Warn);
 
     db = new DB(loggers.db);
 
@@ -30,8 +30,8 @@ describe('OrderBook', () => {
       { nodePubKey: nodeKey.nodePubKey, addresses: [] },
     );
     await orderBookRepository.addCurrencies([
-      { id: 'BTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
-      { id: 'LTC', swapClient: SwapClients.LND, decimalPlaces: 8 },
+      { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+      { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
     ]);
     await orderBookRepository.addPairs([
       { baseCurrency: 'LTC', quoteCurrency: 'BTC' },

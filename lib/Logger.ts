@@ -4,12 +4,12 @@ import colors from 'colors/safe';
 import { getTsString } from './utils/utils';
 
 enum Level {
-  ERROR = 'error',
-  WARN = 'warn',
-  INFO = 'info',
-  VERBOSE = 'verbose',
-  DEBUG = 'debug',
-  TRACE = 'trace',
+  Error = 'error',
+  Warn = 'warn',
+  Info = 'info',
+  Verbose = 'verbose',
+  Debug = 'debug',
+  Trace = 'trace',
 }
 
 const LevelPriorities = {
@@ -22,14 +22,14 @@ const LevelPriorities = {
 };
 
 export enum Context {
-  GLOBAL = 'GLOBAL',
+  Global = 'GLOBAL',
   DB = 'DB',
   RPC = 'RPC',
   P2P = 'P2P',
-  ORDERBOOK = 'ORDERBOOK',
-  LND = 'LND',
-  RAIDEN = 'RAIDEN',
-  SWAPS = 'SWAPS',
+  OrderBook = 'ORDERBOOK',
+  Lnd = 'LND',
+  Raiden = 'RAIDEN',
+  Swaps = 'SWAPS',
 }
 
 type Loggers = {
@@ -54,8 +54,8 @@ class Logger {
   constructor({ level, filename, context, instanceId, disabled }:
     {instanceId?: number, level?: string, filename?: string, context?: Context, disabled?: boolean}) {
 
-    this.level = level || Level.TRACE;
-    this.context = context || Context.GLOBAL;
+    this.level = level || Level.Trace;
+    this.context = context || Context.Global;
     this.instanceId = instanceId || 0;
 
     if (disabled) {
@@ -86,14 +86,14 @@ class Logger {
   public static createLoggers = (level: string, filename = '', instanceId = 0): Loggers => {
     const object = { instanceId, level, filename };
     return {
-      global: new Logger({ ...object, context: Context.GLOBAL }),
+      global: new Logger({ ...object, context: Context.Global }),
       db: new Logger({ ...object, context: Context.DB }),
       rpc: new Logger({ ...object, context: Context.RPC }),
       p2p: new Logger({ ...object, context: Context.P2P }),
-      orderbook: new Logger({ ...object, context: Context.ORDERBOOK }),
-      lnd: new Logger({ ...object, context: Context.LND }),
-      raiden: new Logger({ ...object, context: Context.RAIDEN }),
-      swaps: new Logger({ ...object, context: Context.SWAPS }),
+      orderbook: new Logger({ ...object, context: Context.OrderBook }),
+      lnd: new Logger({ ...object, context: Context.Lnd }),
+      raiden: new Logger({ ...object, context: Context.Raiden }),
+      swaps: new Logger({ ...object, context: Context.Swaps }),
     };
   }
 
@@ -147,27 +147,27 @@ class Logger {
       }
     }
 
-    this.log(Level.ERROR, errMsg);
+    this.log(Level.Error, errMsg);
   }
 
   public warn = (msg: string) => {
-    this.log(Level.WARN, msg);
+    this.log(Level.Warn, msg);
   }
 
   public info = (msg: string) => {
-    this.log(Level.INFO, msg);
+    this.log(Level.Info, msg);
   }
 
   public verbose = (msg: string) => {
-    this.log(Level.VERBOSE, msg);
+    this.log(Level.Verbose, msg);
   }
 
   public debug = (msg: string) => {
-    this.log(Level.DEBUG, msg);
+    this.log(Level.Debug, msg);
   }
 
   public trace = (msg: string) => {
-    this.log(Level.TRACE, msg);
+    this.log(Level.Trace, msg);
   }
 }
 

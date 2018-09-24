@@ -40,8 +40,8 @@ class MatchingEngine {
 
   constructor(private logger: Logger, public pairId: string) {
     this.queues = {
-      buy: MatchingEngine.createPriorityQueue(OrderingDirection.DESC),
-      sell: MatchingEngine.createPriorityQueue(OrderingDirection.ASC),
+      buy: MatchingEngine.createPriorityQueue(OrderingDirection.Desc),
+      sell: MatchingEngine.createPriorityQueue(OrderingDirection.Asc),
     };
 
     this.ownOrders = {
@@ -61,7 +61,7 @@ class MatchingEngine {
   }
 
   public static getOrdersPriorityQueueComparator = (orderingDirection: OrderingDirection) => {
-    const directionComparator = orderingDirection === OrderingDirection.ASC
+    const directionComparator = orderingDirection === OrderingDirection.Asc
       ? (a: number, b: number) => a < b
       : (a: number, b: number) => a > b;
 

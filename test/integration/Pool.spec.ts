@@ -13,7 +13,7 @@ chai.use(chaiAsPromised);
 describe('P2P Pool Tests', () => {
   let db: DB;
   let pool: Pool;
-  const loggers = Logger.createLoggers(Level.WARN);
+  const loggers = Logger.createLoggers(Level.Warn);
   const nodePubKeyOne = NodeKey['generate']().nodePubKey;
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {

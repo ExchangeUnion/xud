@@ -325,23 +325,23 @@ class Pool extends EventEmitter {
 
   private handlePacket = async (peer: Peer, packet: Packet) => {
     switch (packet.type) {
-      case PacketType.ORDER: {
+      case PacketType.Order: {
         const order = (packet as packets.OrderPacket).body!;
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
         this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
         break;
       }
-      case PacketType.ORDER_INVALIDATION: {
+      case PacketType.OrderInvalidation: {
         const order = (packet as packets.OrderInvalidationPacket).body!;
         this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
         this.emit('packet.orderInvalidation', order);
         break;
       }
-      case PacketType.GET_ORDERS: {
+      case PacketType.GetOrders: {
         this.emit('packet.getOrders', peer, packet.header.id);
         break;
       }
-      case PacketType.ORDERS: {
+      case PacketType.Orders: {
         const orders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
         orders.forEach((order) => {
@@ -349,11 +349,11 @@ class Pool extends EventEmitter {
         });
         break;
       }
-      case PacketType.GET_NODES: {
+      case PacketType.GetNodes: {
         this.handleGetNodes(peer, packet.header.id);
         break;
       }
-      case PacketType.NODES: {
+      case PacketType.Nodes: {
         const nodes = (packet as packets.NodesPacket).body!;
         let newNodesCount = 0;
         nodes.forEach((node) => {
@@ -365,22 +365,22 @@ class Pool extends EventEmitter {
         await this.connectNodes(nodes);
         break;
       }
-      case PacketType.SWAP_REQUEST: {
+      case PacketType.SwapRequest: {
         this.logger.debug(`received swapRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
-      case PacketType.SWAP_RESPONSE: {
+      case PacketType.SwapResponse: {
         this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapResponse', packet, peer);
         break;
       }
-      case PacketType.SWAP_COMPLETE: {
+      case PacketType.SwapComplete: {
         this.logger.debug(`received swapComplete from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapComplete', packet);
         break;
       }
-      case PacketType.SWAP_ERROR: {
+      case PacketType.SwapError: {
         this.logger.debug(`received swapError from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapError', packet);
         break;

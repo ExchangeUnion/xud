@@ -4,11 +4,11 @@ import { HandshakeState } from '../../../types/p2p';
 
 class HelloPacket extends Packet<HandshakeState> {
   public get type() {
-    return PacketType.HELLO;
+    return PacketType.Hello;
   }
 
   public get direction() {
-    return PacketDirection.UNILATERAL;
+    return PacketDirection.Unilateral;
   }
 }
 

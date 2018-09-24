@@ -15,11 +15,11 @@ export type SwapRequestPacketBody = {
 
 class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
   public get type() {
-    return PacketType.SWAP_REQUEST;
+    return PacketType.SwapRequest;
   }
 
   public get direction() {
-    return PacketDirection.REQUEST;
+    return PacketDirection.Request;
   }
 }
 

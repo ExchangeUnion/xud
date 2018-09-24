@@ -6,11 +6,11 @@ type OrdersPacketBody = orders.OutgoingOrder[];
 
 class OrdersPacket extends Packet<OrdersPacketBody> {
   public get type() {
-    return PacketType.ORDERS;
+    return PacketType.Orders;
   }
 
   public get direction() {
-    return PacketDirection.RESPONSE;
+    return PacketDirection.Response;
   }
 }
 
