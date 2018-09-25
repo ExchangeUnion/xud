@@ -648,6 +648,9 @@ export class Order extends jspb.Message {
     getCanceled(): boolean;
     setCanceled(value: boolean): void;
 
+    getSide(): OrderSide;
+    setSide(value: OrderSide): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Order.AsObject;
@@ -670,6 +673,7 @@ export namespace Order {
         createdAt: number,
         invoice: string,
         canceled: boolean,
+        side: OrderSide,
     }
 }
 
@@ -814,6 +818,9 @@ export class PlaceOrderRequest extends jspb.Message {
     getOrderId(): string;
     setOrderId(value: string): void;
 
+    getSide(): OrderSide;
+    setSide(value: OrderSide): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): PlaceOrderRequest.AsObject;
@@ -831,6 +838,7 @@ export namespace PlaceOrderRequest {
         quantity: number,
         pairId: string,
         orderId: string,
+        side: OrderSide,
     }
 }
 
@@ -1125,4 +1133,9 @@ export namespace SubscribeSwapsResponse {
     export type AsObject = {
         order: string,
     }
+}
+
+export enum OrderSide {
+    BUY = 0,
+    SELL = 1,
 }

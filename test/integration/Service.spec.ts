@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClients } from '../../lib/types/enums';
+import { SwapClients, OrderSide } from '../../lib/types/enums';
 
 chai.use(chaiAsPromised);
 
@@ -16,6 +16,7 @@ describe('API Service', () => {
     orderId: '1',
     price: 100,
     quantity: 1,
+    side: OrderSide.Buy,
   };
 
   before(async () => {
@@ -86,6 +87,7 @@ describe('API Service', () => {
     expect(order.price).to.equal(placeOrderArgs.price);
     expect(order.quantity).to.equal(placeOrderArgs.quantity);
     expect(order.pairId).to.equal(placeOrderArgs.pairId);
+    expect(order.isBuy).to.equal(placeOrderArgs.side === OrderSide.Buy);
   });
 
   it('should cancel an order', async () => {

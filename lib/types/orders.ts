@@ -5,6 +5,8 @@ type MarketOrder = {
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
+  /** Whether the order is a buy (if `true`) or a sell (if `false`). */
+  isBuy: boolean;
 };
 
 /** A limit order with a specified price. */
