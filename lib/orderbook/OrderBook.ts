@@ -75,7 +75,7 @@ class OrderBook extends EventEmitter {
 
   /** Loads the supported pairs and currencies from the database. */
   public init = async () => {
-    const promises = [await this.repository.getPairs(), await this.repository.getCurrencies()];
+    const promises: PromiseLike<any>[] = [this.repository.getPairs(), this.repository.getCurrencies()];
     const results = await Promise.all(promises);
     const pairs = results[0] as db.PairInstance[];
     const currencies = results[1] as db.CurrencyInstance[];
