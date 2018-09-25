@@ -360,7 +360,6 @@ class Pool extends EventEmitter {
       case PacketType.GetOrders: {
         const getOrdersPacketBody = (packet as packets.GetOrdersPacket).body!;
         const pairIds = getOrdersPacketBody ? getOrdersPacketBody.pairIds : [];
-        this.logger.verbose(`got orders to ${peer.nodePubKey} for supported pairs: ${pairIds}`);
         this.emit('packet.getOrders', peer, packet.header.id, pairIds);
         break;
       }
