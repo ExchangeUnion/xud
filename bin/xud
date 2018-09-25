@@ -4,22 +4,22 @@ const Xud = require('../dist/Xud').default;
 
 const { argv } = require('yargs')
   .options({
-    dbPath: {
+    dbpath: {
       describe: 'The file path for the database',
       type: 'string',
       alias: 'd',
     },
-    initDb: {
+    initdb: {
       describe: 'Whether to initialize the db with data',
       type: 'boolean',
       default: undefined,
     },
-    logLevel: {
+    loglevel: {
       describe: 'Verbosity of the logger',
       type: 'string',
       alias: 'l',
     },
-    logPath: {
+    logpath: {
       describe: 'Path to the log file',
       type: 'string',
     },

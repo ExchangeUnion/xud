@@ -20,12 +20,12 @@ const getUnusedPort = async () => {
   });
 };
 
-const createConfig = (instanceId: number, p2pPort: number) => ({
-  instanceId,
-  initDb: false,
-  dbPath: ':memory:',
-  logLevel: 'warn',
-  logPath: '',
+const createConfig = (instanceid: number, p2pPort: number) => ({
+  instanceid,
+  initdb: false,
+  dbpath: ':memory:',
+  loglevel: 'warn',
+  logpath: '',
   p2p: {
     listen: true,
     port: p2pPort,
