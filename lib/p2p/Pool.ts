@@ -55,6 +55,8 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
+  /** A set of pub keys of nodes for which we have pending outgoing connections. */
+  private pendingOutgoingConnections = new Set<string>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
@@ -167,6 +169,7 @@ class Pool extends EventEmitter {
   /**
    * Iterate over a collection of nodes and attempt to connect to them.
    * If the node is banned, already connected, or has no listening addresses, then do nothing.
+   * Additionally, if we're already trying to connect to a given node also do nothing.
    * @param nodes a collection of nodes with a `forEach` iterator to attempt to connect to
    * @param ignoreKnown whether to ignore nodes we are already aware of, defaults to false
    * @param retryConnecting whether to attempt retry connecting, defaults to false
@@ -175,11 +178,29 @@ class Pool extends EventEmitter {
   private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      // check that this node is not ourselves, that it has listening addresses,
-      // and that either we haven't heard of it, or we're not ignoring known nodes and it's not banned
-      if (node.nodePubKey !== this.handshakeData.nodePubKey && node.addresses.length > 0 &&
-        (!this.nodes.has(node.nodePubKey) || (!ignoreKnown && !this.nodes.isBanned(node.nodePubKey))) &&
-        !this.peers.has(node.nodePubKey)) {
+      let isNotIgnored = false;
+      let hasNoPendingConnections = true;
+
+      // check that this node is not ourselves
+      const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
+
+      // that it has listening addresses,
+      const hasAddresses = node.addresses.length > 0;
+
+      // ignore nodes that are banned or, if ignoreKnown is true, that we already know
+      const isKnownNode = this.nodes.has(node.nodePubKey);
+      if (isKnownNode) {
+        isNotIgnored = !ignoreKnown && !this.nodes.isBanned(node.nodePubKey);
+      }
+
+      // Check we're not already trying to connect to this node.
+      if (this.pendingOutgoingConnections.has(node.nodePubKey)) {
+        hasNoPendingConnections = false;
+      }
+
+      // Validate this node.
+      if (isNotUs && hasAddresses && isNotIgnored && hasNoPendingConnections) {
+        this.pendingOutgoingConnections.add(node.nodePubKey);
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -491,10 +512,12 @@ class Pool extends EventEmitter {
 
     peer.once('open', async () => {
       await this.handleOpen(peer);
+      this.pendingOutgoingConnections.delete(peer.nodePubKey!);
     });
 
     peer.once('close', () => {
       if (peer.nodePubKey) {
+        this.pendingOutgoingConnections.delete(peer.nodePubKey);
         this.peers.remove(peer.nodePubKey);
       }
       this.emit('peer.close', peer);
