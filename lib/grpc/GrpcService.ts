@@ -10,7 +10,6 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
 /**
  * Convert a [[StampedOrder]] to an xudrpc Order message.
@@ -25,6 +24,7 @@ const getOrder = (order: StampedOrder) => {
   grpcOrder.setPeerPubKey((order as StampedPeerOrder).peerPubKey);
   grpcOrder.setPrice(order.price);
   grpcOrder.setQuantity(order.quantity);
+  grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
   return grpcOrder;
 };
 

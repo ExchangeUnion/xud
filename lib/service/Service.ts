@@ -5,10 +5,10 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapDealRole, SwapClients } from '../types/enums';
+import { SwapClients, OrderSide } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedOrder } from '../types/orders';
+import { Pair } from '../types/orders';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
@@ -285,8 +285,8 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (args: { pairId: string, price: number, quantity: number, orderId: string }) => {
-    const { pairId, price, quantity, orderId } = args;
+  public placeOrder = async (args: { pairId: string, price: number, quantity: number, orderId: string, side: number }) => {
+    const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.NON_ZERO_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
@@ -295,6 +295,7 @@ class Service extends EventEmitter {
       pairId,
       price,
       quantity,
+      isBuy: side === OrderSide.Buy,
       localId: orderId,
     };
 

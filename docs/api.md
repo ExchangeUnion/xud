@@ -52,6 +52,7 @@
     - [SwapPayload](#xudrpc.SwapPayload)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [OrderSide](#xudrpc.OrderSide)
   
   
     - [Xud](#xudrpc.Xud)
@@ -469,6 +470,7 @@
 | created_at | [int64](#int64) |  | The epoch time when this order was created |
 | invoice | [string](#string) |  | Lightning invoice |
 | canceled | [bool](#bool) |  | Indicates whether an order was canceled |
+| side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell |
 
 
 
@@ -555,6 +557,7 @@
 | quantity | [double](#double) |  | The quantity of the order, precise to 6 decimal places. |
 | pair_id | [string](#string) |  | The trading pair that the order is for |
 | order_id | [string](#string) |  | The local id to assign to the order |
+| side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell |
 
 
 
@@ -746,6 +749,18 @@
 | ---- | ------ | ----------- |
 | LND | 0 |  |
 | RAIDEN | 1 |  |
+
+
+
+<a name="xudrpc.OrderSide"></a>
+
+### OrderSide
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BUY | 0 |  |
+| SELL | 1 |  |
 
 
  

@@ -43,7 +43,7 @@ describe('OrderBook', () => {
 
   const getOwnOrder = (order: orders.StampedOwnOrder): orders.StampedOwnOrder | undefined => {
     const ownOrders = orderBook.getOwnOrders(order.pairId);
-    const arr = order.quantity > 0 ? ownOrders.buy : ownOrders.sell;
+    const arr = order.isBuy ? ownOrders.buy : ownOrders.sell;
 
     for (const orderItem of arr) {
       if (orderItem.id === order.id) {
@@ -61,13 +61,13 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55 };
+    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55, isBuy: true };
     await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
     await orderBook.addLimitOrder({ localId: uuidv1(), ...order });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -6, price: 55 };
+    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 6, price: 55, isBuy: false };
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.undefined;
 
@@ -84,7 +84,7 @@ describe('OrderBook', () => {
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -10 };
+    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, isBuy: false };
     const result = await orderBook.addMarketOrder(order);
     const { taker } = result.matches[0];
     expect(result.remainingOrder).to.be.undefined;
@@ -92,15 +92,15 @@ describe('OrderBook', () => {
   });
 
   it('should create, partially match, and cancel an order', async () => {
-    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 10 };
+    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 10, isBuy: true };
     await orderBook.addLimitOrder(order);
-    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -5 };
+    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false };
     await orderBook.addMarketOrder(takerOrder);
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
-    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: -10, price: 100 };
+    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 100, isBuy: false };
 
     expect(() => orderBook.addLimitOrder(order)).to.not.throw();
 

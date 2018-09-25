@@ -9,6 +9,11 @@ export enum OrderingDirection {
   Asc = 'ASC',
 }
 
+export enum OrderSide {
+  Buy,
+  Sell,
+}
+
 export enum SwapDealRole {
   Taker = 0,
   Maker = 1,

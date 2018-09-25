@@ -708,6 +708,10 @@
           "type": "boolean",
           "format": "boolean",
           "title": "Indicates whether an order was canceled"
+        },
+        "side": {
+          "$ref": "#/definitions/xudrpcOrderSide",
+          "title": "Whether the order is a Buy or Sell"
         }
       }
     },
@@ -721,6 +725,14 @@
           "$ref": "#/definitions/xudrpcOrder"
         }
       }
+    },
+    "xudrpcOrderSide": {
+      "type": "string",
+      "enum": [
+        "BUY",
+        "SELL"
+      ],
+      "default": "BUY"
     },
     "xudrpcOrders": {
       "type": "object",
@@ -808,6 +820,10 @@
         "order_id": {
           "type": "string",
           "title": "The local id to assign to the order"
+        },
+        "side": {
+          "$ref": "#/definitions/xudrpcOrderSide",
+          "title": "Whether the order is a Buy or Sell"
         }
       }
     },

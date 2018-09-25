@@ -1,6 +1,6 @@
 import { callback, loadXudClient } from './command';
 import { Arguments, Argv } from 'yargs';
-import { PlaceOrderRequest } from '../proto/xudrpc_pb';
+import { PlaceOrderRequest, OrderSide } from '../proto/xudrpc_pb';
 
 export const orderBuilder = (argv: Argv, command: string) => argv
   .option('quantity', {
@@ -28,7 +28,8 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
 
-  request.setQuantity(isSell ? argv.quantity * -1 : argv.quantity);
+  request.setQuantity(argv.quantity);
+  request.setSide(isSell ? OrderSide.SELL : OrderSide.BUY);
   request.setPairId(argv.pair_id.toUpperCase());
 
   if (!isNaN(numericPrice)) {
