@@ -360,7 +360,7 @@ class Pool extends EventEmitter {
       case PacketType.GetOrders: {
         const getOrdersPacketBody = (packet as packets.GetOrdersPacket).body!;
         const pairIds = getOrdersPacketBody ? getOrdersPacketBody.pairIds : [];
-        this.logger.verbose(`sending orders to ${peer.nodePubKey} for supported pairs: ${pairIds}`);
+        this.logger.verbose(`got orders to ${peer.nodePubKey} for supported pairs: ${pairIds}`);
         this.emit('packet.getOrders', peer, packet.header.id, pairIds);
         break;
       }
@@ -427,8 +427,7 @@ class Pool extends EventEmitter {
       this.peers.add(peer);
 
       // request peer's orders and known nodes
-      const getOrdersPacketBody: packets.GetOrdersPacketBody = { pairIds: this.handshakeData.pairs };
-      peer.sendPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
+      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
       peer.sendPacket(new packets.GetNodesPacket());
 
       // if outbound, update the `lastConnected` field for the address we're actually connected to

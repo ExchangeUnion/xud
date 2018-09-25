@@ -315,7 +315,7 @@ class OrderBook extends EventEmitter {
   /**
    * Send all local orders to a given peer in an [[OrdersPacket].
    * @param reqId the request id of a [[GetOrdersPacket]] packet that this method is responding to
-   * @param pairIds comes from Handshakestate, to send only supported pairs to peer
+   * @param pairIds using to send only supported pairs to peer
    */
   private sendOrders = async (peer: Peer, reqId: string, pairIds: string[]) => {
     // TODO: just send supported pairs
