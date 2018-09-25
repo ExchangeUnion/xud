@@ -9,6 +9,7 @@ describe('WebProxy', () => {
 
   before(async () => {
     config = {
+      dbpath: ':memory:',
       webproxy: {
         disable: false,
         port: 8080,
