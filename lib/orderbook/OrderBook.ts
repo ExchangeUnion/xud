@@ -64,7 +64,7 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', (deal) => {
         if (deal.myRole === SwapDealRole.Maker) {
           // assume full order execution of an own order
-          this.removeOwnOrder(deal.orderId, deal.pairId);
+          this.removeOwnOrder(deal.orderId, deal.pairId, deal.takerPubKey);
 
           // TODO: handle partial order execution, updating existing order
         }
@@ -253,9 +253,10 @@ class OrderBook extends EventEmitter {
 
   /**
    * Attempts to remove a local order from the order book.
+   * @param takerPubKey the node pub key of the taker who filled this order, if applicable
    * @returns true if an order was removed, otherwise false
    */
-  private removeOwnOrder = (orderId: string, pairId: string): boolean => {
+  private removeOwnOrder = (orderId: string, pairId: string, takerPubKey?: string): boolean => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       this.logger.warn(`invalid pairId: ${pairId}`);
@@ -275,7 +276,7 @@ class OrderBook extends EventEmitter {
       this.pool.broadcastOrderInvalidation({
         orderId,
         pairId,
-      });
+      }, takerPubKey);
     }
 
     return true;
