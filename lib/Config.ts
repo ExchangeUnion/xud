@@ -7,12 +7,14 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
+import { Network } from './types/enums';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
   public loglevel: string;
   public logpath: string;
+  public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
@@ -53,6 +55,7 @@ class Config {
     this.dbpath = this.getDefaultDbPath();
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
+    this.network = Network.TestNet;
 
     this.p2p = {
       listen: true,

@@ -2,23 +2,9 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { getUri } from '../../lib/utils/utils';
-import net from 'net';
+import { getUnusedPort } from '../utils';
 
 chai.use(chaiAsPromised);
-
-const getUnusedPort = async () => {
-  return new Promise<number>((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, () => {
-      const { port } = server.address();
-      server.close(() => {
-        resolve(port);
-      });
-    });
-  });
-};
 
 const createConfig = (instanceid: number, p2pPort: number) => ({
   instanceid,
