@@ -358,7 +358,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GetOrders: {
-        const getOrdersPacketBody = (packet as packets.GetOrdersPacket).body!;
+        const getOrdersPacketBody = (packet as packets.GetOrdersPacket).body;
         const pairIds = getOrdersPacketBody ? getOrdersPacketBody.pairIds : [];
         this.emit('packet.getOrders', peer, packet.header.id, pairIds);
         break;
