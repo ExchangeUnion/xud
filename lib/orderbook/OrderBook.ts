@@ -313,17 +313,15 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Send all local orders to a given peer in an [[OrdersPacket].
+   * Send local orders to a given peer in an [[OrdersPacket].
    * @param reqId the request id of a [[GetOrdersPacket]] packet that this method is responding to
-   * @param pairIds using to send only supported pairs to peer
+   * @param pairIds a list of trading pair ids, only orders belonging to one of these pairs will be sent
    */
   private sendOrders = async (peer: Peer, reqId: string, pairIds: string[]) => {
-    // TODO: just send supported pairs
-
     const outgoingOrders: orders.OutgoingOrder[] = [];
     this.matchingEngines.forEach((matchingEngine) => {
       // send only requested pairIds
-      if (pairIds.indexOf(matchingEngine.pairId) !== -1) {
+      if (pairIds.includes(matchingEngine.pairId)) {
         const orders = matchingEngine.getOwnOrders();
         orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
         orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
