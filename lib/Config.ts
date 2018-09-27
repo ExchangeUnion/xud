@@ -7,12 +7,14 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
+import { Network } from './types/enums';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
   public loglevel: string;
   public logpath: string;
+  public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
@@ -29,21 +31,21 @@ class Config {
     let lndDefaultDatadir;
     switch (platform) {
       case 'win32': { // windows
-        const homeDir = process.env.LOCALAPPDATA;
-        this.xudir = `${homeDir}/Xud/`;
-        lndDefaultDatadir = `${homeDir}/Lnd/`;
+        const homeDir = process.env.LOCALAPPDATA!;
+        this.xudir = path.join(homeDir, 'Xud');
+        lndDefaultDatadir = path.join(homeDir, 'Lnd');
         break;
       }
       case 'darwin': { // mac
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/Library/Application Support/Lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         break;
       }
       default: { // linux
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/.lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, '.lnd');
         break;
       }
     }
@@ -53,6 +55,7 @@ class Config {
     this.dbpath = this.getDefaultDbPath();
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
+    this.network = Network.TestNet;
 
     this.p2p = {
       listen: true,
@@ -71,7 +74,7 @@ class Config {
     this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
       cltvdelta: 144,
@@ -79,7 +82,7 @@ class Config {
     this.lndltc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,

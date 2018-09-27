@@ -14,6 +14,13 @@ export enum OrderSide {
   Sell,
 }
 
+export enum Network {
+  MainNet = 'mainnet',
+  TestNet = 'testnet',
+  SimNet = 'simnet',
+  RegTest = 'regtest',
+}
+
 export enum SwapDealRole {
   Taker = 0,
   Maker = 1,
