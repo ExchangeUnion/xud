@@ -1,10 +1,10 @@
-# XUD
+# Exchange Union Daemon
 
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
 [![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 
-XUD stands for Exchange Union Daemon and powers [Exchange Union](https://www.exchangeunion.com/), a decentralized exchange built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable instant & trustless cryptocurrency swaps and order fulfillment between exchanges. This repository contains `xud` which encompasses the following components:
+The Exchange Union Daemon (`xud`) powers [Exchange Union](https://www.exchangeunion.com/), a decentralized exchange built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable instant and trustless cryptocurrency swaps and order fulfillment between cryptocurrency exchanges. Exchanges participating in the network aggregate their liquidity and can provide deeper order books and new trading pairs to their users. `xud` encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
 * Decentralized order book to locally aggregate orders from the known network.
@@ -43,7 +43,7 @@ Issue commands to `xud` with the `xucli` command line tool. To see a list of ava
 
 You can find more information on how to use `xud` in the wiki at [Running xud](https://github.com/ExchangeUnion/xud/wiki/Running-xud) and [Command Line Interface](https://github.com/ExchangeUnion/xud/wiki/Command-Line-Interface).
 
-Note: If you installed `xud` globally, e.g. via npm, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
+Note: If you installed `xud` globally via npm, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
 
 ## Code Documentation
 
