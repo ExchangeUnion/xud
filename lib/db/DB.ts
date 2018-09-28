@@ -1,9 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import assert from 'assert';
 import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
-
 import Logger from '../Logger';
 import { db } from '../types';
 import { SwapClients } from '../types/enums';
@@ -12,6 +10,7 @@ type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
+  ReputationEvent: Sequelize.Model<db.ReputationEventInstance, db.ReputationEventAttributes>;
 };
 
 /** A class representing a connection to a SQL database. */
@@ -45,11 +44,12 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair } = this.models;
+    const { Node, Currency, Pair, ReputationEvent } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
+      ReputationEvent.sync(),
     ]);
     await Promise.all([
       Pair.sync(),

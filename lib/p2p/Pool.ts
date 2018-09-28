@@ -79,7 +79,7 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(logger, models));
+    this.nodes = new NodeList(new P2PRepository(models));
   }
 
   public get peerCount(): number {
@@ -122,8 +122,11 @@ class Pool extends EventEmitter {
     this.handshakeData.addresses = this.addresses;
 
     this.logger.info('Connecting to known / previously connected peers');
-    await this.nodes.load();
-    this.connectNodes(this.nodes, false, true).then(() => {
+    this.bindNodeList();
+
+    this.nodes.load().then(() => {
+      return this.connectNodes(this.nodes, false, true);
+    }).then(() => {
       this.logger.info('Completed start-up connections to known peers.');
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
@@ -146,6 +149,17 @@ class Pool extends EventEmitter {
     this.closePeers();
 
     this.connected = false;
+  }
+
+  private bindNodeList = () => {
+    this.nodes.on('node.ban', (nodePubKey) => {
+      this.logger.warn(`node ${nodePubKey} was banned`);
+
+      const peer = this.peers.get(nodePubKey);
+      if (peer) {
+        peer.close();
+      }
+    });
   }
 
   private verifyReachability = () => {
