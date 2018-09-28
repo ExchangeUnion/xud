@@ -94,7 +94,7 @@ describe('API Service', () => {
     const args = {
       orderId: '1',
     };
-    await expect(service.cancelOrder(args)).to.be.fulfilled;
+    await expect(service.removeOrder(args)).to.be.fulfilled;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {

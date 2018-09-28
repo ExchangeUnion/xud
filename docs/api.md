@@ -8,8 +8,8 @@
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
-    - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
-    - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
+    - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
+    - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
@@ -123,9 +123,9 @@
 
 
 
-<a name="xudrpc.CancelOrderRequest"></a>
+<a name="xudrpc.RemoveOrderRequest"></a>
 
-### CancelOrderRequest
+### RemoveOrderRequest
 
 
 
@@ -138,9 +138,9 @@
 
 
 
-<a name="xudrpc.CancelOrderResponse"></a>
+<a name="xudrpc.RemoveOrderResponse"></a>
 
-### CancelOrderResponse
+### RemoveOrderResponse
 
 
 
@@ -777,7 +777,7 @@
 | ----------- | ------------ | ------------- | ------------|
 | AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Add a currency to the list of supported currencies. |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Add a trading pair to the list of supported trading pairs. |
-| CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Cancel placed order from the orderbook. |
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |

@@ -107,12 +107,12 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.cancelOrder]]
+   * See [[Service.removeOrder]]
    */
-  public cancelOrder: grpc.handleUnaryCall<xudrpc.CancelOrderRequest, xudrpc.CancelOrderResponse> = async (call, callback) => {
+  public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (call, callback) => {
     try {
-      const cancelOrderResponse = await this.service.cancelOrder(call.request.toObject());
-      const response = new xudrpc.CancelOrderResponse();
+      const removeOrderResponse = await this.service.removeOrder(call.request.toObject());
+      const response = new xudrpc.RemoveOrderResponse();
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

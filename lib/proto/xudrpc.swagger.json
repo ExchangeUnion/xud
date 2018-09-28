@@ -69,15 +69,15 @@
         ]
       }
     },
-    "/v1/cancelorder": {
+    "/v1/removeorder": {
       "post": {
         "summary": "Cancel placed order from the orderbook.",
-        "operationId": "CancelOrder",
+        "operationId": "RemoveOrder",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderResponse"
+              "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
           }
         },
@@ -87,7 +87,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderRequest"
+              "$ref": "#/definitions/xudrpcRemoveOrderRequest"
             }
           }
         ],
@@ -471,7 +471,7 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
-    "xudrpcCancelOrderRequest": {
+    "xudrpcRemoveOrderRequest": {
       "type": "object",
       "properties": {
         "order_id": {
@@ -480,7 +480,7 @@
         }
       }
     },
-    "xudrpcCancelOrderResponse": {
+    "xudrpcRemoveOrderResponse": {
       "type": "object"
     },
     "xudrpcChannelBalance": {
