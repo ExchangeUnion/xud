@@ -1,4 +1,4 @@
-import { SwapClients } from './enums';
+import { SwapClients, SwapDealRole } from './enums';
 
 type MarketOrder = {
   /** The number of base currency tokens for the order. */
@@ -48,7 +48,22 @@ export type OutgoingOrder = Pick<StampedOwnOrder, Exclude<keyof StampedOwnOrder,
 export type OrderIdentifier = {
   orderId: string;
   pairId: string;
-  quantity?: number;
+};
+
+export type OrderPortion = OrderIdentifier & {
+  quantity: number;
+  localId?: string;
+};
+
+export type SwapResult = {
+  orderId: string,
+  localId: string,
+  pairId: string,
+  amountReceived: number;
+  amountSent: number;
+  r_hash: string;
+  peerPubKey: string;
+  role: SwapDealRole;
 };
 
 export type Currency = {

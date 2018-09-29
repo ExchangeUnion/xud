@@ -212,7 +212,7 @@
     },
     "/v1/orders": {
       "get": {
-        "summary": "Get a map between pair ids and their buy and sell orders from the order book.",
+        "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
         "operationId": "GetOrders",
         "responses": {
           "200": {
@@ -386,15 +386,15 @@
         ]
       }
     },
-    "/v1/subscribepeerorders": {
+    "/v1/subscribeorders": {
       "get": {
-        "summary": "Subscribe to peer order events.",
-        "operationId": "SubscribePeerOrders",
+        "summary": "Subscribes to orders being removed - either in full or in part - from the order book. This call,\ntogether with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order\nbook. For example, an exchange that wants to show its users a real time list of the orders available\nto them would subscribe to this streaming call to be alerted when part or all of an existing order\nis no longer available for trading.",
+        "operationId": "SubscribeRemovedOrders",
         "responses": {
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSubscribePeerOrdersResponse"
+              "$ref": "#/definitions/xudrpcOrderRemoval"
             }
           }
         },
@@ -405,13 +405,13 @@
     },
     "/v1/subscribeswaps": {
       "get": {
-        "summary": "Subscribe executed swaps.",
+        "summary": "Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to\nget real-time notifications when its orders are filled by a remote taker. It can be used for\ntracking order executions, updating balances, and informing a trader when one of their orders\nis settled through Exchange Union network.",
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
             "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSubscribeSwapsResponse"
+              "$ref": "#/definitions/xudrpcSwapResult"
             }
           }
         },
@@ -429,6 +429,14 @@
         "RAIDEN"
       ],
       "default": "LND"
+    },
+    "SwapResultRole": {
+      "type": "string",
+      "enum": [
+        "TAKER",
+        "MAKER"
+      ],
+      "default": "TAKER"
     },
     "xudrpcAddCurrencyRequest": {
       "type": "object",
@@ -672,46 +680,42 @@
         "price": {
           "type": "number",
           "format": "double",
-          "description": "The price of the order, precise to 6 decimal places."
+          "description": "The price of the order."
         },
         "quantity": {
           "type": "number",
           "format": "double",
-          "description": "The quantity of the order, precise to 6 decimal places."
+          "description": "The quantity of the order."
         },
         "pair_id": {
           "type": "string",
-          "title": "The trading pair that this order is for"
-        },
-        "peer_pub_key": {
-          "type": "string",
-          "title": "The node pub key of the peer that created this order"
+          "description": "The trading pair that this order is for."
         },
         "id": {
           "type": "string",
-          "title": "A UUID for this order"
+          "description": "A UUID for this order."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer that created this order."
         },
         "local_id": {
           "type": "string",
-          "title": "The local id for this order"
+          "description": "The local id for this order."
         },
         "created_at": {
           "type": "string",
           "format": "int64",
-          "title": "The epoch time when this order was created"
-        },
-        "invoice": {
-          "type": "string",
-          "title": "Lightning invoice"
-        },
-        "canceled": {
-          "type": "boolean",
-          "format": "boolean",
-          "title": "Indicates whether an order was canceled"
+          "description": "The epoch time when this order was created."
         },
         "side": {
           "$ref": "#/definitions/xudrpcOrderSide",
-          "title": "Whether the order is a Buy or Sell"
+          "title": "Whether this order is a buy or sell"
+        },
+        "is_own_order": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether this order is a local own order or a remote peer order."
         }
       }
     },
@@ -723,6 +727,33 @@
         },
         "taker": {
           "$ref": "#/definitions/xudrpcOrder"
+        }
+      }
+    },
+    "xudrpcOrderRemoval": {
+      "type": "object",
+      "properties": {
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "The quantity of the order being removed."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the order is for."
+        },
+        "order_id": {
+          "type": "string",
+          "description": "The global UUID for the order."
+        },
+        "local_id": {
+          "type": "string",
+          "description": "The local id for the order, if applicable."
+        },
+        "is_own_order": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether the order being removed is a local own order or a remote peer order."
         }
       }
     },
@@ -806,12 +837,12 @@
         "price": {
           "type": "number",
           "format": "double",
-          "description": "The price of the order, precise to 6 decimal places."
+          "description": "The price of the order."
         },
         "quantity": {
           "type": "number",
           "format": "double",
-          "description": "The quantity of the order, precise to 6 decimal places."
+          "description": "The quantity of the order."
         },
         "pair_id": {
           "type": "string",
@@ -891,20 +922,42 @@
     "xudrpcShutdownResponse": {
       "type": "object"
     },
-    "xudrpcSubscribePeerOrdersResponse": {
+    "xudrpcSwapResult": {
       "type": "object",
       "properties": {
-        "order": {
-          "$ref": "#/definitions/xudrpcOrder"
-        }
-      }
-    },
-    "xudrpcSubscribeSwapsResponse": {
-      "type": "object",
-      "properties": {
-        "order": {
+        "order_id": {
           "type": "string",
-          "title": "The order which was executed for the swap with updated remaining quantity"
+          "description": "The global UUID for the order that was swapped."
+        },
+        "local_id": {
+          "type": "string",
+          "description": "The local id for the order that was swapped."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that this order is for."
+        },
+        "r_hash": {
+          "type": "string",
+          "description": "The hex-encoded r_hash for the swap payments."
+        },
+        "amount_received": {
+          "type": "string",
+          "format": "int64",
+          "description": "The amount of subunits (satoshis) received."
+        },
+        "amount_sent": {
+          "type": "string",
+          "format": "int64",
+          "description": "The amount of subunits (satoshis) sent."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer that executed this order."
+        },
+        "role": {
+          "$ref": "#/definitions/SwapResultRole",
+          "title": "Our role in the swap, either MAKER or TAKER"
         }
       }
     }

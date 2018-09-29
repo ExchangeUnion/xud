@@ -7,7 +7,7 @@ import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderIdentifier, StampedPeerOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
@@ -30,7 +30,7 @@ type PoolConfig = {
 interface Pool {
   on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderIdentifier) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
@@ -38,7 +38,7 @@ interface Pool {
   on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderIdentifier): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
@@ -339,7 +339,7 @@ class Pool extends EventEmitter {
    * Broadcasts an [[OrderInvalidationPacket]] to all currently connected peers.
    * @param nodeToExclude the node pub key of a node to exclude from the packet broadcast
    */
-  public broadcastOrderInvalidation = (order: OrderIdentifier, nodeToExclude?: string) => {
+  public broadcastOrderInvalidation = (order: OrderPortion, nodeToExclude?: string) => {
     const orderInvalidationPacket = new packets.OrderInvalidationPacket(order);
     this.peers.forEach((peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {

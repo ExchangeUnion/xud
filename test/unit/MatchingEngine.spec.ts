@@ -246,16 +246,16 @@ describe('MatchingEngine.removePeerOrders', () => {
 
   it('should add a new peerOrder and then remove it partially', () => {
     const quantity = 5;
-    const quantityToDecrease = 3;
+    const quantityToRemove = 3;
 
     const order = createPeerOrder(5, quantity, false);
     engine.addPeerOrder(order);
 
-    let removedOrder = engine.removePeerOrderQuantity(order.id, quantityToDecrease) as orders.StampedPeerOrder;
-    expect(removedOrder.quantity).to.be.equal(quantityToDecrease);
+    let removedOrder = engine.removePeerOrderQuantity(order.id, quantityToRemove) as orders.StampedPeerOrder;
+    expect(removedOrder.quantity).to.be.equal(quantityToRemove);
 
     removedOrder = engine.removePeerOrderQuantity(order.id) as orders.StampedPeerOrder;
-    expect(removedOrder.quantity).to.be.equal(quantity - quantityToDecrease);
+    expect(removedOrder.quantity).to.be.equal(quantity - quantityToRemove);
   });
 });
 
