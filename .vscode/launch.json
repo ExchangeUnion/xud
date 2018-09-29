@@ -1,0 +1,49 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug",
+      "cwd": "${workspaceRoot}",
+      "args": [
+        "bin/xud"
+      ],
+      "runtimeArgs": [
+        "-r",  "ts-node/register"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Mocha All",
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
+      "runtimeArgs": [
+        "--no-timeouts",
+        "--colors",
+        "-r",  "ts-node/register",
+        "${workspaceRoot}/test/*/*.spec.ts"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Mocha Current File",
+      "cwd": "${workspaceRoot}",
+      "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/mocha",
+      "runtimeArgs": [
+        "--no-timeouts",
+        "--colors",
+        "-r",  "ts-node/register",
+        "${file}"
+      ],
+      "sourceMaps": true,
+      "console": "integratedTerminal"
+    },
+  ]
+}
