@@ -90,7 +90,7 @@ describe('API Service', () => {
     expect(order.isBuy).to.equal(placeOrderArgs.side === OrderSide.Buy);
   });
 
-  it('should cancel an order', async () => {
+  it('should remove an order', async () => {
     const args = {
       orderId: '1',
     };

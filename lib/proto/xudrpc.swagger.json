@@ -71,7 +71,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Cancel placed order from the orderbook.",
+        "summary": "Remove placed order from the orderbook.",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -476,7 +476,7 @@
       "properties": {
         "order_id": {
           "type": "string",
-          "title": "The local id of the order to cancel"
+          "title": "The local id of the order to remove"
         }
       }
     },

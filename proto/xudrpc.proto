@@ -41,7 +41,7 @@ service Xud {
     };
   }
 
-  /* Cancel placed order from the orderbook. */
+  /* Removes an order from the order book by its local id. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
       post: "/v1/removeorder"
@@ -188,7 +188,7 @@ message AddPairRequest {
 message AddPairResponse {}
 
 message RemoveOrderRequest {
-  // The local id of the order to cancel
+  // The local id of the order to remove
   string order_id = 1 [json_name = "order_id"];
 }
 message RemoveOrderResponse {}

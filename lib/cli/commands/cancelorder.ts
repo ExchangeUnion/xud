@@ -4,7 +4,7 @@ import { RemoveOrderRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'removeorder <order_id>';
 
-export const describe = 'cancel an order';
+export const describe = 'remove an order';
 
 export const builder = {
   order_id: {
