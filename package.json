@@ -27,7 +27,9 @@
     "test:unit": "mocha -r ts-node/register test/unit/*",
     "test:unit:watch": "mocha -r ts-node/register test/unit/*  --watch --watch-extensions ts",
     "test:p2p": "mocha -r ts-node/register test/p2p/*",
-    "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts"
+    "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
+    "preversion": "npm run lintNoFix && npm test && npm run compile",
+    "version": "npm run config && git add sample-xud.conf"
   },
   "cross-os": {
     "postcompile": {
