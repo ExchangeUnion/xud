@@ -1,20 +1,23 @@
 import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
 import Xud from '../../lib/Xud';
+import { getUnusedPort } from '../utils';
 
-describe('WebProxy', () => {
+describe('WebProxy', async () => {
   let xud: Xud;
   let config: any;
   chai.use(chaiHttp);
+  const port = await getUnusedPort();
 
   before(async () => {
     config = {
+      dbpath: ':memory:',
       webproxy: {
+        port,
         disable: false,
-        port: 8080,
       },
-      logPath: '',
-      logLevel: 'warn',
+      logpath: '',
+      loglevel: 'warn',
       p2p: {
         listen: false,
       },

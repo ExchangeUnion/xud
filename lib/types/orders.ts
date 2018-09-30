@@ -1,10 +1,12 @@
-import { SwapClients } from './enums';
+import { SwapClients, SwapDealRole } from './enums';
 
 type MarketOrder = {
   /** The number of base currency tokens for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
+  /** Whether the order is a buy (if `true`) or a sell (if `false`). */
+  isBuy: boolean;
 };
 
 /** A limit order with a specified price. */
@@ -46,7 +48,22 @@ export type OutgoingOrder = Pick<StampedOwnOrder, Exclude<keyof StampedOwnOrder,
 export type OrderIdentifier = {
   orderId: string;
   pairId: string;
-  quantity?: number;
+};
+
+export type OrderPortion = OrderIdentifier & {
+  quantity: number;
+  localId?: string;
+};
+
+export type SwapResult = {
+  orderId: string,
+  localId: string,
+  pairId: string,
+  amountReceived: number;
+  amountSent: number;
+  r_hash: string;
+  peerPubKey: string;
+  role: SwapDealRole;
 };
 
 export type Currency = {

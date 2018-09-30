@@ -1,6 +1,7 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
 import { Currency, Pair } from './orders';
+import { ReputationEvent } from './enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
@@ -34,7 +35,9 @@ export type NodeAttributes = NodeFactory & {
   lastAddress: Address;
 };
 
-export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes>;
+export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes> & {
+  reputationScore: number;
+};
 
 export type PairFactory = Pair;
 
@@ -43,3 +46,16 @@ export type PairAttributes = PairFactory & {
 };
 
 export type PairInstance = PairAttributes & Sequelize.Instance<PairAttributes>;
+
+export type ReputationEventFactory = {
+  event: ReputationEvent;
+  nodeId: number;
+};
+
+export type ReputationEventAttributes = ReputationEventFactory & {
+  id: number;
+};
+
+export type ReputationEventInstance = ReputationEventAttributes & Sequelize.Instance<ReputationEventAttributes> & {
+  createdAt: number;
+};

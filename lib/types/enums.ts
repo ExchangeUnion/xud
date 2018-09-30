@@ -9,6 +9,18 @@ export enum OrderingDirection {
   Asc = 'ASC',
 }
 
+export enum OrderSide {
+  Buy,
+  Sell,
+}
+
+export enum Network {
+  MainNet = 'mainnet',
+  TestNet = 'testnet',
+  SimNet = 'simnet',
+  RegTest = 'regtest',
+}
+
 export enum SwapDealRole {
   Taker = 0,
   Maker = 1,
@@ -27,4 +39,12 @@ export enum SwapDealState {
   Active = 0,
   Error = 1,
   Completed = 2,
+}
+
+export enum ReputationEvent {
+  ManualBan = 0,
+  ManualUnban = 1,
+  PacketTimeout = 2,
+  SwapFailure = 3,
+  SwapSuccess = 4,
 }

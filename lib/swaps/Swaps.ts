@@ -7,7 +7,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
-import { StampedOwnOrder, StampedPeerOrder } from '../types/orders';
+import { StampedOwnOrder, StampedPeerOrder, SwapResult } from '../types/orders';
 import assert from 'assert';
 
 type SwapDeal = {
@@ -20,10 +20,14 @@ type SwapDeal = {
    * life cycle and if the deal is active, errored or completed.
    */
   state: SwapDealState;
-  /** The reason for being in current state */
+  /** The reason for being in the current state. */
   stateReason: string;
-  /** Global order id in the XU network. */
+  /** The xud node pub key of the counterparty to this swap deal. */
+  peerPubKey: string;
+  /** The global order id in the XU network for the order being executed. */
   orderId: string;
+  /** The local id for the order being executed. */
+  localOrderId: string;
   /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
   // TODO: is it needed here? if yes, should be in satoshis
   proposedQuantity: number;
@@ -59,11 +63,11 @@ interface Swaps {
   // TODO: put swap.rejected and swap.accepted to work or delete them.
   on(event: 'swap.rejected', listener: (deal: SwapDeal) => void): this;
   on(event: 'swap.accepted', listener: (deal: SwapDeal, quantity: number) => void): this;
-  on(event: 'swap.paid', listener: (deal: SwapDeal) => void): this;
+  on(event: 'swap.paid', listener: (deal: SwapResult) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
   emit(event: 'swap.rejected', deal: SwapDeal): boolean;
   emit(event: 'swap.accepted', deal: SwapDeal, quantity: number): boolean;
-  emit(event: 'swap.paid', deal: SwapDeal): boolean;
+  emit(event: 'swap.paid', swapResult: SwapResult): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
 }
 
@@ -82,11 +86,11 @@ class Swaps extends EventEmitter {
    * @param quantity the quantity of the taker's order
    * @param price the price specified by the maker order being filled
    */
-  private static calculateSwapAmounts = (quantity: number, price: number) => {
+  private static calculateSwapAmounts = (quantity: number, price: number, isBuyOrder: boolean) => {
     let takerAmount: number;
     let makerAmount: number;
     // TODO: use configurable amount of subunits/satoshis per token for each currency
-    if (quantity > 0) {
+    if (isBuyOrder) {
       // taker is buying the base currency
       takerAmount = Math.round(quantity * 100000000);
       makerAmount = Math.round(quantity * price * 100000000);
@@ -199,7 +203,7 @@ class Swaps extends EventEmitter {
 
     let takerCurrency: string;
     let makerCurrency: string;
-    if (taker.quantity > 0) {
+    if (taker.isBuy) {
       // we are buying the base currency
       takerCurrency = baseCurrency;
       makerCurrency = quoteCurrency;
@@ -218,7 +222,7 @@ class Swaps extends EventEmitter {
         takerCltvDelta = this.lndLtcClient.cltvDelta;
         break;
     }
-    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
+    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, taker.isBuy);
     const preimage = randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
@@ -235,6 +239,8 @@ class Swaps extends EventEmitter {
 
     const deal: SwapDeal = {
       ...swapRequestBody,
+      peerPubKey: peer.nodePubKey!,
+      localOrderId: taker.localId,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
       stateReason: '',
@@ -282,6 +288,8 @@ class Swaps extends EventEmitter {
     // accept the deal
     const deal: SwapDeal = {
       ...requestBody,
+      peerPubKey: peer.nodePubKey!,
+      localOrderId: '', // TODO: get local id from order book
       quantity: requestBody.proposedQuantity,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
@@ -625,7 +633,17 @@ class Swaps extends EventEmitter {
     deal.phase = newPhase;
 
     if (deal.phase === SwapDealPhase.AmountReceived) {
-      this.emit('swap.paid', deal);
+      const swapResult = {
+        orderId: deal.orderId,
+        localId: deal.localOrderId,
+        pairId: deal.pairId,
+        amountReceived: deal.makerAmount,
+        amountSent: deal.takerAmount,
+        r_hash: deal.r_hash,
+        peerPubKey: deal.peerPubKey,
+        role: deal.myRole,
+      };
+      this.emit('swap.paid', swapResult);
     }
   }
 

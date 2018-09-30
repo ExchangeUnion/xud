@@ -4,27 +4,31 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { StampedPeerOrder, StampedOrder, StampedOwnOrder } from '../types/orders';
+import { StampedOrder, isOwnOrder, OrderPortion, SwapResult } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
 /**
- * Convert a [[StampedOrder]] to an xudrpc Order message.
+ * Creates an xudrpc Order message from a [[StampedOrder]].
  */
-const getOrder = (order: StampedOrder) => {
+const createOrder = (order: StampedOrder) => {
   const grpcOrder = new xudrpc.Order();
-  grpcOrder.setCanceled(false);
   grpcOrder.setCreatedAt(order.createdAt);
   grpcOrder.setId(order.id);
-  grpcOrder.setLocalId((order as StampedOwnOrder).localId);
+  if (isOwnOrder(order)) {
+    grpcOrder.setLocalId((order).localId);
+    grpcOrder.setIsOwnOrder(true);
+  } else {
+    grpcOrder.setPeerPubKey((order).peerPubKey);
+    grpcOrder.setIsOwnOrder(false);
+  }
   grpcOrder.setPairId(order.pairId);
-  grpcOrder.setPeerPubKey((order as StampedPeerOrder).peerPubKey);
   grpcOrder.setPrice(order.price);
   grpcOrder.setQuantity(order.quantity);
+  grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
   return grpcOrder;
 };
 
@@ -228,7 +232,7 @@ class GrpcService {
 
       const getOrdersList = <T extends StampedOrder>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(getOrder(<StampedOrder>order)));
+        orders.forEach(order => ordersList.push(createOrder(<StampedOrder>order)));
         return ordersList;
       };
 
@@ -312,14 +316,14 @@ class GrpcService {
       const matchesList: xudrpc.OrderMatch[] = [];
       placeOrderResponse.matches.forEach((match) => {
         const orderMatch = new xudrpc.OrderMatch();
-        orderMatch.setMaker(getOrder(match.maker));
-        orderMatch.setTaker(getOrder(match.taker));
+        orderMatch.setMaker(createOrder(match.maker));
+        orderMatch.setTaker(createOrder(match.taker));
         matchesList.push(orderMatch);
       });
       response.setMatchesList(matchesList);
 
       if (placeOrderResponse.remainingOrder) {
-        response.setRemainingOrder(getOrder(placeOrderResponse.remainingOrder));
+        response.setRemainingOrder(createOrder(placeOrderResponse.remainingOrder));
       }
       callback(null, response);
     } catch (err) {
@@ -382,17 +386,45 @@ class GrpcService {
   }
 
   /*
-   * See [[Service.subscribePeerOrders]]
+   * See [[Service.subscribeAddedOrders]]
    */
-  public subscribePeerOrders: grpc.handleServerStreamingCall<xudrpc.SubscribePeerOrdersRequest, xudrpc.SubscribePeerOrdersResponse> = (call) => {
-    this.service.subscribePeerOrders((order: StampedPeerOrder) => call.write({ order }));
+  public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
+    this.service.subscribeAddedOrders((order: StampedOrder) => {
+      call.write(createOrder(order));
+    });
+  }
+
+  /*
+   * See [[Service.subscribeRemovedOrders]]
+   */
+  public subscribeRemovedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeRemovedOrdersRequest, xudrpc.OrderRemoval> = (call) => {
+    this.service.subscribeRemovedOrders((order: OrderPortion) => {
+      const orderRemoval = new xudrpc.OrderRemoval();
+      orderRemoval.setPairId(order.pairId);
+      orderRemoval.setOrderId(order.orderId);
+      orderRemoval.setQuantity(order.quantity);
+      orderRemoval.setLocalId(order.localId || '');
+      orderRemoval.setIsOwnOrder(order.localId !== undefined);
+      call.write(orderRemoval);
+    });
   }
 
   /*
    * See [[Service.subscribeSwaps]]
    */
-  public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SubscribeSwapsResponse> = (call) => {
-    this.service.subscribeSwaps((order: StampedOrder) => call.write({ order }));
+  public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapResult> = (call) => {
+    this.service.subscribeSwaps((swapResult: SwapResult) => {
+      const swap = new xudrpc.SwapResult();
+      swap.setAmountReceived(swapResult.amountReceived);
+      swap.setAmountSent(swapResult.amountSent);
+      swap.setLocalId(swapResult.localId);
+      swap.setPairId(swapResult.pairId);
+      swap.setPeerPubKey(swapResult.peerPubKey);
+      swap.setRHash(swapResult.r_hash);
+      swap.setOrderId(swapResult.orderId);
+      swap.setRole(swapResult.role as number);
+      call.write(swap);
+    });
   }
 }
 

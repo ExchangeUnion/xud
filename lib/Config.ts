@@ -7,52 +7,55 @@ import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
+import { Network } from './types/enums';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
-  public logLevel: string;
-  public logPath: string;
+  public loglevel: string;
+  public logpath: string;
+  public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
-  public instanceId = 0;
+  public instanceid = 0;
   /** Whether to intialize a new database with default values. */
-  public initDb: boolean;
+  public initdb: boolean;
   /** The file path for the database, or ':memory:' if the database should be kept in memory. */
-  public dbPath: string;
+  public dbpath: string;
 
   constructor() {
     const platform = os.platform();
     let lndDefaultDatadir;
     switch (platform) {
       case 'win32': { // windows
-        const homeDir = process.env.LOCALAPPDATA;
-        this.xudir = `${homeDir}/Xud/`;
-        lndDefaultDatadir = `${homeDir}/Lnd/`;
+        const homeDir = process.env.LOCALAPPDATA!;
+        this.xudir = path.join(homeDir, 'Xud');
+        lndDefaultDatadir = path.join(homeDir, 'Lnd');
         break;
       }
       case 'darwin': { // mac
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/Library/Application Support/Lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         break;
       }
       default: { // linux
-        const homeDir = process.env.HOME;
-        this.xudir = `${homeDir}/.xud/`;
-        lndDefaultDatadir = `${homeDir}/.lnd/`;
+        const homeDir = process.env.HOME!;
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, '.lnd');
         break;
       }
     }
 
     // default configuration
-    this.initDb = true;
-    this.dbPath = this.getDefaultDbPath();
-    this.logLevel = this.getDefaultLogLevel();
-    this.logPath = this.getDefaultLogPath();
+    this.initdb = true;
+    this.dbpath = this.getDefaultDbPath();
+    this.loglevel = this.getDefaultLogLevel();
+    this.logpath = this.getDefaultLogPath();
+    this.network = Network.TestNet;
 
     this.p2p = {
       listen: true,
@@ -71,7 +74,7 @@ class Config {
     this.lndbtc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
       cltvdelta: 144,
@@ -79,7 +82,7 @@ class Config {
     this.lndltc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
@@ -119,11 +122,11 @@ class Config {
       deepMerge(this, args);
     }
 
-    if (!Object.values(Level).includes(this.logLevel)) {
-      this.logLevel = this.getDefaultLogLevel();
+    if (!Object.values(Level).includes(this.loglevel)) {
+      this.loglevel = this.getDefaultLogLevel();
     }
 
-    this.createLogDir(this.logPath);
+    this.createLogDir(this.logpath);
 
     return this;
   }
@@ -144,8 +147,8 @@ class Config {
     // if we have a custom xu directory, update the default values for all fields that are
     // derived from the xu directory.
     this.xudir = xudir;
-    this.logPath = this.getDefaultLogPath();
-    this.dbPath = this.getDefaultDbPath();
+    this.logpath = this.getDefaultLogPath();
+    this.dbpath = this.getDefaultDbPath();
   }
 
   private getDefaultDbPath = () => {

@@ -80,7 +80,7 @@ class MatchingEngine {
    */
   public static getMatchingQuantity = (buyOrder: StampedOrder, sellOrder: StampedOrder): number => {
     if (buyOrder.price >= sellOrder.price) {
-      return Math.min(buyOrder.quantity, sellOrder.quantity * -1);
+      return Math.min(buyOrder.quantity, sellOrder.quantity);
     } else {
       return 0;
     }
@@ -91,13 +91,11 @@ class MatchingEngine {
    */
   public static splitOrderByQuantity = (order: StampedOrder, matchingQuantity: number): SplitOrder => {
     const { quantity } = order;
-    const absQuantity = Math.abs(quantity);
-    assert(absQuantity > matchingQuantity, 'order abs quantity must be greater than matchingQuantity');
+    assert(quantity > matchingQuantity, 'order quantity must be greater than matchingQuantity');
 
-    const direction = quantity / absQuantity;
     return {
-      matched: { ...order, quantity: matchingQuantity * direction },
-      remaining: { ...order, quantity: quantity - (matchingQuantity * direction) },
+      matched: { ...order, quantity: matchingQuantity },
+      remaining: { ...order, quantity: quantity - matchingQuantity },
     };
   }
 
@@ -128,9 +126,8 @@ class MatchingEngine {
   }
 
   private addOrder = (order: StampedOrder, lists: OrderSidesLists<StampedOrder>): boolean => {
-    const isBuyOrder = order.quantity > 0;
-    const list = isBuyOrder ? lists.buy : lists.sell;
-    const queue = isBuyOrder ? this.queues.buy : this.queues.sell;
+    const list = order.isBuy ? lists.buy : lists.sell;
+    const queue = order.isBuy ? this.queues.buy : this.queues.sell;
 
     if (list.has(order.id)) {
       return false;
@@ -142,19 +139,22 @@ class MatchingEngine {
   }
 
   /**
-   * Remove a quantity from a peer order. if the entire quantity is met, the order will be removed entirely.
-   * @returns undefined if the order wasn't found, otherwise the removed order or order portion
+   * Removes a quantity from a peer order. If the entire quantity is met, the order will be removed entirely.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrderQuantity = (orderId: string, quantityToDecrease?: number): StampedPeerOrder | undefined => {
+  public removePeerOrderQuantity = (orderId: string, quantityToRemove?: number): StampedPeerOrder | undefined => {
     const order = this.peerOrders.buy.get(orderId) || this.peerOrders.sell.get(orderId);
     if (!order) {
       return;
     }
 
-    if (quantityToDecrease && quantityToDecrease < Math.abs(order.quantity)) {
-      // if quantityToDecrease is below the order quantity, mutate the order quantity, and return a simulation of the removed order portion
-      order.quantity = order.quantity - quantityToDecrease;
-      return { ...order, quantity: quantityToDecrease };
+    if (quantityToRemove && quantityToRemove < order.quantity) {
+      // if quantityToRemove is below the order quantity, reduce the order quantity
+      // and return a copy of the order with the quantity that was removed
+      order.quantity = order.quantity - quantityToRemove;
+      return { ...order, quantity: quantityToRemove };
     } else {
       // otherwise, remove the order entirely, and return it
       this.removePeerOrder(order);
@@ -176,13 +176,17 @@ class MatchingEngine {
 
     // remove from lists. for further optimization, we can maintain a separate list for each peer pubKey
     removedOrders.forEach((order: StampedPeerOrder) => {
-      const list = order.quantity > 0 ? this.peerOrders.buy : this.peerOrders.sell;
+      const list = order.isBuy ? this.peerOrders.buy : this.peerOrders.sell;
       list.delete(order.id);
     });
 
     return removedOrders;
   }
 
+  /**
+   * Removes an own order by its global order id.
+   * @returns the removed order, or undefined if no order with the provided id could be found
+   */
   public removeOwnOrder = (orderId: string): StampedOwnOrder | undefined => {
     const order = this.ownOrders.buy.get(orderId) || this.ownOrders.sell.get(orderId);
     if (!order) {
@@ -198,9 +202,8 @@ class MatchingEngine {
   }
 
   private removeOrder = (order: StampedOrder, lists: OrderSidesLists<StampedOrder>) => {
-    const isBuyOrder = order.quantity > 0;
-    const list = isBuyOrder ? lists.buy : lists.sell;
-    const queue = isBuyOrder ? this.queues.buy : this.queues.sell;
+    const list = order.isBuy ? lists.buy : lists.sell;
+    const queue = order.isBuy ? this.queues.buy : this.queues.sell;
 
     list.delete(order.id);
     queue.remove(order);
@@ -208,9 +211,9 @@ class MatchingEngine {
 
   private getOrderList = (order: StampedOrder): OrderList<StampedOrder> => {
     if (isOwnOrder(order)) {
-      return order.quantity > 0 ? this.ownOrders.buy : this.ownOrders.sell;
+      return order.isBuy ? this.ownOrders.buy : this.ownOrders.sell;
     } else {
-      return order.quantity > 0 ? this.peerOrders.buy : this.peerOrders.sell;
+      return order.isBuy ? this.peerOrders.buy : this.peerOrders.sell;
     }
   }
 
@@ -234,13 +237,12 @@ class MatchingEngine {
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
   private match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
-    const isBuyOrder = takerOrder.quantity > 0;
     const matches: matchingEngine.OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: StampedOwnOrder | undefined = { ...takerOrder };
 
-    const queue = isBuyOrder ? this.queues.sell : this.queues.buy;
-    const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder: StampedOrder) => isBuyOrder
+    const queue = takerOrder.isBuy ? this.queues.sell : this.queues.buy;
+    const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder: StampedOrder) => takerOrder.isBuy
       ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
       : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
 
@@ -257,16 +259,14 @@ class MatchingEngine {
         const list = this.getOrderList(makerOrder);
         list.delete(makerOrder.id);
 
-        const makerOrderAbsQuantity = Math.abs(makerOrder.quantity);
-        const remainingOrderAbsQuantity = Math.abs(remainingOrder.quantity);
         if (
-          makerOrderAbsQuantity === matchingQuantity &&
-          remainingOrderAbsQuantity === matchingQuantity
+          makerOrder.quantity === matchingQuantity &&
+          remainingOrder.quantity === matchingQuantity
         ) { // order quantities are fully matching
           matches.push({ maker: makerOrder, taker: remainingOrder });
 
           remainingOrder = undefined;
-        } else if (remainingOrderAbsQuantity === matchingQuantity) {  // taker order quantity is not sufficient. maker order will split
+        } else if (remainingOrder.quantity === matchingQuantity) {  // taker order quantity is not sufficient. maker order will split
           const splitOrder = MatchingEngine.splitOrderByQuantity(makerOrder, matchingQuantity);
           matches.push({ maker: splitOrder.matched, taker: remainingOrder });
 
@@ -275,7 +275,7 @@ class MatchingEngine {
           list.set(splitOrder.remaining.id, splitOrder.remaining);
 
           remainingOrder = undefined;
-        } else if (makerOrderAbsQuantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split
+        } else if (makerOrder.quantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split
           const splitOrder = MatchingEngine.splitOrderByQuantity(remainingOrder, matchingQuantity);
           matches.push({ maker: makerOrder, taker: splitOrder.matched });
           remainingOrder = splitOrder.remaining as StampedOwnOrder;

@@ -1,8 +1,8 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { OrderIdentifier } from '../../../types/orders';
+import { OrderPortion } from '../../../types/orders';
 
-type OrderInvalidationPacketBody = OrderIdentifier;
+type OrderInvalidationPacketBody = OrderPortion;
 
 class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
   public get type() {

@@ -2,30 +2,17 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { getUri } from '../../lib/utils/utils';
-import net from 'net';
+import { getUnusedPort } from '../utils';
+import { ReputationEvent } from '../../lib/types/enums';
 
 chai.use(chaiAsPromised);
 
-const getUnusedPort = async () => {
-  return new Promise<number>((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on('error', reject);
-    server.listen(0, () => {
-      const { port } = server.address();
-      server.close(() => {
-        resolve(port);
-      });
-    });
-  });
-};
-
-const createConfig = (instanceId: number, p2pPort: number) => ({
-  instanceId,
-  initDb: false,
-  dbPath: ':memory:',
-  logLevel: 'warn',
-  logPath: '',
+const createConfig = (instanceid: number, p2pPort: number) => ({
+  instanceid,
+  initdb: false,
+  dbpath: ':memory:',
+  loglevel: 'warn',
+  logpath: '',
   p2p: {
     listen: true,
     port: p2pPort,
@@ -111,6 +98,20 @@ describe('P2P Sanity Tests', () => {
     const port = await getUnusedPort();
     const connectPromise = nodeOne.service.connect({ nodeUri: getUri({ port, nodePubKey: 'notarealnodepubkey', host: 'localhost' }) });
     await expect(connectPromise).to.be.rejectedWith(`could not connect to peer at localhost:${port}`);
+  });
+
+  it('should disconnect from a node after banning it', async () => {
+    await nodeOne.service.connect({ nodeUri: nodeTwoUri });
+
+    const nodeList = nodeOne['pool']['nodes'];
+
+    const banned = await nodeList.addReputationEvent(nodeTwo.nodePubKey, ReputationEvent.ManualBan);
+    expect(banned).to.be.true;
+
+    expect(nodeList.isBanned(nodeTwo.nodePubKey)).to.be.true;
+
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult.length).to.be.equal(0);
   });
 
   after(async () => {
