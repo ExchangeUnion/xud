@@ -7,14 +7,13 @@ import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, StampedPeerOrder, OrderIdentifier } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
-import { GetOrdersPacketBody } from './packets/types/GetOrdersPacket';
 
 type PoolConfig = {
   /** Whether or not to listen for incoming connections from peers. */
