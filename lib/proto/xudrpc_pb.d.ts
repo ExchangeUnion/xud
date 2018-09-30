@@ -820,6 +820,12 @@ export class Peer extends jspb.Message {
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
 
+    getLndBtcPubKey(): string;
+    setLndBtcPubKey(value: string): void;
+
+    getLndLtcPubKey(): string;
+    setLndLtcPubKey(value: string): void;
+
     getInbound(): boolean;
     setInbound(value: boolean): void;
 
@@ -849,6 +855,8 @@ export namespace Peer {
     export type AsObject = {
         address: string,
         nodePubKey: string,
+        lndBtcPubKey: string,
+        lndLtcPubKey: string,
         inbound: boolean,
         pairsList: Array<string>,
         xudVersion: string,

@@ -808,6 +808,14 @@
           "type": "string",
           "title": "The node pub key to uniquely identify this peer"
         },
+        "lnd_btc_pub_key": {
+          "type": "string",
+          "title": "The LND BTC pub key associated with this peer"
+        },
+        "lnd_ltc_pub_key": {
+          "type": "string",
+          "title": "The The LND LTC pub key associated with this peer"
+        },
         "inbound": {
           "type": "boolean",
           "format": "boolean",
