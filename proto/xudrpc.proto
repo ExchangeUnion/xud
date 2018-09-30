@@ -114,7 +114,7 @@ service Xud {
   /* Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
+  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderResponse) {
     option (google.api.http) = {
       post: "/v1/placeorder"
       body: "*"
@@ -379,10 +379,12 @@ message PlaceOrderRequest {
   OrderSide side = 5 [json_name = "side"];
 }
 message PlaceOrderResponse {
-  // A list of orders matching the newly placed order
-  repeated OrderMatch matches = 1 [json_name = "matches"];
+  // A list of own orders matching the newly placed order
+  repeated OrderMatch internal_matches = 1 [json_name = "internal_matches"];
+  // A list of swap results of non-internal matches of the newly placed order
+  repeated SwapResult swap_results = 2 [json_name = "swap_results"];
   // The remaining portion of the order, after matches, that enters the order book
-  Order remaining_order = 2 [json_name= "remaining_order"];
+  Order remaining_order = 3 [json_name= "remaining_order"];
 }
 
 message RaidenInfo {
@@ -420,18 +422,20 @@ message SwapResult {
   string local_id = 2 [json_name = "local_id"];
   // The trading pair that this order is for.
   string pair_id = 3 [json_name = "pair_id"];
+  // The quantity of the swapped orders.
+  int64 quantity = 4 [json_name = "quantity"];
   // The hex-encoded r_hash for the swap payments.
-  string r_hash = 4 [json_name = "r_hash"];
+  string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
-  int64 amount_received = 5 [json_name = "amount_received"];
+  int64 amount_received = 6 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.
-  int64 amount_sent = 6 [json_name = "amount_sent"];
+  int64 amount_sent = 7 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
-  string peer_pub_key = 7 [json_name = "peer_pub_key"];
+  string peer_pub_key = 8 [json_name = "peer_pub_key"];
   enum Role {
     TAKER = 0;
     MAKER = 1;
   }
   // Our role in the swap, either MAKER or TAKER
-  Role role = 8 [json_name = "role"];
+  Role role = 9 [json_name = "role"];
 }

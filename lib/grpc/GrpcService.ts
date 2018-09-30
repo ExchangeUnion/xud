@@ -10,6 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
+import { PlaceOrderResult } from '../types/orderBook';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -30,6 +31,23 @@ const createOrder = (order: StampedOrder) => {
   grpcOrder.setQuantity(order.quantity);
   grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
   return grpcOrder;
+};
+
+/**
+ * Creates an xudrpc SwapResult message from a [[SwapResult]].
+ */
+const createSwapResult = (result: SwapResult) => {
+  const swapResult = new xudrpc.SwapResult();
+  swapResult.setOrderId(result.orderId);
+  swapResult.setLocalId(result.localId);
+  swapResult.setPairId(result.pairId);
+  swapResult.setQuantity(result.quantity);
+  swapResult.setRHash(result.r_hash);
+  swapResult.setAmountReceived(result.amountReceived);
+  swapResult.setAmountSent(result.amountSent);
+  swapResult.setPeerPubKey(result.peerPubKey);
+  swapResult.setRole(result.role as number);
+  return swapResult;
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -309,25 +327,36 @@ class GrpcService {
   /**
    * See [[Service.placeOrder]]
    */
-  public placeOrder: grpc.handleUnaryCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call, callback) => {
-    try {
-      const placeOrderResponse = await this.service.placeOrder(call.request.toObject());
+  public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call) => {
+    const toReponse = (result: PlaceOrderResult) => {
       const response = new xudrpc.PlaceOrderResponse();
-      const matchesList: xudrpc.OrderMatch[] = [];
-      placeOrderResponse.matches.forEach((match) => {
+
+      const internalMatches = result.internalMatches.map((match) => {
         const orderMatch = new xudrpc.OrderMatch();
         orderMatch.setMaker(createOrder(match.maker));
         orderMatch.setTaker(createOrder(match.taker));
-        matchesList.push(orderMatch);
+        return orderMatch;
       });
-      response.setMatchesList(matchesList);
+      response.setInternalMatchesList(internalMatches);
 
-      if (placeOrderResponse.remainingOrder) {
-        response.setRemainingOrder(createOrder(placeOrderResponse.remainingOrder));
+      const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
+      response.setSwapResultsList(swapResults);
+
+      if (result.remainingOrder) {
+        response.setRemainingOrder(createOrder(result.remainingOrder));
       }
-      callback(null, response);
+
+      return response;
+    };
+
+    try {
+      await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderResult) => {
+        call.write(toReponse(result));
+      });
+
+      call.end();
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      call.end();
     }
   }
 
@@ -413,17 +442,8 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapResult> = (call) => {
-    this.service.subscribeSwaps((swapResult: SwapResult) => {
-      const swap = new xudrpc.SwapResult();
-      swap.setAmountReceived(swapResult.amountReceived);
-      swap.setAmountSent(swapResult.amountSent);
-      swap.setLocalId(swapResult.localId);
-      swap.setPairId(swapResult.pairId);
-      swap.setPeerPubKey(swapResult.peerPubKey);
-      swap.setRHash(swapResult.r_hash);
-      swap.setOrderId(swapResult.orderId);
-      swap.setRole(swapResult.role as number);
-      call.write(swap);
+    this.service.subscribeSwaps((result: SwapResult) => {
+      call.write(createSwapResult(result));
     });
   }
 }

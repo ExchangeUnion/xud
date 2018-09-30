@@ -28,10 +28,10 @@ type SwapDeal = {
   orderId: string;
   /** The local id for the order being executed. */
   localOrderId: string;
-  /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
+  /** The quantity of the order to execute as proposed by the taker. */
   // TODO: is it needed here? if yes, should be in satoshis
   proposedQuantity: number;
-  /** The accepted quantity of the order to execute as accepted by the maker. Negative when the taker is selling. */
+  /** The accepted quantity of the order to execute as accepted by the maker. */
   quantity?: number;
   /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
   pairId: string;
@@ -186,12 +186,50 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * A promise wrapper for a swap procedure
+   * @param maker the remote maker order we are filling
+   * @param taker our local taker order
+   * @returns A promise that is resolved once the swap is completed, or rejects otherwise
+   */
+  public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
+    // TODO: apply timeout as well, after implementing an interrupt signal to the swap procedure
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        this.removeListener('swap.paid', onPaid);
+        this.removeListener('swap.failed', onFailed);
+      };
+
+      const onPaid = (swapResult: SwapResult) => {
+        if (swapResult.r_hash === r_hash) {
+          cleanup();
+          resolve(swapResult);
+        }
+      };
+
+      const onFailed = (deal: SwapDeal) => {
+        if (deal.r_hash === r_hash) {
+          cleanup();
+          reject();
+        }
+      };
+
+      const r_hash = this.beginSwap(maker, taker);
+      if (!r_hash) {
+        reject();
+      }
+
+      this.on('swap.paid', onPaid);
+      this.on('swap.failed', onFailed);
+    });
+  }
+
+  /**
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
    * @param maker the remote maker order we are filling
    * @param taker our local taker order
    * @returns the r_hash for the swap
    */
-  public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
+  private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): string | undefined => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
@@ -637,6 +675,7 @@ class Swaps extends EventEmitter {
         orderId: deal.orderId,
         localId: deal.localOrderId,
         pairId: deal.pairId,
+        quantity: deal.quantity!,
         amountReceived: deal.makerAmount,
         amountSent: deal.takerAmount,
         r_hash: deal.r_hash,

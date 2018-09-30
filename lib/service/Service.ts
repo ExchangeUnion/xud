@@ -8,7 +8,8 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedPeerOrder, SwapResult, OrderPortion } from '../types/orders';
+import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
+import { PlaceOrderResult } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
@@ -285,7 +286,10 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (args: { pairId: string, price: number, quantity: number, orderId: string, side: number }) => {
+  public placeOrder = async (
+    args: { pairId: string, price: number, quantity: number, orderId: string, side: number },
+    callback?: (order: PlaceOrderResult) => void,
+  ) => {
     const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.NON_ZERO_QUANTITY(args);
@@ -299,7 +303,15 @@ class Service extends EventEmitter {
       localId: orderId,
     };
 
-    return price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
+    let ee;
+    if (callback) {
+      ee = new EventEmitter();
+      ee.on('step', (result: PlaceOrderResult) => {
+        callback(result);
+      });
+    }
+
+    return price > 0 ? await this.orderBook.addLimitOrder(order, ee) : await this.orderBook.addMarketOrder(order, ee);
   }
 
   /** Removes a currency. */
@@ -321,9 +333,9 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = async (callback: (order: StampedPeerOrder) => void) => {
+  public subscribeAddedOrders = (callback: (order: StampedOrder) => void) => {
     this.orderBook.on('peerOrder.incoming', order => callback(order));
-    // TODO: send message on remaining order from placeOrder
+    this.orderBook.on('ownOrder.added', order => callback(order));
   }
 
   /**
@@ -331,9 +343,9 @@ class Service extends EventEmitter {
    */
   public subscribeRemovedOrders = async (callback: (order: OrderPortion) => void) => {
     this.orderBook.on('peerOrder.invalidation', order => callback(order));
+    this.orderBook.on('peerOrder.filled', order => callback(order));
     this.orderBook.on('ownOrder.filled', order => callback(order));
-    // TODO: send message when peerOrder is filled by one of our taker orders
-    // TODO: send message when one of our maker orders is filled remotely via swap
+    this.orderBook.on('ownOrder.swapped', order => callback(order));
   }
 
   /*

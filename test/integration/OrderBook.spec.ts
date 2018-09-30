@@ -71,8 +71,8 @@ describe('OrderBook', () => {
     const matches = await orderBook.addLimitOrder(order);
     expect(matches.remainingOrder).to.be.undefined;
 
-    const firstMatch = matches.matches[0];
-    const secondMatch = matches.matches[1];
+    const firstMatch = matches.internalMatches[0];
+    const secondMatch = matches.internalMatches[1];
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
@@ -86,7 +86,7 @@ describe('OrderBook', () => {
   it('should partially match new market order and discard remaining order', async () => {
     const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, isBuy: false };
     const result = await orderBook.addMarketOrder(order);
-    const { taker } = result.matches[0];
+    const { taker } = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
     expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
   });
@@ -102,17 +102,17 @@ describe('OrderBook', () => {
   it('should not add a new own order with a duplicated localId', async () => {
     const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 100, isBuy: false };
 
-    expect(() => orderBook.addLimitOrder(order)).to.not.throw();
+    expect(orderBook.addLimitOrder(order)).to.be.fulfilled;
 
-    expect(() => orderBook.addLimitOrder(order)).to.throw();
+    expect(orderBook.addLimitOrder(order)).to.be.rejected;
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
 
-    expect(() => orderBook.addLimitOrder(order)).to.not.throw();
+    expect(orderBook.addLimitOrder(order)).to.be.fulfilled;
 
-    expect(() => orderBook.addLimitOrder(order)).to.throw();
+    expect(orderBook.addLimitOrder(order)).to.be.rejected;
   });
 
   after(async () => {

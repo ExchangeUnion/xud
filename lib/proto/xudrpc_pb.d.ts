@@ -894,10 +894,15 @@ export namespace PlaceOrderRequest {
 }
 
 export class PlaceOrderResponse extends jspb.Message { 
-    clearMatchesList(): void;
-    getMatchesList(): Array<OrderMatch>;
-    setMatchesList(value: Array<OrderMatch>): void;
-    addMatches(value?: OrderMatch, index?: number): OrderMatch;
+    clearInternalMatchesList(): void;
+    getInternalMatchesList(): Array<OrderMatch>;
+    setInternalMatchesList(value: Array<OrderMatch>): void;
+    addInternalMatches(value?: OrderMatch, index?: number): OrderMatch;
+
+    clearSwapResultsList(): void;
+    getSwapResultsList(): Array<SwapResult>;
+    setSwapResultsList(value: Array<SwapResult>): void;
+    addSwapResults(value?: SwapResult, index?: number): SwapResult;
 
 
     hasRemainingOrder(): boolean;
@@ -918,7 +923,8 @@ export class PlaceOrderResponse extends jspb.Message {
 
 export namespace PlaceOrderResponse {
     export type AsObject = {
-        matchesList: Array<OrderMatch.AsObject>,
+        internalMatchesList: Array<OrderMatch.AsObject>,
+        swapResultsList: Array<SwapResult.AsObject>,
         remainingOrder?: Order.AsObject,
     }
 }
@@ -1127,6 +1133,9 @@ export class SwapResult extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
     getRHash(): string;
     setRHash(value: string): void;
 
@@ -1158,6 +1167,7 @@ export namespace SwapResult {
         orderId: string,
         localId: string,
         pairId: string,
+        quantity: number,
         rHash: string,
         amountReceived: number,
         amountSent: number,
