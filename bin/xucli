@@ -1,20 +1,30 @@
 #!/usr/bin/env node
+const dotenv = require('dotenv');
+
+dotenv.config({
+  path: '../.env',
+});
 
 require('yargs')
   .options({
     rpc: {
       hidden: true,
     },
-    'rpc.port': {
+    rpcport: {
       alias: 'p',
       default: 8886,
       describe: 'RPC service port',
       type: 'number',
     },
-    'rpc.host': {
+    rpchost: {
       alias: 'h',
       default: 'localhost',
       describe: 'RPC service hostname',
+      type: 'string',
+    },
+    tlscertpath: {
+      alias: 'c',
+      describe: 'Path to the TLS certificate of xud',
       type: 'string',
     },
   })
