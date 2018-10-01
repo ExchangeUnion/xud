@@ -422,8 +422,8 @@ message SwapResult {
   string local_id = 2 [json_name = "local_id"];
   // The trading pair that this order is for.
   string pair_id = 3 [json_name = "pair_id"];
-  // The quantity of the swapped orders.
-  int64 quantity = 4 [json_name = "quantity"];
+  // The order quantity that was swapped.
+  double quantity = 4 [json_name = "quantity"];
   // The hex-encoded r_hash for the swap payments.
   string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
