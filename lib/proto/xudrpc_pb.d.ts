@@ -630,27 +630,32 @@ export class Order extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
-    getPeerPubKey(): string;
-    setPeerPubKey(value: string): void;
-
     getId(): string;
     setId(value: string): void;
 
+
+    hasPeerPubKey(): boolean;
+    clearPeerPubKey(): void;
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
+
+
+    hasLocalId(): boolean;
+    clearLocalId(): void;
     getLocalId(): string;
     setLocalId(value: string): void;
 
     getCreatedAt(): number;
     setCreatedAt(value: number): void;
 
-    getInvoice(): string;
-    setInvoice(value: string): void;
-
-    getCanceled(): boolean;
-    setCanceled(value: boolean): void;
-
     getSide(): OrderSide;
     setSide(value: OrderSide): void;
 
+    getIsOwnOrder(): boolean;
+    setIsOwnOrder(value: boolean): void;
+
+
+    getOwnOrPeerCase(): Order.OwnOrPeerCase;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Order.AsObject;
@@ -667,13 +672,59 @@ export namespace Order {
         price: number,
         quantity: number,
         pairId: string,
-        peerPubKey: string,
         id: string,
+        peerPubKey: string,
         localId: string,
         createdAt: number,
-        invoice: string,
-        canceled: boolean,
         side: OrderSide,
+        isOwnOrder: boolean,
+    }
+
+    export enum OwnOrPeerCase {
+        OWNORPEER_NOT_SET = 0,
+    
+    PEER_PUB_KEY = 5,
+
+    LOCAL_ID = 6,
+
+    }
+
+}
+
+export class OrderRemoval extends jspb.Message { 
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getOrderId(): string;
+    setOrderId(value: string): void;
+
+    getLocalId(): string;
+    setLocalId(value: string): void;
+
+    getIsOwnOrder(): boolean;
+    setIsOwnOrder(value: boolean): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OrderRemoval.AsObject;
+    static toObject(includeInstance: boolean, msg: OrderRemoval): OrderRemoval.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OrderRemoval, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OrderRemoval;
+    static deserializeBinaryFromReader(message: OrderRemoval, reader: jspb.BinaryReader): OrderRemoval;
+}
+
+export namespace OrderRemoval {
+    export type AsObject = {
+        quantity: number,
+        pairId: string,
+        orderId: string,
+        localId: string,
+        isOwnOrder: boolean,
     }
 }
 
@@ -981,47 +1032,6 @@ export namespace RemovePairResponse {
     }
 }
 
-export class SwapPayload extends jspb.Message { 
-    getRole(): string;
-    setRole(value: string): void;
-
-    getSendingAmount(): number;
-    setSendingAmount(value: number): void;
-
-    getSendingToken(): string;
-    setSendingToken(value: string): void;
-
-    getReceivingAmount(): number;
-    setReceivingAmount(value: number): void;
-
-    getReceivingToken(): string;
-    setReceivingToken(value: string): void;
-
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SwapPayload.AsObject;
-    static toObject(includeInstance: boolean, msg: SwapPayload): SwapPayload.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SwapPayload, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SwapPayload;
-    static deserializeBinaryFromReader(message: SwapPayload, reader: jspb.BinaryReader): SwapPayload;
-}
-
-export namespace SwapPayload {
-    export type AsObject = {
-        role: string,
-        sendingAmount: number,
-        sendingToken: string,
-        receivingAmount: number,
-        receivingToken: string,
-        nodePubKey: string,
-    }
-}
-
 export class ShutdownRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
@@ -1056,44 +1066,37 @@ export namespace ShutdownResponse {
     }
 }
 
-export class SubscribePeerOrdersRequest extends jspb.Message { 
+export class SubscribeAddedOrdersRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SubscribePeerOrdersRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: SubscribePeerOrdersRequest): SubscribePeerOrdersRequest.AsObject;
+    toObject(includeInstance?: boolean): SubscribeAddedOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeAddedOrdersRequest): SubscribeAddedOrdersRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SubscribePeerOrdersRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SubscribePeerOrdersRequest;
-    static deserializeBinaryFromReader(message: SubscribePeerOrdersRequest, reader: jspb.BinaryReader): SubscribePeerOrdersRequest;
+    static serializeBinaryToWriter(message: SubscribeAddedOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeAddedOrdersRequest;
+    static deserializeBinaryFromReader(message: SubscribeAddedOrdersRequest, reader: jspb.BinaryReader): SubscribeAddedOrdersRequest;
 }
 
-export namespace SubscribePeerOrdersRequest {
+export namespace SubscribeAddedOrdersRequest {
     export type AsObject = {
     }
 }
 
-export class SubscribePeerOrdersResponse extends jspb.Message { 
-
-    hasOrder(): boolean;
-    clearOrder(): void;
-    getOrder(): Order | undefined;
-    setOrder(value?: Order): void;
-
+export class SubscribeRemovedOrdersRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SubscribePeerOrdersResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: SubscribePeerOrdersResponse): SubscribePeerOrdersResponse.AsObject;
+    toObject(includeInstance?: boolean): SubscribeRemovedOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeRemovedOrdersRequest): SubscribeRemovedOrdersRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SubscribePeerOrdersResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SubscribePeerOrdersResponse;
-    static deserializeBinaryFromReader(message: SubscribePeerOrdersResponse, reader: jspb.BinaryReader): SubscribePeerOrdersResponse;
+    static serializeBinaryToWriter(message: SubscribeRemovedOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeRemovedOrdersRequest;
+    static deserializeBinaryFromReader(message: SubscribeRemovedOrdersRequest, reader: jspb.BinaryReader): SubscribeRemovedOrdersRequest;
 }
 
-export namespace SubscribePeerOrdersResponse {
+export namespace SubscribeRemovedOrdersRequest {
     export type AsObject = {
-        order?: Order.AsObject,
     }
 }
 
@@ -1114,25 +1117,59 @@ export namespace SubscribeSwapsRequest {
     }
 }
 
-export class SubscribeSwapsResponse extends jspb.Message { 
-    getOrder(): string;
-    setOrder(value: string): void;
+export class SwapResult extends jspb.Message { 
+    getOrderId(): string;
+    setOrderId(value: string): void;
+
+    getLocalId(): string;
+    setLocalId(value: string): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getRHash(): string;
+    setRHash(value: string): void;
+
+    getAmountReceived(): number;
+    setAmountReceived(value: number): void;
+
+    getAmountSent(): number;
+    setAmountSent(value: number): void;
+
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
+
+    getRole(): SwapResult.Role;
+    setRole(value: SwapResult.Role): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SubscribeSwapsResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: SubscribeSwapsResponse): SubscribeSwapsResponse.AsObject;
+    toObject(includeInstance?: boolean): SwapResult.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapResult): SwapResult.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SubscribeSwapsResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SubscribeSwapsResponse;
-    static deserializeBinaryFromReader(message: SubscribeSwapsResponse, reader: jspb.BinaryReader): SubscribeSwapsResponse;
+    static serializeBinaryToWriter(message: SwapResult, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapResult;
+    static deserializeBinaryFromReader(message: SwapResult, reader: jspb.BinaryReader): SwapResult;
 }
 
-export namespace SubscribeSwapsResponse {
+export namespace SwapResult {
     export type AsObject = {
-        order: string,
+        orderId: string,
+        localId: string,
+        pairId: string,
+        rHash: string,
+        amountReceived: number,
+        amountSent: number,
+        peerPubKey: string,
+        role: SwapResult.Role,
     }
+
+    export enum Role {
+    TAKER = 0,
+    MAKER = 1,
+    }
+
 }
 
 export enum OrderSide {

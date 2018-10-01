@@ -40,3 +40,11 @@ export enum SwapDealState {
   Error = 1,
   Completed = 2,
 }
+
+export enum ReputationEvent {
+  ManualBan = 0,
+  ManualUnban = 1,
+  PacketTimeout = 2,
+  SwapFailure = 3,
+  SwapSuccess = 4,
+}

@@ -79,7 +79,11 @@ service Xud {
     };
   }
   
-  /* Get a map between pair ids and their buy and sell orders from the order book. */
+  /* Gets orders from the order book. This call returns the state of the order book at a given point
+   * in time, although it is not guaranteed to still be vaild by the time a response is received
+   * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
+   * orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders
+   * are separated into buys and sells for each trading pair, but unsorted. */
   rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
@@ -141,15 +145,32 @@ service Xud {
     };
   }
   
-  /* Subscribe to peer order events. */
-  rpc SubscribePeerOrders(SubscribePeerOrdersRequest) returns (stream SubscribePeerOrdersResponse) {
+  /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
+   * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
+   * wants to show its users a real time list of the orders available to them would subscribe to this
+   * streaming call to be alerted of new orders as they become available for trading. */
+  rpc SubscribeAddedOrders(SubscribeAddedOrdersRequest) returns (stream Order) {
     option (google.api.http) = {
-      get: "/v1/subscribepeerorders"
+      get: "/v1/subscribeorders"
     };
   }
   
-  /* Subscribe executed swaps. */
-  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SubscribeSwapsResponse) {
+  /* Subscribes to orders being removed - either in full or in part - from the order book. This call,
+   * together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order
+   * book. For example, an exchange that wants to show its users a real time list of the orders available
+   * to them would subscribe to this streaming call to be alerted when part or all of an existing order
+   * is no longer available for trading. */
+  rpc SubscribeRemovedOrders(SubscribeRemovedOrdersRequest) returns (stream OrderRemoval) {
+    option (google.api.http) = {
+      get: "/v1/subscribeorders"
+    };
+  }
+
+  /* Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to
+   * get real-time notifications when its orders are filled by a remote taker. It can be used for
+   * tracking order executions, updating balances, and informing a trader when one of their orders
+   * is settled through Exchange Union network. */
+  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SwapResult) {
     option (google.api.http) = {
       get: "/v1/subscribeswaps"
     };
@@ -278,26 +299,39 @@ message LndInfo {
 }
 
 message Order {
-  // The price of the order, precise to 6 decimal places.
+  // The price of the order.
   double price = 1 [json_name = "price"];
-  // The quantity of the order, precise to 6 decimal places.
+  // The quantity of the order.
   double quantity = 2 [json_name = "quantity"];
-  // The trading pair that this order is for
+  // The trading pair that this order is for.
   string pair_id = 3 [json_name = "pair_id"];
-  // The node pub key of the peer that created this order
-  string peer_pub_key = 4 [json_name = "peer_id"];
-  // A UUID for this order
-  string id = 5 [json_name = "id"];
-  // The local id for this order
-  string local_id = 6 [json_name = "local_id"];
-  // The epoch time when this order was created
+  // A UUID for this order.
+  string id = 4 [json_name = "id"];
+  oneof own_or_peer {
+    // The node pub key of the peer that created this order.
+    string peer_pub_key = 5 [json_name = "peer_pub_key"];
+    // The local id for this order.
+    string local_id = 6 [json_name = "local_id"];
+  }
+  // The epoch time when this order was created.
   int64 created_at = 7 [json_name = "created_at"];
-  // Lightning invoice
-  string invoice = 8 [json_name = "invoice"];
-  // Indicates whether an order was canceled 
-  bool canceled = 9 [json_name = "canceled"];
-  // Whether the order is a Buy or Sell
-  OrderSide side = 10 [json_name = "side"];
+  // Whether this order is a buy or sell
+  OrderSide side = 8 [json_name = "side"];
+  // Whether this order is a local own order or a remote peer order.
+  bool is_own_order = 9 [json_name = "is_own_order"];
+}
+
+message OrderRemoval {
+  // The quantity of the order being removed.
+  double quantity = 1 [json_name = "quantity"];
+  // The trading pair that the order is for.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The global UUID for the order.
+  string order_id = 3 [json_name = "order_id"];
+  // The local id for the order, if applicable.
+  string local_id = 4 [json_name = "local_id"];
+  // Whether the order being removed is a local own order or a remote peer order.
+  bool is_own_order = 5 [json_name = "is_own_order"];
 }
 
 message Orders {
@@ -333,9 +367,9 @@ message Peer {
 }
 
 message PlaceOrderRequest {
-  // The price of the order, precise to 6 decimal places.
+  // The price of the order.
   double price = 1 [json_name = "price"];
-  // The quantity of the order, precise to 6 decimal places.
+  // The quantity of the order.
   double quantity = 2 [json_name = "quantity"];
   // The trading pair that the order is for
   string pair_id = 3 [json_name = "pair_id"];
@@ -370,25 +404,34 @@ message RemovePairRequest {
 }
 message RemovePairResponse {}
 
-message SwapPayload {
-  string role = 1 [json_name = "role"];
-  uint64 sending_amount = 2 [json_name = "sending_amount"];
-  string sending_token = 3 [json_name = "sending_token"];
-  uint64 receiving_amount = 4 [json_name = "receiving_amount"];
-  string receiving_token = 5 [json_name = "receiving_token"];
-  string node_pub_key = 6 [json_name = "node_pub_key"];
-}
-
 message ShutdownRequest {}
 message ShutdownResponse {}
 
-message SubscribePeerOrdersRequest {}
-message SubscribePeerOrdersResponse {
-  Order order = 1 [json_name = "order"];
-}
+message SubscribeAddedOrdersRequest {}
+
+message SubscribeRemovedOrdersRequest {}
 
 message SubscribeSwapsRequest {}
-message SubscribeSwapsResponse {
-  // The order which was executed for the swap with updated remaining quantity
-  string order = 1 [json_name = "order"];
+
+message SwapResult {
+  // The global UUID for the order that was swapped.
+  string order_id = 1;
+  // The local id for the order that was swapped.
+  string local_id = 2 [json_name = "local_id"];
+  // The trading pair that this order is for.
+  string pair_id = 3 [json_name = "pair_id"];
+  // The hex-encoded r_hash for the swap payments.
+  string r_hash = 4 [json_name = "r_hash"];
+  // The amount of subunits (satoshis) received.
+  int64 amount_received = 5 [json_name = "amount_received"];
+  // The amount of subunits (satoshis) sent.
+  int64 amount_sent = 6 [json_name = "amount_sent"];
+  // The node pub key of the peer that executed this order.
+  string peer_pub_key = 7 [json_name = "peer_pub_key"];
+  enum Role {
+    TAKER = 0;
+    MAKER = 1;
+  }
+  // Our role in the swap, either MAKER or TAKER
+  Role role = 8 [json_name = "role"];
 }

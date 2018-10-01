@@ -63,6 +63,3 @@ dist/
 # typedoc
 typedoc/
 .DS_Store
-
-# example config
-sample-xud.conf

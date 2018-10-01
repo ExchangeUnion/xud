@@ -5,10 +5,10 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide } from '../types/enums';
+import { SwapClients, OrderSide, SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair } from '../types/orders';
+import { Pair, StampedPeerOrder, SwapResult, OrderPortion } from '../types/orders';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
@@ -319,22 +319,34 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to incoming peer orders.
+   * Subscribe to orders being added to the order book.
    */
-  public subscribePeerOrders = async (callback: Function) => {
+  public subscribeAddedOrders = async (callback: (order: StampedPeerOrder) => void) => {
     this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('peerOrder.invalidation', order => callback({
-      canceled: true,
-      id: order.orderId,
-      pairId: order.pairId,
-      quantity: order.quantity,
-    }));
+    // TODO: send message on remaining order from placeOrder
+  }
+
+  /**
+   * Subscribe to orders being removed from the order book.
+   */
+  public subscribeRemovedOrders = async (callback: (order: OrderPortion) => void) => {
+    this.orderBook.on('peerOrder.invalidation', order => callback(order));
+    this.orderBook.on('ownOrder.filled', order => callback(order));
+    // TODO: send message when peerOrder is filled by one of our taker orders
+    // TODO: send message when one of our maker orders is filled remotely via swap
   }
 
   /*
-   * Subscribe to executed swaps
+   * Subscribe to completed swaps that are initiated by a remote peer.
    */
-  public subscribeSwaps = async (_callback: Function) => {};
+  public subscribeSwaps = async (callback: (swapResult: SwapResult) => void) => {
+    this.swaps.on('swap.paid', (swapResult) => {
+      if (swapResult.role === SwapDealRole.Maker) {
+        // only alert client for maker matches, taker matches are handled via placeOrder
+        callback(swapResult);
+      }
+    });
+  }
 
   /**
    * resolveHash resolve hash to preimage.
