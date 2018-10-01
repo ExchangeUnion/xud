@@ -20,7 +20,7 @@ export const orderBuilder = (argv: Argv, command: string) => argv
   })
   .option('stream', {
     type: 'boolean',
-    describe: 'whether to execute in a streaming mode',
+    describe: 'whether to execute in streaming mode',
     default: false,
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
