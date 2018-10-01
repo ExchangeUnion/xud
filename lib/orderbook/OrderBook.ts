@@ -6,14 +6,14 @@ import MatchingEngine from './MatchingEngine';
 import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
-import { orders, matchingEngine, db } from '../types';
+import { orders, db } from '../types';
 import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
+import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderResult } from '../types/orderBook';
 
 interface OrderBook {
@@ -186,26 +186,32 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  public addLimitOrder = (order: orders.OwnOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
-    return this.addOwnOrder(order, false, ee);
+  public addLimitOrder = async (order: orders.OwnOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
+    const stampedOrder = this.stampOwnOrder(order);
+    return this.addOwnOrder(stampedOrder, false, ee);
   }
 
   public addMarketOrder = async (order: orders.OwnMarketOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
-    const price = order.isBuy ? Number.MAX_VALUE : 0;
-    const result = await this.addOwnOrder({ ...order, price }, true, ee);
+    const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.MAX_VALUE : 0 });
+    const result = await this.addOwnOrder(stampedOrder, true, ee);
     delete result.remainingOrder;
     return result;
   }
 
-  private addOwnOrder = async (order: orders.OwnOrder, discardRemaining = false, ee?: EventEmitter, iteration = 0): Promise<PlaceOrderResult> => {
-    // this method might be called recursively on swap failures retries.
+  private addOwnOrder = async (
+    order: orders.StampedOwnOrder,
+    discardRemaining = false,
+    ee?: EventEmitter,
+    iteration = 0,
+  ): Promise<PlaceOrderResult> => {
+    // this method can be called recursively on swap failures retries.
     // if max iterations exceeded, don't try to match
     if (iteration > OrderBook.MAX_MATCHING_RETRIES) {
       assert(discardRemaining, 'discardRemaining must be true on a recursive call');
       return Promise.resolve({
         internalMatches: [],
         swapResults: [],
-        remainingOrder: order as StampedOwnOrder,
+        remainingOrder: order,
       });
     }
 
@@ -215,18 +221,8 @@ class OrderBook extends EventEmitter {
       throw errors.PAIR_DOES_NOT_EXIST(order.pairId);
     }
 
-    // verify localId isn't duplicated. generate one if it's blank
-    if (order.localId === '') {
-      order.localId = uuidv1();
-    } else if (this.localIdMap.has(order.localId)) {
-      throw errors.DUPLICATE_ORDER(order.localId);
-    }
-
-    // don't re-stamp the order if it's already stamped (on recursive call)
-    const stampedOrder: orders.StampedOwnOrder = orders.isStampedOwnOrder(order) ? order : { ...order, id: uuidv1(), createdAt: ms() };
-
     // perform match. maker orders will be removed from the repository
-    const matchingResult = matchingEngine.match(stampedOrder);
+    const matchingResult = matchingEngine.match(order);
 
     // instantiate the final response object
     const result: PlaceOrderResult = {
@@ -241,7 +237,7 @@ class OrderBook extends EventEmitter {
     // append the taker quantity to the remaining order, after making sure it's initialized.
     // if the maker is given, re-add it to the repository
     const rejectNonInternalMatch = (taker: StampedOwnOrder, maker?: StampedPeerOrder) => {
-      result.remainingOrder = result.remainingOrder || { ...stampedOrder, quantity: 0 };
+      result.remainingOrder = result.remainingOrder || { ...order, quantity: 0 };
       result.remainingOrder.quantity += taker.quantity;
 
       if (maker) {
@@ -279,7 +275,7 @@ class OrderBook extends EventEmitter {
     // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
     if (swapFailures.length > 0) {
       // aggregate failures quantities with the remaining order
-      const remainingOrder: StampedOwnOrder = result.remainingOrder || { ...stampedOrder, quantity: 0 };
+      const remainingOrder: StampedOwnOrder = result.remainingOrder || { ...order, quantity: 0 };
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
       // invoke addOwnOrder recursively, append matches/swaps and set the consecutive remaining order
@@ -433,6 +429,17 @@ class OrderBook extends EventEmitter {
         this.pool.broadcastOrder(outgoingOrder);
       }
     }
+  }
+
+  private stampOwnOrder = (order: OwnOrder) => {
+    // verify localId isn't duplicated. generate one if it's blank
+    if (order.localId === '') {
+      order.localId = uuidv1();
+    } else if (this.localIdMap.has(order.localId)) {
+      throw errors.DUPLICATE_ORDER(order.localId);
+    }
+
+    return { ...order, id: uuidv1(), createdAt: ms() };
   }
 
   private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
