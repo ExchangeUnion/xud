@@ -56,7 +56,7 @@ class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
   /** A set of pub keys of nodes for which we have pending outgoing connections. */
-  private pendingOutgoingConnections = new Set<string>();
+  private pendingOutgoingConnections = new Map<string, Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
@@ -158,6 +158,7 @@ class Pool extends EventEmitter {
       await this.unlisten();
     }
 
+    this.closePendingConnections();
     this.closePeers();
 
     this.connected = false;
@@ -226,7 +227,6 @@ class Pool extends EventEmitter {
 
       // Validate this node.
       if (isNotUs && hasAddresses && isNotIgnored && hasNoPendingConnections) {
-        this.pendingOutgoingConnections.add(node.nodePubKey);
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -291,6 +291,7 @@ class Pool extends EventEmitter {
     }
 
     const peer = new Peer(this.logger, address);
+    this.pendingOutgoingConnections.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
   }
@@ -465,6 +466,11 @@ class Pool extends EventEmitter {
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
+    if (!this.connected) {
+      // if we have disconnected the pool, don't allow any new connections to open
+      peer.close();
+      return;
+    }
     if (peer.nodePubKey === this.handshakeData.nodePubKey) {
       return;
     }
@@ -570,8 +576,14 @@ class Pool extends EventEmitter {
     });
   }
 
-  private closePeers = (): void => {
+  private closePeers = () => {
     this.peers.forEach(peer => peer.close());
+  }
+
+  private closePendingConnections = () => {
+    for (const peer of this.pendingOutgoingConnections.values()) {
+      peer.close();
+    }
   }
 
   /**
