@@ -17,11 +17,17 @@ import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder,
 import { PlaceOrderResult } from '../types/orderBook';
 
 interface OrderBook {
+  /** Adds a listener to be called when a remote order was added. */
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
+  /** Adds a listener to be called when all or part of a remote order was invalidated and removed */
   on(event: 'peerOrder.invalidation', listener: (order: orders.OrderPortion) => void): this;
+  /** Adds a listener to be called when all or part of a remote order was filled and removed */
   on(event: 'peerOrder.filled', listener: (order: orders.OrderPortion) => void): this;
+  /** Adds a listener to be called when all or part of a local order was swapped and removed, after it was filled and executed remotely */
   on(event: 'ownOrder.swapped', listener: (order: orders.OrderPortion) => void): this;
+  /** Adds a listener to be called when all or part of a local order was filled and removed */
   on(event: 'ownOrder.filled', listener: (order: orders.OrderPortion) => void): this;
+  /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: orders.StampedOwnOrder) => void): this;
 
   /** Notifies listeners that a remote order was added */
