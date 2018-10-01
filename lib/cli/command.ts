@@ -1,11 +1,33 @@
 import { Arguments } from 'yargs';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import grpc from 'grpc';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
 
 export const loadXudClient = (argv: Arguments) => {
-  // TODO load saved cert from disk
-  const credentials = grpc.credentials.createInsecure();
-  return new XudClient(`${argv.rpc.host}:${argv.rpc.port}`, credentials);
+  const getXudDir = () => {
+    switch (os.platform()) {
+      case 'win32': {
+        const homeDir = process.env.LOCALAPPDATA!;
+        return path.join(homeDir, 'Xud');
+      }
+      case 'darwin': {
+        const homeDir = process.env.HOME!;
+        return path.join(homeDir, '.xud');
+      }
+      default: {
+        const homeDir = process.env.HOME!;
+        return path.join(homeDir, '.xud');
+      }
+    }
+  };
+
+  const certPath = argv.tlscertpath ? argv.tlscertpath : path.join(getXudDir(), 'tls.cert');
+  const cert = fs.readFileSync(certPath);
+  const credentials = grpc.credentials.createSsl(cert);
+
+  return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };
 
 interface grpcResponse {

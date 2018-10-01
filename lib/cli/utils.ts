@@ -1,5 +1,5 @@
-import { callback, loadXudClient } from './command';
 import { Arguments, Argv } from 'yargs';
+import { callback, loadXudClient } from './command';
 import { PlaceOrderRequest, OrderSide } from '../proto/xudrpc_pb';
 
 export const orderBuilder = (argv: Argv, command: string) => argv
