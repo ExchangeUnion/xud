@@ -130,7 +130,7 @@ class Peer extends EventEmitter {
       case 'LTC':
         return this.handshakeState.lndltcPubKey;
       default:
-        return undefined;
+        return;
     }
   }
 
