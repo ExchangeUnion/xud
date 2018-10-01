@@ -48,3 +48,10 @@ export enum ReputationEvent {
   SwapFailure = 3,
   SwapSuccess = 4,
 }
+
+export enum SwapFailureReason {
+  /** Could not find the order specified by a swap request. */
+  OrderNotFound,
+  /** The order specified by a swap request is on hold for a different ongoing swap. */
+  OrderUnavailable,
+}

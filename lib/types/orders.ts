@@ -18,6 +18,8 @@ type Order = MarketOrder & {
 type Local = {
   /** A local identifier for the order. */
   localId: string;
+  /** The amount of an order that is on hold pending swap exectuion. */
+  hold?: number;
 };
 
 type Remote = {
