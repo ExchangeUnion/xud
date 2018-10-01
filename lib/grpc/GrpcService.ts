@@ -71,7 +71,6 @@ class GrpcService {
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
       case p2pErrorCodes.COULD_NOT_CONNECT:
-      case orderErrorCodes.PAIR_DOES_NOT_EXIST:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
@@ -356,7 +355,7 @@ class GrpcService {
 
       call.end();
     } catch (err) {
-      call.end();
+      call.emit('error', this.getGrpcError(err));
     }
   }
 
