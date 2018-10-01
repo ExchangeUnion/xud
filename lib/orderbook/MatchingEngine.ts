@@ -234,7 +234,7 @@ class MatchingEngine {
   }
 
   /**
-   * Match an order against its opposite queue. matched maker orders will be removed from the repository
+   * Match an order against its opposite queue. Matched maker orders will be removed from the repository
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
   public match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
