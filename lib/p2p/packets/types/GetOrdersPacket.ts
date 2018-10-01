@@ -1,7 +1,11 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
-class GetOrdersPacket extends Packet<undefined> {
+export type GetOrdersPacketBody = {
+  pairIds: string[],
+};
+
+class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
   public get type() {
     return PacketType.GetOrders;
   }

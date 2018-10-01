@@ -17,10 +17,10 @@ class GrpcServer {
     this.server.addService(XudService, {
       addCurrency: grpcService.addCurrency,
       addPair: grpcService.addPair,
-      cancelOrder: grpcService.cancelOrder,
+      removeOrder: grpcService.removeOrder,
       channelBalance: grpcService.channelBalance,
       connect: grpcService.connect,
-      disconnect: grpcService.disconnect,
+      ban: grpcService.ban,
       getInfo: grpcService.getInfo,
       getOrders: grpcService.getOrders,
       listCurrencies: grpcService.listCurrencies,

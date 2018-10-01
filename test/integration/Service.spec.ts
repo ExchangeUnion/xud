@@ -90,11 +90,11 @@ describe('API Service', () => {
     expect(order.isBuy).to.equal(placeOrderArgs.side === OrderSide.Buy);
   });
 
-  it('should cancel an order', async () => {
+  it('should remove an order', async () => {
     const args = {
       orderId: '1',
     };
-    await expect(service.cancelOrder(args)).to.be.fulfilled;
+    await expect(service.removeOrder(args)).to.be.fulfilled;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {
@@ -142,6 +142,12 @@ describe('API Service', () => {
   it('should remove two currencies', async () => {
     const removeCurrencyPromises = [service.removeCurrency({ currency: 'LTC' }), service.removeCurrency({ currency: 'BTC' })];
     await expect(Promise.all(removeCurrencyPromises)).to.be.fulfilled;
+  });
+
+  it('should fail to ban a node that does not exist', async () => {
+    const nodePubKey = 'doesNotExist';
+    const banNodePromise = service.ban({ nodePubKey });
+    await expect(banNodePromise).to.be.rejectedWith(`node ${nodePubKey} is unknown`);
   });
 
   it('should shutdown', async () => {

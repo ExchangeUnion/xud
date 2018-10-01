@@ -69,15 +69,15 @@
         ]
       }
     },
-    "/v1/cancelorder": {
+    "/v1/ban": {
       "post": {
-        "summary": "Cancel placed order from the orderbook.",
-        "operationId": "CancelOrder",
+        "summary": "Ban a XU node manually and disconnect from it.",
+        "operationId": "Ban",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderResponse"
+              "$ref": "#/definitions/xudrpcBanResponse"
             }
           }
         },
@@ -87,7 +87,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderRequest"
+              "$ref": "#/definitions/xudrpcBanRequest"
             }
           }
         ],
@@ -161,33 +161,6 @@
             }
           }
         },
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/disconnect": {
-      "post": {
-        "summary": "Disconnect from a connected peer XU node.",
-        "operationId": "Disconnect",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcDisconnectResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcDisconnectRequest"
-            }
-          }
-        ],
         "tags": [
           "Xud"
         ]
@@ -324,6 +297,33 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/removeorder": {
+      "post": {
+        "summary": "Removes an order from the order book by its local id.",
+        "operationId": "RemoveOrder",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveOrderRequest"
             }
           }
         ],
@@ -479,16 +479,15 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
-    "xudrpcCancelOrderRequest": {
+    "xudrpcBanRequest": {
       "type": "object",
       "properties": {
-        "order_id": {
-          "type": "string",
-          "title": "The local id of the order to cancel"
+        "node_pub_key": {
+          "type": "string"
         }
       }
     },
-    "xudrpcCancelOrderResponse": {
+    "xudrpcBanResponse": {
       "type": "object"
     },
     "xudrpcChannelBalance": {
@@ -527,17 +526,6 @@
       }
     },
     "xudrpcConnectResponse": {
-      "type": "object"
-    },
-    "xudrpcDisconnectRequest": {
-      "type": "object",
-      "properties": {
-        "node_pub_key": {
-          "type": "string"
-        }
-      }
-    },
-    "xudrpcDisconnectResponse": {
       "type": "object"
     },
     "xudrpcGetInfoResponse": {
@@ -902,6 +890,18 @@
       }
     },
     "xudrpcRemoveCurrencyResponse": {
+      "type": "object"
+    },
+    "xudrpcRemoveOrderRequest": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "title": "The local id of the order to remove"
+        }
+      }
+    },
+    "xudrpcRemoveOrderResponse": {
       "type": "object"
     },
     "xudrpcRemovePairRequest": {

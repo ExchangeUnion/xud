@@ -8,16 +8,14 @@
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
-    - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
-    - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
+    - [BanRequest](#xudrpc.BanRequest)
+    - [BanResponse](#xudrpc.BanResponse)
     - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
     - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
-    - [DisconnectRequest](#xudrpc.DisconnectRequest)
-    - [DisconnectResponse](#xudrpc.DisconnectResponse)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
@@ -42,6 +40,8 @@
     - [RaidenInfo](#xudrpc.RaidenInfo)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
+    - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
+    - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
@@ -124,24 +124,24 @@
 
 
 
-<a name="xudrpc.CancelOrderRequest"></a>
+<a name="xudrpc.BanRequest"></a>
 
-### CancelOrderRequest
+### BanRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| order_id | [string](#string) |  | The local id of the order to cancel |
+| node_pub_key | [string](#string) |  |  |
 
 
 
 
 
 
-<a name="xudrpc.CancelOrderResponse"></a>
+<a name="xudrpc.BanResponse"></a>
 
-### CancelOrderResponse
+### BanResponse
 
 
 
@@ -229,31 +229,6 @@
 <a name="xudrpc.ConnectResponse"></a>
 
 ### ConnectResponse
-
-
-
-
-
-
-
-<a name="xudrpc.DisconnectRequest"></a>
-
-### DisconnectRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.DisconnectResponse"></a>
-
-### DisconnectResponse
 
 
 
@@ -642,6 +617,31 @@
 
 
 
+<a name="xudrpc.RemoveOrderRequest"></a>
+
+### RemoveOrderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order_id | [string](#string) |  | The local id of the order to remove |
+
+
+
+
+
+
+<a name="xudrpc.RemoveOrderResponse"></a>
+
+### RemoveOrderResponse
+
+
+
+
+
+
+
 <a name="xudrpc.RemovePairRequest"></a>
 
 ### RemovePairRequest
@@ -790,10 +790,10 @@
 | ----------- | ------------ | ------------- | ------------|
 | AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Add a currency to the list of supported currencies. |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Add a trading pair to the list of supported trading pairs. |
-| CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. |
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
-| Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |
+| Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Ban a XU node manually and disconnect from it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
@@ -803,9 +803,9 @@
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Remove a currency. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Remove a trading pair. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin shutting down xud. |
-| SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
-| SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) stream | Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to get real-time notifications when its orders are filled by a remote taker. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through Exchange Union network. |
+| SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
+| SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) | Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to get real-time notifications when its orders are filled by a remote taker. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through Exchange Union network. |
 
  
 

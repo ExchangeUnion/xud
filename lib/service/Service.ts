@@ -110,9 +110,9 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Cancel placed order from the orderbook.
+   * Remove placed order from the orderbook.
    */
-  public cancelOrder = async (args: { orderId: string }) => {
+  public removeOrder = async (args: { orderId: string }) => {
     const { orderId } = args;
     argChecks.HAS_ORDER_ID(args);
 
@@ -171,12 +171,11 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Disconnect from a connected peer XU node on a given host and port.
+   * Ban a XU node manually and disconnect from it.
    */
-  public disconnect = async (args: { nodePubKey: string }) => {
-    const { nodePubKey } = args;
+  public ban = async (args: { nodePubKey: string}) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.closePeer(nodePubKey);
+    await this.pool.banNode(args.nodePubKey);
   }
 
   /**
