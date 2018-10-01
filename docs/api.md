@@ -529,6 +529,8 @@
 | ----- | ---- | ----- | ----------- |
 | address | [string](#string) |  | The socket address with host and port for this peer |
 | node_pub_key | [string](#string) |  | The node pub key to uniquely identify this peer |
+| lnd_btc_pub_key | [string](#string) |  | The lnd BTC pub key associated with this peer |
+| lnd_ltc_pub_key | [string](#string) |  | The lnd LTC pub key associated with this peer |
 | inbound | [bool](#bool) |  | Indicates whether this peer was connected inbound |
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer |
 | xud_version | [string](#string) |  | The version of xud being used by the peer |

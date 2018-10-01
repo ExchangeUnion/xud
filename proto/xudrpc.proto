@@ -356,14 +356,18 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer
   string node_pub_key = 2 [json_name = "node_pub_key"];
+  // The lnd BTC pub key associated with this peer
+  string lnd_btc_pub_key = 3 [json_name = "lnd_btc_pub_key"];
+  // The lnd LTC pub key associated with this peer
+  string lnd_ltc_pub_key = 4 [json_name = "lnd_ltc_pub_key"];
   // Indicates whether this peer was connected inbound
-  bool inbound = 3 [json_name = "inbound"];
+  bool inbound = 5 [json_name = "inbound"];
   // A list of trading pair tickers supported by this peer
-  repeated string pairs = 4 [json_name = "pairs"]; 
+  repeated string pairs = 6 [json_name = "pairs"]; 
   // The version of xud being used by the peer
-  string xud_version = 5 [json_name = "xud_version"];
+  string xud_version = 7 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer
-  int32 seconds_connected = 6 [json_name = "seconds_connected"];
+  int32 seconds_connected = 8 [json_name = "seconds_connected"];
 }
 
 message PlaceOrderRequest {

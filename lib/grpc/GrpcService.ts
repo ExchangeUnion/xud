@@ -295,6 +295,8 @@ class GrpcService {
         grpcPeer.setAddress(peer.address);
         grpcPeer.setInbound(peer.inbound);
         grpcPeer.setNodePubKey(peer.nodePubKey || '');
+        grpcPeer.setLndBtcPubKey(peer.lndbtcPubKey || '');
+        grpcPeer.setLndLtcPubKey(peer.lndltcPubKey || '');
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
