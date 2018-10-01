@@ -29,7 +29,7 @@ type PoolConfig = {
 
 interface Pool {
   on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
-  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string) => void): this;
+  on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
@@ -37,7 +37,7 @@ interface Pool {
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
   on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
-  emit(event: 'packet.getOrders', peer: Peer, reqId: string): boolean;
+  emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
@@ -400,7 +400,9 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GetOrders: {
-        this.emit('packet.getOrders', peer, packet.header.id);
+        const getOrdersPacketBody = (packet as packets.GetOrdersPacket).body;
+        const pairIds = getOrdersPacketBody ? getOrdersPacketBody.pairIds : [];
+        this.emit('packet.getOrders', peer, packet.header.id, pairIds);
         break;
       }
       case PacketType.Orders: {
@@ -466,7 +468,7 @@ class Pool extends EventEmitter {
       this.peers.add(peer);
 
       // request peer's orders and known nodes
-      peer.sendPacket(new packets.GetOrdersPacket());
+      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
       peer.sendPacket(new packets.GetNodesPacket());
 
       // if outbound, update the `lastConnected` field for the address we're actually connected to
