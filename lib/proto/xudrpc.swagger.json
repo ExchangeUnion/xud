@@ -69,33 +69,6 @@
         ]
       }
     },
-    "/v1/cancelorder": {
-      "post": {
-        "summary": "Cancel placed order from the orderbook.",
-        "operationId": "CancelOrder",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcCancelOrderRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/channelbalance": {
       "get": {
         "summary": "Get the total balance available across all channels for a given currency.",
@@ -332,6 +305,33 @@
         ]
       }
     },
+    "/v1/removeorder": {
+      "post": {
+        "summary": "Removes an order from the order book by its local id.",
+        "operationId": "RemoveOrder",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveOrderResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/removepair": {
       "post": {
         "summary": "Remove a trading pair.",
@@ -477,18 +477,6 @@
       }
     },
     "xudrpcAddPairResponse": {
-      "type": "object"
-    },
-    "xudrpcCancelOrderRequest": {
-      "type": "object",
-      "properties": {
-        "order_id": {
-          "type": "string",
-          "title": "The local id of the order to cancel"
-        }
-      }
-    },
-    "xudrpcCancelOrderResponse": {
       "type": "object"
     },
     "xudrpcChannelBalance": {
@@ -902,6 +890,18 @@
       }
     },
     "xudrpcRemoveCurrencyResponse": {
+      "type": "object"
+    },
+    "xudrpcRemoveOrderRequest": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "title": "The local id of the order to remove"
+        }
+      }
+    },
+    "xudrpcRemoveOrderResponse": {
       "type": "object"
     },
     "xudrpcRemovePairRequest": {

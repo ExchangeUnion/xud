@@ -104,40 +104,40 @@ export namespace AddPairResponse {
     }
 }
 
-export class CancelOrderRequest extends jspb.Message { 
+export class RemoveOrderRequest extends jspb.Message { 
     getOrderId(): string;
     setOrderId(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): CancelOrderRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: CancelOrderRequest): CancelOrderRequest.AsObject;
+    toObject(includeInstance?: boolean): RemoveOrderRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveOrderRequest): RemoveOrderRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: CancelOrderRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): CancelOrderRequest;
-    static deserializeBinaryFromReader(message: CancelOrderRequest, reader: jspb.BinaryReader): CancelOrderRequest;
+    static serializeBinaryToWriter(message: RemoveOrderRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveOrderRequest;
+    static deserializeBinaryFromReader(message: RemoveOrderRequest, reader: jspb.BinaryReader): RemoveOrderRequest;
 }
 
-export namespace CancelOrderRequest {
+export namespace RemoveOrderRequest {
     export type AsObject = {
         orderId: string,
     }
 }
 
-export class CancelOrderResponse extends jspb.Message { 
+export class RemoveOrderResponse extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): CancelOrderResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: CancelOrderResponse): CancelOrderResponse.AsObject;
+    toObject(includeInstance?: boolean): RemoveOrderResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveOrderResponse): RemoveOrderResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: CancelOrderResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): CancelOrderResponse;
-    static deserializeBinaryFromReader(message: CancelOrderResponse, reader: jspb.BinaryReader): CancelOrderResponse;
+    static serializeBinaryToWriter(message: RemoveOrderResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveOrderResponse;
+    static deserializeBinaryFromReader(message: RemoveOrderResponse, reader: jspb.BinaryReader): RemoveOrderResponse;
 }
 
-export namespace CancelOrderResponse {
+export namespace RemoveOrderResponse {
     export type AsObject = {
     }
 }

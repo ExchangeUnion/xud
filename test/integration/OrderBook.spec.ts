@@ -91,7 +91,7 @@ describe('OrderBook', () => {
     expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
   });
 
-  it('should create, partially match, and cancel an order', async () => {
+  it('should create, partially match, and remove an order', async () => {
     const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 10, isBuy: true };
     await orderBook.addLimitOrder(order);
     const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false };

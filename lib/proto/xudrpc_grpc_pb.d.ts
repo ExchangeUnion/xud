@@ -10,7 +10,7 @@ import * as annotations_pb from "./annotations_pb";
 interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     addCurrency: IXudService_IAddCurrency;
     addPair: IXudService_IAddPair;
-    cancelOrder: IXudService_ICancelOrder;
+    removeOrder: IXudService_IRemoveOrder;
     channelBalance: IXudService_IChannelBalance;
     connect: IXudService_IConnect;
     disconnect: IXudService_IDisconnect;
@@ -46,14 +46,14 @@ interface IXudService_IAddPair extends grpc.MethodDefinition<xudrpc_pb.AddPairRe
     responseSerialize: grpc.serialize<xudrpc_pb.AddPairResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.AddPairResponse>;
 }
-interface IXudService_ICancelOrder extends grpc.MethodDefinition<xudrpc_pb.CancelOrderRequest, xudrpc_pb.CancelOrderResponse> {
-    path: string; // "/xudrpc.Xud/CancelOrder"
+interface IXudService_IRemoveOrder extends grpc.MethodDefinition<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse> {
+    path: string; // "/xudrpc.Xud/RemoveOrder"
     requestStream: boolean; // false
     responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.CancelOrderRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.CancelOrderResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.CancelOrderResponse>;
+    requestSerialize: grpc.serialize<xudrpc_pb.RemoveOrderRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.RemoveOrderRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.RemoveOrderResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.RemoveOrderResponse>;
 }
 interface IXudService_IChannelBalance extends grpc.MethodDefinition<xudrpc_pb.ChannelBalanceRequest, xudrpc_pb.ChannelBalanceResponse> {
     path: string; // "/xudrpc.Xud/ChannelBalance"
@@ -196,7 +196,7 @@ export const XudService: IXudService;
 export interface IXudServer {
     addCurrency: grpc.handleUnaryCall<xudrpc_pb.AddCurrencyRequest, xudrpc_pb.AddCurrencyResponse>;
     addPair: grpc.handleUnaryCall<xudrpc_pb.AddPairRequest, xudrpc_pb.AddPairResponse>;
-    cancelOrder: grpc.handleUnaryCall<xudrpc_pb.CancelOrderRequest, xudrpc_pb.CancelOrderResponse>;
+    removeOrder: grpc.handleUnaryCall<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse>;
     channelBalance: grpc.handleUnaryCall<xudrpc_pb.ChannelBalanceRequest, xudrpc_pb.ChannelBalanceResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
     disconnect: grpc.handleUnaryCall<xudrpc_pb.DisconnectRequest, xudrpc_pb.DisconnectResponse>;
@@ -221,9 +221,9 @@ export interface IXudClient {
     addPair(request: xudrpc_pb.AddPairRequest, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
     addPair(request: xudrpc_pb.AddPairRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
     addPair(request: xudrpc_pb.AddPairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
-    cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
-    cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
-    cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    removeOrder(request: xudrpc_pb.RemoveOrderRequest, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     channelBalance(request: xudrpc_pb.ChannelBalanceRequest, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
@@ -276,9 +276,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public addPair(request: xudrpc_pb.AddPairRequest, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
     public addPair(request: xudrpc_pb.AddPairRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
     public addPair(request: xudrpc_pb.AddPairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.AddPairResponse) => void): grpc.ClientUnaryCall;
-    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
-    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
-    public cancelOrder(request: xudrpc_pb.CancelOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.CancelOrderResponse) => void): grpc.ClientUnaryCall;
+    public removeOrder(request: xudrpc_pb.RemoveOrderRequest, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    public removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    public removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;
     public channelBalance(request: xudrpc_pb.ChannelBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ChannelBalanceResponse) => void): grpc.ClientUnaryCall;

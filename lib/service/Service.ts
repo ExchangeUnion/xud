@@ -109,9 +109,9 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Cancel placed order from the orderbook.
+   * Remove placed order from the orderbook.
    */
-  public cancelOrder = async (args: { orderId: string }) => {
+  public removeOrder = async (args: { orderId: string }) => {
     const { orderId } = args;
     argChecks.HAS_ORDER_ID(args);
 
