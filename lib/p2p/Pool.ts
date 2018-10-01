@@ -14,6 +14,7 @@ import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } fro
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
+import { ReputationEvent } from '../types/enums';
 
 type PoolConfig = {
   /** Whether or not to listen for incoming connections from peers. */
@@ -336,6 +337,14 @@ class Pool extends EventEmitter {
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
+    }
+  }
+
+  public banNode = async (nodePubKey: string): Promise<void> => {
+    const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+
+    if (!banned) {
+      throw errors.NODE_UNKNOWN(nodePubKey);
     }
   }
 

@@ -249,40 +249,40 @@ export namespace ConnectResponse {
     }
 }
 
-export class DisconnectRequest extends jspb.Message { 
+export class BanRequest extends jspb.Message { 
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): DisconnectRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: DisconnectRequest): DisconnectRequest.AsObject;
+    toObject(includeInstance?: boolean): BanRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: BanRequest): BanRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: DisconnectRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): DisconnectRequest;
-    static deserializeBinaryFromReader(message: DisconnectRequest, reader: jspb.BinaryReader): DisconnectRequest;
+    static serializeBinaryToWriter(message: BanRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BanRequest;
+    static deserializeBinaryFromReader(message: BanRequest, reader: jspb.BinaryReader): BanRequest;
 }
 
-export namespace DisconnectRequest {
+export namespace BanRequest {
     export type AsObject = {
         nodePubKey: string,
     }
 }
 
-export class DisconnectResponse extends jspb.Message { 
+export class BanResponse extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): DisconnectResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: DisconnectResponse): DisconnectResponse.AsObject;
+    toObject(includeInstance?: boolean): BanResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: BanResponse): BanResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: DisconnectResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): DisconnectResponse;
-    static deserializeBinaryFromReader(message: DisconnectResponse, reader: jspb.BinaryReader): DisconnectResponse;
+    static serializeBinaryToWriter(message: BanResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): BanResponse;
+    static deserializeBinaryFromReader(message: BanResponse, reader: jspb.BinaryReader): BanResponse;
 }
 
-export namespace DisconnectResponse {
+export namespace BanResponse {
     export type AsObject = {
     }
 }

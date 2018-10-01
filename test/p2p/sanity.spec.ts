@@ -70,8 +70,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should disconnect successfully', async () => {
-    await expect(nodeOne.service.disconnect({ nodePubKey: nodeTwo.nodePubKey }))
-      .to.be.fulfilled;
+    await expect(nodeOne['pool']['closePeer'](nodeTwo.nodePubKey)).to.be.fulfilled;
 
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
