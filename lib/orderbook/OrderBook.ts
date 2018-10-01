@@ -58,8 +58,8 @@ class OrderBook extends EventEmitter {
 
   private repository: OrderBookRepository;
 
-  /** Max matching retries for swap failures */
-  private static MAX_MATCHING_RETRIES = 3;
+  /** Max time for addOwnOrder iterations (due to swaps failures retries). */
+  private static MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
 
   /** Gets an iterable of supported pair ids. */
   public get pairIds() {
@@ -194,26 +194,23 @@ class OrderBook extends EventEmitter {
 
   public addLimitOrder = async (order: orders.OwnOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
-    return this.addOwnOrder(stampedOrder, false, ee);
+    return this.addOwnOrder(stampedOrder, false, ee, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
   }
 
   public addMarketOrder = async (order: orders.OwnMarketOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.MAX_VALUE : 0 });
-    const result = await this.addOwnOrder(stampedOrder, true, ee);
+    const result = await this.addOwnOrder(stampedOrder, true, ee, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
     delete result.remainingOrder;
     return result;
   }
 
-  private addOwnOrder = async (
-    order: orders.StampedOwnOrder,
-    discardRemaining = false,
-    ee?: EventEmitter,
-    iteration = 0,
-  ): Promise<PlaceOrderResult> => {
+  private addOwnOrder = async (order: orders.StampedOwnOrder, discardRemaining = false, ee?: EventEmitter, maxTime?: number):
+    Promise<PlaceOrderResult> => {
     // this method can be called recursively on swap failures retries.
-    // if max iterations exceeded, don't try to match
-    if (iteration > OrderBook.MAX_MATCHING_RETRIES) {
-      assert(discardRemaining, 'discardRemaining must be true on a recursive call');
+    // if max time exceeded, don't try to match
+    if (maxTime && Date.now() > maxTime) {
+      assert(discardRemaining, 'discardRemaining must be true on recursive calls where maxTime could exceed');
+      this.logger.info(`addOwnOrder max time exceeded. order (${JSON.stringify(order)}) won't be matched`);
       return Promise.resolve({
         internalMatches: [],
         swapResults: [],
@@ -285,7 +282,7 @@ class OrderBook extends EventEmitter {
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
       // invoke addOwnOrder recursively, append matches/swaps and set the consecutive remaining order
-      const remainingOrderResult = await this.addOwnOrder(remainingOrder, false, ee, iteration + 1);
+      const remainingOrderResult = await this.addOwnOrder(remainingOrder, false, ee, maxTime);
       result.internalMatches.push(...remainingOrderResult.internalMatches);
       result.swapResults.push(...remainingOrderResult.swapResults);
       result.remainingOrder = remainingOrderResult.remainingOrder;
