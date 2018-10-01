@@ -757,37 +757,6 @@ export namespace Orders {
     }
 }
 
-export class OrderMatch extends jspb.Message { 
-
-    hasMaker(): boolean;
-    clearMaker(): void;
-    getMaker(): Order | undefined;
-    setMaker(value?: Order): void;
-
-
-    hasTaker(): boolean;
-    clearTaker(): void;
-    getTaker(): Order | undefined;
-    setTaker(value?: Order): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): OrderMatch.AsObject;
-    static toObject(includeInstance: boolean, msg: OrderMatch): OrderMatch.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: OrderMatch, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): OrderMatch;
-    static deserializeBinaryFromReader(message: OrderMatch, reader: jspb.BinaryReader): OrderMatch;
-}
-
-export namespace OrderMatch {
-    export type AsObject = {
-        maker?: Order.AsObject,
-        taker?: Order.AsObject,
-    }
-}
-
 export class OrdersCount extends jspb.Message { 
     getPeer(): number;
     setPeer(value: number): void;
@@ -895,9 +864,9 @@ export namespace PlaceOrderRequest {
 
 export class PlaceOrderResponse extends jspb.Message { 
     clearInternalMatchesList(): void;
-    getInternalMatchesList(): Array<OrderMatch>;
-    setInternalMatchesList(value: Array<OrderMatch>): void;
-    addInternalMatches(value?: OrderMatch, index?: number): OrderMatch;
+    getInternalMatchesList(): Array<Order>;
+    setInternalMatchesList(value: Array<Order>): void;
+    addInternalMatches(value?: Order, index?: number): Order;
 
     clearSwapResultsList(): void;
     getSwapResultsList(): Array<SwapResult>;
@@ -923,7 +892,7 @@ export class PlaceOrderResponse extends jspb.Message {
 
 export namespace PlaceOrderResponse {
     export type AsObject = {
-        internalMatchesList: Array<OrderMatch.AsObject>,
+        internalMatchesList: Array<Order.AsObject>,
         swapResultsList: Array<SwapResult.AsObject>,
         remainingOrder?: Order.AsObject,
     }

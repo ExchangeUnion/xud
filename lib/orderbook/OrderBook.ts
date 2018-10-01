@@ -250,9 +250,9 @@ class OrderBook extends EventEmitter {
       const portion: OrderPortion = { orderId: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (orders.isOwnOrder(maker)) {
         // internal match
-        result.internalMatches.push({ maker, taker });
+        result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
-        ee && ee.emit('step', { internalMatches: [{ maker, taker }], swapResults: [] });
+        ee && ee.emit('step', { internalMatches: [maker], swapResults: [] });
       } else {
         // non-internal match
         if (!this.swaps) {

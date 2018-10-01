@@ -1,12 +1,7 @@
 import { SwapResult, StampedOwnOrder } from './orders';
 
-export type InternalMatch = {
-  maker: StampedOwnOrder;
-  taker: StampedOwnOrder;
-};
-
 export type PlaceOrderResult = {
-  internalMatches: InternalMatch[];
+  internalMatches: StampedOwnOrder[];
   swapResults: SwapResult[]
   remainingOrder?: StampedOwnOrder;
 };

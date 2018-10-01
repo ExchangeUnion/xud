@@ -341,11 +341,6 @@ message Orders {
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
 
-message OrderMatch {
-  Order maker = 1 [json_name = "maker"];
-  Order taker = 2 [json_name = "taker"];
-}
-
 message OrdersCount {
   int32 peer = 1 [json_name = "peer"];
   int32 own = 2 [json_name = "own"];
@@ -380,7 +375,7 @@ message PlaceOrderRequest {
 }
 message PlaceOrderResponse {
   // A list of own orders matching the newly placed order
-  repeated OrderMatch internal_matches = 1 [json_name = "internal_matches"];
+  repeated Order internal_matches = 1 [json_name = "internal_matches"];
   // A list of swap results of non-internal matches of the newly placed order
   repeated SwapResult swap_results = 2 [json_name = "swap_results"];
   // The remaining portion of the order, after matches, that enters the order book

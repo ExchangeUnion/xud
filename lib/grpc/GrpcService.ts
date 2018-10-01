@@ -330,12 +330,7 @@ class GrpcService {
     const toReponse = (result: PlaceOrderResult) => {
       const response = new xudrpc.PlaceOrderResponse();
 
-      const internalMatches = result.internalMatches.map((match) => {
-        const orderMatch = new xudrpc.OrderMatch();
-        orderMatch.setMaker(createOrder(match.maker));
-        orderMatch.setTaker(createOrder(match.taker));
-        return orderMatch;
-      });
+      const internalMatches = result.internalMatches.map(match => createOrder(match));
       response.setInternalMatchesList(internalMatches);
 
       const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
