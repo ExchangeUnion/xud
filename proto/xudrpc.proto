@@ -121,6 +121,15 @@ service Xud {
     };
   }
 
+  /* The synchronous non-streaming version of PlaceOrder. */
+  rpc PlaceOrderSync(PlaceOrderRequest) returns (PlaceOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/placeordersync"
+      body: "*"
+    };
+  }
+
+
   /* Remove a currency. */
   rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
     option (google.api.http) = {

@@ -1,4 +1,4 @@
-import { loadXudClient } from './command';
+import { callback, loadXudClient } from './command';
 import { Arguments, Argv } from 'yargs';
 import * as xudrpc from '../proto/xudrpc_pb';
 
@@ -17,6 +17,11 @@ export const orderBuilder = (argv: Argv, command: string) => argv
   .option('order_id', {
     type: 'string',
     describe: 'the local order id for this order',
+  })
+  .option('stream', {
+    type: 'boolean',
+    describe: 'whether to execute in a streaming mode',
+    default: false,
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
   .example(`$0 ${command} 3 LTC/BTC mkt`, `place a market order to ${command} 3 LTC for BTC`)
@@ -41,8 +46,13 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
     console.log('price must be numeric for limit orders or "mkt"/"market" for market orders');
     return;
   }
-  const placeOrderSubscription = loadXudClient(argv).placeOrder(request);
-  placeOrderSubscription.on('data', (response: xudrpc.PlaceOrderResponse) => {
-    console.log(JSON.stringify(response.toObject()));
-  });
+
+  if (argv.stream) {
+    const subscription = loadXudClient(argv).placeOrder(request);
+    subscription.on('data', (response: xudrpc.PlaceOrderResponse) => {
+      console.log(JSON.stringify(response.toObject(), undefined, 2));
+    });
+  } else {
+    loadXudClient(argv).placeOrderSync(request, callback);
+  }
 };

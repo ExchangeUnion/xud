@@ -50,6 +50,25 @@ const createSwapResult = (result: SwapResult) => {
   return swapResult;
 };
 
+/**
+ * Creates an xudrpc PlaceOrderResponse message from a [[PlaceOrderResult]].
+ */
+const createPlaceOrderResponse = (result: PlaceOrderResult) => {
+  const response = new xudrpc.PlaceOrderResponse();
+
+  const internalMatches = result.internalMatches.map(match => createOrder(match));
+  response.setInternalMatchesList(internalMatches);
+
+  const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
+  response.setSwapResultsList(swapResults);
+
+  if (result.remainingOrder) {
+    response.setRemainingOrder(createOrder(result.remainingOrder));
+  }
+
+  return response;
+};
+
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
   /** Create an instance of available RPC methods and bind all exposed functions. */
@@ -327,30 +346,26 @@ class GrpcService {
    * See [[Service.placeOrder]]
    */
   public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call) => {
-    const toReponse = (result: PlaceOrderResult) => {
-      const response = new xudrpc.PlaceOrderResponse();
-
-      const internalMatches = result.internalMatches.map(match => createOrder(match));
-      response.setInternalMatchesList(internalMatches);
-
-      const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
-      response.setSwapResultsList(swapResults);
-
-      if (result.remainingOrder) {
-        response.setRemainingOrder(createOrder(result.remainingOrder));
-      }
-
-      return response;
-    };
-
     try {
       await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderResult) => {
-        call.write(toReponse(result));
+        call.write(createPlaceOrderResponse(result));
       });
 
       call.end();
     } catch (err) {
       call.emit('error', this.getGrpcError(err));
+    }
+  }
+
+  /**
+   * See [[Service.placeOrder]]
+   */
+  public placeOrderSync: grpc.handleUnaryCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call, callback) => {
+    try {
+      const result = await this.service.placeOrder(call.request.toObject());
+      callback(null, createPlaceOrderResponse(result));
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
     }
   }
 
