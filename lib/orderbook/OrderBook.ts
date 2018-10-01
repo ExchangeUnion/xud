@@ -431,7 +431,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private stampOwnOrder = (order: OwnOrder) => {
+  private stampOwnOrder = (order: OwnOrder): StampedOwnOrder  => {
     // verify localId isn't duplicated. generate one if it's blank
     if (order.localId === '') {
       order.localId = uuidv1();
