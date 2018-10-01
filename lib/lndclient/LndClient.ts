@@ -42,6 +42,11 @@ interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
+interface LndClient {
+  on(event: 'connectionVerified', listener: (newPubKey?: string) => void): this;
+  emit(event: 'connectionVerified', newPubKey?: string): boolean;
+}
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
   public readonly cltvDelta: number = 0;
@@ -52,6 +57,9 @@ class LndClient extends BaseClient {
   private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
   private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
+
+  /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
+  private static RECONNECT_TIMER = 5000;
 
   /**
    * Create an lnd client.
@@ -189,17 +197,25 @@ class LndClient extends BaseClient {
         if (getInfoResponse) {
           // mark connection as active
           this.setStatus(ClientStatus.ConnectionVerified);
-          this.identityPubKey = getInfoResponse.getIdentityPubkey();
           this.subscribeInvoices();
           if (this.reconnectionTimer) {
             clearTimeout(this.reconnectionTimer);
             this.reconnectionTimer = undefined;
           }
+
+          /** The new lnd pub key value if different from the one we had previously. */
+          let newPubKey: string | undefined;
+          if (this.identityPubKey !== getInfoResponse.getIdentityPubkey()) {
+            newPubKey = getInfoResponse.getIdentityPubkey();
+            this.identityPubKey = newPubKey;
+          }
+          this.emit('connectionVerified', newPubKey);
         }
       } catch (err) {
         this.setStatus(ClientStatus.Disconnected);
-        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)}, retrying in 5000 ms`);
-        this.reconnectionTimer = setTimeout(this.verifyConnection, 5000);
+        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
+          retrying in ${LndClient.RECONNECT_TIMER} ms`);
+        this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
       }
     }
   }

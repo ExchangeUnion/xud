@@ -558,6 +558,15 @@ class Peer extends EventEmitter {
   }
 
   private handleHello = (packet: packets.HelloPacket): void => {
+    const helloBody = packet.body!;
+    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(helloBody)}`);
+    if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
+      // peers cannot change their nodepubkey while we are connected to them
+      // TODO: penalize?
+      this.close();
+      return;
+    }
+
     this.handshakeState = packet.body;
 
     const entry = this.responseMap.get(PacketType.Hello);
@@ -628,4 +637,4 @@ class Job {
 }
 
 export default Peer;
-export { HandshakeState, PeerInfo };
+export { PeerInfo };
