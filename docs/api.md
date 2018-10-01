@@ -8,8 +8,6 @@
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
-    - [CancelOrderRequest](#xudrpc.CancelOrderRequest)
-    - [CancelOrderResponse](#xudrpc.CancelOrderResponse)
     - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
@@ -42,6 +40,8 @@
     - [RaidenInfo](#xudrpc.RaidenInfo)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
+    - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
+    - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
@@ -117,31 +117,6 @@
 <a name="xudrpc.AddPairResponse"></a>
 
 ### AddPairResponse
-
-
-
-
-
-
-
-<a name="xudrpc.CancelOrderRequest"></a>
-
-### CancelOrderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| order_id | [string](#string) |  | The local id of the order to cancel |
-
-
-
-
-
-
-<a name="xudrpc.CancelOrderResponse"></a>
-
-### CancelOrderResponse
 
 
 
@@ -644,6 +619,31 @@
 
 
 
+<a name="xudrpc.RemoveOrderRequest"></a>
+
+### RemoveOrderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order_id | [string](#string) |  | The local id of the order to remove |
+
+
+
+
+
+
+<a name="xudrpc.RemoveOrderResponse"></a>
+
+### RemoveOrderResponse
+
+
+
+
+
+
+
 <a name="xudrpc.RemovePairRequest"></a>
 
 ### RemovePairRequest
@@ -792,7 +792,7 @@
 | ----------- | ------------ | ------------- | ------------|
 | AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Add a currency to the list of supported currencies. |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Add a trading pair to the list of supported trading pairs. |
-| CancelOrder | [CancelOrderRequest](#xudrpc.CancelOrderRequest) | [CancelOrderResponse](#xudrpc.CancelOrderResponse) | Cancel placed order from the orderbook. |
+| RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. |
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Disconnect | [DisconnectRequest](#xudrpc.DisconnectRequest) | [DisconnectResponse](#xudrpc.DisconnectResponse) | Disconnect from a connected peer XU node. |

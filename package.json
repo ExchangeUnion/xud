@@ -18,7 +18,7 @@
     "lintNoFix": "tslint --project tsconfig.json && tslint --config tslint-alt.json 'bin/*' 'test/**/*.ts' 'tasks/**/*.ts'",
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "prepublishOnly": "npm run compile",
-    "proto": "cross-os proto && cross-os swagger && cross-os protodocs",
+    "proto": "cross-os proto && cross-os swagger && cross-os protodocs && cross-os protoFixDeprecation",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
     "test": "npm run test:unit && npm run test:int && npm run test:p2p",
@@ -41,6 +41,11 @@
       "linux": "rm -rf ./dist",
       "darwin": "rm -rf ./dist",
       "win32": "rd /q /s dist || cd ."
+    },
+    "protoFixDeprecation": {
+      "linux": "sed -i -- 's/new Buffer(/Buffer.from(/g' lib/proto/*.js",
+      "darwin": "sed -i '' 's/new Buffer(/Buffer.from(/g' lib/proto/*.js",
+      "win32": "@powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./winFixDeprecation.ps1"
     },
     "proto": {
       "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",

@@ -41,10 +41,10 @@ service Xud {
     };
   }
 
-  /* Cancel placed order from the orderbook. */
-  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {
+  /* Removes an order from the order book by its local id. */
+  rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
-      post: "/v1/cancelorder"
+      post: "/v1/removeorder"
       body: "*"
     };
   }
@@ -208,11 +208,11 @@ message AddPairRequest {
 }
 message AddPairResponse {}
 
-message CancelOrderRequest {
-  // The local id of the order to cancel
+message RemoveOrderRequest {
+  // The local id of the order to remove
   string order_id = 1 [json_name = "order_id"];
 }
-message CancelOrderResponse {}
+message RemoveOrderResponse {}
 
 message ChannelBalance {
   // Sum of channels balances denominated in satoshis or equivalent

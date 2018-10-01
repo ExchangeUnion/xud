@@ -79,7 +79,7 @@ class OrderBook extends EventEmitter {
 
   /** Loads the supported pairs and currencies from the database. */
   public init = async () => {
-    const promises = [await this.repository.getPairs(), await this.repository.getCurrencies()];
+    const promises: PromiseLike<any>[] = [this.repository.getPairs(), this.repository.getCurrencies()];
     const results = await Promise.all(promises);
     const pairs = results[0] as db.PairInstance[];
     const currencies = results[1] as db.CurrencyInstance[];
@@ -320,17 +320,19 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Send all local orders to a given peer in an [[OrdersPacket].
+   * Send local orders to a given peer in an [[OrdersPacket].
    * @param reqId the request id of a [[GetOrdersPacket]] packet that this method is responding to
+   * @param pairIds a list of trading pair ids, only orders belonging to one of these pairs will be sent
    */
-  private sendOrders = async (peer: Peer, reqId: string) => {
-    // TODO: just send supported pairs
-
+  private sendOrders = async (peer: Peer, reqId: string, pairIds: string[]) => {
     const outgoingOrders: orders.OutgoingOrder[] = [];
     this.matchingEngines.forEach((matchingEngine) => {
-      const orders = matchingEngine.getOwnOrders();
-      orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
-      orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+      // send only requested pairIds
+      if (pairIds.includes(matchingEngine.pairId)) {
+        const orders = matchingEngine.getOwnOrders();
+        orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+        orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+      }
     });
     peer.sendOrders(outgoingOrders, reqId);
   }

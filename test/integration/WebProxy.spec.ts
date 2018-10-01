@@ -12,6 +12,7 @@ describe('WebProxy', async () => {
   before(async () => {
     config = {
       dbpath: ':memory:',
+      initdb: false,
       webproxy: {
         port,
         disable: false,
