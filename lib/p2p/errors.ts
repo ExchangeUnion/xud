@@ -11,6 +11,7 @@ const errorCodes = {
   EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
   CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
   COULD_NOT_CONNECT: codesPrefix.concat('.7'),
+  NODE_UNKNOWN: codesPrefix.concat('.8'),
 };
 
 const errors = {
@@ -41,6 +42,10 @@ const errors = {
   COULD_NOT_CONNECT: (address: Address, err: Error) => ({
     message: `could not connect to peer at ${addressUtils.toString(address)}: ${err.message}`,
     code: errorCodes.COULD_NOT_CONNECT,
+  }),
+  NODE_UNKNOWN: (nodePubKey: string) => ({
+    message: `node ${nodePubKey} is unknown`,
+    code: errorCodes.NODE_UNKNOWN,
   }),
 };
 

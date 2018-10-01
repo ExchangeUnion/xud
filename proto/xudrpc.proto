@@ -64,10 +64,10 @@ service Xud {
     };
   }
   
-  /* Disconnect from a connected peer XU node. */
-  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse) {
+  /* Ban a XU node manually and disconnect from it. */
+  rpc Ban(BanRequest) returns (BanResponse) {
     option (google.api.http) = {
-      post: "/v1/disconnect"
+      post: "/v1/ban"
       body: "*"
     };
   }
@@ -236,10 +236,10 @@ message ConnectRequest {
 }
 message ConnectResponse {}
 
-message DisconnectRequest {
+message BanRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message DisconnectResponse {}
+message BanResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {

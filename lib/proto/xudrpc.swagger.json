@@ -69,6 +69,33 @@
         ]
       }
     },
+    "/v1/ban": {
+      "post": {
+        "summary": "Ban a XU node manually and disconnect from it.",
+        "operationId": "Ban",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcBanResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcBanRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/channelbalance": {
       "get": {
         "summary": "Get the total balance available across all channels for a given currency.",
@@ -134,33 +161,6 @@
             }
           }
         },
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/disconnect": {
-      "post": {
-        "summary": "Disconnect from a connected peer XU node.",
-        "operationId": "Disconnect",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcDisconnectResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcDisconnectRequest"
-            }
-          }
-        ],
         "tags": [
           "Xud"
         ]
@@ -479,6 +479,17 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
+    "xudrpcBanRequest": {
+      "type": "object",
+      "properties": {
+        "node_pub_key": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcBanResponse": {
+      "type": "object"
+    },
     "xudrpcChannelBalance": {
       "type": "object",
       "properties": {
@@ -515,17 +526,6 @@
       }
     },
     "xudrpcConnectResponse": {
-      "type": "object"
-    },
-    "xudrpcDisconnectRequest": {
-      "type": "object",
-      "properties": {
-        "node_pub_key": {
-          "type": "string"
-        }
-      }
-    },
-    "xudrpcDisconnectResponse": {
       "type": "object"
     },
     "xudrpcGetInfoResponse": {

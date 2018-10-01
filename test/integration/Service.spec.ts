@@ -144,6 +144,12 @@ describe('API Service', () => {
     await expect(Promise.all(removeCurrencyPromises)).to.be.fulfilled;
   });
 
+  it('should fail to ban a node that does not exist', async () => {
+    const nodePubKey = 'doesNotExist';
+    const banNodePromise = service.ban({ nodePubKey });
+    await expect(banNodePromise).to.be.rejectedWith(`node ${nodePubKey} is unknown`);
+  });
+
   it('should shutdown', async () => {
     service.shutdown();
     const shutdownPromise = new Promise((resolve) => {

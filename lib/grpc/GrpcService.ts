@@ -53,6 +53,7 @@ class GrpcService {
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
       case p2pErrorCodes.COULD_NOT_CONNECT:
+      case p2pErrorCodes.NODE_UNKNOWN:
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
         code = status.NOT_FOUND;
         break;
@@ -115,7 +116,7 @@ class GrpcService {
    */
   public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (call, callback) => {
     try {
-      const removeOrderResponse = await this.service.removeOrder(call.request.toObject());
+      await this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
       callback(null, response);
     } catch (err) {
@@ -148,7 +149,7 @@ class GrpcService {
    */
   public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {
     try {
-      const connectResponse = await this.service.connect(call.request.toObject());
+      await this.service.connect(call.request.toObject());
       const response = new xudrpc.ConnectResponse();
       callback(null, response);
     } catch (err) {
@@ -157,12 +158,12 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.disconnect]]
+   * See [[Service.ban]]
    */
-  public disconnect: grpc.handleUnaryCall<xudrpc.DisconnectRequest, xudrpc.DisconnectResponse> = async (call, callback) => {
+  public ban: grpc.handleUnaryCall<xudrpc.BanRequest, xudrpc.BanResponse> = async (call, callback) => {
     try {
-      await this.service.disconnect(call.request.toObject());
-      const response = new xudrpc.DisconnectResponse();
+      await this.service.ban(call.request.toObject());
+      const response = new xudrpc.BanResponse();
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
