@@ -76,8 +76,8 @@ describe('OrderBook', () => {
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
-    const firstMakerOrder = getOwnOrder(<orders.StampedOwnOrder>firstMatch.maker);
-    const secondMakerOrder = getOwnOrder(<orders.StampedOwnOrder>secondMatch.maker);
+    const firstMakerOrder = getOwnOrder(<orders.StampedOwnOrder>firstMatch);
+    const secondMakerOrder = getOwnOrder(<orders.StampedOwnOrder>secondMatch);
     expect(firstMakerOrder).to.be.undefined;
     expect(secondMakerOrder).to.not.be.undefined;
     expect(secondMakerOrder!.quantity).to.equal(4);
@@ -86,9 +86,9 @@ describe('OrderBook', () => {
   it('should partially match new market order and discard remaining order', async () => {
     const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, isBuy: false };
     const result = await orderBook.addMarketOrder(order);
-    const { taker } = result.internalMatches[0];
+    const match = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
-    expect(getOwnOrder(<orders.StampedOwnOrder>taker)).to.be.undefined;
+    expect(getOwnOrder(<orders.StampedOwnOrder>match)).to.be.undefined;
   });
 
   it('should create, partially match, and cancel an order', async () => {
