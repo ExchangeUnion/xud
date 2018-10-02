@@ -49,6 +49,14 @@ const errors = {
     message: `node ${nodePubKey} is unknown`,
     code: errorCodes.NODE_UNKNOWN,
   }),
+  NODE_ALREADY_BANNED: (nodePubKey: string) => ({
+    message: `node ${nodePubKey} has allredy been banned`,
+    code: errorCodes.NODE_ALREADY_BANNED,
+  }),
+  NODE_NOT_BANNED: (nodePubKey: string) => ({
+    message: `node ${nodePubKey} has not been banned`,
+    code: errorCodes.NODE_NOT_BANNED,
+  }),
 };
 
 export { errorCodes };
