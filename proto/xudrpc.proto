@@ -385,7 +385,7 @@ message PlaceOrderRequest {
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order
   repeated Order internal_matches = 1 [json_name = "internal_matches"];
-  // A list of swap results of peer orders that matched newly placed order
+  // A list of swap results of peer orders that matched the newly placed order
   repeated SwapResult swap_results = 2 [json_name = "swap_results"];
   // The remaining portion of the order, after matches, that enters the order book
   Order remaining_order = 3 [json_name= "remaining_order"];
