@@ -5,3 +5,9 @@ export type PlaceOrderResult = {
   swapResults: SwapResult[]
   remainingOrder?: StampedOwnOrder;
 };
+
+export type PlaceOrderEvent = {
+  internalMatch?: StampedOwnOrder;
+  swapResult?: SwapResult
+  remainingOrder?: StampedOwnOrder;
+};

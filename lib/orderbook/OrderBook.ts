@@ -14,7 +14,7 @@ import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
-import { PlaceOrderResult } from '../types/orderBook';
+import {PlaceOrderEvent, PlaceOrderResult} from '../types/orderBook';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -192,20 +192,24 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  public addLimitOrder = async (order: orders.OwnOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
+  public addLimitOrder = async (order: orders.OwnOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
-    return this.addOwnOrder(stampedOrder, false, ee, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
+    return this.addOwnOrder(stampedOrder, false, onUpdate, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
   }
 
-  public addMarketOrder = async (order: orders.OwnMarketOrder, ee?: EventEmitter): Promise<PlaceOrderResult> => {
+  public addMarketOrder = async (order: orders.OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.MAX_VALUE : 0 });
-    const result = await this.addOwnOrder(stampedOrder, true, ee, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
+    const result = await this.addOwnOrder(stampedOrder, true, onUpdate, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
     delete result.remainingOrder;
     return result;
   }
 
-  private addOwnOrder = async (order: orders.StampedOwnOrder, discardRemaining = false, ee?: EventEmitter, maxTime?: number):
-    Promise<PlaceOrderResult> => {
+  private addOwnOrder = async (
+    order: orders.StampedOwnOrder,
+    discardRemaining = false,
+    onUpdate?: (e: PlaceOrderEvent) => void,
+    maxTime?: number
+  ): Promise<PlaceOrderResult> => {
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
@@ -255,7 +259,7 @@ class OrderBook extends EventEmitter {
         // internal match
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
-        ee && ee.emit('step', { internalMatches: [maker], swapResults: [] });
+        onUpdate && onUpdate({ internalMatch: maker });
       } else {
         // non-internal match
         if (!this.swaps) {
@@ -267,7 +271,7 @@ class OrderBook extends EventEmitter {
         try {
           const swapResult = await this.swaps.executeSwap(maker, taker);
           result.swapResults.push(swapResult);
-          ee && ee.emit('step', { internalMatches: [], swapResults: [swapResult] });
+          onUpdate && onUpdate({ swapResult: swapResult });
         } catch (err) {
           // we can either push to swapFailures, or reject in case of non-retry errors
           swapFailures.push(taker);
@@ -282,7 +286,7 @@ class OrderBook extends EventEmitter {
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
       // invoke addOwnOrder recursively, append matches/swaps and set the consecutive remaining order
-      const remainingOrderResult = await this.addOwnOrder(remainingOrder, false, ee, maxTime);
+      const remainingOrderResult = await this.addOwnOrder(remainingOrder, false, onUpdate, maxTime);
       result.internalMatches.push(...remainingOrderResult.internalMatches);
       result.swapResults.push(...remainingOrderResult.swapResults);
       result.remainingOrder = remainingOrderResult.remainingOrder;
@@ -296,7 +300,7 @@ class OrderBook extends EventEmitter {
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
 
       this.broadcastOrder(remainingOrder);
-      ee && ee.emit('step', { remainingOrder, internalMatches: [], swapResults: [] });
+      onUpdate && onUpdate({ remainingOrder });
     }
 
     return result;

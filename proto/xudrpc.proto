@@ -114,7 +114,7 @@ service Xud {
   /* Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderResponse) {
+  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
     option (google.api.http) = {
       post: "/v1/placeorder"
       body: "*"
@@ -387,6 +387,15 @@ message PlaceOrderResponse {
   repeated Order internal_matches = 1 [json_name = "internal_matches"];
   // A list of swap results of peer orders that matched the newly placed order
   repeated SwapResult swap_results = 2 [json_name = "swap_results"];
+  // The remaining portion of the order, after matches, that enters the order book
+  Order remaining_order = 3 [json_name= "remaining_order"];
+}
+
+message PlaceOrderEvent {
+  // An own orders (or portions thereof) that matched the newly placed order
+  Order internal_match = 1 [json_name = "internal_match"];
+  // A swap results of peer orders that matched the newly placed order
+  SwapResult swap_result = 2 [json_name = "swap_result"];
   // The remaining portion of the order, after matches, that enters the order book
   Order remaining_order = 3 [json_name= "remaining_order"];
 }

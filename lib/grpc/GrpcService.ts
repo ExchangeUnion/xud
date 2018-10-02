@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { PlaceOrderResult } from '../types/orderBook';
+import { PlaceOrderResult, PlaceOrderEvent } from '../types/orderBook';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -61,6 +61,27 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
 
   const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
   response.setSwapResultsList(swapResults);
+
+  if (result.remainingOrder) {
+    response.setRemainingOrder(createOrder(result.remainingOrder));
+  }
+
+  return response;
+};
+
+/**
+ * Creates an xudrpc PlaceOrderEvent message from a [[PlaceOrderEvent]].
+ */
+const createPlaceOrderEvent = (result: PlaceOrderEvent) => {
+  const response = new xudrpc.PlaceOrderEvent();
+
+  if (result.internalMatch) {
+    response.setInternalMatch(createOrder(result.internalMatch));
+  }
+
+  if (result.swapResult) {
+    response.setSwapResult(createSwapResult(result.swapResult));
+  }
 
   if (result.remainingOrder) {
     response.setRemainingOrder(createOrder(result.remainingOrder));
@@ -348,8 +369,8 @@ class GrpcService {
    */
   public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call) => {
     try {
-      await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderResult) => {
-        call.write(createPlaceOrderResponse(result));
+      await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderEvent) => {
+        call.write(createPlaceOrderEvent(result));
       });
 
       call.end();

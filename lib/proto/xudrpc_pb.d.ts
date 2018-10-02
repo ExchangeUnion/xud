@@ -898,6 +898,44 @@ export namespace PlaceOrderResponse {
     }
 }
 
+export class PlaceOrderEvent extends jspb.Message { 
+
+    hasInternalMatch(): boolean;
+    clearInternalMatch(): void;
+    getInternalMatch(): Order | undefined;
+    setInternalMatch(value?: Order): void;
+
+
+    hasSwapResult(): boolean;
+    clearSwapResult(): void;
+    getSwapResult(): SwapResult | undefined;
+    setSwapResult(value?: SwapResult): void;
+
+
+    hasRemainingOrder(): boolean;
+    clearRemainingOrder(): void;
+    getRemainingOrder(): Order | undefined;
+    setRemainingOrder(value?: Order): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): PlaceOrderEvent.AsObject;
+    static toObject(includeInstance: boolean, msg: PlaceOrderEvent): PlaceOrderEvent.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: PlaceOrderEvent, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): PlaceOrderEvent;
+    static deserializeBinaryFromReader(message: PlaceOrderEvent, reader: jspb.BinaryReader): PlaceOrderEvent;
+}
+
+export namespace PlaceOrderEvent {
+    export type AsObject = {
+        internalMatch?: Order.AsObject,
+        swapResult?: SwapResult.AsObject,
+        remainingOrder?: Order.AsObject,
+    }
+}
+
 export class RaidenInfo extends jspb.Message { 
     getError(): string;
     setError(value: string): void;

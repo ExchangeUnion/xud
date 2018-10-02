@@ -49,7 +49,7 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
 
   if (argv.stream) {
     const subscription = loadXudClient(argv).placeOrder(request);
-    subscription.on('data', (response: xudrpc.PlaceOrderResponse) => {
+    subscription.on('data', (response: xudrpc.PlaceOrderEvent) => {
       console.log(JSON.stringify(response.toObject(), undefined, 2));
     });
   } else {

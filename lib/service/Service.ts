@@ -9,7 +9,7 @@ import { SwapClients, OrderSide, SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
-import { PlaceOrderResult } from '../types/orderBook';
+import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
@@ -287,7 +287,7 @@ class Service extends EventEmitter {
    */
   public placeOrder = async (
     args: { pairId: string, price: number, quantity: number, orderId: string, side: number },
-    callback?: (order: PlaceOrderResult) => void,
+    callback?: (e: PlaceOrderEvent) => void,
   ) => {
     const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
@@ -302,15 +302,7 @@ class Service extends EventEmitter {
       localId: orderId,
     };
 
-    let ee;
-    if (callback) {
-      ee = new EventEmitter();
-      ee.on('step', (result: PlaceOrderResult) => {
-        callback(result);
-      });
-    }
-
-    return price > 0 ? await this.orderBook.addLimitOrder(order, ee) : await this.orderBook.addMarketOrder(order, ee);
+    return price > 0 ? await this.orderBook.addLimitOrder(order, callback) : await this.orderBook.addMarketOrder(order, callback);
   }
 
   /** Removes a currency. */
