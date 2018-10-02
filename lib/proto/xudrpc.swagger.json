@@ -278,33 +278,6 @@
         ]
       }
     },
-    "/v1/removeban": {
-      "post": {
-        "summary": "Remove ban from XU node manually and connect to it.",
-        "operationId": "RemoveBan",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcRemoveBanResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcRemoveBanRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/removecurrency": {
       "post": {
         "summary": "Remove a currency.",
@@ -442,6 +415,33 @@
             }
           }
         },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/unban": {
+      "post": {
+        "summary": "Remove ban from XU node manually and connect to it.",
+        "operationId": "UnBan",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcUnBanResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcUnBanRequest"
+            }
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -915,17 +915,6 @@
         }
       }
     },
-    "xudrpcRemoveBanRequest": {
-      "type": "object",
-      "properties": {
-        "node_pub_key": {
-          "type": "string"
-        }
-      }
-    },
-    "xudrpcRemoveBanResponse": {
-      "type": "object"
-    },
     "xudrpcRemoveCurrencyRequest": {
       "type": "object",
       "properties": {
@@ -1006,6 +995,17 @@
           "title": "Our role in the swap, either MAKER or TAKER"
         }
       }
+    },
+    "xudrpcUnBanRequest": {
+      "type": "object",
+      "properties": {
+        "node_pub_key": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcUnBanResponse": {
+      "type": "object"
     }
   }
 }

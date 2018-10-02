@@ -353,7 +353,7 @@ class Pool extends EventEmitter {
     }
   }
 
-  public removeNodeBan = async (nodePubKey: string): Promise<void> => {
+  public unBan = async (nodePubKey: string): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
 

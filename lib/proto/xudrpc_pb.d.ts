@@ -287,40 +287,40 @@ export namespace BanResponse {
     }
 }
 
-export class RemoveBanRequest extends jspb.Message { 
+export class UnBanRequest extends jspb.Message { 
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): RemoveBanRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: RemoveBanRequest): RemoveBanRequest.AsObject;
+    toObject(includeInstance?: boolean): UnBanRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: UnBanRequest): UnBanRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: RemoveBanRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): RemoveBanRequest;
-    static deserializeBinaryFromReader(message: RemoveBanRequest, reader: jspb.BinaryReader): RemoveBanRequest;
+    static serializeBinaryToWriter(message: UnBanRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnBanRequest;
+    static deserializeBinaryFromReader(message: UnBanRequest, reader: jspb.BinaryReader): UnBanRequest;
 }
 
-export namespace RemoveBanRequest {
+export namespace UnBanRequest {
     export type AsObject = {
         nodePubKey: string,
     }
 }
 
-export class RemoveBanResponse extends jspb.Message { 
+export class UnBanResponse extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): RemoveBanResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: RemoveBanResponse): RemoveBanResponse.AsObject;
+    toObject(includeInstance?: boolean): UnBanResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: UnBanResponse): UnBanResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: RemoveBanResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): RemoveBanResponse;
-    static deserializeBinaryFromReader(message: RemoveBanResponse, reader: jspb.BinaryReader): RemoveBanResponse;
+    static serializeBinaryToWriter(message: UnBanResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnBanResponse;
+    static deserializeBinaryFromReader(message: UnBanResponse, reader: jspb.BinaryReader): UnBanResponse;
 }
 
-export namespace RemoveBanResponse {
+export namespace UnBanResponse {
     export type AsObject = {
     }
 }

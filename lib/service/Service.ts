@@ -180,9 +180,9 @@ class Service extends EventEmitter {
   /*
    * Remove ban from XU node manually and connenct to it.
    */
-  public removeBan = async (args: { nodePubKey: string}) => {
+  public unBan = async (args: { nodePubKey: string}) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.removeNodeBan(args.nodePubKey);
+    await this.pool.unBan(args.nodePubKey);
   }
 
   /**

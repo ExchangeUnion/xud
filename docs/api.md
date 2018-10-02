@@ -38,8 +38,6 @@
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
     - [RaidenInfo](#xudrpc.RaidenInfo)
-    - [RemoveBanRequest](#xudrpc.RemoveBanRequest)
-    - [RemoveBanResponse](#xudrpc.RemoveBanResponse)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
     - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
@@ -52,6 +50,8 @@
     - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
     - [SwapResult](#xudrpc.SwapResult)
+    - [UnBanRequest](#xudrpc.UnBanRequest)
+    - [UnBanResponse](#xudrpc.UnBanResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
@@ -596,31 +596,6 @@
 
 
 
-<a name="xudrpc.RemoveBanRequest"></a>
-
-### RemoveBanRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.RemoveBanResponse"></a>
-
-### RemoveBanResponse
-
-
-
-
-
-
-
 <a name="xudrpc.RemoveCurrencyRequest"></a>
 
 ### RemoveCurrencyRequest
@@ -767,6 +742,31 @@
 
 
 
+
+<a name="xudrpc.UnBanRequest"></a>
+
+### UnBanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_pub_key | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.UnBanResponse"></a>
+
+### UnBanResponse
+
+
+
+
+
+
  
 
 
@@ -823,7 +823,7 @@
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Get the total balance available across all channels for a given currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Connect to an XU node. |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Ban a XU node manually and disconnect from it. |
-| RemoveBan | [RemoveBanRequest](#xudrpc.RemoveBanRequest) | [RemoveBanResponse](#xudrpc.RemoveBanResponse) | Remove ban from XU node manually and connect to it. |
+| UnBan | [UnBanRequest](#xudrpc.UnBanRequest) | [UnBanResponse](#xudrpc.UnBanResponse) | Remove ban from XU node manually and connect to it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |

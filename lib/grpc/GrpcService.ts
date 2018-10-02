@@ -171,12 +171,12 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.removeBan]]
+   * See [[Service.unBan]]
    */
-  public removeBan: grpc.handleUnaryCall<xudrpc.RemoveBanRequest, xudrpc.RemoveBanResponse> = async (call, callback) => {
+  public unBan: grpc.handleUnaryCall<xudrpc.UnBanRequest, xudrpc.UnBanResponse> = async (call, callback) => {
     try {
-      await this.service.removeBan(call.request.toObject());
-      const response = new xudrpc.RemoveBanResponse();
+      await this.service.unBan(call.request.toObject());
+      const response = new xudrpc.UnBanResponse();
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

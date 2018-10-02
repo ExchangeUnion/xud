@@ -1,8 +1,8 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
-import { RemoveBanRequest } from '../../proto/xudrpc_pb';
+import { UnBanRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'removeban <node_pub_key>';
+export const command = 'unban <node_pub_key>';
 
 export const describe = 'unban a xud node';
 
@@ -14,7 +14,7 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new RemoveBanRequest();
+  const request = new UnBanRequest();
   request.setNodePubKey(argv.node_pub_key);
-  loadXudClient(argv).removeBan(request, callback);
+  loadXudClient(argv).unBan(request, callback);
 };

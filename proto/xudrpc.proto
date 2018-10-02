@@ -73,9 +73,9 @@ service Xud {
   }
 
   /* Remove ban from XU node manually and connect to it. */
-  rpc RemoveBan(RemoveBanRequest) returns (RemoveBanResponse) {
+  rpc UnBan(UnBanRequest) returns (UnBanResponse) {
     option (google.api.http) = {
-      post: "/v1/removeban"
+      post: "/v1/unban"
       body: "*"
     };
   }
@@ -249,10 +249,10 @@ message BanRequest {
 }
 message BanResponse {}
 
-message RemoveBanRequest {
+message UnBanRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message RemoveBanResponse {}
+message UnBanResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {
