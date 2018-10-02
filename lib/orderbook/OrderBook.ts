@@ -14,7 +14,7 @@ import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
-import {PlaceOrderEvent, PlaceOrderResult} from '../types/orderBook';
+import { PlaceOrderEvent, PlaceOrderResult } from '../types/orderBook';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -208,7 +208,7 @@ class OrderBook extends EventEmitter {
     order: orders.StampedOwnOrder,
     discardRemaining = false,
     onUpdate?: (e: PlaceOrderEvent) => void,
-    maxTime?: number
+    maxTime?: number,
   ): Promise<PlaceOrderResult> => {
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
@@ -273,7 +273,7 @@ class OrderBook extends EventEmitter {
         try {
           const swapResult = await this.swaps.executeSwap(maker, taker);
           result.swapResults.push(swapResult);
-          onUpdate && onUpdate({ swapResult: swapResult });
+          onUpdate && onUpdate({ swapResult });
         } catch (err) {
           // we can either push to swapFailures, or reject in case of non-retry errors
           swapFailures.push(taker);
