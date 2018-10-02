@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
-import { deepMerge, isPlainObject } from './utils/utils';
+import { deepMerge } from './utils/utils';
 import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';

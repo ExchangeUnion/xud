@@ -1,3 +1,4 @@
+import path from 'path';
 import bootstrap from './bootstrap';
 import Logger from './Logger';
 import Config from './Config';
@@ -121,7 +122,13 @@ class Xud extends EventEmitter {
       // start rpc server last
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
-        const listening = this.rpcServer.listen(this.config.rpc.port, this.config.rpc.host);
+        const listening = this.rpcServer.listen(
+          this.config.rpc.port,
+          this.config.rpc.host,
+          path.join(this.config.xudir, 'tls.cert'),
+          path.join(this.config.xudir, 'tls.key'),
+        );
+
         if (!listening) {
           // if rpc should be enabled but fails to start, treat it as a fatal error
           this.logger.error('Could not start gRPC server, exiting...');
@@ -132,7 +139,12 @@ class Xud extends EventEmitter {
         if (!this.config.webproxy.disable) {
           this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
           try {
-            await this.grpcAPIProxy.listen(this.config.webproxy.port, this.config.rpc.port, this.config.rpc.host);
+            await this.grpcAPIProxy.listen(
+              this.config.webproxy.port,
+              this.config.rpc.port,
+              this.config.rpc.host,
+              path.join(this.config.xudir, 'tls.cert'),
+            );
           } catch (err) {
             this.logger.error('Could not start gRPC web proxy server', err);
           }

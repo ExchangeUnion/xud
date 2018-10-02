@@ -1,6 +1,6 @@
-import { callback, loadXudClient } from './command';
 import { Arguments, Argv } from 'yargs';
-import * as xudrpc from '../proto/xudrpc_pb';
+import { callback, loadXudClient } from './command';
+import { PlaceOrderRequest, PlaceOrderEvent, OrderSide } from '../proto/xudrpc_pb';
 
 export const orderBuilder = (argv: Argv, command: string) => argv
   .option('quantity', {
@@ -28,13 +28,13 @@ export const orderBuilder = (argv: Argv, command: string) => argv
   .example(`$0 ${command} 10 ZRX/GNT market`, `place a market order to ${command} 10 ZRX for GNT`);
 
 export const orderHandler = (argv: Arguments, isSell = false) => {
-  const request = new xudrpc.PlaceOrderRequest();
+  const request = new PlaceOrderRequest();
 
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
 
   request.setQuantity(argv.quantity);
-  request.setSide(isSell ? xudrpc.OrderSide.SELL : xudrpc.OrderSide.BUY);
+  request.setSide(isSell ? OrderSide.SELL : OrderSide.BUY);
   request.setPairId(argv.pair_id.toUpperCase());
 
   if (!isNaN(numericPrice)) {
@@ -49,7 +49,7 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
 
   if (argv.stream) {
     const subscription = loadXudClient(argv).placeOrder(request);
-    subscription.on('data', (response: xudrpc.PlaceOrderEvent) => {
+    subscription.on('data', (response: PlaceOrderEvent) => {
       console.log(JSON.stringify(response.toObject(), undefined, 2));
     });
   } else {

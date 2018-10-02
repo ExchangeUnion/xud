@@ -19,6 +19,8 @@ type PeerInfo = {
   pairs?: string[],
   xudVersion?: string,
   secondsConnected: number,
+  lndbtcPubKey?: string;
+  lndltcPubKey?: string;
 };
 
 interface Peer {
@@ -89,6 +91,8 @@ class Peer extends EventEmitter {
       pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
       xudVersion: this.handshakeState ? this.handshakeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
+      lndbtcPubKey: this.getLndPubKey('BTC'),
+      lndltcPubKey: this.getLndPubKey('LTC'),
     };
   }
 
