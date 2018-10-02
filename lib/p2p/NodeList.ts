@@ -58,7 +58,7 @@ class NodeList extends EventEmitter {
    * Remove ban from node by nodePubKey.
    * @returns true if ban was removed, false otherwise
    */
-  public removeBan = async (nodePubKey: string): Promise<boolean> => {
+  public unBan = async (nodePubKey: string): Promise<boolean> => {
     return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   }
 
