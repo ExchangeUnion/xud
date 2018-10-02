@@ -287,6 +287,44 @@ export namespace BanResponse {
     }
 }
 
+export class RemoveBanRequest extends jspb.Message { 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RemoveBanRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveBanRequest): RemoveBanRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RemoveBanRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveBanRequest;
+    static deserializeBinaryFromReader(message: RemoveBanRequest, reader: jspb.BinaryReader): RemoveBanRequest;
+}
+
+export namespace RemoveBanRequest {
+    export type AsObject = {
+        nodePubKey: string,
+    }
+}
+
+export class RemoveBanResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RemoveBanResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveBanResponse): RemoveBanResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RemoveBanResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveBanResponse;
+    static deserializeBinaryFromReader(message: RemoveBanResponse, reader: jspb.BinaryReader): RemoveBanResponse;
+}
+
+export namespace RemoveBanResponse {
+    export type AsObject = {
+    }
+}
+
 export class GetInfoRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;

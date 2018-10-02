@@ -177,6 +177,14 @@ class Service extends EventEmitter {
     await this.pool.banNode(args.nodePubKey);
   }
 
+  /*
+   * Remove ban from XU node manually and connenct to it.
+   */
+  public removeBan = async (args: { nodePubKey: string}) => {
+    argChecks.HAS_NODE_PUB_KEY(args);
+    await this.pool.removeNodeBan(args.nodePubKey);
+  }
+
   /**
    * Get general information about this Exchange Union node.
    */

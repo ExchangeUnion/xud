@@ -12,6 +12,8 @@ const errorCodes = {
   CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
   COULD_NOT_CONNECT: codesPrefix.concat('.7'),
   NODE_UNKNOWN: codesPrefix.concat('.8'),
+  NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
+  NODE_NOT_BANNED: codesPrefix.concat('.10'),
 };
 
 const errors = {

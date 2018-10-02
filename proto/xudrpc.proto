@@ -71,6 +71,14 @@ service Xud {
       body: "*"
     };
   }
+
+  /* Remove ban from XU node manually and connect to it. */
+  rpc RemoveBan(RemoveBanRequest) returns (RemoveBanResponse) {
+    option (google.api.http) = {
+      post: "/v1/removeban"
+      body: "*"
+    };
+  }
   
   /* Get general information about this Exchange Union node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
@@ -240,6 +248,11 @@ message BanRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message BanResponse {}
+
+message RemoveBanRequest {
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message RemoveBanResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {

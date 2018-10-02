@@ -54,6 +54,14 @@ class NodeList extends EventEmitter {
     return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
   }
 
+  /**
+   * Remove ban from node by nodePubKey.
+   * @returns true if ban was removed, false otherwise
+   */
+  public removeBan = async (nodePubKey: string): Promise<boolean> => {
+    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+  }
+
   public isBanned = (nodePubKey: string): boolean => {
     const node = this.nodes.get(nodePubKey);
     return node ? node.banned : false;
@@ -130,6 +138,7 @@ class NodeList extends EventEmitter {
         promises.push(this.setBanStatus(node, true));
         this.emit('node.ban', nodePubKey);
       } else if (node.banned) {
+        console.log('HERE');
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));

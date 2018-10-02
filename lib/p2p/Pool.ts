@@ -341,11 +341,31 @@ class Pool extends EventEmitter {
   }
 
   public banNode = async (nodePubKey: string): Promise<void> => {
-    const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+    if (this.nodes.isBanned(nodePubKey)) {
+      this.logger.error(`node ${nodePubKey} has allredy been banned`);
+      return;
 
-    if (!banned) {
-      throw errors.NODE_UNKNOWN(nodePubKey);
+    } else {
+      const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+
+      if (!banned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
     }
+  }
+
+  public removeNodeBan = async (nodePubKey: string): Promise<void> => {
+    if (this.nodes.isBanned(nodePubKey)) {
+      const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+
+      if (!unbanned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+    } else {
+      this.logger.error(`node ${nodePubKey} has not been banned`);
+      return;
+    }
+
   }
 
   public sendToPeer = (nodePubKey: string, packet: Packet) => {

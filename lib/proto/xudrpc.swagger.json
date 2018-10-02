@@ -278,6 +278,33 @@
         ]
       }
     },
+    "/v1/removeban": {
+      "post": {
+        "summary": "Remove ban from XU node manually and connect to it.",
+        "operationId": "RemoveBan",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveBanResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveBanRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/removecurrency": {
       "post": {
         "summary": "Remove a currency.",
@@ -887,6 +914,17 @@
           "type": "string"
         }
       }
+    },
+    "xudrpcRemoveBanRequest": {
+      "type": "object",
+      "properties": {
+        "node_pub_key": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcRemoveBanResponse": {
+      "type": "object"
     },
     "xudrpcRemoveCurrencyRequest": {
       "type": "object",
