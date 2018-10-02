@@ -192,7 +192,6 @@ class Swaps extends EventEmitter {
    * @returns A promise that is resolved once the swap is completed, or rejects otherwise
    */
   public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
-    // TODO: apply timeout as well, after implementing an interrupt signal to the swap procedure
     return new Promise((resolve, reject) => {
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
@@ -216,6 +215,7 @@ class Swaps extends EventEmitter {
       const r_hash = this.beginSwap(maker, taker);
       if (!r_hash) {
         reject();
+        return;
       }
 
       this.on('swap.paid', onPaid);
