@@ -122,7 +122,7 @@ class Service extends EventEmitter {
   public channelBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
-    const getBalance = (currency: string) => {
+    const getBalance = async (currency: string) => {
       let cmdLnd: LndClient;
       switch (currency.toUpperCase()) {
         case 'BTC':
@@ -136,7 +136,8 @@ class Service extends EventEmitter {
           return { balance: 0, pendingOpenBalance: 0 };
       }
 
-      return cmdLnd.channelBalance();
+      const channelBalance = await cmdLnd.channelBalance();
+      return channelBalance.toObject();
     };
 
     if (currency) {
