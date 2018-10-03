@@ -110,7 +110,7 @@ class Pool extends EventEmitter {
       await this.listen();
       this.bindServer();
 
-      if (this.config.detectExternalIp === true) {
+      if (this.config.detectExternalIp) {
         await this.detectExternalIPAddress();
       }
     }
@@ -507,7 +507,7 @@ class Pool extends EventEmitter {
 
       // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-      if (this.config.discover === true) {
+      if (this.config.discover) {
         // request peer's known nodes if only p2p.discover option is true
         peer.sendPacket(new packets.GetNodesPacket());
       }
