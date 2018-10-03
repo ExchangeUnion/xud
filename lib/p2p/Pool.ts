@@ -17,10 +17,18 @@ import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
 type PoolConfig = {
+  /** Turn on/off automatically detecting and sharing current external ip address on startup. */
+  detectExternalIp: boolean;
+
+  /** If false, don't send GET_NODES when connecting, defaults to false. */
+  discover: boolean;
+
   /** Whether or not to listen for incoming connections from peers. */
   listen: boolean;
+
   /** Which port to listen on. If 0, a random unused port will be used. */
   port: number;
+
   /**
    * An array of IP addresses or host names which can be used to connect to this server.
    * It will be advertised with peers for them to try to connect to the server in the future.
@@ -68,9 +76,12 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
+  /** Points to config comes during construction. */
+  private config: PoolConfig;
 
   constructor(config: PoolConfig, private logger: Logger, models: Models) {
     super();
+    this.config = config;
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -96,26 +107,11 @@ class Pool extends EventEmitter {
     }
 
     if (this.server) {
-      let externalIp: string | undefined;
-      // Fetch the external IP if no address was specified by the user
-      if (this.addresses.length === 0) {
-        try {
-          externalIp = await getExternalIp();
-
-          this.logger.info(`retrieved external IP: ${externalIp}`);
-        } catch (error) {
-          this.logger.error(error.message);
-        }
-      }
-
       await this.listen();
       this.bindServer();
 
-      if (externalIp) {
-        this.addresses.push({
-          host: externalIp,
-          port: this.listenPort!,
-        });
+      if (this.config.detectExternalIp === true) {
+        await this.detectExternalIPAddress();
       }
     }
 
@@ -135,6 +131,21 @@ class Pool extends EventEmitter {
 
     this.verifyReachability();
     this.connected = true;
+  }
+
+  private detectExternalIPAddress = async () => {
+    let externalIp: string | undefined;
+    try {
+      externalIp = await getExternalIp();
+      this.logger.info(`retrieved external IP: ${externalIp}`);
+
+      this.addresses.push({
+        host: externalIp,
+        port: this.listenPort!,
+      });
+    } catch (error) {
+      this.logger.error(`error while retrieving external IP: ${error.message}`);
+    }
   }
 
   /**
@@ -494,9 +505,12 @@ class Pool extends EventEmitter {
       this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
       this.peers.add(peer);
 
-      // request peer's orders and known nodes
+      // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-      peer.sendPacket(new packets.GetNodesPacket());
+      if (this.config.discover === true) {
+        // request peer's known nodes if only p2p.discover option is true
+        peer.sendPacket(new packets.GetNodesPacket());
+      }
 
       // if outbound, update the `lastConnected` field for the address we're actually connected to
       const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
