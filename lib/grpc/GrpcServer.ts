@@ -24,7 +24,7 @@ class GrpcServer {
       channelBalance: grpcService.channelBalance,
       connect: grpcService.connect,
       ban: grpcService.ban,
-      unBan: grpcService.unBan,
+      unban: grpcService.unban,
       getInfo: grpcService.getInfo,
       getOrders: grpcService.getOrders,
       listCurrencies: grpcService.listCurrencies,

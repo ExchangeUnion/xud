@@ -4,7 +4,7 @@ import { UnBanRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'unban <node_pub_key>';
 
-export const describe = 'unban a xud node';
+export const describe = 'unban an xud node';
 
 export const builder = {
   node_pub_key: {

@@ -353,7 +353,7 @@ class Pool extends EventEmitter {
     }
   }
 
-  public unBan = async (nodePubKey: string): Promise<void> => {
+  public unban = async (nodePubKey: string): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
 
@@ -363,7 +363,6 @@ class Pool extends EventEmitter {
     } else {
       throw errors.NODE_NOT_BANNED(nodePubKey);
     }
-
   }
 
   public sendToPeer = (nodePubKey: string, packet: Packet) => {

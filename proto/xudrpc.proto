@@ -73,7 +73,7 @@ service Xud {
   }
 
   /* Remove ban from XU node manually and connect to it. */
-  rpc UnBan(UnBanRequest) returns (UnBanResponse) {
+  rpc Unban(UnbanRequest) returns (UnbanResponse) {
     option (google.api.http) = {
       post: "/v1/unban"
       body: "*"
@@ -248,11 +248,6 @@ message BanRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message BanResponse {}
-
-message UnBanRequest {
-  string node_pub_key = 1 [json_name = "node_pub_key"];
-}
-message UnBanResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {
@@ -452,3 +447,8 @@ message SwapResult {
   // Our role in the swap, either MAKER or TAKER
   Role role = 8 [json_name = "role"];
 }
+
+message UnbanRequest {
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message UnbanResponse {}
