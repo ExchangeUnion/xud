@@ -10,6 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
+import P2PRepository from '../p2p/P2PRepository';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -59,11 +60,13 @@ class GrpcService {
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
       case p2pErrorCodes.NODE_ALREADY_CONNECTED:
+      case p2pErrorCodes.NODE_ALREADY_BANNED:
       case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
       case orderErrorCodes.PAIR_ALREADY_EXISTS:
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case p2pErrorCodes.NODE_NOT_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
