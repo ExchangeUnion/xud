@@ -1184,6 +1184,9 @@ export class UnbanRequest extends jspb.Message {
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
 
+    getReconnect(): boolean;
+    setReconnect(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): UnbanRequest.AsObject;
@@ -1198,6 +1201,7 @@ export class UnbanRequest extends jspb.Message {
 export namespace UnbanRequest {
     export type AsObject = {
         nodePubKey: string,
+        reconnect: boolean,
     }
 }
 

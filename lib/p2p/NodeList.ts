@@ -19,9 +19,9 @@ const reputationEventWeight = {
 
 interface NodeList {
   on(event: 'node.ban', listener: (nodePubKey: string) => void): this;
-  on(event: 'node.unban', listener: (nodePubKey: UriParts) => void): this;
+  on(event: 'node.unban', listener: (nodePubKey: UriParts & {reconnect: boolean}) => void): this;
   emit(event: 'node.ban', nodePubKey: string): boolean;
-  emit(event: 'node.unban', nodePubKey: UriParts): boolean;
+  emit(event: 'node.unban', nodePubKey: UriParts & {reconnect: boolean}): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -145,15 +145,6 @@ class NodeList extends EventEmitter {
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
 
-        const uri = await this.repository.getNode(nodePubKey);
-        if (uri) {
-          const nodeUri: UriParts = {
-            nodePubKey,
-            host: uri.lastAddress.host,
-            port: uri.lastAddress.port,
-          };
-          this.emit('node.unban', nodeUri);
-        }
       }
 
       await Promise.all(promises);

@@ -752,6 +752,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | node_pub_key | [string](#string) |  |  |
+| reconnect | [bool](#bool) |  |  |
 
 
 

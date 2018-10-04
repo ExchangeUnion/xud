@@ -12,7 +12,7 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, UriParts } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
@@ -68,6 +68,7 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
+  private repository: P2PRepository;
 
   constructor(config: PoolConfig, private logger: Logger, models: Models) {
     super();
@@ -80,7 +81,8 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(models));
+    this.repository = new P2PRepository(models);
+    this.nodes = new NodeList(this.repository);
   }
 
   public get peerCount(): number {
@@ -177,8 +179,10 @@ class Pool extends EventEmitter {
 
     this.nodes.on('node.unban', async (nodeUri) => {
       this.logger.warn(`node ${nodeUri.nodePubKey} was unbanned`);
-      const { host, port, nodePubKey } = nodeUri;
-      await this.addOutbound({ host, port }, nodePubKey, false);
+      const { host, port, nodePubKey, reconnect } = nodeUri;
+      if (reconnect) {
+        await this.addOutbound({ host, port }, nodePubKey, false);
+      }
     });
   }
 
@@ -359,12 +363,24 @@ class Pool extends EventEmitter {
     }
   }
 
-  public unban = async (nodePubKey: string): Promise<void> => {
+  public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
+    const { nodePubKey, reconnect } = args;
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+      const uri = await this.repository.getNode(nodePubKey);
 
       if (!unbanned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+
+      if (uri) {
+        const nodeUri: UriParts & {reconnect: boolean} = {
+          reconnect,
+          nodePubKey,
+          host: uri.lastAddress.host,
+          port: uri.lastAddress.port,
+        };
+        this.nodes.emit('node.unban', nodeUri);
       }
     } else {
       throw errors.NODE_NOT_BANNED(nodePubKey);

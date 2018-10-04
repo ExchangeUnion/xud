@@ -450,5 +450,6 @@ message SwapResult {
 
 message UnbanRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
+  bool reconnect = 2  [json_name = "reconnect"];
 }
 message UnbanResponse {}
