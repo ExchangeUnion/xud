@@ -23,6 +23,12 @@ const { argv } = require('yargs')
       describe: 'Path to the log file',
       type: 'string',
     },
+    network: {
+      describe: 'The network the lnd clients are using',
+      type: 'string',
+      choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
+      alias: 'n',
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
