@@ -59,8 +59,8 @@ class Config {
 
     this.p2p = {
       listen: true,
-      discover: false,
-      detectExternalIp: true,
+      discover: true,
+      detectexternalip: true,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
     };

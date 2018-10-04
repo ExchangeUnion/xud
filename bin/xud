@@ -88,14 +88,14 @@ const { argv } = require('yargs')
       default: undefined,
     },
     'p2p.discover': {
-      describe: 'Do not send GET_NODES if false, when connecting to a peer',
+      describe: 'Automatically discover and connect to new nodes',
       type: 'boolean',
-      default: false,
+      default: undefined,
     },
-    'p2p.detectExternalIp': {
-      describe: 'Turn on/off discovering and sharing current external ip address on startup',
+    'p2p.detectexternalip': {
+      describe: 'Detect and advertise external ip address to peers',
       type: 'boolean',
-      default: true,
+      default: undefined,
     },
     'p2p.port': {
       describe: 'Port to listen for incoming peers',

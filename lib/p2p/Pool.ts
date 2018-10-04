@@ -17,8 +17,8 @@ import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
 type PoolConfig = {
-  /** Turn on/off automatically detecting and sharing current external ip address on startup. */
-  detectExternalIp: boolean;
+  /** Whether or not to automatically detect and share current external ip address on startup. */
+  detectexternalip: boolean;
 
   /** If false, don't send GET_NODES when connecting, defaults to false. */
   discover: boolean;
@@ -110,8 +110,8 @@ class Pool extends EventEmitter {
       await this.listen();
       this.bindServer();
 
-      if (this.config.detectExternalIp) {
-        await this.detectExternalIPAddress();
+      if (this.config.detectexternalip && this.addresses.length === 0) {
+        await this.detectExternalIpAddress();
       }
     }
 
@@ -133,7 +133,7 @@ class Pool extends EventEmitter {
     this.connected = true;
   }
 
-  private detectExternalIPAddress = async () => {
+  private detectExternalIpAddress = async () => {
     let externalIp: string | undefined;
     try {
       externalIp = await getExternalIp();
@@ -508,7 +508,7 @@ class Pool extends EventEmitter {
       // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
       if (this.config.discover) {
-        // request peer's known nodes if only p2p.discover option is true
+        // request peer's known nodes only if p2p.discover option is true
         peer.sendPacket(new packets.GetNodesPacket());
       }
 
