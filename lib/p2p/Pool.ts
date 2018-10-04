@@ -139,10 +139,13 @@ class Pool extends EventEmitter {
       externalIp = await getExternalIp();
       this.logger.info(`retrieved external IP: ${externalIp}`);
 
-      this.addresses.push({
-        host: externalIp,
-        port: this.listenPort!,
-      });
+      const externalIpExists = this.addresses.some((address) =>  { return address.host === externalIp; });
+      if (!externalIpExists) {
+        this.addresses.push({
+          host: externalIp,
+          port: this.listenPort!,
+        });
+      }
     } catch (error) {
       this.logger.error(`error while retrieving external IP: ${error.message}`);
     }
