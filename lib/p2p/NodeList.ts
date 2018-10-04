@@ -3,6 +3,7 @@ import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
 import { Address } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
+import { UriParts } from '../utils/utils';
 import { ReputationEvent } from '../types/enums';
 
 const reputationEventWeight = {
@@ -18,9 +19,9 @@ const reputationEventWeight = {
 
 interface NodeList {
   on(event: 'node.ban', listener: (nodePubKey: string) => void): this;
-  on(event: 'node.unban', listener: (nodePubKey: string) => void): this;
+  on(event: 'node.unban', listener: (nodePubKey: UriParts) => void): this;
   emit(event: 'node.ban', nodePubKey: string): boolean;
-  emit(event: 'node.unban', nodePubKey: string): boolean;
+  emit(event: 'node.unban', nodePubKey: UriParts): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -143,9 +144,16 @@ class NodeList extends EventEmitter {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
-        console.log('//////////////////////////////////////////////////////////////////');
-        console.log(await this.repository.getNode(nodePubKey));
-        this.emit('node.unban', nodePubKey);
+
+        const uri = await this.repository.getNode(nodePubKey);
+        if (uri) {
+          const nodeUri: UriParts = {
+            nodePubKey,
+            host: uri.lastAddress.host,
+            port: uri.lastAddress.port,
+          };
+          this.emit('node.unban', nodeUri);
+        }
       }
 
       await Promise.all(promises);

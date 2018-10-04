@@ -175,13 +175,10 @@ class Pool extends EventEmitter {
       }
     });
 
-    this.nodes.on('node.unban', async (nodePubKey) => {
-      this.logger.warn(`node ${nodePubKey} was unbanned`);
-
-      const peer = this.peers.get(nodePubKey);
-      if (peer) {
-        await peer.open(this.handshakeData, nodePubKey);
-      }
+    this.nodes.on('node.unban', async (nodeUri) => {
+      this.logger.warn(`node ${nodeUri.nodePubKey} was unbanned`);
+      const { host, port, nodePubKey } = nodeUri;
+      await this.addOutbound({ host, port }, nodePubKey, false);
     });
   }
 
