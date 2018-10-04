@@ -15,7 +15,12 @@ class Config {
   public loglevel: string;
   public logpath: string;
   public network: Network;
-  public rpc: { disable: boolean, host: string, port: number };
+  public rpc: {
+    disable: boolean,
+    host: string,
+    port: number,
+    disabletls: boolean,
+  };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
   public raiden: RaidenClientConfig;
@@ -66,6 +71,7 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 8886,
+      disabletls: false,
     };
     this.webproxy = {
       disable: true,

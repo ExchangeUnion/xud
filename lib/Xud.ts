@@ -127,6 +127,7 @@ class Xud extends EventEmitter {
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
           path.join(this.config.xudir, 'tls.key'),
+          this.config.rpc.disabletls,
         );
 
         if (!listening) {
@@ -144,6 +145,7 @@ class Xud extends EventEmitter {
               this.config.rpc.port,
               this.config.rpc.host,
               path.join(this.config.xudir, 'tls.cert'),
+              this.config.rpc.disabletls,
             );
           } catch (err) {
             this.logger.error('Could not start gRPC web proxy server', err);

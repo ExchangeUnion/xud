@@ -25,13 +25,14 @@ class GrpcWebProxyServer {
   /**
    * Start the server and begins listening on the specified proxy port.
    */
-  public listen = (proxyPort: number, grpcPort: number, grpcHost: string, tlsCertPath: string): Promise<void> => {
+  public listen = (proxyPort: number, grpcPort: number, grpcHost: string, tlsCertPath: string, disableTls = false): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
+    const credentials = disableTls ? grpc.credentials.createInsecure() : grpc.credentials.createSsl(fs.readFileSync(tlsCertPath));
     const gateway = grpcGateway(
       ['xudrpc.proto'],
       `${grpcHost}:${grpcPort}`,
-      grpc.credentials.createSsl(fs.readFileSync(tlsCertPath)),
+      credentials,
       protoPath,
     );
     this.app.use('/api/', gateway);
