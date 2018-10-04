@@ -174,6 +174,15 @@ class Pool extends EventEmitter {
         peer.close();
       }
     });
+
+    this.nodes.on('node.unban', async (nodePubKey) => {
+      this.logger.warn(`node ${nodePubKey} was unbanned`);
+
+      const peer = this.peers.get(nodePubKey);
+      if (peer) {
+        await peer.open(this.handshakeData, nodePubKey);
+      }
+    });
   }
 
   private verifyReachability = () => {

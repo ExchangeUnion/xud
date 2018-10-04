@@ -18,7 +18,9 @@ const reputationEventWeight = {
 
 interface NodeList {
   on(event: 'node.ban', listener: (nodePubKey: string) => void): this;
+  on(event: 'node.unban', listener: (nodePubKey: string) => void): this;
   emit(event: 'node.ban', nodePubKey: string): boolean;
+  emit(event: 'node.unban', nodePubKey: string): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -141,6 +143,9 @@ class NodeList extends EventEmitter {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
+        console.log('//////////////////////////////////////////////////////////////////');
+        console.log(await this.repository.getNode(nodePubKey));
+        this.emit('node.unban', nodePubKey);
       }
 
       await Promise.all(promises);
