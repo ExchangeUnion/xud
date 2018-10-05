@@ -2,12 +2,17 @@ import { SwapResult, StampedOwnOrder } from './orders';
 
 export type PlaceOrderResult = {
   internalMatches: StampedOwnOrder[];
-  swapResults: SwapResult[]
+  swapResults: SwapResult[];
   remainingOrder?: StampedOwnOrder;
 };
 
 export type PlaceOrderEvent = {
-  internalMatch?: StampedOwnOrder;
-  swapResult?: SwapResult
-  remainingOrder?: StampedOwnOrder;
+  case: PlaceOrderEventCase;
+  payload: StampedOwnOrder | SwapResult;
 };
+
+export enum PlaceOrderEventCase {
+  InternalMatch,
+  SwapResult,
+  RemainingOrder,
+}

@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { PlaceOrderResult, PlaceOrderEvent } from '../types/orderBook';
+import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -72,21 +72,19 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
 /**
  * Creates an xudrpc PlaceOrderEvent message from a [[PlaceOrderEvent]].
  */
-const createPlaceOrderEvent = (result: PlaceOrderEvent) => {
+const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
   const response = new xudrpc.PlaceOrderEvent();
-
-  if (result.internalMatch) {
-    response.setInternalMatch(createOrder(result.internalMatch));
+  switch (e.case) {
+    case PlaceOrderEventCase.InternalMatch:
+      response.setInternalMatch(createOrder(e.payload as StampedOrder));
+      break;
+    case PlaceOrderEventCase.SwapResult:
+      response.setSwapResult(createSwapResult(e.payload as SwapResult));
+      break;
+    case PlaceOrderEventCase.RemainingOrder:
+      response.setRemainingOrder(createOrder(e.payload as StampedOrder));
+      break;
   }
-
-  if (result.swapResult) {
-    response.setSwapResult(createSwapResult(result.swapResult));
-  }
-
-  if (result.remainingOrder) {
-    response.setRemainingOrder(createOrder(result.remainingOrder));
-  }
-
   return response;
 };
 

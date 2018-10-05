@@ -926,6 +926,8 @@ export class PlaceOrderEvent extends jspb.Message {
     setRemainingOrder(value?: Order): void;
 
 
+    getEventCase(): PlaceOrderEvent.EventCase;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): PlaceOrderEvent.AsObject;
     static toObject(includeInstance: boolean, msg: PlaceOrderEvent): PlaceOrderEvent.AsObject;
@@ -942,6 +944,18 @@ export namespace PlaceOrderEvent {
         swapResult?: SwapResult.AsObject,
         remainingOrder?: Order.AsObject,
     }
+
+    export enum EventCase {
+        EVENT_NOT_SET = 0,
+    
+    INTERNAL_MATCH = 1,
+
+    SWAP_RESULT = 2,
+
+    REMAINING_ORDER = 3,
+
+    }
+
 }
 
 export class RaidenInfo extends jspb.Message { 

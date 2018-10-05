@@ -14,7 +14,7 @@ import Swaps from '../swaps/Swaps';
 import { SwapDealRole } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
-import { PlaceOrderEvent, PlaceOrderResult } from '../types/orderBook';
+import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -261,7 +261,7 @@ class OrderBook extends EventEmitter {
         // internal match
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
-        onUpdate && onUpdate({ internalMatch: maker });
+        onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
         // non-internal match
         if (!this.swaps) {
@@ -273,7 +273,7 @@ class OrderBook extends EventEmitter {
         try {
           const swapResult = await this.swaps.executeSwap(maker, taker);
           result.swapResults.push(swapResult);
-          onUpdate && onUpdate({ swapResult });
+          onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
           // we can either push to swapFailures, or reject in case of non-retry errors
           swapFailures.push(taker);
@@ -302,7 +302,7 @@ class OrderBook extends EventEmitter {
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
 
       this.broadcastOrder(remainingOrder);
-      onUpdate && onUpdate({ remainingOrder });
+      onUpdate && onUpdate({ case: PlaceOrderEventCase.RemainingOrder, payload: remainingOrder });
     }
 
     return result;

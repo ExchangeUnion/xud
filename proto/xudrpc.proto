@@ -396,12 +396,14 @@ message PlaceOrderResponse {
 }
 
 message PlaceOrderEvent {
-  // An own orders (or portions thereof) that matched the newly placed order
-  Order internal_match = 1 [json_name = "internal_match"];
-  // A swap results of peer orders that matched the newly placed order
-  SwapResult swap_result = 2 [json_name = "swap_result"];
-  // The remaining portion of the order, after matches, that enters the order book
-  Order remaining_order = 3 [json_name= "remaining_order"];
+  oneof event {
+    // An own orders (or portions thereof) that matched the newly placed order
+    Order internal_match = 1 [json_name = "internal_match"];
+    // A swap results of peer orders that matched the newly placed order
+    SwapResult swap_result = 2 [json_name = "swap_result"];
+    // The remaining portion of the order, after matches, that enters the order book
+    Order remaining_order = 3 [json_name= "remaining_order"];
+  }
 }
 
 message RaidenInfo {
