@@ -375,7 +375,6 @@ class Pool extends EventEmitter {
         this.logger.info(`node ${nodePubKey} was unbanned`);
         if (reconnect) {
           await this.tryConnectNode(Node, false);
-          // await this.addOutbound({ host, port }, nodePubKey, false);
         }
       }
     } else {
