@@ -110,7 +110,7 @@ class Pool extends EventEmitter {
       await this.listen();
       this.bindServer();
 
-      if (this.config.detectexternalip && this.addresses.length === 0) {
+      if (this.config.detectexternalip) {
         await this.detectExternalIpAddress();
       }
     }
