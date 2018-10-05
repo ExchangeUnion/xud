@@ -86,19 +86,10 @@ class Swaps extends EventEmitter {
    * @param quantity the quantity of the taker's order
    * @param price the price specified by the maker order being filled
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuyOrder: boolean) => {
-    let takerAmount: number;
-    let makerAmount: number;
+  private static calculateSwapAmounts = (quantity: number, price: number) => {
     // TODO: use configurable amount of subunits/satoshis per token for each currency
-    if (isBuyOrder) {
-      // taker is buying the base currency
-      takerAmount = Math.round(quantity * 100000000);
-      makerAmount = Math.round(quantity * price * 100000000);
-    } else {
-      // taker is selling the base currency
-      takerAmount = Math.round(quantity * price * -100000000);
-      makerAmount = Math.round(quantity * -100000000);
-    }
+    const takerAmount = Math.round(quantity * price * 100000000);
+    const makerAmount = Math.round(quantity * 100000000);
 
     return { takerAmount, makerAmount };
   }
@@ -222,7 +213,7 @@ class Swaps extends EventEmitter {
         takerCltvDelta = this.lndLtcClient.cltvDelta;
         break;
     }
-    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, taker.isBuy);
+    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
     const preimage = randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
