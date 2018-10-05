@@ -185,6 +185,20 @@ class Swaps extends EventEmitter {
     this.deals.delete(deal.r_hash);
   }
 
+  public verifyExecution(maker: StampedPeerOrder, taker: StampedOwnOrder): boolean {
+    // we can make `executeSwap` call this method, instead of having it public
+    const supportedPairs = ['LTC/BTC']; // TODO: define by xud supported pairs
+
+    if (maker.pairId !== taker.pairId || !supportedPairs.includes(maker.pairId)) {
+      return false;
+    }
+
+    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
+    // TODO: what is the status of the order here? is it off the book? What if partial match
+
+    return true;
+  }
+
   /**
    * A promise wrapper for a swap procedure
    * @param maker the remote maker order we are filling
@@ -230,13 +244,9 @@ class Swaps extends EventEmitter {
    * @returns the r_hash for the swap
    */
   private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): string | undefined => {
+    // do we create another order which has the same orderId?
+
     const peer = this.pool.getPeer(maker.peerPubKey);
-
-    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: what is the status of the order here? is it off the book? What if partial match
-    //       do we create another order which has the same orderId?
-    // TODO: check that pairID is LTC/BTC or handleSwapResponse fails
-
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
 
     let takerCurrency: string;

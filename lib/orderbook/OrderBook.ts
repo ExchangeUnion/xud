@@ -264,7 +264,7 @@ class OrderBook extends EventEmitter {
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
         // non-internal match
-        if (!this.swaps) {
+        if (!this.swaps || !this.swaps.verifyExecution(maker, taker)) {
           rejectNonInternalMatch(taker, maker);
           continue;
         }
