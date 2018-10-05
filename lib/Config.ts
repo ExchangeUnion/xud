@@ -78,6 +78,7 @@ class Config {
       host: 'localhost',
       port: 10009,
       cltvdelta: 144,
+      nomacaroons: false,
     };
     this.lndltc = {
       disable: false,
@@ -86,6 +87,7 @@ class Config {
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
+      nomacaroons: false,
     };
     this.raiden = {
       disable: false,
