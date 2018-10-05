@@ -176,14 +176,6 @@ class Pool extends EventEmitter {
         peer.close();
       }
     });
-
-    this.nodes.on('node.unban', async (nodeUri) => {
-      this.logger.warn(`node ${nodeUri.nodePubKey} was unbanned`);
-      const { host, port, nodePubKey, reconnect } = nodeUri;
-      if (reconnect) {
-        await this.addOutbound({ host, port }, nodePubKey, false);
-      }
-    });
   }
 
   private verifyReachability = () => {
@@ -367,20 +359,24 @@ class Pool extends EventEmitter {
     const { nodePubKey, reconnect } = args;
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
-      const uri = await this.repository.getNode(nodePubKey);
 
       if (!unbanned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
 
-      if (uri) {
-        const nodeUri: UriParts & {reconnect: boolean} = {
-          reconnect,
+      const node = await this.repository.getNode(nodePubKey);
+      if (node) {
+        const Node: NodeConnectionInfo = {
           nodePubKey,
-          host: uri.lastAddress.host,
-          port: uri.lastAddress.port,
+          addresses: node.addresses,
+          lastAddress: node.lastAddress,
         };
-        this.nodes.emit('node.unban', nodeUri);
+
+        this.logger.info(`node ${nodePubKey} was unbanned`);
+        if (reconnect) {
+          await this.tryConnectNode(Node, false);
+          // await this.addOutbound({ host, port }, nodePubKey, false);
+        }
       }
     } else {
       throw errors.NODE_NOT_BANNED(nodePubKey);
