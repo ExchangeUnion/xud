@@ -7,8 +7,10 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
-import { StampedOwnOrder, StampedPeerOrder, SwapResult } from '../types/orders';
+import SwapRepository from './SwapRepository';
+import { StampedOwnOrder, StampedPeerOrder, SwapResult, SwapDeal as SwapDealDB } from '../types/orders';
 import assert from 'assert';
+import { Models } from '../db/DB';
 
 type SwapDeal = {
   /** The role of the local node in the swap. */
@@ -74,11 +76,13 @@ interface Swaps {
 class Swaps extends EventEmitter {
   /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
+  private hashs = new Set<string>();
+  private repository: SwapRepository;
 
-  constructor(private logger: Logger, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
+  constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
-
-    this.bind();
+    this.repository = new SwapRepository(this.models);
+    this.init();
   }
 
   /**
@@ -103,7 +107,16 @@ class Swaps extends EventEmitter {
     return { takerAmount, makerAmount };
   }
 
-  private bind() {
+  private init = async () => {
+    const promises: PromiseLike<any> = this.repository.getSwaps();
+    const result = await Promise.resolve(promises);
+    result.map((deal: SwapDealDB) => {
+      this.hashs.add(deal.r_hash);
+    });
+    this.bind();
+  }
+
+  private bind = async () => {
     this.pool.on('packet.swapRequest', this.handleSwapRequest);
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);

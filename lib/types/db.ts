@@ -1,6 +1,6 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
-import { Currency, Pair } from './orders';
+import { Currency, Pair, SwapDeal } from './orders';
 import { ReputationEvent } from './enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {
@@ -24,6 +24,14 @@ export type CurrencyAttributes = CurrencyFactory & {
 };
 
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
+
+export type SwapDealFactory = SwapDeal;
+
+export type SwapDealAttributes = SwapDealFactory & {
+  r_hash: string;
+};
+
+export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
 
 export type NodeFactory = NodeConnectionInfo;
 
