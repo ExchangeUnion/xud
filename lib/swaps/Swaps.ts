@@ -181,6 +181,28 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Saves deal to database and deletes from memory.
+   * @param deal The deal to persist.
+   */
+  private persistDeal = (deal: SwapDeal) => {
+    const { myRole, r_hash, state, makerAmount, makerCurrency, takerAmount, takerCurrency, peerPubKey } = deal;
+    if (this.hashs.has(deal.r_hash)) {
+      const persistDeal: SwapDealDB = {
+        myRole,
+        r_hash,
+        state,
+        makerAmount,
+        makerCurrency,
+        takerAmount,
+        takerCurrency,
+        peerPubKey,
+      };
+      this.repository.addSwapDeal(persistDeal);
+      this.removeDeal(deal);
+    }
+  }
+
+  /**
    * Gets a deal by its r_hash value.
    * @param r_hash The r_hash value of the deal to get.
    * @returns A deal if one is found, otherwise undefined.
@@ -668,6 +690,7 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealPhase(deal, SwapDealPhase.SwapCompleted);
+    this.persistDeal(deal);
   }
 
   private handleSwapError = (error: packets.SwapErrorPacket): void  => {
