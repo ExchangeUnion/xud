@@ -15,6 +15,7 @@ type LndClientConfig = {
   host: string;
   port: number;
   cltvdelta: number;
+  nomacaroons: boolean;
 };
 
 /** General information about the state of this lnd client. */
@@ -69,7 +70,7 @@ class LndClient extends BaseClient {
     super(logger);
 
     let shouldEnable = true;
-    const { disable, certpath, macaroonpath, cltvdelta } = config;
+    const { disable, certpath, macaroonpath, cltvdelta, nomacaroons } = config;
 
     if (disable) {
       shouldEnable = false;
@@ -78,7 +79,7 @@ class LndClient extends BaseClient {
       this.logger.error('could not find lnd certificate, is lnd installed?');
       shouldEnable = false;
     }
-    if (!fs.existsSync(macaroonpath)) {
+    if (!nomacaroons && !fs.existsSync(macaroonpath)) {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
       shouldEnable = false;
     }
@@ -90,10 +91,14 @@ class LndClient extends BaseClient {
       const lndCert = fs.readFileSync(certpath);
       this.credentials = grpc.credentials.createSsl(lndCert);
 
-      const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
-      this.meta.add('macaroon', adminMacaroon.toString('hex'));
-      // mark connection as disconnected
+      if (!nomacaroons) {
+        const adminMacaroon = fs.readFileSync(macaroonpath);
+        this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      } else {
+        this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
+      }
+      // set status as disconnected until we can verify the connection
       this.setStatus(ClientStatus.Disconnected);
     }
   }
