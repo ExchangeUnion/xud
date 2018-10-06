@@ -15,6 +15,7 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp, UriParts } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
+import { ReputationEventInstance } from '../types/db';
 
 type PoolConfig = {
   /** Whether or not to listen for incoming connections from peers. */
@@ -26,6 +27,11 @@ type PoolConfig = {
    * It will be advertised with peers for them to try to connect to the server in the future.
    */
   addresses: string[];
+};
+
+type NodeReputation = {
+  event: ReputationEvent;
+  createdAt: number;
 };
 
 interface Pool {
@@ -273,6 +279,29 @@ class Pool extends EventEmitter {
         await this.addOutbound(address, nodePubKey, false);
         return; // once we've successfully established an outbound connection, stop attempting new connections
       } catch (err) {}
+    }
+  }
+
+  /**
+   * Get nodes reputation events
+   * @param NodeInstance to get reputation events
+   * @return true if the specified node exists and the event was added, false otherwise
+   */
+  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputation[]> => {
+    const node = await this.repository.getNode(nodePubKey);
+    if (node) {
+      const events = await this.repository.getReputationEvents(node);
+      const reputationInfo: NodeReputation[] = [];
+      events.map((e) => {
+        reputationInfo.push({
+          event: e.event,
+          createdAt: e.createdAt,
+        });
+      });
+      return reputationInfo;
+    } else {
+      this.logger.warn(`node ${nodePubKey} not found`);
+      throw errors.NODE_UNKNOWN(nodePubKey);
     }
   }
 

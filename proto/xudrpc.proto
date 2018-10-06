@@ -86,7 +86,13 @@ service Xud {
       get: "/v1/info"
     };
   }
-  
+
+  /*Get node reputation. */
+  rpc GetNodeReputation(GetNodeReputationRequest) returns (GetNodeReputationResponse) {
+    option (google.api.http) = {
+      get: "/v1/reputation"
+    };
+  }
   /* Gets orders from the order book. This call returns the state of the order book at a given point
    * in time, although it is not guaranteed to still be vaild by the time a response is received
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
@@ -260,6 +266,26 @@ message GetInfoResponse {
   LndInfo lndbtc = 7 [json_name = "lndbtc"];
   LndInfo lndltc = 8 [json_name = "lndltc"];
   RaidenInfo raiden = 9 [json_name = "raiden"];
+}
+
+message GetNodeReputationRequest {
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message GetNodeReputationResponse {
+  repeated NodeReputation reputation = 1 [json_name = "reputation"];
+}
+
+message NodeReputation {
+  ReputationEvent event = 1 [json_name = "event"];
+  int32 created_at = 2 [json_name = "created_at"];
+}
+
+enum ReputationEvent {
+  ManualBan = 0;
+  ManualUnban = 1;
+  PacketTimeout = 2;
+  SwapFailure = 3;
+  SwapSuccess = 4;
 }
 
 message GetOrdersRequest {

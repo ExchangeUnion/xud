@@ -359,6 +359,31 @@
         ]
       }
     },
+    "/v1/reputation": {
+      "get": {
+        "summary": "Get node reputation.",
+        "operationId": "GetNodeReputation",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetNodeReputationResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "node_pub_key",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/shutdown": {
       "post": {
         "summary": "Begin shutting down xud.",
@@ -592,6 +617,17 @@
         }
       }
     },
+    "xudrpcGetNodeReputationResponse": {
+      "type": "object",
+      "properties": {
+        "reputation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcNodeReputation"
+          }
+        }
+      }
+    },
     "xudrpcGetOrdersResponse": {
       "type": "object",
       "properties": {
@@ -686,6 +722,18 @@
         },
         "alias": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcNodeReputation": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/xudrpcReputationEvent"
+        },
+        "created_at": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -950,6 +998,17 @@
     },
     "xudrpcRemovePairResponse": {
       "type": "object"
+    },
+    "xudrpcReputationEvent": {
+      "type": "string",
+      "enum": [
+        "ManualBan",
+        "ManualUnban",
+        "PacketTimeout",
+        "SwapFailure",
+        "SwapSuccess"
+      ],
+      "default": "ManualBan"
     },
     "xudrpcShutdownRequest": {
       "type": "object"

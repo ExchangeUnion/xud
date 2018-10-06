@@ -240,6 +240,27 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.getNodeReputation]]
+   */
+  public getNodeReputation: grpc.handleUnaryCall<xudrpc.GetNodeReputationRequest, xudrpc.GetNodeReputationResponse> = async (call, callback) => {
+    try {
+      const events = await this.service.getNodeReputation(call.request.toObject());
+      const response = new xudrpc.GetNodeReputationResponse();
+      const reputationEvents: xudrpc.NodeReputation[] = [];
+      events.map((e) => {
+        const event = new xudrpc.NodeReputation();
+        event.setEvent(e.event);
+        event.setCreatedAt(e.createdAt);
+        reputationEvents.push(event);
+      });
+      response.setReputationList(reputationEvents);
+      callback(null, response);
+    } catch (error) {
+      callback(this.getGrpcError(error), null);
+    }
+  }
+
+  /**
    * See [[Service.getOrders]]
    */
   public getOrders: grpc.handleUnaryCall<xudrpc.GetOrdersRequest, xudrpc.GetOrdersResponse> = (call, callback) => {
