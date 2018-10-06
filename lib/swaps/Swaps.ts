@@ -82,7 +82,7 @@ class Swaps extends EventEmitter {
   constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
     this.repository = new SwapRepository(this.models);
-    this.init();
+
   }
 
   /**
@@ -107,7 +107,7 @@ class Swaps extends EventEmitter {
     return { takerAmount, makerAmount };
   }
 
-  private init = async () => {
+  public init = async () => {
     const promises: PromiseLike<any> = this.repository.getSwaps();
     const result = await Promise.resolve(promises);
     result.map((deal: SwapDealDB) => {
@@ -116,7 +116,7 @@ class Swaps extends EventEmitter {
     this.bind();
   }
 
-  private bind = async () => {
+  private bind = () => {
     this.pool.on('packet.swapRequest', this.handleSwapRequest);
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);

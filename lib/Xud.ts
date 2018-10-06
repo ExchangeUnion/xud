@@ -91,6 +91,7 @@ class Xud extends EventEmitter {
       this.pool = new Pool(this.config.p2p, loggers.p2p, this.db.models);
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.lndbtcClient, this.lndltcClient);
+      await this.swaps.init();
 
       this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.pool, this.swaps);
       initPromises.push(this.orderBook.init());
