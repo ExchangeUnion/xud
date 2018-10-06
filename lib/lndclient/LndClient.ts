@@ -55,7 +55,6 @@ class LndClient extends BaseClient {
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
-  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
   private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
 
@@ -202,7 +201,6 @@ class LndClient extends BaseClient {
         if (getInfoResponse) {
           // mark connection as active
           this.setStatus(ClientStatus.ConnectionVerified);
-          this.subscribeInvoices();
           if (this.reconnectionTimer) {
             clearTimeout(this.reconnectionTimer);
             this.reconnectionTimer = undefined;
@@ -359,43 +357,10 @@ class LndClient extends BaseClient {
       });
   }
 
-  /**
-   * Subscribe to events for when invoices are settled.
-   */
-  private subscribeInvoices = (): void => {
-    if (this.isDisabled()) {
-      throw(errors.LND_IS_DISABLED);
-    }
-    if (this.isDisconnected()) {
-      throw(errors.LND_IS_DISCONNECTED);
-    }
-    this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
-      // TODO: handle invoice events
-      .on('data', (message: string) => {
-        this.logger.info(`invoice update: ${message}`);
-      })
-      .on('end', async () => {
-        this.logger.info('invoice ended');
-        this.setStatus(ClientStatus.Disconnected);
-        await this.verifyConnection();
-      })
-      .on('status', (status: string) => {
-        this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
-      })
-      .on('error', async (error) => {
-        this.logger.error(`invoice error: ${error}`);
-        this.setStatus(ClientStatus.Disconnected);
-        await this.verifyConnection();
-      });
-  }
-
   /** End all subscriptions and reconnection attempts. */
   public close = () => {
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
-    }
-    if (this.invoiceSubscription) {
-      this.invoiceSubscription.cancel();
     }
   }
 }
