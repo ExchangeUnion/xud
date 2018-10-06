@@ -12,6 +12,8 @@ const errorCodes = {
   CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
   COULD_NOT_CONNECT: codesPrefix.concat('.7'),
   NODE_UNKNOWN: codesPrefix.concat('.8'),
+  NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
+  NODE_NOT_BANNED: codesPrefix.concat('.10'),
 };
 
 const errors = {
@@ -46,6 +48,14 @@ const errors = {
   NODE_UNKNOWN: (nodePubKey: string) => ({
     message: `node ${nodePubKey} is unknown`,
     code: errorCodes.NODE_UNKNOWN,
+  }),
+  NODE_ALREADY_BANNED: (nodePubKey: string) => ({
+    message: `node ${nodePubKey} has allredy been banned`,
+    code: errorCodes.NODE_ALREADY_BANNED,
+  }),
+  NODE_NOT_BANNED: (nodePubKey: string) => ({
+    message: `node ${nodePubKey} has not been banned`,
+    code: errorCodes.NODE_NOT_BANNED,
   }),
 };
 
