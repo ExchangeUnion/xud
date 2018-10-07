@@ -1211,6 +1211,48 @@ export namespace SwapResult {
 
 }
 
+export class UnbanRequest extends jspb.Message { 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+    getReconnect(): boolean;
+    setReconnect(value: boolean): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): UnbanRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: UnbanRequest): UnbanRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: UnbanRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnbanRequest;
+    static deserializeBinaryFromReader(message: UnbanRequest, reader: jspb.BinaryReader): UnbanRequest;
+}
+
+export namespace UnbanRequest {
+    export type AsObject = {
+        nodePubKey: string,
+        reconnect: boolean,
+    }
+}
+
+export class UnbanResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): UnbanResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: UnbanResponse): UnbanResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: UnbanResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnbanResponse;
+    static deserializeBinaryFromReader(message: UnbanResponse, reader: jspb.BinaryReader): UnbanResponse;
+}
+
+export namespace UnbanResponse {
+    export type AsObject = {
+    }
+}
+
 export enum OrderSide {
     BUY = 0,
     SELL = 1,

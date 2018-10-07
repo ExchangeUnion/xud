@@ -13,6 +13,7 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
+import { Network } from './types/enums';
 
 const version: string = require('../package.json').version;
 
@@ -61,6 +62,8 @@ class Xud extends EventEmitter {
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid);
     this.logger = loggers.global;
     this.logger.info('config loaded');
+    console.log(JSON.stringify(Object.keys(Network)));
+    console.log(JSON.stringify(Object.values(Network)));
 
     try {
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption

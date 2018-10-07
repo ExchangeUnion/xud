@@ -12,7 +12,7 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, UriParts } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
@@ -68,6 +68,7 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
+  private repository: P2PRepository;
 
   constructor(config: PoolConfig, private logger: Logger, models: Models) {
     super();
@@ -80,7 +81,8 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(models));
+    this.repository = new P2PRepository(models);
+    this.nodes = new NodeList(this.repository);
   }
 
   public get peerCount(): number {
@@ -341,10 +343,42 @@ class Pool extends EventEmitter {
   }
 
   public banNode = async (nodePubKey: string): Promise<void> => {
-    const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+    if (this.nodes.isBanned(nodePubKey)) {
+      throw errors.NODE_ALREADY_BANNED(nodePubKey);
 
-    if (!banned) {
-      throw errors.NODE_UNKNOWN(nodePubKey);
+    } else {
+      const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+
+      if (!banned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+    }
+  }
+
+  public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
+    const { nodePubKey, reconnect } = args;
+    if (this.nodes.isBanned(nodePubKey)) {
+      const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+
+      if (!unbanned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+
+      const node = await this.repository.getNode(nodePubKey);
+      if (node) {
+        const Node: NodeConnectionInfo = {
+          nodePubKey,
+          addresses: node.addresses,
+          lastAddress: node.lastAddress,
+        };
+
+        this.logger.info(`node ${nodePubKey} was unbanned`);
+        if (reconnect) {
+          await this.tryConnectNode(Node, false);
+        }
+      }
+    } else {
+      throw errors.NODE_NOT_BANNED(nodePubKey);
     }
   }
 

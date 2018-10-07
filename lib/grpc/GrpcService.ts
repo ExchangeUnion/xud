@@ -11,6 +11,7 @@ import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
+import P2PRepository from '../p2p/P2PRepository';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -114,11 +115,13 @@ class GrpcService {
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
       case p2pErrorCodes.NODE_ALREADY_CONNECTED:
+      case p2pErrorCodes.NODE_ALREADY_BANNED:
       case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
       case orderErrorCodes.PAIR_ALREADY_EXISTS:
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case p2pErrorCodes.NODE_NOT_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
@@ -219,6 +222,19 @@ class GrpcService {
     try {
       await this.service.ban(call.request.toObject());
       const response = new xudrpc.BanResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.unban]]
+   */
+  public unban: grpc.handleUnaryCall<xudrpc.UnbanRequest, xudrpc.UnbanResponse> = async (call, callback) => {
+    try {
+      await this.service.unban(call.request.toObject());
+      const response = new xudrpc.UnbanResponse();
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

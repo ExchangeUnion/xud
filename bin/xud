@@ -23,6 +23,12 @@ const { argv } = require('yargs')
       describe: 'Path to the log file',
       type: 'string',
     },
+    network: {
+      describe: 'The network the lnd clients are using',
+      type: 'string',
+      choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
+      alias: 'n',
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
@@ -44,6 +50,11 @@ const { argv } = require('yargs')
     'lndbtc.macaroonpath': {
       describe: 'Path of the admin macaroon for lndBtc',
       type: 'string',
+    },
+    'lndbtc.nomacaroons': {
+      describe: 'Whether to disable macaroons for lndBtc',
+      type: 'boolean',
+      default: undefined,
     },
     'lndbtc.port': {
       describe: 'Port of the lndBtc gRPC interface',
@@ -69,6 +80,11 @@ const { argv } = require('yargs')
     'lndltc.macaroonpath': {
       describe: 'Path of the admin macaroon for lndLtc',
       type: 'string',
+    },
+    'lndltc.nomacaroons': {
+      describe: 'Whether to disable macaroons for lndLtc',
+      type: 'boolean',
+      default: undefined,
     },
     'lndltc.port': {
       describe: 'Port of the lndLtc gRPC interface',
