@@ -20,7 +20,7 @@ type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
   detectexternalip: boolean;
 
-  /** If false, don't send GET_NODES when connecting, defaults to false. */
+  /** If false, don't send GET_NODES when connecting, defaults to true. */
   discover: boolean;
 
   /** Whether or not to listen for incoming connections from peers. */
