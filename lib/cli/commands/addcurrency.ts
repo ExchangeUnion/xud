@@ -15,7 +15,7 @@ export const builder = {
   swap_client: {
     description: 'The payment channel network client for swaps',
     type: 'string',
-    choices: ['LND', 'RAIDEN'],
+    choices: ['Lnd', 'Raiden'],
   },
   decimal_places: {
     description: 'The places to the right of the decimal point of the smallest subunit (e.g. satoshi)',

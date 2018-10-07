@@ -419,6 +419,33 @@
           "Xud"
         ]
       }
+    },
+    "/v1/unban": {
+      "post": {
+        "summary": "Remove ban from XU node manually and connect to it.",
+        "operationId": "Unban",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcUnbanResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcUnbanRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
     }
   },
   "definitions": {
@@ -968,6 +995,21 @@
           "title": "Our role in the swap, either MAKER or TAKER"
         }
       }
+    },
+    "xudrpcUnbanRequest": {
+      "type": "object",
+      "properties": {
+        "node_pub_key": {
+          "type": "string"
+        },
+        "reconnect": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "xudrpcUnbanResponse": {
+      "type": "object"
     }
   }
 }

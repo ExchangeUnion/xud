@@ -3,6 +3,7 @@ import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
 import { Address } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
+import { UriParts } from '../utils/utils';
 import { ReputationEvent } from '../types/enums';
 
 const reputationEventWeight = {
@@ -52,6 +53,14 @@ class NodeList extends EventEmitter {
    */
   public ban = async (nodePubKey: string): Promise<boolean> => {
     return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+  }
+
+  /**
+   * Remove ban from node by nodePubKey.
+   * @returns true if ban was removed, false otherwise
+   */
+  public unBan = async (nodePubKey: string): Promise<boolean> => {
+    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   }
 
   public isBanned = (nodePubKey: string): boolean => {
