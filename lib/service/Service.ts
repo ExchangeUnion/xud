@@ -343,6 +343,7 @@ class Service extends EventEmitter {
    * Subscribe to completed swaps that are initiated by a remote peer.
    */
   public subscribeSwaps = async (callback: (swapResult: SwapResult) => void) => {
+    // TODO: use `ownOrder.swapped` order book event instead
     this.swaps.on('swap.paid', (swapResult) => {
       if (swapResult.role === SwapDealRole.Maker) {
         // only alert client for maker matches, taker matches are handled via placeOrder

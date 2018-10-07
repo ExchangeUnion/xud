@@ -21,11 +21,11 @@ interface OrderBook {
   on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
   /** Adds a listener to be called when all or part of a remote order was invalidated and removed */
   on(event: 'peerOrder.invalidation', listener: (order: orders.OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a remote order was filled and removed */
+  /** Adds a listener to be called when all or part of a remote order was filled by an own order and removed */
   on(event: 'peerOrder.filled', listener: (order: orders.OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a local order was swapped and removed, after it was filled and executed remotely */
   on(event: 'ownOrder.swapped', listener: (order: orders.OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a local order was filled and removed */
+  /** Adds a listener to be called when all or part of a local order was filled by an own order and removed */
   on(event: 'ownOrder.filled', listener: (order: orders.OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: orders.StampedOwnOrder) => void): this;
@@ -34,11 +34,11 @@ interface OrderBook {
   emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder): boolean;
   /** Notifies listeners that all or part of a remote order was invalidated and removed */
   emit(event: 'peerOrder.invalidation', order: orders.OrderPortion): boolean;
-  /** Notifies listeners that all or part of a remote order was filled and removed */
+  /** Notifies listeners that all or part of a remote order was filled by an own order and removed */
   emit(event: 'peerOrder.filled', order: orders.OrderPortion): boolean;
   /** Notifies listeners that all or part of a local order was swapped and removed, after it was filled and executed remotely */
   emit(event: 'ownOrder.swapped', order: orders.OrderPortion): boolean;
-  /** Notifies listeners that all or part of a local order was filled and removed */
+  /** Notifies listeners that all or part of a local order was filled by an own order and removed */
   emit(event: 'ownOrder.filled', order: orders.OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: orders.StampedOwnOrder): boolean;
@@ -263,13 +263,12 @@ class OrderBook extends EventEmitter {
         this.emit('ownOrder.filled', portion);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
-        // non-internal match
         if (!this.swaps || !this.swaps.verifyExecution(maker, taker)) {
           rejectNonInternalMatch(taker, maker);
           continue;
         }
 
-        this.emit('peerOrder.filled', portion);
+        this.emit('peerOrder.filled', portion); // make sure we emit this event on every case in which we don't re-add the maker order
         try {
           const swapResult = await this.swaps.executeSwap(maker, taker);
           result.swapResults.push(swapResult);
