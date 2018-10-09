@@ -23,9 +23,14 @@ export const loadXudClient = (argv: Arguments) => {
     }
   };
 
-  const certPath = argv.tlscertpath ? argv.tlscertpath : path.join(getXudDir(), 'tls.cert');
-  const cert = fs.readFileSync(certPath);
-  const credentials = grpc.credentials.createSsl(cert);
+  let credentials: grpc.ChannelCredentials;
+  if (argv.disabletls) {
+    credentials = grpc.credentials.createInsecure();
+  } else {
+    const certPath = argv.tlscertpath ? argv.tlscertpath : path.join(getXudDir(), 'tls.cert');
+    const cert = fs.readFileSync(certPath);
+    credentials = grpc.credentials.createSsl(cert);
+  }
 
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };

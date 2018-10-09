@@ -27,6 +27,11 @@ require('yargs')
       describe: 'Path to the TLS certificate of xud',
       type: 'string',
     },
+    disabletls: {
+      alias: 'd',
+      describe: 'Whether to disable TLS for gRPC calls',
+      type: 'boolean',
+    },
   })
   .commandDir('../dist/cli/commands/', { recurse: true })
   .demandCommand(1, '')

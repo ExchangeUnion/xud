@@ -136,6 +136,11 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'r',
     },
+    'rpc.usetls': {
+      describe: 'Whether to use TLS for gRPC calls',
+      type: 'boolean',
+      default: undefined,
+    },
     'webproxy.disable': {
       describe: 'Disable web proxy server',
       type: 'boolean',

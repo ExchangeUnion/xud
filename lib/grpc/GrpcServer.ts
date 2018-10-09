@@ -49,7 +49,7 @@ class GrpcServer {
    * Start the server and begin listening on the provided port
    * @returns true if the server started listening successfully, false otherwise
    */
-  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string): Promise<boolean> => {
+  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string, disableTls = false): Promise<boolean> => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     let certificate: Buffer;
@@ -67,7 +67,7 @@ class GrpcServer {
     }
 
     // tslint:disable-next-line:no-null-keyword
-    const credentials = grpc.ServerCredentials.createSsl(null,
+    const credentials = disableTls ? grpc.ServerCredentials.createInsecure() : grpc.ServerCredentials.createSsl(null,
       [{
         cert_chain: certificate,
         private_key: privateKey,
