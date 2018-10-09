@@ -188,17 +188,13 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
-    if (this.isConnected()) {
-      this.logger.warn(`not verifying connection to lnd, lnd is already connected`);
-      return;
-    }
     if (this.isDisconnected()) {
       this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
-        if (getInfoResponse) {
+        if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
           this.setStatus(ClientStatus.ConnectionVerified);
           if (this.reconnectionTimer) {
@@ -213,6 +209,10 @@ class LndClient extends BaseClient {
             this.identityPubKey = newPubKey;
           }
           this.emit('connectionVerified', newPubKey);
+        } else {
+          this.setStatus(ClientStatus.OutOfSync);
+          this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
         }
       } catch (err) {
         this.setStatus(ClientStatus.Disconnected);
