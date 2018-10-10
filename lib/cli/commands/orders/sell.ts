@@ -1,7 +1,7 @@
 import { orderBuilder, orderHandler } from '../../utils';
 import { Arguments, Argv } from 'yargs';
 
-export const command = 'sell <quantity> <pair_id> <price> [order_id]';
+export const command = 'sell <quantity> <pair_id> <price> [order_id] [stream]';
 
 export const describe = 'place a sell order';
 

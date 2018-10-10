@@ -107,6 +107,7 @@ class MatchingEngine {
     return this.addOrder(order, this.peerOrders);
   }
 
+  // TODO: remove method
   /**
    * Match an order against its opposite queue, and optionally add the unmatched portion of the order to the queue.
    * @param discardRemaining whether to discard any unmatched portion of the order rather than add it to the queue
@@ -121,7 +122,7 @@ class MatchingEngine {
     return matchingResult;
   }
 
-  private addOwnOrder = (order: StampedOwnOrder): boolean => {
+  public addOwnOrder = (order: StampedOwnOrder): boolean => {
     return this.addOrder(order, this.ownOrders);
   }
 
@@ -233,10 +234,10 @@ class MatchingEngine {
   }
 
   /**
-   * Match an order against its opposite queue.
+   * Match an order against its opposite queue. Matched maker orders will be removed from the repository
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
-  private match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
+  public match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
     const matches: matchingEngine.OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: StampedOwnOrder | undefined = { ...takerOrder };
@@ -277,7 +278,7 @@ class MatchingEngine {
           remainingOrder = undefined;
         } else if (makerOrder.quantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split
           const splitOrder = MatchingEngine.splitOrderByQuantity(remainingOrder, matchingQuantity);
-          matches.push({ maker: makerOrder, taker: splitOrder.matched });
+          matches.push({ maker: makerOrder, taker: splitOrder.matched as StampedOwnOrder });
           remainingOrder = splitOrder.remaining as StampedOwnOrder;
         } else {
           assert(false, 'matchingQuantity should not be lower than both orders quantity values');

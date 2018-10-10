@@ -5,6 +5,7 @@ enum ClientStatus {
   Disabled,
   Disconnected,
   ConnectionVerified,
+  OutOfSync,
 }
 
 /**
@@ -17,9 +18,9 @@ abstract class BaseClient extends EventEmitter {
     super();
   }
 
-  protected setStatus(val: ClientStatus): void {
-    this.logger.info(`${this.constructor.name} status: ${ClientStatus[val]}`);
-    this.status = val;
+  protected setStatus(status: ClientStatus): void {
+    this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
+    this.status = status;
   }
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;

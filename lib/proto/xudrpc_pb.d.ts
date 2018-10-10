@@ -826,37 +826,6 @@ export namespace Orders {
     }
 }
 
-export class OrderMatch extends jspb.Message { 
-
-    hasMaker(): boolean;
-    clearMaker(): void;
-    getMaker(): Order | undefined;
-    setMaker(value?: Order): void;
-
-
-    hasTaker(): boolean;
-    clearTaker(): void;
-    getTaker(): Order | undefined;
-    setTaker(value?: Order): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): OrderMatch.AsObject;
-    static toObject(includeInstance: boolean, msg: OrderMatch): OrderMatch.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: OrderMatch, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): OrderMatch;
-    static deserializeBinaryFromReader(message: OrderMatch, reader: jspb.BinaryReader): OrderMatch;
-}
-
-export namespace OrderMatch {
-    export type AsObject = {
-        maker?: Order.AsObject,
-        taker?: Order.AsObject,
-    }
-}
-
 export class OrdersCount extends jspb.Message { 
     getPeer(): number;
     setPeer(value: number): void;
@@ -971,10 +940,15 @@ export namespace PlaceOrderRequest {
 }
 
 export class PlaceOrderResponse extends jspb.Message { 
-    clearMatchesList(): void;
-    getMatchesList(): Array<OrderMatch>;
-    setMatchesList(value: Array<OrderMatch>): void;
-    addMatches(value?: OrderMatch, index?: number): OrderMatch;
+    clearInternalMatchesList(): void;
+    getInternalMatchesList(): Array<Order>;
+    setInternalMatchesList(value: Array<Order>): void;
+    addInternalMatches(value?: Order, index?: number): Order;
+
+    clearSwapResultsList(): void;
+    getSwapResultsList(): Array<SwapResult>;
+    setSwapResultsList(value: Array<SwapResult>): void;
+    addSwapResults(value?: SwapResult, index?: number): SwapResult;
 
 
     hasRemainingOrder(): boolean;
@@ -995,9 +969,62 @@ export class PlaceOrderResponse extends jspb.Message {
 
 export namespace PlaceOrderResponse {
     export type AsObject = {
-        matchesList: Array<OrderMatch.AsObject>,
+        internalMatchesList: Array<Order.AsObject>,
+        swapResultsList: Array<SwapResult.AsObject>,
         remainingOrder?: Order.AsObject,
     }
+}
+
+export class PlaceOrderEvent extends jspb.Message { 
+
+    hasInternalMatch(): boolean;
+    clearInternalMatch(): void;
+    getInternalMatch(): Order | undefined;
+    setInternalMatch(value?: Order): void;
+
+
+    hasSwapResult(): boolean;
+    clearSwapResult(): void;
+    getSwapResult(): SwapResult | undefined;
+    setSwapResult(value?: SwapResult): void;
+
+
+    hasRemainingOrder(): boolean;
+    clearRemainingOrder(): void;
+    getRemainingOrder(): Order | undefined;
+    setRemainingOrder(value?: Order): void;
+
+
+    getEventCase(): PlaceOrderEvent.EventCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): PlaceOrderEvent.AsObject;
+    static toObject(includeInstance: boolean, msg: PlaceOrderEvent): PlaceOrderEvent.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: PlaceOrderEvent, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): PlaceOrderEvent;
+    static deserializeBinaryFromReader(message: PlaceOrderEvent, reader: jspb.BinaryReader): PlaceOrderEvent;
+}
+
+export namespace PlaceOrderEvent {
+    export type AsObject = {
+        internalMatch?: Order.AsObject,
+        swapResult?: SwapResult.AsObject,
+        remainingOrder?: Order.AsObject,
+    }
+
+    export enum EventCase {
+        EVENT_NOT_SET = 0,
+    
+    INTERNAL_MATCH = 1,
+
+    SWAP_RESULT = 2,
+
+    REMAINING_ORDER = 3,
+
+    }
+
 }
 
 export class RaidenInfo extends jspb.Message { 
@@ -1204,6 +1231,9 @@ export class SwapResult extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
     getRHash(): string;
     setRHash(value: string): void;
 
@@ -1235,6 +1265,7 @@ export namespace SwapResult {
         orderId: string,
         localId: string,
         pairId: string,
+        quantity: number,
         rHash: string,
         amountReceived: number,
         amountSent: number,
