@@ -11,10 +11,11 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapDealRole } from '../types/enums';
+import { SwapDealRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
+import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -80,6 +81,7 @@ class OrderBook extends EventEmitter {
       this.pool.on('packet.order', this.addPeerOrder);
       this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
       this.pool.on('packet.getOrders', this.sendOrders);
+      this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
     }
   }
@@ -117,10 +119,7 @@ class OrderBook extends EventEmitter {
    * Get lists of buy and sell orders of peers.
    */
   public getPeerOrders = (pairId: string) => {
-    const matchingEngine = this.matchingEngines.get(pairId);
-    if (!matchingEngine) {
-      throw errors.PAIR_DOES_NOT_EXIST(pairId);
-    }
+    const matchingEngine = this.getMatchingEngine(pairId);
 
     return matchingEngine.getPeerOrders();
   }
@@ -129,12 +128,33 @@ class OrderBook extends EventEmitter {
    * Get lists of this node's own buy and sell orders.
    */
   public getOwnOrders = (pairId: string) => {
+    const matchingEngine = this.getMatchingEngine(pairId);
+
+    return matchingEngine.getOwnOrders();
+  }
+
+  /** Get the matching engine for a given pairId, or throw an error if none exists. */
+  private getMatchingEngine = (pairId: string) => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
+    return matchingEngine;
+  }
 
-    return matchingEngine.getOwnOrders();
+  /**
+   * Gets an own order by order id and pair id.
+   * @returns The order matching parameters, or undefined if no order could be found.
+   */
+  private getOwnOrder = (orderId: string, pairId: string) => {
+    let order: orders.StampedOwnOrder | undefined;
+    try {
+      const matchingEngine = this.getMatchingEngine(pairId);
+      order = matchingEngine.ownOrders.buy.get(orderId) || matchingEngine.ownOrders.sell.get(orderId);
+    } catch (err) {
+      this.logger.debug(`tried to find order for unsupported pairId ${pairId}`);
+    }
+    return order;
   }
 
   public addPair = async (pair: Pair) => {
@@ -224,11 +244,7 @@ class OrderBook extends EventEmitter {
       });
     }
 
-    // fetch the current matchingEngine
-    const matchingEngine = this.matchingEngines.get(order.pairId);
-    if (!matchingEngine) {
-      throw errors.PAIR_DOES_NOT_EXIST(order.pairId);
-    }
+    const matchingEngine = this.getMatchingEngine(order.pairId);
 
     // perform match. maker orders will be removed from the repository
     const matchingResult = matchingEngine.match(order);
@@ -455,6 +471,52 @@ class OrderBook extends EventEmitter {
   private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
     const { createdAt, localId, ...outgoingOrder } = order;
     return outgoingOrder;
+  }
+
+  /**
+   * Handles a request from a peer to create a swap deal. Checks if the order for the requested swap
+   * is available and if a route exists to determine if the request should be accepted or rejected.
+   * Responds to the peer with a swap response packet containing either an accepted quantity or rejection reason.
+   */
+  private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer)  => {
+    assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
+    assert(this.swaps, 'swaps module is disabled');
+    const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+
+    const order = this.getOwnOrder(orderId, pairId);
+    if (order) {
+      const availableQuantity = order.hold ? order.quantity - order.hold : order.quantity;
+      // TODO: accept the smaller of the proposed quantity and the available quantity
+      if (availableQuantity >= proposedQuantity) {
+        // put accepted quantity on hold
+        // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
+        const quantityToAccept = proposedQuantity;
+
+        order.hold = order.hold ? order.hold + quantityToAccept : quantityToAccept;
+
+        // try to accept the deal
+        const orderToAccept = {
+          quantityToAccept,
+          localId: order.localId,
+          price: order.price,
+        };
+        const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
+        if (!dealAccepted) {
+          // release hold amount and reject swap
+          order.hold -= quantityToAccept;
+        }
+      } else {
+        peer.sendPacket(new SwapErrorPacket({
+          r_hash,
+          errorMessage: SwapFailureReason[SwapFailureReason.OrderUnavailable],
+        }, requestPacket.header.id));
+      }
+    } else {
+      peer.sendPacket(new SwapErrorPacket({
+        r_hash,
+        errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
+      }, requestPacket.header.id));
+    }
   }
 }
 
