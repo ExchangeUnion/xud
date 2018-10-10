@@ -184,18 +184,8 @@ class MatchingEngine {
     return removedOrders;
   }
 
-  /**
-   * Removes an own order by its global order id.
-   * @returns the removed order, or undefined if no order with the provided id could be found
-   */
-  public removeOwnOrder = (orderId: string): StampedOwnOrder | undefined => {
-    const order = this.ownOrders.buy.get(orderId) || this.ownOrders.sell.get(orderId);
-    if (!order) {
-      return;
-    }
-
+  public removeOwnOrder = (order: StampedOwnOrder) => {
     this.removeOrder(order, this.ownOrders);
-    return order;
   }
 
   private removePeerOrder = (order: StampedPeerOrder) => {

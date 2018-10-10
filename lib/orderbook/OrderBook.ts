@@ -91,10 +91,8 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', (swapResult) => {
         if (swapResult.role === SwapDealRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
-          // assume full order execution of an own order
-          this.removeOwnOrder(orderId, pairId, peerPubKey);
-          this.emit('ownOrder.swapped', { orderId, pairId, quantity }); // quantity might not reflect partial order execution yet
-          // TODO: handle partial order execution, updating existing order
+          this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+          this.emit('ownOrder.swapped', { orderId, pairId, quantity });
         }
       });
       // TODO: bind to other swap events
@@ -364,31 +362,50 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Attempts to remove a local order from the order book.
+   * Attempts to remove all or part of a local order from the order book.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
    * @returns true if an order was removed, otherwise false
    */
-  private removeOwnOrder = (orderId: string, pairId: string, takerPubKey?: string): boolean => {
+  private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string): boolean => {
     const matchingEngine = this.matchingEngines.get(pairId);
     if (!matchingEngine) {
-      this.logger.warn(`invalid pairId: ${pairId}`);
+      this.logger.error(`tried to remove own order with invalid pairId: ${pairId}`);
       return false;
     }
 
-    const removedOrder = matchingEngine.removeOwnOrder(orderId);
-    if (!removedOrder) {
-      this.logger.warn(`invalid orderId: ${pairId}`);
+    const orderToRemove = this.getOwnOrder(orderId, pairId);
+    if (!orderToRemove) {
+      this.logger.error(`tried to remove own order with invalid orderId: ${orderId}`);
       return false;
     }
 
-    this.localIdMap.delete(removedOrder.localId);
-    this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
+    const removeFullOrder = () => {
+      matchingEngine.removeOwnOrder(orderToRemove);
+      this.localIdMap.delete(orderToRemove.localId);
+      this.logger.debug(`order removed: ${orderId}`);
+    };
+
+    if (quantityToRemove) {
+      assert(quantityToRemove > 0, 'quantity to remove must be positive');
+      assert(quantityToRemove <= orderToRemove.quantity, 'quantity to remove cannot exceed order quantity');
+      if (quantityToRemove === orderToRemove.quantity) {
+        // full execution
+        removeFullOrder();
+      } else {
+        // partial execution
+        orderToRemove.quantity -= quantityToRemove;
+        this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
+      }
+    } else {
+      removeFullOrder();
+    }
 
     if (this.pool) {
       this.pool.broadcastOrderInvalidation({
         orderId,
         pairId,
-        quantity: removedOrder.quantity,
+        quantity: quantityToRemove || orderToRemove.quantity,
       }, takerPubKey);
     }
 

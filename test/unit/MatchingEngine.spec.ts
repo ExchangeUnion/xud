@@ -211,10 +211,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
     expect(matchingResult.matches).to.be.empty;
     expect(matchingResult.remainingOrder).to.not.be.undefined;
 
-    expect(engine.removeOwnOrder(uuidv1())).to.be.undefined;
-
-    const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder!.id);
-    expect(JSON.stringify(removedOrder)).to.equals(JSON.stringify(matchingResult.remainingOrder));
+    engine.removeOwnOrder(matchingResult.remainingOrder!);
     isEmpty(engine);
   });
 });
@@ -268,7 +265,7 @@ describe('MatchingEngine queues and lists integrity', () => {
     expect(engine.ownOrders.sell.size).to.equal(1);
     expect(engine.queues.sell.size).to.be.equal(1);
 
-    engine.removeOwnOrder(ownOrder.id);
+    engine.removeOwnOrder(ownOrder);
     isEmpty(engine);
   });
 
