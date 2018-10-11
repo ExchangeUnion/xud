@@ -91,10 +91,8 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', (swapResult) => {
         if (swapResult.role === SwapDealRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
-          // assume full order execution of an own order
-          this.removeOwnOrder(orderId, pairId, peerPubKey);
-          this.emit('ownOrder.swapped', { orderId, pairId, quantity }); // quantity might not reflect partial order execution yet
-          // TODO: handle partial order execution, updating existing order
+          this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+          this.emit('ownOrder.swapped', { orderId, pairId, quantity });
         }
       });
       // TODO: bind to other swap events
@@ -219,9 +217,9 @@ class OrderBook extends EventEmitter {
 
   public addMarketOrder = async (order: orders.OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.MAX_VALUE : 0 });
-    const result = await this.addOwnOrder(stampedOrder, true, onUpdate, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
-    delete result.remainingOrder;
-    return result;
+    const addResult = await this.addOwnOrder(stampedOrder, true, onUpdate, Date.now() + OrderBook.MAX_ADD_OWN_ORDER_ITERATIONS_TIME);
+    delete addResult.remainingOrder;
+    return addResult;
   }
 
   private addOwnOrder = async (
@@ -357,58 +355,57 @@ class OrderBook extends EventEmitter {
     const order = this.localIdMap.get(localId);
 
     if (!order) {
-      throw errors.ORDER_NOT_FOUND(localId);
+      throw errors.OWN_ORDER_NOT_FOUND(localId);
     }
 
     this.removeOwnOrder(order.orderId, order.pairId);
   }
 
   /**
-   * Attempts to remove a local order from the order book.
+   * Removes all or part of an own order from the order book and broadcasts an order invalidation packet.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
-   * @returns true if an order was removed, otherwise false
+   * @returns `true` if the order or portion thereof was removed, otherwise false
    */
-  private removeOwnOrder = (orderId: string, pairId: string, takerPubKey?: string): boolean => {
-    const matchingEngine = this.matchingEngines.get(pairId);
-    if (!matchingEngine) {
-      this.logger.warn(`invalid pairId: ${pairId}`);
+  private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string): boolean => {
+    const matchingEngine = this.getMatchingEngine(pairId);
+
+    try {
+      const removeResult = matchingEngine.removeOwnOrder(orderId, quantityToRemove);
+      if (removeResult.fullyRemoved) {
+        const localId = (removeResult.order).localId;
+        this.localIdMap.delete(localId);
+      }
+
+      if (this.pool) {
+        this.pool.broadcastOrderInvalidation({
+          orderId,
+          pairId,
+          quantity: removeResult.order.quantity,
+        }, takerPubKey);
+      }
+
+      return true;
+    } catch (err) {
+      this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
       return false;
     }
-
-    const removedOrder = matchingEngine.removeOwnOrder(orderId);
-    if (!removedOrder) {
-      this.logger.warn(`invalid orderId: ${pairId}`);
-      return false;
-    }
-
-    this.localIdMap.delete(removedOrder.localId);
-    this.logger.debug(`order removed: ${JSON.stringify(orderId)}`);
-
-    if (this.pool) {
-      this.pool.broadcastOrderInvalidation({
-        orderId,
-        pairId,
-        quantity: removedOrder.quantity,
-      }, takerPubKey);
-    }
-
-    return true;
   }
 
-  private removePeerOrder = (orderId: string, pairId: string, quantityToRemove?: number): orders.StampedPeerOrder | undefined => {
-    const matchingEngine = this.matchingEngines.get(pairId);
-    if (!matchingEngine) {
-      this.logger.warn(`incoming order invalidation: invalid pairId (${pairId})`);
-      return;
-    }
-    const removedOrder = matchingEngine.removePeerOrderQuantity(orderId, quantityToRemove);
-    if (!removedOrder) {
-      this.logger.warn(`incoming order invalidation: invalid orderId (${orderId})`);
-      return;
-    } else {
-      assert(removedOrder.quantity === quantityToRemove, 'order quantity must equal quantityToRemove');
-      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: removedOrder.quantity });
-      return removedOrder;
+  /**
+   * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
+   * @returns `true` if the order or portion thereof was removed, otherwise `false`
+   */
+  private removePeerOrder = (orderId: string, pairId: string, quantityToRemove?: number) => {
+    const matchingEngine = this.getMatchingEngine(pairId);
+    try {
+      const removeResult = matchingEngine.removePeerOrder(orderId, quantityToRemove);
+      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: removeResult.order.quantity });
+      return true;
+    } catch (err) {
+      this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
+      return false;
     }
   }
 
