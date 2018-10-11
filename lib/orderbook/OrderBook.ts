@@ -448,10 +448,10 @@ class OrderBook extends EventEmitter {
   /**
    * Create an outgoing order and broadcast it to all peers.
    */
-  private broadcastOrder =  (order: orders.StampedOwnOrder) => {
+  private broadcastOrder = (order: orders.StampedOwnOrder) => {
     if (this.pool) {
-      const outgoingOrder = this.createOutgoingOrder(order);
-      if (outgoingOrder) {
+      if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
+        const outgoingOrder = this.createOutgoingOrder(order);
         this.pool.broadcastOrder(outgoingOrder);
       }
     }

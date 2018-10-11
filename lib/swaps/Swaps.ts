@@ -103,21 +103,12 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Verifies that the order still exists on orderBook
+   * Checks if there exist active swap clients for both currencies in a given trading pair.
+   * @returns `true` if the pair has swap support, `false` otherwise
    */
-  // TODO: replace the dummy implementation with real order book integration
-  private isOrderOnBook = (pairId: string, orderId: string): boolean => {
-    this.logger.debug('checking order book for ' + pairId + ':' + orderId);
-    return true;
-  }
-
-  /**
-   * Verifies that the order still exists on orderBook
-   */
-  // TODO: replace the dummy implementation with real order book integration
-  private checkAndHoldAmount = (deal: SwapDeal): number => {
-    this.logger.debug('checking and holding amount for swap ' + deal.pairId + ':' + deal.orderId + ':' + deal.takerAmount);
-    return deal.takerAmount;
+  public isPairSupported = (pairId: string): boolean => {
+    // TODO: implement generic way of checking pair
+    return pairId === 'LTC/BTC' && this.lndBtcClient.isConnected() && this.lndLtcClient.isConnected();
   }
 
   /**
@@ -179,9 +170,7 @@ class Swaps extends EventEmitter {
 
   public verifyExecution(maker: StampedPeerOrder, taker: StampedOwnOrder): boolean {
     // we can make `executeSwap` call this method, instead of having it public
-    const supportedPairs = ['LTC/BTC']; // TODO: define by xud supported pairs
-
-    if (maker.pairId !== taker.pairId || !supportedPairs.includes(maker.pairId)) {
+    if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
       return false;
     }
 
