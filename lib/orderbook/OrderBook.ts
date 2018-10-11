@@ -275,6 +275,7 @@ class OrderBook extends EventEmitter {
       const portion: OrderPortion = { orderId: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (orders.isOwnOrder(maker)) {
         // internal match
+        portion.localId = maker.localId;
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
