@@ -1625,10 +1625,10 @@ message Invoice {
     The hex-encoded preimage (32 byte) which will allow settling an incoming
     HTLC payable to this preimage
     */
-    bytes rPreimage = 3 [json_name = "rPreimage"];
+    bytes r_preimage = 3 [json_name = "r_preimage"];
 
     /// The hash of the preimage
-    bytes rHash = 4 [json_name = "rHash"];
+    bytes r_hash = 4 [json_name = "r_hash"];
 
     /// The value of this invoice in satoshis
     int64 value = 5 [json_name = "value"];
@@ -1701,7 +1701,7 @@ message Invoice {
     int64 amt_paid = 18 [json_name = "amt_paid"];
 }
 message AddInvoiceResponse {
-    bytes rHash = 1 [json_name = "rHash"];
+    bytes r_hash = 1 [json_name = "r_hash"];
 
     /**
     A bare-bones invoice for a payment within the Lightning Network.  With the
@@ -1726,7 +1726,7 @@ message PaymentHash {
     string r_hash_str = 1 [json_name = "r_hash_str"];
 
     /// The payment hash of the invoice to be looked up.
-    bytes rHash = 2 [json_name = "rHash"];
+    bytes r_hash = 2 [json_name = "r_hash"];
 }
 
 message ListInvoiceRequest {

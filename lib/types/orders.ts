@@ -64,7 +64,7 @@ export type SwapResult = {
   quantity: number,
   amountReceived: number;
   amountSent: number;
-  rHash: string;
+  r_hash: string;
   peerPubKey: string;
   role: SwapRole;
 };

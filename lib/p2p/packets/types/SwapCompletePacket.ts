@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 export type SwapCompletePacketBody = {
-  rHash: string;
+  r_hash: string;
 };
 
 class SwapCompletePacket extends Packet<SwapCompletePacketBody> {

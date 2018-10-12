@@ -479,7 +479,7 @@ class OrderBook extends EventEmitter {
   private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer)  => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     assert(this.swaps, 'swaps module is disabled');
-    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+    const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
 
     const order = this.getOwnOrder(orderId, pairId);
     if (order) {
@@ -505,13 +505,13 @@ class OrderBook extends EventEmitter {
         }
       } else {
         peer.sendPacket(new SwapFailedPacket({
-          rHash,
+          r_hash,
           errorMessage: SwapFailureReason[SwapFailureReason.OrderUnavailable],
         }, requestPacket.header.id));
       }
     } else {
       peer.sendPacket(new SwapFailedPacket({
-        rHash,
+        r_hash,
         errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
       }, requestPacket.header.id));
     }

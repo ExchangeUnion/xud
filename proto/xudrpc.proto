@@ -451,8 +451,8 @@ message SwapResult {
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
   double quantity = 4 [json_name = "quantity"];
-  // The hex-encoded rHash for the swap payments.
-  string rHash = 5 [json_name = "rHash"];
+  // The hex-encoded r_hash for the swap payments.
+  string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
   int64 amount_received = 6 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.

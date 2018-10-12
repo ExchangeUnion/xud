@@ -3,7 +3,7 @@ import PacketType from '../PacketType';
 
 // TODO: proper error handling
 export type SwapErrorPacketBody = {
-  rHash: string;
+  r_hash: string;
   errorMessage: string;
 };
 
