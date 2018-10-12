@@ -732,7 +732,7 @@
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
-| r_hash | [string](#string) |  | The hex-encoded r_hash for the swap payments. |
+| rHash | [string](#string) |  | The hex-encoded rHash for the swap payments. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |

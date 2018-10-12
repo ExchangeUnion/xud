@@ -972,9 +972,9 @@
           "type": "string",
           "description": "The trading pair that this order is for."
         },
-        "r_hash": {
+        "rHash": {
           "type": "string",
-          "description": "The hex-encoded r_hash for the swap payments."
+          "description": "The hex-encoded rHash for the swap payments."
         },
         "amount_received": {
           "type": "string",

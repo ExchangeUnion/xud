@@ -11,11 +11,11 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapDealRole, SwapFailureReason } from '../types/enums';
+import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
-import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
+import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -89,7 +89,7 @@ class OrderBook extends EventEmitter {
   private bindSwaps = () => {
     if (this.swaps) {
       this.swaps.on('swap.paid', (swapResult) => {
-        if (swapResult.role === SwapDealRole.Maker) {
+        if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { orderId, pairId, quantity });
@@ -479,7 +479,7 @@ class OrderBook extends EventEmitter {
   private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer)  => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     assert(this.swaps, 'swaps module is disabled');
-    const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body!;
 
     const order = this.getOwnOrder(orderId, pairId);
     if (order) {
@@ -504,14 +504,14 @@ class OrderBook extends EventEmitter {
           order.hold -= quantityToAccept;
         }
       } else {
-        peer.sendPacket(new SwapErrorPacket({
-          r_hash,
+        peer.sendPacket(new SwapFailedPacket({
+          rHash,
           errorMessage: SwapFailureReason[SwapFailureReason.OrderUnavailable],
         }, requestPacket.header.id));
       }
     } else {
-      peer.sendPacket(new SwapErrorPacket({
-        r_hash,
+      peer.sendPacket(new SwapFailedPacket({
+        rHash,
         errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
       }, requestPacket.header.id));
     }

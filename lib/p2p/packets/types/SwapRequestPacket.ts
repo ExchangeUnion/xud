@@ -9,7 +9,7 @@ export type SwapRequestPacketBody = {
   makerAmount: number;
   makerCurrency: string;
   orderId: string;
-  r_hash: string;
+  rHash: string;
   takerCltvDelta: number;
 };
 

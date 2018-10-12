@@ -43,7 +43,7 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setLocalId(result.localId);
   swapResult.setPairId(result.pairId);
   swapResult.setQuantity(result.quantity);
-  swapResult.setRHash(result.r_hash);
+  swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
   swapResult.setPeerPubKey(result.peerPubKey);
