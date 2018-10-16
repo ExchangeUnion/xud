@@ -17,9 +17,9 @@ type SwapDeal = {
   myRole: SwapDealRole;
   /** The most updated deal phase */
   phase: SwapDealPhase;
-  /** The most updated deal state. State works
-   * together with the phase to indicates the phase of the deal in it's
-   * life cycle and if the deal is active, errored or completed.
+  /**
+   * The most updated deal state. State works together with phase to indicate where the
+   * deal is in its life cycle and if the deal is active, errored, or completed.
    */
   state: SwapDealState;
   /** The reason for being in the current state. */
@@ -30,10 +30,9 @@ type SwapDeal = {
   orderId: string;
   /** The local id for the order being executed. */
   localOrderId: string;
-  /** The quantity of the order to execute as proposed by the taker. Negative when the taker is selling. */
-  // TODO: is it needed here? if yes, should be in satoshis
+  /** The quantity of the order to execute as proposed by the taker. */
   proposedQuantity: number;
-  /** The accepted quantity of the order to execute as accepted by the maker. Negative when the taker is selling. */
+  /** The accepted quantity of the order to execute as accepted by the maker. */
   quantity?: number;
   /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
   pairId: string;
@@ -51,6 +50,8 @@ type SwapDeal = {
   makerCurrency: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
   makerCltvDelta?: number;
+  /** The price of the order that's being executed. */
+  price: number;
   /** The hash of the preimage. */
   r_hash: string;
   r_preimage?: string;
@@ -61,14 +62,15 @@ type SwapDeal = {
   competionTime?: number
 };
 
+type OrderToAccept = {
+  quantityToAccept: number;
+  price: number;
+  localId: string;
+};
+
 interface Swaps {
-  // TODO: put swap.rejected and swap.accepted to work or delete them.
-  on(event: 'swap.rejected', listener: (deal: SwapDeal) => void): this;
-  on(event: 'swap.accepted', listener: (deal: SwapDeal, quantity: number) => void): this;
-  on(event: 'swap.paid', listener: (deal: SwapResult) => void): this;
+  on(event: 'swap.paid', listener: (swapResult: SwapResult) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
-  emit(event: 'swap.rejected', deal: SwapDeal): boolean;
-  emit(event: 'swap.accepted', deal: SwapDeal, quantity: number): boolean;
   emit(event: 'swap.paid', swapResult: SwapResult): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
 }
@@ -90,23 +92,15 @@ class Swaps extends EventEmitter {
    * @param quantity the quantity of the taker's order
    * @param price the price specified by the maker order being filled
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuyOrder: boolean) => {
-    let takerAmount: number;
-    let makerAmount: number;
+  private static calculateSwapAmounts = (quantity: number, price: number) => {
     // TODO: use configurable amount of subunits/satoshis per token for each currency
-    if (isBuyOrder) {
-      // taker is buying the base currency
-      takerAmount = Math.round(quantity * 100000000);
-      makerAmount = Math.round(quantity * price * 100000000);
-    } else {
-      // taker is selling the base currency
-      takerAmount = Math.round(quantity * price * -100000000);
-      makerAmount = Math.round(quantity * -100000000);
-    }
+    const takerAmount = Math.round(quantity * price * 100000000);
+    const makerAmount = Math.round(quantity * 100000000);
 
     return { takerAmount, makerAmount };
   }
 
+<<<<<<< HEAD
   public init = async () => {
     const promises: PromiseLike<any> = this.repository.getSwaps();
     const result = await Promise.resolve(promises);
@@ -118,27 +112,21 @@ class Swaps extends EventEmitter {
 
   private bind = () => {
     this.pool.on('packet.swapRequest', this.handleSwapRequest);
+=======
+  private bind() {
+>>>>>>> e3139358724ebc3093a65a4d11b33df6a21c31f7
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapError', this.handleSwapError);
   }
 
   /**
-   * Verifies that the order still exists on orderBook
+   * Checks if there exist active swap clients for both currencies in a given trading pair.
+   * @returns `true` if the pair has swap support, `false` otherwise
    */
-  // TODO: replace the dummy implementation with real order book integration
-  private isOrderOnBook = (pairId: string, orderId: string): boolean => {
-    this.logger.debug('checking order book for ' + pairId + ':' + orderId);
-    return true;
-  }
-
-  /**
-   * Verifies that the order still exists on orderBook
-   */
-  // TODO: replace the dummy implementation with real order book integration
-  private checkAndHoldAmount = (deal: SwapDeal): number => {
-    this.logger.debug('checking and holding amount for swap ' + deal.pairId + ':' + deal.orderId + ':' + deal.takerAmount);
-    return deal.takerAmount;
+  public isPairSupported = (pairId: string): boolean => {
+    // TODO: implement generic way of checking pair
+    return pairId === 'LTC/BTC' && this.lndBtcClient.isConnected() && this.lndLtcClient.isConnected();
   }
 
   /**
@@ -221,18 +209,70 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Checks if a swap for two given orders can be executed.
+   * @returns `true` if the swap can be executed, `false` otherwise
+   */
+  private verifyExecution = (maker: StampedPeerOrder, taker: StampedOwnOrder): boolean => {
+    if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
+      return false;
+    }
+
+    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
+
+    return true;
+  }
+
+  /**
+   * A promise wrapper for a swap procedure
+   * @param maker the remote maker order we are filling
+   * @param taker our local taker order
+   * @returns A promise that is resolved once the swap is completed, or rejects otherwise
+   */
+  public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
+    return new Promise((resolve, reject) => {
+      if (!this.verifyExecution(maker, taker)) {
+        reject();
+        return;
+      }
+
+      const cleanup = () => {
+        this.removeListener('swap.paid', onPaid);
+        this.removeListener('swap.failed', onFailed);
+      };
+
+      const onPaid = (swapResult: SwapResult) => {
+        if (swapResult.r_hash === r_hash) {
+          cleanup();
+          resolve(swapResult);
+        }
+      };
+
+      const onFailed = (deal: SwapDeal) => {
+        if (deal.r_hash === r_hash) {
+          cleanup();
+          reject();
+        }
+      };
+
+      const r_hash = this.beginSwap(maker, taker);
+      if (!r_hash) {
+        reject();
+        return;
+      }
+
+      this.on('swap.paid', onPaid);
+      this.on('swap.failed', onFailed);
+    });
+  }
+
+  /**
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
    * @param maker the remote maker order we are filling
    * @param taker our local taker order
    * @returns the r_hash for the swap
    */
-  public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
+  private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
-
-    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: what is the status of the order here? is it off the book? What if partial match
-    //       do we create another order which has the same orderId?
-    // TODO: check that pairID is LTC/BTC or handleSwapResponse fails
 
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
 
@@ -257,7 +297,7 @@ class Swaps extends EventEmitter {
         takerCltvDelta = this.lndLtcClient.cltvDelta;
         break;
     }
-    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, taker.isBuy);
+    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
     const preimage = randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
@@ -276,6 +316,7 @@ class Swaps extends EventEmitter {
       ...swapRequestBody,
       peerPubKey: peer.nodePubKey!,
       localOrderId: taker.localId,
+      price: maker.price,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
       stateReason: '',
@@ -301,35 +342,29 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Handles a request from a peer to create a swap deal. Creates a deal,
-   * and stores the deal in the local collection of deals. Responds to the peer with a swap response packet.
+   * Accepts a proposed deal for a specified amount if a route and CLTV delta could be determined
+   * for the swap. Stores the deal in the local collection of deals.
+   * @returns A promise resolving to `true` if the deal was accepted, `false` otherwise.
    */
-  private handleSwapRequest = async (requestPacket: packets.SwapRequestPacket, peer: Peer)  => {
-    assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
-    const requestBody = requestPacket.body!;
-
-    // TODO: consider reduced quantity
+  public acceptDeal = async (orderToAccept: OrderToAccept, requestPacket: packets.SwapRequestPacket, peer: Peer): Promise<boolean> => {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
-    // TODO: multi route support (currenlt only 1)
+    // TODO: multi route support (currently only 1)
+    // TODO: check to make sure we don't already have a deal for the requested r_hash
+    const requestBody = requestPacket.body!;
 
-    // check that we have such an order on book. If not, issue an error and forget
-    if (!this.isOrderOnBook(requestBody.pairId, requestBody.orderId)) {
-      this.sendErrorToPeer(peer, requestBody.r_hash,
-          'order does not exist on book', requestPacket.header.id);
-      return;
-    }
+    const takerPubKey = peer.getLndPubKey(requestBody.takerCurrency)!;
 
-    // accept the deal
     const deal: SwapDeal = {
       ...requestBody,
+      takerPubKey,
       peerPubKey: peer.nodePubKey!,
-      localOrderId: '', // TODO: get local id from order book
-      quantity: requestBody.proposedQuantity,
+      price: orderToAccept.price,
+      localOrderId: orderToAccept.localId,
+      quantity: orderToAccept.quantityToAccept,
       phase: SwapDealPhase.SwapCreated,
       state: SwapDealState.Active,
       stateReason: '',
-      takerPubKey: peer.getLndPubKey(requestBody.takerCurrency),
       r_hash: requestBody.r_hash,
       myRole: SwapDealRole.Maker,
       createTime: Date.now(),
@@ -344,16 +379,7 @@ class Swaps extends EventEmitter {
     if (errMsg) {
       this.setDealState(deal, SwapDealState.Error, errMsg);
       this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-      return;
-    }
-
-    const heldAmount = this.checkAndHoldAmount(deal);
-    assert(heldAmount === 0 || heldAmount === deal.takerAmount,
-        'Partial amount is not yet supported');
-    if (heldAmount === 0) {
-      this.setDealState(deal, SwapDealState.Error, 'Can not swap. No capacity is available');
-      this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-      return;
+      return false;
     }
 
     let lndclient: LndClient;
@@ -365,9 +391,9 @@ class Swaps extends EventEmitter {
         lndclient = this.lndLtcClient;
         break;
       default:
-        this.setDealState(deal, SwapDealState.Error, 'Can not swap. Unsupported Taker currency.');
+        this.setDealState(deal, SwapDealState.Error, 'Can not swap. Unsupported taker currency.');
         this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-        return;
+        return false;
     }
 
     let height: number;
@@ -383,12 +409,12 @@ class Swaps extends EventEmitter {
       if (deal.makerToTakerRoutes.length === 0) {
         this.setDealState(deal, SwapDealState.Error, 'Can not swap. unable to find route to destination.');
         this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-        return;
+        return false;
       }
     } catch (err) {
       this.setDealState(deal, SwapDealState.Error, 'Can not swap. unable to find route to destination: ' + err.message);
       this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-      return;
+      return false;
     }
 
     try {
@@ -398,7 +424,7 @@ class Swaps extends EventEmitter {
     } catch (err) {
       this.setDealState(deal, SwapDealState.Error, 'Can not swap. Unable to fetch block height: ' + err.message);
       this.sendErrorToPeer(peer, deal.r_hash, deal.stateReason, requestPacket.header.id);
-      return;
+      return false;
     }
 
     const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
@@ -424,6 +450,7 @@ class Swaps extends EventEmitter {
 
     peer.sendPacket(new packets.SwapResponsePacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapDealPhase.SwapAgreed);
+    return true;
   }
 
   /**
@@ -443,11 +470,17 @@ class Swaps extends EventEmitter {
     deal.makerCltvDelta = makerCltvDelta;
 
     if (quantity) {
-      // TODO: require a non-zero quantity value on accepted swap responses
-      if (quantity > deal.proposedQuantity) {
-        // TODO: this should not happen, abort deal and penalize peer
+      deal.quantity = quantity; // set the accepted quantity for the deal
+      if (quantity <= 0) {
+        // TODO: accepted quantity must be a positive number, abort deal and penalize peer
+      } else if (quantity > deal.proposedQuantity) {
+        // TODO: accepted quantity should not be greater than proposed quantity, abort deal and penalize peer
       } else if (quantity < deal.proposedQuantity) {
-        // TODO: the maker accepted only part of our swap request, adjust the deal amounts with Swaps.calculateSwapAmounts
+        // TODO: handle partial acceptance
+        // the maker accepted only part of our swap request, adjust the deal amounts
+        // const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
+        // deal.takerAmount = takerAmount;
+        // deal.makerAmount = makerAmount;
       }
     }
 
@@ -672,6 +705,7 @@ class Swaps extends EventEmitter {
         orderId: deal.orderId,
         localId: deal.localOrderId,
         pairId: deal.pairId,
+        quantity: deal.quantity!,
         amountReceived: deal.makerAmount,
         amountSent: deal.takerAmount,
         r_hash: deal.r_hash,

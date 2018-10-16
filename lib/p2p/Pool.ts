@@ -12,15 +12,23 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, UriParts } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
 type PoolConfig = {
+  /** Whether or not to automatically detect and share current external ip address on startup. */
+  detectexternalip: boolean;
+
+  /** If false, don't send GET_NODES when connecting, defaults to true. */
+  discover: boolean;
+
   /** Whether or not to listen for incoming connections from peers. */
   listen: boolean;
+
   /** Which port to listen on. If 0, a random unused port will be used. */
   port: number;
+
   /**
    * An array of IP addresses or host names which can be used to connect to this server.
    * It will be advertised with peers for them to try to connect to the server in the future.
@@ -68,9 +76,13 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
+  /** Points to config comes during construction. */
+  private config: PoolConfig;
+  private repository: P2PRepository;
 
   constructor(config: PoolConfig, private logger: Logger, models: Models) {
     super();
+    this.config = config;
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -80,7 +92,8 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.nodes = new NodeList(new P2PRepository(models));
+    this.repository = new P2PRepository(models);
+    this.nodes = new NodeList(this.repository);
   }
 
   public get peerCount(): number {
@@ -96,26 +109,11 @@ class Pool extends EventEmitter {
     }
 
     if (this.server) {
-      let externalIp: string | undefined;
-      // Fetch the external IP if no address was specified by the user
-      if (this.addresses.length === 0) {
-        try {
-          externalIp = await getExternalIp();
-
-          this.logger.info(`retrieved external IP: ${externalIp}`);
-        } catch (error) {
-          this.logger.error(error.message);
-        }
-      }
-
       await this.listen();
       this.bindServer();
 
-      if (externalIp) {
-        this.addresses.push({
-          host: externalIp,
-          port: this.listenPort!,
-        });
+      if (this.config.detectexternalip) {
+        await this.detectExternalIpAddress();
       }
     }
 
@@ -135,6 +133,24 @@ class Pool extends EventEmitter {
 
     this.verifyReachability();
     this.connected = true;
+  }
+
+  private detectExternalIpAddress = async () => {
+    let externalIp: string | undefined;
+    try {
+      externalIp = await getExternalIp();
+      this.logger.info(`retrieved external IP: ${externalIp}`);
+
+      const externalIpExists = this.addresses.some((address) =>  { return address.host === externalIp; });
+      if (!externalIpExists) {
+        this.addresses.push({
+          host: externalIp,
+          port: this.listenPort!,
+        });
+      }
+    } catch (error) {
+      this.logger.error(`error while retrieving external IP: ${error.message}`);
+    }
   }
 
   /**
@@ -341,10 +357,42 @@ class Pool extends EventEmitter {
   }
 
   public banNode = async (nodePubKey: string): Promise<void> => {
-    const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+    if (this.nodes.isBanned(nodePubKey)) {
+      throw errors.NODE_ALREADY_BANNED(nodePubKey);
 
-    if (!banned) {
-      throw errors.NODE_UNKNOWN(nodePubKey);
+    } else {
+      const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+
+      if (!banned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+    }
+  }
+
+  public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
+    const { nodePubKey, reconnect } = args;
+    if (this.nodes.isBanned(nodePubKey)) {
+      const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+
+      if (!unbanned) {
+        throw errors.NODE_UNKNOWN(nodePubKey);
+      }
+
+      const node = await this.repository.getNode(nodePubKey);
+      if (node) {
+        const Node: NodeConnectionInfo = {
+          nodePubKey,
+          addresses: node.addresses,
+          lastAddress: node.lastAddress,
+        };
+
+        this.logger.info(`node ${nodePubKey} was unbanned`);
+        if (reconnect) {
+          await this.tryConnectNode(Node, false);
+        }
+      }
+    } else {
+      throw errors.NODE_NOT_BANNED(nodePubKey);
     }
   }
 
@@ -494,9 +542,12 @@ class Pool extends EventEmitter {
       this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
       this.peers.add(peer);
 
-      // request peer's orders and known nodes
+      // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-      peer.sendPacket(new packets.GetNodesPacket());
+      if (this.config.discover) {
+        // request peer's known nodes only if p2p.discover option is true
+        peer.sendPacket(new packets.GetNodesPacket());
+      }
 
       // if outbound, update the `lastConnected` field for the address we're actually connected to
       const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {

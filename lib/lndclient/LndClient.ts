@@ -15,6 +15,7 @@ type LndClientConfig = {
   host: string;
   port: number;
   cltvdelta: number;
+  nomacaroons: boolean;
 };
 
 /** General information about the state of this lnd client. */
@@ -54,7 +55,6 @@ class LndClient extends BaseClient {
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
-  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
   private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
 
@@ -69,7 +69,7 @@ class LndClient extends BaseClient {
     super(logger);
 
     let shouldEnable = true;
-    const { disable, certpath, macaroonpath, cltvdelta } = config;
+    const { disable, certpath, macaroonpath, cltvdelta, nomacaroons } = config;
 
     if (disable) {
       shouldEnable = false;
@@ -78,7 +78,7 @@ class LndClient extends BaseClient {
       this.logger.error('could not find lnd certificate, is lnd installed?');
       shouldEnable = false;
     }
-    if (!fs.existsSync(macaroonpath)) {
+    if (!nomacaroons && !fs.existsSync(macaroonpath)) {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
       shouldEnable = false;
     }
@@ -90,10 +90,14 @@ class LndClient extends BaseClient {
       const lndCert = fs.readFileSync(certpath);
       this.credentials = grpc.credentials.createSsl(lndCert);
 
-      const adminMacaroon = fs.readFileSync(macaroonpath);
       this.meta = new grpc.Metadata();
-      this.meta.add('macaroon', adminMacaroon.toString('hex'));
-      // mark connection as disconnected
+      if (!nomacaroons) {
+        const adminMacaroon = fs.readFileSync(macaroonpath);
+        this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      } else {
+        this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
+      }
+      // set status as disconnected until we can verify the connection
       this.setStatus(ClientStatus.Disconnected);
     }
   }
@@ -184,20 +188,15 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
-    if (this.isConnected()) {
-      this.logger.warn(`not verifying connection to lnd, lnd is already connected`);
-      return;
-    }
     if (this.isDisconnected()) {
       this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
-        if (getInfoResponse) {
+        if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
           this.setStatus(ClientStatus.ConnectionVerified);
-          this.subscribeInvoices();
           if (this.reconnectionTimer) {
             clearTimeout(this.reconnectionTimer);
             this.reconnectionTimer = undefined;
@@ -210,6 +209,10 @@ class LndClient extends BaseClient {
             this.identityPubKey = newPubKey;
           }
           this.emit('connectionVerified', newPubKey);
+        } else {
+          this.setStatus(ClientStatus.OutOfSync);
+          this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
         }
       } catch (err) {
         this.setStatus(ClientStatus.Disconnected);
@@ -354,43 +357,10 @@ class LndClient extends BaseClient {
       });
   }
 
-  /**
-   * Subscribe to events for when invoices are settled.
-   */
-  private subscribeInvoices = (): void => {
-    if (this.isDisabled()) {
-      throw(errors.LND_IS_DISABLED);
-    }
-    if (this.isDisconnected()) {
-      throw(errors.LND_IS_DISCONNECTED);
-    }
-    this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
-      // TODO: handle invoice events
-      .on('data', (message: string) => {
-        this.logger.info(`invoice update: ${message}`);
-      })
-      .on('end', async () => {
-        this.logger.info('invoice ended');
-        this.setStatus(ClientStatus.Disconnected);
-        await this.verifyConnection();
-      })
-      .on('status', (status: string) => {
-        this.logger.debug(`invoice status: ${JSON.stringify(status)}`);
-      })
-      .on('error', async (error) => {
-        this.logger.error(`invoice error: ${error}`);
-        this.setStatus(ClientStatus.Disconnected);
-        await this.verifyConnection();
-      });
-  }
-
   /** End all subscriptions and reconnection attempts. */
   public close = () => {
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
-    }
-    if (this.invoiceSubscription) {
-      this.invoiceSubscription.cancel();
     }
   }
 }

@@ -71,6 +71,14 @@ service Xud {
       body: "*"
     };
   }
+
+  /* Remove ban from XU node manually and connect to it. */
+  rpc Unban(UnbanRequest) returns (UnbanResponse) {
+    option (google.api.http) = {
+      post: "/v1/unban"
+      body: "*"
+    };
+  }
   
   /* Get general information about this Exchange Union node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
@@ -114,12 +122,21 @@ service Xud {
   /* Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {
+  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
     option (google.api.http) = {
       post: "/v1/placeorder"
       body: "*"
     };
   }
+
+  /* The synchronous non-streaming version of PlaceOrder. */
+  rpc PlaceOrderSync(PlaceOrderRequest) returns (PlaceOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/placeordersync"
+      body: "*"
+    };
+  }
+
 
   /* Remove a currency. */
   rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
@@ -341,11 +358,6 @@ message Orders {
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
 
-message OrderMatch {
-  Order maker = 1 [json_name = "maker"];
-  Order taker = 2 [json_name = "taker"];
-}
-
 message OrdersCount {
   int32 peer = 1 [json_name = "peer"];
   int32 own = 2 [json_name = "own"];
@@ -383,10 +395,23 @@ message PlaceOrderRequest {
   OrderSide side = 5 [json_name = "side"];
 }
 message PlaceOrderResponse {
-  // A list of orders matching the newly placed order
-  repeated OrderMatch matches = 1 [json_name = "matches"];
+  // A list of own orders (or portions thereof) that matched the newly placed order
+  repeated Order internal_matches = 1 [json_name = "internal_matches"];
+  // A list of swap results of peer orders that matched the newly placed order
+  repeated SwapResult swap_results = 2 [json_name = "swap_results"];
   // The remaining portion of the order, after matches, that enters the order book
-  Order remaining_order = 2 [json_name= "remaining_order"];
+  Order remaining_order = 3 [json_name= "remaining_order"];
+}
+
+message PlaceOrderEvent {
+  oneof event {
+    // An own orders (or portions thereof) that matched the newly placed order
+    Order internal_match = 1 [json_name = "internal_match"];
+    // A swap results of peer orders that matched the newly placed order
+    SwapResult swap_result = 2 [json_name = "swap_result"];
+    // The remaining portion of the order, after matches, that enters the order book
+    Order remaining_order = 3 [json_name= "remaining_order"];
+  }
 }
 
 message RaidenInfo {
@@ -424,18 +449,26 @@ message SwapResult {
   string local_id = 2 [json_name = "local_id"];
   // The trading pair that this order is for.
   string pair_id = 3 [json_name = "pair_id"];
+  // The order quantity that was swapped.
+  double quantity = 4 [json_name = "quantity"];
   // The hex-encoded r_hash for the swap payments.
-  string r_hash = 4 [json_name = "r_hash"];
+  string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
-  int64 amount_received = 5 [json_name = "amount_received"];
+  int64 amount_received = 6 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.
-  int64 amount_sent = 6 [json_name = "amount_sent"];
+  int64 amount_sent = 7 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
-  string peer_pub_key = 7 [json_name = "peer_pub_key"];
+  string peer_pub_key = 8 [json_name = "peer_pub_key"];
   enum Role {
     TAKER = 0;
     MAKER = 1;
   }
   // Our role in the swap, either MAKER or TAKER
-  Role role = 8 [json_name = "role"];
+  Role role = 9 [json_name = "role"];
 }
+
+message UnbanRequest {
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+  bool reconnect = 2  [json_name = "reconnect"];
+}
+message UnbanResponse {}

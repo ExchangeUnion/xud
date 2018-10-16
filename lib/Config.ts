@@ -59,6 +59,8 @@ class Config {
 
     this.p2p = {
       listen: true,
+      discover: true,
+      detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
     };
@@ -78,14 +80,17 @@ class Config {
       host: 'localhost',
       port: 10009,
       cltvdelta: 144,
+      nomacaroons: false,
     };
     this.lndltc = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
+        this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
+      nomacaroons: false,
     };
     this.raiden = {
       disable: false,
@@ -95,8 +100,13 @@ class Config {
   }
 
   public load(args?: { [argName: string]: any }): Config {
-    if (args && args.xudir) {
-      this.updateDefaultPaths(args.xudir);
+    if (args) {
+      if (args.xudir) {
+        this.updateDefaultPaths(args.xudir);
+      }
+      if (args.network) {
+        this.updateMacaroonPaths(args.network);
+      }
     }
     const configPath = path.join(this.xudir, 'xud.conf');
     if (!fs.existsSync(this.xudir)) {
@@ -108,6 +118,16 @@ class Config {
 
         if (props.xudir && (!args || !args.xudir)) {
           this.updateDefaultPaths(props.xudir);
+        }
+
+        if (props.network !== undefined && (!args || !args.network)) {
+          // first check that network is a valid value
+          if (typeof props.network !== 'string' || !Object.values(Network).includes(props.network)) {
+            // delete the invalid network value
+            delete props.network;
+          } else {
+            this.updateMacaroonPaths(props.network);
+          }
         }
 
         // merge parsed json properties from config file to the default config
@@ -149,6 +169,13 @@ class Config {
     this.xudir = xudir;
     this.logpath = this.getDefaultLogPath();
     this.dbpath = this.getDefaultDbPath();
+  }
+
+  private updateMacaroonPaths = (network: string) => {
+    this.network = network as Network;
+    this.lndbtc.macaroonpath = path.join(this.lndbtc.macaroonpath, '..', '..', this.network, 'admin.macaroon');
+    this.lndltc.macaroonpath = path.join(this.lndltc.macaroonpath, '..', '..',
+      this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
   }
 
   private getDefaultDbPath = () => {

@@ -10,6 +10,8 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
+import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
+import P2PRepository from '../p2p/P2PRepository';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -30,6 +32,61 @@ const createOrder = (order: StampedOrder) => {
   grpcOrder.setQuantity(order.quantity);
   grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
   return grpcOrder;
+};
+
+/**
+ * Creates an xudrpc SwapResult message from a [[SwapResult]].
+ */
+const createSwapResult = (result: SwapResult) => {
+  const swapResult = new xudrpc.SwapResult();
+  swapResult.setOrderId(result.orderId);
+  swapResult.setLocalId(result.localId);
+  swapResult.setPairId(result.pairId);
+  swapResult.setQuantity(result.quantity);
+  swapResult.setRHash(result.r_hash);
+  swapResult.setAmountReceived(result.amountReceived);
+  swapResult.setAmountSent(result.amountSent);
+  swapResult.setPeerPubKey(result.peerPubKey);
+  swapResult.setRole(result.role as number);
+  return swapResult;
+};
+
+/**
+ * Creates an xudrpc PlaceOrderResponse message from a [[PlaceOrderResult]].
+ */
+const createPlaceOrderResponse = (result: PlaceOrderResult) => {
+  const response = new xudrpc.PlaceOrderResponse();
+
+  const internalMatches = result.internalMatches.map(match => createOrder(match));
+  response.setInternalMatchesList(internalMatches);
+
+  const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
+  response.setSwapResultsList(swapResults);
+
+  if (result.remainingOrder) {
+    response.setRemainingOrder(createOrder(result.remainingOrder));
+  }
+
+  return response;
+};
+
+/**
+ * Creates an xudrpc PlaceOrderEvent message from a [[PlaceOrderEvent]].
+ */
+const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
+  const response = new xudrpc.PlaceOrderEvent();
+  switch (e.case) {
+    case PlaceOrderEventCase.InternalMatch:
+      response.setInternalMatch(createOrder(e.payload as StampedOrder));
+      break;
+    case PlaceOrderEventCase.SwapResult:
+      response.setSwapResult(createSwapResult(e.payload as SwapResult));
+      break;
+    case PlaceOrderEventCase.RemainingOrder:
+      response.setRemainingOrder(createOrder(e.payload as StampedOrder));
+      break;
+  }
+  return response;
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -54,16 +111,17 @@ class GrpcService {
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
       case p2pErrorCodes.COULD_NOT_CONNECT:
       case p2pErrorCodes.NODE_UNKNOWN:
-      case orderErrorCodes.PAIR_DOES_NOT_EXIST:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
       case p2pErrorCodes.NODE_ALREADY_CONNECTED:
+      case p2pErrorCodes.NODE_ALREADY_BANNED:
       case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
       case orderErrorCodes.PAIR_ALREADY_EXISTS:
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
+      case p2pErrorCodes.NODE_NOT_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
@@ -164,6 +222,19 @@ class GrpcService {
     try {
       await this.service.ban(call.request.toObject());
       const response = new xudrpc.BanResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.unban]]
+   */
+  public unban: grpc.handleUnaryCall<xudrpc.UnbanRequest, xudrpc.UnbanResponse> = async (call, callback) => {
+    try {
+      await this.service.unban(call.request.toObject());
+      const response = new xudrpc.UnbanResponse();
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -312,23 +383,25 @@ class GrpcService {
   /**
    * See [[Service.placeOrder]]
    */
-  public placeOrder: grpc.handleUnaryCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call, callback) => {
+  public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call) => {
     try {
-      const placeOrderResponse = await this.service.placeOrder(call.request.toObject());
-      const response = new xudrpc.PlaceOrderResponse();
-      const matchesList: xudrpc.OrderMatch[] = [];
-      placeOrderResponse.matches.forEach((match) => {
-        const orderMatch = new xudrpc.OrderMatch();
-        orderMatch.setMaker(createOrder(match.maker));
-        orderMatch.setTaker(createOrder(match.taker));
-        matchesList.push(orderMatch);
+      await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderEvent) => {
+        call.write(createPlaceOrderEvent(result));
       });
-      response.setMatchesList(matchesList);
 
-      if (placeOrderResponse.remainingOrder) {
-        response.setRemainingOrder(createOrder(placeOrderResponse.remainingOrder));
-      }
-      callback(null, response);
+      call.end();
+    } catch (err) {
+      call.emit('error', this.getGrpcError(err));
+    }
+  }
+
+  /**
+   * See [[Service.placeOrder]]
+   */
+  public placeOrderSync: grpc.handleUnaryCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call, callback) => {
+    try {
+      const result = await this.service.placeOrder(call.request.toObject());
+      callback(null, createPlaceOrderResponse(result));
     } catch (err) {
       callback(this.getGrpcError(err), null);
     }
@@ -416,17 +489,8 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapResult> = (call) => {
-    this.service.subscribeSwaps((swapResult: SwapResult) => {
-      const swap = new xudrpc.SwapResult();
-      swap.setAmountReceived(swapResult.amountReceived);
-      swap.setAmountSent(swapResult.amountSent);
-      swap.setLocalId(swapResult.localId);
-      swap.setPairId(swapResult.pairId);
-      swap.setPeerPubKey(swapResult.peerPubKey);
-      swap.setRHash(swapResult.r_hash);
-      swap.setOrderId(swapResult.orderId);
-      swap.setRole(swapResult.role as number);
-      call.write(swap);
+    this.service.subscribeSwaps((result: SwapResult) => {
+      call.write(createSwapResult(result));
     });
   }
 }

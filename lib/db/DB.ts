@@ -79,8 +79,8 @@ class DB {
       promises.push(Currency.bulkCreate(<db.CurrencyAttributes[]>[
         { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
         { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-        { id: 'ZRX', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
-        { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
+        // { id: 'ZRX', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
+        // { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
       ]));
 
       promises.push(SwapDeal.bulkCreate(<db.SwapDealAttributes[]>[
@@ -99,7 +99,7 @@ class DB {
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
         { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-        { baseCurrency: 'ZRX', quoteCurrency: 'GNT' },
+        // { baseCurrency: 'ZRX', quoteCurrency: 'GNT' },
       ]);
     }
   }

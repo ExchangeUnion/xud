@@ -211,10 +211,7 @@ describe('MatchingEngine.removeOwnOrder', () => {
     expect(matchingResult.matches).to.be.empty;
     expect(matchingResult.remainingOrder).to.not.be.undefined;
 
-    expect(engine.removeOwnOrder(uuidv1())).to.be.undefined;
-
-    const removedOrder = engine.removeOwnOrder(matchingResult.remainingOrder!.id);
-    expect(JSON.stringify(removedOrder)).to.equals(JSON.stringify(matchingResult.remainingOrder));
+    engine.removeOwnOrder(matchingResult.remainingOrder!.id);
     isEmpty(engine);
   });
 });
@@ -251,10 +248,10 @@ describe('MatchingEngine.removePeerOrders', () => {
     const order = createPeerOrder(5, quantity, false);
     engine.addPeerOrder(order);
 
-    let removedOrder = engine.removePeerOrderQuantity(order.id, quantityToRemove) as orders.StampedPeerOrder;
+    let removedOrder = engine.removePeerOrder(order.id, quantityToRemove).order;
     expect(removedOrder.quantity).to.be.equal(quantityToRemove);
 
-    removedOrder = engine.removePeerOrderQuantity(order.id) as orders.StampedPeerOrder;
+    removedOrder = engine.removePeerOrder(order.id).order;
     expect(removedOrder.quantity).to.be.equal(quantity - quantityToRemove);
   });
 });
@@ -278,7 +275,7 @@ describe('MatchingEngine queues and lists integrity', () => {
     expect(engine.peerOrders.sell.size).to.equal(1);
     expect(engine.queues.sell.size).to.be.equal(1);
 
-    engine['removePeerOrder'](peerOrder);
+    engine['removePeerOrder'](peerOrder.id);
     expect(engine.peerOrders.sell).to.be.empty;
     expect(engine.queues.sell.isEmpty()).to.be.true;
   });
@@ -288,8 +285,8 @@ describe('MatchingEngine queues and lists integrity', () => {
     engine.addPeerOrder(peerOrder);
     expect(engine.peerOrders.sell.size).to.equal(1);
 
-    const removedOrder = engine.removePeerOrderQuantity(peerOrder.id, 3);
-    expect(removedOrder!.quantity).to.equal(3);
+    const removeResult = engine.removePeerOrder(peerOrder.id, 3);
+    expect(removeResult.order.quantity).to.equal(3);
     expect(engine.peerOrders.sell.size).to.equal(1);
 
     const listRemainingOrder = engine.peerOrders.sell.get(peerOrder.id);

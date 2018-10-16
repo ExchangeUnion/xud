@@ -8,7 +8,8 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapDealRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedPeerOrder, SwapResult, OrderPortion } from '../types/orders';
+import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
+import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/MatchingEngine';
 
@@ -177,6 +178,14 @@ class Service extends EventEmitter {
     await this.pool.banNode(args.nodePubKey);
   }
 
+  /*
+   * Remove ban from XU node manually and connenct to it.
+   */
+  public unban = async (args: { nodePubKey: string, reconnect: boolean}) => {
+    argChecks.HAS_NODE_PUB_KEY(args);
+    await this.pool.unban(args);
+  }
+
   /**
    * Get general information about this Exchange Union node.
    */
@@ -284,7 +293,10 @@ class Service extends EventEmitter {
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
-  public placeOrder = async (args: { pairId: string, price: number, quantity: number, orderId: string, side: number }) => {
+  public placeOrder = async (
+    args: { pairId: string, price: number, quantity: number, orderId: string, side: number },
+    callback?: (e: PlaceOrderEvent) => void,
+  ) => {
     const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.NON_ZERO_QUANTITY(args);
@@ -298,7 +310,7 @@ class Service extends EventEmitter {
       localId: orderId,
     };
 
-    return price > 0 ? this.orderBook.addLimitOrder(order) : this.orderBook.addMarketOrder(order);
+    return price > 0 ? await this.orderBook.addLimitOrder(order, callback) : await this.orderBook.addMarketOrder(order, callback);
   }
 
   /** Removes a currency. */
@@ -320,9 +332,9 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = async (callback: (order: StampedPeerOrder) => void) => {
+  public subscribeAddedOrders = (callback: (order: StampedOrder) => void) => {
     this.orderBook.on('peerOrder.incoming', order => callback(order));
-    // TODO: send message on remaining order from placeOrder
+    this.orderBook.on('ownOrder.added', order => callback(order));
   }
 
   /**
@@ -330,15 +342,16 @@ class Service extends EventEmitter {
    */
   public subscribeRemovedOrders = async (callback: (order: OrderPortion) => void) => {
     this.orderBook.on('peerOrder.invalidation', order => callback(order));
+    this.orderBook.on('peerOrder.filled', order => callback(order));
     this.orderBook.on('ownOrder.filled', order => callback(order));
-    // TODO: send message when peerOrder is filled by one of our taker orders
-    // TODO: send message when one of our maker orders is filled remotely via swap
+    this.orderBook.on('ownOrder.swapped', order => callback(order));
   }
 
   /*
    * Subscribe to completed swaps that are initiated by a remote peer.
    */
   public subscribeSwaps = async (callback: (swapResult: SwapResult) => void) => {
+    // TODO: use `ownOrder.swapped` order book event instead
     this.swaps.on('swap.paid', (swapResult) => {
       if (swapResult.role === SwapDealRole.Maker) {
         // only alert client for maker matches, taker matches are handled via placeOrder

@@ -18,6 +18,8 @@ type Order = MarketOrder & {
 type Local = {
   /** A local identifier for the order. */
   localId: string;
+  /** The amount of an order that is on hold pending swap exectuion. */
+  hold?: number;
 };
 
 type Remote = {
@@ -59,6 +61,7 @@ export type SwapResult = {
   orderId: string,
   localId: string,
   pairId: string,
+  quantity: number,
   amountReceived: number;
   amountSent: number;
   r_hash: string;
@@ -101,6 +104,10 @@ export type SwapDeal = {
 
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
   return (order as StampedPeerOrder).peerPubKey === undefined && typeof (order as StampedOwnOrder).localId === 'string';
+}
+
+export function isStampedOwnOrder(order: OwnOrder): order is StampedOwnOrder {
+  return typeof (order as StampedOwnOrder).id === 'string' && typeof (order as StampedOwnOrder).createdAt === 'number';
 }
 
 export function isPeerOrder(order: StampedOrder): order is StampedPeerOrder {

@@ -13,6 +13,7 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
+import { Network } from './types/enums';
 
 const version: string = require('../package.json').version;
 
