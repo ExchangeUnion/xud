@@ -171,6 +171,9 @@ class OrderBook extends EventEmitter {
     this.pairs.set(pairInstance.id, pairInstance);
     this.matchingEngines.set(pairInstance.id, new MatchingEngine(this.logger, pairInstance.id));
 
+    if (this.pool) {
+      this.pool.updateHandshake({ pairs: this.pairIds });
+    }
     return pairInstance;
   }
 
@@ -199,15 +202,17 @@ class OrderBook extends EventEmitter {
 
   public removePair = (pairId: string) => {
     const pair = this.pairs.get(pairId);
-    if (pair) {
-      this.pairs.delete(pairId);
-      this.matchingEngines.delete(pairId);
-      // TODO: invalidate all orders for this pair
-      // TODO: update handshake state
-      return pair.destroy();
-    } else {
+    if (!pair) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
+
+    this.pairs.delete(pairId);
+    this.matchingEngines.delete(pairId);
+
+    if (this.pool) {
+      this.pool.updateHandshake({ pairs: this.pairIds });
+    }
+    return pair.destroy();
   }
 
   public addLimitOrder = async (order: orders.OwnOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
