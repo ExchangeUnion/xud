@@ -29,9 +29,7 @@ export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyA
 // SwapDeals
 export type SwapDealFactory = SwapDeal;
 
-export type SwapDealAttributes = SwapDealFactory & {
-  r_hash: string;
-};
+export type SwapDealAttributes = SwapDealFactory & {};
 
 export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
 

@@ -59,7 +59,7 @@ type SwapDeal = {
   makerToTakerRoutes?: lndrpc.Route[];
   createTime: number;
   executeTime?: number;
-  competionTime?: number
+  completionTime?: number
 };
 
 type OrderToAccept = {
@@ -101,9 +101,11 @@ class Swaps extends EventEmitter {
   }
 
   public init = async () => {
+    // Load Swaps from data base
     const promises: PromiseLike<any> = this.repository.getSwaps();
     const result = await Promise.resolve(promises);
-    result.map((deal: SwapDealDB) => {
+    result.map((deal: SwapDeal) => {
+      // Loads r_hash
       this.hashs.add(deal.r_hash);
     });
     this.bind();
@@ -168,17 +170,28 @@ class Swaps extends EventEmitter {
    * @param deal The deal to persist.
    */
   private persistDeal = (deal: SwapDeal) => {
-    const { myRole, r_hash, state, makerAmount, makerCurrency, takerAmount, takerCurrency, peerPubKey } = deal;
-    if (this.hashs.has(deal.r_hash)) {
+    const { r_hash } = deal;
+    if (this.hashs.has(r_hash)) {
       const persistDeal: SwapDealDB = {
-        myRole,
+        orderId: deal.orderId,
+        localOrderId: deal.localOrderId,
         r_hash,
-        state,
-        makerAmount,
-        makerCurrency,
-        takerAmount,
-        takerCurrency,
-        peerPubKey,
+        r_preimage: deal.r_preimage,
+        myRole: deal.myRole,
+        state: deal.state,
+        stateReason: deal.stateReason,
+        peerPubKey: deal.peerPubKey,
+        takerAmount: deal.takerAmount,
+        makerAmount: deal.makerAmount,
+        proposedQuantity: deal.proposedQuantity,
+        quantity: deal.quantity,
+        pairId: deal.pairId,
+        price: deal.price, 
+        takerCltvDelta: deal.takerCltvDelta,
+        makerCltvDelta: deal.makerCltvDelta, 
+        createTime: deal.createTime,
+        executeTime: deal.executeTime,
+        completionTime: deal.completionTime,
       };
       this.repository.addSwapDeal(persistDeal)
       .then(() => this.removeDeal(deal))
@@ -688,7 +701,7 @@ class Swaps extends EventEmitter {
         break;
       case SwapDealPhase.SwapCompleted:
         assert(deal.phase === SwapDealPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
-        deal.competionTime = Date.now();
+        deal.completionTime = Date.now();
         this.setDealState(deal, SwapDealState.Completed, 'Swap completed. preimage = ' + deal.r_preimage);
         this.logger.debug('Swap completed. preimage = ' + deal.r_preimage);
         break;
@@ -733,6 +746,7 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealState(deal, SwapDealState.Error, errorMessage);
+    this.persistDeal(deal);
   }
 
 }

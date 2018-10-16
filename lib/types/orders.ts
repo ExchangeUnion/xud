@@ -92,14 +92,25 @@ export type Pair = {
 };
 
 export type SwapDeal = {
+  r_hash:string;
+  r_preimage?: string;
+  orderId: string;
+  localOrderId: string;
   myRole: SwapDealRole;
   state: SwapDealState;
+  stateReason: string;
   peerPubKey: string;
   takerAmount: number;
-  takerCurrency: string;
   makerAmount: number;
-  makerCurrency: string;
-  r_hash: string;
+  proposedQuantity: number;
+  quantity?: number;
+  pairId: string;
+  price: number;
+  takerCltvDelta: number;
+  makerCltvDelta?: number;
+  createTime: number;
+  executeTime?: number;
+  completionTime?: number;
 };
 
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
