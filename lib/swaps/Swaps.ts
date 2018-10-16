@@ -180,8 +180,11 @@ class Swaps extends EventEmitter {
         takerCurrency,
         peerPubKey,
       };
-      this.repository.addSwapDeal(persistDeal);
-      this.removeDeal(deal);
+      this.repository.addSwapDeal(persistDeal)
+      .then(() => this.removeDeal(deal))
+      .catch((err) => {
+        throw err;
+      });
     }
   }
 
