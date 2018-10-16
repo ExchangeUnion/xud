@@ -21,7 +21,7 @@
         "operationId": "AddCurrency",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcAddCurrencyResponse"
             }
@@ -48,7 +48,7 @@
         "operationId": "AddPair",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcAddPairResponse"
             }
@@ -75,7 +75,7 @@
         "operationId": "Ban",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcBanResponse"
             }
@@ -102,7 +102,7 @@
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcChannelBalanceResponse"
             }
@@ -128,7 +128,7 @@
         "operationId": "Connect",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcConnectResponse"
             }
@@ -155,7 +155,7 @@
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListCurrenciesResponse"
             }
@@ -172,7 +172,7 @@
         "operationId": "GetInfo",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
             }
@@ -189,7 +189,7 @@
         "operationId": "GetOrders",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetOrdersResponse"
             }
@@ -223,7 +223,7 @@
         "operationId": "ListPairs",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListPairsResponse"
             }
@@ -240,7 +240,7 @@
         "operationId": "ListPeers",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListPeersResponse"
             }
@@ -257,7 +257,34 @@
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/xudrpcPlaceOrderEvent"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcPlaceOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/placeordersync": {
+      "post": {
+        "summary": "The synchronous non-streaming version of PlaceOrder.",
+        "operationId": "PlaceOrderSync",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }
@@ -284,7 +311,7 @@
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
             }
@@ -311,7 +338,7 @@
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
@@ -338,7 +365,7 @@
         "operationId": "RemovePair",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairResponse"
             }
@@ -365,7 +392,7 @@
         "operationId": "Shutdown",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcShutdownResponse"
             }
@@ -392,7 +419,7 @@
         "operationId": "SubscribeRemovedOrders",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcOrderRemoval"
             }
@@ -409,7 +436,7 @@
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapResult"
             }
@@ -426,7 +453,7 @@
         "operationId": "Unban",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcUnbanResponse"
             }
@@ -734,17 +761,6 @@
         }
       }
     },
-    "xudrpcOrderMatch": {
-      "type": "object",
-      "properties": {
-        "maker": {
-          "$ref": "#/definitions/xudrpcOrder"
-        },
-        "taker": {
-          "$ref": "#/definitions/xudrpcOrder"
-        }
-      }
-    },
     "xudrpcOrderRemoval": {
       "type": "object",
       "properties": {
@@ -854,6 +870,23 @@
         }
       }
     },
+    "xudrpcPlaceOrderEvent": {
+      "type": "object",
+      "properties": {
+        "internal_match": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "title": "An own orders (or portions thereof) that matched the newly placed order"
+        },
+        "swap_result": {
+          "$ref": "#/definitions/xudrpcSwapResult",
+          "title": "A swap results of peer orders that matched the newly placed order"
+        },
+        "remaining_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "title": "The remaining portion of the order, after matches, that enters the order book"
+        }
+      }
+    },
     "xudrpcPlaceOrderRequest": {
       "type": "object",
       "properties": {
@@ -884,12 +917,19 @@
     "xudrpcPlaceOrderResponse": {
       "type": "object",
       "properties": {
-        "matches": {
+        "internal_matches": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/xudrpcOrderMatch"
+            "$ref": "#/definitions/xudrpcOrder"
           },
-          "title": "A list of orders matching the newly placed order"
+          "title": "A list of own orders (or portions thereof) that matched the newly placed order"
+        },
+        "swap_results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcSwapResult"
+          },
+          "title": "A list of swap results of peer orders that matched the newly placed order"
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
@@ -971,6 +1011,11 @@
         "pair_id": {
           "type": "string",
           "description": "The trading pair that this order is for."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "The order quantity that was swapped."
         },
         "r_hash": {
           "type": "string",

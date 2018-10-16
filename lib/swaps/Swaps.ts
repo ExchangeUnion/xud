@@ -168,14 +168,16 @@ class Swaps extends EventEmitter {
     this.deals.delete(deal.r_hash);
   }
 
-  public verifyExecution(maker: StampedPeerOrder, taker: StampedOwnOrder): boolean {
-    // we can make `executeSwap` call this method, instead of having it public
+  /**
+   * Checks if a swap for two given orders can be executed.
+   * @returns `true` if the swap can be executed, `false` otherwise
+   */
+  private verifyExecution = (maker: StampedPeerOrder, taker: StampedOwnOrder): boolean => {
     if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
       return false;
     }
 
     // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: what is the status of the order here? is it off the book? What if partial match
 
     return true;
   }
@@ -188,6 +190,11 @@ class Swaps extends EventEmitter {
    */
   public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
     return new Promise((resolve, reject) => {
+      if (!this.verifyExecution(maker, taker)) {
+        reject();
+        return;
+      }
+
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
         this.removeListener('swap.failed', onFailed);
@@ -224,11 +231,8 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns the r_hash for the swap
    */
-  public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
+  private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
-
-    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: check that pairID is LTC/BTC or handleSwapResponse fails
 
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
 
