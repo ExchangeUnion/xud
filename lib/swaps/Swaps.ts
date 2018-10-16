@@ -120,7 +120,7 @@ class Swaps extends EventEmitter {
       errorMessage,
     };
     this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
-    peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
+    peer.sendPacket(new packets.SwapErrorPacket(errorBody, reqId));
     return;
   }
 
@@ -404,7 +404,7 @@ class Swaps extends EventEmitter {
       quantity: requestBody.proposedQuantity,
     };
 
-    peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    peer.sendPacket(new packets.SwapResponsePacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapPhase.SwapAgreed);
     return true;
   }
@@ -413,8 +413,8 @@ class Swaps extends EventEmitter {
    * Handles a response from a peer to confirm a swap deal and updates the deal. If the deal is
    * accepted, initiates the swap.
    */
-  private handleSwapResponse = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
-    assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
+  private handleSwapResponse = async (responsePacket: packets.SwapResponsePacket, peer: Peer) => {
+    assert(responsePacket.body, 'SwapResponsePacket does not contain a body');
     const { quantity, r_hash, makerCltvDelta } = responsePacket.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
@@ -682,7 +682,7 @@ class Swaps extends EventEmitter {
     this.setDealPhase(deal, SwapPhase.SwapCompleted);
   }
 
-  private handleSwapError = (error: packets.SwapFailedPacket): void  => {
+  private handleSwapError = (error: packets.SwapErrorPacket): void  => {
     const { r_hash, errorMessage } = error.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
