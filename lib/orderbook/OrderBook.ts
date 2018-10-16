@@ -62,9 +62,9 @@ class OrderBook extends EventEmitter {
   /** Max time for addOwnOrder iterations (due to swaps failures retries). */
   private static readonly MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
 
-  /** Gets an iterable of supported pair ids. */
+  /** Gets an array of supported pair ids. */
   public get pairIds() {
-    return this.pairs.keys();
+    return Array.from(this.pairs.keys());
   }
 
   constructor(private logger: Logger, models: Models, private pool?: Pool, private swaps?: Swaps) {
@@ -79,7 +79,7 @@ class OrderBook extends EventEmitter {
   private bindPool = () => {
     if (this.pool) {
       this.pool.on('packet.order', this.addPeerOrder);
-      this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.orderId, order.pairId, order.quantity));
+      this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.id, order.pairId, order.quantity));
       this.pool.on('packet.getOrders', this.sendOrders);
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
@@ -92,7 +92,7 @@ class OrderBook extends EventEmitter {
         if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
-          this.emit('ownOrder.swapped', { orderId, pairId, quantity });
+          this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         }
       });
       // TODO: bind to other swap events
@@ -170,7 +170,7 @@ class OrderBook extends EventEmitter {
     const pairInstance = await this.repository.addPair(pair);
     this.pairs.set(pairInstance.id, pairInstance);
     this.matchingEngines.set(pairInstance.id, new MatchingEngine(this.logger, pairInstance.id));
-    // TODO: update handshake state
+
     return pairInstance;
   }
 
@@ -259,7 +259,7 @@ class OrderBook extends EventEmitter {
 
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
-      const portion: OrderPortion = { orderId: maker.id, pairId: maker.pairId, quantity: maker.quantity };
+      const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (orders.isOwnOrder(maker)) {
         // internal match
         portion.localId = maker.localId;
@@ -304,7 +304,7 @@ class OrderBook extends EventEmitter {
     const { remainingOrder } = result;
     if (remainingOrder && !discardRemaining) {
       matchingEngine.addOwnOrder(remainingOrder);
-      this.localIdMap.set(remainingOrder.localId, { orderId: remainingOrder.id, pairId: remainingOrder.pairId });
+      this.localIdMap.set(remainingOrder.localId, { id: remainingOrder.id, pairId: remainingOrder.pairId });
       this.emit('ownOrder.added', remainingOrder);
       this.logger.debug(`order added: ${JSON.stringify(remainingOrder)}`);
 
@@ -352,7 +352,7 @@ class OrderBook extends EventEmitter {
       throw errors.OWN_ORDER_NOT_FOUND(localId);
     }
 
-    this.removeOwnOrder(order.orderId, order.pairId);
+    this.removeOwnOrder(order.id, order.pairId);
   }
 
   /**
@@ -372,11 +372,7 @@ class OrderBook extends EventEmitter {
       }
 
       if (this.pool) {
-        this.pool.broadcastOrderInvalidation({
-          orderId,
-          pairId,
-          quantity: removeResult.order.quantity,
-        }, takerPubKey);
+        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
 
       return true;
@@ -395,7 +391,7 @@ class OrderBook extends EventEmitter {
     const matchingEngine = this.getMatchingEngine(pairId);
     try {
       const removeResult = matchingEngine.removePeerOrder(orderId, quantityToRemove);
-      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: removeResult.order.quantity });
+      this.emit('peerOrder.invalidation', removeResult.order);
       return true;
     } catch (err) {
       this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
@@ -412,11 +408,7 @@ class OrderBook extends EventEmitter {
     this.matchingEngines.forEach((matchingEngine) => {
       const orders = matchingEngine.removePeerOrders(peer.nodePubKey!);
       orders.forEach((order) => {
-        this.emit('peerOrder.invalidation', {
-          orderId: order.id,
-          pairId: order.pairId,
-          quantity: order.quantity,
-        });
+        this.emit('peerOrder.invalidation', order);
       });
     });
   }

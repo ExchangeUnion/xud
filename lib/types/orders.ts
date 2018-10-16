@@ -48,7 +48,8 @@ export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
 export type OutgoingOrder = Pick<StampedOwnOrder, Exclude<keyof StampedOwnOrder, 'localId' | 'createdAt'>>;
 
 export type OrderIdentifier = {
-  orderId: string;
+  /** The global identifier for this order on the XU network. */
+  id: string;
   pairId: string;
 };
 

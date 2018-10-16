@@ -479,7 +479,7 @@ class GrpcService {
     this.service.subscribeRemovedOrders((order: OrderPortion) => {
       const orderRemoval = new xudrpc.OrderRemoval();
       orderRemoval.setPairId(order.pairId);
-      orderRemoval.setOrderId(order.orderId);
+      orderRemoval.setOrderId(order.id);
       orderRemoval.setQuantity(order.quantity);
       orderRemoval.setLocalId(order.localId || '');
       orderRemoval.setIsOwnOrder(order.localId !== undefined);
