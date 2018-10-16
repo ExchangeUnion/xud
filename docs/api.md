@@ -30,11 +30,11 @@
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
     - [Order](#xudrpc.Order)
-    - [OrderMatch](#xudrpc.OrderMatch)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
+    - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
     - [RaidenInfo](#xudrpc.RaidenInfo)
@@ -454,22 +454,6 @@
 
 
 
-<a name="xudrpc.OrderMatch"></a>
-
-### OrderMatch
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| maker | [Order](#xudrpc.Order) |  |  |
-| taker | [Order](#xudrpc.Order) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.OrderRemoval"></a>
 
 ### OrderRemoval
@@ -543,6 +527,23 @@
 
 
 
+<a name="xudrpc.PlaceOrderEvent"></a>
+
+### PlaceOrderEvent
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| internal_match | [Order](#xudrpc.Order) |  | An own orders (or portions thereof) that matched the newly placed order |
+| swap_result | [SwapResult](#xudrpc.SwapResult) |  | A swap results of peer orders that matched the newly placed order |
+| remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book |
+
+
+
+
+
+
 <a name="xudrpc.PlaceOrderRequest"></a>
 
 ### PlaceOrderRequest
@@ -570,7 +571,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| matches | [OrderMatch](#xudrpc.OrderMatch) | repeated | A list of orders matching the newly placed order |
+| internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order |
+| swap_results | [SwapResult](#xudrpc.SwapResult) | repeated | A list of swap results of peer orders that matched the newly placed order |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book |
 
 
@@ -732,6 +734,7 @@
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
+| quantity | [double](#double) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded r_hash for the swap payments. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
@@ -830,7 +833,8 @@
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Get the list of the order book&#39;s suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Get a list of connected peers. |
-| PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | Add an order to the order book. If price is zero or unspecified a market order will get added. |
+| PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Add an order to the order book. If price is zero or unspecified a market order will get added. |
+| PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Remove a currency. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Remove a trading pair. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin shutting down xud. |
