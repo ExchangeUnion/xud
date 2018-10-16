@@ -100,7 +100,6 @@ class Swaps extends EventEmitter {
     return { takerAmount, makerAmount };
   }
 
-<<<<<<< HEAD
   public init = async () => {
     const promises: PromiseLike<any> = this.repository.getSwaps();
     const result = await Promise.resolve(promises);
@@ -110,11 +109,7 @@ class Swaps extends EventEmitter {
     this.bind();
   }
 
-  private bind = () => {
-    this.pool.on('packet.swapRequest', this.handleSwapRequest);
-=======
   private bind() {
->>>>>>> e3139358724ebc3093a65a4d11b33df6a21c31f7
     this.pool.on('packet.swapResponse', this.handleSwapResponse);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapError', this.handleSwapError);
