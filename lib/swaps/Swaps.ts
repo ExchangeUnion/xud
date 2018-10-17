@@ -57,7 +57,7 @@ type SwapDeal = {
   makerToTakerRoutes?: lndrpc.Route[];
   createTime: number;
   executeTime?: number;
-  completionTime?: number
+  completeTime?: number
 };
 
 type OrderToAccept = {
@@ -650,7 +650,7 @@ class Swaps extends EventEmitter {
         break;
       case SwapPhase.SwapCompleted:
         assert(deal.phase === SwapPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
-        deal.completionTime = Date.now();
+        deal.completeTime = Date.now();
         this.setDealState(deal, SwapState.Completed, 'Swap completed. preimage = ' + deal.r_preimage);
         this.logger.debug('Swap completed. preimage = ' + deal.r_preimage);
         break;
