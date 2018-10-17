@@ -5,7 +5,7 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapDealRole } from '../types/enums';
+import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
@@ -353,7 +353,7 @@ class Service extends EventEmitter {
   public subscribeSwaps = async (callback: (swapResult: SwapResult) => void) => {
     // TODO: use `ownOrder.swapped` order book event instead
     this.swaps.on('swap.paid', (swapResult) => {
-      if (swapResult.role === SwapDealRole.Maker) {
+      if (swapResult.role === SwapRole.Maker) {
         // only alert client for maker matches, taker matches are handled via placeOrder
         callback(swapResult);
       }

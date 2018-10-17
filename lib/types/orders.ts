@@ -1,4 +1,4 @@
-import { SwapClients, SwapDealRole } from './enums';
+import { SwapClients, SwapRole } from './enums';
 
 type MarketOrder = {
   /** The number of base currency tokens for the order. */
@@ -66,7 +66,7 @@ export type SwapResult = {
   amountSent: number;
   r_hash: string;
   peerPubKey: string;
-  role: SwapDealRole;
+  role: SwapRole;
 };
 
 export type Currency = {

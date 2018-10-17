@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapDealRole, SwapFailureReason } from '../types/enums';
+import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
@@ -89,7 +89,7 @@ class OrderBook extends EventEmitter {
   private bindSwaps = () => {
     if (this.swaps) {
       this.swaps.on('swap.paid', (swapResult) => {
-        if (swapResult.role === SwapDealRole.Maker) {
+        if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { orderId, pairId, quantity });
