@@ -9,7 +9,7 @@ export type SwapResponsePacketBody = {
   makerCltvDelta: number;
 };
 
-class SwapAcceptedPacket extends Packet<SwapResponsePacketBody> {
+class SwapResponsePacket extends Packet<SwapResponsePacketBody> {
   public get type() {
     return PacketType.SwapResponse;
   }
@@ -19,4 +19,4 @@ class SwapAcceptedPacket extends Packet<SwapResponsePacketBody> {
   }
 }
 
-export default SwapAcceptedPacket;
+export default SwapResponsePacket;

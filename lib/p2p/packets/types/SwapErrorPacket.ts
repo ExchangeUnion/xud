@@ -7,13 +7,13 @@ export type SwapErrorPacketBody = {
   errorMessage: string;
 };
 
-class SwapFailedPacket extends Packet<SwapErrorPacketBody> {
+class SwapErrorPacket extends Packet<SwapErrorPacketBody> {
   public get type() {
     return PacketType.SwapError;
   }
 
   public get direction(): PacketDirection {
-    // SwapFailedPacket may serve as a response to SwapRequest packet
+    // SwapErrorPacket may serve as a response to SwapRequest packet
     if (this.header.reqId) {
       return PacketDirection.Response;
     }
@@ -21,4 +21,4 @@ class SwapFailedPacket extends Packet<SwapErrorPacketBody> {
   }
 }
 
-export default SwapFailedPacket;
+export default SwapErrorPacket;

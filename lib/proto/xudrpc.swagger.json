@@ -258,10 +258,14 @@
         "responses": {
           "200": {
 <<<<<<< HEAD
+<<<<<<< HEAD
             "description": "(streaming responses)",
 =======
             "description": "A successful response.(streaming responses)",
 >>>>>>> e3139358724ebc3093a65a4d11b33df6a21c31f7
+=======
+            "description": "A successful response.(streaming responses)",
+>>>>>>> 5543a7bdb455a9f9b8e7e0f9c8b6fc92b342dc61
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderEvent"
             }
@@ -289,10 +293,14 @@
         "responses": {
           "200": {
 <<<<<<< HEAD
+<<<<<<< HEAD
             "description": "",
 =======
             "description": "A successful response.",
 >>>>>>> e3139358724ebc3093a65a4d11b33df6a21c31f7
+=======
+            "description": "A successful response.",
+>>>>>>> 5543a7bdb455a9f9b8e7e0f9c8b6fc92b342dc61
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }

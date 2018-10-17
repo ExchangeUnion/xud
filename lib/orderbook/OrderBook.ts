@@ -15,7 +15,7 @@ import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
-import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
+import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -497,13 +497,13 @@ class OrderBook extends EventEmitter {
           order.hold -= quantityToAccept;
         }
       } else {
-        peer.sendPacket(new SwapFailedPacket({
+        peer.sendPacket(new SwapErrorPacket({
           r_hash,
           errorMessage: SwapFailureReason[SwapFailureReason.OrderUnavailable],
         }, requestPacket.header.id));
       }
     } else {
-      peer.sendPacket(new SwapFailedPacket({
+      peer.sendPacket(new SwapErrorPacket({
         r_hash,
         errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
       }, requestPacket.header.id));

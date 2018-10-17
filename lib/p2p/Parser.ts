@@ -47,11 +47,11 @@ const fromRaw = (raw: string): Packet => {
       case PacketType.SwapRequest:
         return new packetTypes.SwapRequestPacket(packet);
       case PacketType.SwapResponse:
-        return new packetTypes.SwapAcceptedPacket(packet);
+        return new packetTypes.SwapResponsePacket(packet);
       case PacketType.SwapComplete:
         return new packetTypes.SwapCompletePacket(packet);
       case PacketType.SwapError:
-        return new packetTypes.SwapFailedPacket(packet);
+        return new packetTypes.SwapErrorPacket(packet);
       default:
         throw new ParserError(ParserErrorType.UnknownPacketType, packet.header.type!);
     }

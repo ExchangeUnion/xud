@@ -42,17 +42,17 @@ interface Pool {
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapResponse', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
-  on(event: 'packet.swapError', listener: (packet: packets.SwapFailedPacket) => void): this;
+  on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapResponse', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
+  emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
-  emit(event: 'packet.swapError', packet: packets.SwapFailedPacket): boolean;
+  emit(event: 'packet.swapError', packet: packets.SwapErrorPacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
