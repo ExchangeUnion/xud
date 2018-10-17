@@ -140,11 +140,13 @@ class NodeList extends EventEmitter {
       if (node.reputationScore < NodeList.banThreshold) {
         promises.push(this.setBanStatus(node, true));
         this.bannedNodes.add(node.nodePubKey);
+        this.nodes.delete(node.nodePubKey);
         this.emit('node.ban', nodePubKey);
       } else if (node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         this.bannedNodes.delete(node.nodePubKey);
+        this.nodes.set(node.nodePubKey, node);
         promises.push(this.setBanStatus(node, false));
       }
 
