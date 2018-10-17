@@ -8,9 +8,10 @@ import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
-import { StampedOwnOrder, StampedPeerOrder, SwapResult, SwapDeal as SwapDealDB } from '../types/orders';
+import { StampedOwnOrder, StampedPeerOrder, SwapResult } from '../types/orders';
 import assert from 'assert';
 import { Models } from '../db/DB';
+import { SwapDealAttributes } from 'lib/types/db';
 
 type SwapDeal = {
   /** The role of the local node in the swap. */
@@ -105,7 +106,6 @@ class Swaps extends EventEmitter {
     const promises: PromiseLike<any> = this.repository.getSwaps();
     const result = await Promise.resolve(promises);
     result.map((deal: SwapDeal) => {
-      // Loads r_hash
       this.hashs.add(deal.r_hash);
     });
     this.bind();
@@ -172,23 +172,21 @@ class Swaps extends EventEmitter {
   private persistDeal = (deal: SwapDeal) => {
     const { r_hash } = deal;
     if (this.hashs.has(r_hash)) {
-      const persistDeal: SwapDealDB = {
+      const persistDeal: SwapDealAttributes = {
+        r_hash,
         orderId: deal.orderId,
         localOrderId: deal.localOrderId,
-        r_hash,
         r_preimage: deal.r_preimage,
         myRole: deal.myRole,
         state: deal.state,
         stateReason: deal.stateReason,
         peerPubKey: deal.peerPubKey,
-        takerAmount: deal.takerAmount,
-        makerAmount: deal.makerAmount,
         proposedQuantity: deal.proposedQuantity,
         quantity: deal.quantity,
         pairId: deal.pairId,
-        price: deal.price, 
+        price: deal.price,
         takerCltvDelta: deal.takerCltvDelta,
-        makerCltvDelta: deal.makerCltvDelta, 
+        makerCltvDelta: deal.makerCltvDelta,
         createTime: deal.createTime,
         executeTime: deal.executeTime,
         completionTime: deal.completionTime,

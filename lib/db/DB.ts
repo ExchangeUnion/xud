@@ -83,18 +83,6 @@ class DB {
         // { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
       ]));
 
-      promises.push(SwapDeal.bulkCreate(<db.SwapDealAttributes[]>[
-        { r_hash: '3f8028915a17d603416f7276c822b6b2d20e71a',
-          state: SwapDealState.Active,
-          myRole: SwapDealRole.Maker,
-          peerPubKey: '03fd337659e99e628d0487e4f87acf93e353db06f754dccc402f2de1b857a319d0',
-          makerAmount: 10,
-          takerAmount: 15,
-          makerCurrency: 'BTC',
-          takerCurrency: 'LTC',
-        },
-      ]));
-
       await Promise.all(promises);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
