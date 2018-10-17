@@ -79,7 +79,7 @@ class OrderBook extends EventEmitter {
   private bindPool = () => {
     if (this.pool) {
       this.pool.on('packet.order', this.addPeerOrder);
-      this.pool.on('packet.orderInvalidation', order => this.removePeerOrder(order.id, order.pairId, order.quantity));
+      this.pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
       this.pool.on('packet.getOrders', this.sendOrders);
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
@@ -390,18 +390,11 @@ class OrderBook extends EventEmitter {
   /**
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
-   * @returns `true` if the order or portion thereof was removed, otherwise `false`
    */
-  private removePeerOrder = (orderId: string, pairId: string, quantityToRemove?: number) => {
+  private removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number) => {
     const matchingEngine = this.getMatchingEngine(pairId);
-    try {
-      const removeResult = matchingEngine.removePeerOrder(orderId, quantityToRemove);
-      this.emit('peerOrder.invalidation', removeResult.order);
-      return true;
-    } catch (err) {
-      this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
-      return false;
-    }
+    const removeResult = matchingEngine.removePeerOrder(orderId, peerPubKey, quantityToRemove);
+    this.emit('peerOrder.invalidation', removeResult.order);
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
@@ -462,6 +455,15 @@ class OrderBook extends EventEmitter {
   private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
     const { createdAt, localId, ...outgoingOrder } = order;
     return outgoingOrder;
+  }
+
+  private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
+    try {
+      this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
+    } catch {
+      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey}`);
+      // TODO: Penalize peer
+    }
   }
 
   /**
