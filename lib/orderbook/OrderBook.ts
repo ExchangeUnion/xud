@@ -257,17 +257,6 @@ class OrderBook extends EventEmitter {
     // instantiate a container for failed swaps, for retry purposes
     const swapFailures: StampedOwnOrder[] = [];
 
-    // append the taker quantity to the remaining order, after making sure it's initialized.
-    // if the maker is given, re-add it to the repository
-    const rejectNonInternalMatch = (taker: StampedOwnOrder, maker?: StampedPeerOrder) => {
-      result.remainingOrder = result.remainingOrder || { ...order, quantity: 0 };
-      result.remainingOrder.quantity += taker.quantity;
-
-      if (maker) {
-        matchingEngine.addPeerOrder(maker);
-      }
-    };
-
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
       const portion: OrderPortion = { orderId: maker.id, pairId: maker.pairId, quantity: maker.quantity };
@@ -278,19 +267,23 @@ class OrderBook extends EventEmitter {
         this.emit('ownOrder.filled', portion);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
-        if (!this.swaps || !this.swaps.verifyExecution(maker, taker)) {
-          rejectNonInternalMatch(taker, maker);
+        if (!this.swaps) {
+          // swaps should only be undefined during integration testing of the order book
+          // for now we treat this case the same as a swap failure
+          this.emit('peerOrder.invalidation', portion);
+          swapFailures.push(taker);
           continue;
         }
 
-        this.emit('peerOrder.filled', portion); // make sure we emit this event on every case in which we don't re-add the maker order
         try {
           const swapResult = await this.swaps.executeSwap(maker, taker);
+          this.emit('peerOrder.filled', portion);
           result.swapResults.push(swapResult);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
-          // we can either push to swapFailures, or reject in case of non-retry errors
+          this.emit('peerOrder.invalidation', portion);
           swapFailures.push(taker);
+          // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
         }
       }
     }
