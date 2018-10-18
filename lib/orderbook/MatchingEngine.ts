@@ -144,6 +144,9 @@ class MatchingEngine {
    * Remove all orders given a peer pubKey.
    */
   public removePeerOrders = (peerPubKey: string): StampedPeerOrder[] => {
+    // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues
+    if (!peerPubKey) return [];
+
     const callback = (order: StampedOrder) => (order as StampedPeerOrder).peerPubKey === peerPubKey;
 
     // remove from queues

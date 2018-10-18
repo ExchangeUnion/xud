@@ -21,12 +21,12 @@ export enum Network {
   RegTest = 'regtest',
 }
 
-export enum SwapDealRole {
+export enum SwapRole {
   Taker = 0,
   Maker = 1,
 }
 
-export enum SwapDealPhase {
+export enum SwapPhase {
   SwapCreated = 0,
   SwapRequested = 1,
   SwapAgreed = 2,
@@ -35,7 +35,7 @@ export enum SwapDealPhase {
   SwapCompleted = 5,
 }
 
-export enum SwapDealState {
+export enum SwapState {
   Active = 0,
   Error = 1,
   Completed = 2,
