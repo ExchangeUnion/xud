@@ -60,7 +60,7 @@ class OrderBook extends EventEmitter {
   private repository: OrderBookRepository;
 
   /** Max time for addOwnOrder iterations (due to swaps failures retries). */
-  private static MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
+  private static readonly MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
 
   /** Gets an iterable of supported pair ids. */
   public get pairIds() {

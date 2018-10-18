@@ -71,7 +71,7 @@ interface Parser {
 class Parser extends EventEmitter {
   private buffer = '';
 
-  private static MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
+  private static readonly MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
 
   constructor(private delimiter: string, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
     super();

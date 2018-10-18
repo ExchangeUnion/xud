@@ -26,7 +26,7 @@ interface NodeList {
 class NodeList extends EventEmitter {
   private nodes = new Map<string, NodeInstance>();
 
-  private static readonly banThreshold = -50;
+  private static readonly BAN_THRESHOLD = -50;
 
   public get count() {
     return this.nodes.size;
@@ -135,7 +135,7 @@ class NodeList extends EventEmitter {
 
       this.updateReputationScore(node, event);
 
-      if (node.reputationScore < NodeList.banThreshold) {
+      if (node.reputationScore < NodeList.BAN_THRESHOLD) {
         promises.push(this.setBanStatus(node, true));
         this.emit('node.ban', nodePubKey);
       } else if (node.banned) {

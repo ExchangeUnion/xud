@@ -44,7 +44,7 @@ type Loggers = {
 };
 
 class Logger {
-  public static disabledLogger = new Logger({ disabled: true });
+  public static readonly DISABLED_LOGGER = new Logger({ disabled: true });
 
   private level: string;
   private context: Context;

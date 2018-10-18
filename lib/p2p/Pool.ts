@@ -197,7 +197,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.disabledLogger, address);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
