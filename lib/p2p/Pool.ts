@@ -335,7 +335,7 @@ class Pool extends EventEmitter {
     const peer = new Peer(this.logger, address);
     this.pendingOutgoingConnections.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
-    return peer
+    return peer;
   }
 
   public listPeers = (): PeerInfo[] => {
