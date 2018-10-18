@@ -389,12 +389,12 @@
     "/v1/reputation": {
       "get": {
         "summary": "Get node reputation.",
-        "operationId": "GetNodeReputation",
+        "operationId": "GetNodeInfo",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcGetNodeReputationResponse"
+              "$ref": "#/definitions/xudrpcGetNodeInfoResponse"
             }
           }
         },
@@ -644,14 +644,16 @@
         }
       }
     },
-    "xudrpcGetNodeReputationResponse": {
+    "xudrpcGetNodeInfoResponse": {
       "type": "object",
       "properties": {
-        "reputation": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcNodeReputation"
-          }
+        "reputationScore": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "banned": {
+          "type": "boolean",
+          "format": "boolean"
         }
       }
     },
@@ -749,18 +751,6 @@
         },
         "alias": {
           "type": "string"
-        }
-      }
-    },
-    "xudrpcNodeReputation": {
-      "type": "object",
-      "properties": {
-        "event": {
-          "$ref": "#/definitions/xudrpcReputationEvent"
-        },
-        "created_at": {
-          "type": "integer",
-          "format": "int32"
         }
       }
     },
@@ -1038,17 +1028,6 @@
     },
     "xudrpcRemovePairResponse": {
       "type": "object"
-    },
-    "xudrpcReputationEvent": {
-      "type": "string",
-      "enum": [
-        "ManualBan",
-        "ManualUnban",
-        "PacketTimeout",
-        "SwapFailure",
-        "SwapSuccess"
-      ],
-      "default": "ManualBan"
     },
     "xudrpcShutdownRequest": {
       "type": "object"

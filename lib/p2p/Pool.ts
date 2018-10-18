@@ -37,9 +37,9 @@ type PoolConfig = {
   addresses: string[];
 };
 
-type NodeReputation = {
-  event: ReputationEvent;
-  createdAt: number;
+type NodeInfo = {
+  reputationScore: ReputationEvent;
+  banned: boolean;
 };
 
 interface Pool {
@@ -297,22 +297,18 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Get nodes reputation events
-   * @param NodeInstance to get reputation events
+   * Get node info
+   * @param nodePubKey to get reputation events
    * @return true if the specified node exists and the event was added, false otherwise
    */
-  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputation[]> => {
+  public getNodeReputation = async (nodePubKey: string): Promise<NodeInfo> => {
     const node = await this.repository.getNode(nodePubKey);
     if (node) {
-      const events = await this.repository.getReputationEvents(node);
-      const reputationInfo: NodeReputation[] = [];
-      events.map((e) => {
-        reputationInfo.push({
-          event: e.event,
-          createdAt: e.createdAt,
-        });
-      });
-      return reputationInfo;
+      const { reputationScore, banned } = node;
+      return {
+        reputationScore,
+        banned,
+      };
     } else {
       this.logger.warn(`node ${nodePubKey} not found`);
       throw errors.NODE_UNKNOWN(nodePubKey);
@@ -339,7 +335,7 @@ class Pool extends EventEmitter {
     const peer = new Peer(this.logger, address);
     this.pendingOutgoingConnections.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
-    return peer;
+    return peer
   }
 
   public listPeers = (): PeerInfo[] => {

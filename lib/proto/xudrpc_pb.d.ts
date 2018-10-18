@@ -371,72 +371,49 @@ export namespace GetInfoResponse {
     }
 }
 
-export class GetNodeReputationRequest extends jspb.Message { 
+export class GetNodeInfoRequest extends jspb.Message { 
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): GetNodeReputationRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: GetNodeReputationRequest): GetNodeReputationRequest.AsObject;
+    toObject(includeInstance?: boolean): GetNodeInfoRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetNodeInfoRequest): GetNodeInfoRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: GetNodeReputationRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): GetNodeReputationRequest;
-    static deserializeBinaryFromReader(message: GetNodeReputationRequest, reader: jspb.BinaryReader): GetNodeReputationRequest;
+    static serializeBinaryToWriter(message: GetNodeInfoRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetNodeInfoRequest;
+    static deserializeBinaryFromReader(message: GetNodeInfoRequest, reader: jspb.BinaryReader): GetNodeInfoRequest;
 }
 
-export namespace GetNodeReputationRequest {
+export namespace GetNodeInfoRequest {
     export type AsObject = {
         nodePubKey: string,
     }
 }
 
-export class GetNodeReputationResponse extends jspb.Message { 
-    clearReputationList(): void;
-    getReputationList(): Array<NodeReputation>;
-    setReputationList(value: Array<NodeReputation>): void;
-    addReputation(value?: NodeReputation, index?: number): NodeReputation;
+export class GetNodeInfoResponse extends jspb.Message { 
+    getReputationscore(): number;
+    setReputationscore(value: number): void;
+
+    getBanned(): boolean;
+    setBanned(value: boolean): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): GetNodeReputationResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: GetNodeReputationResponse): GetNodeReputationResponse.AsObject;
+    toObject(includeInstance?: boolean): GetNodeInfoResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetNodeInfoResponse): GetNodeInfoResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: GetNodeReputationResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): GetNodeReputationResponse;
-    static deserializeBinaryFromReader(message: GetNodeReputationResponse, reader: jspb.BinaryReader): GetNodeReputationResponse;
+    static serializeBinaryToWriter(message: GetNodeInfoResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetNodeInfoResponse;
+    static deserializeBinaryFromReader(message: GetNodeInfoResponse, reader: jspb.BinaryReader): GetNodeInfoResponse;
 }
 
-export namespace GetNodeReputationResponse {
+export namespace GetNodeInfoResponse {
     export type AsObject = {
-        reputationList: Array<NodeReputation.AsObject>,
-    }
-}
-
-export class NodeReputation extends jspb.Message { 
-    getEvent(): ReputationEvent;
-    setEvent(value: ReputationEvent): void;
-
-    getCreatedAt(): number;
-    setCreatedAt(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): NodeReputation.AsObject;
-    static toObject(includeInstance: boolean, msg: NodeReputation): NodeReputation.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: NodeReputation, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): NodeReputation;
-    static deserializeBinaryFromReader(message: NodeReputation, reader: jspb.BinaryReader): NodeReputation;
-}
-
-export namespace NodeReputation {
-    export type AsObject = {
-        event: ReputationEvent,
-        createdAt: number,
+        reputationscore: number,
+        banned: boolean,
     }
 }
 
@@ -1325,12 +1302,4 @@ export namespace UnbanResponse {
 export enum OrderSide {
     BUY = 0,
     SELL = 1,
-}
-
-export enum ReputationEvent {
-    ManualBan = 0,
-    ManualUnban = 1,
-    PacketTimeout = 2,
-    SwapFailure = 3,
-    SwapSuccess = 4,
 }

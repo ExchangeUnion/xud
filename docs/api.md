@@ -18,8 +18,8 @@
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
-    - [GetNodeReputationRequest](#xudrpc.GetNodeReputationRequest)
-    - [GetNodeReputationResponse](#xudrpc.GetNodeReputationResponse)
+    - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
+    - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
     - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
     - [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry)
@@ -31,7 +31,6 @@
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
-    - [NodeReputation](#xudrpc.NodeReputation)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [Orders](#xudrpc.Orders)
@@ -58,7 +57,6 @@
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
-    - [ReputationEvent](#xudrpc.ReputationEvent)
     - [SwapResult.Role](#xudrpc.SwapResult.Role)
   
   
@@ -275,9 +273,9 @@
 
 
 
-<a name="xudrpc.GetNodeReputationRequest"></a>
+<a name="xudrpc.GetNodeInfoRequest"></a>
 
-### GetNodeReputationRequest
+### GetNodeInfoRequest
 
 
 
@@ -290,15 +288,16 @@
 
 
 
-<a name="xudrpc.GetNodeReputationResponse"></a>
+<a name="xudrpc.GetNodeInfoResponse"></a>
 
-### GetNodeReputationResponse
+### GetNodeInfoResponse
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reputation | [NodeReputation](#xudrpc.NodeReputation) | repeated |  |
+| reputationScore | [int32](#int32) |  |  |
+| banned | [bool](#bool) |  |  |
 
 
 
@@ -459,22 +458,6 @@
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |
 | alias | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.NodeReputation"></a>
-
-### NodeReputation
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| event | [ReputationEvent](#xudrpc.ReputationEvent) |  |  |
-| created_at | [int32](#int32) |  |  |
 
 
 
@@ -848,21 +831,6 @@
 
 
 
-<a name="xudrpc.ReputationEvent"></a>
-
-### ReputationEvent
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ManualBan | 0 |  |
-| ManualUnban | 1 |  |
-| PacketTimeout | 2 |  |
-| SwapFailure | 3 |  |
-| SwapSuccess | 4 |  |
-
-
-
 <a name="xudrpc.SwapResult.Role"></a>
 
 ### SwapResult.Role
@@ -894,7 +862,7 @@
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Ban a XU node manually and disconnect from it. |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Remove ban from XU node manually and connect to it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Get general information about this Exchange Union node. |
-| GetNodeReputation | [GetNodeReputationRequest](#xudrpc.GetNodeReputationRequest) | [GetNodeReputationResponse](#xudrpc.GetNodeReputationResponse) | Get node reputation. |
+| GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Get node reputation. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Get the list of the order book&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Get the list of the order book&#39;s suported trading pairs. |

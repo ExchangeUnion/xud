@@ -88,7 +88,7 @@ service Xud {
   }
 
   /*Get node reputation. */
-  rpc GetNodeReputation(GetNodeReputationRequest) returns (GetNodeReputationResponse) {
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
     option (google.api.http) = {
       get: "/v1/reputation"
     };
@@ -277,24 +277,12 @@ message GetInfoResponse {
   RaidenInfo raiden = 9 [json_name = "raiden"];
 }
 
-message GetNodeReputationRequest {
+message GetNodeInfoRequest {
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message GetNodeReputationResponse {
-  repeated NodeReputation reputation = 1 [json_name = "reputation"];
-}
-
-message NodeReputation {
-  ReputationEvent event = 1 [json_name = "event"];
-  int32 created_at = 2 [json_name = "created_at"];
-}
-
-enum ReputationEvent {
-  ManualBan = 0;
-  ManualUnban = 1;
-  PacketTimeout = 2;
-  SwapFailure = 3;
-  SwapSuccess = 4;
+message GetNodeInfoResponse {
+  int32 reputationScore = 1 [json_name = "reputation"];
+  bool banned = 2 [json_name = "banned"];
 }
 
 message GetOrdersRequest {

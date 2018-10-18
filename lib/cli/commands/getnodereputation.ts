@@ -1,10 +1,10 @@
 import { Arguments } from 'yargs';
 import { callback, loadXudClient } from '../command';
-import { GetNodeReputationRequest } from '../../proto/xudrpc_pb';
+import { GetNodeInfoRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'getnodereputation <node_pub_key>';
+export const command = 'getnodeinfo <node_pub_key>';
 
-export const describe = 'get node reputation';
+export const describe = 'get information about node';
 
 export const builder = {
   node_pub_key: {
@@ -14,7 +14,7 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new GetNodeReputationRequest();
+  const request = new GetNodeInfoRequest();
   request.setNodePubKey(argv.node_pub_key);
-  loadXudClient(argv).getNodeReputation(request, callback);
+  loadXudClient(argv).getNodeInfo(request, callback);
 };
