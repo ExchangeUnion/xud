@@ -25,6 +25,7 @@ interface NodeList {
 /** Represents a list of nodes for managing network peers activity */
 class NodeList extends EventEmitter {
   private nodes = new Map<string, NodeInstance>();
+  private bannedNodes = new Set<string>();
 
   private static readonly banThreshold = -50;
 
@@ -39,7 +40,7 @@ class NodeList extends EventEmitter {
   /**
    * Check if a node with a given nodePubKey exists.
    */
-  public has = (nodePubKey: string) => {
+  public has = (nodePubKey: string): boolean => {
     return this.nodes.has(nodePubKey);
   }
 
@@ -64,8 +65,7 @@ class NodeList extends EventEmitter {
   }
 
   public isBanned = (nodePubKey: string): boolean => {
-    const node = this.nodes.get(nodePubKey);
-    return node ? node.banned : false;
+    return this.bannedNodes.has(nodePubKey);
   }
 
   /**
@@ -75,7 +75,9 @@ class NodeList extends EventEmitter {
     const nodes = await this.repository.getNodes();
 
     nodes.forEach(async (node) => {
-      if (!node.banned) {
+      if (node.banned) {
+        this.bannedNodes.add(node.nodePubKey);
+      } else {
         this.nodes.set(node.nodePubKey, node);
         const events = await this.repository.getReputationEvents(node);
         events.forEach(({ event }) => {
@@ -137,10 +139,14 @@ class NodeList extends EventEmitter {
 
       if (node.reputationScore < NodeList.banThreshold) {
         promises.push(this.setBanStatus(node, true));
+        this.bannedNodes.add(node.nodePubKey);
+        this.nodes.delete(node.nodePubKey);
         this.emit('node.ban', nodePubKey);
       } else if (node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
+        this.bannedNodes.delete(node.nodePubKey);
+        this.nodes.set(node.nodePubKey, node);
         promises.push(this.setBanStatus(node, false));
       }
 
