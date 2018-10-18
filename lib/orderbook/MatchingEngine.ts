@@ -4,6 +4,7 @@ import { matchingEngine, orders } from '../types';
 import { OrderingDirection } from '../types/enums';
 import Logger from '../Logger';
 import { isOwnOrder, StampedOrder, StampedOwnOrder, StampedPeerOrder } from '../types/orders';
+import errors from './errors';
 
 type SplitOrder = {
   matched: StampedOrder;
@@ -140,30 +141,6 @@ class MatchingEngine {
   }
 
   /**
-   * Removes a quantity from a peer order. If the entire quantity is met, the order will be removed entirely.
-   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
-   * quantity then the entire order is removed
-   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
-   */
-  public removePeerOrderQuantity = (orderId: string, quantityToRemove?: number): StampedPeerOrder | undefined => {
-    const order = this.peerOrders.buy.get(orderId) || this.peerOrders.sell.get(orderId);
-    if (!order) {
-      return;
-    }
-
-    if (quantityToRemove && quantityToRemove < order.quantity) {
-      // if quantityToRemove is below the order quantity, reduce the order quantity
-      // and return a copy of the order with the quantity that was removed
-      order.quantity = order.quantity - quantityToRemove;
-      return { ...order, quantity: quantityToRemove };
-    } else {
-      // otherwise, remove the order entirely, and return it
-      this.removePeerOrder(order);
-      return order;
-    }
-  }
-
-  /**
    * Remove all orders given a peer pubKey.
    */
   public removePeerOrders = (peerPubKey: string): StampedPeerOrder[] => {
@@ -185,29 +162,47 @@ class MatchingEngine {
   }
 
   /**
-   * Removes an own order by its global order id.
-   * @returns the removed order, or undefined if no order with the provided id could be found
+   * Removes all or part of a peer order.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removeOwnOrder = (orderId: string): StampedOwnOrder | undefined => {
-    const order = this.ownOrders.buy.get(orderId) || this.ownOrders.sell.get(orderId);
+  public removePeerOrder = (orderId: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
+    return this.removeOrder(orderId, this.peerOrders, quantityToRemove);
+  }
+
+  /**
+   * Removes all or part of an own order.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns true if the entire order was removed, or false if only part of the order was removed
+   */
+  public removeOwnOrder = (orderId: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
+    return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
+  }
+
+  private removeOrder = <T extends StampedOrder>(orderId: string, lists: OrderSidesLists<StampedOrder>, quantityToRemove?: number):
+    { order: T, fullyRemoved: boolean } => {
+    const order = lists.buy.get(orderId) || lists.sell.get(orderId);
     if (!order) {
-      return;
+      throw errors.ORDER_NOT_FOUND(orderId);
     }
 
-    this.removeOrder(order, this.ownOrders);
-    return order;
-  }
+    if (quantityToRemove && quantityToRemove < order.quantity) {
+      // if quantityToRemove is below the order quantity, reduce the order quantity
+      order.quantity = order.quantity - quantityToRemove;
+      this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
+      return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
+    } else {
+      // otherwise, remove the order entirely
+      const list = order.isBuy ? lists.buy : lists.sell;
+      const queue = order.isBuy ? this.queues.buy : this.queues.sell;
 
-  private removePeerOrder = (order: StampedPeerOrder) => {
-    this.removeOrder(order, this.peerOrders);
-  }
-
-  private removeOrder = (order: StampedOrder, lists: OrderSidesLists<StampedOrder>) => {
-    const list = order.isBuy ? lists.buy : lists.sell;
-    const queue = order.isBuy ? this.queues.buy : this.queues.sell;
-
-    list.delete(order.id);
-    queue.remove(order);
+      list.delete(order.id);
+      queue.remove(order);
+      this.logger.debug(`order removed: ${orderId}`);
+      return { order: order as T, fullyRemoved: true };
+    }
   }
 
   private getOrderList = (order: StampedOrder): OrderList<StampedOrder> => {

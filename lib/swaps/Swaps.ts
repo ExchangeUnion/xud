@@ -103,21 +103,12 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Verifies that the order still exists on orderBook
+   * Checks if there exist active swap clients for both currencies in a given trading pair.
+   * @returns `true` if the pair has swap support, `false` otherwise
    */
-  // TODO: replace the dummy implementation with real order book integration
-  private isOrderOnBook = (pairId: string, orderId: string): boolean => {
-    this.logger.debug('checking order book for ' + pairId + ':' + orderId);
-    return true;
-  }
-
-  /**
-   * Verifies that the order still exists on orderBook
-   */
-  // TODO: replace the dummy implementation with real order book integration
-  private checkAndHoldAmount = (deal: SwapDeal): number => {
-    this.logger.debug('checking and holding amount for swap ' + deal.pairId + ':' + deal.orderId + ':' + deal.takerAmount);
-    return deal.takerAmount;
+  public isPairSupported = (pairId: string): boolean => {
+    // TODO: implement generic way of checking pair
+    return pairId === 'LTC/BTC' && this.lndBtcClient.isConnected() && this.lndLtcClient.isConnected();
   }
 
   /**
@@ -177,16 +168,16 @@ class Swaps extends EventEmitter {
     this.deals.delete(deal.r_hash);
   }
 
-  public verifyExecution(maker: StampedPeerOrder, taker: StampedOwnOrder): boolean {
-    // we can make `executeSwap` call this method, instead of having it public
-    const supportedPairs = ['LTC/BTC']; // TODO: define by xud supported pairs
-
-    if (maker.pairId !== taker.pairId || !supportedPairs.includes(maker.pairId)) {
+  /**
+   * Checks if a swap for two given orders can be executed.
+   * @returns `true` if the swap can be executed, `false` otherwise
+   */
+  private verifyExecution = (maker: StampedPeerOrder, taker: StampedOwnOrder): boolean => {
+    if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
       return false;
     }
 
     // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: what is the status of the order here? is it off the book? What if partial match
 
     return true;
   }
@@ -199,6 +190,11 @@ class Swaps extends EventEmitter {
    */
   public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
     return new Promise((resolve, reject) => {
+      if (!this.verifyExecution(maker, taker)) {
+        reject();
+        return;
+      }
+
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
         this.removeListener('swap.failed', onFailed);
@@ -235,11 +231,8 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns the r_hash for the swap
    */
-  public beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
+  private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
-
-    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-    // TODO: check that pairID is LTC/BTC or handleSwapResponse fails
 
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
 
