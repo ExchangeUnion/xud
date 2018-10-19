@@ -55,7 +55,7 @@ class LndClient extends BaseClient {
   private identityPubKey?: string;
 
   /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
-  private static RECONNECT_TIMER = 5000;
+  private static readonly RECONNECT_TIMER = 5000;
 
   /**
    * Create an lnd client.
