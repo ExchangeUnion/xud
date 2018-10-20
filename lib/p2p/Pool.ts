@@ -197,7 +197,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.disabledLogger, address);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
@@ -330,19 +330,23 @@ class Pool extends EventEmitter {
   }
 
   private openPeer = async (peer: Peer, nodePubKey?: string, retryConnecting = false): Promise<void> => {
-    this.bindPeer(peer);
-    try {
-      await peer.open(this.handshakeData, nodePubKey, retryConnecting);
-    } catch (err) {
-      // we don't have `nodePubKey` for inbound connections, which might fail on handshake
-      const id = nodePubKey || addressUtils.toString(peer.address);
-      this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
+    const isBanned = nodePubKey ? this.nodes.isBanned(nodePubKey) : false;
+    if (!isBanned) {
+      this.bindPeer(peer);
+      try {
+        await peer.open(this.handshakeData, nodePubKey, retryConnecting);
+      } catch (err) {
 
-      if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
-        await this.nodes.removeAddress(nodePubKey!, peer.address);
+        // we don't have `nodePubKey` for inbound connections, which might fail on handshake
+        const id = nodePubKey || addressUtils.toString(peer.address);
+        this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
+
+        if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
+          await this.nodes.removeAddress(nodePubKey!, peer.address);
+        }
+
+        throw err;
       }
-
-      throw err;
     }
   }
 

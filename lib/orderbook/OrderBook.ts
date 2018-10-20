@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapDealRole, SwapFailureReason } from '../types/enums';
+import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, StampedPeerOrder, OwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
@@ -60,7 +60,7 @@ class OrderBook extends EventEmitter {
   private repository: OrderBookRepository;
 
   /** Max time for addOwnOrder iterations (due to swaps failures retries). */
-  private static MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
+  private static readonly MAX_ADD_OWN_ORDER_ITERATIONS_TIME = 10000; // 10 sec
 
   /** Gets an iterable of supported pair ids. */
   public get pairIds() {
@@ -89,7 +89,7 @@ class OrderBook extends EventEmitter {
   private bindSwaps = () => {
     if (this.swaps) {
       this.swaps.on('swap.paid', (swapResult) => {
-        if (swapResult.role === SwapDealRole.Maker) {
+        if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { orderId, pairId, quantity });
@@ -405,9 +405,12 @@ class OrderBook extends EventEmitter {
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
     // TODO: remove only from pairs which are supported by the peer
+    if (!peer.nodePubKey) {
+      return;
+    }
+
     this.matchingEngines.forEach((matchingEngine) => {
       const orders = matchingEngine.removePeerOrders(peer.nodePubKey!);
-
       orders.forEach((order) => {
         this.emit('peerOrder.invalidation', {
           orderId: order.id,

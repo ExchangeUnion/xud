@@ -21,7 +21,7 @@
         "operationId": "AddCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddCurrencyResponse"
             }
@@ -48,7 +48,7 @@
         "operationId": "AddPair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddPairResponse"
             }
@@ -75,7 +75,7 @@
         "operationId": "Ban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcBanResponse"
             }
@@ -102,7 +102,7 @@
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcChannelBalanceResponse"
             }
@@ -128,7 +128,7 @@
         "operationId": "Connect",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcConnectResponse"
             }
@@ -155,7 +155,7 @@
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListCurrenciesResponse"
             }
@@ -172,7 +172,7 @@
         "operationId": "GetInfo",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
             }
@@ -189,7 +189,7 @@
         "operationId": "GetOrders",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetOrdersResponse"
             }
@@ -223,7 +223,7 @@
         "operationId": "ListPairs",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPairsResponse"
             }
@@ -240,7 +240,7 @@
         "operationId": "ListPeers",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPeersResponse"
             }
@@ -257,7 +257,7 @@
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderEvent"
             }
@@ -284,7 +284,7 @@
         "operationId": "PlaceOrderSync",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }
@@ -311,7 +311,7 @@
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
             }
@@ -338,7 +338,7 @@
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
@@ -365,7 +365,7 @@
         "operationId": "RemovePair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairResponse"
             }
@@ -392,7 +392,7 @@
         "operationId": "Shutdown",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcShutdownResponse"
             }
@@ -419,7 +419,7 @@
         "operationId": "SubscribeRemovedOrders",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcOrderRemoval"
             }
@@ -436,7 +436,7 @@
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapResult"
             }
@@ -453,7 +453,7 @@
         "operationId": "Unban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcUnbanResponse"
             }

@@ -35,10 +35,6 @@ type ChannelCount = {
   pending: number,
 };
 
-interface GrpcResponse {
-  toObject: Function;
-}
-
 interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
@@ -59,7 +55,7 @@ class LndClient extends BaseClient {
   private identityPubKey?: string;
 
   /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
-  private static RECONNECT_TIMER = 5000;
+  private static readonly RECONNECT_TIMER = 5000;
 
   /**
    * Create an lnd client.
@@ -107,22 +103,6 @@ class LndClient extends BaseClient {
   }
 
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
-    return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
-        return;
-      }
-      (this.lightning as LightningMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: GrpcResponse) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(response.toObject());
-        }
-      });
-    });
-  }
-
-  private unaryCallNative = <T, U>(methodName: string, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
@@ -228,101 +208,80 @@ class LndClient extends BaseClient {
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
-    return this.unaryCallNative<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
-  }
-
-  /**
-   * Attempt to add a new invoice to the lnd invoice database.
-   * @param value the value of this invoice in satoshis
-   */
-  public addInvoice = (value: number): Promise<lndrpc.AddInvoiceResponse.AsObject> => {
-    const request = new lndrpc.Invoice();
-    request.setValue(value);
-    return this.unaryCall<lndrpc.Invoice, lndrpc.AddInvoiceResponse.AsObject>('addInvoice', request);
-  }
-
-  /**
-   * Pay an invoice through the Lightning Network.
-   * @param payment_request an invoice for a payment within the Lightning Network
-   */
-  public payInvoice = (paymentRequest: string): Promise<lndrpc.SendResponse.AsObject> => {
-    const request = new lndrpc.SendRequest();
-    request.setPaymentRequest(paymentRequest);
-    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse.AsObject>('sendPaymentSync', request);
+    return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
   /**
    * Send a payment through the Lightning Network.
-   * @param lndrpc.SendRequest (see lndrpc.proto)
    */
   public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
-    return this.unaryCallNative<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
+    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
   /**
    * Get a new address for the internal lnd wallet.
    */
-  public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse.AsObject> => {
+  public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse> => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
-    return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse.AsObject>('newAddress', request);
+    return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
   }
 
   /**
    * Return the total of unspent outputs for the internal lnd wallet.
    */
-  public walletBalance = (): Promise<lndrpc.WalletBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse.AsObject>('walletBalance', new lndrpc.WalletBalanceRequest());
+  public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
+    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
   /**
    * Return the total balance available across all channels.
    */
-  public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse.AsObject>('channelBalance', new lndrpc.ChannelBalanceRequest());
+  public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse> => {
+    return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>('channelBalance', new lndrpc.ChannelBalanceRequest());
   }
 
   /**
    * Connect to another lnd node.
    */
-  public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse.AsObject> => {
+  public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse> => {
     const request = new lndrpc.ConnectPeerRequest();
     const address = new lndrpc.LightningAddress();
     address.setHost(`${host}:${port}`);
     address.setPubkey(pubkey);
     request.setAddr(address);
-    return this.unaryCall<lndrpc.ConnectPeerRequest, lndrpc.ConnectPeerResponse.AsObject>('connectPeer', request);
+    return this.unaryCall<lndrpc.ConnectPeerRequest, lndrpc.ConnectPeerResponse>('connectPeer', request);
   }
 
   /**
    * Open a channel with a connected lnd node.
    */
-  public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint.AsObject> => {
+  public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
     request.setNodePubkeyString(node_pubkey_string);
     request.setLocalFundingAmount(local_funding_amount);
-    return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint.AsObject>('openChannelSync', request);
+    return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint>('openChannelSync', request);
   }
 
   /**
    * List all open channels for this node.
    */
-  public listChannels = (): Promise<lndrpc.ListChannelsResponse.AsObject> => {
-    return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse.AsObject>('listChannels', new lndrpc.ListChannelsRequest());
+  public listChannels = (): Promise<lndrpc.ListChannelsResponse> => {
+    return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
   /**
    * List all routes to destination.
    */
   public queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
-    return this.unaryCallNative<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
+    return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
   /**
    * Send amount to destination using pre-defined routes.
    */
   public sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
-    return this.unaryCallNative<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
+    return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
   /**

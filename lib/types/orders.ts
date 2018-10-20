@@ -1,4 +1,4 @@
-import { SwapClients, SwapDealRole, SwapDealState } from './enums';
+import { SwapClients, SwapRole, SwapState } from './enums';
 
 type MarketOrder = {
   /** The number of base currency tokens for the order. */
@@ -66,7 +66,7 @@ export type SwapResult = {
   amountSent: number;
   r_hash: string;
   peerPubKey: string;
-  role: SwapDealRole;
+  role: SwapRole;
 };
 
 export type Currency = {
@@ -89,24 +89,6 @@ export type Pair = {
   baseCurrency: string;
   /* The currency used to quote a price for the base currency. */
   quoteCurrency: string;
-};
-
-export type SwapDeal = {
-  r_hash: string;
-  r_preimage: string | undefined;
-  myRole: SwapDealRole;
-  state: SwapDealState;
-  stateReason: string;
-  peerPubKey: string;
-  orderId: string;
-  localOrderId: string
-  proposedQuantity: number;
-  quantity: number | undefined;
-  pairId: string;
-  price: number;
-  takerCltvDelta: number;
-  makerCltvDelta: number | undefined;
-  createTime: number;
 };
 
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
