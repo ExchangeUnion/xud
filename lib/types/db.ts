@@ -1,7 +1,6 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
-import { SwapDeal } from '../swaps/Swaps';
-import { Currency, Pair } from './orders';
+import { Currency, Pair, SwapDeal } from './orders';
 import { ReputationEvent } from './enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {

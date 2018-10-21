@@ -4,7 +4,7 @@ import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import { db } from '../types';
-import { SwapClients, SwapDealRole, SwapDealState } from '../types/enums';
+import { SwapClients } from '../types/enums';
 
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
