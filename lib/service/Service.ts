@@ -331,6 +331,10 @@ class Service extends EventEmitter {
   }
 
   public executeSwap = async (args: { pairId: string, makerOrderId: string, makerPeerPubKey: string, takerOrderId: string }): Promise<SwapResult> => {
+    if (!this.orderBook.nomatching) {
+      throw errors.NOMATCHING_MODE_IS_REQUIRED();
+    }
+
     const { pairId, makerOrderId, makerPeerPubKey, takerOrderId } = args;
 
     const maker = this.orderBook.getPeerOrder(makerOrderId, pairId, makerPeerPubKey);

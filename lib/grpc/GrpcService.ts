@@ -126,6 +126,7 @@ class GrpcService {
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
+      case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
         code = status.FAILED_PRECONDITION;
         break;
     }

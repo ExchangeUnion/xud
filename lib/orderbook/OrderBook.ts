@@ -70,7 +70,7 @@ class OrderBook extends EventEmitter {
     return this.pairs.keys();
   }
 
-  constructor(private logger: Logger, models: Models, private nomatching = false, private pool?: Pool, private swaps?: Swaps) {
+  constructor(private logger: Logger, models: Models, public nomatching = false, private pool?: Pool, private swaps?: Swaps) {
     super();
 
     this.repository = new OrderBookRepository(logger, models);
@@ -555,7 +555,6 @@ class OrderBook extends EventEmitter {
       }, requestPacket.header.id));
     }
   }
-
 }
 
 export default OrderBook;
