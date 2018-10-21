@@ -11,7 +11,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
 import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
-import { OrderSidesArrays } from '../orderbook/MatchingEngine';
+import { OrderSidesArrays } from '../orderbook/TradingPair';
 
 /**
  * The components required by the API service layer.
@@ -205,7 +205,7 @@ class Service extends EventEmitter {
     let ownOrdersCount = 0;
     let numPairs = 0;
     for (const pairId of this.orderBook.pairIds) {
-      const peerOrders = this.orderBook.getPeerOrders(pairId);
+      const peerOrders = this.orderBook.getPeersOrders(pairId);
       const ownOrders = this.orderBook.getOwnOrders(pairId);
 
       peerOrdersCount += Object.keys(peerOrders.buy).length + Object.keys(peerOrders.sell).length;
@@ -242,7 +242,7 @@ class Service extends EventEmitter {
 
     const result = new Map<string, OrderSidesArrays<any>>();
     const getOrderTypes = (pairId: string) => {
-      const orders = this.orderBook.getPeerOrders(pairId);
+      const orders = this.orderBook.getPeersOrders(pairId);
 
       if (includeOwnOrders) {
         const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
@@ -311,7 +311,7 @@ class Service extends EventEmitter {
       localId: orderId,
     };
 
-    return price > 0 ? await this.orderBook.addLimitOrder(order, callback) : await this.orderBook.addMarketOrder(order, callback);
+    return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
   }
 
   /** Removes a currency. */
@@ -328,6 +328,14 @@ class Service extends EventEmitter {
     const { pairId } = args;
 
     return this.orderBook.removePair(pairId);
+  }
+
+  public executeSwap = async (args: { pairId: string, makerOrderId: string, makerPeerPubKey: string, takerOrderId: string }): Promise<SwapResult> => {
+    const { pairId, makerOrderId, makerPeerPubKey, takerOrderId } = args;
+
+    const maker = this.orderBook.getPeerOrder(makerOrderId, pairId, makerPeerPubKey);
+    const taker = this.orderBook.getOwnOrder(takerOrderId, pairId);
+    return this.swaps.executeSwap(maker, taker);
   }
 
   /*

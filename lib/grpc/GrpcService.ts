@@ -408,6 +408,18 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.placeOrder]]
+   */
+  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapResult> = async (call, callback) => {
+    try {
+      const result = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapResult(result));
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.addCurrency]]
    */
   public removeCurrency: grpc.handleUnaryCall<xudrpc.RemoveCurrencyRequest, xudrpc.RemoveCurrencyResponse> = async (call, callback) => {

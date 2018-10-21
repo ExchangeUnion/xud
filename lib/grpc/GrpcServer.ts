@@ -32,6 +32,7 @@ class GrpcServer {
       listPeers: grpcService.listPeers,
       placeOrder: grpcService.placeOrder,
       placeOrderSync: grpcService.placeOrderSync,
+      executeSwap: grpcService.executeSwap,
       removeCurrency: grpcService.removeCurrency,
       removePair: grpcService.removePair,
       shutdown: grpcService.shutdown,

@@ -958,6 +958,39 @@ export namespace PlaceOrderEvent {
 
 }
 
+export class ExecuteSwapRequest extends jspb.Message { 
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getMakerOrderId(): string;
+    setMakerOrderId(value: string): void;
+
+    getMakerPeerPubKey(): string;
+    setMakerPeerPubKey(value: string): void;
+
+    getTakerOrderId(): string;
+    setTakerOrderId(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
+    static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
+}
+
+export namespace ExecuteSwapRequest {
+    export type AsObject = {
+        pairId: string,
+        makerOrderId: string,
+        makerPeerPubKey: string,
+        takerOrderId: string,
+    }
+}
+
 export class RaidenInfo extends jspb.Message { 
     getError(): string;
     setError(value: string): void;

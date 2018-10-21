@@ -22,6 +22,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     listPeers: IXudService_IListPeers;
     placeOrder: IXudService_IPlaceOrder;
     placeOrderSync: IXudService_IPlaceOrderSync;
+    executeSwap: IXudService_IExecuteSwap;
     removeCurrency: IXudService_IRemoveCurrency;
     removePair: IXudService_IRemovePair;
     shutdown: IXudService_IShutdown;
@@ -156,6 +157,15 @@ interface IXudService_IPlaceOrderSync extends grpc.MethodDefinition<xudrpc_pb.Pl
     responseSerialize: grpc.serialize<xudrpc_pb.PlaceOrderResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.PlaceOrderResponse>;
 }
+interface IXudService_IExecuteSwap extends grpc.MethodDefinition<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.SwapResult> {
+    path: string; // "/xudrpc.Xud/ExecuteSwap"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.ExecuteSwapRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ExecuteSwapRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.SwapResult>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.SwapResult>;
+}
 interface IXudService_IRemoveCurrency extends grpc.MethodDefinition<xudrpc_pb.RemoveCurrencyRequest, xudrpc_pb.RemoveCurrencyResponse> {
     path: string; // "/xudrpc.Xud/RemoveCurrency"
     requestStream: boolean; // false
@@ -228,6 +238,7 @@ export interface IXudServer {
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
     placeOrder: grpc.handleServerStreamingCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
+    executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.SwapResult>;
     removeCurrency: grpc.handleUnaryCall<xudrpc_pb.RemoveCurrencyRequest, xudrpc_pb.RemoveCurrencyResponse>;
     removePair: grpc.handleUnaryCall<xudrpc_pb.RemovePairRequest, xudrpc_pb.RemovePairResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
@@ -278,6 +289,9 @@ export interface IXudClient {
     placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
+    executeSwap(request: xudrpc_pb.ExecuteSwapRequest, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
+    executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
+    executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
     removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;
     removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;
     removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;
@@ -338,6 +352,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
     public placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
+    public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
+    public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
+    public executeSwap(request: xudrpc_pb.ExecuteSwapRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.SwapResult) => void): grpc.ClientUnaryCall;
     public removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;
     public removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;
     public removeCurrency(request: xudrpc_pb.RemoveCurrencyRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.RemoveCurrencyResponse) => void): grpc.ClientUnaryCall;

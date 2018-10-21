@@ -138,6 +138,14 @@ service Xud {
   }
 
 
+  /* Execute a swap between a maker peer order and a taker own order */
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapResult) {
+    option (google.api.http) = {
+      post: "/v1/executeswap"
+      body: "*"
+    };
+  }
+
   /* Remove a currency. */
   rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
     option (google.api.http) = {
@@ -412,6 +420,13 @@ message PlaceOrderEvent {
     // The remaining portion of the order, after matches, that enters the order book
     Order remaining_order = 3 [json_name= "remaining_order"];
   }
+}
+
+message ExecuteSwapRequest {
+  string pair_id = 1 [json_name = "pair_id"];
+  string maker_order_id = 2 [json_name = "maker_order_id"];
+  string maker_peer_pub_key = 3 [json_name = "maker_peer_pub_key"];
+  string taker_order_id = 4 [json_name = "taker_order_id"];
 }
 
 message RaidenInfo {

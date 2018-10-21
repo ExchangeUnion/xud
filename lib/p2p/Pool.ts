@@ -7,12 +7,12 @@ import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, OrderInvalidation, StampedPeerOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp, UriParts } from '../utils/utils';
+import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 
@@ -39,7 +39,7 @@ type PoolConfig = {
 interface Pool {
   on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderInvalidation) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
@@ -47,7 +47,7 @@ interface Pool {
   on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderInvalidation): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
@@ -470,7 +470,7 @@ class Pool extends EventEmitter {
       case PacketType.OrderInvalidation: {
         const order = (packet as packets.OrderInvalidationPacket).body!;
         this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
-        this.emit('packet.orderInvalidation', order);
+        this.emit('packet.orderInvalidation', { ...order, peerPubKey: peer.nodePubKey! });
         break;
       }
       case PacketType.GetOrders: {
