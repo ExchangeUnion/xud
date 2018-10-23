@@ -21,7 +21,7 @@ type SwapDeal = {
    */
   state: SwapState;
   /** The reason for being in the current state. */
-  errorReason: string;
+  errorReason?: string;
   /** The xud node pub key of the counterparty to this swap deal. */
   peerPubKey: string;
   /** The global order id in the XU network for the order being executed. */
@@ -279,7 +279,6 @@ class Swaps extends EventEmitter {
       price: maker.price,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
-      errorReason: '',
       r_preimage: preimage.toString('hex'),
       role: SwapRole.Taker,
       createTime: Date.now(),
@@ -324,7 +323,6 @@ class Swaps extends EventEmitter {
       quantity: orderToAccept.quantityToAccept,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
-      errorReason: '',
       r_hash: requestBody.r_hash,
       role: SwapRole.Maker,
       createTime: Date.now(),
@@ -338,7 +336,7 @@ class Swaps extends EventEmitter {
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
       this.setDealState(deal, SwapState.Error, errMsg);
-      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason!, requestPacket.header.id);
       return false;
     }
 
@@ -352,7 +350,7 @@ class Swaps extends EventEmitter {
         break;
       default:
         this.setDealState(deal, SwapState.Error, 'Can not swap. Unsupported taker currency.');
-        this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason, requestPacket.header.id);
+        this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason!, requestPacket.header.id);
         return false;
     }
 
@@ -368,12 +366,12 @@ class Swaps extends EventEmitter {
       this.logger.debug('got ' + deal.makerToTakerRoutes.length + ' routes to destination: ' + deal.makerToTakerRoutes);
       if (deal.makerToTakerRoutes.length === 0) {
         this.setDealState(deal, SwapState.Error, 'Can not swap. unable to find route to destination.');
-        this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason, requestPacket.header.id);
+        this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason!, requestPacket.header.id);
         return false;
       }
     } catch (err) {
       this.setDealState(deal, SwapState.Error, 'Can not swap. unable to find route to destination: ' + err.message);
-      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason!, requestPacket.header.id);
       return false;
     }
 
@@ -383,7 +381,7 @@ class Swaps extends EventEmitter {
       this.logger.debug('got block height of ' + height);
     } catch (err) {
       this.setDealState(deal, SwapState.Error, 'Can not swap. Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.r_hash, deal.errorReason!, requestPacket.header.id);
       return false;
     }
 
