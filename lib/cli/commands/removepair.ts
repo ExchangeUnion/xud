@@ -16,5 +16,5 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new RemovePairRequest();
   request.setPairId(argv.pair_id.toUpperCase());
-  loadXudClient(argv).removePair(request, callback);
+  loadXudClient(argv).removePair(request, callback());
 };

@@ -7,5 +7,5 @@ export const command = 'listpairs';
 export const describe = 'get order book\'s available pairs';
 
 export const handler = (argv: Arguments) => {
-  loadXudClient(argv).listPairs(new ListPairsRequest(), callback);
+  loadXudClient(argv).listPairs(new ListPairsRequest(), callback());
 };

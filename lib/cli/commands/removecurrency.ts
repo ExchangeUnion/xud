@@ -16,5 +16,5 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new RemoveCurrencyRequest();
   request.setCurrency(argv.currency.toUpperCase());
-  loadXudClient(argv).removeCurrency(request, callback);
+  loadXudClient(argv).removeCurrency(request, callback());
 };

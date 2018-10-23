@@ -40,15 +40,19 @@ interface grpcResponse {
  * @param argv the command line arguments
  * @param callback the callback function to perform a command
  */
-export const callback = (error: Error | null, response: grpcResponse) => {
-  if (error) {
-    console.error(`${error.name}: ${error.message}`);
-  } else {
-    const responseObj = response.toObject();
-    if (Object.keys(responseObj).length === 0) {
-      console.log('success');
+export const callback = (formatOutput?: Function) => {
+  return (error: Error | null, response: grpcResponse) => {
+    if (error) {
+      console.error(`${error.name}: ${error.message}`);
     } else {
-      console.log(JSON.stringify(responseObj, undefined, 2));
+      const responseObj = response.toObject();
+      if (Object.keys(responseObj).length === 0) {
+        console.log('success');
+      } else {
+        formatOutput
+          ? formatOutput(responseObj)
+          : console.log(JSON.stringify(responseObj, undefined, 2));
+      }
     }
-  }
+  };
 };

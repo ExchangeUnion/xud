@@ -34,5 +34,5 @@ export const handler = (argv: Arguments) => {
   request.setSwapClient(Number(SwapClients[argv.swap_client]));
   request.setTokenAddress(argv.token_address);
   request.setDecimalPlaces(argv.decimal_places);
-  loadXudClient(argv).addCurrency(request, callback);
+  loadXudClient(argv).addCurrency(request, callback());
 };

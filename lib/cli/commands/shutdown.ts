@@ -7,5 +7,5 @@ export const command = 'shutdown';
 export const describe = 'gracefully shutdown the xud node';
 
 export const handler = (argv: Arguments) => {
-  loadXudClient(argv).shutdown(new ShutdownRequest(), callback);
+  loadXudClient(argv).shutdown(new ShutdownRequest(), callback());
 };
