@@ -14,11 +14,13 @@ const errorCodes = {
   NODE_UNKNOWN: codesPrefix.concat('.8'),
   NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
   NODE_NOT_BANNED: codesPrefix.concat('.10'),
+  NODE_IS_BANNED: codesPrefix.concat('.11'),
+  ALREADY_CONNECTING: codesPrefix.concat('.12'),
 };
 
 const errors = {
   NODE_ALREADY_CONNECTED: (nodePubKey: string, address: Address) => ({
-    message: `Node ${nodePubKey} at ${addressUtils.toString(address)} already connected`,
+    message: `node ${nodePubKey} at ${addressUtils.toString(address)} already connected`,
     code: errorCodes.NODE_ALREADY_CONNECTED,
   }),
   NOT_CONNECTED: (nodePubKey: string) => ({
@@ -50,12 +52,20 @@ const errors = {
     code: errorCodes.NODE_UNKNOWN,
   }),
   NODE_ALREADY_BANNED: (nodePubKey: string) => ({
-    message: `node ${nodePubKey} has allredy been banned`,
+    message: `node ${nodePubKey} has already been banned`,
     code: errorCodes.NODE_ALREADY_BANNED,
   }),
   NODE_NOT_BANNED: (nodePubKey: string) => ({
     message: `node ${nodePubKey} has not been banned`,
     code: errorCodes.NODE_NOT_BANNED,
+  }),
+  NODE_IS_BANNED: (nodePubKey: string) => ({
+    message: `could not connect to node ${nodePubKey} because it is banned`,
+    code: errorCodes.NODE_IS_BANNED,
+  }),
+  ALREADY_CONNECTING: (nodePubKey: string) => ({
+    message: `there is already an existing connection attempt to node ${nodePubKey}`,
+    code: errorCodes.ALREADY_CONNECTING,
   }),
 };
 

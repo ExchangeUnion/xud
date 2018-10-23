@@ -116,12 +116,14 @@ class GrpcService {
       case orderErrorCodes.DUPLICATE_ORDER:
       case p2pErrorCodes.NODE_ALREADY_CONNECTED:
       case p2pErrorCodes.NODE_ALREADY_BANNED:
+      case p2pErrorCodes.ALREADY_CONNECTING:
       case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
       case orderErrorCodes.PAIR_ALREADY_EXISTS:
         code = status.ALREADY_EXISTS;
         break;
       case p2pErrorCodes.NOT_CONNECTED:
       case p2pErrorCodes.NODE_NOT_BANNED:
+      case p2pErrorCodes.NODE_IS_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
