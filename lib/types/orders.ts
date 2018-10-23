@@ -1,5 +1,6 @@
 import { SwapClients, SwapRole } from './enums';
 
+/** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
   /** The number of base currency tokens for the order. */
   quantity: number;
@@ -9,12 +10,13 @@ type MarketOrder = {
   isBuy: boolean;
 };
 
-/** A limit order with a specified price. */
+/** A limit order with a specified price that will enter the order book if it is not immediately matched. */
 type Order = MarketOrder & {
   /** The price for the order expressed in units of the quote currency. */
   price: number;
 };
 
+/** Properties that apply only to orders placed by the local xud. */
 type Local = {
   /** A local identifier for the order. */
   localId: string;
@@ -22,11 +24,13 @@ type Local = {
   hold?: number;
 };
 
+/** Properties that apply only to orders placed by remote peers. */
 type Remote = {
   /** The nodePubKey of the node which created this order. */
   peerPubKey: string;
 };
 
+/** Properties that uniquely identify an order and make it ready for sending to peers. */
 type Stamp = {
   /** The global identifier for this order on the XU network. */
   id: string;
@@ -44,14 +48,16 @@ export type StampedPeerOrder = Order & Remote & Stamp;
 
 export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
 
-/** An outgoing version of a local order without the localId and createdAt timestamp */
+/** An outgoing version of a local own order without the localId and createdAt timestamp */
 export type OutgoingOrder = Pick<StampedOwnOrder, Exclude<keyof StampedOwnOrder, 'localId' | 'createdAt'>>;
 
+/** Properties that can be used to uniquely identify and fetch an order within an order book. */
 export type OrderIdentifier = {
   orderId: string;
   pairId: string;
 };
 
+/** A reference to a portion of an existing order. */
 export type OrderPortion = OrderIdentifier & {
   quantity: number;
   localId?: string;
