@@ -37,7 +37,7 @@ type PoolConfig = {
   addresses: string[];
 };
 
-type NodeInfo = {
+type NodeReputationInfo = {
   reputationScore: ReputationEvent;
   banned: boolean;
 };
@@ -297,11 +297,11 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Get node info
-   * @param nodePubKey to get reputation events
+   * Gets a node's reputation score and whether it is banned
+   * @param nodePubKey The node pub key of the node for which to get reputation information
    * @return true if the specified node exists and the event was added, false otherwise
    */
-  public getNodeReputation = async (nodePubKey: string): Promise<NodeInfo> => {
+  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
     const node = await this.repository.getNode(nodePubKey);
     if (node) {
       const { reputationScore, banned } = node;

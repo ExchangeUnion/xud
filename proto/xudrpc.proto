@@ -87,7 +87,7 @@ service Xud {
     };
   }
 
-  /*Get node reputation. */
+  /* Gets general information about a node. */
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
     option (google.api.http) = {
       get: "/v1/reputation"

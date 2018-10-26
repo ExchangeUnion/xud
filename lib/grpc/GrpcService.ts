@@ -295,7 +295,7 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.getNodeReputation]]
+   * See [[Service.getNodeInfo]]
    */
   public getNodeInfo: grpc.handleUnaryCall<xudrpc.GetNodeInfoRequest, xudrpc.GetNodeInfoResponse> = async (call, callback) => {
     try {
@@ -304,8 +304,8 @@ class GrpcService {
       response.setBanned(banned);
       response.setReputationscore(reputationScore);
       callback(null, response);
-    } catch (error) {
-      callback(this.getGrpcError(error), null);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
     }
   }
 

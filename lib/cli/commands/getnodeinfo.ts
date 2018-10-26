@@ -4,12 +4,12 @@ import { GetNodeInfoRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'getnodeinfo <node_pub_key>';
 
-export const describe = 'get information about node';
+export const describe = 'get general information about a node';
 
 export const builder = {
   node_pub_key: {
     type: 'string',
-    description: 'NodePubKey of node to get reputation',
+    description: 'nodePubKey of node to get reputation',
   },
 };
 

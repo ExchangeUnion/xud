@@ -190,7 +190,7 @@ class Service extends EventEmitter {
   /**
    * Get node info.
    */
-  public getNodeInfo = async (args: {nodePubKey: string}) => {
+  public getNodeInfo = async (args: { nodePubKey: string }) => {
     const info = await this.pool.getNodeReputation(args.nodePubKey);
     return info;
   }

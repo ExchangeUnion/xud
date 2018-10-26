@@ -388,7 +388,7 @@
     },
     "/v1/reputation": {
       "get": {
-        "summary": "Get node reputation.",
+        "summary": "Gets general information about a node.",
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
