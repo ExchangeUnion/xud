@@ -228,13 +228,13 @@ describe('MatchingEngine.removePeerOrders', () => {
     engine.addPeerOrder(firstHostOrders[0]);
     engine.addPeerOrder(firstHostOrders[1]);
     engine.addPeerOrder(createPeerOrder(100, 5, false, ms(), secondPeerPubKey));
-    expect(engine.peerOrders.sell.size).to.equal(3);
+    expect(engine.getPeerOrders().sell.length).to.equal(3);
 
     const removedOrders = engine.removePeerOrders(firstPeerPubKey);
     expect(removedOrders.length).to.equal(2);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
     expect(engine.queues.sell.size).to.equal(1);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
 
     const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(100, 15, true), false);
     expect(matchingResult.remainingOrder).to.not.be.undefined;
@@ -248,12 +248,27 @@ describe('MatchingEngine.removePeerOrders', () => {
     const order = createPeerOrder(5, quantity, false);
     engine.addPeerOrder(order);
 
-    let removedOrder = engine.removePeerOrder(order.id, quantityToRemove).order;
+    let removedOrder = engine.removePeerOrder(order.id, order.peerPubKey, quantityToRemove).order;
     expect(removedOrder.quantity).to.be.equal(quantityToRemove);
 
-    removedOrder = engine.removePeerOrder(order.id).order;
+    removedOrder = engine.removePeerOrder(order.id, order.peerPubKey).order;
     expect(removedOrder.quantity).to.be.equal(quantity - quantityToRemove);
   });
+
+  it('should not remove a peer order using the wrong peer pub key', () => {
+    const quantity = 5;
+    const otherPeerPubKey = 'other-peer-pubkey';
+
+    const order = createPeerOrder(5, quantity, false);
+    engine.addPeerOrder(order);
+
+    expect(() => engine.removePeerOrder(
+      order.id,
+      otherPeerPubKey,
+      quantity,
+    )).to.throw(`order with id ${order.id} could not be found`);
+  });
+
 });
 
 describe('MatchingEngine queues and lists integrity', () => {
@@ -272,24 +287,24 @@ describe('MatchingEngine queues and lists integrity', () => {
   it('queue and list should both remove a peer order', () => {
     const peerOrder = createPeerOrder(100, 10, false);
     engine['addPeerOrder'](peerOrder);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
     expect(engine.queues.sell.size).to.be.equal(1);
 
-    engine['removePeerOrder'](peerOrder.id);
-    expect(engine.peerOrders.sell).to.be.empty;
+    engine['removePeerOrder'](peerOrder.id, peerOrder.peerPubKey);
+    expect(engine.getPeerOrders().sell).to.be.empty;
     expect(engine.queues.sell.isEmpty()).to.be.true;
   });
 
   it('queue and list should have the same order instance after a partial peer order removal', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     engine.addPeerOrder(peerOrder);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
 
-    const removeResult = engine.removePeerOrder(peerOrder.id, 3);
+    const removeResult = engine.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 3);
     expect(removeResult.order.quantity).to.equal(3);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
 
-    const listRemainingOrder = engine.peerOrders.sell.get(peerOrder.id);
+    const listRemainingOrder = engine.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
     const queueRemainingOrder = engine.queues.sell.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
@@ -298,13 +313,13 @@ describe('MatchingEngine queues and lists integrity', () => {
   it('queue and list should have the same order instance after a partial match / maker order split', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     engine.addPeerOrder(peerOrder);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 3, true);
     const matchingResult = engine.matchOrAddOwnOrder(ownOrder, false);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
-    const listRemainingOrder = engine.peerOrders.sell.get(peerOrder.id);
+    const listRemainingOrder = engine.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
     const queueRemainingOrder = engine.queues.sell.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
@@ -313,15 +328,17 @@ describe('MatchingEngine queues and lists integrity', () => {
   it('queue and list should both have the maker order removed after a full match', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     engine.addPeerOrder(peerOrder);
-    expect(engine.peerOrders.sell.size).to.equal(1);
+    expect(engine.getPeerOrders().sell.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 10, true);
     const matchingResult = engine.matchOrAddOwnOrder(ownOrder, false);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
-    const listRemainingOrder = engine.peerOrders.sell.get(peerOrder.id);
+    expect(() => engine.getPeerOrder(
+      peerOrder.id,
+      peerOrder.peerPubKey,
+    )).to.throw(`order with id ${peerOrder.id} could not be found`);
     const queueRemainingOrder = engine.queues.sell.peek();
-    expect(listRemainingOrder).to.be.undefined;
     expect(queueRemainingOrder).to.be.undefined;
   });
 });
