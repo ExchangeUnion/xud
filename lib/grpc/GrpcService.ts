@@ -297,6 +297,21 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.getNodeInfo]]
+   */
+  public getNodeInfo: grpc.handleUnaryCall<xudrpc.GetNodeInfoRequest, xudrpc.GetNodeInfoResponse> = async (call, callback) => {
+    try {
+      const { banned, reputationScore } = await this.service.getNodeInfo(call.request.toObject());
+      const response = new xudrpc.GetNodeInfoResponse();
+      response.setBanned(banned);
+      response.setReputationscore(reputationScore);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.getOrders]]
    */
   public getOrders: grpc.handleUnaryCall<xudrpc.GetOrdersRequest, xudrpc.GetOrdersResponse> = (call, callback) => {

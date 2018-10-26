@@ -18,6 +18,8 @@
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
+    - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
+    - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
     - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
     - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
     - [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry)
@@ -265,6 +267,37 @@
 | lndbtc | [LndInfo](#xudrpc.LndInfo) |  |  |
 | lndltc | [LndInfo](#xudrpc.LndInfo) |  |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetNodeInfoRequest"></a>
+
+### GetNodeInfoRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_pub_key | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetNodeInfoResponse"></a>
+
+### GetNodeInfoResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| reputationScore | [int32](#int32) |  |  |
+| banned | [bool](#bool) |  |  |
 
 
 
@@ -829,6 +862,7 @@
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. |
+| GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. |
 | GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |

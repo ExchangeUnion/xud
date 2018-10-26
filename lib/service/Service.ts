@@ -188,6 +188,14 @@ class Service extends EventEmitter {
   }
 
   /**
+   * Get node info.
+   */
+  public getNodeInfo = async (args: { nodePubKey: string }) => {
+    const info = await this.pool.getNodeReputation(args.nodePubKey);
+    return info;
+  }
+
+  /**
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
