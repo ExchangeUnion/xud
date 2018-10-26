@@ -13,10 +13,7 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import {
-  Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder,
-  OrderInvalidation,
-} from '../types/orders';
+import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
 
@@ -345,7 +342,7 @@ class OrderBook extends EventEmitter {
     return result;
   }
 
-  /**
+    /**
    * Add own order
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
@@ -430,10 +427,9 @@ class OrderBook extends EventEmitter {
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
-  private removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number) => {
+  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedPeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
-    const removeResult = tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
-    this.emit('peerOrder.invalidation', removeResult.order);
+    return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
@@ -480,7 +476,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  private stampOwnOrder = (order: OwnOrder): StampedOwnOrder  => {
+  public stampOwnOrder = (order: OwnOrder): StampedOwnOrder  => {
     // verify localId isn't duplicated. generate one if it's blank
     if (order.localId === '') {
       order.localId = uuidv1();
@@ -498,7 +494,8 @@ class OrderBook extends EventEmitter {
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
     try {
-      this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
+      const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
+      this.emit('peerOrder.invalidation', removeResult.order);
     } catch {
       this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey}`);
       // TODO: Penalize peer

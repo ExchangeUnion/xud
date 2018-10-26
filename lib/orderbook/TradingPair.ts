@@ -163,7 +163,7 @@ class TradingPair {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
+  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedPeerOrder, fullyRemoved: boolean} => {
     const peerOrdersMaps = this.peersOrders.get(peerPubKey);
     if (!peerOrdersMaps) {
       throw errors.ORDER_NOT_FOUND(orderId);

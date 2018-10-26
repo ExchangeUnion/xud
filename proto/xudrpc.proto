@@ -450,10 +450,14 @@ message PlaceOrderEvent {
 }
 
 message ExecuteSwapRequest {
-  string pair_id = 1 [json_name = "pair_id"];
-  string maker_order_id = 2 [json_name = "maker_order_id"];
-  string maker_peer_pub_key = 3 [json_name = "maker_peer_pub_key"];
-  string taker_order_id = 4 [json_name = "taker_order_id"];
+  // The trading pair of the swap orders.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The order id of the maker order.
+  string order_id = 1 [json_name = "order_id"];
+  // The node pub key of the peer which owns the maker order.
+  string peer_pub_key = 3 [json_name = "peer_pub_key"];
+  // The quantity for the swap execution (if not specified, the entire maker order quantity will be used).
+  double quantity = 4 [json_name = "quantity"];
 }
 
 message RaidenInfo {

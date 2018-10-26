@@ -8,8 +8,8 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
-import { PlaceOrderEvent } from '../types/orderBook';
+import {Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder} from '../types/orders';
+import {PlaceOrderEvent, PlaceOrderEventCase} from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 
@@ -330,16 +330,32 @@ class Service extends EventEmitter {
     return this.orderBook.removePair(pairId);
   }
 
-  public executeSwap = async (args: { pairId: string, makerOrderId: string, makerPeerPubKey: string, takerOrderId: string }): Promise<SwapResult> => {
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }
 
-    const { pairId, makerOrderId, makerPeerPubKey, takerOrderId } = args;
+    const { orderId, pairId, peerPubKey } = args;
+    const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
 
-    const maker = this.orderBook.getPeerOrder(makerOrderId, pairId, makerPeerPubKey);
-    const taker = this.orderBook.getOwnOrder(takerOrderId, pairId);
-    return this.swaps.executeSwap(maker, taker);
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const taker = this.orderBook.stampOwnOrder({
+      localId: '',
+      pairId,
+      price: maker.price,
+      isBuy: !maker.isBuy,
+      quantity: quantity || maker.quantity
+    });
+
+    try {
+      const swapResult = await this.swaps.executeSwap(maker, taker);
+      this.emit('peerOrder.filled', maker);
+      return swapResult;
+    } catch (err) {
+      this.emit('peerOrder.invalidation', maker);
+      // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
+      throw err;
+    }
   }
 
   /*

@@ -962,14 +962,14 @@ export class ExecuteSwapRequest extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
-    getMakerOrderId(): string;
-    setMakerOrderId(value: string): void;
+    getOrderId(): string;
+    setOrderId(value: string): void;
 
-    getMakerPeerPubKey(): string;
-    setMakerPeerPubKey(value: string): void;
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
 
-    getTakerOrderId(): string;
-    setTakerOrderId(value: string): void;
+    getQuantity(): number;
+    setQuantity(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -985,9 +985,9 @@ export class ExecuteSwapRequest extends jspb.Message {
 export namespace ExecuteSwapRequest {
     export type AsObject = {
         pairId: string,
-        makerOrderId: string,
-        makerPeerPubKey: string,
-        takerOrderId: string,
+        orderId: string,
+        peerPubKey: string,
+        quantity: number,
     }
 }
 

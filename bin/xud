@@ -30,7 +30,7 @@ const { argv } = require('yargs')
       alias: 'n',
     },
     nomatching: {
-      describe: 'Whether matching will be disabled',
+      describe: 'Whether to disable matching within xud',
       type: 'boolean',
       default: undefined,
     },
