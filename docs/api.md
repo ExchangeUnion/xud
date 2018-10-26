@@ -281,7 +281,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  |  |
+| node_pub_key | [string](#string) |  | The node pub key of the node for which to get information. |
 
 
 
@@ -296,8 +296,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reputationScore | [int32](#int32) |  |  |
-| banned | [bool](#bool) |  |  |
+| reputationScore | [int32](#int32) |  | The node&#39;s reputation score. Points are subtracted for unexpected or potentially malicious behavior. Points are added when swaps are successfully executed. |
+| banned | [bool](#bool) |  | Whether the node is currently banned. |
 
 
 
