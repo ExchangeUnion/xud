@@ -98,7 +98,7 @@ service Xud {
   /* Gets general information about a node. */
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
     option (google.api.http) = {
-      get: "/v1/reputation"
+      get: "/v1/nodeinfo"
     };
   }
   /* Gets orders from the order book. This call returns the state of the order book at a given point
