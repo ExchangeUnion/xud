@@ -57,6 +57,9 @@ class LndClient extends BaseClient {
   /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
   private static readonly RECONNECT_TIMER = 5000;
 
+  /** Time in milliseconds between attempts to recheck if lnd's backend chain is in sync. */
+  private static readonly RECHECK_SYNC_TIMER = 30000;
+
   /**
    * Create an lnd client.
    * @param config the lnd configuration
@@ -168,7 +171,7 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
-    if (this.isDisconnected()) {
+    if (!this.isConnected()) {
       this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
@@ -192,7 +195,7 @@ class LndClient extends BaseClient {
         } else {
           this.setStatus(ClientStatus.OutOfSync);
           this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
-          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECHECK_SYNC_TIMER);
         }
       } catch (err) {
         this.setStatus(ClientStatus.Disconnected);

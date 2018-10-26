@@ -11,11 +11,7 @@ type SplitOrder = {
   remaining: StampedOrder;
 };
 
-type OrderId = string;
-
-type PeerPubKey = string;
-
-type OrderMap<T extends orders.StampedOrder> = Map<OrderId, T>;
+type OrderMap<T extends orders.StampedOrder> = Map<string, T>;
 
 type OrderSidesMaps<T extends orders.StampedOrder> = {
   buy: OrderMap<T>,
@@ -42,7 +38,7 @@ class TradingPair {
   /** a pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
   public ownOrders: OrderSidesMaps<orders.StampedOwnOrder>;
   /** a map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
-  public peersOrders: Map<PeerPubKey, OrderSidesMaps<StampedPeerOrder>>;
+  public peersOrders: Map<string, OrderSidesMaps<StampedPeerOrder>>;
 
   constructor(private logger: Logger, public pairId: string, private matching = true) {
     if (matching) {
@@ -53,8 +49,8 @@ class TradingPair {
     }
 
     this.ownOrders = {
-      buy: new Map<OrderId, StampedOwnOrder>(),
-      sell: new Map<OrderId, StampedOwnOrder>(),
+      buy: new Map<string, StampedOwnOrder>(),
+      sell: new Map<string, StampedOwnOrder>(),
     };
 
     this.peersOrders = new Map<string, OrderSidesMaps<StampedPeerOrder>>();
@@ -109,16 +105,16 @@ class TradingPair {
    * @returns false if it's a duplicated order, otherwise true
    */
   public addPeerOrder = (order: StampedPeerOrder): boolean => {
-    let peerOrders = this.peersOrders.get(order.peerPubKey);
-    if (!peerOrders) {
-      peerOrders = {
-        buy: new Map<OrderId, StampedPeerOrder>(),
-        sell: new Map<OrderId, StampedPeerOrder>(),
+    let peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
+    if (!peerOrdersMaps) {
+      peerOrdersMaps = {
+        buy: new Map<string, StampedPeerOrder>(),
+        sell: new Map<string, StampedPeerOrder>(),
       };
-      this.peersOrders.set(order.peerPubKey, peerOrders);
+      this.peersOrders.set(order.peerPubKey, peerOrdersMaps);
     }
 
-    return this.addOrder(order, peerOrders);
+    return this.addOrder(order, peerOrdersMaps);
   }
 
   public addOwnOrder = (order: StampedOwnOrder): boolean => {
@@ -167,13 +163,12 @@ class TradingPair {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (peerPubKey: string, orderId: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
-    const peerOrders = this.peersOrders.get(peerPubKey);
-    if (!peerOrders) {
-      throw errors.PEER_ORDER_NOT_FOUND(orderId, peerPubKey);
+  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
+    const peerOrdersMaps = this.peersOrders.get(peerPubKey);
+    if (!peerOrdersMaps) {
+      throw errors.ORDER_NOT_FOUND(orderId);
     }
-
-    return this.removeOrder(orderId, peerOrders, quantityToRemove);
+    return this.removeOrder(orderId, peerOrdersMaps, quantityToRemove);
   }
 
   /**
@@ -213,16 +208,13 @@ class TradingPair {
     }
   }
 
-  private getOrderMap = (order: StampedOrder): OrderMap<StampedOrder> => {
+  private getOrderMap = (order: StampedOrder): OrderMap<StampedOrder> | undefined => {
     if (isOwnOrder(order)) {
       return order.isBuy ? this.ownOrders.buy : this.ownOrders.sell;
     } else {
-      const { peerPubKey } = order;
-      const peerOrders = this.peersOrders.get(peerPubKey);
-      if (!peerOrders) {
-        throw errors.PEER_ORDER_NOT_FOUND(order.id, peerPubKey);
-      }
-      return order.isBuy ? peerOrders.buy : peerOrders.sell;
+      const peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
+      if (!peerOrdersMaps) return;
+      return order.isBuy ? peerOrdersMaps.buy : peerOrdersMaps.sell;
     }
   }
 
@@ -237,8 +229,8 @@ class TradingPair {
     const res: OrderSidesArrays<StampedPeerOrder> = { buy: [], sell: [] };
     this.peersOrders.forEach((peerOrders) => {
       const peerOrdersArrs = this.getOrders(peerOrders);
-      res.buy.push(...peerOrdersArrs.buy);
-      res.sell.push(...peerOrdersArrs.sell);
+      res.buy = res.buy.concat(peerOrdersArrs.buy);
+      res.sell = res.sell.concat(peerOrdersArrs.sell);
     });
 
     return res;
@@ -251,7 +243,7 @@ class TradingPair {
   public getOwnOrder = (orderId: string): StampedOwnOrder => {
     const order =  this.getOrder(orderId, this.ownOrders);
     if (!order) {
-      throw errors.OWN_ORDER_NOT_FOUND(orderId);
+      throw errors.ORDER_NOT_FOUND(orderId);
     }
 
     return order;
@@ -260,12 +252,12 @@ class TradingPair {
   public getPeerOrder = (orderId: string, peerPubKey: string): StampedPeerOrder => {
     const peerOrders = this.peersOrders.get(peerPubKey);
     if (!peerOrders) {
-      throw errors.PEER_ORDER_NOT_FOUND(orderId, peerPubKey);
+      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
     }
 
     const order = this.getOrder(orderId, peerOrders);
     if (!order) {
-      throw errors.PEER_ORDER_NOT_FOUND(orderId, peerPubKey);
+      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
     }
 
     return order;
@@ -302,6 +294,7 @@ class TradingPair {
         // get the order from the top of the queue, and remove its ref from the map as well
         const makerOrder = queue.poll()!;
         const map = this.getOrderMap(makerOrder);
+        if (!map) break;
         map.delete(makerOrder.id);
 
         if (

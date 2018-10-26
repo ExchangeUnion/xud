@@ -65,9 +65,9 @@ class OrderBook extends EventEmitter {
   /** Max time for placeOrder iterations (due to swaps failures retries). */
   private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 10000; // 10 sec
 
-  /** Gets an iterable of supported pair ids. */
+  /** Gets an array of supported pair ids. */
   public get pairIds() {
-    return this.pairs.keys();
+    return Array.from(this.pairs.keys());
   }
 
   constructor(private logger: Logger, models: Models, public nomatching = false, private pool?: Pool, private swaps?: Swaps) {
@@ -95,7 +95,7 @@ class OrderBook extends EventEmitter {
         if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
-          this.emit('ownOrder.swapped', { orderId, pairId, quantity });
+          this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         }
       });
       // TODO: bind to other swap events
@@ -186,7 +186,10 @@ class OrderBook extends EventEmitter {
     const pairInstance = await this.repository.addPair(pair);
     this.pairs.set(pairInstance.id, pairInstance);
     this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, !this.nomatching));
-    // TODO: update handshake state
+
+    if (this.pool) {
+      this.pool.updateHandshake({ pairs: this.pairIds });
+    }
     return pairInstance;
   }
 
@@ -215,15 +218,17 @@ class OrderBook extends EventEmitter {
 
   public removePair = (pairId: string) => {
     const pair = this.pairs.get(pairId);
-    if (pair) {
-      this.pairs.delete(pairId);
-      this.tradingPairs.delete(pairId);
-      // TODO: invalidate all orders for this pair
-      // TODO: update handshake state
-      return pair.destroy();
-    } else {
+    if (!pair) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
+
+    this.pairs.delete(pairId);
+    this.tradingPairs.delete(pairId);
+
+    if (this.pool) {
+      this.pool.updateHandshake({ pairs: this.pairIds });
+    }
+    return pair.destroy();
   }
 
   public placeLimitOrder = async (order: orders.OwnOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
@@ -289,7 +294,7 @@ class OrderBook extends EventEmitter {
 
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
-      const portion: OrderPortion = { orderId: maker.id, pairId: maker.pairId, quantity: maker.quantity };
+      const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (orders.isOwnOrder(maker)) {
         // internal match
         portion.localId = maker.localId;
@@ -392,7 +397,7 @@ class OrderBook extends EventEmitter {
       throw errors.OWN_ORDER_NOT_FOUND(localId);
     }
 
-    this.removeOwnOrder(order.orderId, order.pairId);
+    this.removeOwnOrder(order.id, order.pairId);
   }
 
   /**
@@ -411,11 +416,7 @@ class OrderBook extends EventEmitter {
       }
 
       if (this.pool) {
-        this.pool.broadcastOrderInvalidation({
-          orderId,
-          pairId,
-          quantity: removeResult.order.quantity,
-        }, takerPubKey);
+        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
 
       return true;
@@ -428,18 +429,11 @@ class OrderBook extends EventEmitter {
   /**
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
-   * @returns `true` if the order or portion thereof was removed, otherwise `false`
    */
-  private removePeerOrder = (peerPubKey: string, orderId: string, pairId: string, quantityToRemove?: number) => {
+  private removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number) => {
     const tp = this.getTradingPair(pairId);
-    try {
-      const removeResult = tp.removePeerOrder(peerPubKey, orderId, quantityToRemove);
-      this.emit('peerOrder.invalidation', { orderId, pairId, quantity: removeResult.order.quantity });
-      return true;
-    } catch (err) {
-      this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
-      return false;
-    }
+    const removeResult = tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
+    this.emit('peerOrder.invalidation', removeResult.order);
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
@@ -451,11 +445,7 @@ class OrderBook extends EventEmitter {
     this.tradingPairs.forEach((tp) => {
       const orders = tp.removePeerOrders(peer.nodePubKey!);
       orders.forEach((order) => {
-        this.emit('peerOrder.invalidation', {
-          orderId: order.id,
-          pairId: order.pairId,
-          quantity: order.quantity,
-        });
+        this.emit('peerOrder.invalidation', order);
       });
     });
   }
@@ -506,8 +496,13 @@ class OrderBook extends EventEmitter {
     return outgoingOrder;
   }
 
-  private handleOrderInvalidation = (oi: OrderInvalidation) => {
-    this.removePeerOrder(oi.peerPubKey, oi.orderId, oi.pairId, oi.quantity);
+  private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
+    try {
+      this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
+    } catch {
+      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey}`);
+      // TODO: Penalize peer
+    }
   }
 
   /**
