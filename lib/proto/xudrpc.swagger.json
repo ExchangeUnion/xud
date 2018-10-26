@@ -17,7 +17,7 @@
   "paths": {
     "/v1/addcurrency": {
       "post": {
-        "summary": "Add a currency to the list of supported currencies.",
+        "summary": "Adds a currency to the list of supported currencies. Once added, the currency may be used for\nnew trading pairs.",
         "operationId": "AddCurrency",
         "responses": {
           "200": {
@@ -44,7 +44,7 @@
     },
     "/v1/addpair": {
       "post": {
-        "summary": "Add a trading pair to the list of supported trading pairs.",
+        "summary": "Adds a trading pair to the list of supported trading pairs. The newly supported pair is\nadvertised to peers so they may begin sending orders for it.",
         "operationId": "AddPair",
         "responses": {
           "200": {
@@ -71,7 +71,7 @@
     },
     "/v1/ban": {
       "post": {
-        "summary": "Ban a XU node manually and disconnect from it.",
+        "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.",
         "operationId": "Ban",
         "responses": {
           "200": {
@@ -98,7 +98,7 @@
     },
     "/v1/channelbalance": {
       "get": {
-        "summary": "Get the total balance available across all channels for a given currency.",
+        "summary": "Gets the total balance available across all payment channels for one or all currencies.",
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
@@ -111,7 +111,7 @@
         "parameters": [
           {
             "name": "currency",
-            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all\nsupported currencies are queried.",
+            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -124,7 +124,7 @@
     },
     "/v1/connect": {
       "post": {
-        "summary": "Connect to an XU node.",
+        "summary": "Attempts to connect to a node. Once connected, the node is added to the list of peers and\nbecomes available for swaps and trading. A handshake exchanges information about the peer's\nsupported trading and swap clients. Orders will be shared with the peer upon connection and\nupon new order placements.",
         "operationId": "Connect",
         "responses": {
           "200": {
@@ -151,7 +151,7 @@
     },
     "/v1/currencies": {
       "get": {
-        "summary": "Get the list of the order book's supported currencies.",
+        "summary": "Gets a list of this node's supported currencies.",
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
@@ -168,7 +168,7 @@
     },
     "/v1/info": {
       "get": {
-        "summary": "Get general information about this Exchange Union node.",
+        "summary": "Gets general information about this node.",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -219,7 +219,7 @@
     },
     "/v1/pairs": {
       "get": {
-        "summary": "Get the list of the order book's suported trading pairs.",
+        "summary": "Gets a list of this nodes suported trading pairs.",
         "operationId": "ListPairs",
         "responses": {
           "200": {
@@ -236,7 +236,7 @@
     },
     "/v1/peers": {
       "get": {
-        "summary": "Get a list of connected peers.",
+        "summary": "Gets a list of connected peers.",
         "operationId": "ListPeers",
         "responses": {
           "200": {
@@ -253,7 +253,7 @@
     },
     "/v1/placeorder": {
       "post": {
-        "summary": "Add an order to the order book.\nIf price is zero or unspecified a market order will get added.",
+        "summary": "Adds an order to the order book.\nIf price is zero or unspecified a market order will get added.",
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
@@ -307,7 +307,7 @@
     },
     "/v1/removecurrency": {
       "post": {
-        "summary": "Remove a currency.",
+        "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed. Once removed, the currency can no\nlonger be used for any supported trading pairs.",
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
@@ -334,7 +334,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Removes an order from the order book by its local id.",
+        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps, \nand peers are notified that the order is no longer valid.",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -361,7 +361,7 @@
     },
     "/v1/removepair": {
       "post": {
-        "summary": "Remove a trading pair.",
+        "summary": "Removes a trading pair from the list of currently supported trading pair. This call will\neffectively cancel any standing orders for that trading pair. Peers are informed when a pair\nis no longer supported so that they will know to stop sending orders for it.",
         "operationId": "RemovePair",
         "responses": {
           "200": {
@@ -413,7 +413,7 @@
     },
     "/v1/shutdown": {
       "post": {
-        "summary": "Begin shutting down xud.",
+        "summary": "Begin gracefully shutting down xud.",
         "operationId": "Shutdown",
         "responses": {
           "200": {
@@ -474,7 +474,7 @@
     },
     "/v1/unban": {
       "post": {
-        "summary": "Remove ban from XU node manually and connect to it.",
+        "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.",
         "operationId": "Unban",
         "responses": {
           "200": {
@@ -526,16 +526,16 @@
         },
         "swap_client": {
           "$ref": "#/definitions/AddCurrencyRequestSwapClient",
-          "title": "The payment channel network client to use for executing swaps"
+          "description": "The payment channel network client to use for executing swaps."
         },
         "token_address": {
           "type": "string",
-          "title": "The contract address for layered tokens such as ERC20"
+          "description": "The contract address for layered tokens such as ERC20."
         },
         "decimal_places": {
           "type": "integer",
           "format": "int64",
-          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others\nwhere the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought\nof as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified."
+          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
         }
       }
     },
@@ -547,11 +547,11 @@
       "properties": {
         "base_currency": {
           "type": "string",
-          "title": "The base currency that is bought and sold for this trading pair"
+          "description": "The base currency that is bought and sold for this trading pair."
         },
         "quote_currency": {
           "type": "string",
-          "title": "The currency used to quote a price for the base currency"
+          "description": "The currency used to quote a price for the base currency."
         }
       }
     },
@@ -562,7 +562,8 @@
       "type": "object",
       "properties": {
         "node_pub_key": {
-          "type": "string"
+          "type": "string",
+          "description": "The node pub key of the node to ban."
         }
       }
     },
@@ -575,12 +576,12 @@
         "balance": {
           "type": "string",
           "format": "int64",
-          "title": "Sum of channels balances denominated in satoshis or equivalent"
+          "description": "Sum of channels balances denominated in satoshis or equivalent."
         },
         "pending_open_balance": {
           "type": "string",
           "format": "int64",
-          "title": "Sum of channels pending balances denominated in satoshis or equivalent"
+          "description": "Sum of channels pending balances denominated in satoshis or equivalent."
         }
       }
     },
@@ -592,7 +593,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/xudrpcChannelBalance"
           },
-          "title": "A map between currency ticker symbols and their channel balances"
+          "description": "A map between currency ticker symbols and their channel balances."
         }
       }
     },
@@ -600,7 +601,8 @@
       "type": "object",
       "properties": {
         "node_uri": {
-          "type": "string"
+          "type": "string",
+          "description": "The uri of the node to connect to in \"[nodePubKey]@[host]:[port]\" format."
         }
       }
     },
@@ -611,27 +613,33 @@
       "type": "object",
       "properties": {
         "version": {
-          "type": "string"
+          "type": "string",
+          "description": "The version of this instance of xud."
         },
         "node_pub_key": {
-          "type": "string"
+          "type": "string",
+          "description": "The node pub key of this node."
         },
         "uris": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "description": "A list of uris that can be used to connect to this node. These are shared with peers."
         },
         "num_peers": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of currently connected peers."
         },
         "num_pairs": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of supported trading pairs."
         },
         "orders": {
-          "$ref": "#/definitions/xudrpcOrdersCount"
+          "$ref": "#/definitions/xudrpcOrdersCount",
+          "description": "The number of active, standing orders in the order book."
         },
         "lndbtc": {
           "$ref": "#/definitions/xudrpcLndInfo"
@@ -665,7 +673,7 @@
           "additionalProperties": {
             "$ref": "#/definitions/xudrpcOrders"
           },
-          "title": "A map between pair ids and their buy and sell orders"
+          "description": "A map between pair ids and their buy and sell orders."
         }
       }
     },
@@ -677,7 +685,7 @@
           "items": {
             "type": "string"
           },
-          "title": "The ticker symbols of supported currencies"
+          "description": "A list of ticker symbols of the supported currencies."
         }
       }
     },
@@ -689,7 +697,7 @@
           "items": {
             "type": "string"
           },
-          "title": "The supported trading pair tickers in formats like \"LTC/BTC\""
+          "description": "The list of supported trading pair tickers in formats like \"LTC/BTC\"."
         }
       }
     },
@@ -700,7 +708,8 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/xudrpcPeer"
-          }
+          },
+          "description": "The list of connected peers."
         }
       }
     },
@@ -709,15 +718,18 @@
       "properties": {
         "active": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of active/online channels for this lnd instance that can be used for swaps."
         },
         "inactive": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of inactive/offline channels for this lnd instance."
         },
         "pending": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of channels that are pending on-chain confirmation before they can be used."
         }
       }
     },
@@ -842,14 +854,14 @@
           "items": {
             "$ref": "#/definitions/xudrpcOrder"
           },
-          "title": "A list of buy orders sorted by descending price"
+          "description": "A list of buy orders sorted by descending price."
         },
         "sell_orders": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/xudrpcOrder"
           },
-          "title": "A list of sell orders sorted by ascending price"
+          "description": "A list of sell orders sorted by ascending price."
         }
       }
     },
@@ -858,11 +870,13 @@
       "properties": {
         "peer": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of orders belonging to remote xud nodes."
         },
         "own": {
           "type": "integer",
-          "format": "int32"
+          "format": "int32",
+          "description": "The number of orders belonging to our local xud node."
         }
       }
     },
@@ -871,40 +885,40 @@
       "properties": {
         "address": {
           "type": "string",
-          "title": "The socket address with host and port for this peer"
+          "description": "The socket address with host and port for this peer."
         },
         "node_pub_key": {
           "type": "string",
-          "title": "The node pub key to uniquely identify this peer"
+          "description": "The node pub key to uniquely identify this peer."
         },
         "lnd_btc_pub_key": {
           "type": "string",
-          "title": "The lnd BTC pub key associated with this peer"
+          "description": "The lnd BTC pub key associated with this peer."
         },
         "lnd_ltc_pub_key": {
           "type": "string",
-          "title": "The lnd LTC pub key associated with this peer"
+          "description": "The lnd LTC pub key associated with this peer."
         },
         "inbound": {
           "type": "boolean",
           "format": "boolean",
-          "title": "Indicates whether this peer was connected inbound"
+          "description": "Indicates whether this peer was connected inbound."
         },
         "pairs": {
           "type": "array",
           "items": {
             "type": "string"
           },
-          "title": "A list of trading pair tickers supported by this peer"
+          "description": "A list of trading pair tickers supported by this peer."
         },
         "xud_version": {
           "type": "string",
-          "title": "The version of xud being used by the peer"
+          "description": "The version of xud being used by the peer."
         },
         "seconds_connected": {
           "type": "integer",
           "format": "int32",
-          "title": "The time in seconds that we have been connected to this peer"
+          "description": "The time in seconds that we have been connected to this peer."
         }
       }
     },
@@ -913,15 +927,15 @@
       "properties": {
         "internal_match": {
           "$ref": "#/definitions/xudrpcOrder",
-          "title": "An own orders (or portions thereof) that matched the newly placed order"
+          "description": "An own orders (or portions thereof) that matched the newly placed order."
         },
         "swap_result": {
           "$ref": "#/definitions/xudrpcSwapResult",
-          "title": "A swap results of peer orders that matched the newly placed order"
+          "description": "A swap results of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
-          "title": "The remaining portion of the order, after matches, that enters the order book"
+          "description": "The remaining portion of the order, after matches, that enters the order book."
         }
       }
     },
@@ -940,15 +954,15 @@
         },
         "pair_id": {
           "type": "string",
-          "title": "The trading pair that the order is for"
+          "description": "The trading pair that the order is for."
         },
         "order_id": {
           "type": "string",
-          "title": "The local id to assign to the order"
+          "description": "The local id to assign to the order."
         },
         "side": {
           "$ref": "#/definitions/xudrpcOrderSide",
-          "title": "Whether the order is a Buy or Sell"
+          "description": "Whether the order is a Buy or Sell."
         }
       }
     },
@@ -960,18 +974,18 @@
           "items": {
             "$ref": "#/definitions/xudrpcOrder"
           },
-          "title": "A list of own orders (or portions thereof) that matched the newly placed order"
+          "description": "A list of own orders (or portions thereof) that matched the newly placed order."
         },
         "swap_results": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/xudrpcSwapResult"
           },
-          "title": "A list of swap results of peer orders that matched the newly placed order"
+          "description": "A list of swap results of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
-          "title": "The remaining portion of the order, after matches, that enters the order book"
+          "description": "The remaining portion of the order, after matches, that enters the order book."
         }
       }
     },
@@ -1010,7 +1024,7 @@
       "properties": {
         "order_id": {
           "type": "string",
-          "title": "The local id of the order to remove"
+          "description": "The local id of the order to remove."
         }
       }
     },
@@ -1022,7 +1036,7 @@
       "properties": {
         "pair_id": {
           "type": "string",
-          "title": "The trading pair ticker to remove, such as \"LTC/BTC\""
+          "description": "The trading pair ticker to remove in a format such as \"LTC/BTC\"."
         }
       }
     },
@@ -1075,7 +1089,7 @@
         },
         "role": {
           "$ref": "#/definitions/SwapResultRole",
-          "title": "Our role in the swap, either MAKER or TAKER"
+          "description": "Our role in the swap, either MAKER or TAKER."
         }
       }
     },
@@ -1083,11 +1097,13 @@
       "type": "object",
       "properties": {
         "node_pub_key": {
-          "type": "string"
+          "type": "string",
+          "description": "The node pub key of the peer to unban."
         },
         "reconnect": {
           "type": "boolean",
-          "format": "boolean"
+          "format": "boolean",
+          "description": "Whether to attempt to connect to the peer after it is unbanned."
         }
       }
     },

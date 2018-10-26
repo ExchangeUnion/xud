@@ -41,7 +41,7 @@ abstract class Packet<T = any> implements PacketInterface {
   public body?: T;
   public header: PacketHeader;
   /** Wire protocol delimiter. */
-  public static PROTOCOL_DELIMITER = 'ↂ₿ↂ';
+  public static readonly PROTOCOL_DELIMITER = 'ↂ₿ↂ';
 
   /**
    * Create a packet from a deserialized packet message.

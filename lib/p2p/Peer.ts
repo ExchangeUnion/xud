@@ -60,19 +60,19 @@ class Peer extends EventEmitter {
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   /** Interval to check required responses from peer. */
-  private static STALL_INTERVAL = 5000;
+  private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
-  private static PING_INTERVAL = 30000;
+  private static readonly PING_INTERVAL = 30000;
   /** Response timeout for response packets. */
-  private static RESPONSE_TIMEOUT = 10000;
+  private static readonly RESPONSE_TIMEOUT = 10000;
   /** Socket connection timeout for outbound peers. */
-  private static CONNECTION_TIMEOUT = 10000;
+  private static readonly CONNECTION_TIMEOUT = 10000;
   /** Connection retries min delay. */
-  private static CONNECTION_RETRIES_MIN_DELAY = 5000;
+  private static readonly CONNECTION_RETRIES_MIN_DELAY = 5000;
   /** Connection retries max delay. */
-  private static CONNECTION_RETRIES_MAX_DELAY = 3600000;
+  private static readonly CONNECTION_RETRIES_MAX_DELAY = 3600000;
   /** Connection retries max period. */
-  private static CONNECTION_RETRIES_MAX_PERIOD = 604800000;
+  private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {

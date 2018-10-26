@@ -102,7 +102,7 @@ class Xud extends EventEmitter {
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init({
         version,
-        pairs: Array.from(this.orderBook.pairIds),
+        pairs: this.orderBook.pairIds,
         nodePubKey: this.nodeKey.nodePubKey,
         raidenAddress: this.raidenClient.address,
         lndbtcPubKey: this.lndbtcClient.pubKey,
