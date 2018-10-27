@@ -2,9 +2,9 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { ExecuteSwapRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'executeswap <pair_id> <maker_order_id> <maker_peer_pub_key> <taker_order_id>';
+export const command = 'executeswap <pair_id> <order_id> <peer_pub_key> [quantity]';
 
-export const describe = 'execute a swap on between a maker peer order and a taker own order (nomatching mode only)';
+export const describe = 'execute a swap on a peer order (nomatching mode only)';
 
 export const builder = {
   order_id: {
@@ -18,7 +18,7 @@ export const builder = {
   },
   quantity: {
     type: 'number',
-    default: undefined
+    description: 'the quantity to swap. the whole order will be swapped if unspecified',
   },
 };
 

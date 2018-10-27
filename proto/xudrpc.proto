@@ -145,7 +145,7 @@ service Xud {
   }
 
 
-  /* Execute a swap between a maker peer order and a taker own order */
+  /* Execute a swap on a maker peer order */
   rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapResult) {
     option (google.api.http) = {
       post: "/v1/executeswap"
@@ -456,7 +456,7 @@ message ExecuteSwapRequest {
   string order_id = 1 [json_name = "order_id"];
   // The node pub key of the peer which owns the maker order.
   string peer_pub_key = 3 [json_name = "peer_pub_key"];
-  // The quantity for the swap execution (if not specified, the entire maker order quantity will be used).
+  // the quantity to swap. the whole order will be swapped if unspecified.
   double quantity = 4 [json_name = "quantity"];
 }
 

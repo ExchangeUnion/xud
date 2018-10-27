@@ -64,8 +64,6 @@ export type OrderPortion = OrderIdentifier & {
   localId?: string;
 };
 
-export type OrderInvalidation = OrderPortion & Remote;
-
 export type SwapResult = {
   orderId: string,
   localId: string,

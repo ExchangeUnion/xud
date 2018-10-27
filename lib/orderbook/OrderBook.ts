@@ -13,7 +13,10 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder } from '../types/orders';
+import {
+  Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder,
+  SwapResult
+} from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
 
@@ -49,10 +52,10 @@ interface OrderBook {
 class OrderBook extends EventEmitter {
   /** A map of supported currency tickers to currency instances. */
   public currencies = new Map<string, CurrencyInstance>();
-  /** A map of supported pair tickers to pair instances. */
+  /** A map of supported trading pair tickers and pair database instances. */
   public pairs = new Map<string, PairInstance>();
 
-  /** A map between active trading pair ids and trading pair instance. */
+  /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
   /** A map between own orders local id and their global id. */
   private localIdMap = new Map<string, OrderIdentifier>();
@@ -109,7 +112,7 @@ class OrderBook extends EventEmitter {
     currencies.forEach(currency => this.currencies.set(currency.id, currency));
     pairs.forEach((pair) => {
       this.pairs.set(pair.id, pair);
-      this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, !this.nomatching));
+      this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
     });
   }
 
@@ -136,14 +139,6 @@ class OrderBook extends EventEmitter {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
     return tp;
-  }
-
-  private tryGetTradingPair = (pairId: string): TradingPair | undefined => {
-    try {
-      return this.getTradingPair(pairId);
-    } catch (err) {
-      return;
-    }
   }
 
   /**
@@ -182,7 +177,7 @@ class OrderBook extends EventEmitter {
 
     const pairInstance = await this.repository.addPair(pair);
     this.pairs.set(pairInstance.id, pairInstance);
-    this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, !this.nomatching));
+    this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
 
     if (this.pool) {
       this.pool.updateHandshake({ pairs: this.pairIds });
@@ -326,7 +321,7 @@ class OrderBook extends EventEmitter {
       const remainingOrder: StampedOwnOrder = result.remainingOrder || { ...order, quantity: 0 };
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
-      // invoke addOwnOrder recursively, append matches/swaps and set the consecutive remaining order
+      // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
       const remainingOrderResult = await this.placeOrder(remainingOrder, false, onUpdate, maxTime);
       result.internalMatches.push(...remainingOrderResult.internalMatches);
       result.swapResults.push(...remainingOrderResult.swapResults);
@@ -342,14 +337,38 @@ class OrderBook extends EventEmitter {
     return result;
   }
 
+  public executeSwap = async (orderId: string, pairId: string, peerPubKey: string, quantity?: number): Promise<SwapResult> => {
+    const maker = this.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const taker = this.stampOwnOrder({
+      localId: '',
+      pairId,
+      price: maker.price,
+      isBuy: !maker.isBuy,
+      quantity: quantity || maker.quantity
+    });
+
+    try {
+      const swapResult = await this.swaps!.executeSwap(maker, taker);
+      this.emit('peerOrder.filled', maker);
+      return swapResult;
+    } catch (err) {
+      this.emit('peerOrder.invalidation', maker);
+      // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
+      throw err;
+    }
+  }
+
+
     /**
-   * Add own order
+   * Adds an own order to the order book and broadcasts it to peers.
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
   private addOwnOrder = (order: orders.StampedOwnOrder): boolean => {
     const tp = this.getTradingPair(order.pairId);
     const result = tp.addOwnOrder(order);
     assert(result, 'own order id is duplicated');
+
+    this.localIdMap.set(order.localId, { id: order.id, pairId: order.pairId });
 
     this.emit('ownOrder.added', order);
     this.logger.debug(`order added: ${JSON.stringify(order)}`);
@@ -363,7 +382,7 @@ class OrderBook extends EventEmitter {
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
   private addPeerOrder = (order: orders.StampedPeerOrder): boolean => {
-    const tp = this.tryGetTradingPair(order.pairId);
+    const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       // TODO: penalize peer
@@ -391,7 +410,7 @@ class OrderBook extends EventEmitter {
   public removeOwnOrderByLocalId = (localId: string) => {
     const order = this.localIdMap.get(localId);
     if (!order) {
-      throw errors.OWN_ORDER_NOT_FOUND(localId);
+      throw errors.ORDER_NOT_FOUND(localId);
     }
 
     this.removeOwnOrder(order.id, order.pairId);

@@ -187,6 +187,17 @@ class Service extends EventEmitter {
     await this.pool.unban(args);
   }
 
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
+    if (!this.orderBook.nomatching) {
+      throw errors.NOMATCHING_MODE_IS_REQUIRED();
+    }
+
+    const { orderId, pairId, peerPubKey } = args;
+    const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
+
+    return this.orderBook.executeSwap(orderId, pairId, peerPubKey, quantity);
+  }
+
   /**
    * Get general information about this Exchange Union node.
    */
@@ -328,34 +339,6 @@ class Service extends EventEmitter {
     const { pairId } = args;
 
     return this.orderBook.removePair(pairId);
-  }
-
-  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
-    if (!this.orderBook.nomatching) {
-      throw errors.NOMATCHING_MODE_IS_REQUIRED();
-    }
-
-    const { orderId, pairId, peerPubKey } = args;
-    const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
-
-    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
-    const taker = this.orderBook.stampOwnOrder({
-      localId: '',
-      pairId,
-      price: maker.price,
-      isBuy: !maker.isBuy,
-      quantity: quantity || maker.quantity
-    });
-
-    try {
-      const swapResult = await this.swaps.executeSwap(maker, taker);
-      this.emit('peerOrder.filled', maker);
-      return swapResult;
-    } catch (err) {
-      this.emit('peerOrder.invalidation', maker);
-      // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
-      throw err;
-    }
   }
 
   /*

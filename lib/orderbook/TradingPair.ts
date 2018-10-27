@@ -34,14 +34,14 @@ type OrderSidesQueues = {
  */
 class TradingPair {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
-  public queues: OrderSidesQueues | undefined;
-  /** a pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
+  public queues?: OrderSidesQueues;
+  /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
   public ownOrders: OrderSidesMaps<orders.StampedOwnOrder>;
-  /** a map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
+  /** A map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
   public peersOrders: Map<string, OrderSidesMaps<StampedPeerOrder>>;
 
-  constructor(private logger: Logger, public pairId: string, private matching = true) {
-    if (matching) {
+  constructor(private logger: Logger, public pairId: string, private nomatching = true) {
+    if (!nomatching) {
       this.queues = {
         buy: TradingPair.createPriorityQueue(OrderingDirection.Desc),
         sell: TradingPair.createPriorityQueue(OrderingDirection.Asc),
@@ -129,7 +129,7 @@ class TradingPair {
 
     map.set(order.id, order);
 
-    if (this.matching) {
+    if (!this.nomatching) {
       const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
       queue.add(order);
     }
@@ -147,7 +147,7 @@ class TradingPair {
     const peerOrders = this.peersOrders.get(peerPubKey);
     if (!peerOrders) return [];
 
-    if (this.matching) {
+    if (!this.nomatching) {
       const callback = (order: StampedOrder) => (order as StampedPeerOrder).peerPubKey === peerPubKey;
       this.queues!.buy.removeMany(callback);
       this.queues!.sell.removeMany(callback);
@@ -198,7 +198,7 @@ class TradingPair {
       const list = order.isBuy ? maps.buy : maps.sell;
       list.delete(order.id);
 
-      if (this.matching) {
+      if (!this.nomatching) {
         const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
         queue.remove(order);
       }
@@ -272,7 +272,7 @@ class TradingPair {
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
   public match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
-    assert(this.matching);
+    assert(!this.nomatching);
 
     const matches: matchingEngine.OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */

@@ -128,6 +128,7 @@ class GrpcService {
       case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
+      case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
         code = status.FAILED_PRECONDITION;
         break;
@@ -239,6 +240,18 @@ class GrpcService {
       await this.service.unban(call.request.toObject());
       const response = new xudrpc.UnbanResponse();
       callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.executeSwap]]
+   */
+  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapResult> = async (call, callback) => {
+    try {
+      const result = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapResult(result));
     } catch (err) {
       callback(this.getGrpcError(err), null);
     }
@@ -405,18 +418,6 @@ class GrpcService {
     try {
       const result = await this.service.placeOrder(call.request.toObject());
       callback(null, createPlaceOrderResponse(result));
-    } catch (err) {
-      callback(this.getGrpcError(err), null);
-    }
-  }
-
-  /**
-   * See [[Service.placeOrder]]
-   */
-  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapResult> = async (call, callback) => {
-    try {
-      const result = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapResult(result));
     } catch (err) {
       callback(this.getGrpcError(err), null);
     }
