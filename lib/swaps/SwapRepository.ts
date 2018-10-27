@@ -19,7 +19,7 @@ class SwapRepository {
   }
 
   public addSwapDeal = (swapDeal: db.SwapDealFactory): Bluebird<db.SwapDealInstance> => {
-    return this.models.SwapDeal.create(swapDeal);
+    return this.models.SwapDeal.create(<db.SwapDealAttributes>swapDeal);
   }
 }
 export default SwapRepository;

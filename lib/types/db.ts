@@ -1,4 +1,5 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
+import * as lndrpc from '../proto/lndrpc_pb';
 import { Address, NodeConnectionInfo } from './p2p';
 import { Currency, Pair, SwapDeal } from './orders';
 import { ReputationEvent } from './enums';
@@ -29,7 +30,14 @@ export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyA
 /* SwapDeal */
 export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes'>>;
 
-export type SwapDealAttributes = SwapDealFactory;
+export type SwapDealAttributes = SwapDealFactory & {
+  makerCltvDelta: number;
+  r_preimage: string;
+  quantity: number;
+  takerPubKey: string;
+  executeTime: number;
+  completeTime: number;
+};
 
 export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
 

@@ -11,6 +11,7 @@ import SwapRepository from './SwapRepository';
 import { StampedOwnOrder, StampedPeerOrder, SwapResult, SwapDeal } from '../types/orders';
 import assert from 'assert';
 import { Models } from '../db/DB';
+import { SwapDealInstance } from 'lib/types/db';
 
 type OrderToAccept = {
   quantityToAccept: number;
@@ -548,7 +549,7 @@ class Swaps extends EventEmitter {
       }
 
       const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes);
+      request.setRoutesList(deal.makerToTakerRoutes ? deal.makerToTakerRoutes : []);
       request.setPaymentHashString(deal.r_hash);
 
       try {

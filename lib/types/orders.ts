@@ -113,7 +113,7 @@ export type SwapDeal = {
   /** The quantity of the order to execute as proposed by the taker. */
   proposedQuantity: number;
   /** The accepted quantity of the order to execute as accepted by the maker. */
-  quantity: number | undefined;
+  quantity?: number;
   /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
   pairId: string;
   /** The number of satoshis (or equivalent) the taker is expecting to receive. */
@@ -121,7 +121,7 @@ export type SwapDeal = {
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
-  takerPubKey: string | undefined;
+  takerPubKey?: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to taker. */
   takerCltvDelta: number;
   /** The number of satoshis (or equivalent) the maker is expecting to receive. */
@@ -129,17 +129,17 @@ export type SwapDeal = {
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
-  makerCltvDelta: number | undefined;
+  makerCltvDelta?: number;
   /** The price of the order that's being executed. */
   price: number;
   /** The hash of the preimage. */
   r_hash: string;
-  r_preimage: string | undefined;
+  r_preimage?: string;
   /** The routes the maker should use to send to the taker. */
-  makerToTakerRoutes: lndrpc.Route[] | undefined;
+  makerToTakerRoutes?: lndrpc.Route[];
   createTime: number;
-  executeTime: number | undefined;
-  completeTime: number | undefined;
+  executeTime?: number;
+  completeTime?: number;
 };
 
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
