@@ -1,4 +1,5 @@
-import { SwapResult, StampedOwnOrder } from './orders';
+import { StampedOwnOrder } from './orders';
+import { SwapResult } from 'lib/swaps/types';
 
 export type PlaceOrderResult = {
   internalMatches: StampedOwnOrder[];

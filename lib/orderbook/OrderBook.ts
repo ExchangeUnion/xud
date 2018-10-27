@@ -13,12 +13,10 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import {
-  Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder,
-  SwapResult,
-} from '../types/orders';
+import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
-import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
+import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
+import { SwapResult } from 'lib/swaps/types';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -552,12 +550,12 @@ class OrderBook extends EventEmitter {
   private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer)  => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     assert(this.swaps, 'swaps module is disabled');
-    const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body!;
 
     if (!Swaps.validateSwapRequest(requestPacket.body!)) {
       // TODO: penalize peer for invalid swap request
-      peer.sendPacket(new SwapErrorPacket({
-        r_hash,
+      peer.sendPacket(new SwapFailedPacket({
+        rHash,
         errorMessage: SwapFailureReason[SwapFailureReason.InvalidSwapRequest],
       }, requestPacket.header.id));
       return;
@@ -565,8 +563,8 @@ class OrderBook extends EventEmitter {
 
     const order = this.tryGetOwnOrder(orderId, pairId);
     if (!order) {
-      peer.sendPacket(new SwapErrorPacket({
-        r_hash,
+      peer.sendPacket(new SwapFailedPacket({
+        rHash,
         errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
       }, requestPacket.header.id));
       return;
@@ -594,8 +592,8 @@ class OrderBook extends EventEmitter {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
-      peer.sendPacket(new SwapErrorPacket({
-        r_hash,
+      peer.sendPacket(new SwapFailedPacket({
+        rHash,
         errorMessage: SwapFailureReason[SwapFailureReason.OrderOnHold],
       }, requestPacket.header.id));
     }

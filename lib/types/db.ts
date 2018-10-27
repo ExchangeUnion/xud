@@ -32,7 +32,7 @@ export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTak
 
 export type SwapDealAttributes = SwapDealFactory & {
   makerCltvDelta: number;
-  r_preimage: string;
+  rPreimage: string;
   errorReason: string;
   quantity: number;
   takerPubKey: string;

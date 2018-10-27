@@ -44,8 +44,8 @@ export type SwapDeal = {
   /** The price of the order that's being executed. */
   price: number;
   /** The hash of the preimage. */
-  r_hash: string;
-  r_preimage?: string;
+  rHash: string;
+  rPreimage?: string;
   /** The routes the maker should use to send to the taker. */
   makerToTakerRoutes?: Route[];
   createTime: number;
@@ -54,7 +54,7 @@ export type SwapDeal = {
 };
 
 /** The result of a successful swap. */
-export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'r_hash' | 'peerPubKey' | 'role'> & {
+export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'role'> & {
   /** The amount of satoshis (or equivalent) received. */
   amountReceived: number;
   /** The amount of satoshis (or equivalent) sent. */

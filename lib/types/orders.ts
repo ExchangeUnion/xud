@@ -65,18 +65,6 @@ export type OrderPortion = OrderIdentifier & {
   localId?: string;
 };
 
-export type SwapResult = {
-  orderId: string,
-  localId: string,
-  pairId: string,
-  quantity: number,
-  amountReceived: number;
-  amountSent: number;
-  r_hash: string;
-  peerPubKey: string;
-  role: SwapRole;
-};
-
 export type Currency = {
   /** The ticker symbol for this currency such as BTC, LTC, ETH, etc... */
   id: string;

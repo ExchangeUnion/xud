@@ -5,7 +5,7 @@ export type SwapRequestPacketBody = {
   proposedQuantity: number;
   pairId: string;
   orderId: string;
-  r_hash: string;
+  rHash: string;
   takerCltvDelta: number;
 };
 
