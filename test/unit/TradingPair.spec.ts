@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import Logger, { Level } from '../../lib/Logger';
-import MatchingEngine from '../../lib/orderbook/MatchingEngine';
+import TradingPair from '../../lib/orderbook/TradingPair';
 import { orders } from '../../lib/types';
 import { OrderingDirection } from '../../lib/types/enums';
 import { ms } from '../../lib/utils/utils';
@@ -35,22 +35,23 @@ const createPeerOrder = (
   pairId: PAIR_ID,
 });
 
-let engine: MatchingEngine;
+let tp: TradingPair;
 
-const isEmpty = (engine: MatchingEngine) => {
-  expect(engine.ownOrders.buy).to.be.empty;
-  expect(engine.ownOrders.sell).to.be.empty;
-  expect(engine.queues.sell.isEmpty()).to.be.true;
+const isEmpty = (tp: TradingPair) => {
+  expect(tp.ownOrders.buy).to.be.empty;
+  expect(tp.ownOrders.sell).to.be.empty;
+  expect(tp.queues!.buy.isEmpty()).to.be.true;
+  expect(tp.queues!.sell.isEmpty()).to.be.true;
 };
 
 const init = () => {
-  engine = new MatchingEngine(loggers.orderbook, PAIR_ID);
-  isEmpty(engine);
+  tp = new TradingPair(loggers.orderbook, PAIR_ID);
+  isEmpty(tp);
 };
 
-describe('MatchingEngine.getMatchingQuantity', () => {
+describe('TradingPair.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
-    const res = MatchingEngine.getMatchingQuantity(
+    const res = TradingPair.getMatchingQuantity(
       createOwnOrder(5, 10, true),
       createOwnOrder(5.5, 10, false),
     );
@@ -58,7 +59,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   });
 
   it('should match buy order with a higher then a sell order', () => {
-    const res = MatchingEngine.getMatchingQuantity(
+    const res = TradingPair.getMatchingQuantity(
       createOwnOrder(5.5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -66,7 +67,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   });
 
   it('should match buy order with an equal price to a sell order', () => {
-    const res = MatchingEngine.getMatchingQuantity(
+    const res = TradingPair.getMatchingQuantity(
       createOwnOrder(5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -74,7 +75,7 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   });
 
   it('should match with lowest quantity of both orders', () => {
-    const res = MatchingEngine.getMatchingQuantity(
+    const res = TradingPair.getMatchingQuantity(
       createOwnOrder(5, 5, true),
       createOwnOrder(5, 10, false),
     );
@@ -82,9 +83,9 @@ describe('MatchingEngine.getMatchingQuantity', () => {
   });
 });
 
-describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
+describe('TradingPair.getOrdersPriorityQueueComparator', () => {
   it('should prioritize lower price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5, 10, true),
       createOwnOrder(5.5, 10, false),
@@ -93,7 +94,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize higher price on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5.5, 10, true),
       createOwnOrder(5, 10, false),
@@ -102,7 +103,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize higher price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5.5, 10, true),
       createOwnOrder(5, 10, false),
@@ -111,7 +112,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should not prioritize lower price on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5, 10, true),
       createOwnOrder(5.5, 10, false),
@@ -120,7 +121,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on ASC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Asc);
     const res = comparator(
       createOwnOrder(5, 10, true, ms() - 1),
       createOwnOrder(5, 10, false, ms()),
@@ -129,7 +130,7 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 
   it('should prioritize earlier createdAt when prices are equal on DESC ordering direction', () => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(OrderingDirection.Desc);
     const res = comparator(
       createOwnOrder(5, 10, true, ms() - 1),
       createOwnOrder(5, 10, false, ms()),
@@ -138,11 +139,11 @@ describe('MatchingEngine.getOrdersPriorityQueueComparator', () => {
   });
 });
 
-describe('MatchingEngine.splitOrderByQuantity', () => {
+describe('TradingPair.splitOrderByQuantity', () => {
   it('should split buy orders properly', () => {
     const orderQuantity = 10;
     const matchingQuantity = 6;
-    const { matched, remaining } = MatchingEngine.splitOrderByQuantity(
+    const { matched, remaining } = TradingPair.splitOrderByQuantity(
       createOwnOrder(5, orderQuantity, true),
       matchingQuantity,
     );
@@ -153,7 +154,7 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
   it('should split sell orders properly', () => {
     const orderQuantity = 10;
     const matchingQuantity = 4;
-    const { matched, remaining } = MatchingEngine.splitOrderByQuantity(
+    const { matched, remaining } = TradingPair.splitOrderByQuantity(
       createOwnOrder(5, orderQuantity, false),
       matchingQuantity,
     );
@@ -162,61 +163,57 @@ describe('MatchingEngine.splitOrderByQuantity', () => {
   });
 
   it('should not work when matchingQuantity higher than quantity of order', () => {
-    expect(() => MatchingEngine.splitOrderByQuantity(
+    expect(() => TradingPair.splitOrderByQuantity(
       createOwnOrder(5, 5, true),
       10,
     )).to.throw('order quantity must be greater than matchingQuantity');
   });
 });
 
-describe('MatchingEngine.match', () => {
+describe('TradingPair.match', () => {
   beforeEach(init);
 
   it('should fully match with two maker orders', () => {
-    engine.addPeerOrder(createPeerOrder(5, 5, false));
-    engine.addPeerOrder(createPeerOrder(5, 5, false));
-    const { remainingOrder } = engine['match'](createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 5, false));
+    tp.addPeerOrder(createPeerOrder(5, 5, false));
+    const { remainingOrder } = tp.match(createOwnOrder(5, 10, true));
     expect(remainingOrder).to.be.undefined;
   });
 
   it('should split taker order when makers are insufficient', () => {
-    engine.addPeerOrder(createPeerOrder(5, 4, false));
-    engine.addPeerOrder(createPeerOrder(5, 5, false));
-    const matchAgainst = [engine.queues.sell];
-    const { remainingOrder } = engine['match'](createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 4, false));
+    tp.addPeerOrder(createPeerOrder(5, 5, false));
+    const { remainingOrder } = tp.match(createOwnOrder(5, 10, true));
     expect(remainingOrder).to.not.be.undefined;
     expect(remainingOrder!.quantity).to.equal(1);
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    engine.addPeerOrder(createPeerOrder(5, 5, false));
-    engine.addPeerOrder(createPeerOrder(5, 6, false));
-    const matchAgainst = [engine.queues.sell];
-    const { matches, remainingOrder } = engine['match'](createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 5, false));
+    tp.addPeerOrder(createPeerOrder(5, 6, false));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 10, true));
     expect(remainingOrder).to.be.undefined;
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(5);
     });
-    const peekResult = engine.queues.sell.peek();
+    const peekResult = tp.queues!.sell.peek();
     expect(peekResult).to.not.be.undefined;
     expect(peekResult!.quantity).to.equal(1);
   });
 });
 
-describe('MatchingEngine.removeOwnOrder', () => {
+describe('TradingPair.removeOwnOrder', () => {
   beforeEach(init);
 
   it('should add a new ownOrder and then remove it', async () => {
-    const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(5, 5, false), false);
-    expect(matchingResult.matches).to.be.empty;
-    expect(matchingResult.remainingOrder).to.not.be.undefined;
-
-    engine.removeOwnOrder(matchingResult.remainingOrder!.id);
-    isEmpty(engine);
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.removeOwnOrder(ownOrder.id);
+    isEmpty(tp);
   });
 });
 
-describe('MatchingEngine.removePeerOrders', () => {
+describe('TradingPair.removePeerOrders', () => {
   beforeEach(init);
 
   it('should add new peerOrders and then remove some of them', () => {
@@ -225,18 +222,18 @@ describe('MatchingEngine.removePeerOrders', () => {
 
     const firstHostOrders = [createPeerOrder(100, 5, false, ms(), firstPeerPubKey),
       createPeerOrder(100, 5, false, ms(), firstPeerPubKey)];
-    engine.addPeerOrder(firstHostOrders[0]);
-    engine.addPeerOrder(firstHostOrders[1]);
-    engine.addPeerOrder(createPeerOrder(100, 5, false, ms(), secondPeerPubKey));
-    expect(engine.getPeerOrders().sell.length).to.equal(3);
+    tp.addPeerOrder(firstHostOrders[0]);
+    tp.addPeerOrder(firstHostOrders[1]);
+    tp.addPeerOrder(createPeerOrder(100, 5, false, ms(), secondPeerPubKey));
+    expect(tp.getPeersOrders().sell.length).to.equal(3);
 
-    const removedOrders = engine.removePeerOrders(firstPeerPubKey);
+    const removedOrders = tp.removePeerOrders(firstPeerPubKey);
     expect(removedOrders.length).to.equal(2);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
-    expect(engine.queues.sell.size).to.equal(1);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
+    expect(tp.queues!.sell.size).to.equal(1);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
 
-    const matchingResult = engine.matchOrAddOwnOrder(createOwnOrder(100, 15, true), false);
+    const matchingResult = tp.match(createOwnOrder(100, 15, true));
     expect(matchingResult.remainingOrder).to.not.be.undefined;
     expect(matchingResult.remainingOrder!.quantity).to.equal(10);
   });
@@ -246,12 +243,12 @@ describe('MatchingEngine.removePeerOrders', () => {
     const quantityToRemove = 3;
 
     const order = createPeerOrder(5, quantity, false);
-    engine.addPeerOrder(order);
+    tp.addPeerOrder(order);
 
-    let removedOrder = engine.removePeerOrder(order.id, order.peerPubKey, quantityToRemove).order;
+    let removedOrder = tp.removePeerOrder(order.id, order.peerPubKey, quantityToRemove).order;
     expect(removedOrder.quantity).to.be.equal(quantityToRemove);
 
-    removedOrder = engine.removePeerOrder(order.id, order.peerPubKey).order;
+    removedOrder = tp.removePeerOrder(order.id, order.peerPubKey).order;
     expect(removedOrder.quantity).to.be.equal(quantity - quantityToRemove);
   });
 
@@ -260,9 +257,9 @@ describe('MatchingEngine.removePeerOrders', () => {
     const otherPeerPubKey = 'other-peer-pubkey';
 
     const order = createPeerOrder(5, quantity, false);
-    engine.addPeerOrder(order);
+    tp.addPeerOrder(order);
 
-    expect(() => engine.removePeerOrder(
+    expect(() => tp.removePeerOrder(
       order.id,
       otherPeerPubKey,
       quantity,
@@ -271,74 +268,74 @@ describe('MatchingEngine.removePeerOrders', () => {
 
 });
 
-describe('MatchingEngine queues and lists integrity', () => {
+describe('MatchingEngine queues and maps integrity', () => {
   beforeEach(init);
 
-  it('queue and list should both remove an own order', () => {
+  it('queue and map should both remove an own order', () => {
     const ownOrder = createOwnOrder(100, 10, false);
-    engine.matchOrAddOwnOrder(ownOrder, false);
-    expect(engine.ownOrders.sell.size).to.equal(1);
-    expect(engine.queues.sell.size).to.be.equal(1);
+    tp.addOwnOrder(ownOrder);
+    expect(tp.ownOrders.sell.size).to.equal(1);
+    expect(tp.queues!.sell.size).to.be.equal(1);
 
-    engine.removeOwnOrder(ownOrder.id);
-    isEmpty(engine);
+    tp.removeOwnOrder(ownOrder.id);
+    isEmpty(tp);
   });
 
-  it('queue and list should both remove a peer order', () => {
+  it('queue and map should both remove a peer order', () => {
     const peerOrder = createPeerOrder(100, 10, false);
-    engine['addPeerOrder'](peerOrder);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
-    expect(engine.queues.sell.size).to.be.equal(1);
+    tp['addPeerOrder'](peerOrder);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.queues!.sell.size).to.be.equal(1);
 
-    engine['removePeerOrder'](peerOrder.id, peerOrder.peerPubKey);
-    expect(engine.getPeerOrders().sell).to.be.empty;
-    expect(engine.queues.sell.isEmpty()).to.be.true;
+    tp['removePeerOrder'](peerOrder.id, peerOrder.peerPubKey);
+    expect(tp.getPeersOrders().sell).to.be.empty;
+    expect(tp.queues!.sell.isEmpty()).to.be.true;
   });
 
-  it('queue and list should have the same order instance after a partial peer order removal', () => {
+  it('queue and map should have the same order instance after a partial peer order removal', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
-    engine.addPeerOrder(peerOrder);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
+    tp.addPeerOrder(peerOrder);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
 
-    const removeResult = engine.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 3);
+    const removeResult = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 3);
     expect(removeResult.order.quantity).to.equal(3);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
 
-    const listRemainingOrder = engine.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
-    const queueRemainingOrder = engine.queues.sell.peek();
+    const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
+    const queueRemainingOrder = tp.queues!.sell.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
 
-  it('queue and list should have the same order instance after a partial match / maker order split', () => {
+  it('queue and map should have the same order instance after a partial match / maker order split', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
-    engine.addPeerOrder(peerOrder);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
+    tp.addPeerOrder(peerOrder);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 3, true);
-    const matchingResult = engine.matchOrAddOwnOrder(ownOrder, false);
+    const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
-    const listRemainingOrder = engine.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
-    const queueRemainingOrder = engine.queues.sell.peek();
+    const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
+    const queueRemainingOrder = tp.queues!.sell.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
 
-  it('queue and list should both have the maker order removed after a full match', () => {
+  it('queue and map should both have the maker order removed after a full match', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
-    engine.addPeerOrder(peerOrder);
-    expect(engine.getPeerOrders().sell.length).to.equal(1);
+    tp.addPeerOrder(peerOrder);
+    expect(tp.getPeersOrders().sell.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 10, true);
-    const matchingResult = engine.matchOrAddOwnOrder(ownOrder, false);
+    const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
-    expect(() => engine.getPeerOrder(
+    expect(() => tp.getPeerOrder(
       peerOrder.id,
       peerOrder.peerPubKey,
-    )).to.throw(`order with id ${peerOrder.id} could not be found`);
-    const queueRemainingOrder = engine.queues.sell.peek();
+    )).to.throw(`order with id ${peerOrder.peerPubKey}/${peerOrder.id} could not be found`);
+    const queueRemainingOrder = tp.queues!.sell.peek();
     expect(queueRemainingOrder).to.be.undefined;
   });
 });

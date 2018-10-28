@@ -15,7 +15,7 @@ import { SwapRole, SwapFailureReason } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import {
   Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder,
-  SwapResult
+  SwapResult,
 } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapErrorPacket } from '../p2p/packets';
@@ -340,11 +340,11 @@ class OrderBook extends EventEmitter {
   public executeSwap = async (orderId: string, pairId: string, peerPubKey: string, quantity?: number): Promise<SwapResult> => {
     const maker = this.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
     const taker = this.stampOwnOrder({
-      localId: '',
       pairId,
+      localId: '',
       price: maker.price,
       isBuy: !maker.isBuy,
-      quantity: quantity || maker.quantity
+      quantity: quantity || maker.quantity,
     });
 
     try {
@@ -358,8 +358,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-
-    /**
+  /**
    * Adds an own order to the order book and broadcasts it to peers.
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
@@ -446,7 +445,8 @@ class OrderBook extends EventEmitter {
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
-  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedPeerOrder, fullyRemoved: boolean } => {
+  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number):
+    { order: StampedPeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }

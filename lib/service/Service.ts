@@ -8,8 +8,8 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import {Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder} from '../types/orders';
-import {PlaceOrderEvent, PlaceOrderEventCase} from '../types/orderBook';
+import { Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder } from '../types/orders';
+import { PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 

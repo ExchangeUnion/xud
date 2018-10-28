@@ -27,6 +27,6 @@ export const handler = (argv: Arguments) => {
   request.setOrderId(argv.maker_order_id);
   request.setPairId(argv.pair_id);
   request.setPeerPubKey(argv.maker_peer_pub_key);
-  request.setQuantity(argv.quantity)
+  request.setQuantity(argv.quantity);
   loadXudClient(argv).executeSwap(request, callback);
 };
