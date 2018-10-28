@@ -77,6 +77,9 @@ class Swaps extends EventEmitter {
   /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
 
+  /** The number of satoshis in a bitcoin. */
+  private static readonly SATOSHIS_PER_COIN = 100000000;
+
   constructor(private logger: Logger, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
 
@@ -90,8 +93,8 @@ class Swaps extends EventEmitter {
    */
   private static calculateSwapAmounts = (quantity: number, price: number) => {
     // TODO: use configurable amount of subunits/satoshis per token for each currency
-    const baseCurrencyAmount = Math.round(quantity * 100000000);
-    const quoteCurrencyAmount = Math.round(quantity * price * 100000000);
+    const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
+    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);
 
     return { baseCurrencyAmount, quoteCurrencyAmount };
   }
