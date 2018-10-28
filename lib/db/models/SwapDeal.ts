@@ -11,7 +11,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     r_preimage: { type: DataTypes.STRING, allowNull: true },
     peerPubKey: { type: DataTypes.STRING, allowNull: false },
     orderId: { type: DataTypes.STRING, allowNull: false },
-    localOrderId: { type: DataTypes.STRING, allowNull: false },
+    localId: { type: DataTypes.STRING, allowNull: false },
     proposedQuantity: { type: DataTypes.DECIMAL(8), allowNull: false },
     quantity: { type: DataTypes.DECIMAL(8), allowNull: true },
     pairId: { type: DataTypes.STRING, allowNull: false },

@@ -1,7 +1,7 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
-import * as lndrpc from '../proto/lndrpc_pb';
 import { Address, NodeConnectionInfo } from './p2p';
-import { Currency, Pair, SwapDeal } from './orders';
+import { SwapDeal } from '../swaps/types';
+import { Currency, Pair } from './orders';
 import { ReputationEvent } from './enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {
@@ -33,6 +33,7 @@ export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTak
 export type SwapDealAttributes = SwapDealFactory & {
   makerCltvDelta: number;
   r_preimage: string;
+  errorReason: string;
   quantity: number;
   takerPubKey: string;
   executeTime: number;

@@ -27,10 +27,10 @@ type SwapDeal = {
   errorReason?: string;
   /** The xud node pub key of the counterparty to this swap deal. */
   peerPubKey: string;
-  /** The global order id in the XU network for the order being executed. */
+  /** The global order id in the XU network for the maker order being executed. */
   orderId: string;
-  /** The local id for the order being executed. */
-  localOrderId: string;
+  /** The local id of the own order involved in the swap. */
+  localId: string;
   /** The quantity of the order to execute as proposed by the taker. */
   proposedQuantity: number;
   /** The accepted quantity of the order to execute as accepted by the maker. */
@@ -104,7 +104,7 @@ class Swaps extends EventEmitter {
   public init = async () => {
     // Load Swaps from data base
     const result = await this.repository.getSwapDeals();
-    result.forEach((deal: SwapDeal) => {
+    result.forEach((deal: SwapDealInstance) => {
       this.usedHashes.add(deal.r_hash);
     });
   }
@@ -169,7 +169,7 @@ class Swaps extends EventEmitter {
    */
   private persistDeal = async (deal: SwapDeal) => {
     if (this.usedHashes.has(deal.r_hash)) {
-      await this.repository.addSwapDeal(deal);
+      await this.repository.addSwapDeal(<SwapDealInstance>deal);
       this.removeDeal(deal);
     }
   }
@@ -299,7 +299,7 @@ class Swaps extends EventEmitter {
     const deal: SwapDeal = {
       ...swapRequestBody,
       peerPubKey: peer.nodePubKey!,
-      localOrderId: taker.localId,
+      localId: taker.localId,
       price: maker.price,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
@@ -343,7 +343,7 @@ class Swaps extends EventEmitter {
       takerPubKey,
       peerPubKey: peer.nodePubKey!,
       price: orderToAccept.price,
-      localOrderId: orderToAccept.localId,
+      localId: orderToAccept.localId,
       quantity: orderToAccept.quantityToAccept,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
@@ -685,7 +685,7 @@ class Swaps extends EventEmitter {
     if (deal.phase === SwapPhase.AmountReceived) {
       const swapResult = {
         orderId: deal.orderId,
-        localId: deal.localOrderId,
+        localId: deal.localId,
         pairId: deal.pairId,
         quantity: deal.quantity!,
         amountReceived: deal.makerAmount,
@@ -698,7 +698,7 @@ class Swaps extends EventEmitter {
     }
   }
 
-  private handleSwapComplete = async (response: packets.SwapCompletePacket): Promise<void>   => {
+  private handleSwapComplete = (response: packets.SwapCompletePacket) => {
     const { r_hash } = response.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
@@ -706,10 +706,10 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealPhase(deal, SwapPhase.SwapCompleted);
-    await this.persistDeal(deal);
+    return this.persistDeal(deal);
   }
 
-  private handleSwapError = async (error: packets.SwapErrorPacket): Promise<void> => {
+  private handleSwapError = (error: packets.SwapErrorPacket) => {
     const { r_hash, errorMessage } = error.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
@@ -717,7 +717,7 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealState(deal, SwapState.Error, errorMessage);
-    await this.persistDeal(deal);
+    return this.persistDeal(deal);
   }
 
 }

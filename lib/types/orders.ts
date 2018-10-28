@@ -99,56 +99,6 @@ export type Pair = {
   quoteCurrency: string;
 };
 
-export type SwapDeal = {
-  /** The role of the local node in the swap. */
-  role: SwapRole;
-  /** The most updated deal phase */
-  phase: SwapPhase;
-  /**
-   * The most updated deal state. State works together with phase to indicate where the
-   * deal is in its life cycle and if the deal is active, errored, or completed.
-   */
-  state: SwapState;
-  /** The reason for being in the current state. */
-  errorReason: string;
-  /** The xud node pub key of the counterparty to this swap deal. */
-  peerPubKey: string;
-  /** The global order id in the XU network for the order being executed. */
-  orderId: string;
-  /** The local id for the order being executed. */
-  localOrderId: string;
-  /** The quantity of the order to execute as proposed by the taker. */
-  proposedQuantity: number;
-  /** The accepted quantity of the order to execute as accepted by the maker. */
-  quantity?: number;
-  /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
-  pairId: string;
-  /** The number of satoshis (or equivalent) the taker is expecting to receive. */
-  takerAmount: number;
-  /** The currency the taker is expecting to receive. */
-  takerCurrency: string;
-  /** Taker's lnd pubkey on the taker currency's network. */
-  takerPubKey?: string;
-  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to taker. */
-  takerCltvDelta: number;
-  /** The number of satoshis (or equivalent) the maker is expecting to receive. */
-  makerAmount: number;
-  /** The currency the maker is expecting to receive. */
-  makerCurrency: string;
-  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
-  makerCltvDelta?: number;
-  /** The price of the order that's being executed. */
-  price: number;
-  /** The hash of the preimage. */
-  r_hash: string;
-  r_preimage?: string;
-  /** The routes the maker should use to send to the taker. */
-  makerToTakerRoutes?: lndrpc.Route[];
-  createTime: number;
-  executeTime?: number;
-  completeTime?: number;
-};
-
 export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
   return (order as StampedPeerOrder).peerPubKey === undefined && typeof (order as StampedOwnOrder).localId === 'string';
 }
