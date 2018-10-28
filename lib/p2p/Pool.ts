@@ -126,10 +126,10 @@ class Pool extends EventEmitter {
     this.handshakeData = handshakeData;
     this.handshakeData.addresses = this.addresses;
 
-    this.logger.info('Connecting to known / previously connected peers');
     this.bindNodeList();
 
     this.nodes.load().then(() => {
+      this.logger.info('Connecting to known / previously connected peers');
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
       this.logger.info('Completed start-up connections to known peers.');
@@ -232,7 +232,7 @@ class Pool extends EventEmitter {
       const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
 
       // check that it has listening addresses,
-      const hasAddresses = node.addresses.length > 0;
+      const hasAddresses = node.lastAddress || node.addresses.length;
 
       // ignore nodes that we already know if ignoreKnown is true
       const isNotIgnored = this.nodes.has(node.nodePubKey) && !ignoreKnown;
