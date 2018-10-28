@@ -25,7 +25,8 @@ import "annotations.proto";
 package xudrpc;
 
 service Xud {
-  /* Add a currency to the list of supported currencies. */
+  /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
+   * new trading pairs. */
   rpc AddCurrency(AddCurrencyRequest) returns (AddCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/addcurrency"
@@ -33,7 +34,8 @@ service Xud {
     };
   }
 
-  /* Add a trading pair to the list of supported trading pairs. */
+  /* Adds a trading pair to the list of supported trading pairs. The newly supported pair is
+   * advertised to peers so they may begin sending orders for it. */
   rpc AddPair(AddPairRequest) returns (AddPairResponse) {
     option (google.api.http) = {
       post: "/v1/addpair"
@@ -41,7 +43,9 @@ service Xud {
     };
   }
 
-  /* Removes an order from the order book by its local id. */
+  /* Removes an order from the order book by its local id. This should be called when an order is
+   * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, 
+   * and peers are notified that the order is no longer valid. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
       post: "/v1/removeorder"
@@ -49,14 +53,17 @@ service Xud {
     };
   }
 
-  /* Get the total balance available across all channels for a given currency. */
+  /* Gets the total balance available across all payment channels for one or all currencies. */
   rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
     option (google.api.http) = {
       get: "/v1/channelbalance"
     };
   }
   
-  /* Connect to an XU node. */
+  /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
+   * becomes available for swaps and trading. A handshake exchanges information about the peer's
+   * supported trading and swap clients. Orders will be shared with the peer upon connection and
+   * upon new order placements.*/
   rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
       post: "/v1/connect"
@@ -64,7 +71,8 @@ service Xud {
     };
   }
   
-  /* Ban a XU node manually and disconnect from it. */
+  /* Bans a node and immediately disconnects from it. This can be used to prevent any connections
+   * to a specific node.*/
   rpc Ban(BanRequest) returns (BanResponse) {
     option (google.api.http) = {
       post: "/v1/ban"
@@ -72,7 +80,7 @@ service Xud {
     };
   }
 
-  /* Remove ban from XU node manually and connect to it. */
+  /* Removes a ban from a node manually and, optionally, attempts to connect to it. */
   rpc Unban(UnbanRequest) returns (UnbanResponse) {
     option (google.api.http) = {
       post: "/v1/unban"
@@ -80,13 +88,19 @@ service Xud {
     };
   }
   
-  /* Get general information about this Exchange Union node. */
+  /* Gets general information about this node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
       get: "/v1/info"
     };
   }
-  
+
+  /* Gets general information about a node. */
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/nodeinfo"
+    };
+  }
   /* Gets orders from the order book. This call returns the state of the order book at a given point
    * in time, although it is not guaranteed to still be vaild by the time a response is received
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
@@ -98,30 +112,29 @@ service Xud {
     };
   }
   
-  /* Get the list of the order book's supported currencies. */
+  /* Gets a list of this node's supported currencies. */
   rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
     option (google.api.http) = {
       get: "/v1/currencies"
     };
   }
   
-  /* Get the list of the order book's suported trading pairs. */
+  /* Gets a list of this nodes suported trading pairs. */
   rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
     option (google.api.http) = {
       get: "/v1/pairs"
     };
   }
   
-  /* Get a list of connected peers. */
+  /* Gets a list of connected peers. */
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
     option (google.api.http) = {
       get: "/v1/peers"
     };
   }
 
-  /* Add an order to the order book.
-   * If price is zero or unspecified a market order will get added.
-   */
+  /* Adds an order to the order book.
+   * If price is zero or unspecified a market order will get added. */
   rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
     option (google.api.http) = {
       post: "/v1/placeorder"
@@ -138,7 +151,9 @@ service Xud {
   }
 
 
-  /* Remove a currency. */
+  /* Removes a currency from the list of supported currencies. Only currencies that are not in use
+   * for any currently supported trading pairs may be removed. Once removed, the currency can no
+   * longer be used for any supported trading pairs. */
   rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/removecurrency"
@@ -146,7 +161,9 @@ service Xud {
     };
   }
 
-  /* Remove a trading pair. */
+  /* Removes a trading pair from the list of currently supported trading pair. This call will
+   * effectively cancel any standing orders for that trading pair. Peers are informed when a pair
+   * is no longer supported so that they will know to stop sending orders for it. */
   rpc RemovePair(RemovePairRequest) returns (RemovePairResponse) {
     option (google.api.http) = {
       post: "/v1/removepair"
@@ -154,7 +171,7 @@ service Xud {
     };
   }
   
-  /* Begin shutting down xud. */
+  /* Begin gracefully shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
       post: "/v1/shutdown"
@@ -206,102 +223,128 @@ message AddCurrencyRequest {
     LND = 0;
     RAIDEN = 1;
   }
-  // The payment channel network client to use for executing swaps
+  // The payment channel network client to use for executing swaps.
   SwapClient swap_client = 2 [json_name = "swap_client"];
-  // The contract address for layered tokens such as ERC20
+  // The contract address for layered tokens such as ERC20.
   string token_address = 3 [json_name = "token_address"];
-  // The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others
-  // where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought
-  // of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified.
+  // The number of places to the right of the decimal point of the smallest subunit of the currency.
+  // For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full
+  // units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10
+  // exponent of the smallest subunit expressed as a positive integer. A default value of 8 is
+  // used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
 message AddCurrencyResponse {}
 
 message AddPairRequest {
-  // The base currency that is bought and sold for this trading pair
+  // The base currency that is bought and sold for this trading pair.
   string base_currency = 1 [json_name = "base_currency"];
-  // The currency used to quote a price for the base currency
+  // The currency used to quote a price for the base currency.
   string quote_currency = 2 [json_name = "quote_currency"];
 }
 message AddPairResponse {}
 
 message RemoveOrderRequest {
-  // The local id of the order to remove
+  // The local id of the order to remove.
   string order_id = 1 [json_name = "order_id"];
 }
 message RemoveOrderResponse {}
 
 message ChannelBalance {
-  // Sum of channels balances denominated in satoshis or equivalent
+  // Sum of channels balances denominated in satoshis or equivalent.
   int64 balance = 1 [json_name = "balance"];
-  // Sum of channels pending balances denominated in satoshis or equivalent
+  // Sum of channels pending balances denominated in satoshis or equivalent.
   int64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
 message ChannelBalanceRequest {
-  // The ticker symbol of the currency to query for, if unspecified then balances for all
-  // supported currencies are queried
+  // The ticker symbol of the currency to query for, if unspecified then balances for all supported
+  // currencies are queried.
   string currency = 1 [json_name = "currency"];
 }
 message ChannelBalanceResponse {
-  // A map between currency ticker symbols and their channel balances
+  // A map between currency ticker symbols and their channel balances.
   map<string, ChannelBalance> balances = 1 [json_name = "orders"];
 }
 
 message ConnectRequest {
+  // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
   string node_uri = 1 [json_name = "node_uri"];
 }
 message ConnectResponse {}
 
 message BanRequest {
+  // The node pub key of the node to ban.
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message BanResponse {}
 
 message GetInfoRequest {}
 message GetInfoResponse {
+  // The version of this instance of xud.
   string version = 1 [json_name = "version"];
+  // The node pub key of this node.
   string node_pub_key = 2 [json_name = "node_pub_key"];
+  // A list of uris that can be used to connect to this node. These are shared with peers.
   repeated string uris = 3 [json_name = "uris"];
+  // The number of currently connected peers.
   int32 num_peers = 4 [json_name = "num_peers"];
+  // The number of supported trading pairs.
   int32 num_pairs = 5 [json_name = "num_pairs"];
+  // The number of active, standing orders in the order book.
   OrdersCount orders = 6 [json_name = "orders"];
   LndInfo lndbtc = 7 [json_name = "lndbtc"];
   LndInfo lndltc = 8 [json_name = "lndltc"];
   RaidenInfo raiden = 9 [json_name = "raiden"];
 }
 
+message GetNodeInfoRequest {
+  // The node pub key of the node for which to get information. 
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message GetNodeInfoResponse {
+  // The node's reputation score. Points are subtracted for unexpected or potentially malicious
+  // behavior. Points are added when swaps are successfully executed.
+  int32 reputationScore = 1 [json_name = "reputation"];
+  // Whether the node is currently banned.
+  bool banned = 2 [json_name = "banned"];
+}
+
 message GetOrdersRequest {
-  // The trading pair for which to retrieve orders
+  // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
-  // Whether own orders should be included in result or not
+  // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
 }
 message GetOrdersResponse {
-  // A map between pair ids and their buy and sell orders
+  // A map between pair ids and their buy and sell orders.
   map<string, Orders> orders = 1 [json_name = "orders"];
 }
 
 message ListCurrenciesRequest {}
 message ListCurrenciesResponse {
-  // The ticker symbols of supported currencies
+  // A list of ticker symbols of the supported currencies.
   repeated string currencies = 1 [json_name = "currencies"];
 }
 
 message ListPairsRequest {}
 message ListPairsResponse {
-  // The supported trading pair tickers in formats like "LTC/BTC"
+  // The list of supported trading pair tickers in formats like "LTC/BTC".
   repeated string pairs = 1 [json_name = "pairs"];
 }
 
 message ListPeersRequest {}
 message ListPeersResponse {
+  // The list of connected peers.
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
 message LndChannels {
+  // The number of active/online channels for this lnd instance that can be used for swaps.
   int32 active = 1 [json_name = "active"];
+  // The number of inactive/offline channels for this lnd instance.
   int32 inactive = 2 [json_name = "inactive"];
+  // The number of channels that are pending on-chain confirmation before they can be used.
   int32 pending = 3 [json_name = "pending"];
 }
 
@@ -352,33 +395,35 @@ message OrderRemoval {
 }
 
 message Orders {
-  // A list of buy orders sorted by descending price
+  // A list of buy orders sorted by descending price.
   repeated Order buy_orders = 1 [json_name = "buy_orders"];
-  // A list of sell orders sorted by ascending price
+  // A list of sell orders sorted by ascending price.
   repeated Order sell_orders = 2 [json_name = "sell_orders"];
 }
 
 message OrdersCount {
+  // The number of orders belonging to remote xud nodes.
   int32 peer = 1 [json_name = "peer"];
+  // The number of orders belonging to our local xud node.
   int32 own = 2 [json_name = "own"];
 }
 
 message Peer {
-  // The socket address with host and port for this peer
+  // The socket address with host and port for this peer.
   string address = 1 [json_name = "address"];
-  // The node pub key to uniquely identify this peer
+  // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // The lnd BTC pub key associated with this peer
+  // The lnd BTC pub key associated with this peer.
   string lnd_btc_pub_key = 3 [json_name = "lnd_btc_pub_key"];
-  // The lnd LTC pub key associated with this peer
+  // The lnd LTC pub key associated with this peer.
   string lnd_ltc_pub_key = 4 [json_name = "lnd_ltc_pub_key"];
-  // Indicates whether this peer was connected inbound
+  // Indicates whether this peer was connected inbound.
   bool inbound = 5 [json_name = "inbound"];
-  // A list of trading pair tickers supported by this peer
+  // A list of trading pair tickers supported by this peer.
   repeated string pairs = 6 [json_name = "pairs"]; 
-  // The version of xud being used by the peer
+  // The version of xud being used by the peer.
   string xud_version = 7 [json_name = "xud_version"];
-  // The time in seconds that we have been connected to this peer
+  // The time in seconds that we have been connected to this peer.
   int32 seconds_connected = 8 [json_name = "seconds_connected"];
 }
 
@@ -387,29 +432,29 @@ message PlaceOrderRequest {
   double price = 1 [json_name = "price"];
   // The quantity of the order.
   double quantity = 2 [json_name = "quantity"];
-  // The trading pair that the order is for
+  // The trading pair that the order is for.
   string pair_id = 3 [json_name = "pair_id"];
-  // The local id to assign to the order
+  // The local id to assign to the order.
   string order_id = 4 [json_name = "order_id"];
-  // Whether the order is a Buy or Sell
+  // Whether the order is a Buy or Sell.
   OrderSide side = 5 [json_name = "side"];
 }
 message PlaceOrderResponse {
-  // A list of own orders (or portions thereof) that matched the newly placed order
+  // A list of own orders (or portions thereof) that matched the newly placed order.
   repeated Order internal_matches = 1 [json_name = "internal_matches"];
-  // A list of swap results of peer orders that matched the newly placed order
+  // A list of swap results of peer orders that matched the newly placed order.
   repeated SwapResult swap_results = 2 [json_name = "swap_results"];
-  // The remaining portion of the order, after matches, that enters the order book
+  // The remaining portion of the order, after matches, that enters the order book.
   Order remaining_order = 3 [json_name= "remaining_order"];
 }
 
 message PlaceOrderEvent {
   oneof event {
-    // An own orders (or portions thereof) that matched the newly placed order
+    // An own orders (or portions thereof) that matched the newly placed order.
     Order internal_match = 1 [json_name = "internal_match"];
-    // A swap results of peer orders that matched the newly placed order
+    // A swap results of peer orders that matched the newly placed order.
     SwapResult swap_result = 2 [json_name = "swap_result"];
-    // The remaining portion of the order, after matches, that enters the order book
+    // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
   }
 }
@@ -428,7 +473,7 @@ message RemoveCurrencyRequest {
 message RemoveCurrencyResponse {}
 
 message RemovePairRequest {
-  // The trading pair ticker to remove, such as "LTC/BTC"
+  // The trading pair ticker to remove in a format such as "LTC/BTC".
   string pair_id = 1 [json_name = "pair_id"];
 }
 message RemovePairResponse {}
@@ -463,12 +508,14 @@ message SwapResult {
     TAKER = 0;
     MAKER = 1;
   }
-  // Our role in the swap, either MAKER or TAKER
+  // Our role in the swap, either MAKER or TAKER.
   Role role = 9 [json_name = "role"];
 }
 
 message UnbanRequest {
+  // The node pub key of the peer to unban.
   string node_pub_key = 1 [json_name = "node_pub_key"];
+  // Whether to attempt to connect to the peer after it is unbanned.
   bool reconnect = 2  [json_name = "reconnect"];
 }
 message UnbanResponse {}

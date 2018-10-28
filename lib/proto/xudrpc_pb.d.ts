@@ -371,6 +371,52 @@ export namespace GetInfoResponse {
     }
 }
 
+export class GetNodeInfoRequest extends jspb.Message { 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetNodeInfoRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetNodeInfoRequest): GetNodeInfoRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetNodeInfoRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetNodeInfoRequest;
+    static deserializeBinaryFromReader(message: GetNodeInfoRequest, reader: jspb.BinaryReader): GetNodeInfoRequest;
+}
+
+export namespace GetNodeInfoRequest {
+    export type AsObject = {
+        nodePubKey: string,
+    }
+}
+
+export class GetNodeInfoResponse extends jspb.Message { 
+    getReputationscore(): number;
+    setReputationscore(value: number): void;
+
+    getBanned(): boolean;
+    setBanned(value: boolean): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetNodeInfoResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetNodeInfoResponse): GetNodeInfoResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetNodeInfoResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetNodeInfoResponse;
+    static deserializeBinaryFromReader(message: GetNodeInfoResponse, reader: jspb.BinaryReader): GetNodeInfoResponse;
+}
+
+export namespace GetNodeInfoResponse {
+    export type AsObject = {
+        reputationscore: number,
+        banned: boolean,
+    }
+}
+
 export class GetOrdersRequest extends jspb.Message { 
     getPairId(): string;
     setPairId(value: string): void;

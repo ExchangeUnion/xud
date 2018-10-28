@@ -15,6 +15,7 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp, UriParts } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
+import { ReputationEventInstance } from '../types/db';
 
 type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
@@ -36,10 +37,15 @@ type PoolConfig = {
   addresses: string[];
 };
 
+type NodeReputationInfo = {
+  reputationScore: ReputationEvent;
+  banned: boolean;
+};
+
 interface Pool {
   on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
@@ -47,7 +53,7 @@ interface Pool {
   on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
   emit(event: 'packet.order', order: StampedPeerOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
@@ -222,28 +228,17 @@ class Pool extends EventEmitter {
   private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
-      let isNotIgnored = false;
-      let hasNoPendingConnections = true;
-
       // check that this node is not ourselves
       const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
 
-      // that it has listening addresses,
+      // check that it has listening addresses,
       const hasAddresses = node.addresses.length > 0;
 
-      // ignore nodes that are banned or, if ignoreKnown is true, that we already know
-      const isKnownNode = this.nodes.has(node.nodePubKey);
-      if (isKnownNode) {
-        isNotIgnored = !ignoreKnown && !this.nodes.isBanned(node.nodePubKey);
-      }
+      // ignore nodes that we already know if ignoreKnown is true
+      const isNotIgnored = this.nodes.has(node.nodePubKey) && !ignoreKnown;
 
-      // Check we're not already trying to connect to this node.
-      if (this.pendingOutgoingConnections.has(node.nodePubKey)) {
-        hasNoPendingConnections = false;
-      }
-
-      // Validate this node.
-      if (isNotUs && hasAddresses && isNotIgnored && hasNoPendingConnections) {
+      // determine whether we should attempt to connect
+      if (isNotUs && hasAddresses && isNotIgnored) {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -285,8 +280,29 @@ class Pool extends EventEmitter {
 
       try {
         await this.addOutbound(address, nodePubKey, false);
-        return; // once we've successfully established an outbound connection, stop attempting new connections
+        return true; // once we've successfully established an outbound connection, stop attempting new connections
       } catch (err) {}
+    }
+
+    return false;
+  }
+
+  /**
+   * Gets a node's reputation score and whether it is banned
+   * @param nodePubKey The node pub key of the node for which to get reputation information
+   * @return true if the specified node exists and the event was added, false otherwise
+   */
+  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
+    const node = await this.repository.getNode(nodePubKey);
+    if (node) {
+      const { reputationScore, banned } = node;
+      return {
+        reputationScore,
+        banned,
+      };
+    } else {
+      this.logger.warn(`node ${nodePubKey} not found`);
+      throw errors.NODE_UNKNOWN(nodePubKey);
     }
   }
 
@@ -302,9 +318,12 @@ class Pool extends EventEmitter {
       const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
       this.logger.warn(err.message);
       throw err;
+    } else if (this.nodes.isBanned(nodePubKey)) {
+      throw errors.NODE_IS_BANNED(nodePubKey);
     } else if (this.peers.has(nodePubKey)) {
-      const err = errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
-      throw err;
+      throw errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
+    } else if (this.pendingOutgoingConnections.has(nodePubKey)) {
+      throw errors.ALREADY_CONNECTING(nodePubKey);
     }
 
     const peer = new Peer(this.logger, address);
@@ -363,7 +382,6 @@ class Pool extends EventEmitter {
   public banNode = async (nodePubKey: string): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
-
     } else {
       const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
 
@@ -470,7 +488,7 @@ class Pool extends EventEmitter {
       case PacketType.OrderInvalidation: {
         const order = (packet as packets.OrderInvalidationPacket).body!;
         this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
-        this.emit('packet.orderInvalidation', order);
+        this.emit('packet.orderInvalidation', order, peer.nodePubKey as string);
         break;
       }
       case PacketType.GetOrders: {

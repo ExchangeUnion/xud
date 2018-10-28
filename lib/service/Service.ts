@@ -188,6 +188,15 @@ class Service extends EventEmitter {
   }
 
   /**
+   * Gets information about a specified node.
+   */
+  public getNodeInfo = async (args: { nodePubKey: string }) => {
+    argChecks.HAS_NODE_PUB_KEY(args);
+    const info = await this.pool.getNodeReputation(args.nodePubKey);
+    return info;
+  }
+
+  /**
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
@@ -257,7 +266,7 @@ class Service extends EventEmitter {
     if (pairId) {
       result.set(pairId, getOrderTypes(pairId));
     } else {
-      Array.from(this.orderBook.pairIds).forEach((pairId) => {
+      this.orderBook.pairIds.forEach((pairId) => {
         result.set(pairId, getOrderTypes(pairId));
       });
     }
@@ -279,7 +288,7 @@ class Service extends EventEmitter {
    * @returns A list of supported trading pair tickers
    */
   public listPairs = () => {
-    return Array.from(this.orderBook.pairIds);
+    return this.orderBook.pairIds;
   }
 
   /**
