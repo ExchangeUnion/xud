@@ -322,7 +322,7 @@ class OrderBook extends EventEmitter {
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
       // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
-      const remainingOrderResult = await this.placeOrder(remainingOrder, false, onUpdate, maxTime);
+      const remainingOrderResult = await this.placeOrder(remainingOrder, true, onUpdate, maxTime);
       result.internalMatches.push(...remainingOrderResult.internalMatches);
       result.swapResults.push(...remainingOrderResult.swapResults);
       result.remainingOrder = remainingOrderResult.remainingOrder;
