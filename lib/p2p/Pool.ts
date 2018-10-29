@@ -15,6 +15,7 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
+import { ReputationEventInstance } from '../types/db';
 
 type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
@@ -34,6 +35,11 @@ type PoolConfig = {
    * It will be advertised with peers for them to try to connect to the server in the future.
    */
   addresses: string[];
+};
+
+type NodeReputationInfo = {
+  reputationScore: ReputationEvent;
+  banned: boolean;
 };
 
 interface Pool {
@@ -120,10 +126,10 @@ class Pool extends EventEmitter {
     this.handshakeData = handshakeData;
     this.handshakeData.addresses = this.addresses;
 
-    this.logger.info('Connecting to known / previously connected peers');
     this.bindNodeList();
 
     this.nodes.load().then(() => {
+      this.logger.info('Connecting to known / previously connected peers');
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
       this.logger.info('Completed start-up connections to known peers.');
@@ -226,7 +232,7 @@ class Pool extends EventEmitter {
       const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
 
       // check that it has listening addresses,
-      const hasAddresses = node.addresses.length > 0;
+      const hasAddresses = node.lastAddress || node.addresses.length;
 
       // ignore nodes that we already know if ignoreKnown is true
       const isNotIgnored = this.nodes.has(node.nodePubKey) && !ignoreKnown;
@@ -279,6 +285,25 @@ class Pool extends EventEmitter {
     }
 
     return false;
+  }
+
+  /**
+   * Gets a node's reputation score and whether it is banned
+   * @param nodePubKey The node pub key of the node for which to get reputation information
+   * @return true if the specified node exists and the event was added, false otherwise
+   */
+  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
+    const node = await this.repository.getNode(nodePubKey);
+    if (node) {
+      const { reputationScore, banned } = node;
+      return {
+        reputationScore,
+        banned,
+      };
+    } else {
+      this.logger.warn(`node ${nodePubKey} not found`);
+      throw errors.NODE_UNKNOWN(nodePubKey);
+    }
   }
 
   /**

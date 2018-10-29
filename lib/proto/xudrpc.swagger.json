@@ -183,6 +183,32 @@
         ]
       }
     },
+    "/v1/nodeinfo": {
+      "get": {
+        "summary": "Gets general information about a node.",
+        "operationId": "GetNodeInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetNodeInfoResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "node_pub_key",
+            "description": "The node pub key of the node for which to get information.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/orders": {
       "get": {
         "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
@@ -307,7 +333,7 @@
     },
     "/v1/removecurrency": {
       "post": {
-        "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed.  Once removed, the currency can no\nlonger be used for any supported trading pairs.",
+        "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed. Once removed, the currency can no\nlonger be used for any supported trading pairs.",
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
@@ -624,6 +650,21 @@
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
+        }
+      }
+    },
+    "xudrpcGetNodeInfoResponse": {
+      "type": "object",
+      "properties": {
+        "reputationScore": {
+          "type": "integer",
+          "format": "int32",
+          "description": "The node's reputation score. Points are subtracted for unexpected or potentially malicious\nbehavior. Points are added when swaps are successfully executed."
+        },
+        "banned": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether the node is currently banned."
         }
       }
     },

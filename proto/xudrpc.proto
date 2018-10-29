@@ -94,7 +94,13 @@ service Xud {
       get: "/v1/info"
     };
   }
-  
+
+  /* Gets general information about a node. */
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/nodeinfo"
+    };
+  }
   /* Gets orders from the order book. This call returns the state of the order book at a given point
    * in time, although it is not guaranteed to still be vaild by the time a response is received
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
@@ -298,6 +304,18 @@ message GetInfoResponse {
   LndInfo lndbtc = 7 [json_name = "lndbtc"];
   LndInfo lndltc = 8 [json_name = "lndltc"];
   RaidenInfo raiden = 9 [json_name = "raiden"];
+}
+
+message GetNodeInfoRequest {
+  // The node pub key of the node for which to get information. 
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message GetNodeInfoResponse {
+  // The node's reputation score. Points are subtracted for unexpected or potentially malicious
+  // behavior. Points are added when swaps are successfully executed.
+  int32 reputationScore = 1 [json_name = "reputation"];
+  // Whether the node is currently banned.
+  bool banned = 2 [json_name = "banned"];
 }
 
 message GetOrdersRequest {
