@@ -11,11 +11,11 @@ type SplitOrder = {
   remaining: StampedOrder;
 };
 
-type OrderList<T extends orders.StampedOrder> = Map<string, T>;
+type OrderMap<T extends orders.StampedOrder> = Map<string, T>;
 
-type OrderSidesLists<T extends orders.StampedOrder> = {
-  buy: OrderList<T>,
-  sell: OrderList<T>,
+type OrderSidesMaps<T extends orders.StampedOrder> = {
+  buy: OrderMap<T>,
+  sell: OrderMap<T>,
 };
 
 type OrderSidesArrays<T extends orders.StampedOrder> = {
@@ -28,31 +28,36 @@ type OrderSidesQueues = {
   sell: FastPriorityQueue<StampedOrder>,
 };
 
-/** A class to represent a matching engine responsible for matching orders for a given trading pair according to their price and quantity. */
-class MatchingEngine {
+/**
+ * A class to represent a trading pair.
+ * responsible for managing all active orders, and for matching orders according to their price and quantity.
+ */
+class TradingPair {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
-  public queues: OrderSidesQueues;
+  public queues?: OrderSidesQueues;
   /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
-  public ownOrders: OrderSidesLists<orders.StampedOwnOrder>;
+  public ownOrders: OrderSidesMaps<orders.StampedOwnOrder>;
   /** A map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
-  public peersOrders: Map<string, OrderSidesLists<orders.StampedPeerOrder>>;
+  public peersOrders: Map<string, OrderSidesMaps<StampedPeerOrder>>;
 
-  constructor(private logger: Logger, public pairId: string) {
-    this.queues = {
-      buy: MatchingEngine.createPriorityQueue(OrderingDirection.Desc),
-      sell: MatchingEngine.createPriorityQueue(OrderingDirection.Asc),
-    };
+  constructor(private logger: Logger, public pairId: string, private nomatching = false) {
+    if (!nomatching) {
+      this.queues = {
+        buy: TradingPair.createPriorityQueue(OrderingDirection.Desc),
+        sell: TradingPair.createPriorityQueue(OrderingDirection.Asc),
+      };
+    }
 
     this.ownOrders = {
       buy: new Map<string, StampedOwnOrder>(),
       sell: new Map<string, StampedOwnOrder>(),
     };
 
-    this.peersOrders = new Map<string, OrderSidesLists<orders.StampedPeerOrder>>();
+    this.peersOrders = new Map<string, OrderSidesMaps<StampedPeerOrder>>();
   }
 
   private static createPriorityQueue = (orderingDirection: OrderingDirection): FastPriorityQueue<StampedOrder> => {
-    const comparator = MatchingEngine.getOrdersPriorityQueueComparator(orderingDirection);
+    const comparator = TradingPair.getOrdersPriorityQueueComparator(orderingDirection);
     return new FastPriorityQueue(comparator);
   }
 
@@ -100,47 +105,36 @@ class MatchingEngine {
    * @returns false if it's a duplicated order, otherwise true
    */
   public addPeerOrder = (order: StampedPeerOrder): boolean => {
-    let peerOrdersList = this.peersOrders.get(order.peerPubKey);
-    if (!peerOrdersList) {
-      peerOrdersList = {
+    let peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
+    if (!peerOrdersMaps) {
+      peerOrdersMaps = {
         buy: new Map<string, StampedPeerOrder>(),
         sell: new Map<string, StampedPeerOrder>(),
       };
-      this.peersOrders.set(order.peerPubKey, peerOrdersList);
-    }
-    return this.addOrder(order, peerOrdersList);
-  }
-
-  // TODO: remove method
-  /**
-   * Match an order against its opposite queue, and optionally add the unmatched portion of the order to the queue.
-   * @param discardRemaining whether to discard any unmatched portion of the order rather than add it to the queue
-   * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
-   */
-  public matchOrAddOwnOrder = (order: StampedOwnOrder, discardRemaining: boolean): matchingEngine.MatchingResult => {
-    const matchingResult = this.match(order);
-    if (matchingResult.remainingOrder && !discardRemaining) {
-      this.addOwnOrder(matchingResult.remainingOrder);
+      this.peersOrders.set(order.peerPubKey, peerOrdersMaps);
     }
 
-    return matchingResult;
+    return this.addOrder(order, peerOrdersMaps);
   }
 
   public addOwnOrder = (order: StampedOwnOrder): boolean => {
     return this.addOrder(order, this.ownOrders);
   }
 
-  private addOrder = (order: StampedOrder, lists: OrderSidesLists<StampedOrder>): boolean => {
-    const list = order.isBuy ? lists.buy : lists.sell;
-    const queue = order.isBuy ? this.queues.buy : this.queues.sell;
-
-    if (list.has(order.id)) {
+  private addOrder = (order: StampedOrder, maps: OrderSidesMaps<StampedOrder>): boolean => {
+    const map = order.isBuy ? maps.buy : maps.sell;
+    if (map.has(order.id)) {
       return false;
-    } else {
-      list.set(order.id, order);
-      queue.add(order);
-      return true;
     }
+
+    map.set(order.id, order);
+
+    if (!this.nomatching) {
+      const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
+      queue.add(order);
+    }
+
+    return true;
   }
 
   /**
@@ -150,18 +144,17 @@ class MatchingEngine {
     // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues
     if (!peerPubKey) return [];
 
-    const callback = (order: StampedOrder) => (order as StampedPeerOrder).peerPubKey === peerPubKey;
+    const peerOrders = this.peersOrders.get(peerPubKey);
+    if (!peerOrders) return [];
 
-    // remove from queues
-    const removedOrders = [
-      ...this.queues.buy.removeMany(callback),
-      ...this.queues.sell.removeMany(callback),
-    ] as StampedPeerOrder[];
+    if (!this.nomatching) {
+      const callback = (order: StampedOrder) => (order as StampedPeerOrder).peerPubKey === peerPubKey;
+      this.queues!.buy.removeMany(callback);
+      this.queues!.sell.removeMany(callback);
+    }
 
-    // remove from lists.
     this.peersOrders.delete(peerPubKey);
-
-    return removedOrders;
+    return [...peerOrders.buy.values(), ...peerOrders.sell.values()];
   }
 
   /**
@@ -170,12 +163,12 @@ class MatchingEngine {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedOwnOrder, fullyRemoved: boolean} => {
-    const peerOrdersList = this.peersOrders.get(peerPubKey);
-    if (!peerOrdersList) {
+  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: StampedPeerOrder, fullyRemoved: boolean} => {
+    const peerOrdersMaps = this.peersOrders.get(peerPubKey);
+    if (!peerOrdersMaps) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
-    return this.removeOrder(orderId, peerOrdersList, quantityToRemove);
+    return this.removeOrder(orderId, peerOrdersMaps, quantityToRemove);
   }
 
   /**
@@ -188,9 +181,9 @@ class MatchingEngine {
     return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
   }
 
-  private removeOrder = <T extends StampedOrder>(orderId: string, lists: OrderSidesLists<StampedOrder>, quantityToRemove?: number):
+  private removeOrder = <T extends StampedOrder>(orderId: string, maps: OrderSidesMaps<StampedOrder>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
-    const order = lists.buy.get(orderId) || lists.sell.get(orderId);
+    const order = maps.buy.get(orderId) || maps.sell.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
@@ -202,61 +195,76 @@ class MatchingEngine {
       return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
     } else {
       // otherwise, remove the order entirely
-      const list = order.isBuy ? lists.buy : lists.sell;
-      const queue = order.isBuy ? this.queues.buy : this.queues.sell;
-
+      const list = order.isBuy ? maps.buy : maps.sell;
       list.delete(order.id);
-      queue.remove(order);
+
+      if (!this.nomatching) {
+        const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
+        queue.remove(order);
+      }
+
       this.logger.debug(`order removed: ${orderId}`);
       return { order: order as T, fullyRemoved: true };
     }
   }
 
-  private getOrderList = (order: StampedOrder): OrderList<StampedOrder> | undefined => {
+  private getOrderMap = (order: StampedOrder): OrderMap<StampedOrder> | undefined => {
     if (isOwnOrder(order)) {
       return order.isBuy ? this.ownOrders.buy : this.ownOrders.sell;
     } else {
-      const peerOrdersList = this.peersOrders.get(order.peerPubKey);
-      if (!peerOrdersList) return;
-      return order.isBuy ? peerOrdersList.buy : peerOrdersList.sell;
+      const peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
+      if (!peerOrdersMaps) return;
+      return order.isBuy ? peerOrdersMaps.buy : peerOrdersMaps.sell;
     }
   }
 
-  private getOrders = <T extends orders.StampedOrder>(lists: OrderSidesLists<T>): OrderSidesArrays<T> => {
+  private getOrders = <T extends orders.StampedOrder>(lists: OrderSidesMaps<T>): OrderSidesArrays<T> => {
     return {
       buy: Array.from(lists.buy.values()),
       sell: Array.from(lists.sell.values()),
     };
   }
 
-  public getPeerOrder = (orderId: string, peerPubKey: string): StampedPeerOrder => {
-    const peerOrders = this.peersOrders.get(peerPubKey);
-    if (!peerOrders) {
-      throw errors.ORDER_NOT_FOUND(orderId);
-    }
-    const order = this.getOrder(orderId, peerOrders);
-    if (!order) {
-      throw errors.ORDER_NOT_FOUND(orderId);
-    }
-    return order;
-  }
-
-  private getOrder = <T extends StampedOrder>(orderId: string, maps: OrderSidesLists<T>): T | undefined => {
-    return maps.buy.get(orderId) || maps.sell.get(orderId);
-  }
-
-  public getPeerOrders = (): OrderSidesArrays<StampedPeerOrder> => {
+  public getPeersOrders = (): OrderSidesArrays<StampedPeerOrder> => {
     const res: OrderSidesArrays<StampedPeerOrder> = { buy: [], sell: [] };
     this.peersOrders.forEach((peerOrders) => {
       const peerOrdersArrs = this.getOrders(peerOrders);
       res.buy = res.buy.concat(peerOrdersArrs.buy);
       res.sell = res.sell.concat(peerOrdersArrs.sell);
     });
+
     return res;
   }
 
-  public getOwnOrders = () => {
+  public getOwnOrders = (): OrderSidesArrays<StampedOwnOrder> => {
     return this.getOrders(this.ownOrders);
+  }
+
+  public getOwnOrder = (orderId: string): StampedOwnOrder => {
+    const order =  this.getOrder(orderId, this.ownOrders);
+    if (!order) {
+      throw errors.ORDER_NOT_FOUND(orderId);
+    }
+
+    return order;
+  }
+
+  public getPeerOrder = (orderId: string, peerPubKey: string): StampedPeerOrder => {
+    const peerOrders = this.peersOrders.get(peerPubKey);
+    if (!peerOrders) {
+      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
+    }
+
+    const order = this.getOrder(orderId, peerOrders);
+    if (!order) {
+      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
+    }
+
+    return order;
+  }
+
+  private getOrder = <T extends StampedOrder>(orderId: string, maps: OrderSidesMaps<T>): T | undefined => {
+    return maps.buy.get(orderId) || maps.sell.get(orderId);
   }
 
   /**
@@ -264,14 +272,16 @@ class MatchingEngine {
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
   public match = (takerOrder: StampedOwnOrder): matchingEngine.MatchingResult => {
+    assert(!this.nomatching);
+
     const matches: matchingEngine.OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: StampedOwnOrder | undefined = { ...takerOrder };
 
-    const queue = takerOrder.isBuy ? this.queues.sell : this.queues.buy;
+    const queue = takerOrder.isBuy ? this.queues!.sell : this.queues!.buy;
     const getMatchingQuantity = (remainingOrder: StampedOwnOrder, oppositeOrder: StampedOrder) => takerOrder.isBuy
-      ? MatchingEngine.getMatchingQuantity(remainingOrder, oppositeOrder)
-      : MatchingEngine.getMatchingQuantity(oppositeOrder, remainingOrder);
+      ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)
+      : TradingPair.getMatchingQuantity(oppositeOrder, remainingOrder);
 
     // as long as we have remaining quantity to match and orders to match against, keep checking for matches
     while (remainingOrder && !queue.isEmpty()) {
@@ -281,11 +291,11 @@ class MatchingEngine {
         // there's no match with the best available maker order, so end the matching routine
         break;
       } else {
-        // get the order from the top of the queue, and remove its ref from the list as well
+        // get the order from the top of the queue, and remove its ref from the map as well
         const makerOrder = queue.poll()!;
-        const list = this.getOrderList(makerOrder);
-        if (!list) break;
-        list.delete(makerOrder.id);
+        const map = this.getOrderMap(makerOrder);
+        if (!map) break;
+        map.delete(makerOrder.id);
 
         if (
           makerOrder.quantity === matchingQuantity &&
@@ -295,16 +305,16 @@ class MatchingEngine {
 
           remainingOrder = undefined;
         } else if (remainingOrder.quantity === matchingQuantity) {  // taker order quantity is not sufficient. maker order will split
-          const splitOrder = MatchingEngine.splitOrderByQuantity(makerOrder, matchingQuantity);
+          const splitOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
           matches.push({ maker: splitOrder.matched, taker: remainingOrder });
 
           // add the remaining order to the queue and the list
           queue.add(splitOrder.remaining);
-          list.set(splitOrder.remaining.id, splitOrder.remaining);
+          map.set(splitOrder.remaining.id, splitOrder.remaining);
 
           remainingOrder = undefined;
         } else if (makerOrder.quantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split
-          const splitOrder = MatchingEngine.splitOrderByQuantity(remainingOrder, matchingQuantity);
+          const splitOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
           matches.push({ maker: makerOrder, taker: splitOrder.matched as StampedOwnOrder });
           remainingOrder = splitOrder.remaining as StampedOwnOrder;
         } else {
@@ -317,5 +327,5 @@ class MatchingEngine {
   }
 }
 
-export default MatchingEngine;
+export default TradingPair;
 export { OrderSidesArrays };

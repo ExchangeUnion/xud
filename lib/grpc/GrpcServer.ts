@@ -25,6 +25,7 @@ class GrpcServer {
       connect: grpcService.connect,
       ban: grpcService.ban,
       unban: grpcService.unban,
+      executeSwap: grpcService.executeSwap,
       getInfo: grpcService.getInfo,
       getNodeInfo: grpcService.getNodeInfo,
       getOrders: grpcService.getOrders,

@@ -25,6 +25,8 @@ class Config {
   public initdb: boolean;
   /** The file path for the database, or ':memory:' if the database should be kept in memory. */
   public dbpath: string;
+  /** Whether matching will be disabled */
+  public nomatching: boolean;
 
   constructor() {
     const platform = os.platform();
@@ -53,6 +55,7 @@ class Config {
     // default configuration
     this.initdb = true;
     this.dbpath = this.getDefaultDbPath();
+    this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.network = Network.TestNet;

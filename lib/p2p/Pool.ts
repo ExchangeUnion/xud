@@ -12,7 +12,7 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp, UriParts } from '../utils/utils';
+import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 import { ReputationEventInstance } from '../types/db';
