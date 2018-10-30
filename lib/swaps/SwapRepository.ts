@@ -22,4 +22,5 @@ class SwapRepository {
     return this.models.SwapDeal.create(<db.SwapDealAttributes>swapDeal);
   }
 }
+
 export default SwapRepository;

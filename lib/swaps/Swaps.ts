@@ -137,6 +137,14 @@ class Swaps extends EventEmitter {
     return this.deals.get(r_hash);
   }
 
+  /**
+   * Gets all completed swap deals.
+   * @returns A list of all completed deals.
+   */
+  public getCompletedDeals = async (): Promise<SwapDealInstance[]> => {
+    return await this.repository.getSwapDeals();
+  }
+
   public addDeal = (deal: SwapDeal) => {
     this.deals.set(deal.r_hash, deal);
     this.logger.debug('New deal: ' + JSON.stringify(deal));

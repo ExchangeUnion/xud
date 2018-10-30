@@ -412,6 +412,15 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.ListSwapDeals]]
+   */
+  public listSwapDeals: grpc.handleUnaryCall<xudrpc.ListSwapDealsRequest, xudrpc.ListSwapDealsResponse> = async (_, callback) => {
+    const response = new xudrpc.ListSwapDealsResponse();
+    console.log('//////////////////////////////////////////////////////');
+    console.log(this.service.listSwapDeals());
+    callback(null, response);
+  }
+  /**
    * See [[Service.placeOrder]]
    */
   public placeOrder: grpc.handleServerStreamingCall<xudrpc.PlaceOrderRequest, xudrpc.PlaceOrderResponse> = async (call) => {

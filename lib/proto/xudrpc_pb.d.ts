@@ -585,6 +585,40 @@ export namespace ListPeersResponse {
     }
 }
 
+export class ListSwapDealsRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListSwapDealsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ListSwapDealsRequest): ListSwapDealsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListSwapDealsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListSwapDealsRequest;
+    static deserializeBinaryFromReader(message: ListSwapDealsRequest, reader: jspb.BinaryReader): ListSwapDealsRequest;
+}
+
+export namespace ListSwapDealsRequest {
+    export type AsObject = {
+    }
+}
+
+export class ListSwapDealsResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListSwapDealsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ListSwapDealsResponse): ListSwapDealsResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListSwapDealsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListSwapDealsResponse;
+    static deserializeBinaryFromReader(message: ListSwapDealsResponse, reader: jspb.BinaryReader): ListSwapDealsResponse;
+}
+
+export namespace ListSwapDealsResponse {
+    export type AsObject = {
+    }
+}
+
 export class LndChannels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;

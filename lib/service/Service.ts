@@ -11,6 +11,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
+import SwapRepository from '../swaps/SwapRepository';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 
 /**
@@ -308,6 +309,14 @@ class Service extends EventEmitter {
    */
   public listPeers = () => {
     return this.pool.listPeers();
+  }
+
+  /**
+   * Get all completed swap deals.
+   * @returns A list of completed swap deals.
+   */
+  public listSwapDeals = async () => {
+    return await this.swaps.getCompletedDeals();
   }
 
   /**

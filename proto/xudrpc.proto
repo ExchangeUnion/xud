@@ -133,6 +133,13 @@ service Xud {
     };
   }
 
+  /* Gets a list of completed swap deals. */
+  rpc ListSwapDeals(ListSwapDealsRequest) returns (ListSwapDealsResponse) {
+    option (google.api.http) = {
+      get: "/v1/swapsdeals"
+    };
+  }
+
   /* Adds an order to the order book.
    * If price is zero or unspecified a market order will get added. */
   rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
@@ -346,6 +353,9 @@ message ListPeersResponse {
   // The list of connected peers.
   repeated Peer peers = 1 [json_name = "peers"];
 }
+
+message ListSwapDealsRequest {}
+message ListSwapDealsResponse {}
 
 message LndChannels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
