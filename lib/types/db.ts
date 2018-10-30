@@ -1,5 +1,6 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
+import { SwapDeal } from '../swaps/types';
 import { Currency, Pair } from './orders';
 import { ReputationEvent } from './enums';
 
@@ -17,6 +18,7 @@ export type SequelizeAttributes<T extends { [key: string]: any }> = {
 * "xInstance" is the type definition of a fetched record as a Sequelize row instance, which contains some util properties.
 */
 
+/* Currency */
 export type CurrencyFactory = Currency;
 
 export type CurrencyAttributes = CurrencyFactory & {
@@ -25,6 +27,22 @@ export type CurrencyAttributes = CurrencyFactory & {
 
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
+/* SwapDeal */
+export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes'>>;
+
+export type SwapDealAttributes = SwapDealFactory & {
+  makerCltvDelta: number;
+  r_preimage: string;
+  errorReason: string;
+  quantity: number;
+  takerPubKey: string;
+  executeTime: number;
+  completeTime: number;
+};
+
+export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
+
+/* Node */
 export type NodeFactory = NodeConnectionInfo;
 
 export type NodeAttributes = NodeFactory & {
@@ -39,6 +57,7 @@ export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes> &
   reputationScore: number;
 };
 
+/* Pairs */
 export type PairFactory = Pair;
 
 export type PairAttributes = PairFactory & {
@@ -47,6 +66,7 @@ export type PairAttributes = PairFactory & {
 
 export type PairInstance = PairAttributes & Sequelize.Instance<PairAttributes>;
 
+/* Reputation events */
 export type ReputationEventFactory = {
   event: ReputationEvent;
   nodeId: number;

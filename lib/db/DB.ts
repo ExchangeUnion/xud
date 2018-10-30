@@ -9,6 +9,7 @@ import { SwapClients } from '../types/enums';
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
+  SwapDeal: Sequelize.Model<db.SwapDealInstance, db.SwapDealAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
   ReputationEvent: Sequelize.Model<db.ReputationEventInstance, db.ReputationEventAttributes>;
 };
@@ -44,12 +45,13 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair, ReputationEvent } = this.models;
+    const { Node, Currency, Pair, ReputationEvent, SwapDeal } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
       ReputationEvent.sync(),
+      SwapDeal.sync(),
     ]);
     await Promise.all([
       Pair.sync(),
