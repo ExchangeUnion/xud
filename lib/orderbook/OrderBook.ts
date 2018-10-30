@@ -260,7 +260,7 @@ class OrderBook extends EventEmitter {
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
       assert(discardRemaining, 'discardRemaining must be true on recursive calls where maxTime could exceed');
-      this.logger.info(`addOwnOrder max time exceeded. order (${JSON.stringify(order)}) won't be matched`);
+      this.logger.info(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be matched`);
 
       // returning the remaining order to be rolled back and handled by the initial call
       return Promise.resolve({
