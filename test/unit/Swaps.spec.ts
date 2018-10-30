@@ -1,5 +1,6 @@
 import { expect } from 'chai';
-import Swaps, { SwapDeal } from '../../lib/swaps/Swaps';
+import Swaps from '../../lib/swaps/Swaps';
+import { SwapDeal } from '../../lib/swaps/types';
 import Logger, { Level } from '../../lib/Logger';
 import { SwapPhase, SwapState, SwapRole } from '../../lib/types/enums';
 
@@ -18,7 +19,7 @@ describe('Swaps', () => {
     state: SwapState.Active,
     peerPubKey: '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8',
     orderId: 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8',
-    localOrderId: '1',
+    localId: '1',
     proposedQuantity: quantity,
     pairId: 'LTC/BTC',
     takerCurrency: 'LTC',
