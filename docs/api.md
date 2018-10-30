@@ -16,6 +16,7 @@
     - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
+    - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
@@ -234,6 +235,24 @@
 
 ### ConnectResponse
 
+
+
+
+
+
+
+<a name="xudrpc.ExecuteSwapRequest"></a>
+
+### ExecuteSwapRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pair_id | [string](#string) |  | The trading pair of the swap orders. |
+| order_id | [string](#string) |  | The order id of the maker order. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. |
+| quantity | [double](#double) |  | the quantity to swap. the whole order will be swapped if unspecified. |
 
 
 
@@ -869,6 +888,7 @@
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
+| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapResult](#xudrpc.SwapResult) | Execute a swap on a maker peer order |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |

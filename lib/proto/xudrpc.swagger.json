@@ -166,6 +166,33 @@
         ]
       }
     },
+    "/v1/executeswap": {
+      "post": {
+        "summary": "Execute a swap on a maker peer order",
+        "operationId": "ExecuteSwap",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcSwapResult"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcExecuteSwapRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/info": {
       "get": {
         "summary": "Gets general information about this node.",
@@ -360,7 +387,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps, \nand peers are notified that the order is no longer valid.",
+        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid.",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -609,6 +636,28 @@
     },
     "xudrpcConnectResponse": {
       "type": "object"
+    },
+    "xudrpcExecuteSwapRequest": {
+      "type": "object",
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair of the swap orders."
+        },
+        "order_id": {
+          "type": "string",
+          "description": "The order id of the maker order."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer which owns the maker order."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "the quantity to swap. the whole order will be swapped if unspecified."
+        }
+      }
     },
     "xudrpcGetInfoResponse": {
       "type": "object",
