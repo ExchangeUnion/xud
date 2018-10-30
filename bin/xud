@@ -29,6 +29,11 @@ const { argv } = require('yargs')
       choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
       alias: 'n',
     },
+    nomatching: {
+      describe: 'Whether to disable matching within xud',
+      type: 'boolean',
+      default: undefined,
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
