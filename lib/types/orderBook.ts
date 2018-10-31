@@ -1,15 +1,15 @@
-import { StampedOwnOrder } from './orders';
+import { OwnOrder } from './orders';
 import { SwapResult } from 'lib/swaps/types';
 
 export type PlaceOrderResult = {
-  internalMatches: StampedOwnOrder[];
+  internalMatches: OwnOrder[];
   swapResults: SwapResult[];
-  remainingOrder?: StampedOwnOrder;
+  remainingOrder?: OwnOrder;
 };
 
 export type PlaceOrderEvent = {
   case: PlaceOrderEventCase;
-  payload: StampedOwnOrder | SwapResult;
+  payload: OwnOrder | SwapResult;
 };
 
 export enum PlaceOrderEventCase {

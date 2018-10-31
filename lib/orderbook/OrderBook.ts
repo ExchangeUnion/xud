@@ -13,14 +13,14 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder } from '../types/orders';
+import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult } from 'lib/swaps/types';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
-  on(event: 'peerOrder.incoming', listener: (order: orders.StampedPeerOrder) => void): this;
+  on(event: 'peerOrder.incoming', listener: (order: orders.PeerOrder) => void): this;
   /** Adds a listener to be called when all or part of a remote order was invalidated and removed */
   on(event: 'peerOrder.invalidation', listener: (order: orders.OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a remote order was filled by an own order and removed */
@@ -30,10 +30,10 @@ interface OrderBook {
   /** Adds a listener to be called when all or part of a local order was filled by an own order and removed */
   on(event: 'ownOrder.filled', listener: (order: orders.OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
-  on(event: 'ownOrder.added', listener: (order: orders.StampedOwnOrder) => void): this;
+  on(event: 'ownOrder.added', listener: (order: orders.OwnOrder) => void): this;
 
   /** Notifies listeners that a remote order was added */
-  emit(event: 'peerOrder.incoming', order: orders.StampedPeerOrder): boolean;
+  emit(event: 'peerOrder.incoming', order: orders.PeerOrder): boolean;
   /** Notifies listeners that all or part of a remote order was invalidated and removed */
   emit(event: 'peerOrder.invalidation', order: orders.OrderPortion): boolean;
   /** Notifies listeners that all or part of a remote order was filled by an own order and removed */
@@ -43,7 +43,7 @@ interface OrderBook {
   /** Notifies listeners that all or part of a local order was filled by an own order and removed */
   emit(event: 'ownOrder.filled', order: orders.OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
-  emit(event: 'ownOrder.added', order: orders.StampedOwnOrder): boolean;
+  emit(event: 'ownOrder.added', order: orders.OwnOrder): boolean;
 }
 
 /** A class representing an orderbook containing all orders for all active trading pairs. */
@@ -153,12 +153,12 @@ class OrderBook extends EventEmitter {
    * Gets an own order by order id and pair id.
    * @returns The order matching parameters, or undefined if no order could be found.
    */
-  public getOwnOrder = (orderId: string, pairId: string): StampedOwnOrder => {
+  public getOwnOrder = (orderId: string, pairId: string): OwnOrder => {
     const tp = this.getTradingPair(pairId);
     return tp.getOwnOrder(orderId);
   }
 
-  private tryGetOwnOrder = (orderId: string, pairId: string): StampedOwnOrder | undefined => {
+  private tryGetOwnOrder = (orderId: string, pairId: string): OwnOrder | undefined => {
     try {
       return this.getOwnOrder(orderId, pairId);
     } catch (err) {
@@ -166,7 +166,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  public getPeerOrder = (orderId: string, pairId: string, peerPubKey: string): StampedPeerOrder => {
+  public getPeerOrder = (orderId: string, pairId: string, peerPubKey: string): PeerOrder => {
     const tp = this.getTradingPair(pairId);
     return tp.getPeerOrder(orderId, peerPubKey);
   }
@@ -231,7 +231,7 @@ class OrderBook extends EventEmitter {
     return pair.destroy();
   }
 
-  public placeLimitOrder = async (order: orders.OwnOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
+  public placeLimitOrder = async (order: orders.OwnLimitOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
@@ -259,7 +259,7 @@ class OrderBook extends EventEmitter {
   }
 
   private placeOrder = async (
-    order: orders.StampedOwnOrder,
+    order: orders.OwnOrder,
     discardRemaining = false,
     onUpdate?: (e: PlaceOrderEvent) => void,
     maxTime?: number,
@@ -290,7 +290,7 @@ class OrderBook extends EventEmitter {
     };
 
     // instantiate a container for failed swaps, for retry purposes
-    const swapFailures: StampedOwnOrder[] = [];
+    const swapFailures: OwnOrder[] = [];
 
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
@@ -326,7 +326,7 @@ class OrderBook extends EventEmitter {
     // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
     if (swapFailures.length > 0) {
       // aggregate failures quantities with the remaining order
-      const remainingOrder: StampedOwnOrder = result.remainingOrder || { ...order, quantity: 0 };
+      const remainingOrder: OwnOrder = result.remainingOrder || { ...order, quantity: 0 };
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
 
       // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
@@ -371,7 +371,7 @@ class OrderBook extends EventEmitter {
    * Adds an own order to the order book and broadcasts it to peers.
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
-  private addOwnOrder = (order: orders.StampedOwnOrder): boolean => {
+  private addOwnOrder = (order: orders.OwnOrder): boolean => {
     const tp = this.getTradingPair(order.pairId);
     const result = tp.addOwnOrder(order);
     assert(result, 'own order id is duplicated');
@@ -386,10 +386,11 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Add peer order
-   * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
+   * Adds an incoming peer order to the local order book. It timestamps the order based on when it
+   * enters the order book and also records its initial quantity upon being received.
+   * @returns `false` if it's a duplicated order or with an invalid pair id, otherwise true
    */
-  private addPeerOrder = (order: orders.StampedPeerOrder): boolean => {
+  private addPeerOrder = (order: orders.IncomingOrder): boolean => {
     const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
       this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
@@ -397,7 +398,7 @@ class OrderBook extends EventEmitter {
       return false;
     }
 
-    const stampedOrder: orders.StampedPeerOrder = { ...order, createdAt: ms() };
+    const stampedOrder: orders.PeerOrder = { ...order, createdAt: ms() };
 
     if (!tp.addPeerOrder(stampedOrder)) {
       this.logger.debug(`incoming peer order is duplicated: ${order.id}`);
@@ -467,7 +468,7 @@ class OrderBook extends EventEmitter {
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
   public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number):
-    { order: StampedPeerOrder, fullyRemoved: boolean } => {
+    { order: PeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }
@@ -507,7 +508,7 @@ class OrderBook extends EventEmitter {
   /**
    * Create an outgoing order and broadcast it to all peers.
    */
-  private broadcastOrder = (order: orders.StampedOwnOrder) => {
+  private broadcastOrder = (order: orders.OwnOrder) => {
     if (this.pool) {
       if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
         const outgoingOrder = this.createOutgoingOrder(order);
@@ -516,7 +517,7 @@ class OrderBook extends EventEmitter {
     }
   }
 
-  public stampOwnOrder = (order: OwnOrder): StampedOwnOrder  => {
+  public stampOwnOrder = (order: OwnLimitOrder): OwnOrder  => {
     // verify localId isn't duplicated. generate one if it's blank
     if (order.localId === '') {
       order.localId = uuidv1();
@@ -527,7 +528,7 @@ class OrderBook extends EventEmitter {
     return { ...order, id: uuidv1(), createdAt: ms() };
   }
 
-  private createOutgoingOrder = (order: orders.StampedOwnOrder): orders.OutgoingOrder => {
+  private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
     const { createdAt, localId, ...outgoingOrder } = order;
     return outgoingOrder;
   }

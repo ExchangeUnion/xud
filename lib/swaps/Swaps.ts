@@ -8,7 +8,7 @@ import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
-import { StampedOwnOrder, StampedPeerOrder } from '../types/orders';
+import { OwnOrder, PeerOrder } from '../types/orders';
 import assert from 'assert';
 import { Models } from '../db/DB';
 import { SwapDealInstance } from 'lib/types/db';
@@ -176,7 +176,7 @@ class Swaps extends EventEmitter {
    * Checks if a swap for two given orders can be executed.
    * @returns `true` if the swap can be executed, `false` otherwise
    */
-  private verifyExecution = (maker: StampedPeerOrder, taker: StampedOwnOrder): boolean => {
+  private verifyExecution = (maker: PeerOrder, taker: OwnOrder): boolean => {
     if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
       return false;
     }
@@ -192,7 +192,7 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns A promise that is resolved once the swap is completed, or rejects otherwise
    */
-  public executeSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder): Promise<SwapResult> => {
+  public executeSwap = (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
     return new Promise((resolve, reject) => {
       if (!this.verifyExecution(maker, taker)) {
         reject();
@@ -235,7 +235,7 @@ class Swaps extends EventEmitter {
    * @param taker Our local taker order
    * @returns The rHash for the swap, or `undefined` if the swap could not be initiated
    */
-  private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
+  private beginSwap = (maker: PeerOrder, taker: OwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
