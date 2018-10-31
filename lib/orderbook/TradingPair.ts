@@ -252,12 +252,12 @@ class TradingPair {
   public getPeerOrder = (orderId: string, peerPubKey: string): StampedPeerOrder => {
     const peerOrders = this.peersOrders.get(peerPubKey);
     if (!peerOrders) {
-      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
+      throw errors.ORDER_NOT_FOUND(orderId, peerPubKey);
     }
 
     const order = this.getOrder(orderId, peerOrders);
     if (!order) {
-      throw errors.ORDER_NOT_FOUND(`${peerPubKey}/${orderId}`);
+      throw errors.ORDER_NOT_FOUND(orderId, peerPubKey);
     }
 
     return order;
