@@ -41,6 +41,8 @@ type Remote = {
 type Stamp = OrderIdentifier & {
   /** Epoch timestamp when this order was created locally. */
   createdAt: number;
+  /** The number of base currency tokens initially available for the order, before any actions such as trades reduced the available quantity. */
+  initialQuantity: number;
 };
 
 export type OwnMarketOrder = MarketOrder & Local;
@@ -54,7 +56,7 @@ export type PeerOrder = LimitOrder & Stamp & Remote;
 export type Order = OwnOrder | PeerOrder;
 
 /** An outgoing version of a local own order without fields that are not useful for peers. */
-export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold'>>;
+export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>>;
 
 /** An outgoing version of a local own order without fields that are not useful for peers. */
 export type IncomingOrder = OutgoingOrder & Remote;

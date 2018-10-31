@@ -14,6 +14,7 @@ const createOwnOrder = (price: number, quantity: number, isBuy: boolean, created
   quantity,
   isBuy,
   createdAt,
+  initialQuantity: quantity,
   id: uuidv1(),
   localId: uuidv1(),
   pairId: PAIR_ID,
@@ -32,6 +33,7 @@ const createPeerOrder = (
   isBuy,
   createdAt,
   peerPubKey,
+  initialQuantity: quantity,
   id: uuidv1(),
   pairId: PAIR_ID,
 });

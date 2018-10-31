@@ -398,7 +398,7 @@ class OrderBook extends EventEmitter {
       return false;
     }
 
-    const stampedOrder: orders.PeerOrder = { ...order, createdAt: ms() };
+    const stampedOrder: orders.PeerOrder = { ...order, createdAt: ms(), initialQuantity: order.quantity };
 
     if (!tp.addPeerOrder(stampedOrder)) {
       this.logger.debug(`incoming peer order is duplicated: ${order.id}`);
@@ -525,7 +525,7 @@ class OrderBook extends EventEmitter {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    return { ...order, id: uuidv1(), createdAt: ms() };
+    return { ...order, initialQuantity: order.quantity, id: uuidv1(), createdAt: ms() };
   }
 
   private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
