@@ -415,10 +415,42 @@ class GrpcService {
    * See [[Service.ListSwapDeals]]
    */
   public listSwapDeals: grpc.handleUnaryCall<xudrpc.ListSwapDealsRequest, xudrpc.ListSwapDealsResponse> = async (_, callback) => {
-    const response = new xudrpc.ListSwapDealsResponse();
-    console.log('//////////////////////////////////////////////////////');
-    console.log(this.service.listSwapDeals());
-    callback(null, response);
+    try {
+      const listSwapsResponse = await this.service.listSwapDeals();
+      const swaps: xudrpc.Swap[] = [];
+      const response = new xudrpc.ListSwapDealsResponse();
+      listSwapsResponse.forEach((deal) => {
+        const grpcSwap = new xudrpc.Swap();
+        grpcSwap.setRole(deal.role);
+        grpcSwap.setPhase(deal.phase);
+        grpcSwap.setState(deal.state);
+        grpcSwap.setErrorReason(deal.errorReason);
+        grpcSwap.setPeerPubKey(deal.peerPubKey);
+        grpcSwap.setOrderId(deal.orderId);
+        grpcSwap.setLocalId(deal.localId);
+        grpcSwap.setProposedQuantity(deal.proposedQuantity);
+        grpcSwap.setQuantity(deal.quantity); // ?
+        grpcSwap.setPairId(deal.pairId);
+        grpcSwap.setTakerAmount(deal.takerAmount);
+        grpcSwap.setTakerCurrency(deal.takerCurrency);
+        grpcSwap.setTakerPubKey(deal.takerPubKey);
+        grpcSwap.setTakerCltvDelta(deal.takerCltvDelta);
+        grpcSwap.setMakerAmount(deal.makerAmount);
+        grpcSwap.setMakerCurrency(deal.makerCurrency);
+        grpcSwap.setMakerCltvDelta(deal.makerCltvDelta);
+        grpcSwap.setPrice(deal.price);
+        grpcSwap.setRHash(deal.r_hash);
+        grpcSwap.setRPreimage(deal.r_preimage);
+        grpcSwap.setCreateTime(deal.createTime);
+        grpcSwap.setExecuteTime(deal.executeTime);
+        grpcSwap.setCompleteTime(deal.completeTime);
+        swaps.push(grpcSwap);
+      });
+      response.setSwapsList(swaps);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
   }
   /**
    * See [[Service.placeOrder]]

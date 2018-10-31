@@ -603,6 +603,11 @@ export namespace ListSwapDealsRequest {
 }
 
 export class ListSwapDealsResponse extends jspb.Message { 
+    clearSwapsList(): void;
+    getSwapsList(): Array<Swap>;
+    setSwapsList(value: Array<Swap>): void;
+    addSwaps(value?: Swap, index?: number): Swap;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListSwapDealsResponse.AsObject;
@@ -616,6 +621,7 @@ export class ListSwapDealsResponse extends jspb.Message {
 
 export namespace ListSwapDealsResponse {
     export type AsObject = {
+        swapsList: Array<Swap.AsObject>,
     }
 }
 
@@ -1069,6 +1075,136 @@ export namespace ExecuteSwapRequest {
         peerPubKey: string,
         quantity: number,
     }
+}
+
+export class Swap extends jspb.Message { 
+    getRole(): Swap.SwapRole;
+    setRole(value: Swap.SwapRole): void;
+
+    getPhase(): Swap.SwapPhase;
+    setPhase(value: Swap.SwapPhase): void;
+
+    getState(): Swap.SwapState;
+    setState(value: Swap.SwapState): void;
+
+    getErrorReason(): string;
+    setErrorReason(value: string): void;
+
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
+
+    getOrderId(): string;
+    setOrderId(value: string): void;
+
+    getLocalId(): string;
+    setLocalId(value: string): void;
+
+    getProposedQuantity(): number;
+    setProposedQuantity(value: number): void;
+
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getTakerAmount(): number;
+    setTakerAmount(value: number): void;
+
+    getTakerCurrency(): string;
+    setTakerCurrency(value: string): void;
+
+    getTakerPubKey(): string;
+    setTakerPubKey(value: string): void;
+
+    getMakerAmount(): number;
+    setMakerAmount(value: number): void;
+
+    getMakerCurrency(): string;
+    setMakerCurrency(value: string): void;
+
+    getTakerCltvDelta(): number;
+    setTakerCltvDelta(value: number): void;
+
+    getMakerCltvDelta(): number;
+    setMakerCltvDelta(value: number): void;
+
+    getPrice(): number;
+    setPrice(value: number): void;
+
+    getRHash(): string;
+    setRHash(value: string): void;
+
+    getRPreimage(): string;
+    setRPreimage(value: string): void;
+
+    getCreateTime(): number;
+    setCreateTime(value: number): void;
+
+    getExecuteTime(): number;
+    setExecuteTime(value: number): void;
+
+    getCompleteTime(): number;
+    setCompleteTime(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Swap.AsObject;
+    static toObject(includeInstance: boolean, msg: Swap): Swap.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Swap, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Swap;
+    static deserializeBinaryFromReader(message: Swap, reader: jspb.BinaryReader): Swap;
+}
+
+export namespace Swap {
+    export type AsObject = {
+        role: Swap.SwapRole,
+        phase: Swap.SwapPhase,
+        state: Swap.SwapState,
+        errorReason: string,
+        peerPubKey: string,
+        orderId: string,
+        localId: string,
+        proposedQuantity: number,
+        quantity: number,
+        pairId: string,
+        takerAmount: number,
+        takerCurrency: string,
+        takerPubKey: string,
+        makerAmount: number,
+        makerCurrency: string,
+        takerCltvDelta: number,
+        makerCltvDelta: number,
+        price: number,
+        rHash: string,
+        rPreimage: string,
+        createTime: number,
+        executeTime: number,
+        completeTime: number,
+    }
+
+    export enum SwapRole {
+    Taker = 0,
+    Maker = 1,
+    }
+
+    export enum SwapPhase {
+    SwapCreated = 0,
+    SwapRequested = 1,
+    SwapAgreed = 2,
+    AmountSent = 3,
+    AmountReceived = 4,
+    SwapCompleted = 5,
+    }
+
+    export enum SwapState {
+    Active = 0,
+    Error = 1,
+    Completed = 2,
+    }
+
 }
 
 export class RaidenInfo extends jspb.Message { 
