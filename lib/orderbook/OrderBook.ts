@@ -311,6 +311,7 @@ class OrderBook extends EventEmitter {
         }
 
         try {
+          await this.repository.addOrderIfNotExists(maker);
           const swapResult = await this.swaps.executeSwap(maker, taker);
           this.emit('peerOrder.filled', portion);
           result.swapResults.push(swapResult);
@@ -356,6 +357,7 @@ class OrderBook extends EventEmitter {
       hold: 0,
     });
 
+    await this.repository.addOrderIfNotExists(maker);
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
@@ -589,7 +591,9 @@ class OrderBook extends EventEmitter {
         isBuy: order.isBuy,
       };
       const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
-      if (!dealAccepted) {
+      if (dealAccepted) {
+        await this.repository.addOrderIfNotExists(order);
+      } else {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
