@@ -2,7 +2,7 @@ import { SwapPhase, SwapRole, SwapState, ReputationEvent } from '../types/enums'
 import Peer from '../p2p/Peer';
 import P2PRepository from '../p2p/P2PRepository';
 import NodeList from '../p2p/NodeList';
-import { Models } from '../db/DB'
+import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
 import Logger from '../Logger';
@@ -436,10 +436,12 @@ class Swaps extends EventEmitter {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
         this.setDealState(deal, SwapState.Error, 'accepted quantity must be a positive number');
-        this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure)
+        await this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure);
+        return;
       } else if (quantity > deal.proposedQuantity) {
         this.setDealState(deal, SwapState.Error, 'accepted quantity should not be greater than proposed quantity');
-        this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure)
+        await this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure);
+        return;
       } else if (quantity < deal.proposedQuantity) {
         const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
         deal.takerAmount = takerAmount;
