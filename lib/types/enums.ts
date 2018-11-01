@@ -54,4 +54,6 @@ export enum SwapFailureReason {
   OrderNotFound,
   /** The order specified by a swap request is on hold for a different ongoing swap. */
   OrderOnHold,
+  /** The swap request contained invalid data. */
+  InvalidSwapRequest,
 }

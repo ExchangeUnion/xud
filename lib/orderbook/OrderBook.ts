@@ -554,6 +554,15 @@ class OrderBook extends EventEmitter {
     assert(this.swaps, 'swaps module is disabled');
     const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
 
+    if (!Swaps.validateSwapRequest(requestPacket.body!)) {
+      // TODO: penalize peer for invalid swap request
+      peer.sendPacket(new SwapErrorPacket({
+        r_hash,
+        errorMessage: SwapFailureReason[SwapFailureReason.InvalidSwapRequest],
+      }, requestPacket.header.id));
+      return;
+    }
+
     const order = this.tryGetOwnOrder(orderId, pairId);
     if (!order) {
       peer.sendPacket(new SwapErrorPacket({
