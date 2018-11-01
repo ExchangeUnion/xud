@@ -17,13 +17,15 @@ export type SwapDeal = {
   peerPubKey: string;
   /** The global order id in the XU network for the maker order being executed. */
   orderId: string;
+  /** Whether the maker order is a buy order. */
+  isBuy: boolean;
   /** The local id of the own order involved in the swap. */
   localId: string;
   /** The quantity of the order to execute as proposed by the taker. */
   proposedQuantity: number;
-  /** The accepted quantity of the order to execute as accepted by the maker. */
+  /** The quantity of the order to execute as accepted by the maker. */
   quantity?: number;
-  /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
+  /** The trading pair for the swap. The pairId together with the orderId are needed to find the maker order in the order book. */
   pairId: string;
   /** The number of satoshis (or equivalent) the taker is expecting to receive. */
   takerAmount: number;
@@ -52,10 +54,11 @@ export type SwapDeal = {
 };
 
 /** The result of a successful swap. */
-export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'quantity' | 'r_hash' | 'peerPubKey' | 'role'> & {
+export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'r_hash' | 'peerPubKey' | 'role'> & {
   /** The amount of satoshis (or equivalent) received. */
   amountReceived: number;
   /** The amount of satoshis (or equivalent) sent. */
   amountSent: number;
+  /** The quantity that was swapped. */
   quantity: number;
 };
