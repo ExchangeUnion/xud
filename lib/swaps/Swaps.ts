@@ -1,6 +1,8 @@
-import { SwapPhase, SwapRole, SwapState } from '../types/enums';
+import { SwapPhase, SwapRole, SwapState, ReputationEvent } from '../types/enums';
 import Peer from '../p2p/Peer';
+import P2PRepository from '../p2p/P2PRepository';
 import NodeList from '../p2p/NodeList';
+import { Models } from '../db/DB'
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
 import Logger from '../Logger';
@@ -77,10 +79,12 @@ interface Swaps {
 class Swaps extends EventEmitter {
   /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
-
-  constructor(private logger: Logger, private pool: Pool, private nodeList: NodeList, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
+  private repository: P2PRepository;
+  private nodes: NodeList;
+  constructor(private logger: Logger, private pool: Pool, private model: Models, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
-
+    this.repository = new P2PRepository(model);
+    this.nodes = new NodeList(this.repository);
     this.bind();
   }
 
@@ -431,10 +435,11 @@ class Swaps extends EventEmitter {
     if (quantity) {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
-        // TODO: accepted quantity must be a positive number, abort deal and penalize peer
-        this.logger.error(`Got exception from sendPaymentSync`);
+        this.setDealState(deal, SwapState.Error, 'accepted quantity must be a positive number');
+        this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure)
       } else if (quantity > deal.proposedQuantity) {
-        // TODO: accepted quantity should not be greater than proposed quantity, abort deal and penalize peer
+        this.setDealState(deal, SwapState.Error, 'accepted quantity should not be greater than proposed quantity');
+        this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure)
       } else if (quantity < deal.proposedQuantity) {
         const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
         deal.takerAmount = takerAmount;
