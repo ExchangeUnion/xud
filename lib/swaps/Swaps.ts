@@ -1,5 +1,6 @@
 import { SwapPhase, SwapRole, SwapState } from '../types/enums';
 import Peer from '../p2p/Peer';
+import NodeList from '../p2p/NodeList';
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
 import Logger from '../Logger';
@@ -77,7 +78,7 @@ class Swaps extends EventEmitter {
   /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
 
-  constructor(private logger: Logger, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
+  constructor(private logger: Logger, private pool: Pool, private nodeList: NodeList, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
 
     this.bind();
@@ -431,14 +432,13 @@ class Swaps extends EventEmitter {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
         // TODO: accepted quantity must be a positive number, abort deal and penalize peer
+        this.logger.error(`Got exception from sendPaymentSync`);
       } else if (quantity > deal.proposedQuantity) {
         // TODO: accepted quantity should not be greater than proposed quantity, abort deal and penalize peer
       } else if (quantity < deal.proposedQuantity) {
-        // TODO: handle partial acceptance
-        // the maker accepted only part of our swap request, adjust the deal amounts
-        // const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
-        // deal.takerAmount = takerAmount;
-        // deal.makerAmount = makerAmount;
+        const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
+        deal.takerAmount = takerAmount;
+        deal.makerAmount = makerAmount;
       }
     }
 
