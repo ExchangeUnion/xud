@@ -12,7 +12,7 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 import { ReputationEventInstance } from '../types/db';
@@ -482,7 +482,7 @@ class Pool extends EventEmitter {
       case PacketType.Order: {
         const order = (packet as packets.OrderPacket).body!;
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
-        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
+        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey, createdAt: ms() } as StampedPeerOrder);
         break;
       }
       case PacketType.OrderInvalidation: {
@@ -501,7 +501,7 @@ class Pool extends EventEmitter {
         const orders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
         orders.forEach((order) => {
-          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
+          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey, createdAt: ms() } as StampedPeerOrder);
         });
         break;
       }

@@ -267,6 +267,20 @@ class TradingPair {
     return maps.buy.get(orderId) || maps.sell.get(orderId);
   }
 
+  public addOrderHold = (orderId: string, holdAmount: number) => {
+    const order = this.getOwnOrder(orderId);
+    assert(holdAmount > 0);
+    assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
+    order.hold += holdAmount;
+  }
+
+  public removeOrderHold = (orderId: string, holdAmount: number) => {
+    const order = this.getOwnOrder(orderId);
+    assert(holdAmount > 0);
+    assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
+    order.hold -= holdAmount;
+  }
+
   /**
    * Match an order against its opposite queue. Matched maker orders will be removed from the repository
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order

@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason } from '../types/enums';
+import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import {
   Pair, OrderIdentifier, StampedOwnOrder, OrderPortion, OwnOrder, StampedPeerOrder,
@@ -94,11 +94,21 @@ class OrderBook extends EventEmitter {
       this.swaps.on('swap.paid', (swapResult) => {
         if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
+
+          // we must remove the amount that was put on hold while the swap was pending for the remaining order
+          this.removeOrderHold(orderId, pairId, quantity);
+
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         }
       });
-      // TODO: bind to other swap events
+      this.swaps.on('swap.failed', (deal) => {
+        if (deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed) {
+          // if our order is the maker and the swap failed after it was agreed to but before it was executed
+          // we must release the hold on the order that we set when we agreed to the deal
+          this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
+        }
+      });
     }
   }
 
@@ -345,6 +355,7 @@ class OrderBook extends EventEmitter {
       price: maker.price,
       isBuy: !maker.isBuy,
       quantity: quantity || maker.quantity,
+      hold: 0,
     });
 
     try {
@@ -413,6 +424,18 @@ class OrderBook extends EventEmitter {
     }
 
     this.removeOwnOrder(order.id, order.pairId);
+  }
+
+  private addOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
+    const tp = this.getTradingPair(pairId);
+    tp.addOrderHold(orderId, holdAmount);
+    this.logger.debug(`added hold on ${holdAmount} for order ${orderId}`);
+  }
+
+  private removeOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
+    const tp = this.getTradingPair(pairId);
+    tp.removeOrderHold(orderId, holdAmount);
+    this.logger.debug(`removed hold on ${holdAmount} for order ${orderId}`);
   }
 
   /**
@@ -533,14 +556,14 @@ class OrderBook extends EventEmitter {
 
     const order = this.tryGetOwnOrder(orderId, pairId);
     if (order) {
-      const availableQuantity = order.hold ? order.quantity - order.hold : order.quantity;
+      const availableQuantity = order.quantity - order.hold;
       // TODO: accept the smaller of the proposed quantity and the available quantity
       if (availableQuantity >= proposedQuantity) {
         // put accepted quantity on hold
         // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
         const quantityToAccept = proposedQuantity;
 
-        order.hold = order.hold ? order.hold + quantityToAccept : quantityToAccept;
+        this.addOrderHold(order.id, pairId, quantityToAccept);
 
         // try to accept the deal
         const orderToAccept = {
@@ -551,7 +574,7 @@ class OrderBook extends EventEmitter {
         const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
         if (!dealAccepted) {
           // release hold amount and reject swap
-          order.hold -= quantityToAccept;
+          this.removeOrderHold(order.id, pairId, quantityToAccept);
         }
       } else {
         peer.sendPacket(new SwapErrorPacket({
