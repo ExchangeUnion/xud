@@ -12,7 +12,7 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, parseUri } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
 import { ReputationEventInstance } from '../types/db';
@@ -692,7 +692,8 @@ class Pool extends EventEmitter {
       };
 
       this.interfaces!.forEach((uri) => {
-        this.server!.listen(uri).on('listening', () => {
+        const  listen = uri.split(':');
+        this.server!.listen(Number(listen[0]), listen[1]).on('listening', () => {
           const { address, port } = this.server!.address();
           this.logger.info(`p2p server listening on ${address}:${port}`);
 
