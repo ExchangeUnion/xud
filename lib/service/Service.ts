@@ -8,10 +8,10 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedOrder, SwapResult, OrderPortion } from '../types/orders';
-import { PlaceOrderEvent } from '../types/orderBook';
+import { Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder } from '../types/orders';
+import { PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
-import { OrderSidesArrays } from '../orderbook/MatchingEngine';
+import { OrderSidesArrays } from '../orderbook/TradingPair';
 
 /**
  * The components required by the API service layer.
@@ -187,6 +187,17 @@ class Service extends EventEmitter {
     await this.pool.unban(args);
   }
 
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
+    if (!this.orderBook.nomatching) {
+      throw errors.NOMATCHING_MODE_IS_REQUIRED();
+    }
+
+    const { orderId, pairId, peerPubKey } = args;
+    const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
+
+    return this.orderBook.executeSwap(orderId, pairId, peerPubKey, quantity);
+  }
+
   /**
    * Gets information about a specified node.
    */
@@ -214,7 +225,7 @@ class Service extends EventEmitter {
     let ownOrdersCount = 0;
     let numPairs = 0;
     for (const pairId of this.orderBook.pairIds) {
-      const peerOrders = this.orderBook.getPeerOrders(pairId);
+      const peerOrders = this.orderBook.getPeersOrders(pairId);
       const ownOrders = this.orderBook.getOwnOrders(pairId);
 
       peerOrdersCount += Object.keys(peerOrders.buy).length + Object.keys(peerOrders.sell).length;
@@ -251,7 +262,7 @@ class Service extends EventEmitter {
 
     const result = new Map<string, OrderSidesArrays<any>>();
     const getOrderTypes = (pairId: string) => {
-      const orders = this.orderBook.getPeerOrders(pairId);
+      const orders = this.orderBook.getPeersOrders(pairId);
 
       if (includeOwnOrders) {
         const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
@@ -320,7 +331,7 @@ class Service extends EventEmitter {
       localId: orderId,
     };
 
-    return price > 0 ? await this.orderBook.addLimitOrder(order, callback) : await this.orderBook.addMarketOrder(order, callback);
+    return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
   }
 
   /** Removes a currency. */

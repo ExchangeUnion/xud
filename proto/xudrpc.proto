@@ -44,7 +44,7 @@ service Xud {
   }
 
   /* Removes an order from the order book by its local id. This should be called when an order is
-   * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, 
+   * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
    * and peers are notified that the order is no longer valid. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
@@ -150,6 +150,14 @@ service Xud {
     };
   }
 
+
+  /* Execute a swap on a maker peer order */
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapResult) {
+    option (google.api.http) = {
+      post: "/v1/executeswap"
+      body: "*"
+    };
+  }
 
   /* Removes a currency from the list of supported currencies. Only currencies that are not in use
    * for any currently supported trading pairs may be removed. Once removed, the currency can no
@@ -457,6 +465,17 @@ message PlaceOrderEvent {
     // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
   }
+}
+
+message ExecuteSwapRequest {
+  // The trading pair of the swap orders.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The order id of the maker order.
+  string order_id = 1 [json_name = "order_id"];
+  // The node pub key of the peer which owns the maker order.
+  string peer_pub_key = 3 [json_name = "peer_pub_key"];
+  // the quantity to swap. the whole order will be swapped if unspecified.
+  double quantity = 4 [json_name = "quantity"];
 }
 
 message RaidenInfo {

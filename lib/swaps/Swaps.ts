@@ -10,58 +10,11 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
+import SwapRepository from './SwapRepository';
 import { StampedOwnOrder, StampedPeerOrder, SwapResult } from '../types/orders';
 import assert from 'assert';
-
-type SwapDeal = {
-  /** The role of the local node in the swap. */
-  role: SwapRole;
-  /** The most updated deal phase */
-  phase: SwapPhase;
-  /**
-   * The most updated deal state. State works together with phase to indicate where the
-   * deal is in its life cycle and if the deal is active, errored, or completed.
-   */
-  state: SwapState;
-  /** The reason for being in the current state. */
-  errorReason?: string;
-  /** The xud node pub key of the counterparty to this swap deal. */
-  peerPubKey: string;
-  /** The global order id in the XU network for the order being executed. */
-  orderId: string;
-  /** The local id for the order being executed. */
-  localOrderId: string;
-  /** The quantity of the order to execute as proposed by the taker. */
-  proposedQuantity: number;
-  /** The accepted quantity of the order to execute as accepted by the maker. */
-  quantity?: number;
-  /** The trading pair of the order. The pairId together with the orderId are needed to find the deal in orderBook. */
-  pairId: string;
-  /** The number of satoshis (or equivalent) the taker is expecting to receive. */
-  takerAmount: number;
-  /** The currency the taker is expecting to receive. */
-  takerCurrency: string;
-  /** Taker's lnd pubkey on the taker currency's network. */
-  takerPubKey?: string;
-  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to taker. */
-  takerCltvDelta: number;
-  /** The number of satoshis (or equivalent) the maker is expecting to receive. */
-  makerAmount: number;
-  /** The currency the maker is expecting to receive. */
-  makerCurrency: string;
-  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
-  makerCltvDelta?: number;
-  /** The price of the order that's being executed. */
-  price: number;
-  /** The hash of the preimage. */
-  r_hash: string;
-  r_preimage?: string;
-  /** The routes the maker should use to send to the taker. */
-  makerToTakerRoutes?: lndrpc.Route[];
-  createTime: number;
-  executeTime?: number;
-  completeTime?: number
-};
+import { SwapDealInstance } from 'lib/types/db';
+import { SwapDeal } from './types';
 
 type OrderToAccept = {
   quantityToAccept: number;
@@ -79,12 +32,18 @@ interface Swaps {
 class Swaps extends EventEmitter {
   /** A map between r_hash and swap deals. */
   private deals = new Map<string, SwapDeal>();
-  private repository: P2PRepository;
+  private usedHashes = new Set<string>();
+  private swapRepository: SwapRepository;
+  private p2pRepository: P2PRepository;
   private nodes: NodeList;
-  constructor(private logger: Logger, private pool: Pool, private model: Models, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
+  /** The number of satoshis in a bitcoin. */
+  private static readonly SATOSHIS_PER_COIN = 100000000;
+
+  constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
-    this.repository = new P2PRepository(model);
-    this.nodes = new NodeList(this.repository);
+    this.swapRepository = new SwapRepository(this.models);
+    this.p2pRepository = new P2PRepository(this.models);
+    this.nodes = new NodeList(this.p2pRepository);
     this.bind();
   }
 
@@ -95,10 +54,18 @@ class Swaps extends EventEmitter {
    */
   private static calculateSwapAmounts = (quantity: number, price: number) => {
     // TODO: use configurable amount of subunits/satoshis per token for each currency
-    const takerAmount = Math.round(quantity * price * 100000000);
-    const makerAmount = Math.round(quantity * 100000000);
+    const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
+    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);
 
-    return { takerAmount, makerAmount };
+    return { baseCurrencyAmount, quoteCurrencyAmount };
+  }
+
+  public init = async () => {
+    // Load Swaps from data base
+    const result = await this.swapRepository.getSwapDeals();
+    result.forEach((deal: SwapDealInstance) => {
+      this.usedHashes.add(deal.r_hash);
+    });
   }
 
   private bind() {
@@ -117,7 +84,7 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Sends an error to peer. set reqId if packet is a response to a request.
+   * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
   private sendErrorToPeer = (peer: Peer, r_hash: string, errorMessage: string, reqId?: string) => {
     const errorBody: packets.SwapErrorPacketBody = {
@@ -153,6 +120,17 @@ class Swaps extends EventEmitter {
     }
 
     return;
+  }
+
+  /**
+   * Saves deal to database and deletes from memory.
+   * @param deal The deal to persist.
+   */
+  private persistDeal = async (deal: SwapDeal) => {
+    if (this.usedHashes.has(deal.r_hash)) {
+      await this.swapRepository.addSwapDeal(deal);
+      this.removeDeal(deal);
+    }
   }
 
   /**
@@ -240,17 +218,24 @@ class Swaps extends EventEmitter {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
+    const { baseCurrencyAmount, quoteCurrencyAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
 
     let takerCurrency: string;
     let makerCurrency: string;
+    let takerAmount: number;
+    let makerAmount: number;
     if (taker.isBuy) {
       // we are buying the base currency
       takerCurrency = baseCurrency;
       makerCurrency = quoteCurrency;
+      takerAmount = baseCurrencyAmount;
+      makerAmount = quoteCurrencyAmount;
     } else {
       // we are selling the base currency
       takerCurrency = quoteCurrency;
       makerCurrency = baseCurrency;
+      takerAmount = quoteCurrencyAmount;
+      makerAmount = baseCurrencyAmount;
     }
 
     let takerCltvDelta = 0;
@@ -262,7 +247,6 @@ class Swaps extends EventEmitter {
         takerCltvDelta = this.lndLtcClient.cltvDelta;
         break;
     }
-    const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
     const preimage = randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
@@ -280,7 +264,7 @@ class Swaps extends EventEmitter {
     const deal: SwapDeal = {
       ...swapRequestBody,
       peerPubKey: peer.nodePubKey!,
-      localOrderId: taker.localId,
+      localId: taker.localId,
       price: maker.price,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
@@ -324,7 +308,7 @@ class Swaps extends EventEmitter {
       takerPubKey,
       peerPubKey: peer.nodePubKey!,
       price: orderToAccept.price,
-      localOrderId: orderToAccept.localId,
+      localId: orderToAccept.localId,
       quantity: orderToAccept.quantityToAccept,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
@@ -443,9 +427,9 @@ class Swaps extends EventEmitter {
         await this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure);
         return;
       } else if (quantity < deal.proposedQuantity) {
-        const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
-        deal.takerAmount = takerAmount;
-        deal.makerAmount = makerAmount;
+        const { baseCurrencyAmount, quoteCurrencyAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
+        deal.takerAmount = baseCurrencyAmount;
+        deal.makerAmount = quoteCurrencyAmount;
       }
     }
 
@@ -497,8 +481,8 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Verifies that the request from LND is valid. check the received amount vs
-   * the expected amount and the CltvDelta vs the expected on.
+   * Verifies that the request from LND is valid. Checks the received amount vs
+   * the expected amount and the CltvDelta vs the expected one.
    */
   private validateRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
     const amount = resolveRequest.getAmount();
@@ -529,18 +513,17 @@ class Swaps extends EventEmitter {
     expectedAmount = expectedAmount * 1000;
 
     if (amount < expectedAmount) {
-      this.logger.error('received ' + amount + ' mSat, expected ' + expectedAmount + ' mSat');
+      this.logger.error(`received ${amount} mSat, expected ${expectedAmount} mSat`);
       this.setDealState(deal, SwapState.Error,
-          'Amount sent from ' + source + ' to ' + 'destination' + 'is too small');
+          `Amount sent from ${source} to ${destination} is too small`);
       return false;
     }
 
     if (cltvDelta > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
-      this.logger.error('got timeout ' + resolveRequest.getTimeout() + ' at height ' + resolveRequest.getHeightNow());
-      this.logger.error('cltvDelta is ' + (resolveRequest.getTimeout() - resolveRequest.getHeightNow()) +
-          ' expected delta of ' + cltvDelta);
+      this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
+      this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
       this.setDealState(deal, SwapState.Error,
-          'cltvDelta sent from ' + source + ' to ' + 'destination' + 'is too small');
+          `cltvDelta sent from ${source} to ${destination} is too small`);
       return false;
     }
     return true;
@@ -580,7 +563,7 @@ class Swaps extends EventEmitter {
       }
 
       const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes!);
+      request.setRoutesList(deal.makerToTakerRoutes ? deal.makerToTakerRoutes : []);
       request.setPaymentHashString(deal.r_hash);
 
       try {
@@ -668,11 +651,11 @@ class Swaps extends EventEmitter {
     if (deal.phase === SwapPhase.AmountReceived) {
       const swapResult = {
         orderId: deal.orderId,
-        localId: deal.localOrderId,
+        localId: deal.localId,
         pairId: deal.pairId,
         quantity: deal.quantity!,
-        amountReceived: deal.makerAmount,
-        amountSent: deal.takerAmount,
+        amountReceived: deal.role === SwapRole.Maker ? deal.makerAmount : deal.takerAmount,
+        amountSent: deal.role === SwapRole.Maker ? deal.takerAmount : deal.makerAmount,
         r_hash: deal.r_hash,
         peerPubKey: deal.peerPubKey,
         role: deal.role,
@@ -681,7 +664,7 @@ class Swaps extends EventEmitter {
     }
   }
 
-  private handleSwapComplete = (response: packets.SwapCompletePacket): void  => {
+  private handleSwapComplete = (response: packets.SwapCompletePacket) => {
     const { r_hash } = response.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
@@ -689,9 +672,10 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealPhase(deal, SwapPhase.SwapCompleted);
+    return this.persistDeal(deal);
   }
 
-  private handleSwapError = (error: packets.SwapErrorPacket): void  => {
+  private handleSwapError = (error: packets.SwapErrorPacket) => {
     const { r_hash, errorMessage } = error.body!;
     const deal = this.getDeal(r_hash);
     if (!deal) {
@@ -699,9 +683,9 @@ class Swaps extends EventEmitter {
       return;
     }
     this.setDealState(deal, SwapState.Error, errorMessage);
+    return this.persistDeal(deal);
   }
 
 }
 
 export default Swaps;
-export { SwapDeal };

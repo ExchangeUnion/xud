@@ -1,4 +1,5 @@
-import { SwapClients, SwapRole } from './enums';
+import { SwapClients, SwapRole, SwapState, SwapPhase } from './enums';
+import * as lndrpc from '../proto/lndrpc_pb';
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
