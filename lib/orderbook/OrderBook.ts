@@ -409,7 +409,7 @@ class OrderBook extends EventEmitter {
   public removeOwnOrderByLocalId = (localId: string) => {
     const order = this.localIdMap.get(localId);
     if (!order) {
-      throw errors.ORDER_NOT_FOUND(localId);
+      throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
     }
 
     this.removeOwnOrder(order.id, order.pairId);

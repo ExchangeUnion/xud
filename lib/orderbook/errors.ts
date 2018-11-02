@@ -10,6 +10,7 @@ const errorCodes = {
   CURRENCY_ALREADY_EXISTS: codesPrefix.concat('.6'),
   PAIR_ALREADY_EXISTS: codesPrefix.concat('.7'),
   MARKET_ORDERS_NOT_ALLOWED: codesPrefix.concat('.8'),
+  LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
 };
 
 const errors = {
@@ -37,13 +38,17 @@ const errors = {
     message: `currency ${currency} already exists`,
     code: errorCodes.CURRENCY_ALREADY_EXISTS,
   }),
-  PAIR_ALREADY_EXISTS: (pair_id: string) => ({
-    message: `trading pair ${pair_id} already exists`,
+  PAIR_ALREADY_EXISTS: (pairId: string) => ({
+    message: `trading pair ${pairId} already exists`,
     code: errorCodes.PAIR_ALREADY_EXISTS,
   }),
   MARKET_ORDERS_NOT_ALLOWED: () => ({
     message: `market orders are not allowed on nomatching mode`,
     code: errorCodes.MARKET_ORDERS_NOT_ALLOWED,
+  }),
+  LOCAL_ID_DOES_NOT_EXIST: (localId: string) => ({
+    message: `order with local id ${localId} does not exist`,
+    code: errorCodes.LOCAL_ID_DOES_NOT_EXIST,
   }),
 };
 

@@ -111,6 +111,8 @@ class GrpcService {
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
       case p2pErrorCodes.COULD_NOT_CONNECT:
       case p2pErrorCodes.NODE_UNKNOWN:
+      case orderErrorCodes.LOCAL_ID_DOES_NOT_EXIST:
+      case orderErrorCodes.ORDER_NOT_FOUND:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
