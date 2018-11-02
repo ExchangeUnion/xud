@@ -109,7 +109,6 @@ class GrpcService {
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
-      case p2pErrorCodes.COULD_NOT_CONNECT:
       case p2pErrorCodes.NODE_UNKNOWN:
         code = status.NOT_FOUND;
         break;
@@ -125,12 +124,15 @@ class GrpcService {
       case p2pErrorCodes.NODE_NOT_BANNED:
       case p2pErrorCodes.NODE_IS_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
-      case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
       case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
         code = status.FAILED_PRECONDITION;
+        break;
+      case lndErrorCodes.LND_IS_UNAVAILABLE:
+      case p2pErrorCodes.COULD_NOT_CONNECT:
+        code = status.UNAVAILABLE;
         break;
     }
 

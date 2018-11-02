@@ -132,7 +132,7 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
-      error = errors.LND_IS_DISCONNECTED.message;
+      error = errors.LND_IS_UNAVAILABLE.message;
     } else {
       try {
         const lnd = await this.getInfo();
@@ -295,7 +295,7 @@ class LndClient extends BaseClient {
       throw(errors.LND_IS_DISABLED);
     }
     if (this.isDisconnected()) {
-      throw(errors.LND_IS_DISCONNECTED);
+      throw(errors.LND_IS_UNAVAILABLE);
     }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();
