@@ -25,8 +25,9 @@ type PoolConfig = {
   discover: boolean;
 
   /** Whether or not to listen for incoming connections from peers. */
-  listen: boolean;
+  listen: string[];
 
+  nolisten: boolean;
   /** Which port to listen on. If 0, a random unused port will be used. */
   port: number;
 
@@ -80,6 +81,7 @@ class Pool extends EventEmitter {
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
+  private interfaces?: string[];
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
   /** Points to config comes during construction. */
@@ -90,8 +92,18 @@ class Pool extends EventEmitter {
     super();
     this.config = config;
 
-    if (config.listen) {
-      this.listenPort = config.port;
+    if (!config.nolisten) {
+      this.listenPort = config.port || 0;
+      this.interfaces = [];
+
+      /** Makes sure all uris are properlly formatted  */
+      config.listen.forEach((uri) => {
+        if (uri.split(':').length === 2) {
+          this.interfaces!.push(uri);
+        } else {
+          this.interfaces!.push(`${this.listenPort}:${uri}`);
+        }
+      });
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
@@ -679,18 +691,20 @@ class Pool extends EventEmitter {
         reject(err);
       };
 
-      this.server!.listen(this.listenPort || 0, '0.0.0.0').on('listening', () => {
-        const { address, port } = this.server!.address();
-        this.logger.info(`p2p server listening on ${address}:${port}`);
+      this.interfaces!.forEach((uri) => {
+        this.server!.listen(uri).on('listening', () => {
+          const { address, port } = this.server!.address();
+          this.logger.info(`p2p server listening on ${address}:${port}`);
 
-        if (this.listenPort === 0) {
-          // we didn't specify a port and grabbed any available port
-          this.listenPort = port;
-        }
+          if (this.listenPort === 0) {
+            // we didn't specify a port and grabbed any available port
+            this.listenPort = port;
+          }
 
-        this.server!.removeListener('error', listenErrHandler);
-        resolve();
-      }).on('error', listenErrHandler);
+          this.server!.removeListener('error', listenErrHandler);
+          resolve();
+        }).on('error', listenErrHandler);
+      });
     });
   }
 

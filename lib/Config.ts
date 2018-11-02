@@ -61,7 +61,8 @@ class Config {
     this.network = Network.TestNet;
 
     this.p2p = {
-      listen: true,
+      listen: ['0.0.0.0'],
+      nolisten: false,
       discover: true,
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
