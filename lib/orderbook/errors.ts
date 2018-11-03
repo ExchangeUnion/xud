@@ -21,8 +21,8 @@ const errors = {
     message: `order with local id ${localId} already exists`,
     code: errorCodes.DUPLICATE_ORDER,
   }),
-  ORDER_NOT_FOUND: (orderId: string) => ({
-    message: `order with id ${orderId} could not be found`,
+  ORDER_NOT_FOUND: (orderId: string, peerPubKey?: string) => ({
+    message: `order with id ${orderId}${peerPubKey ? ' for peer ' + peerPubKey : ''} could not be found`,
     code: errorCodes.ORDER_NOT_FOUND,
   }),
   CURRENCY_DOES_NOT_EXIST: (currency: string) => ({

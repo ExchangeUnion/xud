@@ -334,7 +334,7 @@ describe('MatchingEngine queues and maps integrity', () => {
     expect(() => tp.getPeerOrder(
       peerOrder.id,
       peerOrder.peerPubKey,
-    )).to.throw(`order with id ${peerOrder.peerPubKey}/${peerOrder.id} could not be found`);
+    )).to.throw(`order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`);
     const queueRemainingOrder = tp.queues!.sell.peek();
     expect(queueRemainingOrder).to.be.undefined;
   });
