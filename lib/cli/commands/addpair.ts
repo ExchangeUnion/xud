@@ -21,5 +21,5 @@ export const handler = (argv: Arguments) => {
   const request = new AddPairRequest();
   request.setBaseCurrency(argv.base_currency.toUpperCase());
   request.setQuoteCurrency(argv.quote_currency.toUpperCase());
-  loadXudClient(argv).addPair(request, callback());
+  loadXudClient(argv).addPair(request, callback(argv));
 };

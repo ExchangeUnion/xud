@@ -16,5 +16,5 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new BanRequest();
   request.setNodePubKey(argv.node_pub_key);
-  loadXudClient(argv).ban(request, callback());
+  loadXudClient(argv).ban(request, callback(argv));
 };

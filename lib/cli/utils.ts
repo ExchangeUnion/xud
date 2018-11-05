@@ -53,6 +53,6 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
       console.log(JSON.stringify(response.toObject(), undefined, 2));
     });
   } else {
-    loadXudClient(argv).placeOrderSync(request, callback());
+    loadXudClient(argv).placeOrderSync(request, callback(argv));
   }
 };

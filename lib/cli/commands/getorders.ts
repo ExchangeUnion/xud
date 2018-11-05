@@ -92,5 +92,5 @@ export const handler = (argv: Arguments) => {
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setIncludeOwnOrders(true);
-  loadXudClient(argv).getOrders(request, callback(displayTables));
+  loadXudClient(argv).getOrders(request, callback(argv, displayTables));
 };
