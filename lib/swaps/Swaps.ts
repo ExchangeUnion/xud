@@ -293,7 +293,11 @@ class Swaps extends EventEmitter {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
     // TODO: multi route support (currently only 1)
-    // TODO: check to make sure we don't already have a deal for the requested r_hash
+
+    if (this.usedHashes.has(requestPacket.body!.r_hash)) {
+      this.sendErrorToPeer(peer, requestPacket.body!.r_hash, 'this r_hash already exsist', requestPacket.header.id);
+      return false;
+    }
     const requestBody = requestPacket.body!;
 
     const takerPubKey = peer.getLndPubKey(requestBody.takerCurrency)!;
