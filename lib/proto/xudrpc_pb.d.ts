@@ -700,6 +700,9 @@ export class Order extends jspb.Message {
     getIsOwnOrder(): boolean;
     setIsOwnOrder(value: boolean): void;
 
+    getHold(): number;
+    setHold(value: number): void;
+
 
     getOwnOrPeerCase(): Order.OwnOrPeerCase;
 
@@ -724,6 +727,7 @@ export namespace Order {
         createdAt: number,
         side: OrderSide,
         isOwnOrder: boolean,
+        hold: number,
     }
 
     export enum OwnOrPeerCase {
