@@ -8,6 +8,7 @@
     "xucli": "./bin/xucli"
   },
   "scripts": {
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "config": "gulp config.create",
     "compile": "cross-os precompile && tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
@@ -29,7 +30,7 @@
     "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
-    "version": "npm run config && git add sample-xud.conf && npm run typedoc"
+    "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
   },
   "cross-os": {
     "postcompile": {
@@ -153,6 +154,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "concurrently": "^3.5.1",
+    "conventional-changelog-cli": "^2.0.11",
     "grpc-tools": "^1.6.6",
     "grpc_tools_node_protoc_ts": "^2.3.0",
     "mocha": "^5.0.5",
