@@ -12,7 +12,7 @@ describe('Swaps', () => {
   const price = 0.005;
   const takerCltvDelta = 144;
   const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';
-  const r_hash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+  const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
 
   /** A swap deal for a buy order. */
   const buyDeal: SwapDeal = {
@@ -20,7 +20,7 @@ describe('Swaps', () => {
     price,
     takerCltvDelta,
     orderId,
-    r_hash,
+    rHash,
     role: SwapRole.Maker,
     phase: SwapPhase.SwapCreated,
     state: SwapState.Active,
@@ -49,7 +49,7 @@ describe('Swaps', () => {
   const swapRequest: SwapRequestPacketBody = {
     takerCltvDelta,
     orderId,
-    r_hash,
+    rHash,
     proposedQuantity: quantity,
     pairId: 'LTC/BTC',
   };
@@ -88,6 +88,6 @@ describe('Swaps', () => {
   });
 
   it(`should flag a swap request with an rHash that is not 64 characters`, () => {
-    expect(Swaps.validateSwapRequest({ ...swapRequest, r_hash: 'notavalidhash' })).to.be.false;
+    expect(Swaps.validateSwapRequest({ ...swapRequest, rHash: 'notavalidhash' })).to.be.false;
   });
 });

@@ -4,7 +4,7 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { StampedOrder, isOwnOrder, OrderPortion, SwapResult } from '../types/orders';
+import { StampedOrder, isOwnOrder, OrderPortion } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
@@ -12,6 +12,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import P2PRepository from '../p2p/P2PRepository';
+import { SwapResult } from 'lib/swaps/types';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -43,7 +44,7 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setLocalId(result.localId);
   swapResult.setPairId(result.pairId);
   swapResult.setQuantity(result.quantity);
-  swapResult.setRHash(result.r_hash);
+  swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
   swapResult.setPeerPubKey(result.peerPubKey);

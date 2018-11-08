@@ -10,10 +10,10 @@ class SwapRepository {
     return this.models.SwapDeal.findAll();
   }
 
-  public getSwapDeal = async (r_hash: string): Promise<db.SwapDealInstance | null> => {
+  public getSwapDeal = async (rHash: string): Promise<db.SwapDealInstance | null> => {
     return this.models.SwapDeal.findOne({
       where: {
-        r_hash,
+        rHash,
       },
     });
   }
