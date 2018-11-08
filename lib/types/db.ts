@@ -28,7 +28,7 @@ export type CurrencyAttributes = CurrencyFactory & {
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
 /* SwapDeal */
-export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes'>>;
+export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes' | 'isBuy'>>;
 
 export type SwapDealAttributes = SwapDealFactory & {
   makerCltvDelta: number;

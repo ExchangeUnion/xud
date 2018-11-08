@@ -14,10 +14,8 @@ import { Models } from '../db/DB';
 import { SwapDealInstance } from 'lib/types/db';
 import { SwapDeal } from './types';
 
-type OrderToAccept = {
-  quantityToAccept: number;
-  price: number;
-  localId: string;
+type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
+  quantity: number;
 };
 
 interface Swaps {
@@ -43,16 +41,33 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Calculates the amount of subunits/satoshis each side of a swap should receive.
-   * @param quantity the quantity of the taker's order
-   * @param price the price specified by the maker order being filled
+   * Derives the maker and taker currency for a swap.
+   * @param pairId The trading pair id for the swap
+   * @param isBuy Whether the maker order in the swap is a buy
+   * @returns An object with the derived `makerCurrency` and `takerCurrency` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number) => {
+  private static deriveCurrencies = (pairId: string, isBuy: boolean) => {
+    const [baseCurrency, quoteCurrency] = pairId.split('/');
+
+    const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
+    const takerCurrency = isBuy ? quoteCurrency : baseCurrency;
+    return { makerCurrency, takerCurrency };
+  }
+
+  /**
+   * Calculates the amount of subunits/satoshis each side of a swap should receive.
+   * @param quantity The quantity being swapped
+   * @param price The price for the swap
+   * @param isBuy Whether the maker order in the swap is a buy
+   * @returns An object with the calculated `makerAmount` and `takerAmount` values
+   */
+  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean) => {
     // TODO: use configurable amount of subunits/satoshis per token for each currency
     const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);
-
-    return { baseCurrencyAmount, quoteCurrencyAmount };
+    const makerAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
+    const takerAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
+    return { makerAmount, takerAmount };
   }
 
   public init = async () => {
@@ -205,33 +220,17 @@ class Swaps extends EventEmitter {
 
   /**
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
-   * @param maker the remote maker order we are filling
-   * @param taker our local taker order
-   * @returns the r_hash for the swap
+   * @param maker The remote maker order we are filling
+   * @param taker Our local taker order
+   * @returns The r_hash for the swap, or `undefined` if the swap could not be initiated
    */
   private beginSwap = (maker: StampedPeerOrder, taker: StampedOwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
-    const [baseCurrency, quoteCurrency] = maker.pairId.split('/');
-    const { baseCurrencyAmount, quoteCurrencyAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price);
+    const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
 
-    let takerCurrency: string;
-    let makerCurrency: string;
-    let takerAmount: number;
-    let makerAmount: number;
-    if (taker.isBuy) {
-      // we are buying the base currency
-      takerCurrency = baseCurrency;
-      makerCurrency = quoteCurrency;
-      takerAmount = baseCurrencyAmount;
-      makerAmount = quoteCurrencyAmount;
-    } else {
-      // we are selling the base currency
-      takerCurrency = quoteCurrency;
-      makerCurrency = baseCurrency;
-      takerAmount = quoteCurrencyAmount;
-      makerAmount = baseCurrencyAmount;
-    }
+    const quantity = Math.min(maker.quantity, taker.quantity);
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy);
 
     let takerCltvDelta = 0;
     switch (takerCurrency) {
@@ -245,10 +244,6 @@ class Swaps extends EventEmitter {
     const preimage = randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
-      takerCurrency,
-      makerCurrency,
-      takerAmount,
-      makerAmount,
       takerCltvDelta,
       r_hash: createHash('sha256').update(preimage).digest('hex'),
       orderId: maker.id,
@@ -258,9 +253,14 @@ class Swaps extends EventEmitter {
 
     const deal: SwapDeal = {
       ...swapRequestBody,
+      takerCurrency,
+      makerCurrency,
+      takerAmount,
+      makerAmount,
       peerPubKey: peer.nodePubKey!,
       localId: taker.localId,
       price: maker.price,
+      isBuy: maker.isBuy,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
       r_preimage: preimage.toString('hex'),
@@ -296,15 +296,25 @@ class Swaps extends EventEmitter {
     // TODO: check to make sure we don't already have a deal for the requested r_hash
     const requestBody = requestPacket.body!;
 
-    const takerPubKey = peer.getLndPubKey(requestBody.takerCurrency)!;
+    const { quantity, price, isBuy } = orderToAccept;
+
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy);
+    const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(requestBody.pairId, isBuy);
+
+    const takerPubKey = peer.getLndPubKey(takerCurrency)!;
 
     const deal: SwapDeal = {
       ...requestBody,
       takerPubKey,
+      price,
+      isBuy,
+      quantity,
+      makerAmount,
+      takerAmount,
+      makerCurrency,
+      takerCurrency,
       peerPubKey: peer.nodePubKey!,
-      price: orderToAccept.price,
       localId: orderToAccept.localId,
-      quantity: orderToAccept.quantityToAccept,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
       r_hash: requestBody.r_hash,
@@ -341,10 +351,10 @@ class Swaps extends EventEmitter {
     let height: number;
     try {
       const req = new lndrpc.QueryRoutesRequest();
-      req.setAmt(requestBody.takerAmount);
+      req.setAmt(takerAmount);
       req.setFinalCltvDelta(requestBody.takerCltvDelta);
       req.setNumRoutes(1);
-      req.setPubKey(peer.getLndPubKey(requestBody.takerCurrency)!);
+      req.setPubKey(peer.getLndPubKey(takerCurrency)!);
       const routes = await lndclient.queryRoutes(req);
       deal.makerToTakerRoutes = routes.getRoutesList();
       this.logger.debug('got ' + deal.makerToTakerRoutes.length + ' routes to destination: ' + deal.makerToTakerRoutes);
@@ -373,7 +383,7 @@ class Swaps extends EventEmitter {
 
     // cltvDelta can't be zero for both the LtcClient and BtcClient (checked in constructor)
     const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
-    switch (requestBody.makerCurrency) {
+    switch (makerCurrency) {
       case 'BTC':
         deal.makerCltvDelta = this.lndBtcClient.cltvDelta + routeCltvDelta / cltvDeltaFactor;
         break;

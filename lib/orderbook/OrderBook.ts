@@ -555,37 +555,39 @@ class OrderBook extends EventEmitter {
     const { r_hash, proposedQuantity, orderId, pairId } = requestPacket.body!;
 
     const order = this.tryGetOwnOrder(orderId, pairId);
-    if (order) {
-      const availableQuantity = order.quantity - order.hold;
-      // TODO: accept the smaller of the proposed quantity and the available quantity
-      if (availableQuantity >= proposedQuantity) {
-        // put accepted quantity on hold
-        // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
-        const quantityToAccept = proposedQuantity;
+    if (!order) {
+      peer.sendPacket(new SwapErrorPacket({
+        r_hash,
+        errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
+      }, requestPacket.header.id));
+      return;
+    }
 
-        this.addOrderHold(order.id, pairId, quantityToAccept);
+    const availableQuantity = order.quantity - order.hold;
+    assert(availableQuantity > 0);
+    // TODO: accept the smaller of the proposed quantity and the available quantity
+    if (availableQuantity >= proposedQuantity) {
+      // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
+      /** The quantity of the order that we will accept */
+      const quantity = proposedQuantity;
 
-        // try to accept the deal
-        const orderToAccept = {
-          quantityToAccept,
-          localId: order.localId,
-          price: order.price,
-        };
-        const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
-        if (!dealAccepted) {
-          // release hold amount and reject swap
-          this.removeOrderHold(order.id, pairId, quantityToAccept);
-        }
-      } else {
-        peer.sendPacket(new SwapErrorPacket({
-          r_hash,
-          errorMessage: SwapFailureReason[SwapFailureReason.OrderUnavailable],
-        }, requestPacket.header.id));
+      this.addOrderHold(order.id, pairId, quantity);
+
+      // try to accept the deal
+      const orderToAccept = {
+        quantity,
+        localId: order.localId,
+        price: order.price,
+        isBuy: order.isBuy,
+      };
+      const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
+      if (!dealAccepted) {
+        this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
       peer.sendPacket(new SwapErrorPacket({
         r_hash,
-        errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
+        errorMessage: SwapFailureReason[SwapFailureReason.OrderOnHold],
       }, requestPacket.header.id));
     }
   }
