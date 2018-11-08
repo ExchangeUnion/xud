@@ -55,6 +55,17 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Checks if a swap request is valid. This is a shallow check that only detects critical
+   * inconsistencies and verifies only whether the request can possibly lead to a successful swap.
+   * @returns `true` if the request is valid, otherwise `false`
+   */
+  public static validateSwapRequest = ({ proposedQuantity, r_hash }: packets.SwapRequestPacketBody) => {
+    // proposed quantity must be a positive number
+    // r_hash must be exactly 64 characters
+    return proposedQuantity > 0 && r_hash.length === 64;
+  }
+
+  /**
    * Calculates the amount of subunits/satoshis each side of a swap should receive.
    * @param quantity The quantity being swapped
    * @param price The price for the swap
@@ -486,8 +497,9 @@ class Swaps extends EventEmitter {
   /**
    * Verifies that the request from LND is valid. Checks the received amount vs
    * the expected amount and the CltvDelta vs the expected one.
+   * @returns `true` if the resolve request is valid, `false` otherwise
    */
-  private validateRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
+  private validateResolveRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
     const amount = resolveRequest.getAmount();
     let expectedAmount = 0;
     let cltvDelta = 0;
@@ -547,7 +559,7 @@ class Swaps extends EventEmitter {
       return msg;
     }
 
-    if (!this.validateRequest(deal, resolveRequest)) {
+    if (!this.validateResolveRequest(deal, resolveRequest)) {
       return deal.errorReason;
     }
 
