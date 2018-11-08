@@ -22,7 +22,7 @@ type Local = {
   /** A local identifier for the order. */
   localId: string;
   /** The amount of an order that is on hold pending swap exectuion. */
-  hold?: number;
+  hold: number;
 };
 
 /** Properties that apply only to orders placed by remote peers. */

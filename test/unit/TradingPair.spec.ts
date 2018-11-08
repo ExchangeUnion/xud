@@ -17,6 +17,7 @@ const createOwnOrder = (price: number, quantity: number, isBuy: boolean, created
   id: uuidv1(),
   localId: uuidv1(),
   pairId: PAIR_ID,
+  hold: 0,
 });
 
 const createPeerOrder = (
@@ -337,5 +338,67 @@ describe('MatchingEngine queues and maps integrity', () => {
     )).to.throw(`order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`);
     const queueRemainingOrder = tp.queues!.sell.peek();
     expect(queueRemainingOrder).to.be.undefined;
+  });
+});
+
+describe('TradingPair.addOrderHold & TradingPair.removeOrderHold', () => {
+  init();
+
+  it('should add a new ownOrder and put part of it on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 2);
+    expect(ownOrder.hold).to.equal(2);
+  });
+
+  it('should add a new ownOrder and put all of it on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 5);
+    expect(ownOrder.hold).to.equal(5);
+  });
+
+  it('should add a new ownOrder and put two holds on it', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 1);
+    tp.addOrderHold(ownOrder.id, 3);
+    expect(ownOrder.hold).to.equal(4);
+  });
+
+  it('should add a new ownOrder and fail putting more on hold than is available', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    expect(() => tp.addOrderHold(ownOrder.id, 10)).to.throw('the amount of an order on hold cannot exceed the available quantity');
+  });
+
+  it('should add a new ownOrder, add a hold, then remove the hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+    tp.removeOrderHold(ownOrder.id, 3);
+    expect(ownOrder.hold).to.equal(0);
+  });
+
+  it('should add a new ownOrder, add two holds, then remove one hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+    tp.addOrderHold(ownOrder.id, 1);
+    tp.removeOrderHold(ownOrder.id, 1);
+    expect(ownOrder.hold).to.equal(3);
+  });
+
+  it('should add a new ownOrder and fail removing a hold that does not exist', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    expect(() => tp.removeOrderHold(ownOrder.id, 1)).to.throw('cannot remove more than is currently on hold for an order');
+  });
+
+  it('should add a new ownOrder, add a hold, and fail removing more than what is on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 1);
+    expect(() => tp.removeOrderHold(ownOrder.id, 3)).to.throw('cannot remove more than is currently on hold for an order');
   });
 });

@@ -329,6 +329,7 @@ class Service extends EventEmitter {
       quantity,
       isBuy: side === OrderSide.Buy,
       localId: orderId,
+      hold: 0,
     };
 
     return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
