@@ -12,6 +12,8 @@ type Models = {
   SwapDeal: Sequelize.Model<db.SwapDealInstance, db.SwapDealAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
   ReputationEvent: Sequelize.Model<db.ReputationEventInstance, db.ReputationEventAttributes>;
+  Order: Sequelize.Model<db.OrderInstance, db.OrderAttributes>;
+  Trade: Sequelize.Model<db.TradeInstance, db.TradeAttributes>;
 };
 
 /** A class representing a connection to a SQL database. */
@@ -45,16 +47,24 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair, ReputationEvent, SwapDeal } = this.models;
+    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
-      ReputationEvent.sync(),
-      SwapDeal.sync(),
     ]);
+    // Pair is dependent on Currency, ReputationEvent is dependent on Node
     await Promise.all([
       Pair.sync(),
+      ReputationEvent.sync(),
+    ]);
+    // Order is dependent on Pair
+    await Promise.all([
+      Order.sync(),
+    ]);
+    await Promise.all([
+      Trade.sync(),
+      SwapDeal.sync(),
     ]);
 
     if (newDb && initDb) {

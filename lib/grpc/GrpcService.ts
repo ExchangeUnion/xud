@@ -4,19 +4,19 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { StampedOrder, isOwnOrder, OrderPortion, SwapResult } from '../types/orders';
+import { Order, isOwnOrder, OrderPortion } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
-import P2PRepository from '../p2p/P2PRepository';
+import { SwapResult } from 'lib/swaps/types';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
  */
-const createOrder = (order: StampedOrder) => {
+const createOrder = (order: Order) => {
   const grpcOrder = new xudrpc.Order();
   grpcOrder.setCreatedAt(order.createdAt);
   grpcOrder.setId(order.id);
@@ -43,7 +43,7 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setLocalId(result.localId);
   swapResult.setPairId(result.pairId);
   swapResult.setQuantity(result.quantity);
-  swapResult.setRHash(result.r_hash);
+  swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
   swapResult.setPeerPubKey(result.peerPubKey);
@@ -77,13 +77,13 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
   const response = new xudrpc.PlaceOrderEvent();
   switch (e.case) {
     case PlaceOrderEventCase.InternalMatch:
-      response.setInternalMatch(createOrder(e.payload as StampedOrder));
+      response.setInternalMatch(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventCase.SwapResult:
       response.setSwapResult(createSwapResult(e.payload as SwapResult));
       break;
     case PlaceOrderEventCase.RemainingOrder:
-      response.setRemainingOrder(createOrder(e.payload as StampedOrder));
+      response.setRemainingOrder(createOrder(e.payload as Order));
       break;
   }
   return response;
@@ -337,9 +337,9 @@ class GrpcService {
       const getOrdersResponse = this.service.getOrders(call.request.toObject());
       const response = new xudrpc.GetOrdersResponse();
 
-      const getOrdersList = <T extends StampedOrder>(orders: T[]) => {
+      const getOrdersList = <T extends Order>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(createOrder(<StampedOrder>order)));
+        orders.forEach(order => ordersList.push(createOrder(<Order>order)));
         return ordersList;
       };
 
@@ -500,7 +500,7 @@ class GrpcService {
    * See [[Service.subscribeAddedOrders]]
    */
   public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders((order: StampedOrder) => {
+    this.service.subscribeAddedOrders((order: Order) => {
       call.write(createOrder(order));
     });
   }
