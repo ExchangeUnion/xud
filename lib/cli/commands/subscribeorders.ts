@@ -1,12 +1,24 @@
-import { loadXudClient } from '../command';
+import { loadXudClient, callback } from '../command';
 import { Arguments } from 'yargs';
 import * as xudrpc from '../../proto/xudrpc_pb';
 
-export const command = 'streamorders';
+export const command = 'streamorders [show_existing]';
 
 export const describe = 'stream order added, removed, and swapped events (DEMO)';
 
+export const builder = {
+  show_existing: {
+    description: 'Return existing orders',
+    type: 'boolean',
+    default: false,
+  },
+};
+
 export const handler = (argv: Arguments) => {
+  const request = new xudrpc.SubscribeExistingRequest();
+  request.setShowExisting(argv.show_existing);
+  loadXudClient(argv).subscribeExistingOrders(request);
+
   const addedOrdersSubscription = loadXudClient(argv).subscribeAddedOrders(new xudrpc.SubscribeAddedOrdersRequest());
   addedOrdersSubscription.on('data', (order: xudrpc.Order) => {
     console.log(`Order added: ${JSON.stringify(order.toObject())}`);

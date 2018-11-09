@@ -500,7 +500,7 @@ class GrpcService {
    * See [[Service.subscribeAddedOrders]]
    */
   public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders((order: Order) => {
+    this.service.subscribeAddedOrders(call.request.toObject(), (order: Order) => {
       call.write(createOrder(order));
     });
   }
