@@ -43,8 +43,9 @@ export type SwapDeal = {
   makerCltvDelta?: number;
   /** The price of the order that's being executed. */
   price: number;
-  /** The hash of the preimage. */
+  /** The hex-encoded hash of the preimage. */
   rHash: string;
+  /** The hex-encoded preimage. */
   rPreimage?: string;
   /** The routes the maker should use to send to the taker. */
   makerToTakerRoutes?: Route[];

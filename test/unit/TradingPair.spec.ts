@@ -9,11 +9,12 @@ import { ms } from '../../lib/utils/utils';
 const PAIR_ID = 'LTC/BTC';
 const loggers = Logger.createLoggers(Level.Warn);
 
-const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.StampedOwnOrder => ({
+const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.OwnOrder => ({
   price,
   quantity,
   isBuy,
   createdAt,
+  initialQuantity: quantity,
   id: uuidv1(),
   localId: uuidv1(),
   pairId: PAIR_ID,
@@ -26,12 +27,13 @@ const createPeerOrder = (
   isBuy: boolean,
   createdAt = ms(),
   peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-): orders.StampedPeerOrder => ({
+): orders.PeerOrder => ({
   quantity,
   price,
   isBuy,
   createdAt,
   peerPubKey,
+  initialQuantity: quantity,
   id: uuidv1(),
   pairId: PAIR_ID,
 });
