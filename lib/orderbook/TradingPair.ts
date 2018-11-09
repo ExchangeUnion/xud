@@ -128,6 +128,7 @@ class TradingPair {
     }
 
     map.set(order.id, order);
+    this.logger.debug(`order added: ${JSON.stringify(order)}`);
 
     if (!this.nomatching) {
       const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
@@ -272,6 +273,7 @@ class TradingPair {
     assert(holdAmount > 0);
     assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
     order.hold += holdAmount;
+    this.logger.debug(`added hold of ${holdAmount} on order ${orderId}`);
   }
 
   public removeOrderHold = (orderId: string, holdAmount: number) => {
@@ -279,6 +281,7 @@ class TradingPair {
     assert(holdAmount > 0);
     assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
     order.hold -= holdAmount;
+    this.logger.debug(`removed hold of ${holdAmount} on order ${orderId}`);
   }
 
   /**

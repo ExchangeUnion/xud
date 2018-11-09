@@ -487,7 +487,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.OrderInvalidation: {
         const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
+        this.logger.verbose(`received order invalidation from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
         this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
         break;
       }

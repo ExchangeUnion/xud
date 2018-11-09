@@ -226,6 +226,11 @@ class Peer extends EventEmitter {
 
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
+    if (this.nodePubKey !== undefined) {
+      this.logger.trace(`Sent packet to ${this.nodePubKey}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
+    } else {
+      this.logger.trace(`Sent packet to ${addressUtils.toString(this.address)}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
+    }
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -461,9 +466,9 @@ class Peer extends EventEmitter {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
-        this.logger.trace(`Received data (${this.nodePubKey}): ${dataStr}`);
+        this.logger.trace(`Received data from ${this.nodePubKey}: ${dataStr}`);
       } else {
-        this.logger.trace(`Received data (${addressUtils.toString(this.address)}): ${data.toString()}`);
+        this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
       }
       this.parser.feed(dataStr);
     });
