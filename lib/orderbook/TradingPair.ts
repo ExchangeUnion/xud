@@ -6,11 +6,6 @@ import Logger from '../Logger';
 import { isOwnOrder, Order, OwnOrder, PeerOrder } from '../types/orders';
 import errors from './errors';
 
-type SplitOrder = {
-  matched: Order;
-  remaining: Order;
-};
-
 type OrderMap<T extends orders.Order> = Map<string, T>;
 
 type OrderSidesMaps<T extends orders.Order> = {
@@ -79,7 +74,7 @@ class TradingPair {
    * Get the matching quantity between two orders.
    * @returns the smaller of the quantity between the two orders if their price matches, 0 otherwise
    */
-  public static getMatchingQuantity = (buyOrder: Order, sellOrder: Order): number => {
+  private static getMatchingQuantity = (buyOrder: Order, sellOrder: Order): number => {
     if (buyOrder.price >= sellOrder.price) {
       return Math.min(buyOrder.quantity, sellOrder.quantity);
     } else {
@@ -88,21 +83,22 @@ class TradingPair {
   }
 
   /**
-   * Split an order by quantity into a matched portion and a remaining portion.
+   * Splits an order by quantity into a matched portion and subtracts the matched quantity from the original order.
+   * @param order the order that is being split
+   * @param matchingQuantity the quantity for the split order and to subtract from the original order
+   * @returns the split portion of the order with the matching quantity
    */
-  public static splitOrderByQuantity = (order: Order, matchingQuantity: number): SplitOrder => {
-    const { quantity } = order;
-    assert(quantity > matchingQuantity, 'order quantity must be greater than matchingQuantity');
+  private static splitOrderByQuantity = <T extends Order>(order: T, matchingQuantity: number): T => {
+    assert(order.quantity > matchingQuantity, 'order quantity must be greater than matchingQuantity');
 
-    return {
-      matched: { ...order, quantity: matchingQuantity },
-      remaining: { ...order, quantity: quantity - matchingQuantity },
-    };
+    order.quantity -= matchingQuantity;
+    const matchedOrder = Object.assign({}, order, { quantity: matchingQuantity });
+    return matchedOrder;
   }
 
   /**
-   * Add peer order
-   * @returns false if it's a duplicated order, otherwise true
+   * Adds a peer order.
+   * @returns `false` if it's a duplicated order, otherwise `true`
    */
   public addPeerOrder = (order: PeerOrder): boolean => {
     let peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
@@ -218,7 +214,7 @@ class TradingPair {
     }
   }
 
-  private getOrders = <T extends orders.Order>(lists: OrderSidesMaps<T>): OrderSidesArrays<T> => {
+  private getOrders = <T extends Order>(lists: OrderSidesMaps<T>): OrderSidesArrays<T> => {
     return {
       buy: Array.from(lists.buy.values()),
       sell: Array.from(lists.sell.values()),
@@ -299,40 +295,40 @@ class TradingPair {
 
     // as long as we have remaining quantity to match and orders to match against, keep checking for matches
     while (remainingOrder && !queue.isEmpty()) {
-      const oppositeOrder = queue.peek()!;
-      const matchingQuantity = getMatchingQuantity(remainingOrder, oppositeOrder);
+      // get the best available maker order from the top of the queue
+      const makerOrder = queue.peek()!;
+      const matchingQuantity = getMatchingQuantity(remainingOrder, makerOrder);
       if (matchingQuantity <= 0) {
         // there's no match with the best available maker order, so end the matching routine
         break;
       } else {
-        // get the order from the top of the queue, and remove its ref from the map as well
-        const makerOrder = queue.poll()!;
-        const map = this.getOrderMap(makerOrder);
-        if (!map) break;
-        map.delete(makerOrder.id);
+        /** Whether the maker order is fully matched and should be removed from the queue. */
+        const makerFullyMatched = makerOrder.quantity === matchingQuantity;
+        const remainingFullyMatched = remainingOrder.quantity === matchingQuantity;
 
-        if (
-          makerOrder.quantity === matchingQuantity &&
-          remainingOrder.quantity === matchingQuantity
-        ) { // order quantities are fully matching
+        if (makerFullyMatched && remainingFullyMatched) {
+          // maker & taker order quantities equal and fully matching
           matches.push({ maker: makerOrder, taker: remainingOrder });
-
-          remainingOrder = undefined;
-        } else if (remainingOrder.quantity === matchingQuantity) {  // taker order quantity is not sufficient. maker order will split
-          const splitOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
-          matches.push({ maker: splitOrder.matched, taker: remainingOrder });
-
-          // add the remaining order to the queue and the list
-          queue.add(splitOrder.remaining);
-          map.set(splitOrder.remaining.id, splitOrder.remaining);
-
-          remainingOrder = undefined;
-        } else if (makerOrder.quantity === matchingQuantity) { // maker order quantity is not sufficient. taker order will split
-          const splitOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
-          matches.push({ maker: makerOrder, taker: splitOrder.matched as OwnOrder });
-          remainingOrder = splitOrder.remaining as OwnOrder;
+        } else if (remainingFullyMatched) {
+          // taker order quantity is not sufficient. maker order will split
+          const matchedMakerOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
+          matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
+        } else if (makerFullyMatched) {
+          // maker order quantity is not sufficient. taker order will split
+          const matchedTakerOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
+          matches.push({ maker: makerOrder, taker: matchedTakerOrder });
         } else {
           assert(false, 'matchingQuantity should not be lower than both orders quantity values');
+        }
+
+        if (remainingFullyMatched) {
+          remainingOrder = undefined;
+        }
+        if (makerFullyMatched) {
+          // maker order is fully matched, so remove it from the queue and map
+          assert(queue.poll() === makerOrder);
+          const map = this.getOrderMap(makerOrder)!;
+          map.delete(makerOrder.id);
         }
       }
     }
