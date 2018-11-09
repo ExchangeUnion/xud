@@ -30,9 +30,9 @@ interface Peer {
   on(event: 'handshake', listener: () => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
-  once(event: 'reputationEvent', listener: (event: ReputationEvent) => void): this;
+  once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   emit(event: 'connect'): boolean;
-  emit(event: 'reputationEvent', reputationEvent: ReputationEvent): boolean;
+  emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'open'): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
@@ -249,10 +249,6 @@ class Peer extends EventEmitter {
       this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
       this.lastSend = Date.now();
     }
-  }
-
-  private increaseBan = (event: ReputationEvent) => {
-    this.emit('reputationEvent', event);
   }
 
   /**
@@ -474,15 +470,15 @@ class Peer extends EventEmitter {
       switch (err.type) {
         case ParserErrorType.UnparseableMessage:
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.increaseBan(ReputationEvent.UnparsableMessage);
+          this.emit('reputation', ReputationEvent.UnparseableMessage);
           break;
         case ParserErrorType.InvalidMessage:
           this.logger.warn(`Invalid peer message: ${err.payload}`);
-          this.increaseBan(ReputationEvent.InvalidMessage);
+          this.emit('reputation', ReputationEvent.InvalidMessage);
           break;
         case ParserErrorType.UnknownPacketType:
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
-          this.increaseBan(ReputationEvent.UnknownMessageType);
+          this.emit('reputation', ReputationEvent.UnknownMessageType);
       }
     });
   }
