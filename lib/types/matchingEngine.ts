@@ -1,11 +1,11 @@
-import { StampedOrder, StampedOwnOrder } from './orders';
+import { Order, OwnOrder } from './orders';
 
 export type OrderMatch = {
-  maker: StampedOrder;
-  taker: StampedOwnOrder;
+  maker: Order;
+  taker: OwnOrder;
 };
 
 export type MatchingResult = {
   matches: OrderMatch[];
-  remainingOrder?: StampedOwnOrder;
+  remainingOrder?: OwnOrder;
 };

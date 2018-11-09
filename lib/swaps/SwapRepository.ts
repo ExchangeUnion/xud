@@ -10,16 +10,22 @@ class SwapRepository {
     return this.models.SwapDeal.findAll();
   }
 
-  public getSwapDeal = async (r_hash: string): Promise<db.SwapDealInstance | null> => {
+  public getSwapDeal = async (rHash: string): Promise<db.SwapDealInstance | null> => {
     return this.models.SwapDeal.findOne({
       where: {
-        r_hash,
+        rHash,
       },
     });
   }
 
-  public addSwapDeal = (swapDeal: db.SwapDealFactory): Bluebird<db.SwapDealInstance> => {
-    return this.models.SwapDeal.create(<db.SwapDealAttributes>swapDeal);
+  public addSwapDeal = async (swapDeal: db.SwapDealFactory): Promise<db.SwapDealInstance> => {
+    const node = await this.models.Node.findOne({
+      where: {
+        nodePubKey: swapDeal.peerPubKey,
+      },
+    });
+    const attributes = { ...swapDeal, nodeId: node!.id } as db.SwapDealAttributes;
+    return this.models.SwapDeal.create(attributes);
   }
 }
 export default SwapRepository;

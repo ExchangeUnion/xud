@@ -48,5 +48,12 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
 
   const Node = sequelize.define<db.NodeInstance, db.NodeAttributes>('Node', attributes, options);
 
+  Node.associate = (models: Sequelize.Models) => {
+    models.Node.hasMany(models.ReputationEvent, {
+      foreignKey: 'nodeId',
+      constraints: true,
+    });
+  };
+
   return Node;
 };
