@@ -1,7 +1,7 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
 import { SwapDeal } from '../swaps/types';
-import { Currency, Pair } from './orders';
+import { Currency, Pair, OwnOrder, Order } from './orders';
 import { ReputationEvent } from './enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = {
@@ -28,19 +28,44 @@ export type CurrencyAttributes = CurrencyFactory & {
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
 /* SwapDeal */
-export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes'>>;
+export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes' | 'price' | 'pairId' | 'isBuy'>>;
 
-export type SwapDealAttributes = SwapDealFactory & {
+export type SwapDealAttributes = Pick<SwapDealFactory, Exclude<keyof SwapDealFactory, 'peerPubKey'>> & {
   makerCltvDelta: number;
-  r_preimage: string;
+  rPreimage: string;
   errorReason: string;
   quantity: number;
   takerPubKey: string;
   executeTime: number;
   completeTime: number;
+  /** The internal db node id of the counterparty peer for this swap deal. */
+  nodeId: number;
 };
 
 export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
+
+export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold'>>;
+
+export type OrderAttributes = OrderFactory & {
+  /** The internal db node id of the peer that created this order. */
+  nodeId: number;
+  localId: string;
+};
+
+export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes>;
+
+export type TradeFactory = {
+  /** The order id of the maker order involved in this trade. */
+  makerOrderId: string,
+  /** The order id of the taker order involved in this trade. */
+  takerOrderId: string,
+  /** The quantity transacted in this trade. */
+  quantity: number,
+};
+
+export type TradeAttributes = TradeFactory;
+
+export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes>;
 
 /* Node */
 export type NodeFactory = NodeConnectionInfo;

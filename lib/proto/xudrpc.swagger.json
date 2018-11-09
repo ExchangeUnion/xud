@@ -1123,7 +1123,7 @@
         },
         "r_hash": {
           "type": "string",
-          "description": "The hex-encoded r_hash for the swap payments."
+          "description": "The hex-encoded payment hash for the swaps."
         },
         "amount_received": {
           "type": "string",
