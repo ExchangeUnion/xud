@@ -197,7 +197,7 @@ class Peer extends EventEmitter {
 
     if (this.socket) {
       if (reason) {
-        this.sendPacket(new packets.DisconnectingPacket(reason))
+        this.sendPacket(new packets.DisconnectingPacket(reason));
       }
 
       if (!this.socket.destroyed) {
