@@ -4,7 +4,7 @@ import * as xudrpc from '../../proto/xudrpc_pb';
 
 export const command = 'streamorders';
 
-export const describe = 'stream orders existing added, removed, and swapped events (DEMO)';
+export const describe = 'stream orders existing, added, removed, and swapped events (DEMO)';
 
 export const handler = (argv: Arguments) => {
   const addedOrdersSubscription = loadXudClient(argv).subscribeAddedOrders(new xudrpc.SubscribeAddedOrdersRequest());
