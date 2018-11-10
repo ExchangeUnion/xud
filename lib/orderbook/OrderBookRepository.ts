@@ -40,6 +40,10 @@ class OrderbookRepository {
       await this.models.Order.create(order as OrderAttributes);
     }
   }
+
+  public addTrade = async (trade: db.TradeFactory) => {
+    await this.models.Trade.create(trade);
+  }
 }
 
 export default OrderbookRepository;
