@@ -10,6 +10,7 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
+import { DisconnectionReason, DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -168,10 +169,10 @@ class Peer extends EventEmitter {
     // TODO: Check that the peer's version is compatible with ours
     if (nodePubKey) {
       if (this.nodePubKey !== nodePubKey) {
-        this.close();
+        this.close({ reason: DisconnectionReason.UnexpectedIdentity });
         throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
       } else if (this.nodePubKey === handshakeData.nodePubKey) {
-        this.close();
+        this.close({ reason: DisconnectionReason.ConnectedToSelf });
         throw errors.ATTEMPTED_CONNECTION_TO_SELF;
       }
     }
@@ -186,7 +187,7 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (): void => {
+  public close = (reason?: DisconnectingPacketBody): void => {
     if (this.closed) {
       return;
     }
@@ -195,6 +196,10 @@ class Peer extends EventEmitter {
     this.connected = false;
 
     if (this.socket) {
+      if (reason) {
+        this.sendPacket(new packets.DisconnectingPacket(reason))
+      }
+
       if (!this.socket.destroyed) {
         this.socket.destroy();
       }
@@ -374,10 +379,10 @@ class Peer extends EventEmitter {
   private checkTimeout = () => {
     const now = ms();
 
-    for (const [packetType, entry] of this.responseMap) {
+    for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
-        this.close();
+        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetId})`);
+        this.close({ reason: DisconnectionReason.ResponseStalling, payload: packetId });
         return;
       }
     }
@@ -567,7 +572,7 @@ class Peer extends EventEmitter {
     if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close();
+      this.close({ reason: DisconnectionReason.ForbiddenIdentityUpdate, payload: helloBody.nodePubKey });
       return;
     }
 

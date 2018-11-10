@@ -28,6 +28,8 @@ const fromRaw = (raw: string): Packet => {
     switch (packet.header.type) {
       case PacketType.Hello:
         return new packetTypes.HelloPacket(packet);
+      case PacketType.Disconnecting:
+        return new packetTypes.DisconnectingPacket(packet);
       case PacketType.Ping:
         return new packetTypes.PingPacket(packet);
       case PacketType.Pong:

@@ -15,6 +15,7 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent } from '../types/enums';
+import { DisconnectingPacketBody, DisconnectionReason } from './packets/types/DisconnectingPacket';
 
 type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
@@ -187,12 +188,12 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey) => {
+    this.nodes.on('node.ban', (nodePubKey, events) => {
       this.logger.warn(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        peer.close();
+        peer.close({ reason: DisconnectionReason.Banned, payload: JSON.stringify(events) });
       }
     });
   }
@@ -368,10 +369,10 @@ class Pool extends EventEmitter {
     }
   }
 
-  public closePeer = async (nodePubKey: string): Promise<void> => {
+  public closePeer = async (nodePubKey: string, reason?: DisconnectingPacketBody): Promise<void> => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      peer.close();
+      peer.close(reason);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
@@ -541,13 +542,18 @@ class Pool extends EventEmitter {
         this.emit('packet.swapError', packet);
         break;
       }
+
+      case PacketType.Disconnecting: {
+        this.logger.debug(`received disconnecting packet from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        break;
+      }
     }
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      peer.close();
+      peer.close({ reason: DisconnectionReason.NotReadyForConnections });
       return;
     }
     if (peer.nodePubKey === this.handshakeData.nodePubKey) {
@@ -556,10 +562,10 @@ class Pool extends EventEmitter {
 
     if (this.nodes.isBanned(peer.nodePubKey!)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
-      peer.close();
+      peer.close({ reason: DisconnectionReason.Banned });
     } else if (this.peers.has(peer.nodePubKey!)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us
-      peer.close();
+      peer.close({ reason: DisconnectionReason.AlreadyConnected });
     } else {
       this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
       this.peers.add(peer);
@@ -653,13 +659,13 @@ class Pool extends EventEmitter {
         await this.nodes.ban(peer.nodePubKey);
       }
       if (peer.connected) {
-        peer.close();
+        peer.close({ reason: DisconnectionReason.Banned });
       }
     });
   }
 
   private closePeers = () => {
-    this.peers.forEach(peer => peer.close());
+    this.peers.forEach(peer => peer.close({ reason: DisconnectionReason.Shutdown }));
   }
 
   private closePendingConnections = () => {

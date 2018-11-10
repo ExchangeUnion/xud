@@ -3,8 +3,8 @@ import P2PRepository from './P2PRepository';
 import { NodeInstance, NodeFactory } from '../types/db';
 import { Address } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { UriParts } from '../utils/utils';
 import { ReputationEvent } from '../types/enums';
+import { db } from '../types';
 
 const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -18,8 +18,8 @@ const reputationEventWeight = {
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(event: 'node.ban', listener: (nodePubKey: string) => void): this;
-  emit(event: 'node.ban', nodePubKey: string): boolean;
+  on(event: 'node.ban', listener: (nodePubKey: string, events: db.ReputationEventInstance[]) => void): this;
+  emit(event: 'node.ban', nodePubKey: string, events: db.ReputationEventInstance[]): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -141,7 +141,9 @@ class NodeList extends EventEmitter {
         promises.push(this.setBanStatus(node, true));
         this.bannedNodes.add(node.nodePubKey);
         this.nodes.delete(node.nodePubKey);
-        this.emit('node.ban', nodePubKey);
+
+        const events = await this.repository.getReputationEvents(node);
+        this.emit('node.ban', nodePubKey, events);
       } else if (node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
