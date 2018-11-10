@@ -187,12 +187,6 @@ service Xud {
     };
   }
   
-  rpc SubscribeExistingOrders(SubscribeExistingRequest) returns (stream Order) {
-    option (google.api.http) = {
-      get: "/v1/subscribeorders"
-    };
-  }
-
   /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
    * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
    * wants to show its users a real time list of the orders available to them would subscribe to this
@@ -505,10 +499,6 @@ message RemovePairResponse {}
 
 message ShutdownRequest {}
 message ShutdownResponse {}
-
-message SubscribeExistingRequest {
-  bool show_existing = 1 [json_name = "show_existing"];
-}
 
 message SubscribeAddedOrdersRequest {}
 

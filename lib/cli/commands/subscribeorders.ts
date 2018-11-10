@@ -15,10 +15,6 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new xudrpc.SubscribeExistingRequest();
-  request.setShowExisting(argv.show_existing);
-  loadXudClient(argv).subscribeExistingOrders(request);
-
   const addedOrdersSubscription = loadXudClient(argv).subscribeAddedOrders(new xudrpc.SubscribeAddedOrdersRequest());
   addedOrdersSubscription.on('data', (order: xudrpc.Order) => {
     console.log(`Order added: ${JSON.stringify(order.toObject())}`);
