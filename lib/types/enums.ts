@@ -49,7 +49,7 @@ export enum ReputationEvent {
   SwapSuccess = 4,
   UnparseableMessage = 5,
   InvalidMessage = 6,
-  UnknownMessageType = 7,
+  UnknownPacketType = 7,
 }
 
 export enum SwapFailureReason {

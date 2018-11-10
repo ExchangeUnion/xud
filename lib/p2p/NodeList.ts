@@ -13,7 +13,7 @@ const reputationEventWeight = {
   [ReputationEvent.SwapFailure]: -10,
   [ReputationEvent.SwapSuccess]: 1,
   [ReputationEvent.InvalidMessage]: -10,
-  [ReputationEvent.UnknownMessageType]: -20,
+  [ReputationEvent.UnknownPacketType]: -20,
   [ReputationEvent.UnparseableMessage]: -10,
 };
 

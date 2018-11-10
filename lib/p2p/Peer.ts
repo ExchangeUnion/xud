@@ -478,7 +478,7 @@ class Peer extends EventEmitter {
           break;
         case ParserErrorType.UnknownPacketType:
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.UnknownMessageType);
+          this.emit('reputation', ReputationEvent.UnknownPacketType);
       }
     });
   }
