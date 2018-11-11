@@ -312,6 +312,7 @@ class TradingPair {
         } else if (remainingFullyMatched) {
           // taker order quantity is not sufficient. maker order will split
           const matchedMakerOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
+          this.logger.debug(`reduced order ${makerOrder.id} by ${matchingQuantity} quantity while matching order ${takerOrder.id}`);
           matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
         } else if (makerFullyMatched) {
           // maker order quantity is not sufficient. taker order will split
@@ -329,6 +330,7 @@ class TradingPair {
           assert(queue.poll() === makerOrder);
           const map = this.getOrderMap(makerOrder)!;
           map.delete(makerOrder.id);
+          this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
         }
       }
     }
