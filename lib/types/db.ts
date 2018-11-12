@@ -30,12 +30,17 @@ export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyA
 /* SwapDeal */
 export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes' | 'price' | 'pairId' | 'isBuy'>>;
 
-export type SwapDealAttributes = Pick<SwapDealFactory, Exclude<keyof SwapDealFactory, 'peerPubKey'>> & {
+export type SwapDealAttributes = SwapDealFactory & {
   /** The internal db node id of the counterparty peer for this swap deal. */
   nodeId: number;
+  Node?: NodeAttributes;
+  Order?: OrderAttributes;
 };
 
-export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
+export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes> & {
+  getNode: Sequelize.BelongsToGetAssociationMixin<NodeInstance>;
+  getOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
+};
 
 export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
   /** The internal db node id of the peer that created this order. */
