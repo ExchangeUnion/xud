@@ -306,26 +306,21 @@ class OrderBook extends EventEmitter {
       } else {
         if (!this.swaps) {
           // swaps should only be undefined during integration testing of the order book
-          // for now we treat this case the same as a swap failure
+          // for now we treat this case like a swap failure
           this.emit('peerOrder.invalidation', portion);
           swapFailures.push(taker);
           continue;
         }
 
         try {
-          await this.repository.addOrderIfNotExists(maker);
           this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-          const swapResult = await this.swaps.executeSwap(maker, taker);
-          this.emit('peerOrder.filled', portion);
-          await this.persistTrade(swapResult.quantity, maker, taker);
-          result.swapResults.push(swapResult);
+          const swapResult = await this.executeSwap(maker, taker);
           this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
+          result.swapResults.push(swapResult);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
-          this.emit('peerOrder.invalidation', portion);
           swapFailures.push(taker);
-          this.logger.warn('swap failed during order matching, will repeat matching routine for failed swap quantity');
-          // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
+          this.logger.warn(`swap failed during matching for order ${taker.id}, will repeat matching routine for failed swap quantity`);
         }
       }
     }
@@ -353,17 +348,12 @@ class OrderBook extends EventEmitter {
     return result;
   }
 
-  public executeSwap = async (orderId: string, pairId: string, peerPubKey: string, quantity?: number): Promise<SwapResult> => {
-    const maker = this.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
-    const taker = this.stampOwnOrder({
-      pairId,
-      localId: '',
-      price: maker.price,
-      isBuy: !maker.isBuy,
-      quantity: quantity || maker.quantity,
-      hold: 0,
-    });
-
+  /**
+   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
+   * succeeds and `peerOrder.invalidation` if the swap fails.
+   */
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+    // make sure the order is in the database before we begin the swap
     await this.repository.addOrderIfNotExists(maker);
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
