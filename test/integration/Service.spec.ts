@@ -26,7 +26,7 @@ describe('API Service', () => {
       loglevel: 'warn',
       logpath: '',
       p2p: {
-        listen: false,
+        nolisten: true,
       },
       rpc: {
         disable: true,

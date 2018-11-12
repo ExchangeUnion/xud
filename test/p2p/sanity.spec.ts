@@ -14,7 +14,7 @@ const createConfig = (instanceid: number, p2pPort: number) => ({
   loglevel: 'warn',
   logpath: '',
   p2p: {
-    listen: true,
+    nolisten: false,
     port: p2pPort,
     addresses: [`localhost:${p2pPort}`],
   },
