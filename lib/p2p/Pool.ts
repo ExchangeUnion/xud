@@ -38,7 +38,7 @@ type PoolConfig = {
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
-  banned: boolean;
+  banned?: boolean;
 };
 
 interface Pool {
