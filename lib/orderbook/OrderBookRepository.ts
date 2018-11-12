@@ -32,12 +32,36 @@ class OrderbookRepository {
     return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   }
 
+  /**
+   * Only persist order if it doesn't exists.
+   * @param order order to persist
+   */
   public addOrderIfNotExists = async (order: db.OrderFactory) => {
     const count = await this.models.Order.count({
       where: { id: order.id },
     });
     if (count === 0) {
       await this.models.Order.create(order as OrderAttributes);
+    }
+  }
+
+  /**
+   * Only persist multiple orders if they don't exists.
+   * @param orders array of orders to persist
+   */
+  public addOrdersIfNotExists = async (orders: db.OrderFactory[]) => {
+    let ordersToAdd: OrderAttributes[] = [];
+    orders.forEach(async (order) => {
+      const count = await this.models.Order.count({
+        where: { id: order.id },
+      });
+      if (count === 0) {
+        ordersToAdd.push(order as OrderAttributes);
+      }
+    });
+
+    if (ordersToAdd.length > 0) {
+      await this.models.Order.bulkCreate(ordersToAdd);
     }
   }
 
