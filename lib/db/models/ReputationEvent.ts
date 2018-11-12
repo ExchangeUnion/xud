@@ -19,6 +19,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
   ReputationEvent.associate = (models: Sequelize.Models) => {
     models.ReputationEvent.belongsTo(models.Node, {
       foreignKey: 'nodeId',
+      constraints: true,
     });
   };
 

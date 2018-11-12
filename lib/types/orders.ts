@@ -3,7 +3,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
-  /** The number of base currency tokens for the order. */
+  /** The number of currently available base currency tokens for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
@@ -12,9 +12,15 @@ type MarketOrder = {
 };
 
 /** A limit order with a specified price that will enter the order book if it is not immediately matched. */
-type Order = MarketOrder & {
+type LimitOrder = MarketOrder & {
   /** The price for the order expressed in units of the quote currency. */
   price: number;
+};
+
+/** Properties that can be used to uniquely identify and fetch an order within an order book. */
+export type OrderIdentifier = Pick<MarketOrder, 'pairId'> & {
+  /** The global identifier for this order on the XU network. */
+  id: string;
 };
 
 /** Properties that apply only to orders placed by the local xud. */
@@ -22,7 +28,7 @@ type Local = {
   /** A local identifier for the order. */
   localId: string;
   /** The amount of an order that is on hold pending swap exectuion. */
-  hold?: number;
+  hold: number;
 };
 
 /** Properties that apply only to orders placed by remote peers. */
@@ -31,50 +37,34 @@ type Remote = {
   peerPubKey: string;
 };
 
-/** Properties that uniquely identify an order and make it ready for sending to peers. */
-type Stamp = {
-  /** The global identifier for this order on the XU network. */
-  id: string;
-  /** Epoch timestamp when this order was created. */
+/** Properties that uniquely identify an order and make it ready to enter the order book. */
+type Stamp = OrderIdentifier & {
+  /** Epoch timestamp when this order was created locally. */
   createdAt: number;
+  /** The number of base currency tokens initially available for the order, before any actions such as trades reduced the available quantity. */
+  initialQuantity: number;
 };
 
 export type OwnMarketOrder = MarketOrder & Local;
 
-export type OwnOrder = Order & Local;
+export type OwnLimitOrder = LimitOrder & Local;
 
-export type StampedOwnOrder = OwnOrder & Stamp;
+export type OwnOrder = OwnLimitOrder & Stamp;
 
-export type StampedPeerOrder = Order & Remote & Stamp;
+export type PeerOrder = LimitOrder & Stamp & Remote;
 
-export type StampedOrder = StampedOwnOrder | StampedPeerOrder;
+export type Order = OwnOrder | PeerOrder;
 
-/** An outgoing version of a local own order without the localId and createdAt timestamp */
-export type OutgoingOrder = Pick<StampedOwnOrder, Exclude<keyof StampedOwnOrder, 'localId' | 'createdAt'>>;
+/** An outgoing version of a local own order without fields that are not useful for peers. */
+export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>>;
 
-/** Properties that can be used to uniquely identify and fetch an order within an order book. */
-export type OrderIdentifier = {
-  /** The global identifier for this order on the XU network. */
-  id: string;
-  pairId: string;
-};
+/** An outgoing version of a local own order without fields that are not useful for peers. */
+export type IncomingOrder = OutgoingOrder & Remote;
 
 /** A reference to a portion of an existing order. */
 export type OrderPortion = OrderIdentifier & {
   quantity: number;
   localId?: string;
-};
-
-export type SwapResult = {
-  orderId: string,
-  localId: string,
-  pairId: string,
-  quantity: number,
-  amountReceived: number;
-  amountSent: number;
-  r_hash: string;
-  peerPubKey: string;
-  role: SwapRole;
 };
 
 export type Currency = {
@@ -99,14 +89,10 @@ export type Pair = {
   quoteCurrency: string;
 };
 
-export function isOwnOrder(order: StampedOrder): order is StampedOwnOrder {
-  return (order as StampedPeerOrder).peerPubKey === undefined && typeof (order as StampedOwnOrder).localId === 'string';
+export function isOwnOrder(order: Order): order is OwnOrder {
+  return (order as PeerOrder).peerPubKey === undefined && typeof (order as OwnOrder).localId === 'string';
 }
 
-export function isStampedOwnOrder(order: OwnOrder): order is StampedOwnOrder {
-  return typeof (order as StampedOwnOrder).id === 'string' && typeof (order as StampedOwnOrder).createdAt === 'number';
-}
-
-export function isPeerOrder(order: StampedOrder): order is StampedPeerOrder {
-  return (order as StampedOwnOrder).localId === undefined && typeof (order as StampedPeerOrder).peerPubKey === 'string';
+export function isPeerOrder(order: Order): order is PeerOrder {
+  return (order as OwnOrder).localId === undefined && typeof (order as PeerOrder).peerPubKey === 'string';
 }

@@ -18,5 +18,5 @@ export const handler = (argv: Arguments) => {
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
-  loadXudClient(argv).channelBalance(request, callback);
+  loadXudClient(argv).channelBalance(request, callback(argv));
 };

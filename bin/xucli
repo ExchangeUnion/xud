@@ -27,6 +27,12 @@ require('yargs')
       describe: 'Path to the TLS certificate of xud',
       type: 'string',
     },
+    json: {
+      alias: 'j',
+      describe: 'Display output in json format',
+      type: 'boolean',
+      default: false,
+    },
   })
   .commandDir('../dist/cli/commands/', { recurse: true })
   .demandCommand(1, '')

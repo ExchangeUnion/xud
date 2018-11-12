@@ -7,5 +7,5 @@ export const command = 'getinfo';
 export const describe = 'get general info from the xud node';
 
 export const handler = (argv: Arguments) => {
-  loadXudClient(argv).getInfo(new GetInfoRequest(), callback);
+  loadXudClient(argv).getInfo(new GetInfoRequest(), callback(argv));
 };

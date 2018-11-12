@@ -5,6 +5,10 @@ import path from 'path';
 import grpc from 'grpc';
 import { XudClient } from '../proto/xudrpc_grpc_pb';
 
+/**
+ * A generic function to instantiate an XU client.
+ * @param argv the command line arguments
+ */
 export const loadXudClient = (argv: Arguments) => {
   const getXudDir = () => {
     switch (os.platform()) {
@@ -34,21 +38,19 @@ interface grpcResponse {
   toObject: Function;
 }
 
-/**
- * A generic function to instantiate an XU client, perform a command, and output the result to the
- * console.
- * @param argv the command line arguments
- * @param callback the callback function to perform a command
- */
-export const callback = (error: Error | null, response: grpcResponse) => {
-  if (error) {
-    console.error(`${error.name}: ${error.message}`);
-  } else {
-    const responseObj = response.toObject();
-    if (Object.keys(responseObj).length === 0) {
-      console.log('success');
+export const callback = (argv: Arguments, formatOutput?: Function) => {
+  return (error: Error | null, response: grpcResponse) => {
+    if (error) {
+      console.error(`${error.name}: ${error.message}`);
     } else {
-      console.log(JSON.stringify(responseObj, undefined, 2));
+      const responseObj = response.toObject();
+      if (Object.keys(responseObj).length === 0) {
+        console.log('success');
+      } else {
+        !argv.json && formatOutput
+          ? formatOutput(responseObj)
+          : console.log(JSON.stringify(responseObj, undefined, 2));
+      }
     }
-  }
+  };
 };
