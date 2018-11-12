@@ -21,7 +21,7 @@ const createOrder = (order: Order) => {
   grpcOrder.setCreatedAt(order.createdAt);
   grpcOrder.setId(order.id);
   if (isOwnOrder(order)) {
-    grpcOrder.setHold(order.hold ? order.hold : 0);
+    grpcOrder.setHold(order.hold);
     grpcOrder.setLocalId((order).localId);
     grpcOrder.setIsOwnOrder(true);
   } else {
