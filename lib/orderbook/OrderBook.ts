@@ -316,7 +316,7 @@ class OrderBook extends EventEmitter {
           await this.repository.addOrderIfNotExists(maker);
           const swapResult = await this.swaps.executeSwap(maker, taker);
           this.emit('peerOrder.filled', portion);
-          await this.repository.addOrdersIfNotExists([maker,taker])
+          await this.repository.addOrdersIfNotExists([maker, taker]);
           await this.persistTrade(swapResult.quantity, maker.id, taker.id);
           result.swapResults.push(swapResult);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
@@ -365,7 +365,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.repository.addOrdersIfNotExists([maker,taker]);
+      await this.repository.addOrdersIfNotExists([maker, taker]);
       await this.persistTrade(swapResult.quantity, maker.id, taker.id);
       return swapResult;
     } catch (err) {
