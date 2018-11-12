@@ -173,17 +173,65 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Checks if a swap for two given orders can be executed.
-   * @returns `true` if the swap can be executed, `false` otherwise
+   * Gets a client for the specified currency.
+   * @param currency the currency of the client
+   * @returns a client if found, otherwise undefined
    */
-  private verifyExecution = (maker: PeerOrder, taker: OwnOrder): boolean => {
+  private getClientForCurrency(currency: string): LndClient | undefined {
+    switch (currency) {
+      case 'BTC':
+        return this.lndBtcClient;
+        break;
+      case 'LTC':
+        return this.lndLtcClient;
+        break;
+      default:
+        return;
+    }
+  }
+
+  /**
+   * Gets routes for the given currency, amount and peerPubKey.
+   * @param currency currency/chain to find routes in
+   * @param amount the capacity of the route
+   * @param peerPubKey target node for the route
+   * @returns routes
+   */
+  private getRoutes =  async (currency: string, amount: number, peerPubKey: string): Promise<lndrpc.Route[]> => {
+    const client = this.getClientForCurrency(currency);
+    if (!client) throw new Error('swap client not found');
+    const req = new lndrpc.QueryRoutesRequest();
+    req.setAmt(amount);
+    req.setFinalCltvDelta(client.cltvDelta);
+    req.setNumRoutes(1);
+    const peer = this.pool.getPeer(peerPubKey);
+    const pubKey = peer.getLndPubKey(currency);
+    if (!pubKey) {
+      throw new Error(`${currency} client's pubKey not found for peer ${peerPubKey}`);
+    }
+    req.setPubKey(pubKey);
+    const routes = (await client.queryRoutes(req)).getRoutesList();
+    this.logger.debug(`got ${routes.length} routes to destination: ${routes}`);
+    return routes;
+  }
+
+  /**
+   * Checks if a swap for two given orders can be executed.
+   * @param maker maker order
+   * @param taker taker order
+   * @returns nothing if the swap can be executed, throws an error with a reason otherwise
+   */
+  private verifyExecution = async (maker: PeerOrder, taker: OwnOrder) => {
     if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
-      return false;
+      throw new Error('pairId does not match or pair is not supported');
     }
 
-    // TODO: check route to peer. Maybe there is no route or no capacity to send the amount
-
-    return true;
+    const { makerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
+    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy);
+    const routes = await this.getRoutes(makerCurrency, makerAmount, maker.peerPubKey);
+    if (routes.length === 0) {
+      throw new Error('Can not swap. unable to find route to destination');
+    }
   }
 
   /**
@@ -192,38 +240,30 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns A promise that is resolved once the swap is completed, or rejects otherwise
    */
-  public executeSwap = (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
-    return new Promise((resolve, reject) => {
-      if (!this.verifyExecution(maker, taker)) {
-        reject();
-        return;
-      }
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+    await this.verifyExecution(maker, taker);
+    const rHash = this.beginSwap(maker, taker);
+    if (!rHash) {
+      throw new Error('cannot execute swap. rHash not found');
+    }
 
+    return new Promise<SwapResult>((resolve, reject) => {
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
         this.removeListener('swap.failed', onFailed);
       };
-
       const onPaid = (swapResult: SwapResult) => {
         if (swapResult.rHash === rHash) {
           cleanup();
           resolve(swapResult);
         }
       };
-
       const onFailed = (deal: SwapDeal) => {
         if (deal.rHash === rHash) {
           cleanup();
           reject();
         }
       };
-
-      const rHash = this.beginSwap(maker, taker);
-      if (!rHash) {
-        reject();
-        return;
-      }
-
       this.on('swap.paid', onPaid);
       this.on('swap.failed', onFailed);
     });
@@ -345,41 +385,30 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    let lndclient: LndClient;
-    switch (deal.takerCurrency) {
-      case 'BTC':
-        lndclient = this.lndBtcClient;
-        break;
-      case 'LTC':
-        lndclient = this.lndLtcClient;
-        break;
-      default:
-        this.setDealState(deal, SwapState.Error, 'Can not swap. Unsupported taker currency.');
-        this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
-        return false;
-    }
-
-    let height: number;
+    let lndclient: LndClient | undefined;
     try {
-      const req = new lndrpc.QueryRoutesRequest();
-      req.setAmt(takerAmount);
-      req.setFinalCltvDelta(requestBody.takerCltvDelta);
-      req.setNumRoutes(1);
-      req.setPubKey(peer.getLndPubKey(takerCurrency)!);
-      const routes = await lndclient.queryRoutes(req);
-      deal.makerToTakerRoutes = routes.getRoutesList();
-      this.logger.debug('got ' + deal.makerToTakerRoutes.length + ' routes to destination: ' + deal.makerToTakerRoutes);
-      if (deal.makerToTakerRoutes.length === 0) {
-        this.setDealState(deal, SwapState.Error, 'Can not swap. unable to find route to destination.');
-        this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
-        return false;
-      }
-    } catch (err) {
-      this.setDealState(deal, SwapState.Error, 'Can not swap. unable to find route to destination: ' + err.message);
+      lndclient = this.getClientForCurrency(deal.takerCurrency);
+      if (!lndclient) throw new Error('swap client not found');
+    } catch {
+      this.setDealState(deal, SwapState.Error, 'Can not swap. Unsupported taker currency.');
       this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
       return false;
     }
 
+    try {
+      deal.makerToTakerRoutes = await this.getRoutes(deal.takerCurrency, takerAmount, deal.peerPubKey);
+      if (deal.makerToTakerRoutes.length === 0) throw new Error();
+    } catch (err) {
+      const cannotSwap = 'Can not swap. unable to find route to destination';
+      const errMsg = err && err.message
+        ? `${cannotSwap}.`
+        : `${cannotSwap}: ${err.message}`;
+      this.setDealState(deal, SwapState.Error, errMsg);
+      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      return false;
+    }
+
+    let height: number;
     try {
       const info = await lndclient.getInfo();
       height = info.getBlockHeight();
