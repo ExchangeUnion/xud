@@ -2,14 +2,14 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 
 // TODO: proper error handling
-export type SwapResponsePacketBody = {
-  r_hash: string;
+export type SwapAcceptedPacketBody = {
+  rHash: string;
   /** Specifies the accepted quantity (which may be less than the proposed quantity). */
   quantity: number;
   makerCltvDelta: number;
 };
 
-class SwapResponsePacket extends Packet<SwapResponsePacketBody> {
+class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
   public get type() {
     return PacketType.SwapResponse;
   }
@@ -19,4 +19,4 @@ class SwapResponsePacket extends Packet<SwapResponsePacketBody> {
   }
 }
 
-export default SwapResponsePacket;
+export default SwapAcceptedPacket;

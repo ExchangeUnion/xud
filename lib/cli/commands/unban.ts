@@ -22,5 +22,5 @@ export const handler = (argv: Arguments) => {
   const request = new UnbanRequest();
   request.setNodePubKey(argv.node_pub_key);
   request.setReconnect(argv.reconnect);
-  loadXudClient(argv).unban(request, callback);
+  loadXudClient(argv).unban(request, callback(argv));
 };

@@ -16,5 +16,18 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
 
   const Currency = sequelize.define<db.CurrencyInstance, db.CurrencyAttributes>('Currency', attributes, options);
 
+  Currency.associate = (models: Sequelize.Models) => {
+    models.Currency.hasMany(models.Pair, {
+      as: 'quoteCurrencies',
+      foreignKey: 'quoteCurrency',
+      constraints: true,
+    });
+    models.Currency.hasMany(models.Pair, {
+      as: 'baseCurrencies',
+      foreignKey: 'baseCurrency',
+      constraints: true,
+    });
+  };
+
   return Currency;
 };
