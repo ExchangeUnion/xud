@@ -521,14 +521,15 @@ class OrderBook extends EventEmitter {
   }
 
   public stampOwnOrder = (order: OwnLimitOrder): OwnOrder  => {
-    // verify localId isn't duplicated. generate one if it's blank
+    const id = uuidv1();
+    // verify localId isn't duplicated. use global id if blank
     if (order.localId === '') {
-      order.localId = uuidv1();
+      order.localId = id;
     } else if (this.localIdMap.has(order.localId)) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    return { ...order, initialQuantity: order.quantity, id: uuidv1(), createdAt: ms() };
+    return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
   }
 
   private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
