@@ -1,7 +1,5 @@
-import { SwapPhase, SwapRole, SwapState, ReputationEvent } from '../types/enums';
+import { SwapPhase, SwapRole, SwapState } from '../types/enums';
 import Peer from '../p2p/Peer';
-import P2PRepository from '../p2p/P2PRepository';
-import NodeList from '../p2p/NodeList';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
@@ -32,16 +30,12 @@ class Swaps extends EventEmitter {
   private deals = new Map<string, SwapDeal>();
   private usedHashes = new Set<string>();
   private swapRepository: SwapRepository;
-  private p2pRepository: P2PRepository;
-  private nodes: NodeList;
   /** The number of satoshis in a bitcoin. */
   private static readonly SATOSHIS_PER_COIN = 100000000;
 
   constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
     this.swapRepository = new SwapRepository(this.models);
-    this.p2pRepository = new P2PRepository(this.models);
-    this.nodes = new NodeList(this.p2pRepository);
     this.bind();
   }
 
@@ -441,11 +435,11 @@ class Swaps extends EventEmitter {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
         this.setDealState(deal, SwapState.Error, 'accepted quantity must be a positive number');
-        await this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure);
+        // TODO: penalize peer
         return;
       } else if (quantity > deal.proposedQuantity) {
         this.setDealState(deal, SwapState.Error, 'accepted quantity should not be greater than proposed quantity');
-        await this.nodes.addReputationEvent(peer.nodePubKey!, ReputationEvent.SwapFailure);
+        // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
         const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy);
