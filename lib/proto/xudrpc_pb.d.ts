@@ -1181,6 +1181,9 @@ export namespace ShutdownResponse {
 }
 
 export class SubscribeAddedOrdersRequest extends jspb.Message { 
+    getExisting(): boolean;
+    setExisting(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): SubscribeAddedOrdersRequest.AsObject;
@@ -1194,6 +1197,7 @@ export class SubscribeAddedOrdersRequest extends jspb.Message {
 
 export namespace SubscribeAddedOrdersRequest {
     export type AsObject = {
+        existing: boolean,
     }
 }
 

@@ -355,15 +355,20 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = (callback: (order: Order) => void) => {
-    this.orderBook.pairIds.forEach((pair) => {
-      const ownOrders = this.orderBook.getOwnOrders(pair);
-      const peerOrders = this.orderBook.getPeersOrders(pair);
-      const orders = [...ownOrders.buy, ...ownOrders.sell, ...peerOrders.buy, ...peerOrders.sell];
-      orders.forEach(order => callback(order));
-    });
-    this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('ownOrder.added', order => callback(order));
+  public subscribeAddedOrders = (args: { existing: boolean }, callback: (order: Order) => void) => {
+    if (args.existing) {
+      this.orderBook.pairIds.forEach((pair) => {
+        const ownOrders = this.orderBook.getOwnOrders(pair);
+        const peerOrders = this.orderBook.getPeersOrders(pair);
+        ownOrders.buy.forEach(callback);
+        peerOrders.buy.forEach(callback);
+        ownOrders.sell.forEach(callback);
+        peerOrders.sell.forEach(callback);
+      });
+    }
+
+    this.orderBook.on('peerOrder.incoming', callback);
+    this.orderBook.on('ownOrder.added', callback);
   }
 
   /**

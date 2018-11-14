@@ -500,7 +500,9 @@ message RemovePairResponse {}
 message ShutdownRequest {}
 message ShutdownResponse {}
 
-message SubscribeAddedOrdersRequest {}
+message SubscribeAddedOrdersRequest {
+  bool existing = 1 [json_name = "existing"];
+}
 
 message SubscribeRemovedOrdersRequest {}
 
