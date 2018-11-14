@@ -57,3 +57,15 @@ export enum SwapFailureReason {
   /** The swap request contained invalid data. */
   InvalidSwapRequest,
 }
+
+export enum DisconnectionReason {
+  ResponseStalling,
+  IncompatibleProtocolVersion,
+  UnexpectedIdentity,
+  ForbiddenIdentityUpdate,
+  ConnectedToSelf,
+  NotAcceptingConnections,
+  Banned,
+  AlreadyConnected,
+  Shutdown,
+}

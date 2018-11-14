@@ -2,20 +2,21 @@ import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
-import NodeList from './NodeList';
+import NodeList, { reputationEventWeight } from './NodeList';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, PeerOrder, IncomingOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent } from '../types/enums';
-import { DisconnectingPacketBody, DisconnectionReason } from './packets/types/DisconnectingPacket';
+import { ReputationEvent, DisconnectionReason } from '../types/enums';
+import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
+import { db } from '../types';
 
 type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
@@ -188,12 +189,13 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey, events) => {
+    this.nodes.on('node.ban', (nodePubKey: string, events: db.ReputationEventInstance[]) => {
       this.logger.warn(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        peer.close({ reason: DisconnectionReason.Banned, payload: JSON.stringify(events) });
+        const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
+        peer.close({ reason: DisconnectionReason.Banned, payload: JSON.stringify(lastNegativeEvents) });
       }
     });
   }
@@ -553,7 +555,7 @@ class Pool extends EventEmitter {
   private handleOpen = async (peer: Peer): Promise<void> => {
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      peer.close({ reason: DisconnectionReason.NotReadyForConnections });
+      peer.close({ reason: DisconnectionReason.NotAcceptingConnections });
       return;
     }
     if (peer.nodePubKey === this.handshakeData.nodePubKey) {

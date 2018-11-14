@@ -10,7 +10,8 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { DisconnectionReason, DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
+import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
+import { DisconnectionReason } from '../types/enums';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {

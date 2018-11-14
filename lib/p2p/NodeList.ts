@@ -6,7 +6,7 @@ import addressUtils from '../utils/addressUtils';
 import { ReputationEvent } from '../types/enums';
 import { db } from '../types';
 
-const reputationEventWeight = {
+export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
   [ReputationEvent.ManualUnban]: 0,
   [ReputationEvent.PacketTimeout]: -1,
