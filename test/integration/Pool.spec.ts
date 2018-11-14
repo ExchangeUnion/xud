@@ -10,11 +10,11 @@ import { Address } from '../../lib/types/p2p';
 
 chai.use(chaiAsPromised);
 
-describe('P2P Pool Tests', () => {
+describe('P2P Pool Tests', async () => {
   let db: DB;
   let pool: Pool;
   const loggers = Logger.createLoggers(Level.Warn);
-  const nodePubKeyOne = NodeKey['generate']().nodePubKey;
+  const nodePubKeyOne = (await NodeKey['generate']()).nodePubKey;
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {
     const peer = new Peer(loggers.p2p, addresses[0]);

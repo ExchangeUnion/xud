@@ -1,10 +1,10 @@
-import fs from 'fs';
 import path from 'path';
 import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import { db } from '../types';
 import { SwapClients } from '../types/enums';
+import { exists, readdir } from '../utils/fsUtils';
 
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
@@ -19,7 +19,7 @@ type Models = {
 /** A class representing a connection to a SQL database. */
 class DB {
   public sequelize: Sequelize.Sequelize;
-  public models: Models;
+  public models!: Models;
 
   /**
    * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
@@ -31,7 +31,6 @@ class DB {
       dialect: 'sqlite',
       operatorsAliases: false,
     });
-    this.models = this.loadModels();
   }
 
   /**
@@ -39,7 +38,8 @@ class DB {
    * @param initDb whether to intialize a new database with default values if no database exists
    */
   public init = async (initDb = false): Promise<void> => {
-    const newDb = !this.storage || !fs.existsSync(this.storage);
+    this.models = await this.loadModels();
+    const newDb = !this.storage || !(await exists(this.storage));
     try {
       await this.sequelize.authenticate();
       this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
@@ -110,10 +110,10 @@ class DB {
     return this.sequelize.drop();
   }
 
-  private loadModels = (): Models => {
+  private loadModels = async (): Promise<Models> => {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
-    fs.readdirSync(modelsFolder)
+    (await readdir(modelsFolder))
       .filter(file => (file.indexOf('.') !== 0) && (file !== path.basename(__filename)) && (file.slice(-3).match(/.js|.ts/)))
       .forEach((file) => {
         const model = this.sequelize.import(path.join(modelsFolder, file));
