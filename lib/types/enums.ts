@@ -47,6 +47,9 @@ export enum ReputationEvent {
   PacketTimeout = 2,
   SwapFailure = 3,
   SwapSuccess = 4,
+  UnparseableMessage = 5,
+  InvalidMessage = 6,
+  UnknownPacketType = 7,
 }
 
 export enum SwapFailureReason {

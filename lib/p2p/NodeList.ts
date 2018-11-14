@@ -12,6 +12,9 @@ export const reputationEventWeight = {
   [ReputationEvent.PacketTimeout]: -1,
   [ReputationEvent.SwapFailure]: -10,
   [ReputationEvent.SwapSuccess]: 1,
+  [ReputationEvent.InvalidMessage]: -10,
+  [ReputationEvent.UnknownPacketType]: -20,
+  [ReputationEvent.UnparseableMessage]: -10,
 };
 
 // TODO: inform node about getting banned

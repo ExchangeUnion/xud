@@ -490,7 +490,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.OrderInvalidation: {
         const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
+        this.logger.verbose(`received order invalidation from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
         this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
         break;
       }
@@ -655,13 +655,10 @@ class Pool extends EventEmitter {
       this.emit('peer.close', peer);
     });
 
-    peer.once('ban', async () => {
-      this.logger.debug(`Banning peer (${peer.nodePubKey})`);
+    peer.once('reputation', async (event) => {
+      this.logger.debug(`Peer (${peer.nodePubKey}), received reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        await this.nodes.ban(peer.nodePubKey);
-      }
-      if (peer.connected) {
-        peer.close({ reason: DisconnectionReason.Banned });
+        await this.nodes.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }
