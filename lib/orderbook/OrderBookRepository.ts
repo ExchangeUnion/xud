@@ -50,18 +50,13 @@ class OrderbookRepository {
    * @param orders array of orders to persist
    */
   public addOrdersIfNotExists = async (orders: db.OrderFactory[]) => {
-    const ordersToAdd: OrderAttributes[] = [];
+    const ordersToAdd: Promise<void>[] = [];
 
-    await Bluebird.Promise.each(orders, async (order) => {
-      const count = await this.models.Order.count({
-        where: { id: order.id },
-      });
-      if (count === 0) {
-        ordersToAdd.push(order as OrderAttributes);
-      }
+    await Bluebird.Promise.each(orders, (order) => {
+      ordersToAdd.push(this.addOrderIfNotExists(order));
     });
 
-    await this.models.Order.bulkCreate(ordersToAdd);
+    await Promise.all(ordersToAdd);
   }
 
   public addTrade = async (trade: db.TradeFactory) => {

@@ -1,4 +1,4 @@
-import assert, { throws } from 'assert';
+import assert from 'assert';
 import uuidv1 from 'uuid/v1';
 import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
@@ -17,6 +17,7 @@ import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult } from 'lib/swaps/types';
+import { Order } from 'lib/proto/xudrpc_pb';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -300,8 +301,7 @@ class OrderBook extends EventEmitter {
         portion.localId = maker.localId;
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
-        await this.repository.addOrdersIfNotExists([maker, taker]);
-        await this.persistTrade(portion.quantity, maker.id, taker.id);
+        await this.persistTrade(portion.quantity, maker, taker);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
         if (!this.swaps) {
@@ -316,8 +316,7 @@ class OrderBook extends EventEmitter {
           await this.repository.addOrderIfNotExists(maker);
           const swapResult = await this.swaps.executeSwap(maker, taker);
           this.emit('peerOrder.filled', portion);
-          await this.repository.addOrdersIfNotExists([maker, taker]);
-          await this.persistTrade(swapResult.quantity, maker.id, taker.id);
+          await this.persistTrade(swapResult.quantity, maker, taker);
           result.swapResults.push(swapResult);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
@@ -365,8 +364,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.repository.addOrdersIfNotExists([maker, taker]);
-      await this.persistTrade(swapResult.quantity, maker.id, taker.id);
+      await this.persistTrade(swapResult.quantity, maker, taker);
       return swapResult;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
@@ -393,10 +391,11 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  private persistTrade = async (quantity: number, makerOrderId: string, takerOrderId: string) => {
+  private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
+    await this.repository.addOrdersIfNotExists([makerOrder, takerOrder]);
     await this.repository.addTrade({
-      makerOrderId,
-      takerOrderId,
+      makerOrderId: makerOrder.id,
+      takerOrderId: takerOrder.id,
       quantity,
     });
   }
