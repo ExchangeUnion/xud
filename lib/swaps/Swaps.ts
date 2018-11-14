@@ -304,7 +304,11 @@ class Swaps extends EventEmitter {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
     // TODO: multi route support (currently only 1)
-    // TODO: check to make sure we don't already have a deal for the requested payment hash
+
+    if (this.usedHashes.has(requestPacket.body!.rHash)) {
+      this.sendErrorToPeer(peer, requestPacket.body!.rHash, 'this rHash already exists', requestPacket.header.id);
+      return false;
+    }
     const requestBody = requestPacket.body!;
 
     const { quantity, price, isBuy } = orderToAccept;
