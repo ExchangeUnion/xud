@@ -392,7 +392,7 @@ class OrderBook extends EventEmitter {
   }
 
   private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
-    await this.repository.addOrdersIfNotExists([makerOrder, takerOrder]);
+    await Promise.all([this.repository.addOrderIfNotExists(makerOrder), this.repository.addOrderIfNotExists(takerOrder)]);
     await this.repository.addTrade({
       quantity,
       makerOrderId: makerOrder.id,

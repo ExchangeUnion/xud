@@ -45,20 +45,6 @@ class OrderbookRepository {
     }
   }
 
-  /**
-   * Only persist multiple orders if they don't exists.
-   * @param orders array of orders to persist
-   */
-  public addOrdersIfNotExists = async (orders: db.OrderFactory[]) => {
-    const ordersToAdd: Promise<void>[] = [];
-
-    await Bluebird.Promise.each(orders, (order) => {
-      ordersToAdd.push(this.addOrderIfNotExists(order));
-    });
-
-    await Promise.all(ordersToAdd);
-  }
-
   public addTrade = async (trade: db.TradeFactory) => {
     await this.models.Trade.create(trade);
   }
