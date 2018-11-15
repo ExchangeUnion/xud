@@ -500,6 +500,7 @@
 | created_at | [int64](#int64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
+| hold | [double](#double) |  | The amount on hold pending swap exectuion. |
 
 
 
