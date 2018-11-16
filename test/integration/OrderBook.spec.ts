@@ -210,6 +210,48 @@ describe('nomatching OrderBook', () => {
     expect(() => orderBook['removeOwnOrder'](remainingOrder!.id, order.pairId, 1)).to.throw;
   });
 
+  describe('stampOwnOrder', () => {
+    const ownOrder = () => {
+      return {
+        pairId: 'LTC/BTC',
+        price: 0.008,
+        quantity: 0.00001,
+        isBuy: false,
+        localId: '',
+        hold: 0,
+      };
+    };
+
+    it('has the same id and localId when localId not provided', async () => {
+      const stampedOrder = orderBook['stampOwnOrder'](ownOrder());
+      expect(stampedOrder.id).to.equal(stampedOrder.localId);
+    });
+
+    it('has the provided localId', async () => {
+      const ownOrderWithLocalId = {
+        ...ownOrder(),
+        localId: uuidv1(),
+      };
+      const stampedOrder = orderBook['stampOwnOrder'](ownOrderWithLocalId);
+      expect(stampedOrder.id).to.not.equal(stampedOrder.localId);
+      expect(stampedOrder.localId).to.equal(ownOrderWithLocalId.localId);
+    });
+
+    it('throws an error when duplicate localId exists', async () => {
+      const ownOrderWithLocalId = {
+        ...ownOrder(),
+        localId: uuidv1(),
+      };
+      orderBook['localIdMap'].set(ownOrderWithLocalId.localId, {
+        id: ownOrderWithLocalId.localId,
+        pairId: ownOrderWithLocalId.pairId,
+      });
+      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId))
+        .to.throw(`order with local id ${ownOrderWithLocalId.localId} already exists`);
+    });
+
+  });
+
   after(async () => {
     await db.close();
   });
