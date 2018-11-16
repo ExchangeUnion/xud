@@ -20,6 +20,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121316403,
                 side: 0,
                 isOwnOrder: true,
+                hold: 0,
               },
               {
                 price: 0.00321,
@@ -31,6 +32,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121316949,
                 side: 0,
                 isOwnOrder: true,
+                hold: 0,
               },
             ],
             sellOrdersList: [
@@ -44,6 +46,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121315487,
                 side: 1,
                 isOwnOrder: false,
+                hold: 0,
               },
               {
                 price: 0.00859,
@@ -55,6 +58,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121315669,
                 side: 1,
                 isOwnOrder: false,
+                hold: 0,
               },
               {
                 price: 0.00458,
@@ -66,6 +70,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121317316,
                 side: 1,
                 isOwnOrder: false,
+                hold: 0,
               },
               {
                 price: 0.00725,
@@ -77,6 +82,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121317133,
                 side: 1,
                 isOwnOrder: false,
+                hold: 0,
               },
               {
                 price: 0.00458,
@@ -88,6 +94,7 @@ describe('Command.getorders.formatOrders', () => {
                 createdAt: 1542121317502,
                 side: 1,
                 isOwnOrder: false,
+                hold: 0,
               },
             ],
           },
