@@ -17,7 +17,6 @@ import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult } from 'lib/swaps/types';
-import { Order } from 'lib/proto/xudrpc_pb';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
