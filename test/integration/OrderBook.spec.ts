@@ -79,7 +79,7 @@ describe('OrderBook', () => {
     return;
   };
 
-  it('should have pairs and matchingEngines equivalent loaded', () => {
+  it('should have trading pairs loaded', () => {
     orderBook.pairs.forEach((pair) => {
       expect(orderBook.tradingPairs).to.have.key(pair.id);
     });
