@@ -1,5 +1,6 @@
 import { SwapPhase, SwapRole, SwapState } from '../types/enums';
 import Peer from '../p2p/Peer';
+import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
 import { createHash, randomBytes } from 'crypto';
 import Logger from '../Logger';
@@ -10,7 +11,6 @@ import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../types/orders';
 import assert from 'assert';
-import { Models } from '../db/DB';
 import { SwapDealInstance } from 'lib/types/db';
 import { SwapDeal, SwapResult } from './types';
 
@@ -30,7 +30,6 @@ class Swaps extends EventEmitter {
   private deals = new Map<string, SwapDeal>();
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
-
   /** The number of satoshis in a bitcoin. */
   private static readonly SATOSHIS_PER_COIN = 100000000;
 
@@ -468,15 +467,17 @@ class Swaps extends EventEmitter {
     if (quantity) {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
-        // TODO: accepted quantity must be a positive number, abort deal and penalize peer
+        this.setDealState(deal, SwapState.Error, 'accepted quantity must be a positive number');
+        // TODO: penalize peer
+        return;
       } else if (quantity > deal.proposedQuantity) {
-        // TODO: accepted quantity should not be greater than proposed quantity, abort deal and penalize peer
+        this.setDealState(deal, SwapState.Error, 'accepted quantity should not be greater than proposed quantity');
+        // TODO: penalize peer
+        return;
       } else if (quantity < deal.proposedQuantity) {
-        // TODO: handle partial acceptance
-        // the maker accepted only part of our swap request, adjust the deal amounts
-        // const { takerAmount, makerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price);
-        // deal.takerAmount = takerAmount;
-        // deal.makerAmount = makerAmount;
+        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy);
+        deal.takerAmount = takerAmount;
+        deal.makerAmount = makerAmount;
       }
     }
 
