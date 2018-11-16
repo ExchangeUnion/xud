@@ -7,7 +7,7 @@ class SwapRepository {
   constructor(private models: Models) {}
 
   public getSwapDeals = (): Bluebird<db.SwapDealInstance[]> => {
-    return this.models.SwapDeal.findAll();
+    return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
   }
 
   public getSwapDeal = async (rHash: string): Promise<db.SwapDealInstance | null> => {
@@ -15,6 +15,7 @@ class SwapRepository {
       where: {
         rHash,
       },
+      include: [this.models.Node, this.models.Order],
     });
   }
 

@@ -37,7 +37,7 @@ class OrderbookRepository {
       where: { id: order.id },
     });
     if (count === 0) {
-      await this.models.Order.create(order as OrderAttributes);
+      await this.models.Order.create(order);
     }
   }
 }

@@ -9,6 +9,12 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     phase: { type: DataTypes.TINYINT, allowNull: false },
     errorReason: { type: DataTypes.STRING, allowNull: true },
     rPreimage: { type: DataTypes.STRING, allowNull: true },
+    peerPubKey: {
+      type: DataTypes.VIRTUAL,
+      get(this: db.SwapDealInstance) {
+        return this.Node ? this.Node.nodePubKey : undefined;
+      },
+    },
     nodeId: { type: DataTypes.INTEGER, allowNull: false },
     orderId: { type: DataTypes.STRING, allowNull: false },
     localId: { type: DataTypes.STRING, allowNull: false },
