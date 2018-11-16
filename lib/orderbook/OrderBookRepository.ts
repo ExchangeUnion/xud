@@ -32,6 +32,10 @@ class OrderbookRepository {
     return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
   }
 
+  /**
+   * Only persist order if it doesn't exists.
+   * @param order order to persist
+   */
   public addOrderIfNotExists = async (order: db.OrderFactory) => {
     const count = await this.models.Order.count({
       where: { id: order.id },
@@ -39,6 +43,10 @@ class OrderbookRepository {
     if (count === 0) {
       await this.models.Order.create(order);
     }
+  }
+
+  public addTrade = async (trade: db.TradeFactory) => {
+    await this.models.Trade.create(trade);
   }
 }
 

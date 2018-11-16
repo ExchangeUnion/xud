@@ -301,6 +301,7 @@ class OrderBook extends EventEmitter {
         portion.localId = maker.localId;
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
+        await this.persistTrade(portion.quantity, maker, taker);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
         if (!this.swaps) {
@@ -316,6 +317,7 @@ class OrderBook extends EventEmitter {
           this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
           const swapResult = await this.swaps.executeSwap(maker, taker);
           this.emit('peerOrder.filled', portion);
+          await this.persistTrade(swapResult.quantity, maker, taker);
           result.swapResults.push(swapResult);
           this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
@@ -366,6 +368,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
+      await this.persistTrade(swapResult.quantity, maker, taker);
       return swapResult;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
@@ -389,6 +392,15 @@ class OrderBook extends EventEmitter {
 
     this.broadcastOrder(order);
     return true;
+  }
+
+  private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
+    await Promise.all([this.repository.addOrderIfNotExists(makerOrder), this.repository.addOrderIfNotExists(takerOrder)]);
+    await this.repository.addTrade({
+      quantity,
+      makerOrderId: makerOrder.id,
+      takerOrderId: takerOrder.id,
+    });
   }
 
   /**
