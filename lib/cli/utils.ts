@@ -105,3 +105,22 @@ const formatRemainingOrder = (order: Order.AsObject) => {
 };
 
 const getBaseCurrency = (pairId: string) => pairId.substring(0, pairId.indexOf('/'));
+
+/**
+ * Sorts orders based on the price.
+ * Buy orders are sorted by highest price first.
+ * Sell orders are sorted by lowest price first.
+ * Given equal price the oldest order will take precedence.
+ * @param orderSide orders to sort
+ * @param isBuy indicates whether we're dealing with buy or sell order
+ */
+export const sortOrders = (orderSide: Order.AsObject[], isBuy: boolean) => {
+  return orderSide.sort((a, b) => {
+    if (a.price === b.price) {
+      return a.createdAt - b.createdAt;
+    }
+    return isBuy
+      ? a.price - b.price
+      : b.price - a.price;
+  });
+};

@@ -3,6 +3,7 @@ import { callback, loadXudClient } from '../command';
 import { GetOrdersRequest, GetOrdersResponse, Order, OrderSide } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { sortOrders } from '../utils';
 
 type FormattedTradingPairOrders = {
   pairId: string,
@@ -64,17 +65,6 @@ const createTable = () => {
   table.push(HEADER);
   table.push(SECONDARY_HEADER);
   return table;
-};
-
-const sortOrders = (orderSide: Order.AsObject[], isBuy: boolean) => {
-  return orderSide.sort((a, b) => {
-    if (a.price === b.price) {
-      return a.createdAt - b.createdAt;
-    }
-    return isBuy
-      ? a.price - b.price
-      : b.price - a.price;
-  });
 };
 
 const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
