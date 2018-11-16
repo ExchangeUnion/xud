@@ -175,3 +175,14 @@ export const isPlainObject = (obj: any) => {
 
 /** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
 export const randomBytes = promisify(crypto.randomBytes);
+
+/**
+ * Format a number using fixed-point notation.
+ * @param num a number to perform the operation on
+ * @param digits number of digits to appear after the decimal point
+ */
+export const toFixed = (num: number, digits = 8) => {
+  const exp = 10 ** digits;
+  // Number.prototype.toFixed() performs worse than Math.round.
+  return Math.round(num * exp) / exp;
+};
