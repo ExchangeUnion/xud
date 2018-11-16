@@ -1,120 +1,39 @@
 import { expect } from 'chai';
 import { formatOrders } from '../../lib/cli/commands/getorders';
 import { GetOrdersResponse } from '../../lib/proto/xudrpc_pb';
+import { createOrdersResponse } from '../factories';
+import colors from 'colors/safe';
 
 describe('Command.getorders.formatOrders', () => {
   it('should flatten, format and sort orders', () => {
-    const jsonOrders: GetOrdersResponse.AsObject = {
-      ordersMap: [
-        [
-          'LTC/BTC',
-          {
-            buyOrdersList: [
-              {
-                price: 0.004321,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '10270831-e755-11e8-a96e-13e8282e2780',
-                peerPubKey: '',
-                localId: '10270830-e755-11e8-a96e-13e8282e2780',
-                createdAt: 1542121316403,
-                side: 0,
-                isOwnOrder: true,
-                hold: 0,
-              },
-              {
-                price: 0.00321,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '107a5851-e755-11e8-a96e-13e8282e2780',
-                peerPubKey: '',
-                localId: '107a5850-e755-11e8-a96e-13e8282e2780',
-                createdAt: 1542121316949,
-                side: 0,
-                isOwnOrder: true,
-                hold: 0,
-              },
-            ],
-            sellOrdersList: [
-              {
-                price: 0.00832,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '0f9af4d1-e755-11e8-8145-13a272c3a58d',
-                peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-                localId: '',
-                createdAt: 1542121315487,
-                side: 1,
-                isOwnOrder: false,
-                hold: 0,
-              },
-              {
-                price: 0.00859,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '0fb6e141-e755-11e8-8145-13a272c3a58d',
-                peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-                localId: '',
-                createdAt: 1542121315669,
-                side: 1,
-                isOwnOrder: false,
-                hold: 0,
-              },
-              {
-                price: 0.00458,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '10b23131-e755-11e8-8145-13a272c3a58d',
-                peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-                localId: '',
-                createdAt: 1542121317316,
-                side: 1,
-                isOwnOrder: false,
-                hold: 0,
-              },
-              {
-                price: 0.00725,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '109644c1-e755-11e8-8145-13a272c3a58d',
-                peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-                localId: '',
-                createdAt: 1542121317133,
-                side: 1,
-                isOwnOrder: false,
-                hold: 0,
-              },
-              {
-                price: 0.00458,
-                quantity: 1e-8,
-                pairId: 'LTC/BTC',
-                id: '10ce92d1-e755-11e8-8145-13a272c3a58d',
-                peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-                localId: '',
-                createdAt: 1542121317502,
-                side: 1,
-                isOwnOrder: false,
-                hold: 0,
-              },
-            ],
-          },
-        ],
-      ],
-    };
+    const BUY_ORDERS_COUNT = 5;
+    const SELL_ORDERS_COUNT = 3;
+    const jsonOrders: GetOrdersResponse.AsObject = createOrdersResponse(
+      BUY_ORDERS_COUNT,
+      SELL_ORDERS_COUNT,
+    );
     const output = formatOrders(jsonOrders);
+    const BUY_PRICE_INDEX = 1;
+    const SELL_PRICE_INDEX = 4;
+    // Shows 1 trading pair
     expect(output.length).to.equal(1);
     expect(output[0].pairId).to.equal('LTC/BTC');
-    const expectedFirstRow = [
-      '\u001b[36m0.00000001\u001b[39m',
-      '\u001b[36m0.004321\u001b[39m',
-      '\u001b[36mX\u001b[39m',
-      '0.00000001',
-      '0.00458',
-      '',
-    ];
-    const expectedLastRow = ['', '', '', '0.00000001', '0.00859', ''];
-    expect(output[0].orders.length).to.equal(5);
-    expect(output[0].orders[0]).to.deep.equal(expectedFirstRow);
-    expect(output[0].orders[4]).to.deep.equal(expectedLastRow);
+    // Total of 5 rows
+    const expectedRowCount = BUY_ORDERS_COUNT > SELL_ORDERS_COUNT
+      ? BUY_ORDERS_COUNT
+      : SELL_ORDERS_COUNT;
+    expect(output[0].orders.length).to.equal(expectedRowCount);
+    // Own orders are drawn in cyan
+    const firstBuyFormatted = output[0].orders[0][BUY_PRICE_INDEX];
+    const COLOR_CYAN = '\u001b[36m';
+    expect(firstBuyFormatted).to.include(COLOR_CYAN);
+    // Buy orders are sorted by highest price first
+    const firstBuyPrice = parseFloat(colors.strip(firstBuyFormatted));
+    const secondBuyPrice = parseFloat(colors.strip(output[0].orders[1][BUY_PRICE_INDEX]));
+    expect(firstBuyPrice >= secondBuyPrice).to.equal(true);
+    // Sell orders are sorted by lowest price first
+    const firstSellPrice = parseFloat(colors.strip(output[0].orders[0][SELL_PRICE_INDEX]));
+    const secondSellPrice = parseFloat(colors.strip(output[0].orders[1][SELL_PRICE_INDEX]));
+    expect(firstSellPrice <= secondSellPrice).to.equal(true);
   });
 });
