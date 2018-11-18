@@ -1,8 +1,8 @@
-import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
+import { exists, mkdir, readFile } from './utils/fsUtils';
 import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
@@ -102,7 +102,7 @@ class Config {
     };
   }
 
-  public load(args?: { [argName: string]: any }): Config {
+  public load = async (args?: { [argName: string]: any }): Promise<Config> => {
     if (args) {
       if (args.xudir) {
         this.updateDefaultPaths(args.xudir);
@@ -112,10 +112,10 @@ class Config {
       }
     }
     const configPath = path.join(this.xudir, 'xud.conf');
-    if (!fs.existsSync(this.xudir)) {
-      fs.mkdirSync(this.xudir);
-    } else if (fs.existsSync(configPath)) {
-      const configText = fs.readFileSync(configPath, 'utf8');
+    if (!(await exists(this.xudir))) {
+      await mkdir(this.xudir);
+    } else if (await exists(configPath)) {
+      const configText = await readFile(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
 
@@ -149,16 +149,16 @@ class Config {
       this.loglevel = this.getDefaultLogLevel();
     }
 
-    this.createLogDir(this.logpath);
+    await this.createLogDir(this.logpath);
 
     return this;
   }
 
-  private createLogDir = (logPath: string) => {
+  private createLogDir = async (logPath: string) => {
     const dir = path.dirname(logPath);
 
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
+    if (!(await exists(dir))) {
+      await mkdir(dir);
     }
   }
 

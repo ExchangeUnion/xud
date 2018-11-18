@@ -2,7 +2,7 @@ import { SwapPhase, SwapRole, SwapState } from '../types/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
-import { createHash, randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 import Logger from '../Logger';
 import * as lndrpc from '../proto/lndrpc_pb';
 import LndClient from '../lndclient/LndClient';
@@ -11,8 +11,9 @@ import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../types/orders';
 import assert from 'assert';
-import { SwapDealInstance } from 'lib/types/db';
+import { SwapDealInstance } from '../types/db';
 import { SwapDeal, SwapResult } from './types';
+import { randomBytes } from '../utils/utils';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -241,7 +242,7 @@ class Swaps extends EventEmitter {
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
     await this.verifyExecution(maker, taker);
-    const rHash = this.beginSwap(maker, taker);
+    const rHash = await this.beginSwap(maker, taker);
     if (!rHash) {
       throw new Error('cannot execute swap. rHash not found');
     }
@@ -274,7 +275,7 @@ class Swaps extends EventEmitter {
    * @param taker Our local taker order
    * @returns The rHash for the swap, or `undefined` if the swap could not be initiated
    */
-  private beginSwap = (maker: PeerOrder, taker: OwnOrder) => {
+  private beginSwap = async (maker: PeerOrder, taker: OwnOrder) => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
@@ -291,7 +292,7 @@ class Swaps extends EventEmitter {
         takerCltvDelta = this.lndLtcClient.cltvDelta;
         break;
     }
-    const preimage = randomBytes(32);
+    const preimage = await randomBytes(32);
 
     const swapRequestBody: packets.SwapRequestPacketBody = {
       takerCltvDelta,

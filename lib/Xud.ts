@@ -13,7 +13,6 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
-import { Network } from './types/enums';
 
 const version: string = require('../package.json').version;
 
@@ -58,29 +57,27 @@ class Xud extends EventEmitter {
    * @param args optional arguments to override configuration parameters.
    */
   public start = async (args?: { [argName: string]: any }) => {
-    this.config.load(args);
+    await this.config.load(args);
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid);
     this.logger = loggers.global;
     this.logger.info('config loaded');
 
     try {
+      const initPromises: Promise<any>[] = [];
       // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      this.nodeKey = NodeKey.load(this.config.xudir, this.config.instanceid);
-      this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
+      initPromises.push(NodeKey.load(this.config.xudir, this.config.instanceid));
 
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.initdb);
 
-      const initPromises: Promise<void>[] = [];
-
       // setup LND clients and connect if configured
       this.lndbtcClient = new LndClient(this.config.lndbtc, loggers.lnd);
       if (!this.lndbtcClient.isDisabled()) {
-        initPromises.push(this.lndbtcClient.verifyConnection());
+        initPromises.push(this.lndbtcClient.init());
       }
       this.lndltcClient = new LndClient(this.config.lndltc, loggers.lnd);
       if (!this.lndltcClient.isDisabled()) {
-        initPromises.push(this.lndltcClient.verifyConnection());
+        initPromises.push(this.lndltcClient.init());
       }
 
       // setup raiden client and connect if configured
@@ -98,7 +95,9 @@ class Xud extends EventEmitter {
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
-      await Promise.all(initPromises);
+      const initPromisesResults = await Promise.all(initPromises);
+      this.nodeKey = initPromisesResults[0]; // the first init promise in the array was NodeKey.load
+      this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init({
@@ -124,7 +123,7 @@ class Xud extends EventEmitter {
       // start rpc server last
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
-        const listening = this.rpcServer.listen(
+        const listening = await this.rpcServer.listen(
           this.config.rpc.port,
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
