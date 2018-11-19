@@ -72,37 +72,36 @@ class LndClient extends BaseClient {
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    let shouldEnable = true;
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
+    let shouldDisable = disable;
 
-    if (disable) {
-      shouldEnable = false;
-    }
     if (!(await exists(certpath))) {
       this.logger.error('could not find lnd certificate, is lnd installed?');
-      shouldEnable = false;
+      shouldDisable = true;
     }
     if (!nomacaroons && !(await exists(macaroonpath))) {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
-      shouldEnable = false;
+      shouldDisable = true;
     }
-    if (shouldEnable) {
-      assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
-      this.uri = `${host}:${port}`;
-      const lndCert = await readFile(certpath);
-      this.credentials = grpc.credentials.createSsl(lndCert);
+    if (shouldDisable) {
+      return;
+    }
 
-      this.meta = new grpc.Metadata();
-      if (!nomacaroons) {
-        const adminMacaroon = await readFile(macaroonpath);
-        this.meta.add('macaroon', adminMacaroon.toString('hex'));
-      } else {
-        this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
-      }
-      // set status as disconnected until we can verify the connection
-      this.setStatus(ClientStatus.Disconnected);
-      await this.verifyConnection();
+    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
+    this.uri = `${host}:${port}`;
+    const lndCert = await readFile(certpath);
+    this.credentials = grpc.credentials.createSsl(lndCert);
+
+    this.meta = new grpc.Metadata();
+    if (!nomacaroons) {
+      const adminMacaroon = await readFile(macaroonpath);
+      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+    } else {
+      this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
     }
+    // set status as disconnected until we can verify the connection
+    this.setStatus(ClientStatus.Disconnected);
+    return this.verifyConnection();
   }
 
   public get pubKey() {

@@ -112,8 +112,8 @@ class RaidenClient extends BaseClient {
     this.port = port;
     this.host = host;
 
-    if (!disable) {
-      this.setStatus(ClientStatus.Disconnected);
+    if (disable) {
+      this.setStatus(ClientStatus.Disabled);
     }
   }
 
