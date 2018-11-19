@@ -70,15 +70,11 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.initdb);
 
-      // setup LND clients and connect if configured
+      // setup LND clients and initialize
       this.lndbtcClient = new LndClient(this.config.lndbtc, loggers.lnd);
-      if (!this.lndbtcClient.isDisabled()) {
-        initPromises.push(this.lndbtcClient.init());
-      }
+      initPromises.push(this.lndbtcClient.init());
       this.lndltcClient = new LndClient(this.config.lndltc, loggers.lnd);
-      if (!this.lndltcClient.isDisabled()) {
-        initPromises.push(this.lndltcClient.init());
-      }
+      initPromises.push(this.lndltcClient.init());
 
       // setup raiden client and connect if configured
       this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden);
