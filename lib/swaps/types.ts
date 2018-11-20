@@ -60,6 +60,10 @@ export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHas
   amountReceived: number;
   /** The amount of satoshis (or equivalent) sent. */
   amountSent: number;
+  /** The ticker symbol of the currency received. */
+  currencyReceived: string;
+  /** The ticker symbol of the currency sent. */
+  currencySent: string;
   /** The quantity that was swapped. */
   quantity: number;
 };

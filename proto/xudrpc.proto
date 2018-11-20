@@ -531,6 +531,10 @@ message SwapResult {
   }
   // Our role in the swap, either MAKER or TAKER.
   Role role = 9 [json_name = "role"];
+  // The ticker symbol of the currency received.
+  string currency_received = 10 [json_name = "currency_received"];
+  // The ticker symbol of the currency sent.
+  string currency_sent = 11 [json_name = "currency_sent"];
 }
 
 message UnbanRequest {

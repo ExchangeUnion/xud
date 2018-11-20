@@ -793,6 +793,8 @@
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
 | role | [SwapResult.Role](#xudrpc.SwapResult.Role) |  | Our role in the swap, either MAKER or TAKER. |
+| currency_received | [string](#string) |  | The ticker symbol of the currency received. |
+| currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 
 
 

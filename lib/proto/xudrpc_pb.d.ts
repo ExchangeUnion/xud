@@ -1263,6 +1263,12 @@ export class SwapResult extends jspb.Message {
     getRole(): SwapResult.Role;
     setRole(value: SwapResult.Role): void;
 
+    getCurrencyReceived(): string;
+    setCurrencyReceived(value: string): void;
+
+    getCurrencySent(): string;
+    setCurrencySent(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): SwapResult.AsObject;
@@ -1285,6 +1291,8 @@ export namespace SwapResult {
         amountSent: number,
         peerPubKey: string,
         role: SwapResult.Role,
+        currencyReceived: string,
+        currencySent: string,
     }
 
     export enum Role {
