@@ -7,6 +7,7 @@ import Config from '../../lib/Config';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/types/p2p';
+import { DisconnectionReason } from '../../lib/types/enums';
 
 chai.use(chaiAsPromised);
 
@@ -69,7 +70,7 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should close a peer', async () => {
-    const closePromise = pool.closePeer(nodePubKeyOne);
+    const closePromise = pool.closePeer(nodePubKeyOne, { reason: DisconnectionReason.NotAcceptingConnections });
     expect(closePromise).to.be.fulfilled;
     await closePromise;
     expect(pool['peers'].has(nodePubKeyOne)).to.be.false;

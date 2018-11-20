@@ -371,10 +371,10 @@ class Pool extends EventEmitter {
     }
   }
 
-  public closePeer = async (nodePubKey: string, reason?: DisconnectingPacketBody): Promise<void> => {
+  public closePeer = async (nodePubKey: string, info?: DisconnectingPacketBody): Promise<void> => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      peer.close(reason);
+      peer.close(info);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
