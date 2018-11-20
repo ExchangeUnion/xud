@@ -544,11 +544,6 @@ class Pool extends EventEmitter {
         this.emit('packet.swapError', packet);
         break;
       }
-
-      case PacketType.Disconnecting: {
-        this.logger.debug(`received disconnecting packet from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        break;
-      }
     }
   }
 
@@ -647,12 +642,26 @@ class Pool extends EventEmitter {
       this.pendingOutgoingConnections.delete(peer.nodePubKey!);
     });
 
-    peer.once('close', () => {
+    peer.once('close', async () => {
+      // cleanup
       if (peer.nodePubKey) {
         this.pendingOutgoingConnections.delete(peer.nodePubKey);
         this.peers.remove(peer.nodePubKey);
       }
       this.emit('peer.close', peer);
+
+      // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
+      // reconnect, for that might have been due to a temporary loss in connectivity
+      const legitReconnect =
+        peer.sentDisconnectionReason === undefined &&
+        (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
+      const addresses = peer.inbound ? peer.addresses : [peer.address];
+
+      if (peer.nodePubKey && legitReconnect && addresses && addresses.length > 0) {
+        this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
+        const node = { addresses, nodePubKey: peer.nodePubKey };
+        await this.tryConnectNode(node, true);
+      }
     });
 
     peer.once('reputation', async (event) => {

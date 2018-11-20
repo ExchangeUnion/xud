@@ -46,6 +46,8 @@ class Peer extends EventEmitter {
   // TODO: properties documentation
   public inbound!: boolean;
   public connected = false;
+  public recvDisconnectionReason?: DisconnectionReason;
+  public sentDisconnectionReason?: DisconnectionReason;
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
@@ -187,7 +189,7 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (reason?: DisconnectingPacketBody): void => {
+  public close = (info?: DisconnectingPacketBody): void => {
     if (this.closed) {
       return;
     }
@@ -196,8 +198,9 @@ class Peer extends EventEmitter {
     this.connected = false;
 
     if (this.socket) {
-      if (reason) {
-        this.sendPacket(new packets.DisconnectingPacket(reason));
+      if (info) {
+        this.sentDisconnectionReason = info.reason;
+        this.sendPacket(new packets.DisconnectingPacket(info));
       }
 
       if (!this.socket.destroyed) {
@@ -522,6 +525,10 @@ class Peer extends EventEmitter {
           this.handlePing(packet);
           break;
         }
+        case PacketType.Disconnecting: {
+          this.handleDisconnecting(packet);
+          break;
+        }
         default:
           this.emit('packet', packet);
           break;
@@ -591,6 +598,17 @@ class Peer extends EventEmitter {
 
   private handlePing = (packet: packets.PingPacket): void  => {
     this.sendPong(packet.header.id);
+  }
+
+  private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
+    if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
+      const peerId = this.nodePubKey || addressUtils.toString(this.address);
+      this.logger.debug(`received disconnecting packet from ${peerId}:${JSON.stringify(packet.body)}`);
+      this.recvDisconnectionReason = packet.body.reason;
+    } else {
+      // protocol violation: packet should be sent once only, with body, with `reason` field
+      // TODO: penalize peer
+    }
   }
 
   private sendPong = (pingId: string): packets.PongPacket => {
