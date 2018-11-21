@@ -292,6 +292,7 @@ class TradingPair {
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 
     const queue = takerOrder.isBuy ? this.queues!.sell : this.queues!.buy;
+    const queueRemovedOrdersWithHold: OwnOrder[] = [];
     const getMatchingQuantity = (remainingOrder: OwnOrder, oppositeOrder: Order) => takerOrder.isBuy
       ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)
       : TradingPair.getMatchingQuantity(oppositeOrder, remainingOrder);
@@ -300,13 +301,18 @@ class TradingPair {
     while (remainingOrder && !queue.isEmpty()) {
       // get the best available maker order from the top of the queue
       const makerOrder = queue.peek()!;
-      const matchingQuantity = getMatchingQuantity(remainingOrder, makerOrder);
+      const makerAvailableQuantityOrder = isOwnOrder(makerOrder)
+        ? { ...makerOrder, quantity: makerOrder.quantity - makerOrder.hold, hold: 0 }
+        : { ...makerOrder }
+
+      const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
       if (matchingQuantity <= 0) {
         // there's no match with the best available maker order, so end the matching routine
         break;
       } else {
         /** Whether the maker order is fully matched and should be removed from the queue. */
         const makerFullyMatched = makerOrder.quantity === matchingQuantity;
+        const makerAvailableQuantityFullyMatched = makerAvailableQuantityOrder.quantity === matchingQuantity;
         const remainingFullyMatched = remainingOrder.quantity === matchingQuantity;
 
         if (makerFullyMatched && remainingFullyMatched) {
@@ -317,26 +323,35 @@ class TradingPair {
           const matchedMakerOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
           this.logger.debug(`reduced order ${makerOrder.id} by ${matchingQuantity} quantity while matching order ${takerOrder.id}`);
           matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
-        } else if (makerFullyMatched) {
+        } else if (makerFullyMatched || makerAvailableQuantityFullyMatched) {
           // maker order quantity is not sufficient. taker order will split
           const matchedTakerOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
-          matches.push({ maker: makerOrder, taker: matchedTakerOrder });
+          matches.push({ maker: makerAvailableQuantityOrder, taker: matchedTakerOrder });
         } else {
-          assert(false, 'matchingQuantity should not be lower than both orders quantity values');
+          assert(false, 'matchingQuantity should not be lower than both orders available quantity values');
         }
 
         if (remainingFullyMatched) {
           remainingOrder = undefined;
         }
+
         if (makerFullyMatched) {
           // maker order is fully matched, so remove it from the queue and map
           assert(queue.poll() === makerOrder);
           const map = this.getOrderMap(makerOrder)!;
           map.delete(makerOrder.id);
           this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
+        } else if (makerAvailableQuantityFullyMatched) {
+          assert(isOwnOrder(makerOrder))
+          assert(queue.poll() === makerOrder);
+          queueRemovedOrdersWithHold.push(makerOrder as OwnOrder)
         }
       }
     }
+
+    // return the removed orders with hold to the queue.
+    // their hold quantity might be released later
+    queueRemovedOrdersWithHold.forEach(order => queue.add(order))
 
     return { matches, remainingOrder };
   }
