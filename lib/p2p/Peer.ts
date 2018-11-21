@@ -48,6 +48,7 @@ class Peer extends EventEmitter {
   public connected = false;
   public recvDisconnectionReason?: DisconnectionReason;
   public sentDisconnectionReason?: DisconnectionReason;
+  public expectedNodePubKey?: string;
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
@@ -163,16 +164,17 @@ class Peer extends EventEmitter {
     assert(!retryConnecting || !this.inbound);
 
     this.opened = true;
+    this.expectedNodePubKey = nodePubKey;
 
     await this.initConnection(retryConnecting);
     this.initStall();
     await this.initHello(handshakeData);
 
     // TODO: Check that the peer's version is compatible with ours
-    if (nodePubKey) {
-      if (this.nodePubKey !== nodePubKey) {
+    if (this.expectedNodePubKey) {
+      if (this.nodePubKey !== this.expectedNodePubKey) {
         this.close(DisconnectionReason.UnexpectedIdentity);
-        throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
+        throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
       } else if (this.nodePubKey === handshakeData.nodePubKey) {
         this.close(DisconnectionReason.ConnectedToSelf);
         throw errors.ATTEMPTED_CONNECTION_TO_SELF;

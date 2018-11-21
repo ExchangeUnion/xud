@@ -645,8 +645,9 @@ class Pool extends EventEmitter {
     peer.once('close', async () => {
       // cleanup
       if (peer.nodePubKey) {
-        this.pendingOutgoingConnections.delete(peer.nodePubKey);
         this.peers.remove(peer.nodePubKey);
+      } else if (peer.expectedNodePubKey) {
+        this.pendingOutgoingConnections.delete(peer.expectedNodePubKey);
       }
       this.emit('peer.close', peer);
 
