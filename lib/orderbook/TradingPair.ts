@@ -303,7 +303,7 @@ class TradingPair {
       const makerOrder = queue.peek()!;
       const makerAvailableQuantityOrder = isOwnOrder(makerOrder)
         ? { ...makerOrder, quantity: makerOrder.quantity - makerOrder.hold, hold: 0 }
-        : { ...makerOrder }
+        : { ...makerOrder };
 
       const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
       if (matchingQuantity <= 0) {
@@ -342,16 +342,16 @@ class TradingPair {
           map.delete(makerOrder.id);
           this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
         } else if (makerAvailableQuantityFullyMatched) {
-          assert(isOwnOrder(makerOrder))
+          assert(isOwnOrder(makerOrder));
           assert(queue.poll() === makerOrder);
-          queueRemovedOrdersWithHold.push(makerOrder as OwnOrder)
+          queueRemovedOrdersWithHold.push(makerOrder as OwnOrder);
         }
       }
     }
 
     // return the removed orders with hold to the queue.
     // their hold quantity might be released later
-    queueRemovedOrdersWithHold.forEach(order => queue.add(order))
+    queueRemovedOrdersWithHold.forEach(order => queue.add(order));
 
     return { matches, remainingOrder };
   }
