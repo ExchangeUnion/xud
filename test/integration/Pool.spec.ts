@@ -70,7 +70,7 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should close a peer', async () => {
-    const closePromise = pool.closePeer(nodePubKeyOne, { reason: DisconnectionReason.NotAcceptingConnections });
+    const closePromise = pool.closePeer(nodePubKeyOne, DisconnectionReason.NotAcceptingConnections);
     expect(closePromise).to.be.fulfilled;
     await closePromise;
     expect(pool['peers'].has(nodePubKeyOne)).to.be.false;

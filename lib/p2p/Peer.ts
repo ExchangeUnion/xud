@@ -171,10 +171,10 @@ class Peer extends EventEmitter {
     // TODO: Check that the peer's version is compatible with ours
     if (nodePubKey) {
       if (this.nodePubKey !== nodePubKey) {
-        this.close({ reason: DisconnectionReason.UnexpectedIdentity });
+        this.close(DisconnectionReason.UnexpectedIdentity);
         throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
       } else if (this.nodePubKey === handshakeData.nodePubKey) {
-        this.close({ reason: DisconnectionReason.ConnectedToSelf });
+        this.close(DisconnectionReason.ConnectedToSelf);
         throw errors.ATTEMPTED_CONNECTION_TO_SELF;
       }
     }
@@ -189,7 +189,7 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (info?: DisconnectingPacketBody): void => {
+  public close = (reason?: DisconnectionReason, reasonPayload?: string): void => {
     if (this.closed) {
       return;
     }
@@ -198,9 +198,9 @@ class Peer extends EventEmitter {
     this.connected = false;
 
     if (this.socket) {
-      if (info) {
-        this.sentDisconnectionReason = info.reason;
-        this.sendPacket(new packets.DisconnectingPacket(info));
+      if (reason) {
+        this.sentDisconnectionReason = reason;
+        this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
 
       if (!this.socket.destroyed) {
@@ -378,7 +378,7 @@ class Peer extends EventEmitter {
     for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
         this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetId})`);
-        this.close({ reason: DisconnectionReason.ResponseStalling, payload: packetId });
+        this.close(DisconnectionReason.ResponseStalling, packetId);
         return;
       }
     }
@@ -572,7 +572,7 @@ class Peer extends EventEmitter {
     if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close({ reason: DisconnectionReason.ForbiddenIdentityUpdate, payload: helloBody.nodePubKey });
+      this.close(DisconnectionReason.ForbiddenIdentityUpdate, helloBody.nodePubKey);
       return;
     }
 
