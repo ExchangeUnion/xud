@@ -18,7 +18,7 @@ describe(endpoint, () => {
     await xud.start(config);
   });
 
-  it('responds with http status 200', (done) => {
+  it('GET responds with http status 200', (done) => {
     chai.request(`http://localhost:${config.webproxy.port}/${endpoint}`)
                 .get('/')
                 .then((res: ChaiHttp.Response) => {
