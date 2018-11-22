@@ -4,7 +4,7 @@ import Xud from '../../../lib/Xud';
 import { getUnusedPort } from '../../utils';
 import { getConfig } from "../bootstrap";
 
-const endpoint = '/api/v1/info';
+const endpoint = 'api/v1/info';
 
 describe(endpoint, () => {
   let xud: Xud;
@@ -19,7 +19,7 @@ describe(endpoint, () => {
   });
 
   it('responds with http status 200', (done) => {
-    chai.request(`http://localhost:${config.webproxy.port}${endpoint}`)
+    chai.request(`http://localhost:${config.webproxy.port}/${endpoint}`)
                 .get('/')
                 .then((res: ChaiHttp.Response) => {
                   expect(res.status).to.equal(200);
