@@ -25,7 +25,7 @@ The subfolders in `test/ddtd` represent the endpoints available:
 - `removeorder`
 - `...`
 
-The files are named according to status code expected:
+The files are named according to the protocol used and the status code expected:
 
 - `HttpStatus200.spec.ts`
 - `HttpStatus400.spec.ts`
