@@ -63,3 +63,9 @@ dist/
 # typedoc
 typedoc/
 .DS_Store
+
+# Docker auto-generated files
+docker/xud/nodekey.dat
+docker/xud/tls.cert
+docker/xud/tls.key
+docker/xud/xud.db
