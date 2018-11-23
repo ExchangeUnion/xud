@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
 import Xud from '../../../lib/Xud';
 import { getUnusedPort } from '../../utils';
-import { getConfig } from "../bootstrap";
+import { getConfig } from '../bootstrap';
 
 const endpoint = 'api/v1/info';
 
@@ -33,4 +33,4 @@ describe(endpoint, () => {
   after(async () => {
     await xud['shutdown']();
   });
- });
+});
