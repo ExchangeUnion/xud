@@ -21,7 +21,7 @@
     "proto": "cross-os proto && cross-os swagger && cross-os protodocs && cross-os protoFixDeprecation",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
-    "test": "npm run test:unit && run test:ddtd && npm run test:int && npm run test:p2p",
+    "test": "npm run test:unit && npm run test:ddtd && npm run test:int && npm run test:p2p",
     "test:ddtd": "mocha -r ts-node/register test/ddtd/suite.ts",
     "test:ddtd:watch": "mocha -r ts-node/register test/ddtd/**/*  --watch --watch-extensions ts",
     "test:int": "mocha -r ts-node/register test/integration/*",
