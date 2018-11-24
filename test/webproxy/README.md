@@ -18,7 +18,7 @@ All tests:
 
 One test in particular:
 
-    node node_modules/.bin/mocha -r ts-node/register test/webproxy/nodeinfo/HttpStatus422.spec.ts
+    node node_modules/.bin/mocha -r ts-node/register test/webproxy/nodeinfo/HttpStatus404.spec.ts
 
 ## Conventions
 

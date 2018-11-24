@@ -18,14 +18,14 @@ describe(endpoint, () => {
     await xud.start(config);
   });
 
-  it('GET responds with http status 422', (done) => {
-    chai.request(`http://localhost:${config.webproxy.port}/${endpoint}/?node_pub_key=foo`)
+  it('GET responds with http status 404', (done) => {
+    chai.request(`http://localhost:${config.webproxy.port}/${endpoint}/foo`)
                 .get('/')
                 .then((res: ChaiHttp.Response) => {
-                  expect(res.status).to.equal(422);
+                  expect(res.status).to.equal(404);
                   expect(res).to.be.json;
                   let text = JSON.parse(res.text);
-                  expect(text.code).to.equal(3);
+                  expect(text.code).to.equal(5);
                   done();
                 }, (err: any) => {
                   throw err;
