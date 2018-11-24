@@ -18,20 +18,18 @@ We're using sample data stored in JSON files.
 
 ## Conventions
 
-The subfolders in `test/ddtd` represent the endpoints available:
+The subfolders in `test/webproxy` represent the HTTP endpoints available:
 
 - `addcurrency`
 - `info`
 - `removeorder`
 - `...`
 
-The files are named according to the protocol used and the status code expected:
+The files are named according to the HTTP status code expected:
 
 - `HttpStatus200.spec.ts`
 - `HttpStatus400.spec.ts`
 - `...`
-- `GrpcStatus0.spec.ts`
-- `GrpcStatus1.spec.ts`
 
 Here is the output obtained when running the tests:
 
@@ -40,7 +38,6 @@ api/v1/info
   ✓ GET responds with http status 200 (95ms)
   ...
 ```
-
 
 ## Conclusion
 
