@@ -1,6 +1,6 @@
 # Data-Driven Test Development (DDTD)
 
-The webproxy is implemented by using a DDTD methodology, which consists in using a classical TDD cycle:
+The webproxy is implemented through a DDTD methodology, which consists in using a classical TDD cycle:
 
 - Add a test
 - Write something in the test
@@ -8,9 +8,7 @@ The webproxy is implemented by using a DDTD methodology, which consists in using
 - Refactor the code of your class/library
 - Make the test pass
 
-And so on, iterating through this process until the functionality being implemented is okay.
-
-We're using sample data stored in JSON files.
+And so on, iterating through this process until the functionality being implemented is okay. We're using sample data stored in JSON files.
 
 ## Run the tests
 
@@ -18,7 +16,7 @@ All tests:
 
     npm run test:webproxy
 
-One in particular:
+One test in particular:
 
     node node_modules/.bin/mocha -r ts-node/register test/webproxy/nodeinfo/HttpStatus422.spec.ts
 
@@ -44,7 +42,3 @@ api/v1/info
   ✓ GET responds with http status 200 (95ms)
   ...
 ```
-
-## Conclusion
-
-The webproxy is defined at development time by using sample data, hence the name data-driven test development (DDTD).
