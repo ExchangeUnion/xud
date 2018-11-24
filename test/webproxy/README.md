@@ -14,7 +14,7 @@ We're using sample data stored in JSON files.
 
 ## Run the tests
 
-    npm run test:ddtd
+    npm run test:webproxy
 
 ## Conventions
 
