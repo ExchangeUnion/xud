@@ -14,7 +14,13 @@ We're using sample data stored in JSON files.
 
 ## Run the tests
 
+All tests:
+
     npm run test:webproxy
+
+One in particular:
+
+    node node_modules/.bin/mocha -r ts-node/register test/webproxy/nodeinfo/HttpStatus422.spec.ts
 
 ## Conventions
 
