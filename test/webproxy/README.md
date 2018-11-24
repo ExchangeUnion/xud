@@ -1,6 +1,6 @@
 # Data-Driven Test Development (DDTD)
 
-A DDTD methodology consists in using a classical TDD cycle:
+The webproxy is implemented by using a DDTD methodology, which consists in using a classical TDD cycle:
 
 - Add a test
 - Write something in the test
@@ -41,4 +41,4 @@ api/v1/info
 
 ## Conclusion
 
-The API is defined at development time by using sample data, hence the name data-driven test development (DDTD).
+The webproxy is defined at development time by using sample data, hence the name data-driven test development (DDTD).
