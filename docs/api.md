@@ -753,7 +753,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| existing | [bool](#bool) |  |  |
+| existing | [bool](#bool) |  | Whether to transmit all existing active orders upon establishing the stream. |
 
 
 

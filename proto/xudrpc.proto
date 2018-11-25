@@ -501,6 +501,7 @@ message ShutdownRequest {}
 message ShutdownResponse {}
 
 message SubscribeAddedOrdersRequest {
+  // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
 }
 
