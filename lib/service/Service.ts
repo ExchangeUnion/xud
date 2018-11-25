@@ -8,11 +8,12 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, StampedOrder, SwapResult, OrderPortion, StampedOwnOrder } from '../types/orders';
-import { PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
+import { Pair, Order, OrderPortion } from '../types/orders';
+import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import SwapRepository from '../swaps/SwapRepository';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
+import { SwapResult } from 'lib/swaps/types';
 
 /**
  * The components required by the API service layer.
@@ -338,6 +339,7 @@ class Service extends EventEmitter {
       quantity,
       isBuy: side === OrderSide.Buy,
       localId: orderId,
+      hold: 0,
     };
 
     return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
@@ -362,7 +364,7 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = (callback: (order: StampedOrder) => void) => {
+  public subscribeAddedOrders = (callback: (order: Order) => void) => {
     this.orderBook.on('peerOrder.incoming', order => callback(order));
     this.orderBook.on('ownOrder.added', order => callback(order));
   }

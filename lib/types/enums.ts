@@ -47,11 +47,28 @@ export enum ReputationEvent {
   PacketTimeout = 2,
   SwapFailure = 3,
   SwapSuccess = 4,
+  UnparseableMessage = 5,
+  InvalidMessage = 6,
+  UnknownPacketType = 7,
 }
 
 export enum SwapFailureReason {
   /** Could not find the order specified by a swap request. */
   OrderNotFound,
   /** The order specified by a swap request is on hold for a different ongoing swap. */
-  OrderUnavailable,
+  OrderOnHold,
+  /** The swap request contained invalid data. */
+  InvalidSwapRequest,
+}
+
+export enum DisconnectionReason {
+  ResponseStalling,
+  IncompatibleProtocolVersion,
+  UnexpectedIdentity,
+  ForbiddenIdentityUpdate,
+  ConnectedToSelf,
+  NotAcceptingConnections,
+  Banned,
+  AlreadyConnected,
+  Shutdown,
 }

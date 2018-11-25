@@ -28,6 +28,8 @@ const fromRaw = (raw: string): Packet => {
     switch (packet.header.type) {
       case PacketType.Hello:
         return new packetTypes.HelloPacket(packet);
+      case PacketType.Disconnecting:
+        return new packetTypes.DisconnectingPacket(packet);
       case PacketType.Ping:
         return new packetTypes.PingPacket(packet);
       case PacketType.Pong:
@@ -47,11 +49,11 @@ const fromRaw = (raw: string): Packet => {
       case PacketType.SwapRequest:
         return new packetTypes.SwapRequestPacket(packet);
       case PacketType.SwapResponse:
-        return new packetTypes.SwapResponsePacket(packet);
+        return new packetTypes.SwapAcceptedPacket(packet);
       case PacketType.SwapComplete:
         return new packetTypes.SwapCompletePacket(packet);
       case PacketType.SwapError:
-        return new packetTypes.SwapErrorPacket(packet);
+        return new packetTypes.SwapFailedPacket(packet);
       default:
         throw new ParserError(ParserErrorType.UnknownPacketType, packet.header.type!);
     }

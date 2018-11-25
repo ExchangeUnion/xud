@@ -4,23 +4,24 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { StampedOrder, isOwnOrder, OrderPortion, SwapResult } from '../types/orders';
+import { Order, isOwnOrder, OrderPortion } from '../types/orders';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
-import P2PRepository from '../p2p/P2PRepository';
+import { SwapResult } from 'lib/swaps/types';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
  */
-const createOrder = (order: StampedOrder) => {
+const createOrder = (order: Order) => {
   const grpcOrder = new xudrpc.Order();
   grpcOrder.setCreatedAt(order.createdAt);
   grpcOrder.setId(order.id);
   if (isOwnOrder(order)) {
+    grpcOrder.setHold(order.hold);
     grpcOrder.setLocalId((order).localId);
     grpcOrder.setIsOwnOrder(true);
   } else {
@@ -43,7 +44,7 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setLocalId(result.localId);
   swapResult.setPairId(result.pairId);
   swapResult.setQuantity(result.quantity);
-  swapResult.setRHash(result.r_hash);
+  swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
   swapResult.setPeerPubKey(result.peerPubKey);
@@ -77,13 +78,13 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
   const response = new xudrpc.PlaceOrderEvent();
   switch (e.case) {
     case PlaceOrderEventCase.InternalMatch:
-      response.setInternalMatch(createOrder(e.payload as StampedOrder));
+      response.setInternalMatch(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventCase.SwapResult:
       response.setSwapResult(createSwapResult(e.payload as SwapResult));
       break;
     case PlaceOrderEventCase.RemainingOrder:
-      response.setRemainingOrder(createOrder(e.payload as StampedOrder));
+      response.setRemainingOrder(createOrder(e.payload as Order));
       break;
   }
   return response;
@@ -109,8 +110,9 @@ class GrpcService {
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
-      case p2pErrorCodes.COULD_NOT_CONNECT:
       case p2pErrorCodes.NODE_UNKNOWN:
+      case orderErrorCodes.LOCAL_ID_DOES_NOT_EXIST:
+      case orderErrorCodes.ORDER_NOT_FOUND:
         code = status.NOT_FOUND;
         break;
       case orderErrorCodes.DUPLICATE_ORDER:
@@ -125,12 +127,15 @@ class GrpcService {
       case p2pErrorCodes.NODE_NOT_BANNED:
       case p2pErrorCodes.NODE_IS_BANNED:
       case lndErrorCodes.LND_IS_DISABLED:
-      case lndErrorCodes.LND_IS_DISCONNECTED:
       case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
       case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
         code = status.FAILED_PRECONDITION;
+        break;
+      case lndErrorCodes.LND_IS_UNAVAILABLE:
+      case p2pErrorCodes.COULD_NOT_CONNECT:
+        code = status.UNAVAILABLE;
         break;
     }
 
@@ -317,7 +322,9 @@ class GrpcService {
     try {
       const { banned, reputationScore } = await this.service.getNodeInfo(call.request.toObject());
       const response = new xudrpc.GetNodeInfoResponse();
-      response.setBanned(banned);
+      if (banned) {
+        response.setBanned(banned);
+      }
       response.setReputationscore(reputationScore);
       callback(null, response);
     } catch (err) {
@@ -333,9 +340,9 @@ class GrpcService {
       const getOrdersResponse = this.service.getOrders(call.request.toObject());
       const response = new xudrpc.GetOrdersResponse();
 
-      const getOrdersList = <T extends StampedOrder>(orders: T[]) => {
+      const getOrdersList = <T extends Order>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(createOrder(<StampedOrder>order)));
+        orders.forEach(order => ordersList.push(createOrder(<Order>order)));
         return ordersList;
       };
 
@@ -537,7 +544,7 @@ class GrpcService {
    * See [[Service.subscribeAddedOrders]]
    */
   public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders((order: StampedOrder) => {
+    this.service.subscribeAddedOrders((order: Order) => {
       call.write(createOrder(order));
     });
   }

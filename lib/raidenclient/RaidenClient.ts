@@ -3,7 +3,7 @@ import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import { ms } from '../utils/utils';
-import { StampedOrder } from '../types/orders';
+import { Order } from '../types/orders';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -88,8 +88,8 @@ type ChannelEvent = {
 };
 
 interface RaidenClient {
-  on(event: 'swap', listener: (order: StampedOrder) => void): this;
-  emit(event: 'swap', order: StampedOrder): boolean;
+  on(event: 'swap', listener: (order: Order) => void): this;
+  emit(event: 'swap', order: Order): boolean;
 }
 
 /**
@@ -100,7 +100,7 @@ class RaidenClient extends BaseClient {
   private port: number;
   private host: string;
   /** Map of token swap identifiers to order ids */
-  private swapIdOrderMap = new Map<number, StampedOrder>();
+  private swapIdOrderMap = new Map<number, Order>();
 
   /**
    * Create a raiden client.
@@ -112,8 +112,8 @@ class RaidenClient extends BaseClient {
     this.port = port;
     this.host = host;
 
-    if (!disable) {
-      this.setStatus(ClientStatus.Disconnected);
+    if (disable) {
+      this.setStatus(ClientStatus.Disabled);
     }
   }
 
@@ -258,7 +258,7 @@ class RaidenClient extends BaseClient {
    * @param target_address the address of the intended swap counterparty
    * @param payload the token swap payload
    */
-  public tokenSwap = async (target_address: string, payload: TokenSwapPayload, order?: StampedOrder): Promise<void> => {
+  public tokenSwap = async (target_address: string, payload: TokenSwapPayload, order?: Order): Promise<void> => {
     const identifier = ms();
     const endpoint = `token_swaps/${target_address}/${identifier}`;
 

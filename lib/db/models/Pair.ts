@@ -18,10 +18,14 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
 
   Pair.associate = (models: Sequelize.Models) => {
     models.Pair.belongsTo(models.Currency, {
+      as: 'baseCurrencyInstance',
+      constraints: true,
       foreignKey: 'baseCurrency',
     });
 
     models.Pair.belongsTo(models.Currency, {
+      as: 'takerCurrencyInstance',
+      constraints: true,
       foreignKey: 'quoteCurrency',
     });
 

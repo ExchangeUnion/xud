@@ -1,10 +1,10 @@
-import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
+import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions, DefineAttributes } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
 import { SwapDeal } from '../swaps/types';
-import { Currency, Pair } from './orders';
+import { Currency, Pair, OwnOrder, Order } from './orders';
 import { ReputationEvent } from './enums';
 
-export type SequelizeAttributes<T extends { [key: string]: any }> = {
+export type SequelizeAttributes<T extends { [key: string]: any }> = DefineAttributes & {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
 };
 
@@ -28,19 +28,45 @@ export type CurrencyAttributes = CurrencyFactory & {
 export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyAttributes>;
 
 /* SwapDeal */
-export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes'>>;
+export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes' | 'price' | 'pairId' | 'isBuy'>>;
 
 export type SwapDealAttributes = SwapDealFactory & {
-  makerCltvDelta: number;
-  r_preimage: string;
-  errorReason: string;
-  quantity: number;
-  takerPubKey: string;
-  executeTime: number;
-  completeTime: number;
+  /** The internal db node id of the counterparty peer for this swap deal. */
+  nodeId: number;
+  Node?: NodeAttributes;
+  Order?: OrderAttributes;
 };
 
-export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
+export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes> & {
+  getNode: Sequelize.BelongsToGetAssociationMixin<NodeInstance>;
+  getOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
+};
+
+export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
+  /** The internal db node id of the peer that created this order. */
+  nodeId?: number;
+  localId?: string;
+  /** The price for the order expressed in units of the quote currency. */
+  price?: number;
+};
+
+export type OrderAttributes = OrderFactory & {
+};
+
+export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes>;
+
+export type TradeFactory = {
+  /** The order id of the maker order involved in this trade. */
+  makerOrderId: string,
+  /** The order id of the taker order involved in this trade. */
+  takerOrderId: string,
+  /** The quantity transacted in this trade. */
+  quantity: number,
+};
+
+export type TradeAttributes = TradeFactory;
+
+export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes>;
 
 /* Node */
 export type NodeFactory = NodeConnectionInfo;

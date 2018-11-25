@@ -6,7 +6,7 @@ import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import grpc from 'grpc';
-import fs from 'fs';
+import { readFile } from '../../utils/fsUtils';
 
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
@@ -25,17 +25,17 @@ class GrpcWebProxyServer {
   /**
    * Start the server and begins listening on the specified proxy port.
    */
-  public listen = (proxyPort: number, grpcPort: number, grpcHost: string, tlsCertPath: string): Promise<void> => {
+  public listen = async (proxyPort: number, grpcPort: number, grpcHost: string, tlsCertPath: string): Promise<void> => {
     // Load the proxy on / URL
     const protoPath = path.join(__dirname, '..', '..', '..', 'proto');
     const gateway = grpcGateway(
       ['xudrpc.proto'],
       `${grpcHost}:${grpcPort}`,
-      grpc.credentials.createSsl(fs.readFileSync(tlsCertPath)),
+      grpc.credentials.createSsl(await readFile(tlsCertPath)),
       protoPath,
     );
     this.app.use('/api/', gateway);
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       /** A handler to handle an error while trying to begin listening. */
       const listenErrHandler = (err: Error) => {
         reject(err);

@@ -1,4 +1,3 @@
-import fs from 'fs';
 import { hostname } from 'os';
 import grpc, { Server } from 'grpc';
 import { pki, md } from 'node-forge';
@@ -9,6 +8,7 @@ import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
 import { HashResolverService } from '../proto/lndrpc_grpc_pb';
+import { exists, readFile, writeFile } from '../utils/fsUtils';
 
 class GrpcServer {
   private server: Server;
@@ -58,15 +58,14 @@ class GrpcServer {
     let certificate: Buffer;
     let privateKey: Buffer;
 
-    if (!fs.existsSync(tlsCertPath) || !fs.existsSync(tlsKeyPath)) {
+    if (!(await exists(tlsCertPath)) || !(await exists(tlsKeyPath))) {
       this.logger.debug('Could not find gRPC TLS certificate. Generating new one');
-      const { tlsCert, tlsKey } = this.generateCertificate(tlsCertPath, tlsKeyPath);
+      const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
 
       certificate = Buffer.from(tlsCert);
       privateKey = Buffer.from(tlsKey);
     } else {
-      certificate = fs.readFileSync(tlsCertPath);
-      privateKey = fs.readFileSync(tlsKeyPath);
+      [certificate, privateKey] = await Promise.all([readFile(tlsCertPath), readFile(tlsKeyPath)]);
     }
 
     // tslint:disable-next-line:no-null-keyword
@@ -104,7 +103,7 @@ class GrpcServer {
    * Generate a new certificate and save it to the disk
    * @returns the cerificate and its private key
    */
-  private generateCertificate = (tlsCertPath: string, tlsKeyPath: string): { tlsCert: string, tlsKey: string } => {
+  private generateCertificate = async (tlsCertPath: string, tlsKeyPath: string): Promise<{ tlsCert: string, tlsKey: string }> => {
     const keys = pki.rsa.generateKeyPair(1024);
     const cert = pki.createCertificate();
 
@@ -152,9 +151,7 @@ class GrpcServer {
     const certificate = pki.certificateToPem(cert);
     const privateKey = pki.privateKeyToPem(keys.privateKey);
 
-    fs.writeFileSync(tlsCertPath, certificate);
-    fs.writeFileSync(tlsKeyPath, privateKey);
-
+    await Promise.all([writeFile(tlsCertPath, certificate), writeFile(tlsKeyPath, privateKey)]);
     return {
       tlsCert: certificate,
       tlsKey: privateKey,

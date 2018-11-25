@@ -399,6 +399,8 @@ message Order {
   OrderSide side = 8 [json_name = "side"];
   // Whether this order is a local own order or a remote peer order.
   bool is_own_order = 9 [json_name = "is_own_order"];
+  // The amount on hold pending swap exectuion.
+  double hold = 10 [json_name = "hold"];
 }
 
 message OrderRemoval {
@@ -573,7 +575,7 @@ message SwapResult {
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
   double quantity = 4 [json_name = "quantity"];
-  // The hex-encoded r_hash for the swap payments.
+  // The hex-encoded payment hash for the swaps.
   string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
   int64 amount_received = 6 [json_name = "amount_received"];

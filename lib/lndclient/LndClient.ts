@@ -1,11 +1,11 @@
-import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
-import fs from 'fs';
+import grpc, { ChannelCredentials } from 'grpc';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
+import { exists, readFile } from '../utils/fsUtils';
 
 /** The configurable options for the lnd client. */
 type LndClientConfig = {
@@ -46,7 +46,7 @@ interface LndClient {
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
-  public readonly cltvDelta: number = 0;
+  public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
@@ -64,41 +64,44 @@ class LndClient extends BaseClient {
    * Create an lnd client.
    * @param config the lnd configuration
    */
-  constructor(config: LndClientConfig, logger: Logger) {
+  constructor(private config: LndClientConfig, logger: Logger) {
     super(logger);
 
-    let shouldEnable = true;
-    const { disable, certpath, macaroonpath, cltvdelta, nomacaroons } = config;
+    this.cltvDelta = config.cltvdelta || 0;
+  }
 
-    if (disable) {
-      shouldEnable = false;
-    }
-    if (!fs.existsSync(certpath)) {
+  /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
+  public init = async () => {
+    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
+    let shouldDisable = disable;
+
+    if (!(await exists(certpath))) {
       this.logger.error('could not find lnd certificate, is lnd installed?');
-      shouldEnable = false;
+      shouldDisable = true;
     }
-    if (!nomacaroons && !fs.existsSync(macaroonpath)) {
+    if (!nomacaroons && !(await exists(macaroonpath))) {
       this.logger.error('could not find lnd macaroon, is lnd installed?');
-      shouldEnable = false;
+      shouldDisable = true;
     }
-    if (shouldEnable) {
-      this.cltvDelta = cltvdelta;
-      assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
-      this.uri = `${config.host}:${config.port}`;
-      this.cltvDelta = cltvdelta;
-      const lndCert = fs.readFileSync(certpath);
-      this.credentials = grpc.credentials.createSsl(lndCert);
+    if (shouldDisable) {
+      return;
+    }
 
-      this.meta = new grpc.Metadata();
-      if (!nomacaroons) {
-        const adminMacaroon = fs.readFileSync(macaroonpath);
-        this.meta.add('macaroon', adminMacaroon.toString('hex'));
-      } else {
-        this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
-      }
-      // set status as disconnected until we can verify the connection
-      this.setStatus(ClientStatus.Disconnected);
+    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
+    this.uri = `${host}:${port}`;
+    const lndCert = await readFile(certpath);
+    this.credentials = grpc.credentials.createSsl(lndCert);
+
+    this.meta = new grpc.Metadata();
+    if (!nomacaroons) {
+      const adminMacaroon = await readFile(macaroonpath);
+      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+    } else {
+      this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
     }
+    // set status as disconnected until we can verify the connection
+    this.setStatus(ClientStatus.Disconnected);
+    return this.verifyConnection();
   }
 
   public get pubKey() {
@@ -132,7 +135,7 @@ class LndClient extends BaseClient {
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
-      error = errors.LND_IS_DISCONNECTED.message;
+      error = errors.LND_IS_UNAVAILABLE.message;
     } else {
       try {
         const lnd = await this.getInfo();
@@ -295,7 +298,7 @@ class LndClient extends BaseClient {
       throw(errors.LND_IS_DISABLED);
     }
     if (this.isDisconnected()) {
-      throw(errors.LND_IS_DISCONNECTED);
+      throw(errors.LND_IS_UNAVAILABLE);
     }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();

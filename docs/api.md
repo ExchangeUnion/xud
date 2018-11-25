@@ -531,6 +531,7 @@
 | created_at | [int64](#int64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
+| hold | [double](#double) |  | The amount on hold pending swap exectuion. |
 
 
 
@@ -855,7 +856,7 @@
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | quantity | [double](#double) |  | The order quantity that was swapped. |
-| r_hash | [string](#string) |  | The hex-encoded r_hash for the swap payments. |
+| r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |

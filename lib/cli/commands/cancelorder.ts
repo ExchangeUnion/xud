@@ -15,5 +15,5 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new RemoveOrderRequest();
   request.setOrderId(argv.order_id);
-  loadXudClient(argv).removeOrder(request, callback);
+  loadXudClient(argv).removeOrder(request, callback(argv));
 };

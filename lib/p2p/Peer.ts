@@ -1,6 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
+import { ReputationEvent, DisconnectionReason } from '../types/enums';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -10,6 +11,7 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
+import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -29,9 +31,9 @@ interface Peer {
   on(event: 'handshake', listener: () => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
-  once(event: 'ban', listener: () => void): this;
+  once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   emit(event: 'connect'): boolean;
-  emit(event: 'ban'): boolean;
+  emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'open'): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
@@ -53,7 +55,6 @@ class Peer extends EventEmitter {
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
-  private banScore = 0;
   private lastRecv = 0;
   private lastSend = 0;
   private handshakeState?: HandshakeState;
@@ -168,10 +169,10 @@ class Peer extends EventEmitter {
     // TODO: Check that the peer's version is compatible with ours
     if (nodePubKey) {
       if (this.nodePubKey !== nodePubKey) {
-        this.close();
+        this.close({ reason: DisconnectionReason.UnexpectedIdentity });
         throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
       } else if (this.nodePubKey === handshakeData.nodePubKey) {
-        this.close();
+        this.close({ reason: DisconnectionReason.ConnectedToSelf });
         throw errors.ATTEMPTED_CONNECTION_TO_SELF;
       }
     }
@@ -186,7 +187,7 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (): void => {
+  public close = (reason?: DisconnectingPacketBody): void => {
     if (this.closed) {
       return;
     }
@@ -195,6 +196,10 @@ class Peer extends EventEmitter {
     this.connected = false;
 
     if (this.socket) {
+      if (reason) {
+        this.sendPacket(new packets.DisconnectingPacket(reason));
+      }
+
       if (!this.socket.destroyed) {
         this.socket.destroy();
       }
@@ -226,6 +231,11 @@ class Peer extends EventEmitter {
 
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
+    if (this.nodePubKey !== undefined) {
+      this.logger.trace(`Sent packet to ${this.nodePubKey}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
+    } else {
+      this.logger.trace(`Sent packet to ${addressUtils.toString(this.address)}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
+    }
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -249,18 +259,6 @@ class Peer extends EventEmitter {
       this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
       this.lastSend = Date.now();
     }
-  }
-
-  private increaseBan = (score: number): boolean => {
-    this.banScore += score;
-
-    if (this.banScore >= 100) { // TODO: make configurable
-      this.logger.debug(`Ban threshold exceeded (${this.nodePubKey})`);
-      this.emit('ban');
-      return true;
-    }
-
-    return false;
   }
 
   /**
@@ -374,10 +372,10 @@ class Peer extends EventEmitter {
   private checkTimeout = () => {
     const now = ms();
 
-    for (const [packetType, entry] of this.responseMap) {
+    for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetType})`);
-        this.close();
+        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetId})`);
+        this.close({ reason: DisconnectionReason.ResponseStalling, payload: packetId });
         return;
       }
     }
@@ -461,9 +459,9 @@ class Peer extends EventEmitter {
       this.lastRecv = Date.now();
       const dataStr = data.toString();
       if (this.nodePubKey !== undefined) {
-        this.logger.trace(`Received data (${this.nodePubKey}): ${dataStr}`);
+        this.logger.trace(`Received data from ${this.nodePubKey}: ${dataStr}`);
       } else {
-        this.logger.trace(`Received data (${addressUtils.toString(this.address)}): ${data.toString()}`);
+        this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
       }
       this.parser.feed(dataStr);
     });
@@ -482,15 +480,15 @@ class Peer extends EventEmitter {
       switch (err.type) {
         case ParserErrorType.UnparseableMessage:
           this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.increaseBan(10);
+          this.emit('reputation', ReputationEvent.UnparseableMessage);
           break;
         case ParserErrorType.InvalidMessage:
           this.logger.warn(`Invalid peer message: ${err.payload}`);
-          this.increaseBan(10);
+          this.emit('reputation', ReputationEvent.InvalidMessage);
           break;
         case ParserErrorType.UnknownPacketType:
           this.logger.warn(`Unknown peer message type: ${err.payload}`);
-          this.increaseBan(20);
+          this.emit('reputation', ReputationEvent.UnknownPacketType);
       }
     });
   }
@@ -567,7 +565,7 @@ class Peer extends EventEmitter {
     if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close();
+      this.close({ reason: DisconnectionReason.ForbiddenIdentityUpdate, payload: helloBody.nodePubKey });
       return;
     }
 

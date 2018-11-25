@@ -2,20 +2,21 @@ import net, { Server, Socket } from 'net';
 import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
-import NodeList from './NodeList';
+import NodeList, { reputationEventWeight } from './NodeList';
 import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, StampedPeerOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
+import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent } from '../types/enums';
-import { ReputationEventInstance } from '../types/db';
+import { ReputationEvent, DisconnectionReason } from '../types/enums';
+import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
+import { db } from '../types';
 
 type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
@@ -39,26 +40,26 @@ type PoolConfig = {
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
-  banned: boolean;
+  banned?: boolean;
 };
 
 interface Pool {
-  on(event: 'packet.order', listener: (order: StampedPeerOrder) => void): this;
+  on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapResponse', listener: (packet: packets.SwapResponsePacket, peer: Peer) => void): this;
+  on(event: 'packet.swapResponse', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
-  on(event: 'packet.swapError', listener: (packet: packets.SwapErrorPacket) => void): this;
-  emit(event: 'packet.order', order: StampedPeerOrder): boolean;
+  on(event: 'packet.swapError', listener: (packet: packets.SwapFailedPacket) => void): this;
+  emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapResponse', packet: packets.SwapResponsePacket, peer: Peer): boolean;
+  emit(event: 'packet.swapResponse', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
-  emit(event: 'packet.swapError', packet: packets.SwapErrorPacket): boolean;
+  emit(event: 'packet.swapError', packet: packets.SwapFailedPacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
@@ -188,12 +189,13 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey) => {
+    this.nodes.on('node.ban', (nodePubKey: string, events: db.ReputationEventInstance[]) => {
       this.logger.warn(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        peer.close();
+        const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
+        peer.close({ reason: DisconnectionReason.Banned, payload: JSON.stringify(lastNegativeEvents) });
       }
     });
   }
@@ -369,10 +371,10 @@ class Pool extends EventEmitter {
     }
   }
 
-  public closePeer = async (nodePubKey: string): Promise<void> => {
+  public closePeer = async (nodePubKey: string, reason?: DisconnectingPacketBody): Promise<void> => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      peer.close();
+      peer.close(reason);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
@@ -480,15 +482,16 @@ class Pool extends EventEmitter {
   private handlePacket = async (peer: Peer, packet: Packet) => {
     switch (packet.type) {
       case PacketType.Order: {
-        const order = (packet as packets.OrderPacket).body!;
-        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
-        this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
+        const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
+        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
+        const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
+        this.emit('packet.order', incomingOrder);
         break;
       }
       case PacketType.OrderInvalidation: {
-        const order = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`canceled order from ${peer.nodePubKey}: ${JSON.stringify(order)}`);
-        this.emit('packet.orderInvalidation', order, peer.nodePubKey as string);
+        const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
+        this.logger.verbose(`received order invalidation from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
+        this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
         break;
       }
       case PacketType.GetOrders: {
@@ -498,10 +501,10 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.Orders: {
-        const orders = (packet as packets.OrdersPacket).body!;
-        this.logger.verbose(`received ${orders.length} orders from ${peer.nodePubKey}`);
-        orders.forEach((order) => {
-          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey } as StampedPeerOrder);
+        const receivedOrders = (packet as packets.OrdersPacket).body!;
+        this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
+        receivedOrders.forEach((order) => {
+          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
         });
         break;
       }
@@ -541,13 +544,18 @@ class Pool extends EventEmitter {
         this.emit('packet.swapError', packet);
         break;
       }
+
+      case PacketType.Disconnecting: {
+        this.logger.debug(`received disconnecting packet from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        break;
+      }
     }
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      peer.close();
+      peer.close({ reason: DisconnectionReason.NotAcceptingConnections });
       return;
     }
     if (peer.nodePubKey === this.handshakeData.nodePubKey) {
@@ -556,10 +564,10 @@ class Pool extends EventEmitter {
 
     if (this.nodes.isBanned(peer.nodePubKey!)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
-      peer.close();
+      peer.close({ reason: DisconnectionReason.Banned });
     } else if (this.peers.has(peer.nodePubKey!)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us
-      peer.close();
+      peer.close({ reason: DisconnectionReason.AlreadyConnected });
     } else {
       this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
       this.peers.add(peer);
@@ -647,19 +655,16 @@ class Pool extends EventEmitter {
       this.emit('peer.close', peer);
     });
 
-    peer.once('ban', async () => {
-      this.logger.debug(`Banning peer (${peer.nodePubKey})`);
+    peer.once('reputation', async (event) => {
+      this.logger.debug(`Peer (${peer.nodePubKey}), received reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        await this.nodes.ban(peer.nodePubKey);
-      }
-      if (peer.connected) {
-        peer.close();
+        await this.nodes.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }
 
   private closePeers = () => {
-    this.peers.forEach(peer => peer.close());
+    this.peers.forEach(peer => peer.close({ reason: DisconnectionReason.Shutdown }));
   }
 
   private closePendingConnections = () => {

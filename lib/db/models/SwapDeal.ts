@@ -3,22 +3,26 @@ import { db } from '../../types';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.SwapDealAttributes> = {
+    rHash: { type: DataTypes.STRING, primaryKey: true },
     role: { type: DataTypes.TINYINT, allowNull: false },
     state: { type: DataTypes.TINYINT, allowNull: false },
     phase: { type: DataTypes.TINYINT, allowNull: false },
     errorReason: { type: DataTypes.STRING, allowNull: true },
-    r_hash: { type: DataTypes.STRING, allowNull: false, unique: true },
-    r_preimage: { type: DataTypes.STRING, allowNull: true },
-    peerPubKey: { type: DataTypes.STRING, allowNull: false },
+    rPreimage: { type: DataTypes.STRING, allowNull: true },
+    peerPubKey: {
+      type: DataTypes.VIRTUAL,
+      get(this: db.SwapDealInstance) {
+        return this.Node ? this.Node.nodePubKey : undefined;
+      },
+    },
+    nodeId: { type: DataTypes.INTEGER, allowNull: false },
     orderId: { type: DataTypes.STRING, allowNull: false },
     localId: { type: DataTypes.STRING, allowNull: false },
     proposedQuantity: { type: DataTypes.DECIMAL(8), allowNull: false },
     quantity: { type: DataTypes.DECIMAL(8), allowNull: true },
-    pairId: { type: DataTypes.STRING, allowNull: false },
     takerAmount: { type: DataTypes.BIGINT , allowNull: false },
     takerCurrency: { type: DataTypes.STRING , allowNull: false },
     takerPubKey: { type: DataTypes.STRING , allowNull: true },
-    price: { type: DataTypes.DECIMAL(8), allowNull: false },
     takerCltvDelta: { type: DataTypes.SMALLINT, allowNull: false },
     makerCltvDelta: { type: DataTypes.SMALLINT, allowNull: true },
     makerAmount: { type: DataTypes.BIGINT, allowNull: false },
@@ -34,6 +38,17 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
   };
 
   const SwapDeal = sequelize.define<db.SwapDealInstance, db.SwapDealAttributes>('SwapDeal', attributes, options);
+
+  SwapDeal.associate = (models: Sequelize.Models) => {
+    models.SwapDeal.belongsTo(models.Order, {
+      foreignKey: 'orderId',
+      constraints: true,
+    });
+    models.SwapDeal.belongsTo(models.Node, {
+      foreignKey: 'nodeId',
+      constraints: true,
+    });
+  };
 
   return SwapDeal;
 };

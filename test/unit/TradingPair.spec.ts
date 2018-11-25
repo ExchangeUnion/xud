@@ -9,14 +9,16 @@ import { ms } from '../../lib/utils/utils';
 const PAIR_ID = 'LTC/BTC';
 const loggers = Logger.createLoggers(Level.Warn);
 
-const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.StampedOwnOrder => ({
+const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.OwnOrder => ({
   price,
   quantity,
   isBuy,
   createdAt,
+  initialQuantity: quantity,
   id: uuidv1(),
   localId: uuidv1(),
   pairId: PAIR_ID,
+  hold: 0,
 });
 
 const createPeerOrder = (
@@ -25,12 +27,13 @@ const createPeerOrder = (
   isBuy: boolean,
   createdAt = ms(),
   peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-): orders.StampedPeerOrder => ({
+): orders.PeerOrder => ({
   quantity,
   price,
   isBuy,
   createdAt,
   peerPubKey,
+  initialQuantity: quantity,
   id: uuidv1(),
   pairId: PAIR_ID,
 });
@@ -51,7 +54,7 @@ const init = () => {
 
 describe('TradingPair.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 10, true),
       createOwnOrder(5.5, 10, false),
     );
@@ -59,7 +62,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match buy order with a higher then a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5.5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -67,7 +70,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match buy order with an equal price to a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -75,7 +78,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match with lowest quantity of both orders', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 5, true),
       createOwnOrder(5, 10, false),
     );
@@ -140,30 +143,17 @@ describe('TradingPair.getOrdersPriorityQueueComparator', () => {
 });
 
 describe('TradingPair.splitOrderByQuantity', () => {
-  it('should split buy orders properly', () => {
+  it('should split an order properly', () => {
     const orderQuantity = 10;
     const matchingQuantity = 6;
-    const { matched, remaining } = TradingPair.splitOrderByQuantity(
-      createOwnOrder(5, orderQuantity, true),
-      matchingQuantity,
-    );
-    expect(matched.quantity).to.equal(matchingQuantity);
-    expect(remaining.quantity).to.equal(orderQuantity - matchingQuantity);
-  });
-
-  it('should split sell orders properly', () => {
-    const orderQuantity = 10;
-    const matchingQuantity = 4;
-    const { matched, remaining } = TradingPair.splitOrderByQuantity(
-      createOwnOrder(5, orderQuantity, false),
-      matchingQuantity,
-    );
-    expect(matched.quantity).to.equal(matchingQuantity);
-    expect(remaining.quantity).to.equal(orderQuantity - matchingQuantity);
+    const order = createOwnOrder(5, orderQuantity, true);
+    const matchedOrder = TradingPair['splitOrderByQuantity'](order, matchingQuantity);
+    expect(matchedOrder.quantity).to.equal(matchingQuantity);
+    expect(order.quantity).to.equal(orderQuantity - matchingQuantity);
   });
 
   it('should not work when matchingQuantity higher than quantity of order', () => {
-    expect(() => TradingPair.splitOrderByQuantity(
+    expect(() => TradingPair['splitOrderByQuantity'](
       createOwnOrder(5, 5, true),
       10,
     )).to.throw('order quantity must be greater than matchingQuantity');
@@ -268,7 +258,7 @@ describe('TradingPair.removePeerOrders', () => {
 
 });
 
-describe('MatchingEngine queues and maps integrity', () => {
+describe('TradingPair queues and maps integrity', () => {
   beforeEach(init);
 
   it('queue and map should both remove an own order', () => {
@@ -334,8 +324,70 @@ describe('MatchingEngine queues and maps integrity', () => {
     expect(() => tp.getPeerOrder(
       peerOrder.id,
       peerOrder.peerPubKey,
-    )).to.throw(`order with id ${peerOrder.peerPubKey}/${peerOrder.id} could not be found`);
+    )).to.throw(`order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`);
     const queueRemainingOrder = tp.queues!.sell.peek();
     expect(queueRemainingOrder).to.be.undefined;
+  });
+});
+
+describe('TradingPair.addOrderHold & TradingPair.removeOrderHold', () => {
+  init();
+
+  it('should add a new ownOrder and put part of it on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 2);
+    expect(ownOrder.hold).to.equal(2);
+  });
+
+  it('should add a new ownOrder and put all of it on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 5);
+    expect(ownOrder.hold).to.equal(5);
+  });
+
+  it('should add a new ownOrder and put two holds on it', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 1);
+    tp.addOrderHold(ownOrder.id, 3);
+    expect(ownOrder.hold).to.equal(4);
+  });
+
+  it('should add a new ownOrder and fail putting more on hold than is available', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    expect(() => tp.addOrderHold(ownOrder.id, 10)).to.throw('the amount of an order on hold cannot exceed the available quantity');
+  });
+
+  it('should add a new ownOrder, add a hold, then remove the hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+    tp.removeOrderHold(ownOrder.id, 3);
+    expect(ownOrder.hold).to.equal(0);
+  });
+
+  it('should add a new ownOrder, add two holds, then remove one hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+    tp.addOrderHold(ownOrder.id, 1);
+    tp.removeOrderHold(ownOrder.id, 1);
+    expect(ownOrder.hold).to.equal(3);
+  });
+
+  it('should add a new ownOrder and fail removing a hold that does not exist', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    expect(() => tp.removeOrderHold(ownOrder.id, 1)).to.throw('cannot remove more than is currently on hold for an order');
+  });
+
+  it('should add a new ownOrder, add a hold, and fail removing more than what is on hold', async () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 1);
+    expect(() => tp.removeOrderHold(ownOrder.id, 3)).to.throw('cannot remove more than is currently on hold for an order');
   });
 });

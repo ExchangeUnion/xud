@@ -12,14 +12,16 @@ const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);
 
-const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.StampedOwnOrder => ({
+const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.OwnOrder => ({
   price,
   quantity,
   isBuy,
   createdAt,
+  initialQuantity: quantity,
   id: uuidv1(),
   localId: uuidv1(),
   pairId: PAIR_ID,
+  hold: 0,
 });
 
 const createPeerOrder = (
@@ -28,12 +30,13 @@ const createPeerOrder = (
   isBuy: boolean,
   createdAt = ms(),
   peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-): orders.StampedPeerOrder => ({
+): orders.PeerOrder => ({
   quantity,
   price,
   isBuy,
   createdAt,
   peerPubKey,
+  initialQuantity: quantity,
   id: uuidv1(),
   pairId: PAIR_ID,
 });
@@ -63,7 +66,7 @@ describe('OrderBook', () => {
     await orderBook.init();
   });
 
-  const getOwnOrder = (order: orders.StampedOwnOrder): orders.StampedOwnOrder | undefined => {
+  const getOwnOrder = (order: orders.OwnOrder): orders.OwnOrder | undefined => {
     const ownOrders = orderBook.getOwnOrders(order.pairId);
     const arr = order.isBuy ? ownOrders.buy : ownOrders.sell;
 
@@ -76,20 +79,20 @@ describe('OrderBook', () => {
     return;
   };
 
-  it('should have pairs and matchingEngines equivalent loaded', () => {
+  it('should have trading pairs loaded', () => {
     orderBook.pairs.forEach((pair) => {
       expect(orderBook.tradingPairs).to.have.key(pair.id);
     });
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55, isBuy: true };
+    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55, isBuy: true, hold: 0 };
     await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
     await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
   });
 
   it('should fully match new ownOrder and remove matches', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 6, price: 55, isBuy: false };
+    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 6, price: 55, isBuy: false, hold: 0 };
     const matches = await orderBook.placeLimitOrder(order);
     expect(matches.remainingOrder).to.be.undefined;
 
@@ -98,31 +101,31 @@ describe('OrderBook', () => {
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
-    const firstMakerOrder = getOwnOrder(<orders.StampedOwnOrder>firstMatch);
-    const secondMakerOrder = getOwnOrder(<orders.StampedOwnOrder>secondMatch);
+    const firstMakerOrder = getOwnOrder(<orders.OwnOrder>firstMatch);
+    const secondMakerOrder = getOwnOrder(<orders.OwnOrder>secondMatch);
     expect(firstMakerOrder).to.be.undefined;
     expect(secondMakerOrder).to.not.be.undefined;
     expect(secondMakerOrder!.quantity).to.equal(4);
   });
 
   it('should partially match new market order and discard remaining order', async () => {
-    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, isBuy: false };
+    const order = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, isBuy: false, hold: 0 };
     const result = await orderBook.placeMarketOrder(order);
     const match = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
-    expect(getOwnOrder(<orders.StampedOwnOrder>match)).to.be.undefined;
+    expect(getOwnOrder(<orders.OwnOrder>match)).to.be.undefined;
   });
 
   it('should create, partially match, and remove an order', async () => {
-    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 10, isBuy: true };
+    const order: orders.OwnOrder = createOwnOrder(10, 10, true);
     await orderBook.placeLimitOrder(order);
-    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false };
+    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false, hold: 0 };
     await orderBook.placeMarketOrder(takerOrder);
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
-    const order: orders.OwnOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 10, price: 100, isBuy: false };
+    const order: orders.OwnOrder = createOwnOrder(100, 10, false);
 
     expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
@@ -205,6 +208,48 @@ describe('nomatching OrderBook', () => {
     orderBook['removeOwnOrder'](remainingOrder!.id, order.pairId, 1);
 
     expect(() => orderBook['removeOwnOrder'](remainingOrder!.id, order.pairId, 1)).to.throw;
+  });
+
+  describe('stampOwnOrder', () => {
+    const ownOrder = () => {
+      return {
+        pairId: 'LTC/BTC',
+        price: 0.008,
+        quantity: 0.00001,
+        isBuy: false,
+        localId: '',
+        hold: 0,
+      };
+    };
+
+    it('has the same id and localId when localId not provided', async () => {
+      const stampedOrder = orderBook['stampOwnOrder'](ownOrder());
+      expect(stampedOrder.id).to.equal(stampedOrder.localId);
+    });
+
+    it('has the provided localId', async () => {
+      const ownOrderWithLocalId = {
+        ...ownOrder(),
+        localId: uuidv1(),
+      };
+      const stampedOrder = orderBook['stampOwnOrder'](ownOrderWithLocalId);
+      expect(stampedOrder.id).to.not.equal(stampedOrder.localId);
+      expect(stampedOrder.localId).to.equal(ownOrderWithLocalId.localId);
+    });
+
+    it('throws an error when duplicate localId exists', async () => {
+      const ownOrderWithLocalId = {
+        ...ownOrder(),
+        localId: uuidv1(),
+      };
+      orderBook['localIdMap'].set(ownOrderWithLocalId.localId, {
+        id: ownOrderWithLocalId.localId,
+        pairId: ownOrderWithLocalId.pairId,
+      });
+      expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId))
+        .to.throw(`order with local id ${ownOrderWithLocalId.localId} already exists`);
+    });
+
   });
 
   after(async () => {

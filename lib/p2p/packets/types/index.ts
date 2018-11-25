@@ -1,5 +1,6 @@
 export { default as OrderPacket } from './OrderPacket';
 export { default as HelloPacket } from './HelloPacket';
+export { default as DisconnectingPacket } from './DisconnectingPacket';
 export { default as PingPacket } from './PingPacket';
 export { default as PongPacket } from './PongPacket';
 export { default as GetOrdersPacket, GetOrdersPacketBody } from './GetOrdersPacket';
@@ -8,6 +9,6 @@ export { default as OrderInvalidationPacket } from './OrderInvalidationPacket';
 export { default as GetNodesPacket } from './GetNodesPacket';
 export { default as NodesPacket } from './NodesPacket';
 export { default as SwapRequestPacket, SwapRequestPacketBody } from './SwapRequestPacket';
-export { default as SwapResponsePacket, SwapResponsePacketBody } from './SwapResponsePacket';
+export { default as SwapAcceptedPacket, SwapAcceptedPacketBody } from './SwapAcceptedPacket';
 export { default as SwapCompletePacket, SwapCompletePacketBody } from './SwapCompletePacket';
-export { default as SwapErrorPacket, SwapErrorPacketBody } from './SwapErrorPacket';
+export { default as SwapFailedPacket, SwapFailedPacketBody } from './SwapFailedPacket';

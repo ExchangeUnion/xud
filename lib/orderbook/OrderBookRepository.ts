@@ -2,6 +2,7 @@ import { db } from '../types';
 import Logger from '../Logger';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
+import { OrderAttributes } from 'lib/types/db';
 
 class OrderbookRepository {
 
@@ -29,6 +30,23 @@ class OrderbookRepository {
 
   public addPairs = (pairs: db.PairFactory[]): Bluebird<db.PairInstance[]> => {
     return this.models.Pair.bulkCreate(<db.PairAttributes[]>pairs);
+  }
+
+  /**
+   * Only persist order if it doesn't exists.
+   * @param order order to persist
+   */
+  public addOrderIfNotExists = async (order: db.OrderFactory) => {
+    const count = await this.models.Order.count({
+      where: { id: order.id },
+    });
+    if (count === 0) {
+      await this.models.Order.create(order);
+    }
+  }
+
+  public addTrade = async (trade: db.TradeFactory) => {
+    await this.models.Trade.create(trade);
   }
 }
 
