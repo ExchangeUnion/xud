@@ -421,9 +421,9 @@ class GrpcService {
   /**
    * See [[Service.ListSwapDeals]]
    */
-  public listSwapDeals: grpc.handleUnaryCall<xudrpc.ListSwapDealsRequest, xudrpc.ListSwapDealsResponse> = async (_, callback) => {
+  public listSwapDeals: grpc.handleUnaryCall<xudrpc.ListSwapDealsRequest, xudrpc.ListSwapDealsResponse> = async (call, callback) => {
     try {
-      const listSwapsResponse = await this.service.listSwapDeals();
+      const listSwapsResponse = await this.service.listSwapDeals(call.request.toObject());
       const swaps: xudrpc.Swap[] = [];
       const response = new xudrpc.ListSwapDealsResponse();
       listSwapsResponse.forEach((deal) => {
@@ -431,26 +431,24 @@ class GrpcService {
         grpcSwap.setRole(deal.role);
         grpcSwap.setPhase(deal.phase);
         grpcSwap.setState(deal.state);
-        grpcSwap.setErrorReason(deal.errorReason);
+        grpcSwap.setErrorReason(deal.errorReason ? deal.errorReason : '');
         grpcSwap.setPeerPubKey(deal.peerPubKey);
         grpcSwap.setOrderId(deal.orderId);
         grpcSwap.setLocalId(deal.localId);
         grpcSwap.setProposedQuantity(deal.proposedQuantity);
-        grpcSwap.setQuantity(deal.quantity); // ?
-        grpcSwap.setPairId(deal.pairId);
+        grpcSwap.setQuantity(deal.quantity ? deal.quantity : 0);
         grpcSwap.setTakerAmount(deal.takerAmount);
         grpcSwap.setTakerCurrency(deal.takerCurrency);
-        grpcSwap.setTakerPubKey(deal.takerPubKey);
+        grpcSwap.setTakerPubKey(deal.takerPubKey ? deal.takerPubKey : '');
         grpcSwap.setTakerCltvDelta(deal.takerCltvDelta);
         grpcSwap.setMakerAmount(deal.makerAmount);
         grpcSwap.setMakerCurrency(deal.makerCurrency);
-        grpcSwap.setMakerCltvDelta(deal.makerCltvDelta);
-        grpcSwap.setPrice(deal.price);
-        grpcSwap.setRHash(deal.r_hash);
-        grpcSwap.setRPreimage(deal.r_preimage);
+        grpcSwap.setMakerCltvDelta(deal.makerCltvDelta ? deal.makerCltvDelta : 0);
+        grpcSwap.setRHash(deal.rHash);
+        grpcSwap.setRPreimage(deal.rPreimage ? deal.rPreimage : '');
         grpcSwap.setCreateTime(deal.createTime);
-        grpcSwap.setExecuteTime(deal.executeTime);
-        grpcSwap.setCompleteTime(deal.completeTime);
+        grpcSwap.setExecuteTime(deal.executeTime ? deal.executeTime : 0);
+        grpcSwap.setCompleteTime(deal.completeTime ? deal.completeTime : 0);
         swaps.push(grpcSwap);
       });
       response.setSwapsList(swaps);

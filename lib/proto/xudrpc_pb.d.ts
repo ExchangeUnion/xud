@@ -586,6 +586,9 @@ export namespace ListPeersResponse {
 }
 
 export class ListSwapDealsRequest extends jspb.Message { 
+    getAll(): boolean;
+    setAll(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListSwapDealsRequest.AsObject;
@@ -599,6 +602,7 @@ export class ListSwapDealsRequest extends jspb.Message {
 
 export namespace ListSwapDealsRequest {
     export type AsObject = {
+        all: boolean,
     }
 }
 
@@ -1109,9 +1113,6 @@ export class Swap extends jspb.Message {
     getQuantity(): number;
     setQuantity(value: number): void;
 
-    getPairId(): string;
-    setPairId(value: string): void;
-
     getTakerAmount(): number;
     setTakerAmount(value: number): void;
 
@@ -1132,9 +1133,6 @@ export class Swap extends jspb.Message {
 
     getMakerCltvDelta(): number;
     setMakerCltvDelta(value: number): void;
-
-    getPrice(): number;
-    setPrice(value: number): void;
 
     getRHash(): string;
     setRHash(value: string): void;
@@ -1173,7 +1171,6 @@ export namespace Swap {
         localId: string,
         proposedQuantity: number,
         quantity: number,
-        pairId: string,
         takerAmount: number,
         takerCurrency: string,
         takerPubKey: string,
@@ -1181,7 +1178,6 @@ export namespace Swap {
         makerCurrency: string,
         takerCltvDelta: number,
         makerCltvDelta: number,
-        price: number,
         rHash: string,
         rPreimage: string,
         createTime: number,

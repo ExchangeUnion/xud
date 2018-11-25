@@ -354,7 +354,9 @@ message ListPeersResponse {
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
-message ListSwapDealsRequest {}
+message ListSwapDealsRequest {
+  bool all = 1 [json_name = "all"];
+}
 message ListSwapDealsResponse {
   repeated Swap swaps = 1 [json_name = "swaps"];
 }
@@ -502,20 +504,18 @@ message Swap {
   string local_id = 7 [json_name = "local_id"];
   int32 proposed_quantity = 8 [json_name = "proposed_quantity"];
   int32 quantity = 9 [json_name = "quantity"];
-  string pair_id = 10 [json_name = "pair_id"];
-  int32 taker_amount = 11 [json_name = "taker_amount"];
-  string taker_currency = 12 [json_name = "taker_currency"];
-  string taker_pub_key = 13 [json_name = "taker_pub_key"]; 
-  int32 maker_amount = 14 [json_name = "maker_amount"];
-  string maker_currency = 15 [json_name = "maker_currency"];
-  int32 taker_cltv_delta = 16 [json_name = "taker_cltv_delta"];
-  int32 maker_cltv_delta = 17 [json_name = "maker_cltv_delta"];
-  int32 price = 18 [json_name = "price"]; 
-  string r_hash = 19 [json_name = "r_hash"];
-  string r_preimage = 20 [json_name = "r_preimage"];
-  int64 create_time = 21 [json_name = "create_time"];
-  int64 execute_time = 22 [json_name = "execute_time"];
-  int64 complete_time = 23 [json_name = "complete_time"];
+  int32 taker_amount = 10 [json_name = "taker_amount"];
+  string taker_currency = 11 [json_name = "taker_currency"];
+  string taker_pub_key = 12 [json_name = "taker_pub_key"]; 
+  int32 maker_amount = 13 [json_name = "maker_amount"];
+  string maker_currency = 14 [json_name = "maker_currency"];
+  int32 taker_cltv_delta = 15 [json_name = "taker_cltv_delta"];
+  int32 maker_cltv_delta = 16 [json_name = "maker_cltv_delta"];
+  string r_hash = 17 [json_name = "r_hash"];
+  string r_preimage = 18 [json_name = "r_preimage"];
+  int64 create_time = 19 [json_name = "create_time"];
+  int64 execute_time = 20 [json_name = "execute_time"];
+  int64 complete_time = 21 [json_name = "complete_time"];
 
   enum SwapRole {
     Taker = 0;

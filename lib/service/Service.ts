@@ -5,7 +5,7 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapRole } from '../types/enums';
+import { SwapClients, OrderSide, SwapRole, SwapState } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion } from '../types/orders';
@@ -316,8 +316,14 @@ class Service extends EventEmitter {
    * Get all completed swap deals.
    * @returns A list of completed swap deals.
    */
-  public listSwapDeals = async () => {
-    return await this.swaps.getCompletedDeals();
+  public listSwapDeals = async (args: { all: boolean }) => {
+    const deals = await this.swaps.getCompletedDeals();
+    if (args.all) {
+      return deals;
+    } else {
+      const successfulDeals = deals.filter(deal => deal.state === SwapState.Completed);
+      return successfulDeals;
+    }
   }
 
   /**

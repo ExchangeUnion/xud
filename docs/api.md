@@ -457,6 +457,11 @@
 
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| all | [bool](#bool) |  |  |
+
+
 
 
 
@@ -824,7 +829,6 @@
 | local_id | [string](#string) |  |  |
 | proposed_quantity | [int32](#int32) |  |  |
 | quantity | [int32](#int32) |  |  |
-| pair_id | [string](#string) |  |  |
 | taker_amount | [int32](#int32) |  |  |
 | taker_currency | [string](#string) |  |  |
 | taker_pub_key | [string](#string) |  |  |
@@ -832,7 +836,6 @@
 | maker_currency | [string](#string) |  |  |
 | taker_cltv_delta | [int32](#int32) |  |  |
 | maker_cltv_delta | [int32](#int32) |  |  |
-| price | [int32](#int32) |  |  |
 | r_hash | [string](#string) |  |  |
 | r_preimage | [string](#string) |  |  |
 | create_time | [int64](#int64) |  |  |
