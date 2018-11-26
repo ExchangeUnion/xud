@@ -203,7 +203,8 @@ class Peer extends EventEmitter {
 
     if (this.socket) {
       if (reason !== undefined) {
-        this.logger.debug(`closing socket with peer ${this.nodePubKey || addressUtils.toString(this.address)}. reason: ${DisconnectionReason[reason]}`);
+        const peerId = this.nodePubKey || addressUtils.toString(this.address);
+        this.logger.debug(`closing socket with peer ${peerId}. reason: ${DisconnectionReason[reason]}`);
         this.sentDisconnectionReason = reason;
         this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
