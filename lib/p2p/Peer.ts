@@ -49,6 +49,7 @@ class Peer extends EventEmitter {
   public recvDisconnectionReason?: DisconnectionReason;
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
+  public active = false; // added to peer list
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
@@ -170,16 +171,17 @@ class Peer extends EventEmitter {
     this.initStall();
     await this.initHello(handshakeData);
 
-    // TODO: Check that the peer's version is compatible with ours
-    if (this.expectedNodePubKey) {
-      if (this.nodePubKey !== this.expectedNodePubKey) {
-        this.close(DisconnectionReason.UnexpectedIdentity);
-        throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
-      } else if (this.nodePubKey === handshakeData.nodePubKey) {
-        this.close(DisconnectionReason.ConnectedToSelf);
-        throw errors.ATTEMPTED_CONNECTION_TO_SELF;
-      }
+    if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
+      this.close(DisconnectionReason.UnexpectedIdentity);
+      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
+
+    if (this.nodePubKey === handshakeData.nodePubKey) {
+      this.close(DisconnectionReason.ConnectedToSelf);
+      throw errors.ATTEMPTED_CONNECTION_TO_SELF;
+    }
+
+    // TODO: Check that the peer's version is compatible with ours
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -200,7 +202,8 @@ class Peer extends EventEmitter {
     this.connected = false;
 
     if (this.socket) {
-      if (reason) {
+      if (reason !== undefined) {
+        this.logger.debug(`closing socket with peer ${this.nodePubKey || addressUtils.toString(this.address)}. reason: ${DisconnectionReason[reason]}`);
         this.sentDisconnectionReason = reason;
         this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }

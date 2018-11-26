@@ -553,47 +553,50 @@ class Pool extends EventEmitter {
       peer.close(DisconnectionReason.NotAcceptingConnections);
       return;
     }
-    if (peer.nodePubKey === this.handshakeData.nodePubKey) {
-      return;
-    }
 
     if (this.nodes.isBanned(peer.nodePubKey!)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
       peer.close(DisconnectionReason.Banned);
-    } else if (this.peers.has(peer.nodePubKey!)) {
-      // TODO: Penalize peers that attempt to create duplicate connections to us
+      return;
+    }
+
+    if (this.peers.has(peer.nodePubKey!)) {
+      // TODO: Penalize peers that attempt to create duplicate connections to us more then once.
+      // the first time might be due connection retries
       peer.close(DisconnectionReason.AlreadyConnected);
-    } else {
-      this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
-      this.peers.add(peer);
+      return
+    }
 
-      // request peer's orders
-      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-      if (this.config.discover) {
-        // request peer's known nodes only if p2p.discover option is true
-        peer.sendPacket(new packets.GetNodesPacket());
-      }
+    this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
+    this.peers.add(peer);
+    peer.active = true;
 
-      // if outbound, update the `lastConnected` field for the address we're actually connected to
-      const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
-        if (addressUtils.areEqual(peer.address, address)) {
-          return { ...address, lastConnected: Date.now() };
-        } else {
-          return address;
-        }
-      });
+    // request peer's orders
+    peer.sendPacket(new packets.GetOrdersPacket({pairIds: this.handshakeData.pairs}));
+    if (this.config.discover) {
+      // request peer's known nodes only if p2p.discover option is true
+      peer.sendPacket(new packets.GetNodesPacket());
+    }
 
-      // upserting the node entry
-      if (!this.nodes.has(peer.nodePubKey!)) {
-        await this.nodes.createNode({
-          addresses,
-          nodePubKey: peer.nodePubKey!,
-          lastAddress: peer.inbound ? undefined : peer.address,
-        });
+    // if outbound, update the `lastConnected` field for the address we're actually connected to
+    const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
+      if (addressUtils.areEqual(peer.address, address)) {
+        return {...address, lastConnected: Date.now()};
       } else {
-        // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
+        return address;
       }
+    });
+
+    // upserting the node entry
+    if (!this.nodes.has(peer.nodePubKey!)) {
+      await this.nodes.createNode({
+        addresses,
+        nodePubKey: peer.nodePubKey!,
+        lastAddress: peer.inbound ? undefined : peer.address,
+      });
+    } else {
+      // the node is known, update its listening addresses
+      await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
     }
   }
 
@@ -643,11 +646,16 @@ class Pool extends EventEmitter {
     });
 
     peer.once('close', async () => {
-      // cleanup
+      if (!peer.nodePubKey && peer.expectedNodePubKey) {
+        this.pendingOutgoingConnections.delete(peer.expectedNodePubKey);
+      }
+
+      if (!peer.active) {
+        return;
+      }
+
       if (peer.nodePubKey) {
         this.peers.remove(peer.nodePubKey);
-      } else if (peer.expectedNodePubKey) {
-        this.pendingOutgoingConnections.delete(peer.expectedNodePubKey);
       }
       this.emit('peer.close', peer);
 
