@@ -303,7 +303,7 @@ class TradingPair {
       const makerOrder = queue.peek()!;
       const makerAvailableQuantityOrder = isOwnOrder(makerOrder)
         ? { ...makerOrder, quantity: makerOrder.quantity - makerOrder.hold, hold: 0 }
-        : { ...makerOrder };
+        : makerOrder;
 
       const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
       if (matchingQuantity <= 0) {
@@ -323,7 +323,7 @@ class TradingPair {
           const matchedMakerOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
           this.logger.debug(`reduced order ${makerOrder.id} by ${matchingQuantity} quantity while matching order ${takerOrder.id}`);
           matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
-        } else if (makerFullyMatched || makerAvailableQuantityFullyMatched) {
+        } else if (makerAvailableQuantityFullyMatched) {
           // maker order quantity is not sufficient. taker order will split
           const matchedTakerOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
           matches.push({ maker: makerAvailableQuantityOrder, taker: matchedTakerOrder });
