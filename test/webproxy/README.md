@@ -12,13 +12,21 @@ And so on, iterating through this process until the functionality being implemen
 
 ## Run the tests
 
-All tests:
+Start:
+
+    ./xud --webproxy.disable false --lnd.disable true --raiden.disable true
+
+Run all tests:
 
     npm run test:webproxy
 
-One test in particular:
+Run one test in particular:
 
     node node_modules/.bin/mocha -r ts-node/register test/webproxy/nodeinfo/HttpStatus404.spec.ts
+
+Shutdown:
+
+    ./xucli shutdown
 
 ## Conventions
 
