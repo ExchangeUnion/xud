@@ -11,7 +11,7 @@ describe(baseUrl + endpoint, () => {
   chai.use(chaiHttp);
 
   data.parameters.forEach(function(parameters) {
-    it('GET responds with http status 404', () => {
+    it(`GET ${parameters.node_pub_key} responds with http status 404`, () => {
       return chai.request(baseUrl)
         .get(`${endpoint}/${parameters.node_pub_key}`)
         .then((res: ChaiHttp.Response) => {
