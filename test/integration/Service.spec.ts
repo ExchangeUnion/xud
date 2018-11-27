@@ -76,7 +76,7 @@ describe('API Service', () => {
       pairId,
       includeOwnOrders: true,
     };
-    const orders = service.getOrders(args);
+    const orders = service.listOrders(args);
 
     const pairOrders = orders.get(args.pairId);
     expect(pairOrders).to.not.be.undefined;

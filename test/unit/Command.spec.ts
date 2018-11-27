@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import { formatOrders } from '../../lib/cli/commands/getorders';
-import { GetOrdersResponse } from '../../lib/proto/xudrpc_pb';
+import { formatOrders } from '../../lib/cli/commands/listorders';
+import { ListOrdersResponse } from '../../lib/proto/xudrpc_pb';
 
 describe('Command.getorders.formatOrders', () => {
   it('should flatten, format and sort orders', () => {
-    const jsonOrders: GetOrdersResponse.AsObject = {
+    const jsonOrders: ListOrdersResponse.AsObject = {
       ordersMap: [
         [
           'LTC/BTC',

@@ -28,7 +28,7 @@ class GrpcServer {
       executeSwap: grpcService.executeSwap,
       getInfo: grpcService.getInfo,
       getNodeInfo: grpcService.getNodeInfo,
-      getOrders: grpcService.getOrders,
+      listOrders: grpcService.listOrders,
       listCurrencies: grpcService.listCurrencies,
       listPairs: grpcService.listPairs,
       listPeers: grpcService.listPeers,

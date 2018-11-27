@@ -21,11 +21,11 @@
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
-    - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
-    - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
-    - [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
     - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
+    - [ListOrdersRequest](#xudrpc.ListOrdersRequest)
+    - [ListOrdersResponse](#xudrpc.ListOrdersResponse)
+    - [ListOrdersResponse.OrdersEntry](#xudrpc.ListOrdersResponse.OrdersEntry)
     - [ListPairsRequest](#xudrpc.ListPairsRequest)
     - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
@@ -323,53 +323,6 @@
 
 
 
-<a name="xudrpc.GetOrdersRequest"></a>
-
-### GetOrdersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
-| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
-
-
-
-
-
-
-<a name="xudrpc.GetOrdersResponse"></a>
-
-### GetOrdersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| orders | [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry) | repeated | A map between pair ids and their buy and sell orders. |
-
-
-
-
-
-
-<a name="xudrpc.GetOrdersResponse.OrdersEntry"></a>
-
-### GetOrdersResponse.OrdersEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [Orders](#xudrpc.Orders) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.ListCurrenciesRequest"></a>
 
 ### ListCurrenciesRequest
@@ -389,6 +342,53 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | currencies | [string](#string) | repeated | A list of ticker symbols of the supported currencies. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersRequest"></a>
+
+### ListOrdersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
+| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersResponse"></a>
+
+### ListOrdersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| orders | [ListOrdersResponse.OrdersEntry](#xudrpc.ListOrdersResponse.OrdersEntry) | repeated | A map between pair ids and their buy and sell orders. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersResponse.OrdersEntry"></a>
+
+### ListOrdersResponse.OrdersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [Orders](#xudrpc.Orders) |  |  |
 
 
 
@@ -883,7 +883,7 @@
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. |
 | GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. |
-| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
+| ListOrders | [ListOrdersRequest](#xudrpc.ListOrdersRequest) | [ListOrdersResponse](#xudrpc.ListOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |

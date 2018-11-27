@@ -1,6 +1,6 @@
 import { Arguments } from 'yargs';
 import { callback, loadXudClient } from '../command';
-import { GetOrdersRequest, GetOrdersResponse, Order, OrderSide } from '../../proto/xudrpc_pb';
+import { ListOrdersRequest, ListOrdersResponse, Order, OrderSide } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 
@@ -38,7 +38,7 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
   }
 };
 
-export const formatOrders = (orders: GetOrdersResponse.AsObject) => {
+export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
   const formattedOrders: FormattedTradingPairOrders[] = [];
   orders.ordersMap.forEach((tradingPair) => {
     const buy = sortOrders(tradingPair[1].buyOrdersList, true);
@@ -84,7 +84,7 @@ const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
   console.log(table.toString());
 };
 
-const displayTables = (orders: GetOrdersResponse.AsObject) => {
+const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
@@ -99,9 +99,9 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new GetOrdersRequest();
+  const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setIncludeOwnOrders(true);
-  loadXudClient(argv).getOrders(request, callback(argv, displayTables));
+  loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };
