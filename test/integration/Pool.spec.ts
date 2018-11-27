@@ -73,7 +73,7 @@ describe('P2P Pool Tests', async () => {
     expect(closePromise).to.be.fulfilled;
     await closePromise;
     expect(pool['peers'].has(nodePubKeyOne)).to.be.false;
-    expect(pool['peers']['peers'].size).to.equal(0);
+    expect(pool['peers'].size).to.equal(0);
   });
 
   it('should update a node on new handshake', async () => {

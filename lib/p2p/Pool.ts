@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
 import NodeList, { reputationEventWeight } from './NodeList';
-import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
@@ -71,12 +70,12 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
-  /** A set of pub keys of nodes for which we have pending outgoing connections. */
+  /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutgoingConnections = new Map<string, Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
-  private peers: PeerList = new PeerList();
+  private peers = new Map<string, Peer>();
   private server?: Server;
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
@@ -104,7 +103,7 @@ class Pool extends EventEmitter {
   }
 
   public get peerCount(): number {
-    return this.peers.length;
+    return this.peers.size;
   }
 
   /**
@@ -335,7 +334,7 @@ class Pool extends EventEmitter {
   }
 
   public listPeers = (): PeerInfo[] => {
-    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.length });
+    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.size });
     let i = 0;
     this.peers.forEach((peer) => {
       peerInfos[i] = peer.info;
@@ -558,19 +557,19 @@ class Pool extends EventEmitter {
       peer.close({ reason: DisconnectionReason.NotAcceptingConnections });
       return;
     }
-    if (peer.nodePubKey === this.handshakeData.nodePubKey) {
+    if (!peer.nodePubKey || peer.nodePubKey === this.handshakeData.nodePubKey) {
       return;
     }
 
-    if (this.nodes.isBanned(peer.nodePubKey!)) {
+    if (this.nodes.isBanned(peer.nodePubKey)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
       peer.close({ reason: DisconnectionReason.Banned });
-    } else if (this.peers.has(peer.nodePubKey!)) {
+    } else if (this.peers.has(peer.nodePubKey)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us
       peer.close({ reason: DisconnectionReason.AlreadyConnected });
     } else {
       this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
-      this.peers.add(peer);
+      this.peers.set(peer.nodePubKey, peer);
 
       // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
@@ -589,15 +588,15 @@ class Pool extends EventEmitter {
       });
 
       // upserting the node entry
-      if (!this.nodes.has(peer.nodePubKey!)) {
+      if (!this.nodes.has(peer.nodePubKey)) {
         await this.nodes.createNode({
           addresses,
-          nodePubKey: peer.nodePubKey!,
+          nodePubKey: peer.nodePubKey,
           lastAddress: peer.inbound ? undefined : peer.address,
         });
       } else {
         // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
+        await this.nodes.updateAddresses(peer.nodePubKey, addresses, peer.inbound ? undefined : peer.address);
       }
     }
   }
@@ -650,7 +649,7 @@ class Pool extends EventEmitter {
     peer.once('close', () => {
       if (peer.nodePubKey) {
         this.pendingOutgoingConnections.delete(peer.nodePubKey);
-        this.peers.remove(peer.nodePubKey);
+        this.peers.delete(peer.nodePubKey);
       }
       this.emit('peer.close', peer);
     });
