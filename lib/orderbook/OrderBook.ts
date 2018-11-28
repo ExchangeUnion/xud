@@ -289,8 +289,8 @@ class OrderBook extends EventEmitter {
       remainingOrder: matchingResult.remainingOrder,
     };
 
-    // instantiate a container for failed swaps, for retry purposes
-    const swapFailures: OwnOrder[] = [];
+    /** The quantity that was attempted to be swapped but failed. */
+    let failedSwapQuantity = 0;
 
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
@@ -308,29 +308,39 @@ class OrderBook extends EventEmitter {
           // swaps should only be undefined during integration testing of the order book
           // for now we treat this case like a swap failure
           this.emit('peerOrder.invalidation', portion);
-          swapFailures.push(taker);
+          failedSwapQuantity += portion.quantity;
           continue;
         }
 
         try {
           this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
           const swapResult = await this.executeSwap(maker, taker);
-          this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
+
+          if (swapResult.quantity < maker.quantity) {
+            // swap was only partially completed
+            portion.quantity = swapResult.quantity;
+            const rejectedQuantity = maker.quantity - swapResult.quantity;
+            failedSwapQuantity += rejectedQuantity; // add unswapped quantity to failed quantity
+            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapResult.quantity} ` +
+              `with peer ${maker.peerPubKey}, ${rejectedQuantity} quantity not accepted and will repeat matching routine`);
+          } else {
+            this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
+          }
           result.swapResults.push(swapResult);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
-          swapFailures.push(taker);
-          this.logger.warn(`swap failed during matching for order ${taker.id}, will repeat matching routine for failed swap quantity`);
+          failedSwapQuantity += portion.quantity;
+          this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
         }
       }
     }
 
     // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
-    if (swapFailures.length > 0) {
-      this.logger.debug(`${swapFailures.length} swaps failed for order ${order.id}, repeating matching routine for failed swaps quantity`);
+    if (failedSwapQuantity > 0) {
+      this.logger.debug(`${failedSwapQuantity} quantity of swaps failed for order ${order.id}, repeating matching routine for failed quantity`);
       // aggregate failures quantities with the remaining order
       const remainingOrder: OwnOrder = result.remainingOrder || { ...order, quantity: 0 };
-      swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
+      remainingOrder.quantity += failedSwapQuantity;
 
       // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
       const remainingOrderResult = await this.placeOrder(remainingOrder, true, onUpdate, maxTime);
@@ -578,12 +588,9 @@ class OrderBook extends EventEmitter {
     }
 
     const availableQuantity = order.quantity - order.hold;
-    assert(availableQuantity > 0);
-    // TODO: accept the smaller of the proposed quantity and the available quantity
-    if (availableQuantity >= proposedQuantity) {
-      // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
+    if (availableQuantity > 0) {
       /** The quantity of the order that we will accept */
-      const quantity = proposedQuantity;
+      const quantity = Math.min(proposedQuantity, availableQuantity);
 
       this.addOrderHold(order.id, pairId, quantity);
 
