@@ -1,4 +1,22 @@
 enum PacketType {
+  Hello = 0,
+  Disconnecting,
+  Ping,
+  Pong,
+  Order,
+  OrderInvalidation,
+  GetOrders,
+  Orders,
+  GetNodes,
+  Nodes,
+  SwapRequest,
+  SwapResponse,
+  SwapComplete,
+  SwapError,
+}
+
+/*
+enum PacketType {
   Hello = 'HELLO',
   Disconnecting = 'DISCONNECTING',
   Ping = 'PING',
@@ -14,5 +32,6 @@ enum PacketType {
   SwapComplete = 'SWAP_COMPLETE',
   SwapError = 'SWAP_ERROR',
 }
+*/
 
 export default PacketType;

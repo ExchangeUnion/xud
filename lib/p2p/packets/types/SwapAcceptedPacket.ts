@@ -1,5 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
+import * as pb from '../../../proto/xudp2p_pb';
 
 // TODO: proper error handling
 export type SwapAcceptedPacketBody = {
@@ -16,6 +17,13 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
 
   public get direction() {
     return PacketDirection.Response;
+  }
+
+  public serialize(): Uint8Array {
+    const msg = new pb.Hello();
+    //  msg.setVersion(this.body!.version)
+    //  msg.setNodepubkey(this.body!.nodePubKey)
+    return msg.serializeBinary();
   }
 }
 

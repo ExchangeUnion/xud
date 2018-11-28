@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+import "annotations.proto";
+
+package xudp2p;
+
+message Header {
+    string id = 1 [json_name = "id"];
+    string reqId = 2 [json_name = "req_id"];
+    string hash = 3 [json_name = "hash"];
+}
+
+message Address {
+    string host = 1 [json_name = "host"];
+    int32 port = 2 [json_name = "port"];
+}
+
+message Order {
+    string id = 2 [json_name = "id"];
+    string pairId = 3 [json_name = "pair_id"];
+    double price = 4 [json_name = "price"];
+    double quantity = 5 [json_name = "quantity"];
+    bool isBuy = 6 [json_name = "is_buy"];
+}
+
+message Node {
+    string nodePubKey = 1 [json_name = "node_pub_key"];
+    repeated Address addresses = 2 [json_name = "addresses"];
+}
+
+message PingPacket {
+    Header header = 1 [json_name = "header"];
+}
+
+message PongPacket {
+    Header header = 1 [json_name = "header"];
+}
+
+message OrderPacket {
+    Header header = 1 [json_name = "header"];
+    string id = 2 [json_name = "id"];
+    string pairId = 3 [json_name = "pair_id"];
+    double price = 4 [json_name = "price"];
+    double quantity = 5 [json_name = "quantity"];
+    bool isBuy = 6 [json_name = "is_buy"];
+}
+
+message OrderInvalidationPacket {
+    Header header = 1 [json_name = "header"];
+    string id = 2 [json_name = "id"];
+    string pairId = 3 [json_name = "pair_id"];
+    double quantity = 5 [json_name = "quantity"];
+}
+
+message GetOrdersPacket {
+    Header header = 1 [json_name = "header"];
+    repeated string pairIds = 2 [json_name = "pair_ids"];
+}
+
+message OrdersPacket {
+    Header header = 1 [json_name = "header"];
+    repeated Order orders = 2 [json_name = "orders"];
+}
+
+message HelloPacket {
+    Header header = 1 [json_name = "header"];
+    string version = 2 [json_name = "version"];
+    string nodePubKey = 3 [json_name = "node_pub_key"];
+    repeated Address addresses = 4 [json_name = "addresses"];
+    repeated string pairs = 5 [json_name = "pairs"];
+    string raidenAddress = 6 [json_name = "raiden_address"];
+    string lndBtcPubKey = 7 [json_name = "lnd_btc_pub_key"];
+    string lndLtcPubKey = 8 [json_name = "lnd_ltc_pub_key"];
+}
+
+message DisconnectingPacket {
+    Header header = 1 [json_name = "header"];
+    int32 reason = 2 [json_name = "reason"];
+    string payload = 3 [json_name = "payload"];
+}
+
+message GetNodesPacket {
+    Header header = 1 [json_name = "header"];
+}
+
+message NodesPacket {
+    Header header = 1 [json_name = "header"];
+    repeated Node nodes = 2 [json_name = "nodes"];
+}

@@ -1,8 +1,11 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import Parser from '../../lib/p2p/Parser';
-import { PingPacket, HelloPacket } from '../../lib/p2p/packets/types';
-import { Packet } from '../../lib/p2p/packets';
+import { Packet, PacketType } from '../../lib/p2p/packets';
+import * as packets from '../../lib/p2p/packets/types';
+import { removeUndefinedProps } from '../../lib/utils/utils';
+import { DisconnectionReason } from '../../lib/types/enums';
+import uuid = require('uuid');
 
 chai.use(chaiAsPromised);
 
@@ -43,16 +46,27 @@ describe('Parser', () => {
   }
 
   function testPacket(packet: Packet) {
-    it(`should parse ${packet.type}`, (done) => {
+    it(`should parse a valid ${PacketType[packet.type]}`, (done) => {
       verify([packet])
         .then(done)
         .catch(done);
 
-      const packetStr = packet.toRaw();
-      parser.feed(packetStr + delimiter);
+      const raw = packet.toRaw();
+      parser.feed(raw);
     });
   }
 
+  function testInvalidPacket(packet: Packet) {
+    it(`should not parse an invalid ${PacketType[packet.type]}`, (done) => {
+      verify([packet])
+        .then(() => done('err: packet is valid'))
+        .catch(() => done());
+
+      const raw = packet.toRaw();
+      parser.feed(raw);
+    });
+  }
+/*
   function testSplitPacket(packet: Packet) {
     it(`should parse ${packet.type} split`, (done) => {
       verify([packet])
@@ -92,23 +106,97 @@ describe('Parser', () => {
       parser.feed(remaining);
     });
   }
+  */
 
-  const pingPacket = new PingPacket();
-  const helloPacket = new HelloPacket({
+  testPacket(new packets.PingPacket());
+
+  testPacket(new packets.PongPacket(undefined, uuid()));
+  testInvalidPacket(new packets.PongPacket(undefined));
+
+  const helloPacketBody = {
     version: '1.0.0',
-    nodePubKey: '0479BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F8179',
-    addresses: [{ host: '1.1.1.1', port: 8885 }],
-    pairs: ['LTC/BTC'],
-    raidenAddress: '8483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8',
-  });
+    nodePubKey: uuid(),
+    addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
+    pairs: [uuid()],
+    raidenAddress: uuid(),
+    lndbtcPubKey: uuid(),
+    lndltcPubKey: uuid(),
+  };
+  testPacket(new packets.HelloPacket(helloPacketBody));
+  testPacket(new packets.HelloPacket({ ...helloPacketBody, pairs: [] }));
+  testPacket(new packets.HelloPacket({ ...helloPacketBody, addresses: [] }));
+  testPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, raidenAddress: undefined })));
+  testPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, lndbtcPubKey: undefined })));
+  testPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, lndltcPubKey: undefined })));
+  testInvalidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, version: undefined })));
+  testInvalidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, nodePubKey: undefined })));
 
-  testPacket(pingPacket);
-  testPacket(helloPacket);
-  testSplitPacket(pingPacket);
-  testSplitPacket(helloPacket);
-  testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
-  testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
+  const disconnectingPacketBody = {
+    reason: DisconnectionReason.IncompatibleProtocolVersion,
+    payload: uuid(),
+  };
+  testPacket(new packets.DisconnectingPacket(disconnectingPacketBody));
+  testPacket(new packets.DisconnectingPacket(removeUndefinedProps({ ...disconnectingPacketBody, payload: undefined })));
+  testInvalidPacket(new packets.DisconnectingPacket(removeUndefinedProps({ ...disconnectingPacketBody, reason: undefined })));
 
+  testPacket(new packets.GetNodesPacket());
+
+  const node = {
+    nodePubKey: uuid(),
+    addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
+  };
+  testPacket(new packets.NodesPacket([node], uuid()));
+  testInvalidPacket(new packets.NodesPacket([node]));
+  testInvalidPacket(new packets.NodesPacket([removeUndefinedProps({ ...node, nodePubKey: undefined })], uuid()));
+  testInvalidPacket(new packets.NodesPacket([{ ...node, addresses: [] }], uuid()));
+
+  const orderPacketBody = {
+    id: uuid(),
+    pairId: uuid(),
+    price: 10,
+    quantity: 10,
+    isBuy: false,
+  };
+  testPacket(new packets.OrderPacket(orderPacketBody));
+  testPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, isBuy: true })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: undefined })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, price: 0 })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })));
+  testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
+
+  const orderInvalidationPacketBody = {
+    id: uuid(),
+    pairId: uuid(),
+    quantity: 10,
+  };
+  testPacket(new packets.OrderInvalidationPacket(orderInvalidationPacketBody));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: undefined })));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...orderPacketBody, quantity: 0 })));
+
+  const getOrdersPacketBody = {
+    pairIds: [uuid()],
+  };
+  testPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined })));
+  testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })));
+
+  const ordersPacketBody = [
+    orderPacketBody,
+  ];
+  testPacket(new packets.OrdersPacket(ordersPacketBody, uuid()));
+  testPacket(new packets.OrdersPacket([], uuid()));
+  testInvalidPacket(new packets.OrdersPacket(ordersPacketBody));
+
+ // testSplitPacket(pingPacket);
+ // testSplitPacket(helloPacket);
+ // testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
+ // testConcatenatedAndSplitOnTheDelimiter([pingPacket, helloPacket, pingPacket]);
+
+  /*
   it(`should not try to parse an empty string`, () => {
     expect(wait()).to.be.rejected;
 
@@ -134,4 +222,5 @@ describe('Parser', () => {
 
     parser.feed(Buffer.allocUnsafe(11).toString());
   });
+  */
 });
