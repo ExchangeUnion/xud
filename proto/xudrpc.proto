@@ -387,6 +387,8 @@ message Order {
   OrderSide side = 8 [json_name = "side"];
   // Whether this order is a local own order or a remote peer order.
   bool is_own_order = 9 [json_name = "is_own_order"];
+  // The amount on hold pending swap exectuion.
+  double hold = 10 [json_name = "hold"];
 }
 
 message OrderRemoval {

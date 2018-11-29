@@ -1,10 +1,10 @@
-import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions } from 'sequelize';
+import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions, DefineAttributes } from 'sequelize';
 import { Address, NodeConnectionInfo } from './p2p';
 import { SwapDeal } from '../swaps/types';
 import { Currency, Pair, OwnOrder, Order } from './orders';
 import { ReputationEvent } from './enums';
 
-export type SequelizeAttributes<T extends { [key: string]: any }> = {
+export type SequelizeAttributes<T extends { [key: string]: any }> = DefineAttributes & {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
 };
 
@@ -30,26 +30,27 @@ export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyA
 /* SwapDeal */
 export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal, 'makerToTakerRoutes' | 'price' | 'pairId' | 'isBuy'>>;
 
-export type SwapDealAttributes = Pick<SwapDealFactory, Exclude<keyof SwapDealFactory, 'peerPubKey'>> & {
-  makerCltvDelta: number;
-  rPreimage: string;
-  errorReason: string;
-  quantity: number;
-  takerPubKey: string;
-  executeTime: number;
-  completeTime: number;
+export type SwapDealAttributes = SwapDealFactory & {
   /** The internal db node id of the counterparty peer for this swap deal. */
   nodeId: number;
+  Node?: NodeAttributes;
+  Order?: OrderAttributes;
 };
 
-export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes>;
+export type SwapDealInstance = SwapDealAttributes & Sequelize.Instance<SwapDealAttributes> & {
+  getNode: Sequelize.BelongsToGetAssociationMixin<NodeInstance>;
+  getOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
+};
 
-export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold'>>;
+export type OrderFactory = Pick<Order, Exclude<keyof Order, 'quantity' | 'hold' | 'price'>> & {
+  /** The internal db node id of the peer that created this order. */
+  nodeId?: number;
+  localId?: string;
+  /** The price for the order expressed in units of the quote currency. */
+  price?: number;
+};
 
 export type OrderAttributes = OrderFactory & {
-  /** The internal db node id of the peer that created this order. */
-  nodeId: number;
-  localId: string;
 };
 
 export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes>;

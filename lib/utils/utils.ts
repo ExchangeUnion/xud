@@ -2,6 +2,8 @@ import http from 'http';
 import p2pErrors from '../p2p/errors';
 import { assert } from 'chai';
 import { Pair } from '../types/orders';
+import crypto from 'crypto';
+import { promisify } from 'util';
 
 export type UriParts = {
   nodePubKey: string;
@@ -170,3 +172,6 @@ export const isPlainObject = (obj: any) => {
   }
   return Object.getPrototypeOf(obj) === proto;
 };
+
+/** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
+export const randomBytes = promisify(crypto.randomBytes);

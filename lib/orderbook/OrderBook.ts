@@ -268,7 +268,7 @@ class OrderBook extends EventEmitter {
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
       assert(discardRemaining, 'discardRemaining must be true on recursive calls where maxTime could exceed');
-      this.logger.info(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be matched`);
+      this.logger.debug(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be fully matched`);
 
       // returning the remaining order to be rolled back and handled by the initial call
       return Promise.resolve({
@@ -297,9 +297,11 @@ class OrderBook extends EventEmitter {
       const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (orders.isOwnOrder(maker)) {
         // internal match
+        this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         portion.localId = maker.localId;
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
+        await this.persistTrade(portion.quantity, maker, taker);
         onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
       } else {
         if (!this.swaps) {
@@ -312,13 +314,17 @@ class OrderBook extends EventEmitter {
 
         try {
           await this.repository.addOrderIfNotExists(maker);
+          this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
           const swapResult = await this.swaps.executeSwap(maker, taker);
           this.emit('peerOrder.filled', portion);
+          await this.persistTrade(swapResult.quantity, maker, taker);
           result.swapResults.push(swapResult);
+          this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
           this.emit('peerOrder.invalidation', portion);
           swapFailures.push(taker);
+          this.logger.warn('swap failed during order matching, will repeat matching routine for failed swap quantity');
           // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
         }
       }
@@ -326,6 +332,7 @@ class OrderBook extends EventEmitter {
 
     // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
     if (swapFailures.length > 0) {
+      this.logger.debug(`${swapFailures.length} swaps failed for order ${order.id}, repeating matching routine for failed swaps quantity`);
       // aggregate failures quantities with the remaining order
       const remainingOrder: OwnOrder = result.remainingOrder || { ...order, quantity: 0 };
       swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
@@ -361,6 +368,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
+      await this.persistTrade(swapResult.quantity, maker, taker);
       return swapResult;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
@@ -381,10 +389,18 @@ class OrderBook extends EventEmitter {
     this.localIdMap.set(order.localId, { id: order.id, pairId: order.pairId });
 
     this.emit('ownOrder.added', order);
-    this.logger.debug(`order added: ${JSON.stringify(order)}`);
 
     this.broadcastOrder(order);
     return true;
+  }
+
+  private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
+    await Promise.all([this.repository.addOrderIfNotExists(makerOrder), this.repository.addOrderIfNotExists(takerOrder)]);
+    await this.repository.addTrade({
+      quantity,
+      makerOrderId: makerOrder.id,
+      takerOrderId: takerOrder.id,
+    });
   }
 
   /**
@@ -395,7 +411,6 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: orders.IncomingOrder): boolean => {
     const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
-      this.logger.debug(`incoming peer order invalid pairId: ${order.pairId}`);
       // TODO: penalize peer
       return false;
     }
@@ -408,7 +423,6 @@ class OrderBook extends EventEmitter {
       return false;
     }
 
-    this.logger.debug(`order added: ${JSON.stringify(stampedOrder)}`);
     this.emit('peerOrder.incoming', stampedOrder);
 
     return true;
@@ -430,13 +444,11 @@ class OrderBook extends EventEmitter {
   private addOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
     const tp = this.getTradingPair(pairId);
     tp.addOrderHold(orderId, holdAmount);
-    this.logger.debug(`added hold on ${holdAmount} for order ${orderId}`);
   }
 
   private removeOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
     const tp = this.getTradingPair(pairId);
     tp.removeOrderHold(orderId, holdAmount);
-    this.logger.debug(`removed hold on ${holdAmount} for order ${orderId}`);
   }
 
   /**
@@ -476,7 +488,6 @@ class OrderBook extends EventEmitter {
   }
 
   private removePeerOrders = async (peer: Peer): Promise<void> => {
-    // TODO: remove only from pairs which are supported by the peer
     if (!peer.nodePubKey) {
       return;
     }
@@ -487,6 +498,8 @@ class OrderBook extends EventEmitter {
         this.emit('peerOrder.invalidation', order);
       });
     });
+
+    this.logger.debug(`removed all orders for peer ${peer.nodePubKey}`);
   }
 
   /**
@@ -520,14 +533,15 @@ class OrderBook extends EventEmitter {
   }
 
   public stampOwnOrder = (order: OwnLimitOrder): OwnOrder  => {
-    // verify localId isn't duplicated. generate one if it's blank
+    const id = uuidv1();
+    // verify localId isn't duplicated. use global id if blank
     if (order.localId === '') {
-      order.localId = uuidv1();
+      order.localId = id;
     } else if (this.localIdMap.has(order.localId)) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    return { ...order, initialQuantity: order.quantity, id: uuidv1(), createdAt: ms() };
+    return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
   }
 
   private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {

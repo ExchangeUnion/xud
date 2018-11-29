@@ -54,7 +54,7 @@ const init = () => {
 
 describe('TradingPair.getMatchingQuantity', () => {
   it('should not match buy order with a lower price then a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 10, true),
       createOwnOrder(5.5, 10, false),
     );
@@ -62,7 +62,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match buy order with a higher then a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5.5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -70,7 +70,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match buy order with an equal price to a sell order', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 10, true),
       createOwnOrder(5, 10, false),
     );
@@ -78,7 +78,7 @@ describe('TradingPair.getMatchingQuantity', () => {
   });
 
   it('should match with lowest quantity of both orders', () => {
-    const res = TradingPair.getMatchingQuantity(
+    const res = TradingPair['getMatchingQuantity'](
       createOwnOrder(5, 5, true),
       createOwnOrder(5, 10, false),
     );
@@ -143,30 +143,17 @@ describe('TradingPair.getOrdersPriorityQueueComparator', () => {
 });
 
 describe('TradingPair.splitOrderByQuantity', () => {
-  it('should split buy orders properly', () => {
+  it('should split an order properly', () => {
     const orderQuantity = 10;
     const matchingQuantity = 6;
-    const { matched, remaining } = TradingPair.splitOrderByQuantity(
-      createOwnOrder(5, orderQuantity, true),
-      matchingQuantity,
-    );
-    expect(matched.quantity).to.equal(matchingQuantity);
-    expect(remaining.quantity).to.equal(orderQuantity - matchingQuantity);
-  });
-
-  it('should split sell orders properly', () => {
-    const orderQuantity = 10;
-    const matchingQuantity = 4;
-    const { matched, remaining } = TradingPair.splitOrderByQuantity(
-      createOwnOrder(5, orderQuantity, false),
-      matchingQuantity,
-    );
-    expect(matched.quantity).to.equal(matchingQuantity);
-    expect(remaining.quantity).to.equal(orderQuantity - matchingQuantity);
+    const order = createOwnOrder(5, orderQuantity, true);
+    const matchedOrder = TradingPair['splitOrderByQuantity'](order, matchingQuantity);
+    expect(matchedOrder.quantity).to.equal(matchingQuantity);
+    expect(order.quantity).to.equal(orderQuantity - matchingQuantity);
   });
 
   it('should not work when matchingQuantity higher than quantity of order', () => {
-    expect(() => TradingPair.splitOrderByQuantity(
+    expect(() => TradingPair['splitOrderByQuantity'](
       createOwnOrder(5, 5, true),
       10,
     )).to.throw('order quantity must be greater than matchingQuantity');
@@ -271,7 +258,7 @@ describe('TradingPair.removePeerOrders', () => {
 
 });
 
-describe('MatchingEngine queues and maps integrity', () => {
+describe('TradingPair queues and maps integrity', () => {
   beforeEach(init);
 
   it('queue and map should both remove an own order', () => {

@@ -21,6 +21,7 @@ const createOrder = (order: Order) => {
   grpcOrder.setCreatedAt(order.createdAt);
   grpcOrder.setId(order.id);
   if (isOwnOrder(order)) {
+    grpcOrder.setHold(order.hold);
     grpcOrder.setLocalId((order).localId);
     grpcOrder.setIsOwnOrder(true);
   } else {
@@ -321,7 +322,9 @@ class GrpcService {
     try {
       const { banned, reputationScore } = await this.service.getNodeInfo(call.request.toObject());
       const response = new xudrpc.GetNodeInfoResponse();
-      response.setBanned(banned);
+      if (banned) {
+        response.setBanned(banned);
+      }
       response.setReputationscore(reputationScore);
       callback(null, response);
     } catch (err) {

@@ -4,7 +4,7 @@ import { GetOrdersRequest, GetOrdersResponse, Order, OrderSide } from '../../pro
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 
-type FormatedTradingPairOrders = {
+type FormattedTradingPairOrders = {
   pairId: string,
   orders: string[][],
 };
@@ -39,22 +39,22 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
 };
 
 export const formatOrders = (orders: GetOrdersResponse.AsObject) => {
-  const formatedOrders: FormatedTradingPairOrders[] = [];
+  const formattedOrders: FormattedTradingPairOrders[] = [];
   orders.ordersMap.forEach((tradingPair) => {
-    const buy = tradingPair[1].buyOrdersList;
-    const sell = tradingPair[1].sellOrdersList;
+    const buy = sortOrders(tradingPair[1].buyOrdersList, true);
+    const sell = sortOrders(tradingPair[1].sellOrdersList, false);
     const totalRows = buy.length < sell.length
       ? sell.length : buy.length;
     const tradingPairOrders = Array.from(Array(totalRows))
       .map(() => {
         return addSide(buy).concat(addSide(sell));
       });
-    formatedOrders.push({
+    formattedOrders.push({
       pairId: tradingPair[0],
       orders: tradingPairOrders,
     });
   });
-  return formatedOrders;
+  return formattedOrders;
 };
 
 const createTable = () => {
@@ -66,7 +66,18 @@ const createTable = () => {
   return table;
 };
 
-const displayOrdersTable = (tradingPair: FormatedTradingPairOrders) => {
+const sortOrders = (orderSide: Order.AsObject[], isBuy: boolean) => {
+  return orderSide.sort((a, b) => {
+    if (a.price === b.price) {
+      return a.createdAt - b.createdAt;
+    }
+    return isBuy
+      ? a.price - b.price
+      : b.price - a.price;
+  });
+};
+
+const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
   const table = createTable();
   tradingPair.orders.forEach(order => table.push(order));
   console.log(colors.underline(colors.bold(`\nTrading pair: ${tradingPair.pairId}`)));

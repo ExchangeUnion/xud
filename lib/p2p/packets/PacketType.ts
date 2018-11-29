@@ -1,5 +1,6 @@
 enum PacketType {
   Hello = 'HELLO',
+  Disconnecting = 'DISCONNECTING',
   Ping = 'PING',
   Pong = 'PONG',
   Order = 'ORDER',
