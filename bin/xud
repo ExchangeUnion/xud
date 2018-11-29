@@ -103,10 +103,14 @@ const { argv } = require('yargs')
       describe: 'String array of reachable addresses',
       type: 'array',
     },
-    'p2p.listen': {
+    'p2p.nolisten': {
       describe: 'Listen for incoming peers',
       type: 'boolean',
       default: undefined,
+    },
+    'p2p.listen': {
+      describe: 'Uris to listen on',
+      type: 'array',
     },
     'p2p.discover': {
       describe: 'Automatically discover and connect to new nodes',

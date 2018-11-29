@@ -20,7 +20,7 @@ describe('WebProxy', async () => {
       logpath: '',
       loglevel: 'warn',
       p2p: {
-        listen: false,
+        nolisten: true,
       },
       lndbtc: {
         disable: true,

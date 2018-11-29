@@ -96,7 +96,7 @@ class Pool extends EventEmitter {
       this.listenPort = config.port || 0;
       this.interfaces = [];
 
-      /** Makes sure all uris are properlly formatted  */
+      /** Makes sure all uris are properly formatted  */
       config.listen.forEach((uri) => {
         if (uri.split(':').length === 2) {
           this.interfaces!.push(uri);
