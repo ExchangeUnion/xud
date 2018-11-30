@@ -1,10 +1,8 @@
-export function getEnv(): any {
-  return {
-    protocol: 'http',
-    host: 'localhost',
-    port: '8080',
-    version: 'v1'
-  }
+export const env = {
+  protocol: 'http',
+  host: 'localhost',
+  port: '8080',
+  version: 'v1'
 }
 
 export function getConfig(port: any): any {
