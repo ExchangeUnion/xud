@@ -47,6 +47,8 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
+  swapResult.setCurrencyReceived(result.currencyReceived);
+  swapResult.setCurrencySent(result.currencySent);
   swapResult.setPeerPubKey(result.peerPubKey);
   swapResult.setRole(result.role as number);
   return swapResult;
