@@ -126,8 +126,8 @@ export namespace RemoveOrderRequest {
 }
 
 export class RemoveOrderResponse extends jspb.Message { 
-    getHold(): number;
-    setHold(value: number): void;
+    getQuantityOnHold(): number;
+    setQuantityOnHold(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -142,7 +142,7 @@ export class RemoveOrderResponse extends jspb.Message {
 
 export namespace RemoveOrderResponse {
     export type AsObject = {
-        hold: number,
+        quantityOnHold: number,
     }
 }
 

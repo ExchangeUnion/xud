@@ -443,6 +443,7 @@ class OrderBook extends EventEmitter {
     if (order.hold) {
       let remainingHold = order.hold;
       // we can't remove the entire order as some of it is on hold, start by removing any available portion
+      this.logger.debug(`can't remove local order ${localId} yet because it has a hold of ${order.hold}`);
       const availableQuantity = order.quantity - order.hold;
       if (availableQuantity) {
         this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, availableQuantity);
@@ -450,6 +451,7 @@ class OrderBook extends EventEmitter {
 
       const cleanup = (quantity: number) => {
         remainingHold -= quantity;
+        this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingHold} remaining`);
         if (remainingHold === 0) {
           // we can stop listening for swaps once all holds are cleared
           this.swaps!.removeListener('swap.failed', failedHandler);

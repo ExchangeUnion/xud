@@ -1088,7 +1088,7 @@
     "xudrpcRemoveOrderResponse": {
       "type": "object",
       "properties": {
-        "hold": {
+        "quantity_on_hold": {
           "type": "number",
           "format": "double",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."

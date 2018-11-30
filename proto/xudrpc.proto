@@ -260,7 +260,7 @@ message RemoveOrderRequest {
 message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
-  double hold = 1 [json_name = "hold"];
+  double quantity_on_hold = 1 [json_name = "hold"];
 }
 
 message ChannelBalance {
