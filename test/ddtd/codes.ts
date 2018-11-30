@@ -259,5 +259,5 @@ export function grpcToHttp(code: number): number {
   		return http.InternalServerError;
 	}
 
-	return http.InternalServerError
+	return http.InternalServerError;
 }
