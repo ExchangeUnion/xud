@@ -62,72 +62,96 @@ As you can see, the sample data is exactly the same for both the webproxy and th
 As an example, here is the output obtained when running a test:
 
 ```
-node node_modules/.bin/mocha -r ts-node/register test/ddtd/getNodeInfo/xudrpc.spec.ts
+node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetNodeInfo/webproxy.spec.ts
 
 
-  getNodeInfo
-    1) ?foo=bar responds with grp status 3
-    2) 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with grp status 3
-    3)  responds with grp status 5
-    4) foo responds with grp status 5
-    5) bar responds with grp status 5
-    6) foobar responds with grp status 5
+  http://localhost:8080/api/v1/nodeinfo
+    1) GET ?foo=bar responds with http status 400
+    2) GET 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with http status 400
+    3) GET  responds with http status 404
+    4) GET foo responds with http status 404
+    5) GET bar responds with http status 404
+    6) GET foobar responds with http status 404
 
 
-  0 passing (355ms)
+  0 passing (168ms)
   6 failing
 
-  1) getNodeInfo
-       ?foo=bar responds with grp status 3:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+  1) http://localhost:8080/api/v1/nodeinfo
+       GET ?foo=bar responds with http status 400:
 
-  2) getNodeInfo
-       律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with grp status 3:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+      AssertionError: expected 500 to equal 400
+      + expected - actual
 
-  3) getNodeInfo
-        responds with grp status 5:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+      -500
+      +400
 
-  4) getNodeInfo
-       foo responds with grp status 5:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:19:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
 
-  5) getNodeInfo
-       bar responds with grp status 5:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+  2) http://localhost:8080/api/v1/nodeinfo
+       GET 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with http status 400:
 
-  6) getNodeInfo
-       foobar responds with grp status 5:
-     Error: 14 UNAVAILABLE: Trying to connect an http1.x server
-      at Object.exports.createStatusError (node_modules/grpc/src/common.js:87:15)
-      at Object.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:1188:28)
-      at InterceptingListener._callNext (node_modules/grpc/src/client_interceptors.js:564:42)
-      at InterceptingListener.onReceiveStatus (node_modules/grpc/src/client_interceptors.js:614:8)
-      at callback (node_modules/grpc/src/client_interceptors.js:841:24)
+      AssertionError: expected 404 to equal 400
+      + expected - actual
+
+      -404
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:19:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
+
+  3) http://localhost:8080/api/v1/nodeinfo
+       GET  responds with http status 404:
+
+      AssertionError: expected 500 to equal 400
+      + expected - actual
+
+      -500
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
+
+  4) http://localhost:8080/api/v1/nodeinfo
+       GET foo responds with http status 404:
+
+      AssertionError: expected 404 to equal 400
+      + expected - actual
+
+      -404
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
+
+  5) http://localhost:8080/api/v1/nodeinfo
+       GET bar responds with http status 404:
+
+      AssertionError: expected 404 to equal 400
+      + expected - actual
+
+      -404
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
+
+  6) http://localhost:8080/api/v1/nodeinfo
+       GET foobar responds with http status 404:
+
+      AssertionError: expected 404 to equal 400
+      + expected - actual
+
+      -404
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
 ```
