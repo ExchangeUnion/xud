@@ -1,8 +1,14 @@
 export const env = {
-  protocol: 'http',
-  host: 'localhost',
-  port: '8080',
-  version: 'v1'
+  webproxy: {
+    protocol: 'http',
+    host: 'localhost',
+    port: '8080',
+    version: 'v1'
+  },
+  xudrpc: {
+    host: 'localhost',
+    port: '8886'
+  }
 }
 
 export function getConfig(port: any): any {

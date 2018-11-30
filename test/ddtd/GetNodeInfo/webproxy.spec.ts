@@ -5,7 +5,7 @@ import * as codes from '../codes';
 import grpcStatus3 from './data/03_INVALID_ARGUMENT.json';
 import grpcStatus5 from './data/05_NOT_FOUND.json';
 
-const baseUrl = `${env.protocol}://${env.host}:${env.port}/api/${env.version}`;
+const baseUrl = `${env.webproxy.protocol}://${env.webproxy.host}:${env.webproxy.port}/api/${env.webproxy.version}`;
 const endpoint = '/nodeinfo';
 
 describe(`${baseUrl}${endpoint}`, () => {

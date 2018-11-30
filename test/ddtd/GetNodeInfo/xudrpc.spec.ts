@@ -7,12 +7,11 @@ import * as codes from '../codes';
 import grpcStatus3 from './data/03_INVALID_ARGUMENT.json';
 import grpcStatus5 from './data/05_NOT_FOUND.json';
 
-const baseUrl = `${env.protocol}://${env.host}:${env.port}/api/${env.version}`;
 const method = 'GetNodeInfo';
 
 describe(method, () => {
   const credentials = grpc.credentials.createInsecure();
-  let client = new XudClient(`${env.host}:${env.port}`, credentials);
+  let client = new XudClient(`${env.xudrpc.host}:${env.xudrpc.port}`, credentials);
 
   grpcStatus3.parameters.forEach(function(parameters) {
     it(`${parameters.node_pub_key} responds with grp status 3`, (done) => {

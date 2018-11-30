@@ -3,7 +3,7 @@ import chaiHttp from 'chai-http';
 import { env } from '../bootstrap';
 import * as codes from '../codes';
 
-const baseUrl = `${env.protocol}://${env.host}:${env.port}/api/${env.version}`;
+const baseUrl = `${env.webproxy.protocol}://${env.webproxy.host}:${env.webproxy.port}/api/${env.webproxy.version}`;
 const endpoint = '/info';
 
 describe(`${baseUrl}${endpoint}`, () => {
