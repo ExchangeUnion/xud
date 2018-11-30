@@ -126,29 +126,53 @@ interface Parser {
 
 /** Protocol packet parser */
 class Parser extends EventEmitter {
-  private buffer = '';
-
   private pending: Buffer[] = [];
   private waiting = 0;
+  private waitingMetadata = 0;
   private type = 0;
 
+  public static readonly PACKET_METADATA_SIZE = 5; // in bytes
   private static readonly MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
 
-  constructor(private delimiter: string, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
+  constructor(private packetMetadataSize: number = Parser.PACKET_METADATA_SIZE, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
     super();
   }
 
   public feed = (data: Buffer): void => {
+    const total = this.pending
+      .map(buffer => buffer.length)
+      .reduce((acc, curr) => acc + curr, 0) + data.length
+    if (total > this.maxBufferSize) {
+      this.resetCycle();
+      this.emit('error', new ParserError(ParserErrorType.MaxBufferSizeExceeded, total.toString()));
+      return;
+    }
+
     if (this.waiting) {
       this.read(this.waiting, data);
+    } else if (this.waitingMetadata) {
+      this.pending.push(data.slice(0, this.waitingMetadata));
+      const { type, size } = this.readMetadata(Buffer.concat(this.pending));
+      this.type = type;
+      this.pending = []
+      this.read(size, data.slice(this.waitingMetadata));
+    } else if (data.length < this.packetMetadataSize) {
+      this.pending.push(data);
+      this.waitingMetadata = this.packetMetadataSize - data.length;
     } else {
-      // first byte is the packet type
-      this.type = data.readUInt8(0, true);
-      // first 4 bytes are the size of the packet
-      const size = data.readUInt32LE(1, true);
-
-      this.read(size, data.slice(5));
+      const { type, size } = this.readMetadata(data);
+      this.type = type;
+      this.read(size, data.slice(this.packetMetadataSize));
     }
+  }
+
+  private readMetadata = (data: Buffer): { type: number, size: number } => {
+    // first byte is the packet type
+    const type = data.readUInt8(0, true);
+    // next 4 bytes are the size of the packet
+    const size = data.readUInt32LE(1, true);
+
+    return { type, size }
   }
 
   private read = (size: number, chunk: Buffer) => {
@@ -167,7 +191,9 @@ class Parser extends EventEmitter {
 
   private resetCycle = () => {
     this.waiting = 0;
+    this.waitingMetadata = 0;
     this.pending = [];
+
   }
 
   private parsePacket = (type: number, chunks: Buffer[]): void => {
