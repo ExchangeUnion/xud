@@ -66,19 +66,19 @@ node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetNodeInfo/webproxy.
 
 
   http://localhost:8080/api/v1/nodeinfo
-    1) GET ?foo=bar responds with http status 400
-    2) GET 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with http status 400
-    3) GET  responds with http status 404
+    1) GET  responds with http status 400
+    2) GET ?foo=bar responds with http status 400
+    3) GET 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with http status 400
     4) GET foo responds with http status 404
     5) GET bar responds with http status 404
     6) GET foobar responds with http status 404
 
 
-  0 passing (168ms)
+  0 passing (175ms)
   6 failing
 
   1) http://localhost:8080/api/v1/nodeinfo
-       GET ?foo=bar responds with http status 400:
+       GET  responds with http status 400:
 
       AssertionError: expected 500 to equal 400
       + expected - actual
@@ -91,6 +91,19 @@ node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetNodeInfo/webproxy.
       at process._tickCallback (internal/process/next_tick.js:182:7)
 
   2) http://localhost:8080/api/v1/nodeinfo
+       GET ?foo=bar responds with http status 400:
+
+      AssertionError: expected 500 to equal 400
+      + expected - actual
+
+      -500
+      +400
+
+      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:19:33)
+      at <anonymous>
+      at process._tickCallback (internal/process/next_tick.js:182:7)
+
+  3) http://localhost:8080/api/v1/nodeinfo
        GET 律絕諸篇俱宇宙古今مليارات في мале,тъйжалнопе responds with http status 400:
 
       AssertionError: expected 404 to equal 400
@@ -100,19 +113,6 @@ node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetNodeInfo/webproxy.
       +400
 
       at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:19:33)
-      at <anonymous>
-      at process._tickCallback (internal/process/next_tick.js:182:7)
-
-  3) http://localhost:8080/api/v1/nodeinfo
-       GET  responds with http status 404:
-
-      AssertionError: expected 500 to equal 400
-      + expected - actual
-
-      -500
-      +400
-
-      at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
       at <anonymous>
       at process._tickCallback (internal/process/next_tick.js:182:7)
 
@@ -154,4 +154,5 @@ node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetNodeInfo/webproxy.
       at chai_1.default.request.get.then (test/ddtd/GetNodeInfo/webproxy.spec.ts:34:33)
       at <anonymous>
       at process._tickCallback (internal/process/next_tick.js:182:7)
+
 ```

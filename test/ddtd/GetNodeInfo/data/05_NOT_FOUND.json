@@ -1,9 +1,6 @@
 {
   "parameters": [
     {
-      "node_pub_key": ""
-    },
-    {
       "node_pub_key": "foo"
     },
     {
