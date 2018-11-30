@@ -113,11 +113,11 @@ class Service extends EventEmitter {
   /*
    * Remove placed order from the orderbook.
    */
-  public removeOrder = async (args: { orderId: string }) => {
+  public removeOrder = (args: { orderId: string }) => {
     const { orderId } = args;
     argChecks.HAS_ORDER_ID(args);
 
-    this.orderBook.removeOwnOrderByLocalId(orderId);
+    return this.orderBook.removeOwnOrderByLocalId(orderId);
   }
 
   /** Gets the total lightning network channel balance for a given currency. */

@@ -16,7 +16,7 @@ import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapResult } from 'lib/swaps/types';
+import { SwapResult, SwapDeal } from 'lib/swaps/types';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -431,14 +431,51 @@ class OrderBook extends EventEmitter {
   /**
    * Removes an order from the order book by its local id. Throws an error if the specified pairId
    * is not supported or if the order to cancel could not be found.
+   * @returns any quantity of the order that was on hold and could not be immediately removed.
    */
   public removeOwnOrderByLocalId = (localId: string) => {
-    const order = this.localIdMap.get(localId);
-    if (!order) {
+    const orderIdentifier = this.localIdMap.get(localId);
+    if (!orderIdentifier) {
       throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
     }
 
-    this.removeOwnOrder(order.id, order.pairId);
+    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    if (order.hold) {
+      let remainingHold = order.hold;
+      // we can't remove the entire order as some of it is on hold, start by removing any available portion
+      const availableQuantity = order.quantity - order.hold;
+      if (availableQuantity) {
+        this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, availableQuantity);
+      }
+
+      const cleanup = (quantity: number) => {
+        remainingHold -= quantity;
+        if (remainingHold === 0) {
+          // we can stop listening for swaps once all holds are cleared
+          this.swaps!.removeListener('swap.failed', failedHandler);
+          this.swaps!.removeListener('swap.paid', paidHandler);
+        }
+      };
+
+      const failedHandler = (deal: SwapDeal) => {
+        if (deal.orderId === orderIdentifier.id) {
+          // remove the portion that failed now that it's not on hold
+          this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, deal.quantity!);
+          cleanup(deal.quantity!);
+        }
+      };
+
+      const paidHandler = (result: SwapResult) => {
+        if (result.orderId === orderIdentifier.id) {
+          cleanup(result.quantity);
+        }
+      };
+
+      this.swaps!.on('swap.failed', failedHandler);
+      this.swaps!.on('swap.paid', paidHandler);
+    }
+    this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    return order.hold;
   }
 
   private addOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
