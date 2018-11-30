@@ -342,7 +342,9 @@ class TradingPair {
           map.delete(makerOrder.id);
           this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
         } else if (makerAvailableQuantityFullyMatched) {
+          // only an own order can be fully matched for available quantity, but not fully matched in the overall
           assert(isOwnOrder(makerOrder));
+
           assert(queue.poll() === makerOrder);
           queueRemovedOrdersWithHold.push(makerOrder as OwnOrder);
         }
