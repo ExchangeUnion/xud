@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import Parser, {ParserErrorType} from '../../lib/p2p/Parser';
+import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
@@ -28,7 +28,7 @@ describe('Parser', () => {
           resolve(parsedPackets);
         }
       });
-      parser.once('error', reject)
+      parser.once('error', reject);
     });
   }
 
@@ -91,14 +91,15 @@ describe('Parser', () => {
   }
 
   function testConcatenatedAndSplit(packets: Packet[], splitByte: number) {
-    it(`should parse ${packets.map(packet => PacketType[packet.type]).join(' ')} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
+    const packetsStr = packets.map(packet => PacketType[packet.type]).join(' ');
+    it(`should parse ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
       verify(packets)
         .then(done)
         .catch(done);
 
       let remaining = Buffer.alloc(0);
       packets.forEach((packet) => {
-        const buffer = Buffer.concat([remaining, packet.toRaw()])
+        const buffer = Buffer.concat([remaining, packet.toRaw()]);
         const chunk = buffer.slice(0, splitByte); // split on a specific byte
         remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
         parser.feed(chunk);
@@ -106,7 +107,6 @@ describe('Parser', () => {
       parser.feed(remaining);
     });
   }
-
 
   const helloPacketBody = {
     version: '1.0.0',
@@ -246,66 +246,61 @@ describe('Parser', () => {
     testValidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, errorMessage: undefined })));
     testInvalidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, rHash: undefined })));
 
-  })
+  });
   describe('test TCP segmentation/concatenation support', () => {
     const pingPacket = new packets.PingPacket();
     const helloPacket = new packets.HelloPacket(helloPacketBody);
 
     testSplitPacket(pingPacket);
-    testSplitPacket(helloPacket)
+    testSplitPacket(helloPacket);
     testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
     testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE - 1);
     testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE);
     testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE + 1);
-  })
+  });
 
   describe('test more edge-cases', () => {
     it(`should not try to parse an empty buffer`, async () => {
-      await expect(wait()).to.be.rejectedWith(timeoutError)
-
+      await expect(wait()).to.be.rejectedWith(timeoutError);
       parser.feed(Buffer.alloc(0));
     });
-
 
     it(`should try parse just the metadata as a packet`, (done) => {
       wait()
         .then(() => done('err: packet should not be parsed'))
-        .catch(err => {
+        .catch((err) => {
           if (err && err.type === ParserErrorType.InvalidMessage) {
-            done()
+            done();
           } else {
-            done(err)
+            done(err);
           }
-        })
+        });
 
       parser.feed(Buffer.alloc(Parser.PACKET_METADATA_SIZE));
     });
-
 
     it(`should buffer a max buffer length`, async () => {
       parser = new Parser(Parser.PACKET_METADATA_SIZE, 10);
 
       await expect(wait()).to.be.rejectedWith(timeoutError);
-
       parser.feed(Buffer.allocUnsafe(10));
     });
-
 
     it(`should not buffer when max buffer size exceeds`,  (done) => {
       parser = new Parser(Parser.PACKET_METADATA_SIZE, 10);
 
       wait()
         .then(() => done('err: packet should not be parsed'))
-        .catch(err => {
+        .catch((err) => {
           if (err && err.type === ParserErrorType.MaxBufferSizeExceeded) {
-            done()
+            done();
           } else {
-            done(err)
+            done(err);
           }
-        })
+        });
 
       parser.feed(Buffer.allocUnsafe(11));
     });
 
-  })
+  });
 });

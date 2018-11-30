@@ -49,17 +49,17 @@ interface Pool {
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
   on(event: 'peer.close', listener: (peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapResponse', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
-  on(event: 'packet.swapError', listener: (packet: packets.SwapFailedPacket) => void): this;
+  on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
   emit(event: 'peer.close', peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapResponse', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
+  emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
-  emit(event: 'packet.swapError', packet: packets.SwapFailedPacket): boolean;
+  emit(event: 'packet.swapFailed', packet: packets.SwapFailedPacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
@@ -529,9 +529,9 @@ class Pool extends EventEmitter {
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
-      case PacketType.SwapResponse: {
-        this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapResponse', packet, peer);
+      case PacketType.SwapAccepted: {
+        this.logger.debug(`received swapAccepted from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapAccepted', packet, peer);
         break;
       }
       case PacketType.SwapComplete: {
@@ -539,9 +539,9 @@ class Pool extends EventEmitter {
         this.emit('packet.swapComplete', packet);
         break;
       }
-      case PacketType.SwapError: {
-        this.logger.debug(`received swapError from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapError', packet);
+      case PacketType.SwapFailed: {
+        this.logger.debug(`received swapFailed from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapFailed', packet);
         break;
       }
 

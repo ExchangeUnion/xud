@@ -48,7 +48,7 @@ class Peer extends EventEmitter {
   public connected = false;
   private opened = false;
   private socket?: Socket;
-  private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
+  private parser: Parser = new Parser();
   private closed = false;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
@@ -254,9 +254,9 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
-  private sendRaw = (packetStr: string) => {
+  private sendRaw = (data: Buffer) => {
     if (this.socket) {
-      this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
+      this.socket.write(data);
       this.lastSend = Date.now();
     }
   }
@@ -463,7 +463,7 @@ class Peer extends EventEmitter {
       } else {
         this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
       }
-      this.parser.feed(dataStr);
+      this.parser.feed(data);
     });
 
     this.socket!.setNoDelay(true);
@@ -553,7 +553,7 @@ class Peer extends EventEmitter {
 
     if (!this.handshakeState) {
       // we must wait to receive handshake data before opening the connection
-      await this.wait(PacketType.Hello, Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.Hello.toString(), Peer.RESPONSE_TIMEOUT);
     }
 
     return packet;
@@ -571,10 +571,10 @@ class Peer extends EventEmitter {
 
     this.handshakeState = packet.body;
 
-    const entry = this.responseMap.get(PacketType.Hello);
+    const entry = this.responseMap.get(PacketType.Hello.toString());
 
     if (entry) {
-      this.responseMap.delete(PacketType.Hello);
+      this.responseMap.delete(PacketType.Hello.toString());
       entry.resolve(packet);
     }
 

@@ -92,7 +92,7 @@ abstract class Packet<T = any> implements PacketInterface {
     const size = Buffer.allocUnsafe(4);
     size.writeUInt32LE(msg.length, 0, true);
 
-    return Buffer.concat([type, size, new Buffer(msg)]);
+    return Buffer.concat([type, size, Buffer.from(msg.buffer as ArrayBuffer)]);
   }
 }
 
