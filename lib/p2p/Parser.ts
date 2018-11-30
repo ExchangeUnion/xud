@@ -48,16 +48,16 @@ const fromRaw = (type: number, binary: Uint8Array): Packet => {
       packet = packetTypes.NodesPacket.deserialize(binary);
       break;
     case PacketType.SwapRequest:
-    //  packet = packetTypes.SwapRequestPacket.deserialize(binary);
+      packet = packetTypes.SwapRequestPacket.deserialize(binary);
       break;
-    case PacketType.SwapResponse:
-    //  packet = packetTypes.SwapAcceptedPacket.deserialize(binary);
+    case PacketType.SwapAccepted:
+      packet = packetTypes.SwapAcceptedPacket.deserialize(binary);
       break;
     case PacketType.SwapComplete:
-    //  packet = packetTypes.SwapCompletePacket.deserialize(binary);
+      packet = packetTypes.SwapCompletePacket.deserialize(binary);
       break;
-    case PacketType.SwapError:
-    //  packet = packetTypes.SwapFailedPacket.deserialize(binary);
+    case PacketType.SwapFailed:
+      packet = packetTypes.SwapFailedPacket.deserialize(binary);
       break;
     default:
       throw new ParserError(ParserErrorType.UnknownPacketType, `packet: ${PacketType[type]}`);

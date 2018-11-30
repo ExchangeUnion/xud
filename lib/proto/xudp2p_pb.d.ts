@@ -453,3 +453,143 @@ export namespace NodesPacket {
         nodesList: Array<Node.AsObject>,
     }
 }
+
+export class SwapRequestPacket extends jspb.Message { 
+
+    hasHeader(): boolean;
+    clearHeader(): void;
+    getHeader(): Header | undefined;
+    setHeader(value?: Header): void;
+
+    getProposedquantity(): number;
+    setProposedquantity(value: number): void;
+
+    getPairid(): string;
+    setPairid(value: string): void;
+
+    getOrderid(): string;
+    setOrderid(value: string): void;
+
+    getRhash(): string;
+    setRhash(value: string): void;
+
+    getTakercltvdelta(): number;
+    setTakercltvdelta(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SwapRequestPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapRequestPacket): SwapRequestPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SwapRequestPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapRequestPacket;
+    static deserializeBinaryFromReader(message: SwapRequestPacket, reader: jspb.BinaryReader): SwapRequestPacket;
+}
+
+export namespace SwapRequestPacket {
+    export type AsObject = {
+        header?: Header.AsObject,
+        proposedquantity: number,
+        pairid: string,
+        orderid: string,
+        rhash: string,
+        takercltvdelta: number,
+    }
+}
+
+export class SwapAcceptedPacket extends jspb.Message { 
+
+    hasHeader(): boolean;
+    clearHeader(): void;
+    getHeader(): Header | undefined;
+    setHeader(value?: Header): void;
+
+    getRhash(): string;
+    setRhash(value: string): void;
+
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
+    getMakercltvdelta(): number;
+    setMakercltvdelta(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SwapAcceptedPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapAcceptedPacket): SwapAcceptedPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SwapAcceptedPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapAcceptedPacket;
+    static deserializeBinaryFromReader(message: SwapAcceptedPacket, reader: jspb.BinaryReader): SwapAcceptedPacket;
+}
+
+export namespace SwapAcceptedPacket {
+    export type AsObject = {
+        header?: Header.AsObject,
+        rhash: string,
+        quantity: number,
+        makercltvdelta: number,
+    }
+}
+
+export class SwapCompletePacket extends jspb.Message { 
+
+    hasHeader(): boolean;
+    clearHeader(): void;
+    getHeader(): Header | undefined;
+    setHeader(value?: Header): void;
+
+    getRhash(): string;
+    setRhash(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SwapCompletePacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapCompletePacket): SwapCompletePacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SwapCompletePacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapCompletePacket;
+    static deserializeBinaryFromReader(message: SwapCompletePacket, reader: jspb.BinaryReader): SwapCompletePacket;
+}
+
+export namespace SwapCompletePacket {
+    export type AsObject = {
+        header?: Header.AsObject,
+        rhash: string,
+    }
+}
+
+export class SwapFailedPacket extends jspb.Message { 
+
+    hasHeader(): boolean;
+    clearHeader(): void;
+    getHeader(): Header | undefined;
+    setHeader(value?: Header): void;
+
+    getRhash(): string;
+    setRhash(value: string): void;
+
+    getErrormessage(): string;
+    setErrormessage(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SwapFailedPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapFailedPacket): SwapFailedPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SwapFailedPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapFailedPacket;
+    static deserializeBinaryFromReader(message: SwapFailedPacket, reader: jspb.BinaryReader): SwapFailedPacket;
+}
+
+export namespace SwapFailedPacket {
+    export type AsObject = {
+        header?: Header.AsObject,
+        rhash: string,
+        errormessage: string,
+    }
+}

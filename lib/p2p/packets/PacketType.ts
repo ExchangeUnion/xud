@@ -10,9 +10,9 @@ enum PacketType {
   GetNodes,
   Nodes,
   SwapRequest,
-  SwapResponse,
+  SwapAccepted,
   SwapComplete,
-  SwapError,
+  SwapFailed,
 }
 
 /*

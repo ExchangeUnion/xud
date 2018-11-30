@@ -26,9 +26,8 @@ class HelloPacket extends Packet<HandshakeState> {
       && msg.version
       && msg.nodepubkey
       && msg.pairsList
+      && msg.addressesList.filter(addr => addr.port && addr.host).length === msg.addressesList.length
     );
-
-    // TODO: if we have addresses, apply host/port format validation
   }
 
   private static convert = (msg: pb.HelloPacket.AsObject): HelloPacket => {

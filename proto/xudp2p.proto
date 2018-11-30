@@ -87,3 +87,30 @@ message NodesPacket {
     Header header = 1 [json_name = "header"];
     repeated Node nodes = 2 [json_name = "nodes"];
 }
+
+message SwapRequestPacket {
+    Header header = 1 [json_name = "header"];
+    double proposedQuantity = 2 [json_name = "proposed_quantity"];
+    string pairId = 3 [json_name = "pair_id"];
+    string orderId = 4 [json_name = "order_id"];
+    string rHash = 5 [json_name = "r_hash"];
+    int32 takerCltvDelta = 6 [json_name = "taker_cltv_delta"];
+}
+
+message SwapAcceptedPacket {
+    Header header = 1 [json_name = "header"];
+    string rHash = 2 [json_name = "r_hash"];
+    double quantity = 3 [json_name = "quantity"];
+    int32 makerCltvDelta = 4 [json_name = "maker_cltv_delta"];
+}
+
+message SwapCompletePacket {
+    Header header = 1 [json_name = "header"];
+    string rHash = 2 [json_name = "r_hash"];
+}
+
+message SwapFailedPacket {
+    Header header = 1 [json_name = "header"];
+    string rHash = 2 [json_name = "r_hash"];
+    string errorMessage = 3 [json_name = "error_message"];
+}
