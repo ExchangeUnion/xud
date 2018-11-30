@@ -22,7 +22,7 @@ Run all tests:
 
 Run one test in particular:
 
-    node node_modules/.bin/mocha -r ts-node/register test/ddtd/getInfo/webproxy.spec.ts
+    node node_modules/.bin/mocha -r ts-node/register test/ddtd/GetInfo/webproxy.spec.ts
 
 Shutdown:
 
