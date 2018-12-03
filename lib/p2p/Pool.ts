@@ -667,8 +667,14 @@ class Pool extends EventEmitter {
       const unintentionalDisconnect =
         (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
         (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
-      const lastAddress = peer.inbound ? undefined : peer.address;
       const addresses = peer.addresses || [];
+
+      let lastAddress;
+      if (peer.inbound) {
+        lastAddress = addresses.length > 0 ? addresses[0] : undefined
+      } else {
+        lastAddress = peer.address;
+      }
 
       if (peer.nodePubKey && unintentionalDisconnect && (addresses.length || lastAddress)) {
         this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
