@@ -671,7 +671,7 @@ class Pool extends EventEmitter {
 
       let lastAddress;
       if (peer.inbound) {
-        lastAddress = addresses.length > 0 ? addresses[0] : undefined
+        lastAddress = addresses.length > 0 ? addresses[0] : undefined;
       } else {
         lastAddress = peer.address;
       }
