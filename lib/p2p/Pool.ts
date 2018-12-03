@@ -570,11 +570,11 @@ class Pool extends EventEmitter {
     }
 
     this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
-    this.peers.set(peer.nodePubKey, peer)
+    this.peers.set(peer.nodePubKey, peer);
     peer.active = true;
 
     // request peer's orders
-    peer.sendPacket(new packets.GetOrdersPacket({pairIds: this.handshakeData.pairs}));
+    peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
     if (this.config.discover) {
       // request peer's known nodes only if p2p.discover option is true
       peer.sendPacket(new packets.GetNodesPacket());
@@ -583,7 +583,7 @@ class Pool extends EventEmitter {
     // if outbound, update the `lastConnected` field for the address we're actually connected to
     const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
       if (addressUtils.areEqual(peer.address, address)) {
-        return {...address, lastConnected: Date.now()};
+        return { ...address, lastConnected: Date.now() };
       } else {
         return address;
       }
