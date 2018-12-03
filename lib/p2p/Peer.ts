@@ -54,6 +54,8 @@ class Peer extends EventEmitter {
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
   private closed = false;
+  /** Timer to retry connection to peer after the previous attempt failed. */
+  private retryConnectionTimer?: NodeJS.Timer;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
@@ -215,6 +217,11 @@ class Peer extends EventEmitter {
       delete this.socket;
     }
 
+    if (this.retryConnectionTimer) {
+      clearTimeout(this.retryConnectionTimer);
+      this.retryConnectionTimer = undefined;
+    }
+
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
       this.pingTimer = undefined;
@@ -299,6 +306,7 @@ class Peer extends EventEmitter {
         }
         this.socket!.removeListener('error', onError);
         this.socket!.removeListener('connect', onConnect);
+        this.retryConnectionTimer = undefined;
       };
 
       const onConnect = () => {
@@ -335,7 +343,7 @@ class Peer extends EventEmitter {
           `failed: ${err.message}. retrying in ${retryDelay / 1000} sec...`,
         );
 
-        setTimeout(() => {
+        this.retryConnectionTimer = setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
           retries = retries + 1;
           this.socket!.connect(this.address);

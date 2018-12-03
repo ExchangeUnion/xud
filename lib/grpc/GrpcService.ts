@@ -47,6 +47,8 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
+  swapResult.setCurrencyReceived(result.currencyReceived);
+  swapResult.setCurrencySent(result.currencySent);
   swapResult.setPeerPubKey(result.peerPubKey);
   swapResult.setRole(result.role as number);
   return swapResult;
@@ -92,6 +94,9 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
+  /** The set of active streaming calls. */
+  private streams: Set<grpc.ServerWriteableStream<any>> = new Set<grpc.ServerWriteableStream<any>>();
+
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(private logger: Logger, private service: Service) {}
 
@@ -148,6 +153,22 @@ class GrpcService {
     this.logger.error(grpcError);
 
     return grpcError;
+  }
+
+  /** Closes and removes all active streaming calls. */
+  public closeStreams = () => {
+    this.streams.forEach((stream) => {
+      stream.end();
+    });
+    this.streams.clear();
+  }
+
+  /** Adds an active streaming call and adds a listener to remove it if it is cancelled. */
+  private addStream = (stream: grpc.ServerWriteableStream<any>) => {
+    this.streams.add(stream);
+    stream.once('cancelled', () => {
+      this.streams.delete(stream);
+    });
   }
 
   /**
@@ -506,6 +527,7 @@ class GrpcService {
     this.service.subscribeAddedOrders((order: Order) => {
       call.write(createOrder(order));
     });
+    this.addStream(call);
   }
 
   /*
@@ -521,6 +543,7 @@ class GrpcService {
       orderRemoval.setIsOwnOrder(order.localId !== undefined);
       call.write(orderRemoval);
     });
+    this.addStream(call);
   }
 
   /*
@@ -530,6 +553,7 @@ class GrpcService {
     this.service.subscribeSwaps((result: SwapResult) => {
       call.write(createSwapResult(result));
     });
+    this.addStream(call);
   }
 }
 

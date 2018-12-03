@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
 import NodeList, { reputationEventWeight } from './NodeList';
-import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
@@ -15,7 +14,6 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
-import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 import { db } from '../types';
 
 type PoolConfig = {
@@ -71,12 +69,12 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
-  /** A set of pub keys of nodes for which we have pending outgoing connections. */
+  /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutgoingConnections = new Map<string, Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
-  private peers: PeerList = new PeerList();
+  private peers = new Map<string, Peer>();
   private server?: Server;
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
@@ -104,7 +102,7 @@ class Pool extends EventEmitter {
   }
 
   public get peerCount(): number {
-    return this.peers.length;
+    return this.peers.size;
   }
 
   /**
@@ -335,7 +333,7 @@ class Pool extends EventEmitter {
   }
 
   public listPeers = (): PeerInfo[] => {
-    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.length });
+    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.size });
     let i = 0;
     this.peers.forEach((peer) => {
       peerInfos[i] = peer.info;
@@ -548,19 +546,23 @@ class Pool extends EventEmitter {
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
+    if (!peer.nodePubKey || peer.nodePubKey === this.handshakeData.nodePubKey) {
+      return;
+    }
+
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
       peer.close(DisconnectionReason.NotAcceptingConnections);
       return;
     }
 
-    if (this.nodes.isBanned(peer.nodePubKey!)) {
+    if (this.nodes.isBanned(peer.nodePubKey)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
       peer.close(DisconnectionReason.Banned);
       return;
     }
 
-    if (this.peers.has(peer.nodePubKey!)) {
+    if (this.peers.has(peer.nodePubKey)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us more then once.
       // the first time might be due connection retries
       peer.close(DisconnectionReason.AlreadyConnected);
@@ -568,11 +570,11 @@ class Pool extends EventEmitter {
     }
 
     this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
-    this.peers.add(peer);
+    this.peers.set(peer.nodePubKey, peer)
     peer.active = true;
 
     // request peer's orders
-    peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
+    peer.sendPacket(new packets.GetOrdersPacket({pairIds: this.handshakeData.pairs}));
     if (this.config.discover) {
       // request peer's known nodes only if p2p.discover option is true
       peer.sendPacket(new packets.GetNodesPacket());
@@ -581,22 +583,22 @@ class Pool extends EventEmitter {
     // if outbound, update the `lastConnected` field for the address we're actually connected to
     const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
       if (addressUtils.areEqual(peer.address, address)) {
-        return { ...address, lastConnected: Date.now() };
+        return {...address, lastConnected: Date.now()};
       } else {
         return address;
       }
     });
 
     // upserting the node entry
-    if (!this.nodes.has(peer.nodePubKey!)) {
+    if (!this.nodes.has(peer.nodePubKey)) {
       await this.nodes.createNode({
         addresses,
-        nodePubKey: peer.nodePubKey!,
+        nodePubKey: peer.nodePubKey,
         lastAddress: peer.inbound ? undefined : peer.address,
       });
     } else {
       // the node is known, update its listening addresses
-      await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
+      await this.nodes.updateAddresses(peer.nodePubKey, addresses, peer.inbound ? undefined : peer.address);
     }
   }
 
@@ -655,7 +657,8 @@ class Pool extends EventEmitter {
       }
 
       if (peer.nodePubKey) {
-        this.peers.remove(peer.nodePubKey);
+        this.pendingOutgoingConnections.delete(peer.nodePubKey);
+        this.peers.delete(peer.nodePubKey);
       }
       this.emit('peer.close', peer);
 
