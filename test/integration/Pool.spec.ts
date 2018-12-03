@@ -91,6 +91,10 @@ describe('P2P Pool Tests', async () => {
     expect(nodeInstance).to.not.be.undefined;
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
+
+    const closePromise = pool.closePeer(nodePubKeyOne, DisconnectionReason.NotAcceptingConnections);
+    expect(closePromise).to.be.fulfilled;
+    await closePromise;
   });
 
   after(async () => {

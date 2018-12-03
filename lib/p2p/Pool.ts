@@ -662,8 +662,8 @@ class Pool extends EventEmitter {
       // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
       // reconnect, for that might have been due to a temporary loss in connectivity
       const unintentionalDisconnect =
-        peer.recvDisconnectionReason === undefined
-        || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling;
+        (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
+        (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
       const lastAddress = peer.inbound ? undefined : peer.address;
       const addresses = peer.addresses || [];
 
