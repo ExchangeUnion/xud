@@ -14,12 +14,12 @@ class PongPacket extends Packet<undefined> {
     return PacketDirection.Response;
   }
 
-  public static deserialize(binary: Uint8Array): PongPacket | undefined {
+  public static deserialize = (binary: Uint8Array): PongPacket | undefined => {
     const msg = pb.PingPacket.deserializeBinary(binary).toObject();
     return PongPacket.validate(msg) ? PongPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.PongPacket.AsObject): boolean {
+  private static validate = (msg: pb.PongPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && !msg.header.hash

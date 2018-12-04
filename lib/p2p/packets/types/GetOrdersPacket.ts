@@ -17,12 +17,12 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     return PacketDirection.Request;
   }
 
-  public static deserialize(binary: Uint8Array): GetOrdersPacket | undefined {
+  public static deserialize = (binary: Uint8Array): GetOrdersPacket | undefined => {
     const msg = pb.GetOrdersPacket.deserializeBinary(binary).toObject();
     return GetOrdersPacket.validate(msg) ? GetOrdersPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.GetOrdersPacket.AsObject): boolean {
+  private static validate = (msg: pb.GetOrdersPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

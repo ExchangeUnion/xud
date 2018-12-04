@@ -23,12 +23,12 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): SwapFailedPacket | undefined {
+  public static deserialize = (binary: Uint8Array): SwapFailedPacket | undefined => {
     const msg = pb.SwapFailedPacket.deserializeBinary(binary).toObject();
     return SwapFailedPacket.validate(msg) ? SwapFailedPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.SwapFailedPacket.AsObject): boolean {
+  private static validate = (msg: pb.SwapFailedPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

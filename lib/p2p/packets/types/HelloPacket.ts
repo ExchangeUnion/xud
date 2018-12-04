@@ -13,12 +13,12 @@ class HelloPacket extends Packet<HandshakeState> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): HelloPacket | undefined {
+  public static deserialize = (binary: Uint8Array): HelloPacket | undefined => {
     const msg = pb.HelloPacket.deserializeBinary(binary).toObject();
     return HelloPacket.validate(msg) ? HelloPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.HelloPacket.AsObject): boolean {
+  private static validate = (msg: pb.HelloPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

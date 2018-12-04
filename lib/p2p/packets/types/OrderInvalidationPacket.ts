@@ -17,12 +17,12 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): OrderInvalidationPacket | undefined {
+  public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | undefined => {
     const msg = pb.OrderPacket.deserializeBinary(binary).toObject();
     return OrderInvalidationPacket.validate(msg) ? OrderInvalidationPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.OrderInvalidationPacket.AsObject): boolean {
+  private static validate = (msg: pb.OrderInvalidationPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

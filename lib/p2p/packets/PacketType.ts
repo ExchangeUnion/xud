@@ -1,37 +1,18 @@
 enum PacketType {
   Hello = 0,
-  Disconnecting,
-  Ping,
-  Pong,
-  Order,
-  OrderInvalidation,
-  GetOrders,
-  Orders,
-  GetNodes,
-  Nodes,
-  SwapRequest,
-  SwapAccepted,
-  SwapComplete,
-  SwapFailed,
+  Disconnecting = 1,
+  Ping = 2,
+  Pong = 3,
+  Order = 4,
+  OrderInvalidation = 5,
+  GetOrders = 6,
+  Orders = 7,
+  GetNodes = 8,
+  Nodes = 9,
+  SwapRequest = 10,
+  SwapAccepted = 11,
+  SwapComplete = 12,
+  SwapFailed = 13,
 }
-
-/*
-enum PacketType {
-  Hello = 'HELLO',
-  Disconnecting = 'DISCONNECTING',
-  Ping = 'PING',
-  Pong = 'PONG',
-  Order = 'ORDER',
-  OrderInvalidation = 'ORDER_INVALIDATION',
-  GetOrders = 'GET_ORDERS',
-  Orders = 'ORDERS',
-  GetNodes = 'GET_NODES',
-  Nodes = 'NODES',
-  SwapRequest = 'SWAP_REQUEST',
-  SwapResponse = 'SWAP_RESPONSE',
-  SwapComplete = 'SWAP_COMPLETE',
-  SwapError = 'SWAP_ERROR',
-}
-*/
 
 export default PacketType;

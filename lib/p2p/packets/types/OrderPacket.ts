@@ -14,12 +14,12 @@ class OrderPacket extends Packet<OutgoingOrder> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): OrderPacket | undefined {
+  public static deserialize = (binary: Uint8Array): OrderPacket | undefined => {
     const msg = pb.OrderPacket.deserializeBinary(binary).toObject();
     return OrderPacket.validate(msg) ? OrderPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.OrderPacket.AsObject): boolean {
+  private static validate = (msg: pb.OrderPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

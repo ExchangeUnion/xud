@@ -14,12 +14,12 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     return PacketDirection.Response;
   }
 
-  public static deserialize(binary: Uint8Array): NodesPacket | undefined {
+  public static deserialize = (binary: Uint8Array): NodesPacket | undefined => {
     const msg = pb.NodesPacket.deserializeBinary(binary).toObject();
     return NodesPacket.validate(msg) ? NodesPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.NodesPacket.AsObject): boolean {
+  private static validate = (msg: pb.NodesPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

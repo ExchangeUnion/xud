@@ -13,12 +13,12 @@ class GetNodesPacket extends Packet<undefined> {
     return PacketDirection.Request;
   }
 
-  public static deserialize(binary: Uint8Array): GetNodesPacket | undefined {
+  public static deserialize = (binary: Uint8Array): GetNodesPacket | undefined => {
     const msg = pb.GetNodesPacket.deserializeBinary(binary).toObject();
     return GetNodesPacket.validate(msg) ? GetNodesPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.GetNodesPacket.AsObject): boolean {
+  private static validate = (msg: pb.GetNodesPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && !msg.header.hash

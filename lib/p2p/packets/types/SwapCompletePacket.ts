@@ -16,12 +16,12 @@ class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): SwapCompletePacket | undefined {
+  public static deserialize = (binary: Uint8Array): SwapCompletePacket | undefined => {
     const msg = pb.SwapCompletePacket.deserializeBinary(binary).toObject();
     return SwapCompletePacket.validate(msg) ? SwapCompletePacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.SwapCompletePacket.AsObject): boolean {
+  private static validate = (msg: pb.SwapCompletePacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

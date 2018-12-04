@@ -13,12 +13,12 @@ class PingPacket extends Packet<undefined> {
     return PacketDirection.Request;
   }
 
-  public static deserialize(binary: Uint8Array): PingPacket | undefined {
+  public static deserialize = (binary: Uint8Array): PingPacket | undefined => {
     const msg = pb.PingPacket.deserializeBinary(binary).toObject();
     return PingPacket.validate(msg) ? PingPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.PingPacket.AsObject): boolean {
+  private static validate = (msg: pb.PingPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && !msg.header.hash

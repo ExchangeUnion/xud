@@ -19,12 +19,12 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize(binary: Uint8Array): DisconnectingPacket | undefined {
+  public static deserialize = (binary: Uint8Array): DisconnectingPacket | undefined => {
     const msg = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
     return DisconnectingPacket.validate(msg) ? DisconnectingPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.DisconnectingPacket.AsObject): boolean {
+  private static validate = (msg: pb.DisconnectingPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash

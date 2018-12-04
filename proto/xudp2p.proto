@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "annotations.proto";
-
 package xudp2p;
 
 message Header {

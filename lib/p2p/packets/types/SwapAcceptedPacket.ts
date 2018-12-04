@@ -19,12 +19,12 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     return PacketDirection.Response;
   }
 
-  public static deserialize(binary: Uint8Array): SwapAcceptedPacket | undefined {
+  public static deserialize = (binary: Uint8Array): SwapAcceptedPacket | undefined => {
     const msg = pb.SwapAcceptedPacket.deserializeBinary(binary).toObject();
     return SwapAcceptedPacket.validate(msg) ? SwapAcceptedPacket.convert(msg) : undefined;
   }
 
-  private static validate(msg: pb.SwapAcceptedPacket.AsObject): boolean {
+  private static validate = (msg: pb.SwapAcceptedPacket.AsObject): boolean => {
     return !!(msg.header
       && msg.header.id
       && msg.header.hash
