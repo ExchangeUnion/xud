@@ -196,7 +196,17 @@ class Service extends EventEmitter {
     const { orderId, pairId, peerPubKey } = args;
     const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
 
-    return this.orderBook.executeSwap(orderId, pairId, peerPubKey, quantity);
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const taker = this.orderBook.stampOwnOrder({
+      pairId,
+      localId: '',
+      price: maker.price,
+      isBuy: !maker.isBuy,
+      quantity: quantity || maker.quantity,
+      hold: 0,
+    });
+
+    return this.orderBook.executeSwap(maker, taker);
   }
 
   /**
