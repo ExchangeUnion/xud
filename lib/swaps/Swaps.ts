@@ -699,13 +699,16 @@ class Swaps extends EventEmitter {
     deal.phase = newPhase;
 
     if (deal.phase === SwapPhase.AmountReceived) {
+      const wasMaker = deal.role === SwapRole.Maker;
       const swapResult = {
         orderId: deal.orderId,
         localId: deal.localId,
         pairId: deal.pairId,
         quantity: deal.quantity!,
-        amountReceived: deal.role === SwapRole.Maker ? deal.makerAmount : deal.takerAmount,
-        amountSent: deal.role === SwapRole.Maker ? deal.takerAmount : deal.makerAmount,
+        amountReceived: wasMaker ? deal.makerAmount : deal.takerAmount,
+        amountSent: wasMaker ? deal.takerAmount : deal.makerAmount,
+        currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
+        currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
         rHash: deal.rHash,
         peerPubKey: deal.peerPubKey,
         role: deal.role,

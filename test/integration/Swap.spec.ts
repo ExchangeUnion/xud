@@ -8,6 +8,7 @@ import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
+import { SwapResult } from '../../lib/swaps/types';
 
 chai.use(chaiAsPromised);
 
@@ -46,6 +47,8 @@ const validSwapResult = () => {
     quantity: 0.00001,
     amountReceived: 1000,
     amountSent: 8,
+    currencyReceived: 'LTC',
+    currencySent: 'BTC',
     rHash: 'd94c22a73d2741ed5cdcf3714f9ab3c8664793b03a54c74a08877726007d67c2',
     peerPubKey: '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
     role: 0,

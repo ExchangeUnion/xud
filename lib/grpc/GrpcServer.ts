@@ -12,6 +12,7 @@ import { exists, readFile, writeFile } from '../utils/fsUtils';
 
 class GrpcServer {
   private server: Server;
+  private grpcService: GrpcService;
 
   constructor(private logger: Logger, service: Service) {
     this.server = new grpc.Server();
@@ -45,6 +46,8 @@ class GrpcServer {
     this.server.addService(HashResolverService, {
       resolveHash: grpcService.resolveHash,
     });
+
+    this.grpcService = grpcService;
   }
 
   /**
@@ -90,6 +93,7 @@ class GrpcServer {
    * Stop listening for requests
    */
   public close = (): Promise<void> => {
+    this.grpcService.closeStreams();
     return new Promise((resolve) => {
       this.server.tryShutdown(() => {
         this.logger.info('GRPC server completed shutdown');

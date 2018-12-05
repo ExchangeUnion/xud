@@ -190,6 +190,61 @@ describe('TradingPair.match', () => {
     expect(peekResult).to.not.be.undefined;
     expect(peekResult!.quantity).to.equal(1);
   });
+
+  it('should not match maker own order hold quantity', () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 5);
+
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    expect(remainingOrder).to.not.be.undefined;
+    expect(remainingOrder!.quantity).to.equal(5);
+    expect(matches.length).to.be.equal(0);
+  });
+
+  it('should not match maker own order hold quantity, and should split the taker order', () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    expect(remainingOrder).to.not.be.undefined;
+    expect(remainingOrder!.quantity).to.equal(3);
+    expect(matches.length).to.be.equal(1);
+    expect(matches[0].maker.quantity).to.be.equal(2);
+    expect(matches[0].taker.quantity).to.be.equal(2);
+  });
+
+  it('should not match maker own order hold quantity, and should fully match the taker order', () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 3);
+
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 2, true));
+    expect(remainingOrder).to.be.undefined;
+    expect(matches.length).to.be.equal(1);
+    expect(matches[0].maker.quantity).to.be.equal(2);
+    expect(matches[0].taker.quantity).to.be.equal(2);
+  });
+
+  it('should not match maker own order hold quantity, but keep the order for the next match', () => {
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addOwnOrder(ownOrder);
+    tp.addOrderHold(ownOrder.id, 5);
+
+    let mr = tp.match(createOwnOrder(5, 5, true));
+    expect(mr.remainingOrder).to.not.be.undefined;
+    expect(mr.remainingOrder!.quantity).to.equal(5);
+    expect(mr.matches.length).to.be.equal(0);
+
+    tp.removeOrderHold(ownOrder.id, 5);
+
+    mr = tp.match(createOwnOrder(5, 5, true));
+    expect(mr.remainingOrder).to.be.undefined;
+    expect(mr.matches.length).to.be.equal(1);
+    expect(mr.matches[0].maker.quantity).to.be.equal(5);
+    expect(mr.matches[0].taker.quantity).to.be.equal(5);
+  });
 });
 
 describe('TradingPair.removeOwnOrder', () => {
