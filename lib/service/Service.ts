@@ -8,7 +8,7 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion } from '../types/orders';
+import { Pair, Order, OrderPortion, OwnOrder, PeerOrder } from '../types/orders';
 import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
@@ -365,15 +365,22 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = (args: { existing: boolean }, callback: (order: Order) => void) => {
+  public subscribeAddedOrders = (args: { existing: boolean, all: boolean }, callback: (order: Order) => void) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buy.forEach(callback);
-        peerOrders.buy.forEach(callback);
-        ownOrders.sell.forEach(callback);
-        peerOrders.sell.forEach(callback);
+        if (args.all) {
+          ownOrders.buy.forEach(callback);
+          peerOrders.buy.forEach(callback);
+          ownOrders.sell.forEach(callback);
+          peerOrders.sell.forEach(callback);
+        } else {
+          ownOrders.buy.slice(0, 10).forEach(callback);
+          peerOrders.buy.slice(0, 10).forEach(callback);
+          ownOrders.sell.slice(0, 10).forEach(callback);
+          peerOrders.sell.slice(0, 10).forEach(callback);
+        }
       });
     }
 

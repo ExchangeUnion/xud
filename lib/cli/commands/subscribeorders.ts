@@ -2,13 +2,18 @@ import { loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import * as xudrpc from '../../proto/xudrpc_pb';
 
-export const command = 'streamorders [existing]';
+export const command = 'streamorders [existing] [all]';
 
 export const describe = 'stream order added, removed, and swapped events (DEMO)';
 
 export const builder = {
   existing: {
     description: 'should return existing orders',
+    type: 'boolean',
+    default: true,
+  },
+  all: {
+    description: 'should return all existing orders',
     type: 'boolean',
     default: false,
   },
