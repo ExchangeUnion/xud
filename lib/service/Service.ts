@@ -368,18 +368,19 @@ class Service extends EventEmitter {
   public subscribeAddedOrders = (args: { existing: boolean, all: boolean }, callback: (order: Order) => void) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
-        const ownOrders = this.orderBook.getOwnOrders(pair);
-        const peerOrders = this.orderBook.getPeersOrders(pair);
+        const { buy: ownOrdersBuy, sell: ownOrdersSell } = this.orderBook.getOwnOrders(pair);
+        const { buy : peerOrdersBuy, sell : peerOrdersSell } = this.orderBook.getPeersOrders(pair);
+
         if (args.all) {
-          ownOrders.buy.forEach(callback);
-          peerOrders.buy.forEach(callback);
-          ownOrders.sell.forEach(callback);
-          peerOrders.sell.forEach(callback);
+          ownOrdersBuy.forEach(callback);
+          peerOrdersBuy.forEach(callback);
+          ownOrdersSell.forEach(callback);
+          peerOrdersSell.forEach(callback);
         } else {
-          ownOrders.buy.slice(0, 10).forEach(callback);
-          peerOrders.buy.slice(0, 10).forEach(callback);
-          ownOrders.sell.slice(0, 10).forEach(callback);
-          peerOrders.sell.slice(0, 10).forEach(callback);
+          ownOrdersBuy.slice(0, 10).forEach(callback);
+          peerOrdersBuy.slice(0, 10).forEach(callback);
+          ownOrdersSell.slice(0, 10).forEach(callback);
+          peerOrdersSell.slice(0, 10).forEach(callback);
         }
       });
     }
