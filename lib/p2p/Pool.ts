@@ -391,8 +391,7 @@ class Pool extends EventEmitter {
     }
   }
 
-  public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
-    const { nodePubKey, reconnect } = args;
+  public unbanNode = async (nodePubKey: string, reconnect: boolean): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
