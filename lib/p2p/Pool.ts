@@ -383,7 +383,7 @@ class Pool extends EventEmitter {
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
     } else {
-      const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+      const banned = await this.nodes.ban(nodePubKey);
 
       if (!banned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
@@ -394,8 +394,7 @@ class Pool extends EventEmitter {
   public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
     const { nodePubKey, reconnect } = args;
     if (this.nodes.isBanned(nodePubKey)) {
-      const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
-
+      const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
