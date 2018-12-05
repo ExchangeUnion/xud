@@ -80,7 +80,7 @@ class Pool extends EventEmitter {
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
-  private interfaces?: string[];
+  private interfaces?: Address[] = [];
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
   /** Points to config comes during construction. */
@@ -97,11 +97,7 @@ class Pool extends EventEmitter {
 
       /** Makes sure all uris are properly formatted  */
       config.listen.forEach((uri) => {
-        if (uri.split(':').length === 2) {
-          this.interfaces!.push(uri);
-        } else {
-          this.interfaces!.push(`${this.listenPort}:${uri}`);
-        }
+        this.interfaces!.push(addressUtils.fromString(uri));
       });
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
@@ -726,20 +722,13 @@ class Pool extends EventEmitter {
       };
 
       this.interfaces!.forEach((uri) => {
-        const  listen = uri.split(':');
-        this.server!.listen(Number(listen[0]), listen[1]).on('listening', () => {
+        this.server!.listen(uri.port, uri.host).on('listening', () => {
           const { address, port } = this.server!.address();
           this.logger.info(`p2p server listening on ${address}:${port}`);
-
-          if (this.listenPort === 0) {
-            // we didn't specify a port and grabbed any available port
-            this.listenPort = port;
-          }
-
-          this.server!.removeListener('error', listenErrHandler);
           resolve();
         }).on('error', listenErrHandler);
       });
+      this.server!.removeListener('error', listenErrHandler);
     });
   }
 
