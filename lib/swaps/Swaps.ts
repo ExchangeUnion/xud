@@ -569,7 +569,8 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (cltvDelta > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
+    // allow 1 additional one block to be created during the swap
+    if (cltvDelta - 1 > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
       this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
       this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
       this.setDealState(deal, SwapState.Error,
