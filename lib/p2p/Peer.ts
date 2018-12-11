@@ -50,6 +50,8 @@ class Peer extends EventEmitter {
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
   public active = false; // added to peer list
+  /** Timer to schedularly call getNodes #402. */
+  public getNodesTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
@@ -220,6 +222,11 @@ class Peer extends EventEmitter {
     if (this.retryConnectionTimer) {
       clearTimeout(this.retryConnectionTimer);
       this.retryConnectionTimer = undefined;
+    }
+
+    if (this.getNodesTimer) {
+      clearInterval(this.getNodesTimer);
+      this.getNodesTimer = undefined;
     }
 
     if (this.pingTimer) {

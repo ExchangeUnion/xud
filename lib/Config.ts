@@ -63,6 +63,7 @@ class Config {
     this.p2p = {
       listen: true,
       discover: true,
+      discoverInSeconds: 60 * 60, // 1 hour
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
