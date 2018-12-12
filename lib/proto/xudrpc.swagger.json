@@ -387,7 +387,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid.",
+        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid. Any portion of the order that is \non hold due to ongoing swaps will not be removed until after the swap attempts complete.",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -1086,7 +1086,14 @@
       }
     },
     "xudrpcRemoveOrderResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "quantity_on_hold": {
+          "type": "number",
+          "format": "double",
+          "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
+        }
+      }
     },
     "xudrpcRemovePairRequest": {
       "type": "object",
