@@ -429,10 +429,10 @@ class Swaps extends EventEmitter {
     const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
     switch (makerCurrency) {
       case 'BTC':
-        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + routeCltvDelta / cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + Math.ceil(routeCltvDelta / cltvDeltaFactor);
         break;
       case 'LTC':
-        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + routeCltvDelta * cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
         break;
     }
 
