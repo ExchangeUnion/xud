@@ -429,10 +429,10 @@ class Swaps extends EventEmitter {
     const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
     switch (makerCurrency) {
       case 'BTC':
-        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + routeCltvDelta / cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + Math.ceil(routeCltvDelta / cltvDeltaFactor);
         break;
       case 'LTC':
-        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + routeCltvDelta * cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
         break;
     }
 
@@ -569,7 +569,8 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (cltvDelta > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
+    // allow 1 additional one block to be created during the swap
+    if (cltvDelta - 1 > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
       this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
       this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
       this.setDealState(deal, SwapState.Error,

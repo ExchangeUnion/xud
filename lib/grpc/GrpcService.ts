@@ -204,8 +204,9 @@ class GrpcService {
    */
   public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (call, callback) => {
     try {
-      await this.service.removeOrder(call.request.toObject());
+      const quantityOnHold = this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
+      response.setQuantityOnHold(quantityOnHold);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

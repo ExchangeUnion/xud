@@ -180,6 +180,7 @@ class TradingPair {
 
   private removeOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<Order>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
+    assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
     const order = maps.buy.get(orderId) || maps.sell.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
@@ -187,13 +188,19 @@ class TradingPair {
 
     if (quantityToRemove && quantityToRemove < order.quantity) {
       // if quantityToRemove is below the order quantity, reduce the order quantity
+      if (isOwnOrder(order)) {
+        assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
+      }
       order.quantity = order.quantity - quantityToRemove;
       this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
       return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
     } else {
       // otherwise, remove the order entirely
-      const list = order.isBuy ? maps.buy : maps.sell;
-      list.delete(order.id);
+      if (isOwnOrder(order)) {
+        assert(order.hold === 0, 'cannot remove an order with a hold');
+      }
+      const map = order.isBuy ? maps.buy : maps.sell;
+      map.delete(order.id);
 
       if (!this.nomatching) {
         const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
