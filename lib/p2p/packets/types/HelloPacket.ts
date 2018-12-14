@@ -48,8 +48,8 @@ class HelloPacket extends Packet<HandshakeState> {
 
   public serialize(): Uint8Array {
     const msg = new pb.HelloPacket();
-    msg.setId(this.header.id)
-    msg.setHash(this.header.hash!)
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
     msg.setVersion(this.body!.version);
     msg.setNodepubkey(this.body!.nodePubKey);
     msg.setPairsList(this.body!.pairs);

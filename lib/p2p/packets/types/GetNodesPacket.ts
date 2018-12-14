@@ -32,7 +32,7 @@ class GetNodesPacket extends Packet<undefined> {
 
   public serialize(): Uint8Array {
     const msg = new pb.PingPacket();
-    msg.setId(this.header.id)
+    msg.setId(this.header.id);
 
     return msg.serializeBinary();
   }

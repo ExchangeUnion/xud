@@ -43,8 +43,8 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
 
   public serialize(): Uint8Array {
     const msg = new pb.GetOrdersPacket();
-    msg.setId(this.header.id)
-    msg.setHash(this.header.hash!)
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
     msg.setPairidsList(this.body!.pairIds);
 
     return msg.serializeBinary();

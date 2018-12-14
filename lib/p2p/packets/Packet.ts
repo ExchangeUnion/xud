@@ -33,9 +33,8 @@ function isPacket(obj: any): obj is Packet {
     && p.serialize !== undefined && typeof p.serialize === 'function'
     && p.type !== undefined && typeof p.type === 'number'
     && p.direction !== undefined && typeof p.direction === 'number'
-  )
+  );
 }
-
 
 enum PacketDirection {
   /** A packet that is pushed to a peer without expecting any response. */

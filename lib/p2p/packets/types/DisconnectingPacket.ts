@@ -46,8 +46,8 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
 
   public serialize(): Uint8Array {
     const msg = new pb.DisconnectingPacket();
-    msg.setId(this.header.id)
-    msg.setHash(this.header.hash!)
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
     msg.setReason(this.body!.reason);
     msg.setPayload(this.body!.payload!);
 
