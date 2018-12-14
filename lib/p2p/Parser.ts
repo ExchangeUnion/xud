@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
-import { Packet, PacketType } from './packets';
-import { PacketInterface } from './packets/Packet';
+import { PacketType } from './packets';
+import Packet, { isPacket } from './packets/Packet';
 import * as packetTypes from './packets/types';
 
 class ParserError {
@@ -8,113 +8,65 @@ class ParserError {
 }
 
 enum ParserErrorType {
-  InvalidMessage,
+  InvalidPacket,
   UnknownPacketType,
-  UnparseableMessage,
   MaxBufferSizeExceeded,
 }
 
 const fromRaw = (type: number, binary: Uint8Array): Packet => {
-  let packet;
+  let packetOrPbObj;
   switch (type) {
     case PacketType.Hello:
-      packet = packetTypes.HelloPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.HelloPacket.deserialize(binary);
       break;
     case PacketType.Disconnecting:
-      packet = packetTypes.DisconnectingPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.DisconnectingPacket.deserialize(binary);
       break;
     case PacketType.Ping:
-      packet = packetTypes.PingPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.PingPacket.deserialize(binary);
       break;
     case PacketType.Pong:
-      packet = packetTypes.PongPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.PongPacket.deserialize(binary);
       break;
     case PacketType.Order:
-      packet = packetTypes.OrderPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrderPacket.deserialize(binary);
       break;
     case PacketType.OrderInvalidation:
-      packet = packetTypes.OrderInvalidationPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrderInvalidationPacket.deserialize(binary);
       break;
     case PacketType.GetOrders:
-      packet = packetTypes.GetOrdersPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.GetOrdersPacket.deserialize(binary);
       break;
     case PacketType.Orders:
-      packet = packetTypes.OrdersPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrdersPacket.deserialize(binary);
       break;
     case PacketType.GetNodes:
-      packet = packetTypes.GetNodesPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.GetNodesPacket.deserialize(binary);
       break;
     case PacketType.Nodes:
-      packet = packetTypes.NodesPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.NodesPacket.deserialize(binary);
       break;
     case PacketType.SwapRequest:
-      packet = packetTypes.SwapRequestPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapRequestPacket.deserialize(binary);
       break;
     case PacketType.SwapAccepted:
-      packet = packetTypes.SwapAcceptedPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapAcceptedPacket.deserialize(binary);
       break;
     case PacketType.SwapComplete:
-      packet = packetTypes.SwapCompletePacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapCompletePacket.deserialize(binary);
       break;
     case PacketType.SwapFailed:
-      packet = packetTypes.SwapFailedPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapFailedPacket.deserialize(binary);
       break;
     default:
-      throw new ParserError(ParserErrorType.UnknownPacketType, `packet: ${PacketType[type]}`);
+      throw new ParserError(ParserErrorType.UnknownPacketType, PacketType[type]);
   }
 
-  if (!packet) {
-    throw new ParserError(ParserErrorType.InvalidMessage, `packet: ${PacketType[type]}`);
+  if (!isPacket(packetOrPbObj)) {
+    throw new ParserError(ParserErrorType.InvalidPacket, `${PacketType[type]} ${JSON.stringify(packetOrPbObj)}`);
   }
 
-  return packet;
-  /*
-  let json;
-  try {
-    json = JSON.parse(raw);
-  } catch (err) {
-    throw new ParserError(ParserErrorType.UnparseableMessage, `${raw}: ${err}`);
-  }
-
-  // check that we have the required fields for an incoming packet
-  if (typeof json.header === 'object' && typeof json.header.type === 'string' && typeof json.header.id === 'string') {
-    const packet = json as PacketInterface;
-    switch (packet.header.type) {
-      case PacketType.Hello:
-        return new packetTypes.HelloPacket(packet);
-      case PacketType.Disconnecting:
-        return new packetTypes.DisconnectingPacket(packet);
-      case PacketType.Ping:
-        return new packetTypes.PingPacket(packet);
-      case PacketType.Pong:
-        return new packetTypes.PongPacket(packet);
-      case PacketType.Order:
-        return new packetTypes.OrderPacket(packet);
-      case PacketType.OrderInvalidation:
-        return new packetTypes.OrderInvalidationPacket(packet);
-      case PacketType.GetOrders:
-        return new packetTypes.GetOrdersPacket(packet);
-      case PacketType.Orders:
-        return new packetTypes.OrdersPacket(packet);
-      case PacketType.GetNodes:
-        return new packetTypes.GetNodesPacket(packet);
-      case PacketType.Nodes:
-        return new packetTypes.NodesPacket(packet);
-      case PacketType.SwapRequest:
-        return new packetTypes.SwapRequestPacket(packet);
-      case PacketType.SwapResponse:
-        return new packetTypes.SwapAcceptedPacket(packet);
-      case PacketType.SwapComplete:
-        return new packetTypes.SwapCompletePacket(packet);
-      case PacketType.SwapError:
-        return new packetTypes.SwapFailedPacket(packet);
-      default:
-        throw new ParserError(ParserErrorType.UnknownPacketType, packet.header.type!);
-    }
-  } else {
-    throw new ParserError(ParserErrorType.InvalidMessage, `${raw}`);
-  }
-  */
+  return packetOrPbObj;
 };
 
 interface Parser {

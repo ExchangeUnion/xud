@@ -269,7 +269,7 @@ describe('Parser', () => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.InvalidMessage) {
+          if (err && err.type === ParserErrorType.InvalidPacket) {
             done();
           } else {
             done(err);

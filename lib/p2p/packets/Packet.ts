@@ -26,6 +26,17 @@ function isPacketInterface(obj: any): obj is PacketInterface {
   return false;
 }
 
+function isPacket(obj: any): obj is Packet {
+  const p = (<Packet>obj);
+  return (
+    p.toRaw !== undefined  && typeof p.toRaw === 'function'
+    && p.serialize !== undefined && typeof p.serialize === 'function'
+    && p.type !== undefined && typeof p.type === 'number'
+    && p.direction !== undefined && typeof p.direction === 'number'
+  )
+}
+
+
 enum PacketDirection {
   /** A packet that is pushed to a peer without expecting any response. */
   Unilateral,
@@ -40,8 +51,6 @@ abstract class Packet<T = any> implements PacketInterface {
   public abstract get direction(): PacketDirection;
   public body?: T;
   public header: PacketHeader;
-  /** Wire protocol delimiter. */
-  public static readonly PROTOCOL_DELIMITER = 'ↂ₿ↂ';
 
   /**
    * Create a packet from a deserialized packet message.
@@ -80,8 +89,8 @@ abstract class Packet<T = any> implements PacketInterface {
   public abstract serialize(): Uint8Array;
 
   /**
-   * Serialize this packet to JSON.
-   * @returns JSON string representing the packet
+   * Serialize this packet to binary Buffer.
+   * @returns Buffer representation of the packet
    */
   public toRaw(): Buffer {
     const msg = this.serialize();
@@ -97,4 +106,4 @@ abstract class Packet<T = any> implements PacketInterface {
 }
 
 export default Packet;
-export { PacketHeader, PacketDirection, PacketInterface };
+export { PacketHeader, PacketDirection, PacketInterface, isPacket };

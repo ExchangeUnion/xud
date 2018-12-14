@@ -478,17 +478,18 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UnparseableMessage:
-          this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.UnparseableMessage);
-          break;
-        case ParserErrorType.InvalidMessage:
-          this.logger.warn(`Invalid peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.InvalidMessage);
+        case ParserErrorType.InvalidPacket:
+          this.logger.warn(`parser: invalid peer packet: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.InvalidPacket);
           break;
         case ParserErrorType.UnknownPacketType:
-          this.logger.warn(`Unknown peer message type: ${err.payload}`);
+          this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
           this.emit('reputation', ReputationEvent.UnknownPacketType);
+          break;
+        case ParserErrorType.MaxBufferSizeExceeded:
+          this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
+          break;
       }
     });
   }
