@@ -16,33 +16,32 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     return PacketDirection.Response;
   }
 
-  public static deserialize = (binary: Uint8Array): OrdersPacket | undefined => {
-    const msg = pb.OrdersPacket.deserializeBinary(binary).toObject();
-    return OrdersPacket.validate(msg) ? OrdersPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): OrdersPacket | pb.OrdersPacket.AsObject => {
+    const obj = pb.OrdersPacket.deserializeBinary(binary).toObject();
+    return OrdersPacket.validate(obj) ? OrdersPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.OrdersPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && msg.header.reqid
-      && msg.ordersList.filter(order =>
+  private static validate = (obj: pb.OrdersPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.reqid
+      && obj.ordersList.filter(order =>
         order.id
         && order.pairid
         && order.price
         && order.quantity,
-      ).length === msg.ordersList.length
+      ).length === obj.ordersList.length
     );
   }
 
-  private static convert = (msg: pb.OrdersPacket.AsObject): OrdersPacket => {
+  private static convert = (obj: pb.OrdersPacket.AsObject): OrdersPacket => {
     return new OrdersPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
-        reqId: msg.header!.reqid,
+        id: obj.id,
+        hash: obj.hash,
+        reqId: obj.reqid,
       },
-      body: msg.ordersList.map(pbOrder => ({
+      body: obj.ordersList.map(pbOrder => ({
         id: pbOrder.id,
         pairId: pbOrder.pairid,
         price: pbOrder.price,
@@ -53,13 +52,10 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-    pbHeader.setReqid(this.header.reqId!);
-
     const msg = new pb.OrdersPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setReqid(this.header.reqId!);
     msg.setOrdersList(this.body!.map((order) => {
       const pbOrder = new pb.Order();
       pbOrder.setId(order.id);

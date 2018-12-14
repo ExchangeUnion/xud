@@ -19,45 +19,41 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     return PacketDirection.Response;
   }
 
-  public static deserialize = (binary: Uint8Array): SwapAcceptedPacket | undefined => {
-    const msg = pb.SwapAcceptedPacket.deserializeBinary(binary).toObject();
-    return SwapAcceptedPacket.validate(msg) ? SwapAcceptedPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): SwapAcceptedPacket | pb.SwapAcceptedPacket.AsObject => {
+    const obj = pb.SwapAcceptedPacket.deserializeBinary(binary).toObject();
+    return SwapAcceptedPacket.validate(obj) ? SwapAcceptedPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.SwapAcceptedPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && msg.header.reqid
-      && msg.rhash
-      && msg.quantity
-      && msg.makercltvdelta
+  private static validate = (obj: pb.SwapAcceptedPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.reqid
+      && obj.rhash
+      && obj.quantity
+      && obj.makercltvdelta
     );
   }
 
-  private static convert = (msg: pb.SwapAcceptedPacket.AsObject): SwapAcceptedPacket => {
+  private static convert = (obj: pb.SwapAcceptedPacket.AsObject): SwapAcceptedPacket => {
     return new SwapAcceptedPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
-        reqId: msg.header!.reqid,
+        id: obj.id,
+        hash: obj.hash,
+        reqId: obj.reqid,
       },
       body: {
-        rHash: msg.rhash,
-        quantity: msg.quantity,
-        makerCltvDelta: msg.makercltvdelta,
+        rHash: obj.rhash,
+        quantity: obj.quantity,
+        makerCltvDelta: obj.makercltvdelta,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-    pbHeader.setReqid(this.header.reqId!);
-
     const msg = new pb.SwapAcceptedPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setReqid(this.header.reqId!);
     msg.setRhash(this.body!.rHash);
     msg.setQuantity(this.body!.quantity);
     msg.setMakercltvdelta(this.body!.makerCltvDelta);

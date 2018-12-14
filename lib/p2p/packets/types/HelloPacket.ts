@@ -13,48 +13,43 @@ class HelloPacket extends Packet<HandshakeState> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize = (binary: Uint8Array): HelloPacket | undefined => {
-    const msg = pb.HelloPacket.deserializeBinary(binary).toObject();
-    return HelloPacket.validate(msg) ? HelloPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): HelloPacket | pb.HelloPacket.AsObject => {
+    const obj = pb.HelloPacket.deserializeBinary(binary).toObject();
+    return HelloPacket.validate(obj) ? HelloPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.HelloPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
-      && msg.version
-      && msg.nodepubkey
-      && msg.pairsList
-      && msg.addressesList.filter(addr => addr.host).length === msg.addressesList.length
+  private static validate = (obj: pb.HelloPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.version
+      && obj.nodepubkey
+      && obj.pairsList
+      && obj.addressesList.filter(addr => addr.host).length === obj.addressesList.length
     );
   }
 
-  private static convert = (msg: pb.HelloPacket.AsObject): HelloPacket => {
+  private static convert = (obj: pb.HelloPacket.AsObject): HelloPacket => {
     return new HelloPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: removeUndefinedProps({
-        version: msg.version,
-        nodePubKey: msg.nodepubkey,
-        pairs: msg.pairsList,
-        addresses: msg.addressesList,
-        raidenAddress: msg.raidenaddress || undefined,
-        lndbtcPubKey: msg.lndbtcpubkey || undefined,
-        lndltcPubKey: msg.lndltcpubkey || undefined,
+        version: obj.version,
+        nodePubKey: obj.nodepubkey,
+        pairs: obj.pairsList,
+        addresses: obj.addressesList,
+        raidenAddress: obj.raidenaddress || undefined,
+        lndbtcPubKey: obj.lndbtcpubkey || undefined,
+        lndltcPubKey: obj.lndltcpubkey || undefined,
       }),
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-
     const msg = new pb.HelloPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id)
+    msg.setHash(this.header.hash!)
     msg.setVersion(this.body!.version);
     msg.setNodepubkey(this.body!.nodePubKey);
     msg.setPairsList(this.body!.pairs);

@@ -17,44 +17,39 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | undefined => {
-    const msg = pb.OrderPacket.deserializeBinary(binary).toObject();
-    return OrderInvalidationPacket.validate(msg) ? OrderInvalidationPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {
+    const obj = pb.OrderInvalidationPacket.deserializeBinary(binary).toObject();
+    return OrderInvalidationPacket.validate(obj) ? OrderInvalidationPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.OrderInvalidationPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
-      && msg.id
-      && msg.pairid
-      && msg.quantity
+  private static validate = (obj: pb.OrderInvalidationPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.orderId
+      && obj.pairid
+      && obj.quantity
     );
   }
 
-  private static convert = (msg: pb.OrderInvalidationPacket.AsObject): OrderPacket => {
+  private static convert = (obj: pb.OrderInvalidationPacket.AsObject): OrderPacket => {
     return new OrderPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: {
-        id: msg.id,
-        pairId: msg.pairid,
-        quantity: msg.quantity,
+        id: obj.orderId,
+        pairId: obj.pairid,
+        quantity: obj.quantity,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-
     const msg = new pb.OrderInvalidationPacket();
-    msg.setHeader(pbHeader);
-    msg.setId(this.body!.id);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setOrderId(this.body!.id);
     msg.setPairid(this.body!.pairId);
     msg.setQuantity(this.body!.quantity);
 

@@ -13,33 +13,26 @@ class PingPacket extends Packet<undefined> {
     return PacketDirection.Request;
   }
 
-  public static deserialize = (binary: Uint8Array): PingPacket | undefined => {
-    const msg = pb.PingPacket.deserializeBinary(binary).toObject();
-    return PingPacket.validate(msg) ? PingPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): PingPacket | pb.PingPacket.AsObject => {
+    const obj = pb.PingPacket.deserializeBinary(binary).toObject();
+    return PingPacket.validate(obj) ? PingPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.PingPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && !msg.header.hash
-      && !msg.header.reqid
-    );
+  private static validate = (obj: pb.PingPacket.AsObject): boolean => {
+    return !!(obj.id);
   }
 
-  private static convert = (msg: pb.PingPacket.AsObject): PingPacket => {
+  private static convert = (obj: pb.PingPacket.AsObject): PingPacket => {
     return new PingPacket({
-      header: removeUndefinedProps({
-        id: msg.header!.id,
-      }),
+      header: {
+        id: obj.id,
+      },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-
     const msg = new pb.PingPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
 
     return msg.serializeBinary();
   }

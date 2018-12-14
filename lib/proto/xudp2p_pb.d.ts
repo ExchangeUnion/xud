@@ -5,35 +5,6 @@
 
 import * as jspb from "google-protobuf";
 
-export class Header extends jspb.Message { 
-    getId(): string;
-    setId(value: string): void;
-
-    getReqid(): string;
-    setReqid(value: string): void;
-
-    getHash(): string;
-    setHash(value: string): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): Header.AsObject;
-    static toObject(includeInstance: boolean, msg: Header): Header.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: Header, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): Header;
-    static deserializeBinaryFromReader(message: Header, reader: jspb.BinaryReader): Header;
-}
-
-export namespace Header {
-    export type AsObject = {
-        id: string,
-        reqid: string,
-        hash: string,
-    }
-}
-
 export class Address extends jspb.Message { 
     getHost(): string;
     setHost(value: string): void;
@@ -124,11 +95,8 @@ export namespace Node {
 }
 
 export class PingPacket extends jspb.Message { 
-
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getId(): string;
+    setId(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -143,16 +111,16 @@ export class PingPacket extends jspb.Message {
 
 export namespace PingPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
     }
 }
 
 export class PongPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -167,31 +135,23 @@ export class PongPacket extends jspb.Message {
 
 export namespace PongPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
     }
 }
 
 export class OrderPacket extends jspb.Message { 
-
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
-
     getId(): string;
     setId(value: string): void;
 
-    getPairid(): string;
-    setPairid(value: string): void;
+    getHash(): string;
+    setHash(value: string): void;
 
-    getPrice(): number;
-    setPrice(value: number): void;
 
-    getQuantity(): number;
-    setQuantity(value: number): void;
-
-    getIsbuy(): boolean;
-    setIsbuy(value: boolean): void;
+    hasOrder(): boolean;
+    clearOrder(): void;
+    getOrder(): Order | undefined;
+    setOrder(value?: Order): void;
 
 
     serializeBinary(): Uint8Array;
@@ -206,24 +166,21 @@ export class OrderPacket extends jspb.Message {
 
 export namespace OrderPacket {
     export type AsObject = {
-        header?: Header.AsObject,
         id: string,
-        pairid: string,
-        price: number,
-        quantity: number,
-        isbuy: boolean,
+        hash: string,
+        order?: Order.AsObject,
     }
 }
 
 export class OrderInvalidationPacket extends jspb.Message { 
-
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
-
     getId(): string;
     setId(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
+
+    getOrderId(): string;
+    setOrderId(value: string): void;
 
     getPairid(): string;
     setPairid(value: string): void;
@@ -244,19 +201,20 @@ export class OrderInvalidationPacket extends jspb.Message {
 
 export namespace OrderInvalidationPacket {
     export type AsObject = {
-        header?: Header.AsObject,
         id: string,
+        hash: string,
+        orderId: string,
         pairid: string,
         quantity: number,
     }
 }
 
 export class GetOrdersPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getHash(): string;
+    setHash(value: string): void;
 
     clearPairidsList(): void;
     getPairidsList(): Array<string>;
@@ -276,17 +234,21 @@ export class GetOrdersPacket extends jspb.Message {
 
 export namespace GetOrdersPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        hash: string,
         pairidsList: Array<string>,
     }
 }
 
 export class OrdersPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
 
     clearOrdersList(): void;
     getOrdersList(): Array<Order>;
@@ -306,17 +268,19 @@ export class OrdersPacket extends jspb.Message {
 
 export namespace OrdersPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
+        hash: string,
         ordersList: Array<Order.AsObject>,
     }
 }
 
 export class HelloPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getHash(): string;
+    setHash(value: string): void;
 
     getVersion(): string;
     setVersion(value: string): void;
@@ -356,7 +320,8 @@ export class HelloPacket extends jspb.Message {
 
 export namespace HelloPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        hash: string,
         version: string,
         nodepubkey: string,
         addressesList: Array<Address.AsObject>,
@@ -368,11 +333,11 @@ export namespace HelloPacket {
 }
 
 export class DisconnectingPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getHash(): string;
+    setHash(value: string): void;
 
     getReason(): number;
     setReason(value: number): void;
@@ -393,18 +358,16 @@ export class DisconnectingPacket extends jspb.Message {
 
 export namespace DisconnectingPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        hash: string,
         reason: number,
         payload: string,
     }
 }
 
 export class GetNodesPacket extends jspb.Message { 
-
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getId(): string;
+    setId(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -419,16 +382,19 @@ export class GetNodesPacket extends jspb.Message {
 
 export namespace GetNodesPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
     }
 }
 
 export class NodesPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
 
     clearNodesList(): void;
     getNodesList(): Array<Node>;
@@ -448,17 +414,19 @@ export class NodesPacket extends jspb.Message {
 
 export namespace NodesPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
+        hash: string,
         nodesList: Array<Node.AsObject>,
     }
 }
 
 export class SwapRequestPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getHash(): string;
+    setHash(value: string): void;
 
     getProposedquantity(): number;
     setProposedquantity(value: number): void;
@@ -488,7 +456,8 @@ export class SwapRequestPacket extends jspb.Message {
 
 export namespace SwapRequestPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        hash: string,
         proposedquantity: number,
         pairid: string,
         orderid: string,
@@ -498,11 +467,14 @@ export namespace SwapRequestPacket {
 }
 
 export class SwapAcceptedPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
 
     getRhash(): string;
     setRhash(value: string): void;
@@ -526,7 +498,9 @@ export class SwapAcceptedPacket extends jspb.Message {
 
 export namespace SwapAcceptedPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
+        hash: string,
         rhash: string,
         quantity: number,
         makercltvdelta: number,
@@ -534,11 +508,14 @@ export namespace SwapAcceptedPacket {
 }
 
 export class SwapCompletePacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
 
     getRhash(): string;
     setRhash(value: string): void;
@@ -556,17 +533,22 @@ export class SwapCompletePacket extends jspb.Message {
 
 export namespace SwapCompletePacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
+        hash: string,
         rhash: string,
     }
 }
 
 export class SwapFailedPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
 
-    hasHeader(): boolean;
-    clearHeader(): void;
-    getHeader(): Header | undefined;
-    setHeader(value?: Header): void;
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
 
     getRhash(): string;
     setRhash(value: string): void;
@@ -587,7 +569,9 @@ export class SwapFailedPacket extends jspb.Message {
 
 export namespace SwapFailedPacket {
     export type AsObject = {
-        header?: Header.AsObject,
+        id: string,
+        reqid: string,
+        hash: string,
         rhash: string,
         errormessage: string,
     }

@@ -17,39 +17,34 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     return PacketDirection.Request;
   }
 
-  public static deserialize = (binary: Uint8Array): GetOrdersPacket | undefined => {
-    const msg = pb.GetOrdersPacket.deserializeBinary(binary).toObject();
-    return GetOrdersPacket.validate(msg) ? GetOrdersPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): GetOrdersPacket | pb.GetOrdersPacket.AsObject => {
+    const obj = pb.GetOrdersPacket.deserializeBinary(binary).toObject();
+    return GetOrdersPacket.validate(obj) ? GetOrdersPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.GetOrdersPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
-      && msg.pairidsList.length > 0
+  private static validate = (obj: pb.GetOrdersPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.pairidsList.length > 0
     );
   }
 
-  private static convert = (msg: pb.GetOrdersPacket.AsObject): GetOrdersPacket => {
+  private static convert = (obj: pb.GetOrdersPacket.AsObject): GetOrdersPacket => {
     return new GetOrdersPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: {
-        pairIds: msg.pairidsList,
+        pairIds: obj.pairidsList,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-
     const msg = new pb.GetOrdersPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id)
+    msg.setHash(this.header.hash!)
     msg.setPairidsList(this.body!.pairIds);
 
     return msg.serializeBinary();

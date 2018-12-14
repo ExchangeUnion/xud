@@ -14,34 +14,33 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     return PacketDirection.Response;
   }
 
-  public static deserialize = (binary: Uint8Array): NodesPacket | undefined => {
-    const msg = pb.NodesPacket.deserializeBinary(binary).toObject();
-    return NodesPacket.validate(msg) ? NodesPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): NodesPacket | pb.NodesPacket.AsObject => {
+    const obj = pb.NodesPacket.deserializeBinary(binary).toObject();
+    return NodesPacket.validate(obj) ? NodesPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.NodesPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && msg.header.reqid
-      && msg.nodesList.filter(node =>
+  private static validate = (obj: pb.NodesPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.reqid
+      && obj.nodesList.filter(node =>
         node.nodepubkey
         && node.addressesList.length > 0
         && node.addressesList.filter(addr => addr.port && addr.host).length === node.addressesList.length,
-      ).length === msg.nodesList.length
+      ).length === obj.nodesList.length
     );
 
     // TODO: add address port/host format validation
   }
 
-  private static convert = (msg: pb.NodesPacket.AsObject): NodesPacket => {
+  private static convert = (obj: pb.NodesPacket.AsObject): NodesPacket => {
     return new NodesPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
-        reqId: msg.header!.reqid,
+        id: obj.id,
+        hash: obj.hash,
+        reqId: obj.reqid,
       },
-      body: msg.nodesList.map(node => ({
+      body: obj.nodesList.map(node => ({
         nodePubKey: node.nodepubkey,
         addresses: node.addressesList,
       })),
@@ -49,13 +48,10 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-    pbHeader.setReqid(this.header.reqId!);
-
     const msg = new pb.NodesPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setReqid(this.header.reqId!);
     msg.setNodesList(this.body!.map((node) => {
       const pbNode = new pb.Node();
       pbNode.setNodepubkey(node.nodePubKey);

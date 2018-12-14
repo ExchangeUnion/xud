@@ -23,41 +23,37 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize = (binary: Uint8Array): SwapFailedPacket | undefined => {
-    const msg = pb.SwapFailedPacket.deserializeBinary(binary).toObject();
-    return SwapFailedPacket.validate(msg) ? SwapFailedPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): SwapFailedPacket | pb.SwapFailedPacket.AsObject => {
+    const obj = pb.SwapFailedPacket.deserializeBinary(binary).toObject();
+    return SwapFailedPacket.validate(obj) ? SwapFailedPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.SwapFailedPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && msg.rhash
+  private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.rhash
     );
   }
 
-  private static convert = (msg: pb.SwapFailedPacket.AsObject): SwapFailedPacket => {
+  private static convert = (obj: pb.SwapFailedPacket.AsObject): SwapFailedPacket => {
     return new SwapFailedPacket({
       header: removeUndefinedProps({
-        id: msg.header!.id,
-        hash: msg.header!.hash,
-        reqId: msg.header!.reqid || undefined,
+        id: obj.id,
+        hash: obj.hash,
+        reqId: obj.reqid || undefined,
       }),
       body: {
-        rHash: msg.rhash,
-        errorMessage: msg.errormessage,
+        rHash: obj.rhash,
+        errorMessage: obj.errormessage,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-    pbHeader.setReqid(this.header.reqId!);
-
     const msg = new pb.SwapFailedPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setReqid(this.header.reqId!);
     msg.setRhash(this.body!.rHash);
     msg.setErrormessage(this.body!.errorMessage);
 

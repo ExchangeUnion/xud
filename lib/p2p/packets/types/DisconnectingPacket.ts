@@ -19,40 +19,35 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize = (binary: Uint8Array): DisconnectingPacket | undefined => {
-    const msg = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
-    return DisconnectingPacket.validate(msg) ? DisconnectingPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {
+    const obj = pb.DisconnectingPacket.deserializeBinary(binary).toObject();
+    return DisconnectingPacket.validate(obj) ? DisconnectingPacket.convert(obj) : obj;
   }
 
   private static validate = (msg: pb.DisconnectingPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
+    return !!(msg.id
+      && msg.hash
       && msg.reason
     );
   }
 
-  private static convert = (msg: pb.DisconnectingPacket.AsObject): DisconnectingPacket => {
+  private static convert = (obj: pb.DisconnectingPacket.AsObject): DisconnectingPacket => {
     return new DisconnectingPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: removeUndefinedProps({
-        reason: msg.reason,
-        payload: msg.payload || undefined,
+        reason: obj.reason,
+        payload: obj.payload || undefined,
       }),
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-
     const msg = new pb.DisconnectingPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id)
+    msg.setHash(this.header.hash!)
     msg.setReason(this.body!.reason);
     msg.setPayload(this.body!.payload!);
 

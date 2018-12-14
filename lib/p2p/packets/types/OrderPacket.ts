@@ -14,51 +14,50 @@ class OrderPacket extends Packet<OutgoingOrder> {
     return PacketDirection.Unilateral;
   }
 
-  public static deserialize = (binary: Uint8Array): OrderPacket | undefined => {
-    const msg = pb.OrderPacket.deserializeBinary(binary).toObject();
-    return OrderPacket.validate(msg) ? OrderPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): OrderPacket | pb.OrderPacket.AsObject => {
+    const obj = pb.OrderPacket.deserializeBinary(binary).toObject();
+    return OrderPacket.validate(obj) ? OrderPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.OrderPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
-      && msg.id
-      && msg.pairid
-      && msg.price
-      && msg.quantity
+  private static validate = (obj: pb.OrderPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.id
+      && obj.order
+      && obj.order.pairid
+      && obj.order.price
+      && obj.order.quantity
     );
   }
 
-  private static convert = (msg: pb.OrderPacket.AsObject): OrderPacket => {
+  private static convert = (obj: pb.OrderPacket.AsObject): OrderPacket => {
     return new OrderPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: {
-        id: msg.id,
-        pairId: msg.pairid,
-        price: msg.price,
-        quantity: msg.quantity,
-        isBuy: msg.isbuy,
+        id: obj.order!.id,
+        pairId: obj.order!.pairid,
+        price: obj.order!.price,
+        quantity: obj.order!.quantity,
+        isBuy: obj.order!.isbuy,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
+    const pbOrder = new pb.Order();
+    pbOrder.setId(this.body!.id);
+    pbOrder.setPairid(this.body!.pairId);
+    pbOrder.setPrice(this.body!.price);
+    pbOrder.setQuantity(this.body!.quantity);
+    pbOrder.setIsbuy(this.body!.isBuy);
 
     const msg = new pb.OrderPacket();
-    msg.setHeader(pbHeader);
-    msg.setId(this.body!.id);
-    msg.setPairid(this.body!.pairId);
-    msg.setPrice(this.body!.price);
-    msg.setQuantity(this.body!.quantity);
-    msg.setIsbuy(this.body!.isBuy);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
+    msg.setOrder(pbOrder);
 
     return msg.serializeBinary();
   }

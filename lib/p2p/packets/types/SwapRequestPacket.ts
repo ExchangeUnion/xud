@@ -19,47 +19,42 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     return PacketDirection.Request;
   }
 
-  public static deserialize = (binary: Uint8Array): SwapRequestPacket | undefined => {
-    const msg = pb.SwapRequestPacket.deserializeBinary(binary).toObject();
-    return SwapRequestPacket.validate(msg) ? SwapRequestPacket.convert(msg) : undefined;
+  public static deserialize = (binary: Uint8Array): SwapRequestPacket | pb.SwapRequestPacket.AsObject => {
+    const obj = pb.SwapRequestPacket.deserializeBinary(binary).toObject();
+    return SwapRequestPacket.validate(obj) ? SwapRequestPacket.convert(obj) : obj;
   }
 
-  private static validate = (msg: pb.SwapRequestPacket.AsObject): boolean => {
-    return !!(msg.header
-      && msg.header.id
-      && msg.header.hash
-      && !msg.header.reqid
-      && msg.proposedquantity
-      && msg.pairid
-      && msg.orderid
-      && msg.rhash
-      && msg.takercltvdelta
+  private static validate = (obj: pb.SwapRequestPacket.AsObject): boolean => {
+    return !!(obj.id
+      && obj.hash
+      && obj.proposedquantity
+      && obj.pairid
+      && obj.orderid
+      && obj.rhash
+      && obj.takercltvdelta
     );
   }
 
-  private static convert = (msg: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {
+  private static convert = (obj: pb.SwapRequestPacket.AsObject): SwapRequestPacket => {
     return new SwapRequestPacket({
       header: {
-        id: msg.header!.id,
-        hash: msg.header!.hash,
+        id: obj.id,
+        hash: obj.hash,
       },
       body: {
-        proposedQuantity: msg.proposedquantity,
-        pairId: msg.pairid,
-        orderId: msg.orderid,
-        rHash: msg.rhash,
-        takerCltvDelta: msg.takercltvdelta,
+        proposedQuantity: obj.proposedquantity,
+        pairId: obj.pairid,
+        orderId: obj.orderid,
+        rHash: obj.rhash,
+        takerCltvDelta: obj.takercltvdelta,
       },
     });
   }
 
   public serialize(): Uint8Array {
-    const pbHeader = new pb.Header();
-    pbHeader.setId(this.header.id);
-    pbHeader.setHash(this.header.hash!);
-
     const msg = new pb.SwapRequestPacket();
-    msg.setHeader(pbHeader);
+    msg.setId(this.header.id);
+    msg.setHash(this.header.hash!);
     msg.setProposedquantity(this.body!.proposedQuantity);
     msg.setPairid(this.body!.pairId);
     msg.setOrderid(this.body!.orderId);
