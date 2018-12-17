@@ -175,3 +175,13 @@ export const isPlainObject = (obj: any) => {
 
 /** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
 export const randomBytes = promisify(crypto.randomBytes);
+
+export const removeUndefinedProps = (obj: any) => {
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] === undefined) {
+      delete obj[key];
+    }
+  });
+
+  return obj;
+};

@@ -47,8 +47,8 @@ export enum ReputationEvent {
   PacketTimeout = 2,
   SwapFailure = 3,
   SwapSuccess = 4,
-  UnparseableMessage = 5,
-  InvalidMessage = 6,
+  MaxParserBufferSizeExceeded = 5,
+  InvalidPacket = 6,
   UnknownPacketType = 7,
 }
 
@@ -62,13 +62,13 @@ export enum SwapFailureReason {
 }
 
 export enum DisconnectionReason {
-  ResponseStalling,
-  IncompatibleProtocolVersion,
-  UnexpectedIdentity,
-  ForbiddenIdentityUpdate,
-  ConnectedToSelf,
-  NotAcceptingConnections,
-  Banned,
-  AlreadyConnected,
-  Shutdown,
+  ResponseStalling = 1,
+  IncompatibleProtocolVersion = 2,
+  UnexpectedIdentity = 3,
+  ForbiddenIdentityUpdate = 4,
+  ConnectedToSelf = 5,
+  NotAcceptingConnections = 6,
+  Banned = 7,
+  AlreadyConnected = 8,
+  Shutdown = 9,
 }
