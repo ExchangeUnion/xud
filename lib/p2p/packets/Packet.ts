@@ -107,7 +107,7 @@ abstract class Packet<T = any> implements PacketInterface {
     return this.header.hash === this.hash(this.body);
   }
 
-/**
+  /**
    * Serialize this packet to binary Buffer.
    * @returns Buffer representation of the packet
    */
