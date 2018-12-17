@@ -9,13 +9,14 @@ const errorCodes = {
   UNEXPECTED_NODE_PUB_KEY: codesPrefix.concat('.3'),
   ATTEMPTED_CONNECTION_TO_SELF: codesPrefix.concat('.4'),
   EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
-  CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
-  COULD_NOT_CONNECT: codesPrefix.concat('.7'),
-  NODE_UNKNOWN: codesPrefix.concat('.8'),
-  NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
-  NODE_NOT_BANNED: codesPrefix.concat('.10'),
-  NODE_IS_BANNED: codesPrefix.concat('.11'),
-  ALREADY_CONNECTING: codesPrefix.concat('.12'),
+  CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
+  CONNECTION_RETRIES_REVOKED: codesPrefix.concat('.7'),
+  COULD_NOT_CONNECT: codesPrefix.concat('.8'),
+  NODE_UNKNOWN: codesPrefix.concat('.9'),
+  NODE_ALREADY_BANNED: codesPrefix.concat('.10'),
+  NODE_NOT_BANNED: codesPrefix.concat('.11'),
+  NODE_IS_BANNED: codesPrefix.concat('.12'),
+  ALREADY_CONNECTING: codesPrefix.concat('.13'),
 };
 
 const errors = {
@@ -39,9 +40,13 @@ const errors = {
     message: `could not retrieve external IP: ${err.message}`,
     code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
   }),
-  CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED: {
+  CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: {
     message: `Connection retry attempts to peer exceeded maximum time allotment`,
-    code: errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED,
+    code: errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED,
+  },
+  CONNECTION_RETRIES_REVOKED: {
+    message: `Connection retry attempts to peer were revoked`,
+    code: errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED,
   },
   COULD_NOT_CONNECT: (address: Address, err: Error) => ({
     message: `could not connect to peer at ${addressUtils.toString(address)}: ${err.message}`,

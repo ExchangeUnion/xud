@@ -631,6 +631,11 @@
         "node_uri": {
           "type": "string",
           "description": "The uri of the node to connect to in \"[nodePubKey]@[host]:[port]\" format."
+        },
+        "retry_connecting": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether to apply multiple connection retry attempts."
         }
       }
     },

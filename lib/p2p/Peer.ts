@@ -64,6 +64,7 @@ class Peer extends EventEmitter {
   private lastRecv = 0;
   private lastSend = 0;
   private handshakeState?: HandshakeState;
+  private connectionRetriesRevoked = false;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   /** Interval to check required responses from peer. */
@@ -245,6 +246,10 @@ class Peer extends EventEmitter {
     this.emit('close');
   }
 
+  public revokeConnectionRetries = (): void => {
+    this.connectionRetriesRevoked = true;
+  }
+
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
     if (this.nodePubKey !== undefined) {
@@ -298,6 +303,7 @@ class Peer extends EventEmitter {
 
       this.socket = net.connect(this.address.port, this.address.host);
       this.inbound = false;
+      this.connectionRetriesRevoked = false;
 
       const cleanup = () => {
         if (this.connectTimeout) {
@@ -334,7 +340,13 @@ class Peer extends EventEmitter {
 
         if (Date.now() - startTime + retryDelay > Peer.CONNECTION_RETRIES_MAX_PERIOD) {
           this.close();
-          reject(errors.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED);
+          reject(errors.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED);
+          return;
+        }
+
+        if (this.connectionRetriesRevoked) {
+          this.close();
+          reject(errors.CONNECTION_RETRIES_REVOKED);
           return;
         }
 

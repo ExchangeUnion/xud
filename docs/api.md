@@ -225,6 +225,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | node_uri | [string](#string) |  | The uri of the node to connect to in &#34;[nodePubKey]@[host]:[port]&#34; format. |
+| retry_connecting | [bool](#bool) |  | Whether to apply multiple connection retry attempts. |
 
 
 

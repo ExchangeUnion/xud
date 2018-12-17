@@ -157,10 +157,12 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: { nodeUri: string }) => {
+  public connect = async (args: { nodeUri: string, retryConnecting: boolean }) => {
+    const { nodeUri, retryConnecting } = args;
+
     let uriParts: UriParts;
     try {
-      uriParts = parseUri(args.nodeUri);
+      uriParts = parseUri(nodeUri);
     } catch (err) {
       throw errors.INVALID_ARGUMENT('uri is invalid');
     }
@@ -169,7 +171,7 @@ class Service extends EventEmitter {
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
 
-    await this.pool.addOutbound({ host, port }, nodePubKey, false);
+    await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   }
 
   /*
