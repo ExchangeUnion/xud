@@ -475,13 +475,13 @@ message PlaceOrderEvent {
 }
 
 message ExecuteSwapRequest {
-  // The trading pair of the swap orders.
-  string pair_id = 2 [json_name = "pair_id"];
   // The order id of the maker order.
   string order_id = 1 [json_name = "order_id"];
-  // The node pub key of the peer which owns the maker order.
+  // The trading pair of the swap orders.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly.
   string peer_pub_key = 3 [json_name = "peer_pub_key"];
-  // the quantity to swap. the whole order will be swapped if unspecified.
+  // The quantity to swap. The whole order will be swapped if unspecified.
   double quantity = 4 [json_name = "quantity"];
 }
 
