@@ -24,9 +24,9 @@ export const builder = {
 
 export const handler = (argv: Arguments) => {
   const request = new ExecuteSwapRequest();
-  request.setOrderId(argv.maker_order_id);
+  request.setOrderId(argv.order_id);
   request.setPairId(argv.pair_id);
-  request.setPeerPubKey(argv.maker_peer_pub_key);
+  request.setPeerPubKey(argv.peer_pub_key);
   request.setQuantity(argv.quantity);
   loadXudClient(argv).executeSwap(request, callback(argv));
 };

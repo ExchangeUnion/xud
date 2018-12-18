@@ -54,7 +54,7 @@ class Peer extends EventEmitter {
   public getNodesTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;
-  private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
+  private parser: Parser = new Parser();
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
@@ -277,9 +277,9 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
-  private sendRaw = (packetStr: string) => {
+  private sendRaw = (data: Buffer) => {
     if (this.socket) {
-      this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
+      this.socket.write(data);
       this.lastSend = Date.now();
     }
   }
@@ -487,7 +487,7 @@ class Peer extends EventEmitter {
       } else {
         this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
       }
-      this.parser.feed(dataStr);
+      this.parser.feed(data);
     });
 
     this.socket!.setNoDelay(true);
@@ -502,17 +502,18 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UnparseableMessage:
-          this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.UnparseableMessage);
-          break;
-        case ParserErrorType.InvalidMessage:
-          this.logger.warn(`Invalid peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.InvalidMessage);
+        case ParserErrorType.InvalidPacket:
+          this.logger.warn(`parser: invalid peer packet: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.InvalidPacket);
           break;
         case ParserErrorType.UnknownPacketType:
-          this.logger.warn(`Unknown peer message type: ${err.payload}`);
+          this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
           this.emit('reputation', ReputationEvent.UnknownPacketType);
+          break;
+        case ParserErrorType.MaxBufferSizeExceeded:
+          this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
+          break;
       }
     });
   }
@@ -581,7 +582,7 @@ class Peer extends EventEmitter {
 
     if (!this.handshakeState) {
       // we must wait to receive handshake data before opening the connection
-      await this.wait(PacketType.Hello, Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.Hello.toString(), Peer.RESPONSE_TIMEOUT);
     }
 
     return packet;
@@ -599,10 +600,10 @@ class Peer extends EventEmitter {
 
     this.handshakeState = packet.body;
 
-    const entry = this.responseMap.get(PacketType.Hello);
+    const entry = this.responseMap.get(PacketType.Hello.toString());
 
     if (entry) {
-      this.responseMap.delete(PacketType.Hello);
+      this.responseMap.delete(PacketType.Hello.toString());
       entry.resolve(packet);
     }
 

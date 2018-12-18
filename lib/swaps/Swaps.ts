@@ -90,9 +90,9 @@ class Swaps extends EventEmitter {
   }
 
   private bind() {
-    this.pool.on('packet.swapResponse', this.handleSwapResponse);
+    this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
-    this.pool.on('packet.swapError', this.handleSwapError);
+    this.pool.on('packet.swapFailed', this.handleSwapFailed);
   }
 
   /**
@@ -453,12 +453,12 @@ class Swaps extends EventEmitter {
    * Handles a response from a peer to confirm a swap deal and updates the deal. If the deal is
    * accepted, initiates the swap.
    */
-  private handleSwapResponse = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
-    assert(responsePacket.body, 'SwapResponsePacket does not contain a body');
+  private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
+    assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
     const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
-      this.logger.error(`received swap response for unrecognized deal payment hash ${rHash}`);
+      this.logger.error(`received swap accepted for unrecognized deal payment hash ${rHash}`);
       return;
     }
 
@@ -729,7 +729,7 @@ class Swaps extends EventEmitter {
     return this.persistDeal(deal);
   }
 
-  private handleSwapError = (error: packets.SwapFailedPacket) => {
+  private handleSwapFailed = (error: packets.SwapFailedPacket) => {
     const { rHash, errorMessage } = error.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
