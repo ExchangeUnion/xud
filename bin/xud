@@ -115,7 +115,7 @@ const { argv } = require('yargs')
     },
     'p2p.discoverInMinutes': {
       describe: 'Interval minutes for discover option',
-      type: 'number'
+      type: 'number',
     },
     'p2p.detectexternalip': {
       describe: 'Detect and advertise external ip address to peers',
