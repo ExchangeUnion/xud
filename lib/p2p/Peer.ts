@@ -50,7 +50,7 @@ class Peer extends EventEmitter {
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
   public active = false; // added to peer list
-  /** Timer to schedularly call getNodes #402. */
+  /** Timer to periodically call getNodes #402 */
   public getNodesTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;

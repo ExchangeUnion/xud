@@ -23,8 +23,8 @@ type PoolConfig = {
   /** If false, don't send GET_NODES when connecting, defaults to true. */
   discover: boolean;
 
-  /** GET_NODES scheduler in seconds, discover option should be true. */
-  discoverInSeconds: number;
+  /** GET_NODES scheduler in minutes, discover option should be true. */
+  discoverInMinutes: number;
 
   /** Whether or not to listen for incoming connections from peers. */
   listen: boolean;
@@ -582,10 +582,17 @@ class Pool extends EventEmitter {
     // request peer's orders
     peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
     if (this.config.discover) {
-      peer.getNodesTimer = setInterval(() => {
-        // request peer's known nodes only if p2p.discover option is true
+      // request peer's known nodes only if p2p.discover option is true
+      if (this.config.discoverInMinutes === 0) {
+        // timer is disabled
         peer.sendPacket(new packets.GetNodesPacket());
-      }, this.config.discoverInSeconds * 1000);
+        peer.getNodesTimer = undefined; // defensive programming
+      }else {
+        // timer is enabled
+        peer.getNodesTimer = setInterval(() => {
+          peer.sendPacket(new packets.GetNodesPacket());
+        }, this.config.discoverInMinutes * 1000 * 60);
+      }
     }
 
     // if outbound, update the `lastConnected` field for the address we're actually connected to

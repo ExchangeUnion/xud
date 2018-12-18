@@ -12,6 +12,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import { SwapResult } from 'lib/swaps/types';
+import { or } from 'sequelize';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -165,6 +166,7 @@ class GrpcService {
 
   /** Adds an active streaming call and adds a listener to remove it if it is cancelled. */
   private addStream = (stream: grpc.ServerWriteableStream<any>) => {
+
     this.streams.add(stream);
     stream.once('cancelled', () => {
       this.streams.delete(stream);
@@ -526,7 +528,9 @@ class GrpcService {
    */
   public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
     this.service.subscribeAddedOrders(call.request.toObject(), (order: Order) => {
-      call.write(createOrder(order));
+      const order2 = createOrder(order);
+      console.log(order2.getSide());
+      call.write(order2);
     });
     this.addStream(call);
   }
