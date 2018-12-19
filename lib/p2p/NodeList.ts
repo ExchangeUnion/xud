@@ -132,10 +132,7 @@ class NodeList extends EventEmitter {
    * @return true if the specified node exists and the event was added, false otherwise
    */
   public addReputationEvent = async (nodePubKey: string, event: ReputationEvent): Promise<boolean> => {
-    let node;
-    if (this.isBanned(nodePubKey)) {
-      node = this.bannedNodes.get(nodePubKey);
-    } else node = this.nodes.get(nodePubKey);
+    const node = this.isBanned(nodePubKey) ? this.bannedNodes.get(nodePubKey) : this.nodes.get(nodePubKey);
 
     if (node) {
       const promises: PromiseLike<any>[] = [
