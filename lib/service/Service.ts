@@ -8,7 +8,7 @@ import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion, OwnOrder, PeerOrder } from '../types/orders';
+import { Pair, Order, OrderPortion } from '../types/orders';
 import { PlaceOrderEvent } from '../types/orderBook';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
@@ -368,13 +368,12 @@ class Service extends EventEmitter {
   public subscribeAddedOrders = (args: { existing: boolean }, callback: (order: Order) => void) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
-        const { buy: ownOrdersBuy, sell: ownOrdersSell } = this.orderBook.getOwnOrders(pair);
-        const { buy : peerOrdersBuy, sell : peerOrdersSell } = this.orderBook.getPeersOrders(pair);
-
-        ownOrdersBuy.forEach(callback);
-        peerOrdersBuy.forEach(callback);
-        ownOrdersSell.forEach(callback);
-        peerOrdersSell.forEach(callback);
+        const ownOrders = this.orderBook.getOwnOrders(pair);
+        const peerOrders = this.orderBook.getPeersOrders(pair);
+        ownOrders.buy.forEach(callback);
+        peerOrders.buy.forEach(callback);
+        ownOrders.sell.forEach(callback);
+        peerOrders.sell.forEach(callback);
       });
     }
 
@@ -399,7 +398,7 @@ class Service extends EventEmitter {
     // TODO: use `ownOrder.swapped` order book event instead
     this.swaps.on('swap.paid', (swapResult) => {
       if (swapResult.role === SwapRole.Maker) {
-        // only alert client for maker matches, taker matches are handled via placeOrder
+        // only alert cliengitt for maker matches, taker matches are handled via placeOrder
         callback(swapResult);
       }
     });
