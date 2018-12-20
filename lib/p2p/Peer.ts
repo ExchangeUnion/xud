@@ -11,7 +11,6 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -247,11 +246,8 @@ class Peer extends EventEmitter {
 
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
-    if (this.nodePubKey !== undefined) {
-      this.logger.trace(`Sent packet to ${this.nodePubKey}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
-    } else {
-      this.logger.trace(`Sent packet to ${addressUtils.toString(this.address)}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
-    }
+    const recipient = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
+    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${recipient}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -391,7 +387,7 @@ class Peer extends EventEmitter {
 
     for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetId})`);
+        this.emitError(`Peer is stalling (${packetId})`);
         this.close(DisconnectionReason.ResponseStalling, packetId);
         return;
       }
@@ -472,16 +468,7 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket!.on('data', (data) => {
-      this.lastRecv = Date.now();
-      const dataStr = data.toString();
-      if (this.nodePubKey !== undefined) {
-        this.logger.trace(`Received data from ${this.nodePubKey}: ${dataStr}`);
-      } else {
-        this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
-      }
-      this.parser.feed(data);
-    });
+    this.socket!.on('data', this.parser.feed);
 
     this.socket!.setNoDelay(true);
   }
@@ -530,6 +517,10 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = (packet: Packet): void => {
+    this.lastRecv = Date.now();
+    const sender = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
+    this.logger.trace(`Received ${PacketType[packet.type]} packet from ${sender}${JSON.stringify(packet)}`);
+
     if (this.isPacketSolicited(packet)) {
       switch (packet.type) {
         case PacketType.Hello: {
