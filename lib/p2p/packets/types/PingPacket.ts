@@ -1,8 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 
 class PingPacket extends Packet<undefined> {
   public get type() {

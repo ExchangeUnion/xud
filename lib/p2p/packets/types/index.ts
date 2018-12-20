@@ -1,5 +1,7 @@
 export { default as OrderPacket } from './OrderPacket';
-export { default as HelloPacket } from './HelloPacket';
+export { default as HelloRequestPacket } from './HelloRequestPacket';
+export { default as HelloResponsePacket } from './HelloResponsePacket';
+export { default as NodeStateUpdatePacket } from './NodeStateUpdatePacket';
 export { default as DisconnectingPacket } from './DisconnectingPacket';
 export { default as PingPacket } from './PingPacket';
 export { default as PongPacket } from './PongPacket';

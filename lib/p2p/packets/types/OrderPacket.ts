@@ -2,8 +2,6 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { OutgoingOrder } from '../../../types/orders';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 
 class OrderPacket extends Packet<OutgoingOrder> {
   public get type() {

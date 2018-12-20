@@ -1,6 +1,9 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
+import crypto from 'crypto';
+import secp256k1 from 'secp256k1';
+import stringify from 'json-stable-stringify';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
@@ -8,10 +11,10 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
-import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import { NodeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
+import NodeKey from '../nodekey/NodeKey';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -28,7 +31,7 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'handshake', listener: () => void): this;
+  on(event: 'nodeStateUpdate', listener: () => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
@@ -38,7 +41,7 @@ interface Peer {
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
-  emit(event: 'handshake'): boolean;
+  emit(event: 'nodeStateUpdate'): boolean;
 }
 
 /** Represents a remote XU peer */
@@ -63,7 +66,9 @@ class Peer extends EventEmitter {
   private connectTime!: number;
   private lastRecv = 0;
   private lastSend = 0;
-  private handshakeState?: HandshakeState;
+  private nodeState?: NodeState;
+  private helloRequestPacket?: packets.HelloRequestPacket;
+  private sharedSecretKey?: string;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   /** Interval to check required responses from peer. */
@@ -83,20 +88,20 @@ class Peer extends EventEmitter {
 
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
-    return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
+    return this.nodeState ? this.nodeState.nodePubKey : undefined;
   }
 
   public get addresses(): Address[] | undefined {
-    return this.handshakeState ? this.handshakeState.addresses : undefined;
+    return this.nodeState ? this.nodeState.addresses : undefined;
   }
 
   public get info(): PeerInfo {
     return {
       address: addressUtils.toString(this.address),
-      nodePubKey: this.handshakeState ? this.handshakeState.nodePubKey : undefined,
+      nodePubKey: this.nodeState ? this.nodeState.nodePubKey : undefined,
       inbound: this.inbound,
-      pairs: this.handshakeState ? this.handshakeState.pairs : undefined,
-      xudVersion: this.handshakeState ? this.handshakeState.version : undefined,
+      pairs: this.nodeState ? this.nodeState.pairs : undefined,
+      xudVersion: this.nodeState ? this.nodeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndbtcPubKey: this.getLndPubKey('BTC'),
       lndltcPubKey: this.getLndPubKey('LTC'),
@@ -128,14 +133,14 @@ class Peer extends EventEmitter {
   }
 
   public getLndPubKey(chain: string): string | undefined {
-    if (!this.handshakeState) {
+    if (!this.nodeState) {
       return;
     }
     switch (chain) {
       case 'BTC':
-        return this.handshakeState.lndbtcPubKey;
+        return this.nodeState.lndbtcPubKey;
       case 'LTC':
-        return this.handshakeState.lndltcPubKey;
+        return this.nodeState.lndltcPubKey;
       default:
         return;
     }
@@ -160,25 +165,26 @@ class Peer extends EventEmitter {
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
+  public open = async (nodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
-    assert(this.inbound || nodePubKey);
+    assert(this.inbound || expectedNodePubKey);
     assert(!retryConnecting || !this.inbound);
 
     this.opened = true;
-    this.expectedNodePubKey = nodePubKey;
+    this.expectedNodePubKey = expectedNodePubKey;
 
     await this.initConnection(retryConnecting);
     this.initStall();
-    await this.initHello(handshakeData);
+
+    await this.handshake(nodeState, nodeKey, expectedNodePubKey);
 
     if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
       this.close(DisconnectionReason.UnexpectedIdentity);
       throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
 
-    if (this.nodePubKey === handshakeData.nodePubKey) {
+    if (this.nodePubKey === nodeState.nodePubKey) {
       this.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
@@ -372,7 +378,7 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number) => {
+  private wait = (packetId: string, timeout?: number): any => {
     const entry = this.getOrAddPendingResponseEntry(packetId);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
@@ -503,6 +509,10 @@ class Peer extends EventEmitter {
           this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
           this.emit('reputation', ReputationEvent.UnknownPacketType);
           break;
+        case ParserErrorType.DataIntegrityError:
+          this.logger.warn(`parser: packet data integrity error: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.PacketDataIntegrityError);
+          break;
         case ParserErrorType.MaxBufferSizeExceeded:
           this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
           this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
@@ -515,7 +525,7 @@ class Peer extends EventEmitter {
   private isPacketSolicited = (packet: Packet): boolean => {
     let solicited = true;
 
-    if (!this.opened && packet.type !== PacketType.Hello) {
+    if (!this.opened && packet.type !== PacketType.HelloRequest && packet.type !== PacketType.HelloResponse) {
       // until the connection is opened, we only accept hello packets
       solicited = false;
     }
@@ -532,8 +542,12 @@ class Peer extends EventEmitter {
   private handlePacket = (packet: Packet): void => {
     if (this.isPacketSolicited(packet)) {
       switch (packet.type) {
-        case PacketType.Hello: {
-          this.handleHello(packet);
+        case PacketType.HelloRequest: {
+          this.handleHelloRequest(packet);
+          break;
+        }
+        case PacketType.NodeStateUpdate: {
+          this.handleNodeStateUpdate(packet);
           break;
         }
         case PacketType.Ping: {
@@ -568,39 +582,126 @@ class Peer extends EventEmitter {
   /**
    * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
    */
-  private initHello = async (handshakeData: HandshakeState) => {
-    const packet = new packets.HelloPacket(handshakeData);
+  private handshake = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string) => {
+    const ecdh = crypto.createECDH('secp256k1');
+    if (!this.inbound) {
 
-    this.sendPacket(packet);
+      // OUTBOUND HANDSHAKE
 
-    if (!this.handshakeState) {
-      // we must wait to receive handshake data before opening the connection
-      await this.wait(PacketType.Hello.toString(), Peer.RESPONSE_TIMEOUT);
+      assert(this.expectedNodePubKey);
+
+      // key exchange
+
+      const ephemeralPubKey = ecdh.generateKeys().toString('hex');
+      this.sharedSecretKey = ecdh.computeSecret(expectedNodePubKey!, 'hex').toString('hex');
+      console.log('#### SHARED SECRET KEY: ' + this.sharedSecretKey);
+
+      // signing
+
+      let helloRequestBody: any = {
+        ephemeralPubKey,
+        peerPubKey: expectedNodePubKey!,
+        nodeState: ownNodeState,
+      };
+
+      const { signature } = secp256k1.sign(
+        crypto.createHash('sha256').update(stringify(helloRequestBody)).digest(),
+        nodeKey.nodePrivKey,
+      );
+      helloRequestBody = { ...helloRequestBody, sign: signature.toString('hex') };
+
+      // send request and wait for response
+
+      const packet = new packets.HelloRequestPacket(helloRequestBody);
+      this.sendPacket(packet);
+
+      const helloResponse = await this.wait(packet.header.id, Peer.RESPONSE_TIMEOUT);
+
+      // verifying signature
+
+      const { sign, ...bodyWithoutSign } = helloResponse.body;
+      const verified = secp256k1.verify(
+        crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
+        Buffer.from(sign, 'hex') ,
+        Buffer.from(helloResponse.body.nodeState.nodePubKey, 'hex'),
+      );
+
+      console.log('#### RESPONSE VERIFIED: ' + verified);
+
+      this.nodeState = helloResponse.body.nodeState;
+
+    } else {
+
+      // INBOUND HANDSHAKE
+
+      if (!this.helloRequestPacket) {
+        await this.wait(PacketType.HelloRequest.toString(), Peer.RESPONSE_TIMEOUT);
+      }
+      const helloRequest = this.helloRequestPacket!;
+
+      // verifying signature
+
+      const { sign, ...bodyWithoutSign } = helloRequest.body!;
+      const verified = secp256k1.verify(
+        crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
+        Buffer.from(sign, 'hex') ,
+        Buffer.from(helloRequest.body!.nodeState.nodePubKey, 'hex'),
+      );
+
+      console.log('#### REQUEST VERIFIED: ' + verified);
+
+      this.nodeState = helloRequest.body!.nodeState;
+
+      // signing
+
+      let helloResponseBody: any = {
+        peerPubKey: helloRequest.body!.nodeState.nodePubKey,
+        nodeState: ownNodeState,
+      };
+
+      const { signature } = secp256k1.sign(
+        crypto.createHash('sha256').update(stringify(helloResponseBody)).digest(),
+        nodeKey.nodePrivKey,
+      );
+
+      helloResponseBody = { ...helloResponseBody, sign: signature.toString('hex') };
+
+      // key exchange
+
+      ecdh.setPrivateKey(nodeKey.nodePrivKey);
+      this.sharedSecretKey = ecdh.computeSecret(helloRequest.body!.ephemeralPubKey, 'hex').toString('hex');
+      console.log('#### SHARED SECRET KEY: ' + this.sharedSecretKey);
+
+      // send response
+
+      const packet = new packets.HelloResponsePacket(helloResponseBody, helloRequest.header.id);
+      this.sendPacket(packet);
     }
-
-    return packet;
   }
 
-  private handleHello = (packet: packets.HelloPacket): void => {
-    const helloBody = packet.body!;
-    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(helloBody)}`);
-    if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
+  private handleHelloRequest = (packet: packets.HelloRequestPacket): void => {
+    this.helloRequestPacket = packet;
+
+    const entry = this.responseMap.get(PacketType.HelloRequest.toString());
+    if (entry) {
+      this.responseMap.delete(PacketType.HelloRequest.toString());
+      entry.resolve(packet);
+    }
+  }
+
+  private handleNodeStateUpdate = (packet: packets.NodeStateUpdatePacket): void => {
+    const { nodeState } = packet.body!;
+    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(nodeState)}`);
+    if (this.nodePubKey && this.nodePubKey !== nodeState.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close(DisconnectionReason.ForbiddenIdentityUpdate, helloBody.nodePubKey);
+      this.close(DisconnectionReason.ForbiddenIdentityUpdate, nodeState.nodePubKey);
       return;
     }
 
-    this.handshakeState = packet.body;
+    this.nodeState = nodeState;
 
-    const entry = this.responseMap.get(PacketType.Hello.toString());
-
-    if (entry) {
-      this.responseMap.delete(PacketType.Hello.toString());
-      entry.resolve(packet);
-    }
-
-    this.emit('handshake');
+    this.emit('nodeStateUpdate');
   }
 
   private sendPing = (): packets.PingPacket => {
@@ -653,7 +754,6 @@ class PendingResponseEntry {
     for (const job of this.jobs) {
       job.resolve(result);
     }
-
     this.jobs.length = 0;
   }
 

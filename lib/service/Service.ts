@@ -222,7 +222,7 @@ class Service extends EventEmitter {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool.handshakeData;
+    const { nodePubKey, addresses } = this.pool.nodeState;
 
     const uris: string[] = [];
 

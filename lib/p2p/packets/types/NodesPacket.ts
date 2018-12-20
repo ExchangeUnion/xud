@@ -2,8 +2,6 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeConnectionInfo } from '../../../types/p2p';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 
 class NodesPacket extends Packet<NodeConnectionInfo[]> {
   public get type() {

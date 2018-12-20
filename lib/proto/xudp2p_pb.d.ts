@@ -94,6 +94,55 @@ export namespace Node {
     }
 }
 
+export class NodeState extends jspb.Message { 
+    getNodepubkey(): string;
+    setNodepubkey(value: string): void;
+
+    getVersion(): string;
+    setVersion(value: string): void;
+
+    clearAddressesList(): void;
+    getAddressesList(): Array<Address>;
+    setAddressesList(value: Array<Address>): void;
+    addAddresses(value?: Address, index?: number): Address;
+
+    clearPairsList(): void;
+    getPairsList(): Array<string>;
+    setPairsList(value: Array<string>): void;
+    addPairs(value: string, index?: number): string;
+
+    getRaidenaddress(): string;
+    setRaidenaddress(value: string): void;
+
+    getLndbtcpubkey(): string;
+    setLndbtcpubkey(value: string): void;
+
+    getLndltcpubkey(): string;
+    setLndltcpubkey(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): NodeState.AsObject;
+    static toObject(includeInstance: boolean, msg: NodeState): NodeState.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: NodeState, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): NodeState;
+    static deserializeBinaryFromReader(message: NodeState, reader: jspb.BinaryReader): NodeState;
+}
+
+export namespace NodeState {
+    export type AsObject = {
+        nodepubkey: string,
+        version: string,
+        addressesList: Array<Address.AsObject>,
+        pairsList: Array<string>,
+        raidenaddress: string,
+        lndbtcpubkey: string,
+        lndltcpubkey: string,
+    }
+}
+
 export class PingPacket extends jspb.Message { 
     getId(): string;
     setId(value: string): void;
@@ -275,60 +324,123 @@ export namespace OrdersPacket {
     }
 }
 
-export class HelloPacket extends jspb.Message { 
+export class NodeStateUpdatePacket extends jspb.Message { 
     getId(): string;
     setId(value: string): void;
 
     getHash(): string;
     setHash(value: string): void;
 
-    getVersion(): string;
-    setVersion(value: string): void;
 
-    getNodepubkey(): string;
-    setNodepubkey(value: string): void;
-
-    clearAddressesList(): void;
-    getAddressesList(): Array<Address>;
-    setAddressesList(value: Array<Address>): void;
-    addAddresses(value?: Address, index?: number): Address;
-
-    clearPairsList(): void;
-    getPairsList(): Array<string>;
-    setPairsList(value: Array<string>): void;
-    addPairs(value: string, index?: number): string;
-
-    getRaidenaddress(): string;
-    setRaidenaddress(value: string): void;
-
-    getLndbtcpubkey(): string;
-    setLndbtcpubkey(value: string): void;
-
-    getLndltcpubkey(): string;
-    setLndltcpubkey(value: string): void;
+    hasNodestate(): boolean;
+    clearNodestate(): void;
+    getNodestate(): NodeState | undefined;
+    setNodestate(value?: NodeState): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): HelloPacket.AsObject;
-    static toObject(includeInstance: boolean, msg: HelloPacket): HelloPacket.AsObject;
+    toObject(includeInstance?: boolean): NodeStateUpdatePacket.AsObject;
+    static toObject(includeInstance: boolean, msg: NodeStateUpdatePacket): NodeStateUpdatePacket.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: HelloPacket, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): HelloPacket;
-    static deserializeBinaryFromReader(message: HelloPacket, reader: jspb.BinaryReader): HelloPacket;
+    static serializeBinaryToWriter(message: NodeStateUpdatePacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): NodeStateUpdatePacket;
+    static deserializeBinaryFromReader(message: NodeStateUpdatePacket, reader: jspb.BinaryReader): NodeStateUpdatePacket;
 }
 
-export namespace HelloPacket {
+export namespace NodeStateUpdatePacket {
     export type AsObject = {
         id: string,
         hash: string,
-        version: string,
-        nodepubkey: string,
-        addressesList: Array<Address.AsObject>,
-        pairsList: Array<string>,
-        raidenaddress: string,
-        lndbtcpubkey: string,
-        lndltcpubkey: string,
+        nodestate?: NodeState.AsObject,
+    }
+}
+
+export class HelloRequestPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
+
+    getSign(): string;
+    setSign(value: string): void;
+
+    getEphemeralpubkey(): string;
+    setEphemeralpubkey(value: string): void;
+
+    getPeerpubkey(): string;
+    setPeerpubkey(value: string): void;
+
+
+    hasNodestate(): boolean;
+    clearNodestate(): void;
+    getNodestate(): NodeState | undefined;
+    setNodestate(value?: NodeState): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): HelloRequestPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: HelloRequestPacket): HelloRequestPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: HelloRequestPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): HelloRequestPacket;
+    static deserializeBinaryFromReader(message: HelloRequestPacket, reader: jspb.BinaryReader): HelloRequestPacket;
+}
+
+export namespace HelloRequestPacket {
+    export type AsObject = {
+        id: string,
+        hash: string,
+        sign: string,
+        ephemeralpubkey: string,
+        peerpubkey: string,
+        nodestate?: NodeState.AsObject,
+    }
+}
+
+export class HelloResponsePacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
+
+    getReqid(): string;
+    setReqid(value: string): void;
+
+    getHash(): string;
+    setHash(value: string): void;
+
+    getSign(): string;
+    setSign(value: string): void;
+
+    getPeerpubkey(): string;
+    setPeerpubkey(value: string): void;
+
+
+    hasNodestate(): boolean;
+    clearNodestate(): void;
+    getNodestate(): NodeState | undefined;
+    setNodestate(value?: NodeState): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): HelloResponsePacket.AsObject;
+    static toObject(includeInstance: boolean, msg: HelloResponsePacket): HelloResponsePacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: HelloResponsePacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): HelloResponsePacket;
+    static deserializeBinaryFromReader(message: HelloResponsePacket, reader: jspb.BinaryReader): HelloResponsePacket;
+}
+
+export namespace HelloResponsePacket {
+    export type AsObject = {
+        id: string,
+        reqid: string,
+        hash: string,
+        sign: string,
+        peerpubkey: string,
+        nodestate?: NodeState.AsObject,
     }
 }
 
