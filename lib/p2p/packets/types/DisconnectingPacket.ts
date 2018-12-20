@@ -3,7 +3,6 @@ import PacketType from '../PacketType';
 import { DisconnectionReason } from '../../../types/enums';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 
 export type DisconnectingPacketBody = {
   reason: DisconnectionReason;
