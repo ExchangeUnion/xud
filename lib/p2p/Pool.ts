@@ -574,8 +574,11 @@ class Pool extends EventEmitter {
     this.peers.set(peer.nodePubKey, peer);
     peer.active = true;
 
-    // request peer's orders
-    peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
+    if (this.handshakeData.pairs.length > 0) {
+      // request peer's orders
+      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
+    }
+
     if (this.config.discover) {
       // request peer's known nodes only if p2p.discover option is true
       peer.sendPacket(new packets.GetNodesPacket());
