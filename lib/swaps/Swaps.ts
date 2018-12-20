@@ -90,9 +90,9 @@ class Swaps extends EventEmitter {
   }
 
   private bind() {
-    this.pool.on('packet.swapResponse', this.handleSwapResponse);
+    this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
-    this.pool.on('packet.swapError', this.handleSwapError);
+    this.pool.on('packet.swapFailed', this.handleSwapFailed);
   }
 
   /**
@@ -429,10 +429,10 @@ class Swaps extends EventEmitter {
     const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
     switch (makerCurrency) {
       case 'BTC':
-        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + routeCltvDelta / cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + Math.ceil(routeCltvDelta / cltvDeltaFactor);
         break;
       case 'LTC':
-        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + routeCltvDelta * cltvDeltaFactor;
+        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
         break;
     }
 
@@ -453,12 +453,12 @@ class Swaps extends EventEmitter {
    * Handles a response from a peer to confirm a swap deal and updates the deal. If the deal is
    * accepted, initiates the swap.
    */
-  private handleSwapResponse = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
-    assert(responsePacket.body, 'SwapResponsePacket does not contain a body');
+  private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
+    assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
     const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
-      this.logger.error(`received swap response for unrecognized deal payment hash ${rHash}`);
+      this.logger.error(`received swap accepted for unrecognized deal payment hash ${rHash}`);
       return;
     }
 
@@ -569,7 +569,8 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (cltvDelta > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
+    // allow 1 additional one block to be created during the swap
+    if (cltvDelta - 1 > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
       this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
       this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
       this.setDealState(deal, SwapState.Error,
@@ -699,13 +700,16 @@ class Swaps extends EventEmitter {
     deal.phase = newPhase;
 
     if (deal.phase === SwapPhase.AmountReceived) {
+      const wasMaker = deal.role === SwapRole.Maker;
       const swapResult = {
         orderId: deal.orderId,
         localId: deal.localId,
         pairId: deal.pairId,
         quantity: deal.quantity!,
-        amountReceived: deal.role === SwapRole.Maker ? deal.makerAmount : deal.takerAmount,
-        amountSent: deal.role === SwapRole.Maker ? deal.takerAmount : deal.makerAmount,
+        amountReceived: wasMaker ? deal.makerAmount : deal.takerAmount,
+        amountSent: wasMaker ? deal.takerAmount : deal.makerAmount,
+        currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
+        currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
         rHash: deal.rHash,
         peerPubKey: deal.peerPubKey,
         role: deal.role,
@@ -725,7 +729,7 @@ class Swaps extends EventEmitter {
     return this.persistDeal(deal);
   }
 
-  private handleSwapError = (error: packets.SwapFailedPacket) => {
+  private handleSwapFailed = (error: packets.SwapFailedPacket) => {
     const { rHash, errorMessage } = error.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {

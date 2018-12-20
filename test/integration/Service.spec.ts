@@ -9,6 +9,7 @@ chai.use(chaiAsPromised);
 describe('API Service', () => {
   let xud: Xud;
   let service: Service;
+  let orderId: string | undefined;
 
   const pairId = 'LTC/BTC';
   const placeOrderArgs = {
@@ -68,7 +69,10 @@ describe('API Service', () => {
   });
 
   it('should place an order', async () => {
-    await expect(service.placeOrder(placeOrderArgs)).to.be.fulfilled;
+    const result = await service.placeOrder(placeOrderArgs);
+    expect(result.remainingOrder).to.not.be.undefined;
+    expect(result.remainingOrder!.pairId).to.equal(pairId);
+    orderId = result.remainingOrder!.id;
   });
 
   it('should get orders', async () => {
@@ -88,13 +92,17 @@ describe('API Service', () => {
     expect(order.quantity).to.equal(placeOrderArgs.quantity);
     expect(order.pairId).to.equal(placeOrderArgs.pairId);
     expect(order.isBuy).to.equal(placeOrderArgs.side === OrderSide.Buy);
+    expect(order.id).to.equal(orderId);
   });
 
-  it('should remove an order', async () => {
+  it('should remove an order', () => {
+    const tp = xud['orderBook'].tradingPairs.get('LTC/BTC')!;
+    expect(tp.ownOrders.buy.has(orderId!)).to.be.true;
     const args = {
       orderId: '1',
     };
-    await expect(service.removeOrder(args)).to.be.fulfilled;
+    service.removeOrder(args);
+    expect(tp.ownOrders.buy.has(orderId!)).to.be.false;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {

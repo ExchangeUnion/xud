@@ -47,6 +47,8 @@ const createSwapResult = (result: SwapResult) => {
   swapResult.setRHash(result.rHash);
   swapResult.setAmountReceived(result.amountReceived);
   swapResult.setAmountSent(result.amountSent);
+  swapResult.setCurrencyReceived(result.currencyReceived);
+  swapResult.setCurrencySent(result.currencySent);
   swapResult.setPeerPubKey(result.peerPubKey);
   swapResult.setRole(result.role as number);
   return swapResult;
@@ -92,6 +94,9 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
+  /** The set of active streaming calls. */
+  private streams: Set<grpc.ServerWriteableStream<any>> = new Set<grpc.ServerWriteableStream<any>>();
+
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(private logger: Logger, private service: Service) {}
 
@@ -150,6 +155,22 @@ class GrpcService {
     return grpcError;
   }
 
+  /** Closes and removes all active streaming calls. */
+  public closeStreams = () => {
+    this.streams.forEach((stream) => {
+      stream.end();
+    });
+    this.streams.clear();
+  }
+
+  /** Adds an active streaming call and adds a listener to remove it if it is cancelled. */
+  private addStream = (stream: grpc.ServerWriteableStream<any>) => {
+    this.streams.add(stream);
+    stream.once('cancelled', () => {
+      this.streams.delete(stream);
+    });
+  }
+
   /**
    * See [[Service.addCurrency]]
    */
@@ -183,8 +204,9 @@ class GrpcService {
    */
   public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (call, callback) => {
     try {
-      await this.service.removeOrder(call.request.toObject());
+      const quantityOnHold = this.service.removeOrder(call.request.toObject());
       const response = new xudrpc.RemoveOrderResponse();
+      response.setQuantityOnHold(quantityOnHold);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
@@ -503,9 +525,10 @@ class GrpcService {
    * See [[Service.subscribeAddedOrders]]
    */
   public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders((order: Order) => {
+    this.service.subscribeAddedOrders(call.request.toObject(), (order: Order) => {
       call.write(createOrder(order));
     });
+    this.addStream(call);
   }
 
   /*
@@ -521,6 +544,7 @@ class GrpcService {
       orderRemoval.setIsOwnOrder(order.localId !== undefined);
       call.write(orderRemoval);
     });
+    this.addStream(call);
   }
 
   /*
@@ -530,6 +554,7 @@ class GrpcService {
     this.service.subscribeSwaps((result: SwapResult) => {
       call.write(createSwapResult(result));
     });
+    this.addStream(call);
   }
 }
 

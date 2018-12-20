@@ -45,7 +45,8 @@ service Xud {
 
   /* Removes an order from the order book by its local id. This should be called when an order is
    * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
-   * and peers are notified that the order is no longer valid. */
+   * and peers are notified that the order is no longer valid. Any portion of the order that is 
+   * on hold due to ongoing swaps will not be removed until after the swap attempts complete. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
       post: "/v1/removeorder"
@@ -256,7 +257,11 @@ message RemoveOrderRequest {
   // The local id of the order to remove.
   string order_id = 1 [json_name = "order_id"];
 }
-message RemoveOrderResponse {}
+message RemoveOrderResponse {
+  // Any portion of the order that was on hold due to ongoing swaps at the time of the request
+  // and could not be removed until after the swaps finish.
+  double quantity_on_hold = 1 [json_name = "hold"];
+}
 
 message ChannelBalance {
   // Sum of channels balances denominated in satoshis or equivalent.
@@ -502,7 +507,10 @@ message RemovePairResponse {}
 message ShutdownRequest {}
 message ShutdownResponse {}
 
-message SubscribeAddedOrdersRequest {}
+message SubscribeAddedOrdersRequest {
+  // Whether to transmit all existing active orders upon establishing the stream.
+  bool existing = 1 [json_name = "existing"];
+}
 
 message SubscribeRemovedOrdersRequest {}
 
@@ -531,6 +539,10 @@ message SwapResult {
   }
   // Our role in the swap, either MAKER or TAKER.
   Role role = 9 [json_name = "role"];
+  // The ticker symbol of the currency received.
+  string currency_received = 10 [json_name = "currency_received"];
+  // The ticker symbol of the currency sent.
+  string currency_sent = 11 [json_name = "currency_sent"];
 }
 
 message UnbanRequest {

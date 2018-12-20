@@ -26,6 +26,16 @@ function isPacketInterface(obj: any): obj is PacketInterface {
   return false;
 }
 
+function isPacket(obj: any): obj is Packet {
+  const p = (<Packet>obj);
+  return (
+    p.toRaw !== undefined  && typeof p.toRaw === 'function'
+    && p.serialize !== undefined && typeof p.serialize === 'function'
+    && p.type !== undefined && typeof p.type === 'number'
+    && p.direction !== undefined && typeof p.direction === 'number'
+  );
+}
+
 enum PacketDirection {
   /** A packet that is pushed to a peer without expecting any response. */
   Unilateral,
@@ -40,8 +50,6 @@ abstract class Packet<T = any> implements PacketInterface {
   public abstract get direction(): PacketDirection;
   public body?: T;
   public header: PacketHeader;
-  /** Wire protocol delimiter. */
-  public static readonly PROTOCOL_DELIMITER = 'ↂ₿ↂ';
 
   /**
    * Create a packet from a deserialized packet message.
@@ -57,15 +65,14 @@ abstract class Packet<T = any> implements PacketInterface {
 
   constructor(bodyOrPacket?: T | PacketInterface, reqId?: string) {
     if (isPacketInterface(bodyOrPacket)) {
-      // we are deserializing a received packet from a raw JSON string
-      delete bodyOrPacket.header.type; // deleting type from header because it's being used only for the wire protocol
+      // we are constructing the deserialized packet
       this.header = bodyOrPacket.header;
 
       if (bodyOrPacket.body) {
         this.body = bodyOrPacket.body;
       }
     } else {
-      // we are creating a new outgoing packet from a body
+      // we are constructing a new outgoing packet from a body
       this.header = { id: uuidv1() };
 
       if (reqId) {
@@ -78,17 +85,24 @@ abstract class Packet<T = any> implements PacketInterface {
       }
     }
   }
+  public abstract serialize(): Uint8Array;
 
   /**
-   * Serialize this packet to JSON.
-   * @returns JSON string representing the packet
+   * Serialize this packet to binary Buffer.
+   * @returns Buffer representation of the packet
    */
-  public toRaw(): string {
-    // explicitly set the type on the header before serializing
-    const header: PacketHeader = { ...this.header, type: this.type };
-    return this.body ? JSON.stringify({ header, body: this.body }) : JSON.stringify({ header });
+  public toRaw(): Buffer {
+    const msg = this.serialize();
+
+    const type = Buffer.alloc(1);
+    type.writeUInt8(this.type, 0, true);
+
+    const size = Buffer.allocUnsafe(4);
+    size.writeUInt32LE(msg.length, 0, true);
+
+    return Buffer.concat([type, size, Buffer.from(msg.buffer as ArrayBuffer)]);
   }
 }
 
 export default Packet;
-export { PacketHeader, PacketDirection, PacketInterface };
+export { PacketHeader, PacketDirection, PacketInterface, isPacket };
