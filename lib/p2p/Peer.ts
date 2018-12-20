@@ -162,11 +162,11 @@ class Peer extends EventEmitter {
   /**
    * Prepare a connection for use by ensuring it is active, exchanging [[HelloPacket]] with handshake data,
    * and emit the `open` event if everything succeeds. Throw an error on unexpected handshake data.
-   * @param handshakeState our handshake data to send to the peer
+   * @param handshakeData our handshake data to send to the peer
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeState: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
+  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || nodePubKey);
@@ -177,22 +177,22 @@ class Peer extends EventEmitter {
 
     await this.initConnection(retryConnecting);
     this.initStall();
-    await this.initHello(handshakeState);
+    await this.initHello(handshakeData);
 
     if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
       this.close(DisconnectionReason.UnexpectedIdentity);
       throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
 
-    if (this.nodePubKey === handshakeState.nodePubKey) {
+    if (this.nodePubKey === handshakeData.nodePubKey) {
       this.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
     // Check version compatibility
-    if (this.version !== handshakeState.version) {
+    if (this.version !== handshakeData.version) {
       this.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), handshakeState.version, this.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), handshakeData.version, this.version);
     }
 
     // Setup the ping interval
