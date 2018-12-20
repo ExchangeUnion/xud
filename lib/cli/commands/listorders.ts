@@ -88,9 +88,9 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'getorders [pair_id]';
+export const command = 'listorders [pair_id]';
 
-export const describe = 'get orders from the order book';
+export const describe = 'list orders from the order book';
 
 export const builder = {
   pair_id: {

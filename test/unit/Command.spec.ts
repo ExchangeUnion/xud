@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { formatOrders } from '../../lib/cli/commands/listorders';
 import { ListOrdersResponse } from '../../lib/proto/xudrpc_pb';
 
-describe('Command.getorders.formatOrders', () => {
+describe('Command.listorders.formatOrders', () => {
   it('should flatten, format and sort orders', () => {
     const jsonOrders: ListOrdersResponse.AsObject = {
       ordersMap: [
