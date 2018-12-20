@@ -44,7 +44,6 @@ interface Peer {
 class Peer extends EventEmitter {
   // TODO: properties documentation
   public inbound!: boolean;
-  public connected = false;
   public recvDisconnectionReason?: DisconnectionReason;
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
@@ -89,6 +88,10 @@ class Peer extends EventEmitter {
     return this.handshakeState ? this.handshakeState.addresses : undefined;
   }
 
+  public get connected(): boolean {
+    return this.socket !== undefined && !this.socket.destroyed;
+  }
+
   public get info(): PeerInfo {
     return {
       address: addressUtils.toString(this.address),
@@ -118,7 +121,6 @@ class Peer extends EventEmitter {
     const peer = new Peer(logger, addressUtils.fromSocket(socket));
 
     peer.inbound = true;
-    peer.connected = true;
     peer.socket = socket;
 
     peer.bindSocket();
@@ -200,7 +202,6 @@ class Peer extends EventEmitter {
     }
 
     this.closed = true;
-    this.connected = false;
 
     if (this.socket) {
       if (reason !== undefined) {
@@ -307,7 +308,6 @@ class Peer extends EventEmitter {
 
       const onConnect = () => {
         this.connectTime = Date.now();
-        this.connected = true;
 
         this.bindSocket();
 

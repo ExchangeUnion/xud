@@ -570,6 +570,12 @@ class Pool extends EventEmitter {
       return;
     }
 
+    // check to make sure the socket was not destroyed during or immediately after the handshake
+    if (!peer.connected) {
+      this.logger.error(`the socket to node ${peer.nodePubKey} was disconnected`);
+      return;
+    }
+
     this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
     this.peers.set(peer.nodePubKey, peer);
     peer.active = true;
