@@ -2,6 +2,7 @@ import PacketType from './PacketType';
 import CryptoJS from 'crypto-js';
 import MD5 from 'crypto-js/md5';
 import uuidv1 from 'uuid/v1';
+import stringify from 'json-stable-stringify';
 
 type PacketHeader = {
   /** An identifer for the packet which must be unique for a given socket. */
@@ -81,11 +82,30 @@ abstract class Packet<T = any> implements PacketInterface {
 
       if (bodyOrPacket) {
         this.body = bodyOrPacket;
-        this.header.hash = MD5(JSON.stringify(bodyOrPacket)).toString(CryptoJS.enc.Base64);
+        this.header.hash = this.hash(bodyOrPacket);
       }
     }
   }
   public abstract serialize(): Uint8Array;
+
+  private hash(value: any): string {
+    return MD5(stringify(value)).toString(CryptoJS.enc.Base64);
+  }
+
+  /**
+   * Verify the header hash against the packet body.
+   */
+  public verifyDataIntegrity(): boolean {
+    if (!this.body) {
+      return true;
+    }
+
+    if (!this.header.hash) {
+      return false;
+    }
+
+    return this.header.hash === this.hash(this.body);
+  }
 
   /**
    * Serialize this packet to binary Buffer.
