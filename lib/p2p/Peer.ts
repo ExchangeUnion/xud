@@ -83,6 +83,10 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
+  private get version(): string | undefined {
+    return this.handshakeState ? this.handshakeState.version : undefined;
+  }
+
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
     return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
@@ -158,11 +162,11 @@ class Peer extends EventEmitter {
   /**
    * Prepare a connection for use by ensuring it is active, exchanging [[HelloPacket]] with handshake data,
    * and emit the `open` event if everything succeeds. Throw an error on unexpected handshake data.
-   * @param handshakeData our handshake data to send to the peer
+   * @param handshakeState our handshake data to send to the peer
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (handshakeData: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
+  public open = async (handshakeState: HandshakeState, nodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || nodePubKey);
@@ -173,19 +177,23 @@ class Peer extends EventEmitter {
 
     await this.initConnection(retryConnecting);
     this.initStall();
-    await this.initHello(handshakeData);
+    await this.initHello(handshakeState);
 
     if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
       this.close(DisconnectionReason.UnexpectedIdentity);
       throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
 
-    if (this.nodePubKey === handshakeData.nodePubKey) {
+    if (this.nodePubKey === handshakeState.nodePubKey) {
       this.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
-    // TODO: Check that the peer's version is compatible with ours
+    // Check version compatibility
+    if (this.version !== handshakeState.version) {
+      this.close(DisconnectionReason.IncompatibleProtocolVersion);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), handshakeState.version, this.version);
+    }
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -575,8 +583,8 @@ class Peer extends EventEmitter {
   /**
    * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
    */
-  private initHello = async (handshakeData: HandshakeState) => {
-    const packet = new packets.HelloPacket(handshakeData);
+  private initHello = async (handshakeState: HandshakeState) => {
+    const packet = new packets.HelloPacket(handshakeState);
 
     this.sendPacket(packet);
 
