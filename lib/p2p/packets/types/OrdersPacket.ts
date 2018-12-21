@@ -22,10 +22,10 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
   private static validate = (obj: pb.OrdersPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.reqid
+      && obj.reqId
       && obj.ordersList.every(order =>
         !!order.id
-        && !!order.pairid
+        && !!order.pairId
         && order.price > 0
         && order.quantity > 0,
       )
@@ -37,14 +37,14 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
       header: {
         id: obj.id,
         hash: obj.hash,
-        reqId: obj.reqid,
+        reqId: obj.reqId,
       },
       body: obj.ordersList.map(pbOrder => ({
         id: pbOrder.id,
-        pairId: pbOrder.pairid,
+        pairId: pbOrder.pairId,
         price: pbOrder.price,
         quantity: pbOrder.quantity,
-        isBuy: pbOrder.isbuy,
+        isBuy: pbOrder.isBuy,
       })),
     });
   }
@@ -53,14 +53,14 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     const msg = new pb.OrdersPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setReqid(this.header.reqId!);
+    msg.setReqId(this.header.reqId!);
     msg.setOrdersList(this.body!.map((order) => {
       const pbOrder = new pb.Order();
       pbOrder.setId(order.id);
-      pbOrder.setPairid(order.pairId);
+      pbOrder.setPairId(order.pairId);
       pbOrder.setPrice(order.price);
       pbOrder.setQuantity(order.quantity);
-      pbOrder.setIsbuy(order.isBuy);
+      pbOrder.setIsBuy(order.isBuy);
       return pbOrder;
     }));
 

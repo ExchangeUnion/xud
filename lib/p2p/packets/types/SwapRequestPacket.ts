@@ -27,11 +27,11 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
   private static validate = (obj: pb.SwapRequestPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.proposedquantity
-      && obj.pairid
-      && obj.orderid
-      && obj.rhash
-      && obj.takercltvdelta
+      && obj.proposedQuantity
+      && obj.pairId
+      && obj.orderId
+      && obj.rHash
+      && obj.takerCltvDelta
     );
   }
 
@@ -42,11 +42,11 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
         hash: obj.hash,
       },
       body: {
-        proposedQuantity: obj.proposedquantity,
-        pairId: obj.pairid,
-        orderId: obj.orderid,
-        rHash: obj.rhash,
-        takerCltvDelta: obj.takercltvdelta,
+        proposedQuantity: obj.proposedQuantity,
+        pairId: obj.pairId,
+        orderId: obj.orderId,
+        rHash: obj.rHash,
+        takerCltvDelta: obj.takerCltvDelta,
       },
     });
   }
@@ -55,11 +55,11 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     const msg = new pb.SwapRequestPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setProposedquantity(this.body!.proposedQuantity);
-    msg.setPairid(this.body!.pairId);
-    msg.setOrderid(this.body!.orderId);
-    msg.setRhash(this.body!.rHash);
-    msg.setTakercltvdelta(this.body!.takerCltvDelta);
+    msg.setProposedQuantity(this.body!.proposedQuantity);
+    msg.setPairId(this.body!.pairId);
+    msg.setOrderId(this.body!.orderId);
+    msg.setRHash(this.body!.rHash);
+    msg.setTakerCltvDelta(this.body!.takerCltvDelta);
 
     return msg.serializeBinary();
   }

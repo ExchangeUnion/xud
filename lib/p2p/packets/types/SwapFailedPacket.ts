@@ -31,7 +31,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
   private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.rhash
+      && obj.rHash
     );
   }
 
@@ -40,11 +40,11 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
       header: removeUndefinedProps({
         id: obj.id,
         hash: obj.hash,
-        reqId: obj.reqid || undefined,
+        reqId: obj.reqId || undefined,
       }),
       body: {
-        rHash: obj.rhash,
-        errorMessage: obj.errormessage,
+        rHash: obj.rHash,
+        errorMessage: obj.errorMessage,
       },
     });
   }
@@ -53,9 +53,9 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     const msg = new pb.SwapFailedPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setReqid(this.header.reqId!);
-    msg.setRhash(this.body!.rHash);
-    msg.setErrormessage(this.body!.errorMessage);
+    msg.setReqId(this.header.reqId!);
+    msg.setRHash(this.body!.rHash);
+    msg.setErrorMessage(this.body!.errorMessage);
 
     return msg.serializeBinary();
   }

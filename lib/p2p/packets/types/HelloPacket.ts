@@ -22,7 +22,7 @@ class HelloPacket extends Packet<HandshakeState> {
     return !!(obj.id
       && obj.hash
       && obj.version
-      && obj.nodepubkey
+      && obj.nodePubKey
       && obj.pairsList
       && obj.addressesList.every(addr => !!addr.host)
     );
@@ -36,12 +36,12 @@ class HelloPacket extends Packet<HandshakeState> {
       },
       body: removeUndefinedProps({
         version: obj.version,
-        nodePubKey: obj.nodepubkey,
+        nodePubKey: obj.nodePubKey,
         pairs: obj.pairsList,
         addresses: obj.addressesList,
-        raidenAddress: obj.raidenaddress || undefined,
-        lndbtcPubKey: obj.lndbtcpubkey || undefined,
-        lndltcPubKey: obj.lndltcpubkey || undefined,
+        raidenAddress: obj.raidenAddress || undefined,
+        lndbtcPubKey: obj.lndbtcPubKey || undefined,
+        lndltcPubKey: obj.lndltcPubKey || undefined,
       }),
     });
   }
@@ -51,7 +51,7 @@ class HelloPacket extends Packet<HandshakeState> {
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
     msg.setVersion(this.body!.version);
-    msg.setNodepubkey(this.body!.nodePubKey);
+    msg.setNodePubKey(this.body!.nodePubKey);
     msg.setPairsList(this.body!.pairs);
     msg.setAddressesList(this.body!.addresses!.map((addr) => {
       const pbAddr = new pb.Address();
@@ -59,9 +59,9 @@ class HelloPacket extends Packet<HandshakeState> {
       pbAddr.setPort(addr.port);
       return pbAddr;
     }));
-    msg.setRaidenaddress(this.body!.raidenAddress!);
-    msg.setLndbtcpubkey(this.body!.lndbtcPubKey!);
-    msg.setLndltcpubkey(this.body!.lndltcPubKey!);
+    msg.setRaidenAddress(this.body!.raidenAddress!);
+    msg.setLndbtcPubKey(this.body!.lndbtcPubKey!);
+    msg.setLndltcPubKey(this.body!.lndltcPubKey!);
 
     return msg.serializeBinary();
   }

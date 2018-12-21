@@ -27,10 +27,10 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
   private static validate = (obj: pb.SwapAcceptedPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.reqid
-      && obj.rhash
+      && obj.reqId
+      && obj.rHash
       && obj.quantity
-      && obj.makercltvdelta
+      && obj.makerCltvDelta
     );
   }
 
@@ -39,12 +39,12 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
       header: {
         id: obj.id,
         hash: obj.hash,
-        reqId: obj.reqid,
+        reqId: obj.reqId,
       },
       body: {
-        rHash: obj.rhash,
+        rHash: obj.rHash,
         quantity: obj.quantity,
-        makerCltvDelta: obj.makercltvdelta,
+        makerCltvDelta: obj.makerCltvDelta,
       },
     });
   }
@@ -53,10 +53,10 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     const msg = new pb.SwapAcceptedPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setReqid(this.header.reqId!);
-    msg.setRhash(this.body!.rHash);
+    msg.setReqId(this.header.reqId!);
+    msg.setRHash(this.body!.rHash);
     msg.setQuantity(this.body!.quantity);
-    msg.setMakercltvdelta(this.body!.makerCltvDelta);
+    msg.setMakerCltvDelta(this.body!.makerCltvDelta);
 
     return msg.serializeBinary();
   }

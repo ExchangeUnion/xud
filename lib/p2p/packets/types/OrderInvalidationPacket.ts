@@ -26,7 +26,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return !!(obj.id
       && obj.hash
       && obj.orderId
-      && obj.pairid
+      && obj.pairId
       && obj.quantity
     );
   }
@@ -39,7 +39,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
       },
       body: {
         id: obj.orderId,
-        pairId: obj.pairid,
+        pairId: obj.pairId,
         quantity: obj.quantity,
       },
     });
@@ -50,7 +50,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
     msg.setOrderId(this.body!.id);
-    msg.setPairid(this.body!.pairId);
+    msg.setPairId(this.body!.pairId);
     msg.setQuantity(this.body!.quantity);
 
     return msg.serializeBinary();
