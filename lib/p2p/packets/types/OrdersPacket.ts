@@ -2,8 +2,6 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { orders } from '../../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import OrderPacket from './OrderPacket';
 
 type OrdersPacketBody = orders.OutgoingOrder[];
 
@@ -25,12 +23,12 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     return !!(obj.id
       && obj.hash
       && obj.reqid
-      && obj.ordersList.filter(order =>
-        order.id
-        && order.pairid
-        && order.price
-        && order.quantity,
-      ).length === obj.ordersList.length
+      && obj.ordersList.every(order =>
+        !!order.id
+        && !!order.pairid
+        && order.price > 0
+        && order.quantity > 0,
+      )
     );
   }
 
