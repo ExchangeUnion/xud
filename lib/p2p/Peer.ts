@@ -388,6 +388,7 @@ class Peer extends EventEmitter {
     for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
         this.emitError(`Peer is stalling (${packetId})`);
+        entry.reject('response timed out');
         this.close(DisconnectionReason.ResponseStalling, packetId);
         return;
       }

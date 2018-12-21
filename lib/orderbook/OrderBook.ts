@@ -77,6 +77,11 @@ class OrderBook extends EventEmitter {
     this.bindSwaps();
   }
 
+  private static createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
+    const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
+    return outgoingOrder ;
+  }
+
   private bindPool = () => {
     if (this.pool) {
       this.pool.on('packet.order', this.addPeerOrder);
@@ -552,8 +557,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     peer.sendOrders(outgoingOrders, reqId);
@@ -565,7 +570,7 @@ class OrderBook extends EventEmitter {
   private broadcastOrder = (order: orders.OwnOrder) => {
     if (this.pool) {
       if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
-        const outgoingOrder = this.createOutgoingOrder(order);
+        const outgoingOrder = OrderBook.createOutgoingOrder(order);
         this.pool.broadcastOrder(outgoingOrder);
       }
     }
@@ -581,11 +586,6 @@ class OrderBook extends EventEmitter {
     }
 
     return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
-  }
-
-  private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
-    const { createdAt, localId, ...outgoingOrder } = order;
-    return outgoingOrder;
   }
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
