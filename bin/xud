@@ -113,7 +113,7 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
-    'p2p.discoverInMinutes': {
+    'p2p.discoverminutes': {
       describe: 'Interval minutes for discover option',
       type: 'number',
     },
