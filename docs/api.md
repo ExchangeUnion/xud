@@ -799,6 +799,8 @@
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | quantity | [double](#double) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
+| r_preimage | [string](#string) |  | The hex-encoded preimage. |
+| price | [int64](#int64) |  | The price of the order that&#39;s being executed. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |

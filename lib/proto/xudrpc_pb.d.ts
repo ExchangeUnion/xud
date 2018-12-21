@@ -1182,6 +1182,12 @@ export class SwapResult extends jspb.Message {
   getRHash(): string;
   setRHash(value: string): void;
 
+  getRPreimage(): string;
+  setRPreimage(value: string): void;
+
+  getPrice(): number;
+  setPrice(value: number): void;
+
   getAmountReceived(): number;
   setAmountReceived(value: number): void;
 
@@ -1217,6 +1223,8 @@ export namespace SwapResult {
     pairId: string,
     quantity: number,
     rHash: string,
+    rPreimage: string,
+    price: number,
     amountReceived: number,
     amountSent: number,
     peerPubKey: string,

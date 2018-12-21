@@ -1137,6 +1137,15 @@
           "type": "string",
           "description": "The hex-encoded payment hash for the swaps."
         },
+        "r_preimage": {
+          "type": "string",
+          "description": "The hex-encoded preimage."
+        },
+        "price": {
+          "type": "string",
+          "format": "int64",
+          "description": "The price of the order that's being executed."
+        },
         "amount_received": {
           "type": "string",
           "format": "int64",
