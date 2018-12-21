@@ -795,7 +795,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
-| local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | quantity | [double](#double) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |

@@ -55,7 +55,7 @@ export type SwapDeal = {
 };
 
 /** The result of a successful swap. */
-export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'role'> & {
+export type SwapResult = Pick<SwapDeal, 'orderId' | 'pairId' | 'rHash' | 'peerPubKey' | 'role'> & {
   /** The amount of satoshis (or equivalent) received. */
   amountReceived: number;
   /** The amount of satoshis (or equivalent) sent. */

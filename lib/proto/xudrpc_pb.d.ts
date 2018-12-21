@@ -1170,9 +1170,6 @@ export class SwapResult extends jspb.Message {
   getOrderId(): string;
   setOrderId(value: string): void;
 
-  getLocalId(): string;
-  setLocalId(value: string): void;
-
   getPairId(): string;
   setPairId(value: string): void;
 
@@ -1213,7 +1210,6 @@ export class SwapResult extends jspb.Message {
 export namespace SwapResult {
   export type AsObject = {
     orderId: string,
-    localId: string,
     pairId: string,
     quantity: number,
     rHash: string,
