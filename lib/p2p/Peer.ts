@@ -303,7 +303,10 @@ class Peer extends EventEmitter {
         }
         this.socket!.removeListener('error', onError);
         this.socket!.removeListener('connect', onConnect);
-        this.retryConnectionTimer = undefined;
+        if (this.retryConnectionTimer) {
+          clearTimeout(this.retryConnectionTimer);
+          this.retryConnectionTimer = undefined;
+        }
       };
 
       const onConnect = () => {
