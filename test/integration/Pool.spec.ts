@@ -79,6 +79,22 @@ describe('P2P Pool Tests', async () => {
     expect(pool['peers'].size).to.equal(0);
   });
 
+  it('should ban a peer', async () => {
+    const banPromise = pool.banNode(nodePubKeyOne);
+    expect(banPromise).to.be.fulfilled;
+    await banPromise;
+    const nodeReputationPromise = await pool.getNodeReputation(nodePubKeyOne);
+    expect(nodeReputationPromise.banned).to.be.true;
+  });
+
+  it('should unban a peer', async () => {
+    const unbanPromise = pool.unbanNode(nodePubKeyOne, false);
+    expect(unbanPromise).to.be.fulfilled;
+    await unbanPromise;
+    const nodeReputationPromise = await pool.getNodeReputation(nodePubKeyOne);
+    expect(nodeReputationPromise.banned).to.be.false;
+  });
+
   it('should update a node on new handshake', async () => {
    /* const addresses = [{ host: '86.75.30.9', port: 8885 }];
     const peer = createPeer(nodePubKeyOne, addresses);
