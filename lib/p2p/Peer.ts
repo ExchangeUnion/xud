@@ -108,7 +108,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address) {
+  constructor(private logger: Logger, public address: Address, private discover: boolean, private discoverminutes: number) {
     super();
 
     this.bindParser(this.parser);
@@ -117,8 +117,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket));
+  public static fromInbound = (socket: Socket, logger: Logger, discover: boolean, discoverminutes: number): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), discover, discoverminutes);
 
     peer.inbound = true;
     peer.connected = true;
@@ -186,6 +186,21 @@ class Peer extends EventEmitter {
     }
 
     // TODO: Check that the peer's version is compatible with ours
+
+    // request peer's known nodes only if p2p.discover option is true
+    if (this.discover) {
+      if (this.discoverminutes === 0) {
+        // timer is disabled
+        this.sendPacket(new packets.GetNodesPacket());
+        this.discoverTimer = undefined; // defensive programming
+      } else {
+        // timer is enabled
+        this.sendPacket(new packets.GetNodesPacket()); // initial execution
+        this.discoverTimer = setInterval(() => {
+          this.sendPacket(new packets.GetNodesPacket());
+        }, this.discoverminutes * 1000 * 60);
+      }
+    }
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
