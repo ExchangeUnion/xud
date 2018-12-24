@@ -8,6 +8,7 @@ import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/types/p2p';
 import { DisconnectionReason } from '../../lib/types/enums';
+import { HelloPacket } from '../../lib/p2p/packets/types';
 import sinon from 'sinon';
 
 chai.use(chaiAsPromised);
@@ -26,7 +27,7 @@ describe('P2P Pool Tests', async () => {
       addresses,
       nodePubKey,
       version: 'test',
-      pairs: [],
+      pairs: ['LTC/BTC'],
     };
     peer.socket = {};
     peer.sendPacket = () => {};
