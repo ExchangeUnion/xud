@@ -64,11 +64,24 @@ export enum ReputationEvent {
 
 export enum SwapFailureReason {
   /** Could not find the order specified by a swap request. */
-  OrderNotFound,
+  OrderNotFound = 0,
   /** The order specified by a swap request is on hold for a different ongoing swap. */
-  OrderOnHold,
+  OrderOnHold = 1,
   /** The swap request contained invalid data. */
-  InvalidSwapRequest,
+  InvalidSwapRequest = 2,
+  /** We are not connected to both swap clients, or we are missing pub key identifiers for the peer's nodes. */
+  SwapClientNotSetup = 3,
+  /** Could not find a route to complete the swap. */
+  NoRouteFound = 4,
+  /** A call to lnd failed for an unexpected reason. */
+  UnexpectedLndError = 5,
+  /** Received a swap packet from the peer with invalid data. */
+  InvalidSwapPacketReceived = 6,
+  /** The call to lnd to send payment failed. */
+  SendPaymentFailure = 7,
+  /** The swap resolver request from lnd was invalid. */
+  InvalidResolveRequest = 8,
+  PeerFailedSwap, // TODO: this generic reason can be replaced with the failure reason reported by the peer
 }
 
 export enum DisconnectionReason {
