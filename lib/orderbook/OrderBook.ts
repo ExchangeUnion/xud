@@ -101,7 +101,7 @@ class OrderBook extends EventEmitter {
         }
       });
       this.swaps.on('swap.failed', (deal) => {
-        if (deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed) {
+        if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
           // if our order is the maker and the swap failed after it was agreed to but before it was executed
           // we must release the hold on the order that we set when we agreed to the deal
           this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);

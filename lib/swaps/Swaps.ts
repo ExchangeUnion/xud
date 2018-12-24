@@ -505,7 +505,7 @@ class Swaps extends EventEmitter {
     // TODO: use timeout on call
 
     try {
-      this.setDealPhase(deal,  SwapPhase.AmountSent);
+      this.setDealPhase(deal,  SwapPhase.SendingAmount);
       const sendPaymentResponse = await cmdLnd.sendPaymentSync(request);
       if (sendPaymentResponse.getPaymentError()) {
         throw new Error(sendPaymentResponse.getPaymentError());
@@ -618,7 +618,7 @@ class Swaps extends EventEmitter {
       request.setPaymentHashString(deal.rHash);
 
       try {
-        this.setDealPhase(deal, SwapPhase.AmountSent);
+        this.setDealPhase(deal, SwapPhase.SendingAmount);
         const response = await cmdLnd.sendToRouteSync(request);
         if (response.getPaymentError()) {
           this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
@@ -677,14 +677,14 @@ class Swaps extends EventEmitter {
         assert(deal.phase === SwapPhase.SwapCreated, 'SwapAgreed can be only be set after SwapCreated');
         this.logger.debug('Sending swap response to peer ');
         break;
-      case SwapPhase.AmountSent:
+      case SwapPhase.SendingAmount:
         assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||
           deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed,
-            'AmountSent can only be set after SwapRequested (taker) or SwapAgreed (maker)');
+            'SendingAmount can only be set after SwapRequested (taker) or SwapAgreed (maker)');
         deal.executeTime = Date.now();
         break;
       case SwapPhase.AmountReceived:
-        assert(deal.phase === SwapPhase.AmountSent, 'AmountReceived can be only be set after AmountSent');
+        assert(deal.phase === SwapPhase.SendingAmount, 'AmountReceived can be only be set after SendingAmount');
         this.logger.debug('Amount received for preImage ' + deal.rPreimage);
         break;
       case SwapPhase.SwapCompleted:
