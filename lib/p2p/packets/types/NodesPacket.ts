@@ -26,7 +26,7 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
       && obj.nodesList.filter(node =>
         node.nodepubkey
         && node.addressesList.length > 0
-        && node.addressesList.filter(addr => addr.port && addr.host).length === node.addressesList.length,
+        && node.addressesList.every(addr => addr.port > 0 && !!addr.host),
       ).length === obj.nodesList.length
     );
 

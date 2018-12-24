@@ -24,7 +24,7 @@ class HelloPacket extends Packet<HandshakeState> {
       && obj.version
       && obj.nodepubkey
       && obj.pairsList
-      && obj.addressesList.filter(addr => addr.host).length === obj.addressesList.length
+      && obj.addressesList.every(addr => !!addr.host)
     );
   }
 
