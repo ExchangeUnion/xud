@@ -4,19 +4,19 @@ package xudp2p;
 
 message Address {
     string host = 1 [json_name = "host"];
-    int32 port = 2 [json_name = "port"];
+    uint32 port = 2 [json_name = "port"];
 }
 
 message Order {
     string id = 1 [json_name = "id"];
-    string pairId = 2 [json_name = "pair_id"];
+    string pair_id = 2 [json_name = "pair_id"];
     double price = 3 [json_name = "price"];
     double quantity = 4 [json_name = "quantity"];
-    bool isBuy = 5 [json_name = "is_buy"];
+    bool is_buy = 5 [json_name = "is_buy"];
 }
 
 message Node {
-    string nodePubKey = 1 [json_name = "node_pub_key"];
+    string node_pub_key = 1 [json_name = "node_pub_key"];
     repeated Address addresses = 2 [json_name = "addresses"];
 }
 
@@ -26,7 +26,7 @@ message PingPacket {
 
 message PongPacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
 }
 
 message OrderPacket {
@@ -39,19 +39,19 @@ message OrderInvalidationPacket {
     string id = 1 [json_name = "id"];
     string hash = 2 [json_name = "hash"];
     string order_id = 3 [json_name = "order_id"];
-    string pairId = 4 [json_name = "pair_id"];
+    string pair_id = 4 [json_name = "pair_id"];
     double quantity = 5 [json_name = "quantity"];
 }
 
 message GetOrdersPacket {
     string id = 1 [json_name = "id"];
     string hash = 2 [json_name = "hash"];
-    repeated string pairIds = 3 [json_name = "pair_ids"];
+    repeated string pair_ids = 3 [json_name = "pair_ids"];
 }
 
 message OrdersPacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
     string hash = 3 [json_name = "hash"];
     repeated Order orders = 4 [json_name = "orders"];
 }
@@ -60,18 +60,18 @@ message HelloPacket {
     string id = 1 [json_name = "id"];
     string hash = 2 [json_name = "hash"];
     string version = 3 [json_name = "version"];
-    string nodePubKey = 4 [json_name = "node_pub_key"];
+    string node_pub_key = 4 [json_name = "node_pub_key"];
     repeated Address addresses = 5 [json_name = "addresses"];
     repeated string pairs = 6 [json_name = "pairs"];
-    string raidenAddress = 7 [json_name = "raiden_address"];
-    string lndBtcPubKey = 8 [json_name = "lnd_btc_pub_key"];
-    string lndLtcPubKey = 9 [json_name = "lnd_ltc_pub_key"];
+    string raiden_address = 7 [json_name = "raiden_address"];
+    string lndbtc_pub_key = 8 [json_name = "lnd_btc_pub_key"];
+    string lndltc_pub_key = 9 [json_name = "lnd_ltc_pub_key"];
 }
 
 message DisconnectingPacket {
     string id = 1 [json_name = "id"];
     string hash = 2 [json_name = "hash"];
-    int32 reason = 3 [json_name = "reason"];
+    uint32 reason = 3 [json_name = "reason"];
     string payload = 4 [json_name = "payload"];
 }
 
@@ -81,7 +81,7 @@ message GetNodesPacket {
 
 message NodesPacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
     string hash = 3 [json_name = "hash"];
     repeated Node nodes = 4 [json_name = "nodes"];
 }
@@ -89,33 +89,33 @@ message NodesPacket {
 message SwapRequestPacket {
     string id = 1 [json_name = "id"];
     string hash = 2 [json_name = "hash"];
-    double proposedQuantity = 3 [json_name = "proposed_quantity"];
-    string pairId = 4 [json_name = "pair_id"];
-    string orderId = 5 [json_name = "order_id"];
-    string rHash = 6 [json_name = "r_hash"];
-    int32 takerCltvDelta = 7 [json_name = "taker_cltv_delta"];
+    double proposed_quantity = 3 [json_name = "proposed_quantity"];
+    string pair_id = 4 [json_name = "pair_id"];
+    string order_id = 5 [json_name = "order_id"];
+    string r_hash = 6 [json_name = "r_hash"];
+    int32 taker_cltv_delta = 7 [json_name = "taker_cltv_delta"];
 }
 
 message SwapAcceptedPacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
     string hash = 3 [json_name = "hash"];
-    string rHash = 4 [json_name = "r_hash"];
+    string r_hash = 4 [json_name = "r_hash"];
     double quantity = 5 [json_name = "quantity"];
-    int32 makerCltvDelta = 6 [json_name = "maker_cltv_delta"];
+    int32 maker_cltv_delta = 6 [json_name = "maker_cltv_delta"];
 }
 
 message SwapCompletePacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
     string hash = 3 [json_name = "hash"];
-    string rHash = 4 [json_name = "r_hash"];
+    string r_hash = 4 [json_name = "r_hash"];
 }
 
 message SwapFailedPacket {
     string id = 1 [json_name = "id"];
-    string reqId = 2 [json_name = "req_id"];
+    string req_id = 2 [json_name = "req_id"];
     string hash = 3 [json_name = "hash"];
-    string rHash = 4 [json_name = "r_hash"];
-    string errorMessage = 5 [json_name = "error_message"];
+    string r_hash = 4 [json_name = "r_hash"];
+    string error_message = 5 [json_name = "error_message"];
 }
