@@ -51,7 +51,7 @@ class Peer extends EventEmitter {
   public expectedNodePubKey?: string;
   public active = false; // added to peer list
   /** Timer to periodically call getNodes #402 */
-  public getNodesTimer?: NodeJS.Timer;
+  public discoverTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser();
@@ -224,9 +224,9 @@ class Peer extends EventEmitter {
       this.retryConnectionTimer = undefined;
     }
 
-    if (this.getNodesTimer) {
-      clearInterval(this.getNodesTimer);
-      this.getNodesTimer = undefined;
+    if (this.discoverTimer) {
+      clearInterval(this.discoverTimer);
+      this.discoverTimer = undefined;
     }
 
     if (this.pingTimer) {

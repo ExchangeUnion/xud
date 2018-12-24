@@ -586,10 +586,11 @@ class Pool extends EventEmitter {
       if (this.config.discoverminutes === 0) {
         // timer is disabled
         peer.sendPacket(new packets.GetNodesPacket());
-        peer.getNodesTimer = undefined; // defensive programming
-      }else {
+        peer.discoverTimer = undefined; // defensive programming
+      } else {
         // timer is enabled
-        peer.getNodesTimer = setInterval(() => {
+        peer.sendPacket(new packets.GetNodesPacket()); // initial execution
+        peer.discoverTimer = setInterval(() => {
           peer.sendPacket(new packets.GetNodesPacket());
         }, this.config.discoverminutes * 1000 * 60);
       }
