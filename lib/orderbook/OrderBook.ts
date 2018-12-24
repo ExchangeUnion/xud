@@ -89,6 +89,7 @@ class OrderBook extends EventEmitter {
       this.pool.on('packet.getOrders', this.sendOrders);
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
+      this.pool.on('peer.pairDropped', this.removePeerPair);
     }
   }
 
@@ -531,19 +532,24 @@ class OrderBook extends EventEmitter {
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }
 
-  private removePeerOrders = async (peer: Peer): Promise<void> => {
-    if (!peer.nodePubKey) {
+  private removePeerOrders = (peerPubKey?: string) => {
+    if (!peerPubKey) {
       return;
     }
 
-    this.tradingPairs.forEach((tp) => {
-      const orders = tp.removePeerOrders(peer.nodePubKey!);
-      orders.forEach((order) => {
-        this.emit('peerOrder.invalidation', order);
-      });
-    });
+    for (const pairId of this.pairIds.values()) {
+      this.removePeerPair(peerPubKey, pairId);
+    }
 
-    this.logger.debug(`removed all orders for peer ${peer.nodePubKey}`);
+    this.logger.debug(`removed all orders for peer ${peerPubKey}`);
+  }
+
+  private removePeerPair = (peerPubKey: string, pairId: string) => {
+    const tp = this.getTradingPair(pairId);
+    const orders = tp.removePeerOrders(peerPubKey);
+    orders.forEach((order) => {
+      this.emit('peerOrder.invalidation', order);
+    });
   }
 
   /**

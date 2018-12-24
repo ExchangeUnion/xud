@@ -45,7 +45,9 @@ interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
-  on(event: 'peer.close', listener: (peer: Peer) => void): this;
+  on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
+  /** Adds a listener to be called when a peer drops support for a trading pair. */
+  on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
@@ -53,7 +55,9 @@ interface Pool {
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
-  emit(event: 'peer.close', peer: Peer): boolean;
+  emit(event: 'peer.close', peerPubKey?: string): boolean;
+  /** Notifies listeners that a peer has dropped support for a trading pair. */
+  emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
@@ -644,6 +648,11 @@ class Pool extends EventEmitter {
       await this.handlePacket(peer, packet);
     });
 
+    peer.on('pairDropped', (pairId) => {
+      // drop all orders for trading pairs that are no longer supported
+      this.emit('peer.pairDropped', peer.nodePubKey!, pairId);
+    });
+
     peer.on('error', (err) => {
       // The only situation in which the node should be connected to itself is the
       // reachability check of the advertised addresses and we don't have to log that
@@ -680,7 +689,7 @@ class Pool extends EventEmitter {
       this.pendingOutboundPeers.delete(peer.nodePubKey);
       this.peers.delete(peer.nodePubKey);
     }
-    this.emit('peer.close', peer);
+    this.emit('peer.close', peer.nodePubKey);
 
     // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
     // reconnect, for that might have been due to a temporary loss in connectivity

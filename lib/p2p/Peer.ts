@@ -27,7 +27,7 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'handshake', listener: () => void): this;
+  on(event: 'pairDropped', listener: (pair: string) => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
@@ -37,7 +37,7 @@ interface Peer {
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
-  emit(event: 'handshake'): boolean;
+  emit(event: 'pairDropped', pair: string): boolean;
 }
 
 /** Represents a remote XU peer */
@@ -86,6 +86,10 @@ class Peer extends EventEmitter {
 
   public get addresses(): Address[] | undefined {
     return this.handshakeState ? this.handshakeState.addresses : undefined;
+  }
+
+  public get pairs(): string[] | undefined {
+    return this.handshakeState ? this.handshakeState.pairs : undefined;
   }
 
   public get connected(): boolean {
@@ -577,16 +581,14 @@ class Peer extends EventEmitter {
   }
 
   private handleHello = (packet: packets.HelloPacket): void => {
-    const helloBody = packet.body!;
-    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(helloBody)}`);
-    if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
+    const newHandshakeState = packet.body!;
+    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(newHandshakeState)}`);
+    if (this.nodePubKey && this.nodePubKey !== newHandshakeState.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close(DisconnectionReason.ForbiddenIdentityUpdate, helloBody.nodePubKey);
+      this.close(DisconnectionReason.ForbiddenIdentityUpdate, newHandshakeState.nodePubKey);
       return;
     }
-
-    this.handshakeState = packet.body;
 
     const entry = this.responseMap.get(PacketType.Hello.toString());
 
@@ -595,7 +597,15 @@ class Peer extends EventEmitter {
       entry.resolve(packet);
     }
 
-    this.emit('handshake');
+    const prevHandshakeState = this.handshakeState!;
+    this.handshakeState = newHandshakeState;
+
+    prevHandshakeState.pairs.forEach((pairId) => {
+      if (!newHandshakeState.pairs.includes(pairId)) {
+        // a trading pair was in the old handshake state but not in the updated one
+        this.emit('pairDropped', pairId);
+      }
+    });
   }
 
   private sendPing = (): packets.PingPacket => {
