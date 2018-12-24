@@ -525,7 +525,7 @@ class OrderBook extends EventEmitter {
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
-  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number):
+  public removePeerOrder = (orderId: string, pairId: string, peerPubKey?: string, quantityToRemove?: number):
     { order: PeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
