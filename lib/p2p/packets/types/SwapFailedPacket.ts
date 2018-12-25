@@ -2,10 +2,12 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
+import { SwapFailureReason } from '../../../types/enums';
 
 // TODO: proper error handling
 export type SwapFailedPacketBody = {
   rHash: string;
+  failureReason: SwapFailureReason;
   errorMessage?: string;
 };
 
@@ -44,6 +46,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
       body: removeUndefinedProps({
         rHash: obj.rHash,
         errorMessage: obj.errorMessage || undefined,
+        failureReason: obj.failureReason,
       }),
     });
   }
@@ -57,6 +60,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     if (this.body!.errorMessage) {
       msg.setErrorMessage(this.body!.errorMessage!);
     }
+    msg.setFailureReason(this.body!.failureReason);
 
     return msg.serializeBinary();
   }

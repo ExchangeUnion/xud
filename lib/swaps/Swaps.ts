@@ -107,9 +107,10 @@ class Swaps extends EventEmitter {
   /**
    * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = (peer: Peer, rHash: string, errorMessage?: string, reqId?: string) => {
+  private sendErrorToPeer = (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
+      failureReason,
       errorMessage,
     };
     this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
@@ -344,7 +345,7 @@ class Swaps extends EventEmitter {
     // TODO: multi route support (currently only 1)
 
     if (this.usedHashes.has(requestPacket.body!.rHash)) {
-      this.sendErrorToPeer(peer, requestPacket.body!.rHash, 'this rHash already exists', requestPacket.header.id);
+      this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
       return false;
     }
     const requestBody = requestPacket.body!;
@@ -383,14 +384,14 @@ class Swaps extends EventEmitter {
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
     const lndclient = this.getClientForCurrency(deal.takerCurrency);
     if (!lndclient) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency');
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -403,7 +404,7 @@ class Swaps extends EventEmitter {
         ? `${cannotSwap}`
         : `${cannotSwap}: ${err.message}`;
       this.failDeal(deal, SwapFailureReason.NoRouteFound, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -414,7 +415,7 @@ class Swaps extends EventEmitter {
       this.logger.debug('got block height of ' + height);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedLndError, 'Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -721,14 +722,14 @@ class Swaps extends EventEmitter {
     return this.persistDeal(deal);
   }
 
-  private handleSwapFailed = (error: packets.SwapFailedPacket) => {
-    const { rHash, errorMessage } = error.body!;
+  private handleSwapFailed = (packet: packets.SwapFailedPacket) => {
+    const { rHash, errorMessage, failureReason } = packet.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
       this.logger.error(`received swap error for unknown deal payment hash ${rHash}`);
       return;
     }
-    this.failDeal(deal, SwapFailureReason.PeerFailedSwap, errorMessage);
+    this.failDeal(deal, failureReason, errorMessage);
     return this.persistDeal(deal);
   }
 

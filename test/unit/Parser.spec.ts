@@ -4,9 +4,10 @@ import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
-import { DisconnectionReason } from '../../lib/types/enums';
+import { DisconnectionReason, SwapFailureReason } from '../../lib/types/enums';
 import uuid = require('uuid');
 import { Address } from '../../lib/types/p2p';
+import stringify from 'json-stable-stringify';
 
 chai.use(chaiAsPromised);
 
@@ -240,12 +241,14 @@ describe('Parser', () => {
 
     const swapFailedPacketBody = {
       rHash: uuid(),
-      errorMessage: uuid(),
+      errorMessage: 'this is a test',
+      failureReason: SwapFailureReason.SendPaymentFailure,
     };
     testValidPacket(new packets.SwapFailedPacket(swapFailedPacketBody));
     testValidPacket(new packets.SwapFailedPacket(swapFailedPacketBody, uuid()));
-    testValidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, errorMessage: undefined })));
-    testInvalidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, rHash: undefined })));
+    testValidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, errorMessage: undefined })));
+    testInvalidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined })));
+    testInvalidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, failureReason: undefined })));
 
   });
   describe('test TCP segmentation/concatenation support', () => {

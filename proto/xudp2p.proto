@@ -118,4 +118,5 @@ message SwapFailedPacket {
     string hash = 3 [json_name = "hash"];
     string r_hash = 4 [json_name = "r_hash"];
     string error_message = 5 [json_name = "error_message"];
+    uint32 failure_reason = 6[json_name = "failure_reason"];
 }
