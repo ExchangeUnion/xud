@@ -448,8 +448,8 @@ class Pool extends EventEmitter {
    * Broadcasts an [[OrderInvalidationPacket]] to all currently connected peers.
    * @param nodeToExclude the node pub key of a node to exclude from the packet broadcast
    */
-  public broadcastOrderInvalidation = (order: OrderPortion, nodeToExclude?: string) => {
-    const orderInvalidationPacket = new packets.OrderInvalidationPacket(order);
+  public broadcastOrderInvalidation = ({ id, pairId, quantity }: OrderPortion, nodeToExclude?: string) => {
+    const orderInvalidationPacket = new packets.OrderInvalidationPacket({ id, pairId, quantity });
     this.peers.forEach((peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {
         peer.sendPacket(orderInvalidationPacket);

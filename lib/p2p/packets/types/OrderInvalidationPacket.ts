@@ -2,8 +2,6 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { OrderPortion } from '../../../types/orders';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 import OrderPacket from './OrderPacket';
 
 type OrderInvalidationPacketBody = OrderPortion;
