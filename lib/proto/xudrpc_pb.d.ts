@@ -947,11 +947,11 @@ export namespace PlaceOrderEvent {
 }
 
 export class ExecuteSwapRequest extends jspb.Message {
-  getPairId(): string;
-  setPairId(value: string): void;
-
   getOrderId(): string;
   setOrderId(value: string): void;
+
+  getPairId(): string;
+  setPairId(value: string): void;
 
   getPeerPubKey(): string;
   setPeerPubKey(value: string): void;
@@ -971,8 +971,8 @@ export class ExecuteSwapRequest extends jspb.Message {
 
 export namespace ExecuteSwapRequest {
   export type AsObject = {
-    pairId: string,
     orderId: string,
+    pairId: string,
     peerPubKey: string,
     quantity: number,
   }

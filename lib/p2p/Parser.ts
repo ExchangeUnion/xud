@@ -10,6 +10,7 @@ class ParserError {
 enum ParserErrorType {
   InvalidPacket,
   UnknownPacketType,
+  DataIntegrityError,
   MaxBufferSizeExceeded,
 }
 
@@ -66,7 +67,12 @@ const fromRaw = (type: number, binary: Uint8Array): Packet => {
     throw new ParserError(ParserErrorType.InvalidPacket, `${PacketType[type]} ${JSON.stringify(packetOrPbObj)}`);
   }
 
-  return packetOrPbObj;
+  const packet = packetOrPbObj;
+  if (!packet.verifyDataIntegrity()) {
+    throw new ParserError(ParserErrorType.DataIntegrityError, `${PacketType[type]} ${JSON.stringify(packet)}`);
+  }
+
+  return packet;
 };
 
 interface Parser {
