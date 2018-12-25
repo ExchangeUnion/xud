@@ -7,7 +7,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     role: { type: DataTypes.TINYINT, allowNull: false },
     state: { type: DataTypes.TINYINT, allowNull: false },
     phase: { type: DataTypes.TINYINT, allowNull: false },
-    errorReason: { type: DataTypes.STRING, allowNull: true },
+    errorMessage: { type: DataTypes.STRING, allowNull: true },
     rPreimage: { type: DataTypes.STRING, allowNull: true },
     peerPubKey: {
       type: DataTypes.VIRTUAL,

@@ -619,7 +619,6 @@ class OrderBook extends EventEmitter {
       // TODO: penalize peer for invalid swap request
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.InvalidSwapRequest],
       }, requestPacket.header.id));
       return;
     }
@@ -628,7 +627,6 @@ class OrderBook extends EventEmitter {
     if (!order) {
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
       }, requestPacket.header.id));
       return;
     }
@@ -656,7 +654,6 @@ class OrderBook extends EventEmitter {
     } else {
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.OrderOnHold],
       }, requestPacket.header.id));
     }
   }

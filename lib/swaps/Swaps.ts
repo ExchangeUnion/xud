@@ -107,7 +107,7 @@ class Swaps extends EventEmitter {
   /**
    * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = (peer: Peer, rHash: string, errorMessage: string, reqId?: string) => {
+  private sendErrorToPeer = (peer: Peer, rHash: string, errorMessage?: string, reqId?: string) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
       errorMessage,
@@ -383,14 +383,14 @@ class Swaps extends EventEmitter {
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
       return false;
     }
 
     const lndclient = this.getClientForCurrency(deal.takerCurrency);
     if (!lndclient) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency');
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
       return false;
     }
 
@@ -403,7 +403,7 @@ class Swaps extends EventEmitter {
         ? `${cannotSwap}`
         : `${cannotSwap}: ${err.message}`;
       this.failDeal(deal, SwapFailureReason.NoRouteFound, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
       return false;
     }
 
@@ -414,7 +414,7 @@ class Swaps extends EventEmitter {
       this.logger.debug('got block height of ' + height);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedLndError, 'Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.sendErrorToPeer(peer, deal.rHash, deal.errorMessage!, requestPacket.header.id);
       return false;
     }
 
@@ -587,7 +587,7 @@ class Swaps extends EventEmitter {
     }
 
     if (!this.validateResolveRequest(deal, resolveRequest)) {
-      return deal.errorReason;
+      return deal.errorMessage;
     }
 
     if (deal.role === SwapRole.Maker) {
@@ -635,18 +635,20 @@ class Swaps extends EventEmitter {
 
   }
 
-  private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorReason: string): void => {
+  private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
     if (deal.state === SwapState.Error) {
-      deal.errorReason = deal.errorReason + '; ' + errorReason;
-      this.logger.debug('new deal state reason: ' + deal.errorReason);
+      if (errorMessage) {
+        deal.errorMessage = deal.errorMessage ? deal.errorMessage + '; ' + errorMessage : errorMessage;
+      }
+      this.logger.debug('new deal error message: ' + deal.errorMessage);
       return;
     }
     assert(deal.state === SwapState.Active, 'deal is not Active. Can not change deal state');
     deal.state = SwapState.Error;
     deal.failureReason = failureReason;
-    deal.errorReason = errorReason;
+    deal.errorMessage = errorMessage;
     this.emit('swap.failed', deal);
   }
 
