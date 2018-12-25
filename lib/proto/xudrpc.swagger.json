@@ -640,22 +640,22 @@
     "xudrpcExecuteSwapRequest": {
       "type": "object",
       "properties": {
-        "pair_id": {
-          "type": "string",
-          "description": "The trading pair of the swap orders."
-        },
         "order_id": {
           "type": "string",
           "description": "The order id of the maker order."
         },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair of the swap orders."
+        },
         "peer_pub_key": {
           "type": "string",
-          "description": "The node pub key of the peer which owns the maker order."
+          "description": "The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly."
         },
         "quantity": {
           "type": "number",
           "format": "double",
-          "description": "the quantity to swap. the whole order will be swapped if unspecified."
+          "description": "The quantity to swap. The whole order will be swapped if unspecified."
         }
       }
     },

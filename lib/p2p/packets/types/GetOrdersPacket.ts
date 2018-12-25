@@ -25,7 +25,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
   private static validate = (obj: pb.GetOrdersPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.pairidsList.length > 0
+      && obj.pairIdsList.length > 0
     );
   }
 
@@ -36,7 +36,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
         hash: obj.hash,
       },
       body: {
-        pairIds: obj.pairidsList,
+        pairIds: obj.pairIdsList,
       },
     });
   }
@@ -45,7 +45,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     const msg = new pb.GetOrdersPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setPairidsList(this.body!.pairIds);
+    msg.setPairIdsList(this.body!.pairIds);
 
     return msg.serializeBinary();
   }

@@ -137,7 +137,7 @@ class TradingPair {
   /**
    * Remove all orders given a peer pubKey.
    */
-  public removePeerOrders = (peerPubKey: string): PeerOrder[] => {
+  public removePeerOrders = (peerPubKey?: string): PeerOrder[] => {
     // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues
     if (!peerPubKey) return [];
 
@@ -160,8 +160,21 @@ class TradingPair {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
-    const peerOrdersMaps = this.peersOrders.get(peerPubKey);
+  public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
+    let peerOrdersMaps: OrderSidesMaps<orders.PeerOrder> | undefined;
+
+    if (peerPubKey) {
+      peerOrdersMaps = this.peersOrders.get(peerPubKey);
+    } else {
+      // if not given a peerPubKey, we must check all peer order maps for the specified orderId
+      for (const orderSidesMaps of this.peersOrders.values()) {
+        if (orderSidesMaps.buy.has(orderId) || orderSidesMaps.sell.has(orderId)) {
+          peerOrdersMaps = orderSidesMaps;
+          break;
+        }
+      }
+    }
+
     if (!peerOrdersMaps) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
