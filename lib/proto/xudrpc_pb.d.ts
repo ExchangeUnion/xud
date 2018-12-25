@@ -394,7 +394,7 @@ export namespace GetNodeInfoResponse {
   }
 }
 
-export class GetOrdersRequest extends jspb.Message {
+export class ListOrdersRequest extends jspb.Message {
   getPairId(): string;
   setPairId(value: string): void;
 
@@ -402,36 +402,36 @@ export class GetOrdersRequest extends jspb.Message {
   setIncludeOwnOrders(value: boolean): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetOrdersRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: GetOrdersRequest): GetOrdersRequest.AsObject;
+  toObject(includeInstance?: boolean): ListOrdersRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListOrdersRequest): ListOrdersRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetOrdersRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetOrdersRequest;
-  static deserializeBinaryFromReader(message: GetOrdersRequest, reader: jspb.BinaryReader): GetOrdersRequest;
+  static serializeBinaryToWriter(message: ListOrdersRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListOrdersRequest;
+  static deserializeBinaryFromReader(message: ListOrdersRequest, reader: jspb.BinaryReader): ListOrdersRequest;
 }
 
-export namespace GetOrdersRequest {
+export namespace ListOrdersRequest {
   export type AsObject = {
     pairId: string,
     includeOwnOrders: boolean,
   }
 }
 
-export class GetOrdersResponse extends jspb.Message {
+export class ListOrdersResponse extends jspb.Message {
   getOrdersMap(): jspb.Map<string, Orders>;
   clearOrdersMap(): void;
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetOrdersResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: GetOrdersResponse): GetOrdersResponse.AsObject;
+  toObject(includeInstance?: boolean): ListOrdersResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListOrdersResponse): ListOrdersResponse.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetOrdersResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetOrdersResponse;
-  static deserializeBinaryFromReader(message: GetOrdersResponse, reader: jspb.BinaryReader): GetOrdersResponse;
+  static serializeBinaryToWriter(message: ListOrdersResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListOrdersResponse;
+  static deserializeBinaryFromReader(message: ListOrdersResponse, reader: jspb.BinaryReader): ListOrdersResponse;
 }
 
-export namespace GetOrdersResponse {
+export namespace ListOrdersResponse {
   export type AsObject = {
     ordersMap: Array<[string, Orders.AsObject]>,
   }

@@ -268,11 +268,11 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public getOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
+  public listOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
     const { pairId, includeOwnOrders } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
-    const getOrderTypes = (pairId: string) => {
+    const listOrderTypes = (pairId: string) => {
       const orders = this.orderBook.getPeersOrders(pairId);
 
       if (includeOwnOrders) {
@@ -286,10 +286,10 @@ class Service extends EventEmitter {
     };
 
     if (pairId) {
-      result.set(pairId, getOrderTypes(pairId));
+      result.set(pairId, listOrderTypes(pairId));
     } else {
       this.orderBook.pairIds.forEach((pairId) => {
-        result.set(pairId, getOrderTypes(pairId));
+        result.set(pairId, listOrderTypes(pairId));
       });
     }
 
