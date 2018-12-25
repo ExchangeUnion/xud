@@ -11,6 +11,7 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
+import semver from 'semver';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -79,6 +80,10 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
+  public get version(): string {
+    return this.handshakeState ? this.handshakeState.version : '';
+  }
+
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
     return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
@@ -112,7 +117,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address) {
+  constructor(private logger: Logger, public address: Address, private minCompatibleVersion: string) {
     super();
 
     this.bindParser(this.parser);
@@ -121,8 +126,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket));
+  public static fromInbound = (socket: Socket, logger: Logger, minCompatibleVersion: string): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), minCompatibleVersion);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -188,7 +193,12 @@ class Peer extends EventEmitter {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
-    // TODO: Check that the peer's version is compatible with ours
+    // Check version compatibility
+    // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
+    if (semver.compare(this.version, this.minCompatibleVersion) === -1) {
+      this.close(DisconnectionReason.IncompatibleProtocolVersion);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), this.minCompatibleVersion, this.version);
+    }
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -567,8 +577,8 @@ class Peer extends EventEmitter {
   /**
    * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
    */
-  private initHello = async (handshakeData: HandshakeState) => {
-    const packet = new packets.HelloPacket(handshakeData);
+  private initHello = async (handshakeState: HandshakeState) => {
+    const packet = new packets.HelloPacket(handshakeState);
 
     this.sendPacket(packet);
 

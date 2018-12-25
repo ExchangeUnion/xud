@@ -89,11 +89,13 @@ class Pool extends EventEmitter {
   private addresses: Address[] = [];
   /** Points to config comes during construction. */
   private config: PoolConfig;
+  private minCompatibleVersion: string;
   private repository: P2PRepository;
 
-  constructor(config: PoolConfig, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, private logger: Logger, models: Models, minCompatibleVersion: string) {
     super();
     this.config = config;
+    this.minCompatibleVersion = minCompatibleVersion;
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -209,7 +211,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.minCompatibleVersion);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
@@ -332,7 +334,7 @@ class Pool extends EventEmitter {
       throw errors.ALREADY_CONNECTING(nodePubKey);
     }
 
-    const peer = new Peer(this.logger, address);
+    const peer = new Peer(this.logger, address, this.minCompatibleVersion);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -460,7 +462,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger);
+    const peer = Peer.fromInbound(socket, this.logger, this.minCompatibleVersion);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);

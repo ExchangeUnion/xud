@@ -49,7 +49,7 @@ describe('P2P Pool Tests', async () => {
     db = new DB(loggers.db);
     await db.init();
 
-    pool = new Pool(config.p2p, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, loggers.p2p, db.models, '');
 
     await pool.init({
       nodePubKey: 'test',
