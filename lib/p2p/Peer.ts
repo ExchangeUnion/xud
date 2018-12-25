@@ -196,7 +196,6 @@ class Peer extends EventEmitter {
     // request peer's known nodes only if p2p.discover option is true
     if (this.config.discover) {
       this.sendPacket(new packets.GetNodesPacket());
-
       if (this.config.discoverminutes === 0) {
         // timer is disabled
         this.discoverTimer = undefined; // defensive programming
