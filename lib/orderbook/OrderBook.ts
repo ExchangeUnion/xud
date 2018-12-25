@@ -17,6 +17,7 @@ import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult, SwapDeal } from 'lib/swaps/types';
+import Bluebird from 'bluebird';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -207,7 +208,7 @@ class OrderBook extends EventEmitter {
     this.currencies.set(currencyInstance.id, currencyInstance);
   }
 
-  public removeCurrency = (currencyId: string) => {
+  public removeCurrency = (currencyId: string): Bluebird<void> => {
     const currency = this.currencies.get(currencyId);
     if (currency) {
       for (const pair of this.pairs.values()) {

@@ -114,7 +114,8 @@ class DB {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
     (await readdir(modelsFolder))
-      .filter(file => (file.indexOf('.') !== 0) && (file !== path.basename(__filename)) && (file.slice(-3).match(/.js|.ts/)))
+      // filter for only files that end in .js or .ts (but not .d.ts)
+      .filter(file => file !== path.basename(__filename) && file.match(/.js$|(^.?|\.[^d]|[^.]d|[^.][^d])\.ts$/))
       .forEach((file) => {
         const model = this.sequelize.import(path.join(modelsFolder, file));
         models[model.name] = model;
