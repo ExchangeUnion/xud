@@ -1,4 +1,4 @@
-import { SwapRole, SwapPhase, SwapState } from 'lib/types/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/types/enums';
 import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
@@ -13,6 +13,7 @@ export type SwapDeal = {
   state: SwapState;
   /** The reason for being in the current state. */
   errorReason?: string;
+  failureReason?: SwapFailureReason;
   /** The xud node pub key of the counterparty to this swap deal. */
   peerPubKey: string;
   /** The global order id in the XU network for the maker order being executed. */

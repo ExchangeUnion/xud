@@ -22,11 +22,11 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
   private static validate = (obj: pb.NodesPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.reqid
+      && obj.reqId
       && obj.nodesList.filter(node =>
-        node.nodepubkey
+        node.nodePubKey
         && node.addressesList.length > 0
-        && node.addressesList.filter(addr => addr.port && addr.host).length === node.addressesList.length,
+        && node.addressesList.every(addr => addr.port > 0 && !!addr.host),
       ).length === obj.nodesList.length
     );
 
@@ -38,10 +38,10 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
       header: {
         id: obj.id,
         hash: obj.hash,
-        reqId: obj.reqid,
+        reqId: obj.reqId,
       },
       body: obj.nodesList.map(node => ({
-        nodePubKey: node.nodepubkey,
+        nodePubKey: node.nodePubKey,
         addresses: node.addressesList,
       })),
     });
@@ -51,10 +51,10 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     const msg = new pb.NodesPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setReqid(this.header.reqId!);
+    msg.setReqId(this.header.reqId!);
     msg.setNodesList(this.body!.map((node) => {
       const pbNode = new pb.Node();
-      pbNode.setNodepubkey(node.nodePubKey);
+      pbNode.setNodePubKey(node.nodePubKey);
       pbNode.setAddressesList(node.addresses.map((addr) => {
         const pbAddr = new pb.Address();
         pbAddr.setHost(addr.host);

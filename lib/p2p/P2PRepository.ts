@@ -1,6 +1,7 @@
 import { Models } from '../db/DB';
 import { db } from '../types';
 import { NodeInstance } from '../types/db';
+import Bluebird from 'bluebird';
 
 class P2PRepository {
 
@@ -26,7 +27,7 @@ class P2PRepository {
     });
   }
 
-  public addNode = (node: db.NodeFactory) => {
+  public addNode = (node: db.NodeFactory): Bluebird<db.NodeInstance> => {
     return this.models.Node.create(<db.NodeAttributes>node);
   }
 

@@ -249,10 +249,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| pair_id | [string](#string) |  | The trading pair of the swap orders. |
 | order_id | [string](#string) |  | The order id of the maker order. |
-| peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. |
-| quantity | [double](#double) |  | the quantity to swap. the whole order will be swapped if unspecified. |
+| pair_id | [string](#string) |  | The trading pair of the swap orders. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
+| quantity | [double](#double) |  | The quantity to swap. The whole order will be swapped if unspecified. |
 
 
 
