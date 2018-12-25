@@ -11,9 +11,7 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { compare } from 'semver';
-
-const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
+import semver from 'semver';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -84,6 +82,10 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
+  public get version(): string {
+    return this.handshakeState ? this.handshakeState.version : '';
+  }
+
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
     return this.handshakeState ? this.handshakeState.nodePubKey : undefined;
@@ -117,7 +119,8 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private discover: boolean, private discoverminutes: number) {
+  constructor(private logger: Logger, public address: Address, private discover: boolean, private discoverminutes: number,
+              private minCompatibleVersion: string) {
     super();
 
     this.bindParser(this.parser);
@@ -126,8 +129,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, discover: boolean, discoverminutes: number): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), discover, discoverminutes);
+  public static fromInbound = (socket: Socket, logger: Logger, discover: boolean, discoverminutes: number, minCompatibleVersion: string): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), discover, discoverminutes, minCompatibleVersion);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -195,9 +198,9 @@ class Peer extends EventEmitter {
 
     // Check version compatibility
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
-    if (compare(handshakeData.version, minCompatibleVersion) === -1) {
+    if (semver.compare(this.version, this.minCompatibleVersion) === -1) {
       this.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), minCompatibleVersion, handshakeData.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), this.minCompatibleVersion, this.version);
     }
 
     // request peer's known nodes only if p2p.discover option is true

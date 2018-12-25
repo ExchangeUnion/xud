@@ -31,8 +31,8 @@ const errors = {
     message: `node at ${address} sent pub key ${nodePubKey}, expected ${expectedNodePubKey}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
-  INCOMPATIBLE_VERSION: (address: string, minCompatibleVersion: string, incomingPeerVersion: string | undefined) => ({
-    message: `node at ${address} has version ${incomingPeerVersion}, expected minimum ${minCompatibleVersion}`,
+  INCOMPATIBLE_VERSION: (address: string, minCompatibleVersion: string, peerVersion: string | undefined) => ({
+    message: `node at ${address} has version ${peerVersion}, expected minimum ${minCompatibleVersion}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
   ATTEMPTED_CONNECTION_TO_SELF: {
