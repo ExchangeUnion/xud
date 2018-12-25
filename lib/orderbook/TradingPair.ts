@@ -137,7 +137,7 @@ class TradingPair {
   /**
    * Remove all orders given a peer pubKey.
    */
-  public removePeerOrders = (peerPubKey: string): PeerOrder[] => {
+  public removePeerOrders = (peerPubKey?: string): PeerOrder[] => {
     // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues
     if (!peerPubKey) return [];
 
@@ -160,8 +160,21 @@ class TradingPair {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
-    const peerOrdersMaps = this.peersOrders.get(peerPubKey);
+  public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
+    let peerOrdersMaps: OrderSidesMaps<orders.PeerOrder> | undefined;
+
+    if (peerPubKey) {
+      peerOrdersMaps = this.peersOrders.get(peerPubKey);
+    } else {
+      // if not given a peerPubKey, we must check all peer order maps for the specified orderId
+      for (const orderSidesMaps of this.peersOrders.values()) {
+        if (orderSidesMaps.buy.has(orderId) || orderSidesMaps.sell.has(orderId)) {
+          peerOrdersMaps = orderSidesMaps;
+          break;
+        }
+      }
+    }
+
     if (!peerOrdersMaps) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
@@ -180,6 +193,7 @@ class TradingPair {
 
   private removeOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<Order>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
+    assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
     const order = maps.buy.get(orderId) || maps.sell.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
@@ -187,13 +201,19 @@ class TradingPair {
 
     if (quantityToRemove && quantityToRemove < order.quantity) {
       // if quantityToRemove is below the order quantity, reduce the order quantity
+      if (isOwnOrder(order)) {
+        assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
+      }
       order.quantity = order.quantity - quantityToRemove;
       this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
       return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
     } else {
       // otherwise, remove the order entirely
-      const list = order.isBuy ? maps.buy : maps.sell;
-      list.delete(order.id);
+      if (isOwnOrder(order)) {
+        assert(order.hold === 0, 'cannot remove an order with a hold');
+      }
+      const map = order.isBuy ? maps.buy : maps.sell;
+      map.delete(order.id);
 
       if (!this.nomatching) {
         const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
@@ -292,6 +312,7 @@ class TradingPair {
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 
     const queue = takerOrder.isBuy ? this.queues!.sell : this.queues!.buy;
+    const queueRemovedOrdersWithHold: OwnOrder[] = [];
     const getMatchingQuantity = (remainingOrder: OwnOrder, oppositeOrder: Order) => takerOrder.isBuy
       ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)
       : TradingPair.getMatchingQuantity(oppositeOrder, remainingOrder);
@@ -300,13 +321,18 @@ class TradingPair {
     while (remainingOrder && !queue.isEmpty()) {
       // get the best available maker order from the top of the queue
       const makerOrder = queue.peek()!;
-      const matchingQuantity = getMatchingQuantity(remainingOrder, makerOrder);
+      const makerAvailableQuantityOrder = isOwnOrder(makerOrder)
+        ? { ...makerOrder, quantity: makerOrder.quantity - makerOrder.hold, hold: 0 }
+        : makerOrder;
+
+      const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
       if (matchingQuantity <= 0) {
         // there's no match with the best available maker order, so end the matching routine
         break;
       } else {
         /** Whether the maker order is fully matched and should be removed from the queue. */
         const makerFullyMatched = makerOrder.quantity === matchingQuantity;
+        const makerAvailableQuantityFullyMatched = makerAvailableQuantityOrder.quantity === matchingQuantity;
         const remainingFullyMatched = remainingOrder.quantity === matchingQuantity;
 
         if (makerFullyMatched && remainingFullyMatched) {
@@ -317,26 +343,37 @@ class TradingPair {
           const matchedMakerOrder = TradingPair.splitOrderByQuantity(makerOrder, matchingQuantity);
           this.logger.debug(`reduced order ${makerOrder.id} by ${matchingQuantity} quantity while matching order ${takerOrder.id}`);
           matches.push({ maker: matchedMakerOrder, taker: remainingOrder });
-        } else if (makerFullyMatched) {
+        } else if (makerAvailableQuantityFullyMatched) {
           // maker order quantity is not sufficient. taker order will split
           const matchedTakerOrder = TradingPair.splitOrderByQuantity(remainingOrder, matchingQuantity);
-          matches.push({ maker: makerOrder, taker: matchedTakerOrder });
+          matches.push({ maker: makerAvailableQuantityOrder, taker: matchedTakerOrder });
         } else {
-          assert(false, 'matchingQuantity should not be lower than both orders quantity values');
+          assert(false, 'matchingQuantity should not be lower than both orders available quantity values');
         }
 
         if (remainingFullyMatched) {
           remainingOrder = undefined;
         }
+
         if (makerFullyMatched) {
           // maker order is fully matched, so remove it from the queue and map
           assert(queue.poll() === makerOrder);
           const map = this.getOrderMap(makerOrder)!;
           map.delete(makerOrder.id);
           this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
+        } else if (makerAvailableQuantityFullyMatched) {
+          // only an own order can be fully matched for available quantity, but not fully matched in the overall
+          assert(isOwnOrder(makerOrder));
+
+          assert(queue.poll() === makerOrder);
+          queueRemovedOrdersWithHold.push(makerOrder as OwnOrder);
         }
       }
     }
+
+    // return the removed orders with hold to the queue.
+    // their hold quantity might be released later
+    queueRemovedOrdersWithHold.forEach(order => queue.add(order));
 
     return { matches, remainingOrder };
   }

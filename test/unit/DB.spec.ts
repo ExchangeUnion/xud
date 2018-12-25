@@ -131,6 +131,39 @@ describe('Database', () => {
     expect(node.nodePubKey).to.equal(peerPubKey);
   });
 
+  it('should add market orders and have their price in db be null', async () => {
+    const buyMarketOrder: OwnOrder = {
+      quantity,
+      price: Number.MAX_VALUE,
+      isBuy: true,
+      createdAt: ms(),
+      initialQuantity: quantity,
+      id: uuidv1(),
+      localId: uuidv1(),
+      pairId: PAIR_ID,
+      hold: 0,
+    };
+    const sellMarketOrder: OwnOrder = {
+      quantity,
+      price: 0,
+      isBuy: true,
+      createdAt: ms(),
+      initialQuantity: quantity,
+      id: uuidv1(),
+      localId: uuidv1(),
+      pairId: PAIR_ID,
+      hold: 0,
+    };
+    await orderBookRepo.addOrderIfNotExists(buyMarketOrder);
+    await orderBookRepo.addOrderIfNotExists(sellMarketOrder);
+    const buyOrder = (await db.models.Order.findById(buyMarketOrder.id))!;
+    const sellOrder = (await db.models.Order.findById(sellMarketOrder.id))!;
+    expect(buyOrder.id).to.equal(buyMarketOrder.id);
+    expect(sellOrder.id).to.equal(sellMarketOrder.id);
+    expect(buyOrder.price).to.be.null;
+    expect(sellOrder.price).to.be.null;
+  });
+
   after(async () => {
     await db.close();
   });

@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
 import NodeList, { reputationEventWeight } from './NodeList';
-import PeerList from './PeerList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
@@ -15,7 +14,6 @@ import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
-import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 import { db } from '../types';
 
 type PoolConfig = {
@@ -47,19 +45,23 @@ interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
-  on(event: 'peer.close', listener: (peer: Peer) => void): this;
+  on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
+  /** Adds a listener to be called when a peer drops support for a trading pair. */
+  on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapResponse', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
+  on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
-  on(event: 'packet.swapError', listener: (packet: packets.SwapFailedPacket) => void): this;
+  on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
-  emit(event: 'peer.close', peer: Peer): boolean;
+  emit(event: 'peer.close', peerPubKey?: string): boolean;
+  /** Notifies listeners that a peer has dropped support for a trading pair. */
+  emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapResponse', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
+  emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
-  emit(event: 'packet.swapError', packet: packets.SwapFailedPacket): boolean;
+  emit(event: 'packet.swapFailed', packet: packets.SwapFailedPacket): boolean;
 }
 
 /** An interface for an object with a `forEach` method that iterates over [[NodeConnectionInfo]] objects. */
@@ -71,12 +73,14 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public handshakeData!: HandshakeState;
-  /** A set of pub keys of nodes for which we have pending outgoing connections. */
-  private pendingOutgoingConnections = new Map<string, Peer>();
+  /** A map of pub keys to nodes for which we have pending outgoing connections. */
+  private pendingOutboundPeers = new Map<string, Peer>();
+  /** A set of peers for which we have pending incoming connections. */
+  private pendingInboundPeers = new Set<Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
   /** A collection of opened, active peers. */
-  private peers: PeerList = new PeerList();
+  private peers = new Map<string, Peer>();
   private server?: Server;
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
@@ -104,7 +108,7 @@ class Pool extends EventEmitter {
   }
 
   public get peerCount(): number {
-    return this.peers.length;
+    return this.peers.size;
   }
 
   /**
@@ -195,7 +199,7 @@ class Pool extends EventEmitter {
       const peer = this.peers.get(nodePubKey);
       if (peer) {
         const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
-        peer.close({ reason: DisconnectionReason.Banned, payload: JSON.stringify(lastNegativeEvents) });
+        peer.close(DisconnectionReason.Banned, JSON.stringify(lastNegativeEvents));
       }
     });
   }
@@ -324,18 +328,18 @@ class Pool extends EventEmitter {
       throw errors.NODE_IS_BANNED(nodePubKey);
     } else if (this.peers.has(nodePubKey)) {
       throw errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
-    } else if (this.pendingOutgoingConnections.has(nodePubKey)) {
+    } else if (this.pendingOutboundPeers.has(nodePubKey)) {
       throw errors.ALREADY_CONNECTING(nodePubKey);
     }
 
     const peer = new Peer(this.logger, address);
-    this.pendingOutgoingConnections.set(nodePubKey, peer);
+    this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
   }
 
   public listPeers = (): PeerInfo[] => {
-    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.length });
+    const peerInfos: PeerInfo[] = Array.from({ length: this.peers.size });
     let i = 0;
     this.peers.forEach((peer) => {
       peerInfos[i] = peer.info;
@@ -357,7 +361,6 @@ class Pool extends EventEmitter {
       try {
         await peer.open(this.handshakeData, nodePubKey, retryConnecting);
       } catch (err) {
-
         // we don't have `nodePubKey` for inbound connections, which might fail on handshake
         const id = nodePubKey || addressUtils.toString(peer.address);
         this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
@@ -371,10 +374,10 @@ class Pool extends EventEmitter {
     }
   }
 
-  public closePeer = async (nodePubKey: string, reason?: DisconnectingPacketBody): Promise<void> => {
+  public closePeer = (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      peer.close(reason);
+      peer.close(reason, reasonPayload);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
@@ -385,7 +388,7 @@ class Pool extends EventEmitter {
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
     } else {
-      const banned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+      const banned = await this.nodes.ban(nodePubKey);
 
       if (!banned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
@@ -393,11 +396,9 @@ class Pool extends EventEmitter {
     }
   }
 
-  public unban = async (args: { nodePubKey: string, reconnect: boolean}): Promise<void> => {
-    const { nodePubKey, reconnect } = args;
+  public unbanNode = async (nodePubKey: string, reconnect: boolean): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
-      const unbanned = await this.nodes.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
-
+      const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
@@ -447,8 +448,8 @@ class Pool extends EventEmitter {
    * Broadcasts an [[OrderInvalidationPacket]] to all currently connected peers.
    * @param nodeToExclude the node pub key of a node to exclude from the packet broadcast
    */
-  public broadcastOrderInvalidation = (order: OrderPortion, nodeToExclude?: string) => {
-    const orderInvalidationPacket = new packets.OrderInvalidationPacket(order);
+  public broadcastOrderInvalidation = ({ id, pairId, quantity }: OrderPortion, nodeToExclude?: string) => {
+    const orderInvalidationPacket = new packets.OrderInvalidationPacket({ id, pairId, quantity });
     this.peers.forEach((peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {
         peer.sendPacket(orderInvalidationPacket);
@@ -460,7 +461,9 @@ class Pool extends EventEmitter {
 
   private addInbound = async (socket: Socket) => {
     const peer = Peer.fromInbound(socket, this.logger);
+    this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
+    this.pendingInboundPeers.delete(peer);
   }
 
   private handleSocket = async (socket: Socket) => {
@@ -529,9 +532,9 @@ class Pool extends EventEmitter {
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
-      case PacketType.SwapResponse: {
-        this.logger.debug(`received swapResponse from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapResponse', packet, peer);
+      case PacketType.SwapAccepted: {
+        this.logger.debug(`received swapAccepted from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapAccepted', packet, peer);
         break;
       }
       case PacketType.SwapComplete: {
@@ -539,66 +542,77 @@ class Pool extends EventEmitter {
         this.emit('packet.swapComplete', packet);
         break;
       }
-      case PacketType.SwapError: {
-        this.logger.debug(`received swapError from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapError', packet);
-        break;
-      }
-
-      case PacketType.Disconnecting: {
-        this.logger.debug(`received disconnecting packet from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+      case PacketType.SwapFailed: {
+        this.logger.debug(`received swapFailed from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.swapFailed', packet);
         break;
       }
     }
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
+    if (!peer.nodePubKey || peer.nodePubKey === this.handshakeData.nodePubKey) {
+      return;
+    }
+
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      peer.close({ reason: DisconnectionReason.NotAcceptingConnections });
-      return;
-    }
-    if (peer.nodePubKey === this.handshakeData.nodePubKey) {
+      peer.close(DisconnectionReason.NotAcceptingConnections);
       return;
     }
 
-    if (this.nodes.isBanned(peer.nodePubKey!)) {
+    if (this.nodes.isBanned(peer.nodePubKey)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
-      peer.close({ reason: DisconnectionReason.Banned });
-    } else if (this.peers.has(peer.nodePubKey!)) {
-      // TODO: Penalize peers that attempt to create duplicate connections to us
-      peer.close({ reason: DisconnectionReason.AlreadyConnected });
-    } else {
-      this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
-      this.peers.add(peer);
+      peer.close(DisconnectionReason.Banned);
+      return;
+    }
 
+    if (this.peers.has(peer.nodePubKey)) {
+      // TODO: Penalize peers that attempt to create duplicate connections to us more then once.
+      // the first time might be due connection retries
+      peer.close(DisconnectionReason.AlreadyConnected);
+      return;
+    }
+
+    // check to make sure the socket was not destroyed during or immediately after the handshake
+    if (!peer.connected) {
+      this.logger.error(`the socket to node ${peer.nodePubKey} was disconnected`);
+      return;
+    }
+
+    this.logger.verbose(`opened connection to ${peer.nodePubKey} at ${addressUtils.toString(peer.address)}`);
+    this.peers.set(peer.nodePubKey, peer);
+    peer.active = true;
+
+    if (this.handshakeData.pairs.length > 0) {
       // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-      if (this.config.discover) {
-        // request peer's known nodes only if p2p.discover option is true
-        peer.sendPacket(new packets.GetNodesPacket());
-      }
+    }
 
-      // if outbound, update the `lastConnected` field for the address we're actually connected to
-      const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
-        if (addressUtils.areEqual(peer.address, address)) {
-          return { ...address, lastConnected: Date.now() };
-        } else {
-          return address;
-        }
-      });
+    if (this.config.discover) {
+      // request peer's known nodes only if p2p.discover option is true
+      peer.sendPacket(new packets.GetNodesPacket());
+    }
 
-      // upserting the node entry
-      if (!this.nodes.has(peer.nodePubKey!)) {
-        await this.nodes.createNode({
-          addresses,
-          nodePubKey: peer.nodePubKey!,
-          lastAddress: peer.inbound ? undefined : peer.address,
-        });
+    // if outbound, update the `lastConnected` field for the address we're actually connected to
+    const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
+      if (addressUtils.areEqual(peer.address, address)) {
+        return { ...address, lastConnected: Date.now() };
       } else {
-        // the node is known, update its listening addresses
-        await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
+        return address;
       }
+    });
+
+    // upserting the node entry
+    if (!this.nodes.has(peer.nodePubKey)) {
+      await this.nodes.createNode({
+        addresses,
+        nodePubKey: peer.nodePubKey,
+        lastAddress: peer.inbound ? undefined : peer.address,
+      });
+    } else {
+      // the node is known, update its listening addresses
+      await this.nodes.updateAddresses(peer.nodePubKey, addresses, peer.inbound ? undefined : peer.address);
     }
   }
 
@@ -634,6 +648,11 @@ class Pool extends EventEmitter {
       await this.handlePacket(peer, packet);
     });
 
+    peer.on('pairDropped', (pairId) => {
+      // drop all orders for trading pairs that are no longer supported
+      this.emit('peer.pairDropped', peer.nodePubKey!, pairId);
+    });
+
     peer.on('error', (err) => {
       // The only situation in which the node should be connected to itself is the
       // reachability check of the advertised addresses and we don't have to log that
@@ -644,33 +663,66 @@ class Pool extends EventEmitter {
 
     peer.once('open', async () => {
       await this.handleOpen(peer);
-      this.pendingOutgoingConnections.delete(peer.nodePubKey!);
+      this.pendingOutboundPeers.delete(peer.nodePubKey!);
     });
 
-    peer.once('close', () => {
-      if (peer.nodePubKey) {
-        this.pendingOutgoingConnections.delete(peer.nodePubKey);
-        this.peers.remove(peer.nodePubKey);
-      }
-      this.emit('peer.close', peer);
-    });
+    peer.once('close', () => this.handlePeerClose(peer));
 
     peer.once('reputation', async (event) => {
-      this.logger.debug(`Peer (${peer.nodePubKey}), received reputation event: ${ReputationEvent[event]}`);
+      this.logger.debug(`Peer (${peer.nodePubKey || addressUtils.toString(peer.address)}), received reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         await this.nodes.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }
 
+  private handlePeerClose = async (peer: Peer) => {
+    if (!peer.nodePubKey && peer.expectedNodePubKey) {
+      this.pendingOutboundPeers.delete(peer.expectedNodePubKey);
+    }
+
+    if (!peer.active) {
+      return;
+    }
+
+    if (peer.nodePubKey) {
+      this.pendingOutboundPeers.delete(peer.nodePubKey);
+      this.peers.delete(peer.nodePubKey);
+    }
+    this.emit('peer.close', peer.nodePubKey);
+
+    // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
+    // reconnect, for that might have been due to a temporary loss in connectivity
+    const unintentionalDisconnect =
+      (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
+      (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
+    const addresses = peer.addresses || [];
+
+    let lastAddress;
+    if (peer.inbound) {
+      lastAddress = addresses.length > 0 ? addresses[0] : undefined;
+    } else {
+      lastAddress = peer.address;
+    }
+
+    if (peer.nodePubKey && unintentionalDisconnect && (addresses.length || lastAddress)) {
+      this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
+      const node = { lastAddress, addresses, nodePubKey: peer.nodePubKey };
+      await this.tryConnectNode(node, true);
+    }
+  }
+
   private closePeers = () => {
-    this.peers.forEach(peer => peer.close({ reason: DisconnectionReason.Shutdown }));
+    this.peers.forEach(peer => peer.close(DisconnectionReason.Shutdown));
   }
 
   private closePendingConnections = () => {
-    for (const peer of this.pendingOutgoingConnections.values()) {
+    for (const peer of this.pendingOutboundPeers.values()) {
       peer.close();
     }
+    this.pendingInboundPeers.forEach((peer) => {
+      peer.close();
+    });
   }
 
   /**

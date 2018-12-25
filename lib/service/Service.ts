@@ -114,11 +114,11 @@ class Service extends EventEmitter {
   /*
    * Remove placed order from the orderbook.
    */
-  public removeOrder = async (args: { orderId: string }) => {
+  public removeOrder = (args: { orderId: string }) => {
     const { orderId } = args;
     argChecks.HAS_ORDER_ID(args);
 
-    this.orderBook.removeOwnOrderByLocalId(orderId);
+    return this.orderBook.removeOwnOrderByLocalId(orderId);
   }
 
   /** Gets the total lightning network channel balance for a given currency. */
@@ -186,7 +186,7 @@ class Service extends EventEmitter {
    */
   public unban = async (args: { nodePubKey: string, reconnect: boolean}) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.unban(args);
+    await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
   public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
@@ -197,7 +197,17 @@ class Service extends EventEmitter {
     const { orderId, pairId, peerPubKey } = args;
     const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
 
-    return this.orderBook.executeSwap(orderId, pairId, peerPubKey, quantity);
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const taker = this.orderBook.stampOwnOrder({
+      pairId,
+      localId: '',
+      price: maker.price,
+      isBuy: !maker.isBuy,
+      quantity: quantity || maker.quantity,
+      hold: 0,
+    });
+
+    return this.orderBook.executeSwap(maker, taker);
   }
 
   /**
@@ -370,9 +380,20 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = (callback: (order: Order) => void) => {
-    this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('ownOrder.added', order => callback(order));
+  public subscribeAddedOrders = (args: { existing: boolean }, callback: (order: Order) => void) => {
+    if (args.existing) {
+      this.orderBook.pairIds.forEach((pair) => {
+        const ownOrders = this.orderBook.getOwnOrders(pair);
+        const peerOrders = this.orderBook.getPeersOrders(pair);
+        ownOrders.buy.forEach(callback);
+        peerOrders.buy.forEach(callback);
+        ownOrders.sell.forEach(callback);
+        peerOrders.sell.forEach(callback);
+      });
+    }
+
+    this.orderBook.on('peerOrder.incoming', callback);
+    this.orderBook.on('ownOrder.added', callback);
   }
 
   /**

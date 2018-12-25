@@ -16,7 +16,8 @@ import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapResult } from 'lib/swaps/types';
+import { SwapResult, SwapDeal } from 'lib/swaps/types';
+import Bluebird from 'bluebird';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -77,6 +78,11 @@ class OrderBook extends EventEmitter {
     this.bindSwaps();
   }
 
+  private static createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
+    const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
+    return outgoingOrder ;
+  }
+
   private bindPool = () => {
     if (this.pool) {
       this.pool.on('packet.order', this.addPeerOrder);
@@ -84,6 +90,7 @@ class OrderBook extends EventEmitter {
       this.pool.on('packet.getOrders', this.sendOrders);
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
+      this.pool.on('peer.pairDropped', this.removePeerPair);
     }
   }
 
@@ -101,7 +108,7 @@ class OrderBook extends EventEmitter {
         }
       });
       this.swaps.on('swap.failed', (deal) => {
-        if (deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed) {
+        if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
           // if our order is the maker and the swap failed after it was agreed to but before it was executed
           // we must release the hold on the order that we set when we agreed to the deal
           this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -201,7 +208,7 @@ class OrderBook extends EventEmitter {
     this.currencies.set(currencyInstance.id, currencyInstance);
   }
 
-  public removeCurrency = (currencyId: string) => {
+  public removeCurrency = (currencyId: string): Bluebird<void> => {
     const currency = this.currencies.get(currencyId);
     if (currency) {
       for (const pair of this.pairs.values()) {
@@ -289,8 +296,8 @@ class OrderBook extends EventEmitter {
       remainingOrder: matchingResult.remainingOrder,
     };
 
-    // instantiate a container for failed swaps, for retry purposes
-    const swapFailures: OwnOrder[] = [];
+    /** The quantity that was attempted to be swapped but failed. */
+    let failedSwapQuantity = 0;
 
     // iterate over the matches
     for (const { maker, taker } of matchingResult.matches) {
@@ -306,36 +313,41 @@ class OrderBook extends EventEmitter {
       } else {
         if (!this.swaps) {
           // swaps should only be undefined during integration testing of the order book
-          // for now we treat this case the same as a swap failure
+          // for now we treat this case like a swap failure
           this.emit('peerOrder.invalidation', portion);
-          swapFailures.push(taker);
+          failedSwapQuantity += portion.quantity;
           continue;
         }
 
         try {
-          await this.repository.addOrderIfNotExists(maker);
           this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-          const swapResult = await this.swaps.executeSwap(maker, taker);
-          this.emit('peerOrder.filled', portion);
-          await this.persistTrade(swapResult.quantity, maker, taker);
+          const swapResult = await this.executeSwap(maker, taker);
+
+          if (swapResult.quantity < maker.quantity) {
+            // swap was only partially completed
+            portion.quantity = swapResult.quantity;
+            const rejectedQuantity = maker.quantity - swapResult.quantity;
+            failedSwapQuantity += rejectedQuantity; // add unswapped quantity to failed quantity
+            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapResult.quantity} ` +
+              `with peer ${maker.peerPubKey}, ${rejectedQuantity} quantity not accepted and will repeat matching routine`);
+          } else {
+            this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
+          }
           result.swapResults.push(swapResult);
-          this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
         } catch (err) {
-          this.emit('peerOrder.invalidation', portion);
-          swapFailures.push(taker);
-          this.logger.warn('swap failed during order matching, will repeat matching routine for failed swap quantity');
-          // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
+          failedSwapQuantity += portion.quantity;
+          this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
         }
       }
     }
 
     // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
-    if (swapFailures.length > 0) {
-      this.logger.debug(`${swapFailures.length} swaps failed for order ${order.id}, repeating matching routine for failed swaps quantity`);
+    if (failedSwapQuantity > 0) {
+      this.logger.debug(`${failedSwapQuantity} quantity of swaps failed for order ${order.id}, repeating matching routine for failed quantity`);
       // aggregate failures quantities with the remaining order
       const remainingOrder: OwnOrder = result.remainingOrder || { ...order, quantity: 0 };
-      swapFailures.forEach(order => remainingOrder.quantity += order.quantity);
+      remainingOrder.quantity += failedSwapQuantity;
 
       // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
       const remainingOrderResult = await this.placeOrder(remainingOrder, true, onUpdate, maxTime);
@@ -353,17 +365,12 @@ class OrderBook extends EventEmitter {
     return result;
   }
 
-  public executeSwap = async (orderId: string, pairId: string, peerPubKey: string, quantity?: number): Promise<SwapResult> => {
-    const maker = this.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
-    const taker = this.stampOwnOrder({
-      pairId,
-      localId: '',
-      price: maker.price,
-      isBuy: !maker.isBuy,
-      quantity: quantity || maker.quantity,
-      hold: 0,
-    });
-
+  /**
+   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
+   * succeeds and `peerOrder.invalidation` if the swap fails.
+   */
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+    // make sure the order is in the database before we begin the swap
     await this.repository.addOrderIfNotExists(maker);
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
@@ -431,14 +438,53 @@ class OrderBook extends EventEmitter {
   /**
    * Removes an order from the order book by its local id. Throws an error if the specified pairId
    * is not supported or if the order to cancel could not be found.
+   * @returns any quantity of the order that was on hold and could not be immediately removed.
    */
   public removeOwnOrderByLocalId = (localId: string) => {
-    const order = this.localIdMap.get(localId);
-    if (!order) {
+    const orderIdentifier = this.localIdMap.get(localId);
+    if (!orderIdentifier) {
       throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
     }
 
-    this.removeOwnOrder(order.id, order.pairId);
+    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    if (order.hold) {
+      let remainingHold = order.hold;
+      // we can't remove the entire order as some of it is on hold, start by removing any available portion
+      this.logger.debug(`can't remove local order ${localId} yet because it has a hold of ${order.hold}`);
+      const availableQuantity = order.quantity - order.hold;
+      if (availableQuantity) {
+        this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, availableQuantity);
+      }
+
+      const cleanup = (quantity: number) => {
+        remainingHold -= quantity;
+        this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingHold} remaining`);
+        if (remainingHold === 0) {
+          // we can stop listening for swaps once all holds are cleared
+          this.swaps!.removeListener('swap.failed', failedHandler);
+          this.swaps!.removeListener('swap.paid', paidHandler);
+        }
+      };
+
+      const failedHandler = (deal: SwapDeal) => {
+        if (deal.orderId === orderIdentifier.id) {
+          // remove the portion that failed now that it's not on hold
+          this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, deal.quantity!);
+          cleanup(deal.quantity!);
+        }
+      };
+
+      const paidHandler = (result: SwapResult) => {
+        if (result.orderId === orderIdentifier.id) {
+          cleanup(result.quantity);
+        }
+      };
+
+      this.swaps!.on('swap.failed', failedHandler);
+      this.swaps!.on('swap.paid', paidHandler);
+    }
+    this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    return order.hold;
   }
 
   private addOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
@@ -481,25 +527,30 @@ class OrderBook extends EventEmitter {
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
-  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number):
+  public removePeerOrder = (orderId: string, pairId: string, peerPubKey?: string, quantityToRemove?: number):
     { order: PeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }
 
-  private removePeerOrders = async (peer: Peer): Promise<void> => {
-    if (!peer.nodePubKey) {
+  private removePeerOrders = (peerPubKey?: string) => {
+    if (!peerPubKey) {
       return;
     }
 
-    this.tradingPairs.forEach((tp) => {
-      const orders = tp.removePeerOrders(peer.nodePubKey!);
-      orders.forEach((order) => {
-        this.emit('peerOrder.invalidation', order);
-      });
-    });
+    for (const pairId of this.pairs.keys()) {
+      this.removePeerPair(peerPubKey, pairId);
+    }
 
-    this.logger.debug(`removed all orders for peer ${peer.nodePubKey}`);
+    this.logger.debug(`removed all orders for peer ${peerPubKey}`);
+  }
+
+  private removePeerPair = (peerPubKey: string, pairId: string) => {
+    const tp = this.getTradingPair(pairId);
+    const orders = tp.removePeerOrders(peerPubKey);
+    orders.forEach((order) => {
+      this.emit('peerOrder.invalidation', order);
+    });
   }
 
   /**
@@ -513,8 +564,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     peer.sendOrders(outgoingOrders, reqId);
@@ -526,7 +577,7 @@ class OrderBook extends EventEmitter {
   private broadcastOrder = (order: orders.OwnOrder) => {
     if (this.pool) {
       if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
-        const outgoingOrder = this.createOutgoingOrder(order);
+        const outgoingOrder = OrderBook.createOutgoingOrder(order);
         this.pool.broadcastOrder(outgoingOrder);
       }
     }
@@ -542,11 +593,6 @@ class OrderBook extends EventEmitter {
     }
 
     return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
-  }
-
-  private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
-    const { createdAt, localId, ...outgoingOrder } = order;
-    return outgoingOrder;
   }
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
@@ -588,12 +634,9 @@ class OrderBook extends EventEmitter {
     }
 
     const availableQuantity = order.quantity - order.hold;
-    assert(availableQuantity > 0);
-    // TODO: accept the smaller of the proposed quantity and the available quantity
-    if (availableQuantity >= proposedQuantity) {
-      // quantityToAccept = Math.min(proposedQuantity, availableQuantity);
+    if (availableQuantity > 0) {
       /** The quantity of the order that we will accept */
-      const quantity = proposedQuantity;
+      const quantity = Math.min(proposedQuantity, availableQuantity);
 
       this.addOrderHold(order.id, pairId, quantity);
 

@@ -11,7 +11,6 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { DisconnectingPacketBody } from './packets/types/DisconnectingPacket';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -28,7 +27,7 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'handshake', listener: () => void): this;
+  on(event: 'pairDropped', listener: (pair: string) => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
@@ -38,18 +37,23 @@ interface Peer {
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
-  emit(event: 'handshake'): boolean;
+  emit(event: 'pairDropped', pair: string): boolean;
 }
 
 /** Represents a remote XU peer */
 class Peer extends EventEmitter {
   // TODO: properties documentation
   public inbound!: boolean;
-  public connected = false;
+  public recvDisconnectionReason?: DisconnectionReason;
+  public sentDisconnectionReason?: DisconnectionReason;
+  public expectedNodePubKey?: string;
+  public active = false; // added to peer list
   private opened = false;
   private socket?: Socket;
-  private parser: Parser = new Parser(Packet.PROTOCOL_DELIMITER);
+  private parser: Parser = new Parser();
   private closed = false;
+  /** Timer to retry connection to peer after the previous attempt failed. */
+  private retryConnectionTimer?: NodeJS.Timer;
   private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
@@ -84,6 +88,14 @@ class Peer extends EventEmitter {
     return this.handshakeState ? this.handshakeState.addresses : undefined;
   }
 
+  public get pairs(): string[] | undefined {
+    return this.handshakeState ? this.handshakeState.pairs : undefined;
+  }
+
+  public get connected(): boolean {
+    return this.socket !== undefined && !this.socket.destroyed;
+  }
+
   public get info(): PeerInfo {
     return {
       address: addressUtils.toString(this.address),
@@ -113,7 +125,6 @@ class Peer extends EventEmitter {
     const peer = new Peer(logger, addressUtils.fromSocket(socket));
 
     peer.inbound = true;
-    peer.connected = true;
     peer.socket = socket;
 
     peer.bindSocket();
@@ -161,21 +172,23 @@ class Peer extends EventEmitter {
     assert(!retryConnecting || !this.inbound);
 
     this.opened = true;
+    this.expectedNodePubKey = nodePubKey;
 
     await this.initConnection(retryConnecting);
     this.initStall();
     await this.initHello(handshakeData);
 
-    // TODO: Check that the peer's version is compatible with ours
-    if (nodePubKey) {
-      if (this.nodePubKey !== nodePubKey) {
-        this.close({ reason: DisconnectionReason.UnexpectedIdentity });
-        throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, nodePubKey, addressUtils.toString(this.address));
-      } else if (this.nodePubKey === handshakeData.nodePubKey) {
-        this.close({ reason: DisconnectionReason.ConnectedToSelf });
-        throw errors.ATTEMPTED_CONNECTION_TO_SELF;
-      }
+    if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
+      this.close(DisconnectionReason.UnexpectedIdentity);
+      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
+
+    if (this.nodePubKey === handshakeData.nodePubKey) {
+      this.close(DisconnectionReason.ConnectedToSelf);
+      throw errors.ATTEMPTED_CONNECTION_TO_SELF;
+    }
+
+    // TODO: Check that the peer's version is compatible with ours
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -187,23 +200,30 @@ class Peer extends EventEmitter {
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (reason?: DisconnectingPacketBody): void => {
+  public close = (reason?: DisconnectionReason, reasonPayload?: string): void => {
     if (this.closed) {
       return;
     }
 
     this.closed = true;
-    this.connected = false;
 
     if (this.socket) {
-      if (reason) {
-        this.sendPacket(new packets.DisconnectingPacket(reason));
+      if (reason !== undefined) {
+        const peerId = this.nodePubKey || addressUtils.toString(this.address);
+        this.logger.debug(`closing socket with peer ${peerId}. reason: ${DisconnectionReason[reason]}`);
+        this.sentDisconnectionReason = reason;
+        this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
 
       if (!this.socket.destroyed) {
         this.socket.destroy();
       }
       delete this.socket;
+    }
+
+    if (this.retryConnectionTimer) {
+      clearTimeout(this.retryConnectionTimer);
+      this.retryConnectionTimer = undefined;
     }
 
     if (this.pingTimer) {
@@ -231,11 +251,8 @@ class Peer extends EventEmitter {
 
   public sendPacket = (packet: Packet): void => {
     this.sendRaw(packet.toRaw());
-    if (this.nodePubKey !== undefined) {
-      this.logger.trace(`Sent packet to ${this.nodePubKey}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
-    } else {
-      this.logger.trace(`Sent packet to ${addressUtils.toString(this.address)}: ${packet.body ? JSON.stringify(packet.body) : ''}`);
-    }
+    const recipient = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
+    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${recipient}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -254,9 +271,9 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
   }
 
-  private sendRaw = (packetStr: string) => {
+  private sendRaw = (data: Buffer) => {
     if (this.socket) {
-      this.socket.write(packetStr + Packet.PROTOCOL_DELIMITER);
+      this.socket.write(data);
       this.lastSend = Date.now();
     }
   }
@@ -290,11 +307,14 @@ class Peer extends EventEmitter {
         }
         this.socket!.removeListener('error', onError);
         this.socket!.removeListener('connect', onConnect);
+        if (this.retryConnectionTimer) {
+          clearTimeout(this.retryConnectionTimer);
+          this.retryConnectionTimer = undefined;
+        }
       };
 
       const onConnect = () => {
         this.connectTime = Date.now();
-        this.connected = true;
 
         this.bindSocket();
 
@@ -326,7 +346,7 @@ class Peer extends EventEmitter {
           `failed: ${err.message}. retrying in ${retryDelay / 1000} sec...`,
         );
 
-        setTimeout(() => {
+        this.retryConnectionTimer = setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
           retries = retries + 1;
           this.socket!.connect(this.address);
@@ -374,8 +394,9 @@ class Peer extends EventEmitter {
 
     for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.emitError(`Peer (${this.nodePubKey}) is stalling (${packetId})`);
-        this.close({ reason: DisconnectionReason.ResponseStalling, payload: packetId });
+        this.emitError(`Peer is stalling (${packetId})`);
+        entry.reject('response timed out');
+        this.close(DisconnectionReason.ResponseStalling, packetId);
         return;
       }
     }
@@ -455,16 +476,7 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket!.on('data', (data) => {
-      this.lastRecv = Date.now();
-      const dataStr = data.toString();
-      if (this.nodePubKey !== undefined) {
-        this.logger.trace(`Received data from ${this.nodePubKey}: ${dataStr}`);
-      } else {
-        this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
-      }
-      this.parser.feed(dataStr);
-    });
+    this.socket!.on('data', this.parser.feed);
 
     this.socket!.setNoDelay(true);
   }
@@ -478,17 +490,18 @@ class Peer extends EventEmitter {
       }
 
       switch (err.type) {
-        case ParserErrorType.UnparseableMessage:
-          this.logger.warn(`Unparsable peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.UnparseableMessage);
-          break;
-        case ParserErrorType.InvalidMessage:
-          this.logger.warn(`Invalid peer message: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.InvalidMessage);
+        case ParserErrorType.InvalidPacket:
+          this.logger.warn(`parser: invalid peer packet: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.InvalidPacket);
           break;
         case ParserErrorType.UnknownPacketType:
-          this.logger.warn(`Unknown peer message type: ${err.payload}`);
+          this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
           this.emit('reputation', ReputationEvent.UnknownPacketType);
+          break;
+        case ParserErrorType.MaxBufferSizeExceeded:
+          this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
+          break;
       }
     });
   }
@@ -512,6 +525,10 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = (packet: Packet): void => {
+    this.lastRecv = Date.now();
+    const sender = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
+    this.logger.trace(`Received ${PacketType[packet.type]} packet from ${sender}${JSON.stringify(packet)}`);
+
     if (this.isPacketSolicited(packet)) {
       switch (packet.type) {
         case PacketType.Hello: {
@@ -520,6 +537,10 @@ class Peer extends EventEmitter {
         }
         case PacketType.Ping: {
           this.handlePing(packet);
+          break;
+        }
+        case PacketType.Disconnecting: {
+          this.handleDisconnecting(packet);
           break;
         }
         default:
@@ -553,32 +574,38 @@ class Peer extends EventEmitter {
 
     if (!this.handshakeState) {
       // we must wait to receive handshake data before opening the connection
-      await this.wait(PacketType.Hello, Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.Hello.toString(), Peer.RESPONSE_TIMEOUT);
     }
 
     return packet;
   }
 
   private handleHello = (packet: packets.HelloPacket): void => {
-    const helloBody = packet.body!;
-    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(helloBody)}`);
-    if (this.nodePubKey && this.nodePubKey !== helloBody.nodePubKey) {
+    const newHandshakeState = packet.body!;
+    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(newHandshakeState)}`);
+    if (this.nodePubKey && this.nodePubKey !== newHandshakeState.nodePubKey) {
       // peers cannot change their nodepubkey while we are connected to them
       // TODO: penalize?
-      this.close({ reason: DisconnectionReason.ForbiddenIdentityUpdate, payload: helloBody.nodePubKey });
+      this.close(DisconnectionReason.ForbiddenIdentityUpdate, newHandshakeState.nodePubKey);
       return;
     }
 
-    this.handshakeState = packet.body;
-
-    const entry = this.responseMap.get(PacketType.Hello);
+    const entry = this.responseMap.get(PacketType.Hello.toString());
 
     if (entry) {
-      this.responseMap.delete(PacketType.Hello);
+      this.responseMap.delete(PacketType.Hello.toString());
       entry.resolve(packet);
     }
 
-    this.emit('handshake');
+    const prevHandshakeState = this.handshakeState!;
+    this.handshakeState = newHandshakeState;
+
+    prevHandshakeState.pairs.forEach((pairId) => {
+      if (!newHandshakeState.pairs.includes(pairId)) {
+        // a trading pair was in the old handshake state but not in the updated one
+        this.emit('pairDropped', pairId);
+      }
+    });
   }
 
   private sendPing = (): packets.PingPacket => {
@@ -591,6 +618,17 @@ class Peer extends EventEmitter {
 
   private handlePing = (packet: packets.PingPacket): void  => {
     this.sendPong(packet.header.id);
+  }
+
+  private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
+    if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
+      const peerId = this.nodePubKey || addressUtils.toString(this.address);
+      this.logger.debug(`received disconnecting packet from ${peerId}:${JSON.stringify(packet.body)}`);
+      this.recvDisconnectionReason = packet.body.reason;
+    } else {
+      // protocol violation: packet should be sent once only, with body, with `reason` field
+      // TODO: penalize peer
+    }
   }
 
   private sendPong = (pingId: string): packets.PongPacket => {

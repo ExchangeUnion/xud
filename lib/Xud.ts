@@ -38,6 +38,7 @@ class Xud extends EventEmitter {
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
+  private shuttingDown = false;
 
   public get nodePubKey() {
     return this.nodeKey.nodePubKey;
@@ -50,6 +51,10 @@ class Xud extends EventEmitter {
     super();
 
     this.config = new Config();
+
+    process.on('SIGINT', () => {
+      this.beginShutdown();
+    });
   }
 
   /**
@@ -170,6 +175,11 @@ class Xud extends EventEmitter {
   }
 
   private shutdown = async () => {
+    if (this.shuttingDown) {
+      this.logger.info('XUD is already shutting down');
+      return;
+    }
+    this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
     this.lndbtcClient.close();

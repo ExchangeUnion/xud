@@ -3,7 +3,7 @@ import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { getUri } from '../../lib/utils/utils';
 import { getUnusedPort } from '../utils';
-import { ReputationEvent } from '../../lib/types/enums';
+import { DisconnectionReason, ReputationEvent } from '../../lib/types/enums';
 
 chai.use(chaiAsPromised);
 
@@ -69,10 +69,10 @@ describe('P2P Sanity Tests', () => {
       .to.be.rejectedWith('already connected');
   });
 
-  it('should disconnect successfully', async () => {
-    await expect(nodeOne['pool']['closePeer'](nodeTwo.nodePubKey)).to.be.fulfilled;
+  it('should disconnect successfully', () => {
+    nodeOne['pool']['closePeer'](nodeTwo.nodePubKey, DisconnectionReason.NotAcceptingConnections);
 
-    const listPeersResult = await nodeOne.service.listPeers();
+    const listPeersResult = nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
 
