@@ -11,6 +11,9 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
+import { compare } from 'semver';
+
+const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -80,10 +83,6 @@ class Peer extends EventEmitter {
   private static readonly CONNECTION_RETRIES_MAX_DELAY = 3600000;
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
-
-  private get version(): string | undefined {
-    return this.handshakeState ? this.handshakeState.version : undefined;
-  }
 
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
@@ -195,9 +194,10 @@ class Peer extends EventEmitter {
     }
 
     // Check version compatibility
-    if (this.version !== handshakeData.version) {
+    // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
+    if (compare(handshakeData.version, minCompatibleVersion) === -1) {
       this.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), handshakeData.version, this.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), minCompatibleVersion, handshakeData.version);
     }
 
     // request peer's known nodes only if p2p.discover option is true

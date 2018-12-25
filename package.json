@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "version": "1.0.0-alpha.5",
-  "minCompatibleVersion": "1.0.0-alpha.4",
+  "minCompatibleVersion": "1.0.0-alpha.3",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -119,6 +119,7 @@
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
     "@types/json-stable-stringify": "^1.0.32",
+    "@types/semver": "^5.5.0",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
