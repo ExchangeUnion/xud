@@ -398,7 +398,7 @@ class Service extends EventEmitter {
     // TODO: use `ownOrder.swapped` order book event instead
     this.swaps.on('swap.paid', (swapResult) => {
       if (swapResult.role === SwapRole.Maker) {
-        // only alert cliengitt for maker matches, taker matches are handled via placeOrder
+        // only alert client for maker matches, taker matches are handled via placeOrder
         callback(swapResult);
       }
     });
