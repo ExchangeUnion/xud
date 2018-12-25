@@ -538,7 +538,7 @@ class OrderBook extends EventEmitter {
       return;
     }
 
-    for (const pairId of this.pairIds.values()) {
+    for (const pairId of this.pairs.keys()) {
       this.removePeerPair(peerPubKey, pairId);
     }
 
