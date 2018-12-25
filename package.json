@@ -118,6 +118,7 @@
   ],
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
+    "@types/json-stable-stringify": "^1.0.32",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
@@ -130,6 +131,7 @@
     "google-protobuf": "^3.5.0",
     "grpc": "^1.13.1",
     "gulp": "^4.0.0",
+    "json-stable-stringify": "^1.0.1",
     "node-forge": "^0.7.6",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",

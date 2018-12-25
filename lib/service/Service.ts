@@ -185,7 +185,7 @@ class Service extends EventEmitter {
    */
   public unban = async (args: { nodePubKey: string, reconnect: boolean}) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.unban(args);
+    await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
   public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
