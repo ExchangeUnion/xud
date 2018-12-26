@@ -14,6 +14,7 @@ class Config {
   public xudir: string;
   public loglevel: string;
   public logpath: string;
+  public logdateformat: string;
   public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
@@ -58,6 +59,7 @@ class Config {
     this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
+    this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = Network.TestNet;
 
     this.p2p = {
@@ -118,7 +120,6 @@ class Config {
       const configText = await readFile(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
-
         if (props.xudir && (!args || !args.xudir)) {
           this.updateDefaultPaths(props.xudir);
         }
@@ -192,6 +193,7 @@ class Config {
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
   }
+
 }
 
 export default Config;

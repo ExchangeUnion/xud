@@ -131,6 +131,7 @@
     "grpc": "^1.13.1",
     "gulp": "^4.0.0",
     "json-stable-stringify": "^1.0.1",
+    "moment": "^2.23.0",
     "node-forge": "^0.7.6",
     "secp256k1": "^3.5.0",
     "sequelize": "^4.37.3",
