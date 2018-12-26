@@ -60,6 +60,7 @@ export enum ReputationEvent {
   MaxParserBufferSizeExceeded = 5,
   InvalidPacket = 6,
   UnknownPacketType = 7,
+  PacketDataIntegrityError = 8,
 }
 
 export enum SwapFailureReason {

@@ -498,6 +498,10 @@ class Peer extends EventEmitter {
           this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
           this.emit('reputation', ReputationEvent.UnknownPacketType);
           break;
+        case ParserErrorType.DataIntegrityError:
+          this.logger.warn(`parser: packet data integrity error: ${err.payload}`);
+          this.emit('reputation', ReputationEvent.PacketDataIntegrityError);
+          break;
         case ParserErrorType.MaxBufferSizeExceeded:
           this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
           this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
