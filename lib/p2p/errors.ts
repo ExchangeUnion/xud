@@ -31,6 +31,10 @@ const errors = {
     message: `node at ${address} sent pub key ${nodePubKey}, expected ${expectedNodePubKey}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
+  MALFORMED_VERSION: (address: string, peerVersion: string | undefined) => ({
+    message: `node at ${address} has version ${peerVersion}, which is malformed, should be in semantic format`,
+    code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
+  }),
   INCOMPATIBLE_VERSION: (address: string, minCompatibleVersion: string, peerVersion: string | undefined) => ({
     message: `node at ${address} has version ${peerVersion}, expected minimum ${minCompatibleVersion}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,

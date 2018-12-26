@@ -94,4 +94,5 @@ export enum DisconnectionReason {
   Banned = 7,
   AlreadyConnected = 8,
   Shutdown = 9,
+  MalformedVersion = 10,
 }

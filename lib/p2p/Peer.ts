@@ -193,7 +193,11 @@ class Peer extends EventEmitter {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
-    // Check version compatibility
+    // Check if version is semantic, and higher than minCompatibleVersion.
+    if (!semver.valid(this.version)) {
+      this.close(DisconnectionReason.MalformedVersion);
+      throw errors.MALFORMED_VERSION(addressUtils.toString(this.address), this.version);
+    }
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
     if (semver.compare(this.version, this.minCompatibleVersion) === -1) {
       this.close(DisconnectionReason.IncompatibleProtocolVersion);
@@ -577,8 +581,8 @@ class Peer extends EventEmitter {
   /**
    * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
    */
-  private initHello = async (handshakeState: HandshakeState) => {
-    const packet = new packets.HelloPacket(handshakeState);
+  private initHello = async (handshakeData: HandshakeState) => {
+    const packet = new packets.HelloPacket(handshakeData);
 
     this.sendPacket(packet);
 
