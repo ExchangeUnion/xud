@@ -120,6 +120,7 @@ class Config {
       const configText = await readFile(configPath, 'utf8');
       try {
         const props = toml.parse(configText);
+
         if (props.xudir && (!args || !args.xudir)) {
           this.updateDefaultPaths(props.xudir);
         }
