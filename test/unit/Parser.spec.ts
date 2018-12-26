@@ -36,8 +36,9 @@ describe('Parser', () => {
     return new Promise((resolve, reject) => {
       wait(packets.length)
         .then((parsedPackets) => {
-          for (let i = 0; i <= packets.length; i += 1) {
+          for (let i = 0; i < packets.length; i += 1) {
             expect(packets[i]).to.deep.equal(parsedPackets[i]);
+            expect(packets[i].type).to.equal(parsedPackets[i].type);
           }
           resolve();
         })
