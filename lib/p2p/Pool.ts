@@ -9,35 +9,12 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate, PoolConfig } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
 import { db } from '../types';
-
-type PoolConfig = {
-  /** Whether or not to automatically detect and share current external ip address on startup. */
-  detectexternalip: boolean;
-
-  /** If false, don't send GET_NODES when connecting, defaults to true. */
-  discover: boolean;
-
-  /** GET_NODES scheduler in minutes, discover option should be true. */
-  discoverminutes: number;
-
-  /** Whether or not to listen for incoming connections from peers. */
-  listen: boolean;
-
-  /** Which port to listen on. If 0, a random unused port will be used. */
-  port: number;
-
-  /**
-   * An array of IP addresses or host names which can be used to connect to this server.
-   * It will be advertised with peers for them to try to connect to the server in the future.
-   */
-  addresses: string[];
-};
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;

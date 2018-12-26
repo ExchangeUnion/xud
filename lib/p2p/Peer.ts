@@ -8,10 +8,9 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
-import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo, PoolConfig } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
-import { PoolConfig } from './Pool';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
