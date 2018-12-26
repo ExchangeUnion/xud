@@ -194,7 +194,6 @@ class Config {
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
   }
-
 }
 
 export default Config;
