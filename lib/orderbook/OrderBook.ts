@@ -103,9 +103,9 @@ class OrderBook extends EventEmitter {
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
+          await this.persistTrade(swapResult.quantity, this.getOwnOrder(swapResult.orderId, swapResult.pairId), undefined, swapResult.rHash);
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
-          await this.persistTrade(swapResult.quantity, this.getOwnOrder(swapResult.orderId, swapResult.pairId), undefined, swapResult.rHash);
         }
       });
       this.swaps.on('swap.failed', (deal) => {
