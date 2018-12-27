@@ -537,6 +537,9 @@ export class SwapFailedPacket extends jspb.Message {
   getErrorMessage(): string;
   setErrorMessage(value: string): void;
 
+  getFailureReason(): number;
+  setFailureReason(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapFailedPacket.AsObject;
   static toObject(includeInstance: boolean, msg: SwapFailedPacket): SwapFailedPacket.AsObject;
@@ -554,6 +557,7 @@ export namespace SwapFailedPacket {
     hash: string,
     rHash: string,
     errorMessage: string,
+    failureReason: number,
   }
 }
 
