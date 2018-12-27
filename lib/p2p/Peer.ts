@@ -13,6 +13,8 @@ import errors from './errors';
 import addressUtils from '../utils/addressUtils';
 import semver from 'semver';
 
+const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
+
 /** Key info about a peer for display purposes */
 type PeerInfo = {
   address: string,
@@ -80,7 +82,7 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
-  public get version(): string {
+  private get version(): string {
     return this.handshakeState ? this.handshakeState.version : '';
   }
 
@@ -117,7 +119,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private minCompatibleVersion: string) {
+  constructor(private logger: Logger, public address: Address) {
     super();
 
     this.bindParser(this.parser);
@@ -126,8 +128,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, minCompatibleVersion: string): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), minCompatibleVersion);
+  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket));
 
     peer.inbound = true;
     peer.socket = socket;
@@ -199,9 +201,9 @@ class Peer extends EventEmitter {
       throw errors.MALFORMED_VERSION(addressUtils.toString(this.address), this.version);
     }
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
-    if (semver.compare(this.version, this.minCompatibleVersion) === -1) {
+    if (semver.compare(this.version, minCompatibleVersion) === -1) {
       this.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), this.minCompatibleVersion, this.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), minCompatibleVersion, this.version);
     }
 
     // Setup the ping interval

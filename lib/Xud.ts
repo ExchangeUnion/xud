@@ -14,9 +14,7 @@ import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
 
-const packageJson = require('../package.json');
-const version: string = packageJson.version;
-const minCompatibleVersion: string = packageJson.minCompatibleVersion;
+const version: string = require('../package.json').version;
 
 interface Xud {
   on(event: 'shutdown', listener: () => void): this;
@@ -89,7 +87,7 @@ class Xud extends EventEmitter {
         initPromises.push(this.raidenClient.init());
       }
 
-      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db.models, minCompatibleVersion);
+      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db.models);
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.lndbtcClient, this.lndltcClient);
       initPromises.push(this.swaps.init());
