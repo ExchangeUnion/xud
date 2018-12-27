@@ -13,7 +13,7 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder } from '../types/orders';
+import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult, SwapDeal } from 'lib/swaps/types';
@@ -96,7 +96,7 @@ class OrderBook extends EventEmitter {
 
   private bindSwaps = () => {
     if (this.swaps) {
-      this.swaps.on('swap.paid', (swapResult) => {
+      this.swaps.on('swap.paid', async (swapResult) => {
         if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
 
@@ -105,6 +105,7 @@ class OrderBook extends EventEmitter {
 
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
+          await this.persistTrade(swapResult.quantity, this.getOwnOrder(swapResult.orderId, swapResult.pairId), undefined, swapResult.rHash);
         }
       });
       this.swaps.on('swap.failed', (deal) => {
@@ -375,7 +376,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.persistTrade(swapResult.quantity, maker, taker);
+      await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
       return swapResult;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
@@ -401,12 +402,17 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
-    await Promise.all([this.repository.addOrderIfNotExists(makerOrder), this.repository.addOrderIfNotExists(takerOrder)]);
+  private persistTrade = async (quantity: number, makerOrder: Order, takerOrder?: OwnOrder, rHash?: string) => {
+    const addOrderPromises = [this.repository.addOrderIfNotExists(makerOrder)];
+    if (takerOrder) {
+      addOrderPromises.push(this.repository.addOrderIfNotExists(takerOrder));
+    }
+    await Promise.all(addOrderPromises);
     await this.repository.addTrade({
       quantity,
+      rHash,
       makerOrderId: makerOrder.id,
-      takerOrderId: takerOrder.id,
+      takerOrderId: takerOrder ? takerOrder.id : undefined,
     });
   }
 
