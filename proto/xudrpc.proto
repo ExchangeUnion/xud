@@ -107,7 +107,7 @@ service Xud {
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
    * orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders
    * are separated into buys and sells for each trading pair, but unsorted. */
-  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
     };
@@ -323,13 +323,13 @@ message GetNodeInfoResponse {
   bool banned = 2 [json_name = "banned"];
 }
 
-message GetOrdersRequest {
+message ListOrdersRequest {
   // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
 }
-message GetOrdersResponse {
+message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
   map<string, Orders> orders = 1 [json_name = "orders"];
 }

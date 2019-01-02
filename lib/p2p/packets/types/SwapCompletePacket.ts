@@ -1,7 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import SwapAcceptedPacket from './SwapAcceptedPacket';
 
 export type SwapCompletePacketBody = {
   rHash: string;

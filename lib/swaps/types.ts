@@ -12,7 +12,7 @@ export type SwapDeal = {
    */
   state: SwapState;
   /** The reason for being in the current state. */
-  errorReason?: string;
+  errorMessage?: string;
   failureReason?: SwapFailureReason;
   /** The xud node pub key of the counterparty to this swap deal. */
   peerPubKey: string;

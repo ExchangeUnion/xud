@@ -239,12 +239,12 @@
     "/v1/orders": {
       "get": {
         "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
-        "operationId": "GetOrders",
+        "operationId": "ListOrders",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/xudrpcGetOrdersResponse"
+              "$ref": "#/definitions/xudrpcListOrdersResponse"
             }
           }
         },
@@ -717,18 +717,6 @@
         }
       }
     },
-    "xudrpcGetOrdersResponse": {
-      "type": "object",
-      "properties": {
-        "orders": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/xudrpcOrders"
-          },
-          "description": "A map between pair ids and their buy and sell orders."
-        }
-      }
-    },
     "xudrpcListCurrenciesResponse": {
       "type": "object",
       "properties": {
@@ -738,6 +726,18 @@
             "type": "string"
           },
           "description": "A list of ticker symbols of the supported currencies."
+        }
+      }
+    },
+    "xudrpcListOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "orders": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcOrders"
+          },
+          "description": "A map between pair ids and their buy and sell orders."
         }
       }
     },

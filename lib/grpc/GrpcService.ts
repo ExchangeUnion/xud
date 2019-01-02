@@ -355,24 +355,24 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.getOrders]]
+   * See [[Service.listOrders]]
    */
-  public getOrders: grpc.handleUnaryCall<xudrpc.GetOrdersRequest, xudrpc.GetOrdersResponse> = (call, callback) => {
+  public listOrders: grpc.handleUnaryCall<xudrpc.ListOrdersRequest, xudrpc.ListOrdersResponse> = (call, callback) => {
     try {
-      const getOrdersResponse = this.service.getOrders(call.request.toObject());
-      const response = new xudrpc.GetOrdersResponse();
+      const listOrdersResponse = this.service.listOrders(call.request.toObject());
+      const response = new xudrpc.ListOrdersResponse();
 
-      const getOrdersList = <T extends Order>(orders: T[]) => {
+      const listOrdersList = <T extends Order>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
         orders.forEach(order => ordersList.push(createOrder(<Order>order)));
         return ordersList;
       };
 
       const ordersMap = response.getOrdersMap();
-      getOrdersResponse.forEach((orderArrays, pairId) => {
+      listOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(getOrdersList(orderArrays.buy));
-        orders.setSellOrdersList(getOrdersList(orderArrays.sell));
+        orders.setBuyOrdersList(listOrdersList(orderArrays.buy));
+        orders.setSellOrdersList(listOrdersList(orderArrays.sell));
 
         ordersMap.set(pairId, orders);
       });

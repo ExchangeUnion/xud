@@ -60,6 +60,7 @@ export enum ReputationEvent {
   MaxParserBufferSizeExceeded = 5,
   InvalidPacket = 6,
   UnknownPacketType = 7,
+  PacketDataIntegrityError = 8,
 }
 
 export enum SwapFailureReason {
@@ -81,7 +82,8 @@ export enum SwapFailureReason {
   SendPaymentFailure = 7,
   /** The swap resolver request from lnd was invalid. */
   InvalidResolveRequest = 8,
-  PeerFailedSwap, // TODO: this generic reason can be replaced with the failure reason reported by the peer
+  /** The swap request attempts to reuse a payment hash. */
+  PaymentHashReuse = 9,
 }
 
 export enum DisconnectionReason {
