@@ -14,6 +14,13 @@ export enum OrderSide {
   Sell,
 }
 
+export enum OrderType {
+  Ioc,
+  Fok,
+  Limit,
+  Market,
+}
+
 export enum Network {
   MainNet = 'mainnet',
   TestNet = 'testnet',

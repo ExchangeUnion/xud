@@ -58,6 +58,7 @@
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
+    - [OrderType](#xudrpc.OrderType)
     - [SwapResult.Role](#xudrpc.SwapResult.Role)
   
   
@@ -610,6 +611,7 @@
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell. |
+| type | [OrderType](#xudrpc.OrderType) |  | Whether the order type is a IOC or FOK. |
 
 
 
@@ -860,6 +862,20 @@
 | ---- | ------ | ----------- |
 | BUY | 0 |  |
 | SELL | 1 |  |
+
+
+
+<a name="xudrpc.OrderType"></a>
+
+### OrderType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IOC | 0 |  |
+| FOK | 1 |  |
+| LIMIT | 2 |  |
+| MARKET | 3 |  |
 
 
 

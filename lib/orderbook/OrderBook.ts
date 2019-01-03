@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, OrderType } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
@@ -239,7 +239,8 @@ class OrderBook extends EventEmitter {
     return pair.destroy();
   }
 
-  public placeLimitOrder = async (order: orders.OwnLimitOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
+  public placeLimitOrder = async (order: orders.OwnLimitOrder, type: OrderType, onUpdate?: (e: PlaceOrderEvent) => void):
+      Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
@@ -252,7 +253,7 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    return this.placeOrder(stampedOrder, false, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
+    return this.placeOrder(stampedOrder, false, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME, type);
   }
 
   public placeMarketOrder = async (order: orders.OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
@@ -271,6 +272,7 @@ class OrderBook extends EventEmitter {
     discardRemaining = false,
     onUpdate?: (e: PlaceOrderEvent) => void,
     maxTime?: number,
+    type?: OrderType,
   ): Promise<PlaceOrderResult> => {
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
@@ -285,6 +287,8 @@ class OrderBook extends EventEmitter {
         remainingOrder: order,
       });
     }
+
+    this.logger.debug(`order type: ${type}`); // TODO
 
     // perform match. maker orders will be removed from the repository
     const tp = this.getTradingPair(order.pairId);

@@ -850,6 +850,9 @@ export class PlaceOrderRequest extends jspb.Message {
   getSide(): OrderSide;
   setSide(value: OrderSide): void;
 
+  getType(): OrderType;
+  setType(value: OrderType): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlaceOrderRequest.AsObject;
   static toObject(includeInstance: boolean, msg: PlaceOrderRequest): PlaceOrderRequest.AsObject;
@@ -867,6 +870,7 @@ export namespace PlaceOrderRequest {
     pairId: string,
     orderId: string,
     side: OrderSide,
+    type: OrderType,
   }
 }
 
@@ -1274,5 +1278,12 @@ export namespace UnbanResponse {
 export enum OrderSide {
   BUY = 0,
   SELL = 1,
+}
+
+export enum OrderType {
+  IOC = 0,
+  FOK = 1,
+  LIMIT = 2,
+  MARKET = 3,
 }
 

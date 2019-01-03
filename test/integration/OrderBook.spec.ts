@@ -8,6 +8,8 @@ import { orders } from '../../lib/types';
 import { SwapClients } from '../../lib/types/enums';
 import { createOwnOrder } from '../utils';
 
+// TODO fix tests
+
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);

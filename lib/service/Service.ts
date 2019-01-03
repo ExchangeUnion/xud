@@ -5,7 +5,7 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapRole } from '../types/enums';
+import { SwapClients, OrderSide, SwapRole, OrderType } from '../types/enums';
 import { parseUri, getUri, UriParts } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion } from '../types/orders';
@@ -326,10 +326,10 @@ class Service extends EventEmitter {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (
-    args: { pairId: string, price: number, quantity: number, orderId: string, side: number },
+    args: { pairId: string, price: number, quantity: number, orderId: string, side: number, type: number },
     callback?: (e: PlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side } = args;
+    const { pairId, price, quantity, orderId, side, type } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.NON_ZERO_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
@@ -343,7 +343,8 @@ class Service extends EventEmitter {
       hold: 0,
     };
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
+    return type === OrderType.Market ? await this.orderBook.placeMarketOrder(order, callback)   :
+                                       await this.orderBook.placeLimitOrder(order, type, callback);
   }
 
   /** Removes a currency. */
