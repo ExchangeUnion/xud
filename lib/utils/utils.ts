@@ -78,7 +78,7 @@ export const isEmptyObject = (val: any): boolean => {
 
 /** Get the current date in the given dateFormat, if not provided formats with `DD/MM/YYYY HH:mm:ss.SSS`.
  */
-export const getTsString = (dateFormat?: string): string => moment().format(dateFormat ? dateFormat : 'DD/MM/YYYY HH:mm:ss.SSS');
+export const getTsString = (dateFormat?: string): string => moment().format(dateFormat ? dateFormat : 'YYYY-MM-DD hh:mm:ss.sss');
 
 /**
  * Recursively merge properties from different sources into a target object, overriding any
