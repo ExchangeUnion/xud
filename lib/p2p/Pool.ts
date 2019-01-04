@@ -9,32 +9,12 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate, PoolConfig } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
 import { db } from '../types';
-
-type PoolConfig = {
-  /** Whether or not to automatically detect and share current external ip address on startup. */
-  detectexternalip: boolean;
-
-  /** If false, don't send GET_NODES when connecting, defaults to true. */
-  discover: boolean;
-
-  /** Whether or not to listen for incoming connections from peers. */
-  listen: boolean;
-
-  /** Which port to listen on. If 0, a random unused port will be used. */
-  port: number;
-
-  /**
-   * An array of IP addresses or host names which can be used to connect to this server.
-   * It will be advertised with peers for them to try to connect to the server in the future.
-   */
-  addresses: string[];
-};
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
@@ -209,7 +189,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config);
         await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
@@ -332,7 +312,7 @@ class Pool extends EventEmitter {
       throw errors.ALREADY_CONNECTING(nodePubKey);
     }
 
-    const peer = new Peer(this.logger, address);
+    const peer = new Peer(this.logger, address, this.config);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -460,7 +440,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger);
+    const peer = Peer.fromInbound(socket, this.logger, this.config);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
@@ -587,11 +567,6 @@ class Pool extends EventEmitter {
     if (this.handshakeData.pairs.length > 0) {
       // request peer's orders
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
-    }
-
-    if (this.config.discover) {
-      // request peer's known nodes only if p2p.discover option is true
-      peer.sendPacket(new packets.GetNodesPacket());
     }
 
     // if outbound, update the `lastConnected` field for the address we're actually connected to

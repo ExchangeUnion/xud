@@ -8,7 +8,7 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
-import { HandshakeState, Address, NodeConnectionInfo } from '../types/p2p';
+import { HandshakeState, Address, NodeConnectionInfo, PoolConfig } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
 
@@ -48,6 +48,8 @@ class Peer extends EventEmitter {
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
   public active = false; // added to peer list
+  /** Timer to periodically call getNodes #402 */
+  public discoverTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;
   private parser: Parser = new Parser();
@@ -112,7 +114,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address) {
+  constructor(private logger: Logger, public address: Address, private config: PoolConfig) {
     super();
 
     this.bindParser(this.parser);
@@ -121,8 +123,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket));
+  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), config);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -190,6 +192,18 @@ class Peer extends EventEmitter {
 
     // TODO: Check that the peer's version is compatible with ours
 
+    // request peer's known nodes only if p2p.discover option is true
+    if (this.config.discover) {
+      this.sendPacket(new packets.GetNodesPacket());
+      if (this.config.discoverminutes === 0) {
+        // timer is disabled
+        this.discoverTimer = undefined; // defensive programming
+      } else {
+        // timer is enabled
+        this.discoverTimer = setInterval(this.sendGetNodes, this.config.discoverminutes * 1000 * 60);
+      }
+    }
+
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
@@ -224,6 +238,11 @@ class Peer extends EventEmitter {
     if (this.retryConnectionTimer) {
       clearTimeout(this.retryConnectionTimer);
       this.retryConnectionTimer = undefined;
+    }
+
+    if (this.discoverTimer) {
+      clearInterval(this.discoverTimer);
+      this.discoverTimer = undefined;
     }
 
     if (this.pingTimer) {
@@ -614,6 +633,14 @@ class Peer extends EventEmitter {
 
   private sendPing = (): packets.PingPacket => {
     const packet = new packets.PingPacket();
+
+    this.sendPacket(packet);
+
+    return packet;
+  }
+
+  private sendGetNodes = (): packets.PingPacket => {
+    const packet =  new packets.GetNodesPacket();
 
     this.sendPacket(packet);
 

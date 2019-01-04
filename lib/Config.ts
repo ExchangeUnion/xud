@@ -3,11 +3,11 @@ import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
 import { exists, mkdir, readFile } from './utils/fsUtils';
-import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
 import { Network } from './types/enums';
+import { PoolConfig } from './types/p2p';
 
 class Config {
   public p2p: PoolConfig;
@@ -63,6 +63,7 @@ class Config {
     this.p2p = {
       listen: true,
       discover: true,
+      discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],

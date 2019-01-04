@@ -109,9 +109,13 @@ const { argv } = require('yargs')
       default: undefined,
     },
     'p2p.discover': {
-      describe: 'Automatically discover and connect to new nodes',
+      describe: 'Automatically discover and connect to new nodes with discoverminutes interval',
       type: 'boolean',
       default: undefined,
+    },
+    'p2p.discoverminutes': {
+      describe: 'Interval minutes for discover option',
+      type: 'number',
     },
     'p2p.detectexternalip': {
       describe: 'Detect and advertise external ip address to peers',
