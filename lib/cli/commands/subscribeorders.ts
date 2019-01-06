@@ -10,7 +10,7 @@ export const builder = {
   existing: {
     description: 'should return existing orders',
     type: 'boolean',
-    default: false,
+    default: true,
   },
 };
 

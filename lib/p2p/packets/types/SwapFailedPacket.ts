@@ -1,13 +1,14 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import SwapCompletePacket from './SwapCompletePacket';
 import { removeUndefinedProps } from '../../../utils/utils';
+import { SwapFailureReason } from '../../../types/enums';
 
 // TODO: proper error handling
 export type SwapFailedPacketBody = {
   rHash: string;
-  errorMessage: string;
+  failureReason: SwapFailureReason;
+  errorMessage?: string;
 };
 
 class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
@@ -31,7 +32,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
   private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.hash
-      && obj.rhash
+      && obj.rHash
     );
   }
 
@@ -40,12 +41,13 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
       header: removeUndefinedProps({
         id: obj.id,
         hash: obj.hash,
-        reqId: obj.reqid || undefined,
+        reqId: obj.reqId || undefined,
       }),
-      body: {
-        rHash: obj.rhash,
-        errorMessage: obj.errormessage,
-      },
+      body: removeUndefinedProps({
+        rHash: obj.rHash,
+        errorMessage: obj.errorMessage || undefined,
+        failureReason: obj.failureReason,
+      }),
     });
   }
 
@@ -53,9 +55,12 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     const msg = new pb.SwapFailedPacket();
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setReqid(this.header.reqId!);
-    msg.setRhash(this.body!.rHash);
-    msg.setErrormessage(this.body!.errorMessage);
+    msg.setReqId(this.header.reqId!);
+    msg.setRHash(this.body!.rHash);
+    if (this.body!.errorMessage) {
+      msg.setErrorMessage(this.body!.errorMessage!);
+    }
+    msg.setFailureReason(this.body!.failureReason);
 
     return msg.serializeBinary();
   }

@@ -4,7 +4,7 @@ import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
-import { DisconnectionReason } from '../../lib/types/enums';
+import { DisconnectionReason, SwapFailureReason } from '../../lib/types/enums';
 import uuid = require('uuid');
 import {Address, NodeState, NodeStateUpdate} from '../../lib/types/p2p';
 import {HelloRequestPacketBody} from "../../lib/p2p/packets/types/HelloRequestPacket";
@@ -37,8 +37,9 @@ describe('Parser', () => {
     return new Promise((resolve, reject) => {
       wait(packets.length)
         .then((parsedPackets) => {
-          for (let i = 0; i <= packets.length; i += 1) {
+          for (let i = 0; i < packets.length; i += 1) {
             expect(packets[i]).to.deep.equal(parsedPackets[i]);
+            expect(packets[i].type).to.equal(parsedPackets[i].type);
           }
           resolve();
         })
@@ -275,12 +276,14 @@ describe('Parser', () => {
 
     const swapFailedPacketBody = {
       rHash: uuid(),
-      errorMessage: uuid(),
+      errorMessage: 'this is a test',
+      failureReason: SwapFailureReason.SendPaymentFailure,
     };
     testValidPacket(new packets.SwapFailedPacket(swapFailedPacketBody));
     testValidPacket(new packets.SwapFailedPacket(swapFailedPacketBody, uuid()));
-    testValidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, errorMessage: undefined })));
-    testInvalidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, rHash: undefined })));
+    testValidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, errorMessage: undefined })));
+    testInvalidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, rHash: undefined })));
+    testInvalidPacket(new packets.SwapFailedPacket(removeUndefinedProps({ ...swapFailedPacketBody, failureReason: undefined })));
 
   });
   describe('test TCP segmentation/concatenation support', () => {
@@ -305,7 +308,7 @@ describe('Parser', () => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.UnknownPacketType) {
+          if (err && err.type === ParserErrorType.InvalidPacket) {
             done();
           } else {
             done(err);

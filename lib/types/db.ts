@@ -58,8 +58,10 @@ export type OrderInstance = OrderAttributes & Sequelize.Instance<OrderAttributes
 export type TradeFactory = {
   /** The order id of the maker order involved in this trade. */
   makerOrderId: string,
-  /** The order id of the taker order involved in this trade. */
-  takerOrderId: string,
+  /** The order id of the taker order involved in this trade, if applicable. */
+  takerOrderId?: string,
+  /** The rHash of the swap that filled this trade, if applicable. */
+  rHash?: string,
   /** The quantity transacted in this trade. */
   quantity: number,
 };

@@ -1,5 +1,8 @@
 import net from 'net';
 import { SinonSpy } from 'sinon';
+import { ms } from '../lib/utils/utils';
+import { PeerOrder, OwnOrder } from '../lib/types/orders';
+import uuidv1 from 'uuid';
 
 /**
  * Discovers and returns a dynamically assigned, unused port available for testing.
@@ -37,3 +40,33 @@ export const waitForSpy = (spy: SinonSpy, property = 'called') => {
     }
   });
 };
+
+export const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms(), pairId = 'LTC/BTC'): OwnOrder => ({
+  price,
+  quantity,
+  isBuy,
+  pairId,
+  createdAt,
+  initialQuantity: quantity,
+  id: uuidv1(),
+  localId: uuidv1(),
+  hold: 0,
+});
+
+export const createPeerOrder = (
+  price: number,
+  quantity: number,
+  isBuy: boolean,
+  createdAt = ms(),
+  peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
+  pairId = 'LTC/BTC',
+): PeerOrder => ({
+  quantity,
+  price,
+  isBuy,
+  pairId,
+  createdAt,
+  peerPubKey,
+  initialQuantity: quantity,
+  id: uuidv1(),
+});
