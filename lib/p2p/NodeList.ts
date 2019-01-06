@@ -12,9 +12,10 @@ export const reputationEventWeight = {
   [ReputationEvent.PacketTimeout]: -1,
   [ReputationEvent.SwapFailure]: -10,
   [ReputationEvent.SwapSuccess]: 1,
-  [ReputationEvent.InvalidMessage]: -10,
+  [ReputationEvent.InvalidPacket]: -10,
   [ReputationEvent.UnknownPacketType]: -20,
-  [ReputationEvent.UnparseableMessage]: -10,
+  [ReputationEvent.PacketDataIntegrityError]: -20,
+  [ReputationEvent.MaxParserBufferSizeExceeded]: -20,
 };
 
 // TODO: inform node about getting banned
@@ -28,7 +29,7 @@ interface NodeList {
 /** Represents a list of nodes for managing network peers activity */
 class NodeList extends EventEmitter {
   private nodes = new Map<string, NodeInstance>();
-  private bannedNodes = new Set<string>();
+  private bannedNodes = new Map<string, NodeInstance>();
 
   private static readonly BAN_THRESHOLD = -50;
 
@@ -79,7 +80,7 @@ class NodeList extends EventEmitter {
 
     nodes.forEach(async (node) => {
       if (node.banned) {
-        this.bannedNodes.add(node.nodePubKey);
+        this.bannedNodes.set(node.nodePubKey, node);
       } else {
         this.nodes.set(node.nodePubKey, node);
         const events = await this.repository.getReputationEvents(node);
@@ -132,7 +133,8 @@ class NodeList extends EventEmitter {
    * @return true if the specified node exists and the event was added, false otherwise
    */
   public addReputationEvent = async (nodePubKey: string, event: ReputationEvent): Promise<boolean> => {
-    const node = this.nodes.get(nodePubKey);
+    const node = this.isBanned(nodePubKey) ? this.bannedNodes.get(nodePubKey) : this.nodes.get(nodePubKey);
+
     if (node) {
       const promises: PromiseLike<any>[] = [
         this.repository.addReputationEvent({ event, nodeId: node.id }),
@@ -142,7 +144,7 @@ class NodeList extends EventEmitter {
 
       if (node.reputationScore < NodeList.BAN_THRESHOLD) {
         promises.push(this.setBanStatus(node, true));
-        this.bannedNodes.add(node.nodePubKey);
+        this.bannedNodes.set(node.nodePubKey, node);
         this.nodes.delete(node.nodePubKey);
 
         const events = await this.repository.getReputationEvents(node);

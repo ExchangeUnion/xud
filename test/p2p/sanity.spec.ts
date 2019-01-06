@@ -72,10 +72,10 @@ describe('P2P Sanity Tests', () => {
       .to.be.rejectedWith('already connected');
   });
 
-  it('should disconnect successfully', async () => {
-    await expect(nodeOne['pool']['closePeer'](nodeTwo.nodePubKey, DisconnectionReason.NotAcceptingConnections)).to.be.fulfilled;
+  it('should disconnect successfully', () => {
+    nodeOne['pool']['closePeer'](nodeTwo.nodePubKey, DisconnectionReason.NotAcceptingConnections);
 
-    const listPeersResult = await nodeOne.service.listPeers();
+    const listPeersResult = nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
 
