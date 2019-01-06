@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import { Pair } from '../types/orders';
 import crypto from 'crypto';
 import { promisify } from 'util';
+import moment from 'moment';
 
 export type UriParts = {
   nodePubKey: string;
@@ -75,9 +76,9 @@ export const isEmptyObject = (val: any): boolean => {
   return isObject(val) && Object.keys(val).length === 0;
 };
 
-/** Get the current date in the LocaleString format.
+/** Get the current date in the given dateFormat, if not provided formats with `YYYY-MM-DD hh:mm:ss.sss`.
  */
-export const getTsString = (): string => (new Date()).toLocaleString();
+export const getTsString = (dateFormat?: string): string => moment().format(dateFormat || 'YYYY-MM-DD hh:mm:ss.sss');
 
 /**
  * Recursively merge properties from different sources into a target object, overriding any

@@ -14,6 +14,7 @@ class Config {
   public xudir: string;
   public loglevel: string;
   public logpath: string;
+  public logdateformat: string;
   public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
@@ -58,6 +59,7 @@ class Config {
     this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
+    this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = Network.TestNet;
 
     this.p2p = {

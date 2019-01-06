@@ -63,7 +63,7 @@ class Xud extends EventEmitter {
    */
   public start = async (args?: { [argName: string]: any }) => {
     await this.config.load(args);
-    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid);
+    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
     this.logger = loggers.global;
     this.logger.info('config loaded');
 

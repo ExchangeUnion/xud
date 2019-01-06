@@ -23,6 +23,10 @@ const { argv } = require('yargs')
       describe: 'Path to the log file',
       type: 'string',
     },
+    logdateformat: {
+      describe: 'Format of the logger date',
+      type: 'string',
+    },
     network: {
       describe: 'The network the lnd clients are using',
       type: 'string',
