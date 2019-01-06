@@ -11,6 +11,9 @@ import { Packet, PacketDirection, PacketType } from './packets';
 import { HandshakeState, Address, NodeConnectionInfo, PoolConfig } from '../types/p2p';
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
+import semver from 'semver';
+
+const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -80,6 +83,10 @@ class Peer extends EventEmitter {
   private static readonly CONNECTION_RETRIES_MAX_DELAY = 3600000;
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
+
+  private get version(): string {
+    return this.handshakeState ? this.handshakeState.version : '';
+  }
 
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
@@ -190,7 +197,16 @@ class Peer extends EventEmitter {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
-    // TODO: Check that the peer's version is compatible with ours
+    // Check if version is semantic, and higher than minCompatibleVersion.
+    if (!semver.valid(this.version)) {
+      this.close(DisconnectionReason.MalformedVersion);
+      throw errors.MALFORMED_VERSION(addressUtils.toString(this.address), this.version);
+    }
+    // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
+    if (semver.compare(this.version, minCompatibleVersion) === -1) {
+      this.close(DisconnectionReason.IncompatibleProtocolVersion);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), minCompatibleVersion, this.version);
+    }
 
     // request peer's known nodes only if p2p.discover option is true
     if (this.config.discover) {

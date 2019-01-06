@@ -1,5 +1,6 @@
 {
   "name": "xud",
+  "minCompatibleVersion": "1.0.0-alpha.3",
   "version": "1.0.0-alpha.6",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
@@ -118,6 +119,7 @@
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
     "@types/json-stable-stringify": "^1.0.32",
+    "@types/semver": "^5.5.0",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
@@ -134,6 +136,7 @@
     "moment": "^2.23.0",
     "node-forge": "^0.7.6",
     "secp256k1": "^3.5.0",
+    "semver": "^5.6.0",
     "sequelize": "^4.37.3",
     "sqlite3": "^4.0.2",
     "swagger-ui-express": "^3.0.10",
