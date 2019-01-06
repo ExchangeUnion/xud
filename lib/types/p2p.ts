@@ -12,7 +12,7 @@ export type NodeConnectionInfo = {
   lastAddress?: Address;
 };
 
-export type HandshakeState = {
+export type NodeState = {
   version: string;
   nodePubKey: string;
   addresses?: Address[];
@@ -22,15 +22,10 @@ export type HandshakeState = {
   lndltcPubKey?: string;
 };
 
-export type HandshakeStateUpdate = {
+export type NodeStateUpdate = {
   addresses?: Address[];
-  pairs?: string[];
+  pairs: string[];
   raidenAddress?: string;
   lndbtcPubKey?: string;
   lndltcPubKey?: string;
 };
-
-export function isHandshakeState(obj: any): obj is HandshakeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && Array.isArray(obj.addresses)
-    && Array.isArray(obj.pairs);
-}

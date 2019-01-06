@@ -16,8 +16,14 @@ enum ParserErrorType {
 const fromRaw = (type: number, binary: Uint8Array): Packet => {
   let packetOrPbObj;
   switch (type) {
-    case PacketType.Hello:
-      packetOrPbObj = packetTypes.HelloPacket.deserialize(binary);
+    case PacketType.HelloRequest:
+      packetOrPbObj = packetTypes.HelloRequestPacket.deserialize(binary);
+      break;
+    case PacketType.HelloResponse:
+      packetOrPbObj = packetTypes.HelloResponsePacket.deserialize(binary);
+      break;
+    case PacketType.NodeStateUpdate:
+      packetOrPbObj = packetTypes.NodeStateUpdatePacket.deserialize(binary);
       break;
     case PacketType.Disconnecting:
       packetOrPbObj = packetTypes.DisconnectingPacket.deserialize(binary);
