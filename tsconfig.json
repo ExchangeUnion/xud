@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "noEmitOnError": false,
     "lib": ["dom","ES2017"],
+    "declaration": true,
 
     /* Additional Checks */
     "noUnusedLocals": false,                  /* Report errors on unused locals. */

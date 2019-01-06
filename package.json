@@ -1,6 +1,7 @@
 {
   "name": "xud",
-  "version": "1.0.0-alpha.5",
+  "minCompatibleVersion": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.6",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -56,8 +57,8 @@
       "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\hash_resolver.proto proto\\lndrpc.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
     },
     "proto:p2p": {
-      "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/xudp2p.proto",
-      "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/grpc_tools_node_protoc_ts/bin/protoc-gen-ts' -I='proto' proto/xudp2p.proto",
+      "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/xudp2p.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/xudp2p.proto",
       "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudp2p.proto"
     },
     "swagger": {
@@ -119,6 +120,7 @@
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.3.6",
     "@types/json-stable-stringify": "^1.0.32",
+    "@types/semver": "^5.5.0",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
@@ -132,8 +134,10 @@
     "grpc": "^1.13.1",
     "gulp": "^4.0.0",
     "json-stable-stringify": "^1.0.1",
+    "moment": "^2.23.0",
     "node-forge": "^0.7.6",
     "secp256k1": "^3.5.0",
+    "semver": "^5.6.0",
     "sequelize": "^4.37.3",
     "sqlite3": "^4.0.2",
     "swagger-ui-express": "^3.0.10",

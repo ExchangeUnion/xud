@@ -33,20 +33,23 @@ class OrderbookRepository {
   }
 
   /**
-   * Only persist order if it doesn't exists.
+   * Adds an order to the database if it doesn't already exist.
    * @param order order to persist
+   * @returns the created order instance, or undefined if it already existed
    */
   public addOrderIfNotExists = async (order: db.OrderFactory) => {
     const count = await this.models.Order.count({
       where: { id: order.id },
     });
     if (count === 0) {
-      await this.models.Order.create(order);
+      return this.models.Order.create(order);
+    } else {
+      return undefined;
     }
   }
 
-  public addTrade = async (trade: db.TradeFactory) => {
-    await this.models.Trade.create(trade);
+  public addTrade = (trade: db.TradeFactory) => {
+    return this.models.Trade.create(trade);
   }
 }
 

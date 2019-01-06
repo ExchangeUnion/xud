@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState } from '../types/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason } from '../types/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -107,9 +107,10 @@ class Swaps extends EventEmitter {
   /**
    * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = (peer: Peer, rHash: string, errorMessage: string, reqId?: string) => {
+  private sendErrorToPeer = (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
+      failureReason,
       errorMessage,
     };
     this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
@@ -119,8 +120,8 @@ class Swaps extends EventEmitter {
 
   /**
    * Verifies LND setup. Make sure we are connected to BTC and LTC and that
-   * the peer is also connected to these networks. Returns an error message
-   * or undefined in case all is good.
+   * the peer has provided pub keys for these networks.
+   * @returns undefined if the setup is verified, otherwise an error message
    */
   private verifyLndSetup = (deal: SwapDeal, peer: Peer) => {
     if (!peer.getLndPubKey(deal.takerCurrency)) {
@@ -181,10 +182,8 @@ class Swaps extends EventEmitter {
     switch (currency) {
       case 'BTC':
         return this.lndBtcClient;
-        break;
       case 'LTC':
         return this.lndLtcClient;
-        break;
       default:
         return;
     }
@@ -326,7 +325,7 @@ class Swaps extends EventEmitter {
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
       this.logger.error(errMsg);
-      this.setDealState(deal, SwapState.Error, errMsg);
+      this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
       return;
     }
     peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
@@ -346,7 +345,7 @@ class Swaps extends EventEmitter {
     // TODO: multi route support (currently only 1)
 
     if (this.usedHashes.has(requestPacket.body!.rHash)) {
-      this.sendErrorToPeer(peer, requestPacket.body!.rHash, 'this rHash already exists', requestPacket.header.id);
+      this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
       return false;
     }
     const requestBody = requestPacket.body!;
@@ -384,18 +383,15 @@ class Swaps extends EventEmitter {
     // the peer is also connected to these networks.
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
-      this.setDealState(deal, SwapState.Error, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
-    let lndclient: LndClient | undefined;
-    try {
-      lndclient = this.getClientForCurrency(deal.takerCurrency);
-      if (!lndclient) throw new Error('swap client not found');
-    } catch {
-      this.setDealState(deal, SwapState.Error, 'Can not swap. Unsupported taker currency.');
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+    const lndclient = this.getClientForCurrency(deal.takerCurrency);
+    if (!lndclient) {
+      this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency');
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -403,12 +399,12 @@ class Swaps extends EventEmitter {
       deal.makerToTakerRoutes = await this.getRoutes(deal.takerCurrency, takerAmount, deal.peerPubKey);
       if (deal.makerToTakerRoutes.length === 0) throw new Error();
     } catch (err) {
-      const cannotSwap = 'Can not swap. unable to find route to destination';
+      const cannotSwap = 'Unable to find route to destination';
       const errMsg = err && err.message
-        ? `${cannotSwap}.`
+        ? `${cannotSwap}`
         : `${cannotSwap}: ${err.message}`;
-      this.setDealState(deal, SwapState.Error, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.failDeal(deal, SwapFailureReason.NoRouteFound, errMsg);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -418,8 +414,8 @@ class Swaps extends EventEmitter {
       height = info.getBlockHeight();
       this.logger.debug('got block height of ' + height);
     } catch (err) {
-      this.setDealState(deal, SwapState.Error, 'Can not swap. Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.rHash, deal.errorReason!, requestPacket.header.id);
+      this.failDeal(deal, SwapFailureReason.UnexpectedLndError, 'Unable to fetch block height: ' + err.message);
+      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -468,11 +464,11 @@ class Swaps extends EventEmitter {
     if (quantity) {
       deal.quantity = quantity; // set the accepted quantity for the deal
       if (quantity <= 0) {
-        this.setDealState(deal, SwapState.Error, 'accepted quantity must be a positive number');
+        this.failDeal(deal, SwapFailureReason.InvalidSwapPacketReceived, 'accepted quantity must be a positive number');
         // TODO: penalize peer
         return;
       } else if (quantity > deal.proposedQuantity) {
-        this.setDealState(deal, SwapState.Error, 'accepted quantity should not be greater than proposed quantity');
+        this.failDeal(deal, SwapFailureReason.InvalidSwapPacketReceived, 'accepted quantity should not be greater than proposed quantity');
         // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
@@ -505,7 +501,7 @@ class Swaps extends EventEmitter {
     // TODO: use timeout on call
 
     try {
-      this.setDealPhase(deal,  SwapPhase.AmountSent);
+      this.setDealPhase(deal,  SwapPhase.SendingAmount);
       const sendPaymentResponse = await cmdLnd.sendPaymentSync(request);
       if (sendPaymentResponse.getPaymentError()) {
         throw new Error(sendPaymentResponse.getPaymentError());
@@ -521,12 +517,11 @@ class Swaps extends EventEmitter {
       peer.sendPacket(new packets.SwapCompletePacket(responseBody));
 
     } catch (err) {
-      this.logger.error(`Got exception from sendPaymentSync ${JSON.stringify(request.toObject())}`, err.message);
-      this.setDealState(deal, SwapState.Error, err.message);
+      this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err.message);
+      this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
       this.sendErrorToPeer(peer, rHash, err.message);
       return;
     }
-
   }
 
   /**
@@ -555,8 +550,7 @@ class Swaps extends EventEmitter {
         destination = 'Taker';
         break;
       default:
-        this.setDealState(deal, SwapState.Error,
-          'Unknown role detected');
+        this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Unknown role detected');
         return false;
     }
     // convert expected amount to mSat
@@ -564,8 +558,7 @@ class Swaps extends EventEmitter {
 
     if (amount < expectedAmount) {
       this.logger.error(`received ${amount} mSat, expected ${expectedAmount} mSat`);
-      this.setDealState(deal, SwapState.Error,
-          `Amount sent from ${source} to ${destination} is too small`);
+      this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, `Amount sent from ${source} to ${destination} is too small`);
       return false;
     }
 
@@ -573,8 +566,7 @@ class Swaps extends EventEmitter {
     if (cltvDelta - 1 > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
       this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
       this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
-      this.setDealState(deal, SwapState.Error,
-          `cltvDelta sent from ${source} to ${destination} is too small`);
+      this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, `cltvDelta sent from ${source} to ${destination} is too small`);
       return false;
     }
     return true;
@@ -596,7 +588,7 @@ class Swaps extends EventEmitter {
     }
 
     if (!this.validateResolveRequest(deal, resolveRequest)) {
-      return deal.errorReason;
+      return deal.errorMessage;
     }
 
     if (deal.role === SwapRole.Maker) {
@@ -618,11 +610,11 @@ class Swaps extends EventEmitter {
       request.setPaymentHashString(deal.rHash);
 
       try {
-        this.setDealPhase(deal, SwapPhase.AmountSent);
+        this.setDealPhase(deal, SwapPhase.SendingAmount);
         const response = await cmdLnd.sendToRouteSync(request);
         if (response.getPaymentError()) {
           this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
-          this.setDealState(deal, SwapState.Error, response.getPaymentError());
+          this.failDeal(deal, SwapFailureReason.SendPaymentFailure, response.getPaymentError());
           return response.getPaymentError();
         }
 
@@ -631,7 +623,7 @@ class Swaps extends EventEmitter {
         return deal.rPreimage;
       } catch (err) {
         this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()) + err.message);
-        this.setDealState(deal, SwapState.Error, err.message);
+        this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
         return 'Got exception from sendPaymentSync' + err.message;
       }
     } else {
@@ -644,20 +636,21 @@ class Swaps extends EventEmitter {
 
   }
 
-  private setDealState = (deal: SwapDeal, newState: SwapState, newStateReason: string): void => {
+  private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
-    if (deal.state === newState && deal.state === SwapState.Error) {
-      deal.errorReason = deal.errorReason + '; ' + newStateReason;
-      this.logger.debug('new deal state reason: ' + deal.errorReason);
+    if (deal.state === SwapState.Error) {
+      if (errorMessage) {
+        deal.errorMessage = deal.errorMessage ? deal.errorMessage + '; ' + errorMessage : errorMessage;
+      }
+      this.logger.debug('new deal error message: ' + deal.errorMessage);
       return;
     }
     assert(deal.state === SwapState.Active, 'deal is not Active. Can not change deal state');
-    deal.state = newState;
-    deal.errorReason = newStateReason;
-    if (deal.state === SwapState.Error) {
-      this.emit('swap.failed', deal);
-    }
+    deal.state = SwapState.Error;
+    deal.failureReason = failureReason;
+    deal.errorMessage = errorMessage;
+    this.emit('swap.failed', deal);
   }
 
   private setDealPhase = (deal: SwapDeal, newPhase: SwapPhase): void => {
@@ -677,20 +670,20 @@ class Swaps extends EventEmitter {
         assert(deal.phase === SwapPhase.SwapCreated, 'SwapAgreed can be only be set after SwapCreated');
         this.logger.debug('Sending swap response to peer ');
         break;
-      case SwapPhase.AmountSent:
+      case SwapPhase.SendingAmount:
         assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||
           deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed,
-            'AmountSent can only be set after SwapRequested (taker) or SwapAgreed (maker)');
+            'SendingAmount can only be set after SwapRequested (taker) or SwapAgreed (maker)');
         deal.executeTime = Date.now();
         break;
       case SwapPhase.AmountReceived:
-        assert(deal.phase === SwapPhase.AmountSent, 'AmountReceived can be only be set after AmountSent');
+        assert(deal.phase === SwapPhase.SendingAmount, 'AmountReceived can be only be set after SendingAmount');
         this.logger.debug('Amount received for preImage ' + deal.rPreimage);
         break;
       case SwapPhase.SwapCompleted:
         assert(deal.phase === SwapPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
         deal.completeTime = Date.now();
-        this.setDealState(deal, SwapState.Completed, 'Swap completed. preimage = ' + deal.rPreimage);
+        deal.state = SwapState.Completed;
         this.logger.debug('Swap completed. preimage = ' + deal.rPreimage);
         break;
       default:
@@ -729,14 +722,14 @@ class Swaps extends EventEmitter {
     return this.persistDeal(deal);
   }
 
-  private handleSwapFailed = (error: packets.SwapFailedPacket) => {
-    const { rHash, errorMessage } = error.body!;
+  private handleSwapFailed = (packet: packets.SwapFailedPacket) => {
+    const { rHash, errorMessage, failureReason } = packet.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
       this.logger.error(`received swap error for unknown deal payment hash ${rHash}`);
       return;
     }
-    this.setDealState(deal, SwapState.Error, errorMessage);
+    this.failDeal(deal, failureReason, errorMessage);
     return this.persistDeal(deal);
   }
 

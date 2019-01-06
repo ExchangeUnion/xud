@@ -22,7 +22,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
       && obj.hash
       && obj.id
       && obj.order
-      && obj.order.pairid
+      && obj.order.pairId
       && obj.order.price
       && obj.order.quantity
     );
@@ -36,10 +36,10 @@ class OrderPacket extends Packet<OutgoingOrder> {
       },
       body: {
         id: obj.order!.id,
-        pairId: obj.order!.pairid,
+        pairId: obj.order!.pairId,
         price: obj.order!.price,
         quantity: obj.order!.quantity,
-        isBuy: obj.order!.isbuy,
+        isBuy: obj.order!.isBuy,
       },
     });
   }
@@ -47,10 +47,10 @@ class OrderPacket extends Packet<OutgoingOrder> {
   public serialize(): Uint8Array {
     const pbOrder = new pb.Order();
     pbOrder.setId(this.body!.id);
-    pbOrder.setPairid(this.body!.pairId);
+    pbOrder.setPairId(this.body!.pairId);
     pbOrder.setPrice(this.body!.price);
     pbOrder.setQuantity(this.body!.quantity);
-    pbOrder.setIsbuy(this.body!.isBuy);
+    pbOrder.setIsBuy(this.body!.isBuy);
 
     const msg = new pb.OrderPacket();
     msg.setId(this.header.id);

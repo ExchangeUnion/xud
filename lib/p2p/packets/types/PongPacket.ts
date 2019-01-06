@@ -19,7 +19,7 @@ class PongPacket extends Packet<undefined> {
 
   private static validate = (obj: pb.PongPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.reqid
+      && obj.reqId
     );
   }
 
@@ -27,7 +27,7 @@ class PongPacket extends Packet<undefined> {
     return new PongPacket({
       header: {
         id: obj.id,
-        reqId: obj.reqid,
+        reqId: obj.reqId,
       },
     });
   }
@@ -35,7 +35,7 @@ class PongPacket extends Packet<undefined> {
   public serialize(): Uint8Array {
     const msg = new pb.PongPacket();
     msg.setId(this.header.id);
-    msg.setReqid(this.header.reqId!);
+    msg.setReqId(this.header.reqId!);
 
     return msg.serializeBinary();
   }

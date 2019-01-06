@@ -13,10 +13,11 @@ import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
-import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder } from '../types/orders';
+import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order } from '../types/orders';
 import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult, SwapDeal } from 'lib/swaps/types';
+import Bluebird from 'bluebird';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -77,6 +78,11 @@ class OrderBook extends EventEmitter {
     this.bindSwaps();
   }
 
+  private static createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
+    const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
+    return outgoingOrder ;
+  }
+
   private bindPool = () => {
     if (this.pool) {
       this.pool.on('packet.order', this.addPeerOrder);
@@ -84,24 +90,26 @@ class OrderBook extends EventEmitter {
       this.pool.on('packet.getOrders', this.sendOrders);
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
+      this.pool.on('peer.pairDropped', this.removePeerPair);
     }
   }
 
   private bindSwaps = () => {
     if (this.swaps) {
-      this.swaps.on('swap.paid', (swapResult) => {
+      this.swaps.on('swap.paid', async (swapResult) => {
         if (swapResult.role === SwapRole.Maker) {
           const { orderId, pairId, quantity, peerPubKey } = swapResult;
 
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
+          await this.persistTrade(swapResult.quantity, this.getOwnOrder(swapResult.orderId, swapResult.pairId), undefined, swapResult.rHash);
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         }
       });
       this.swaps.on('swap.failed', (deal) => {
-        if (deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed) {
+        if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
           // if our order is the maker and the swap failed after it was agreed to but before it was executed
           // we must release the hold on the order that we set when we agreed to the deal
           this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -201,7 +209,7 @@ class OrderBook extends EventEmitter {
     this.currencies.set(currencyInstance.id, currencyInstance);
   }
 
-  public removeCurrency = (currencyId: string) => {
+  public removeCurrency = (currencyId: string): Bluebird<void> => {
     const currency = this.currencies.get(currencyId);
     if (currency) {
       for (const pair of this.pairs.values()) {
@@ -368,7 +376,7 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.persistTrade(swapResult.quantity, maker, taker);
+      await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
       return swapResult;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
@@ -394,12 +402,17 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  private persistTrade = async (quantity: number, makerOrder: orders.PeerOrder | orders.OwnOrder, takerOrder: orders.OwnOrder | orders.PeerOrder) => {
-    await Promise.all([this.repository.addOrderIfNotExists(makerOrder), this.repository.addOrderIfNotExists(takerOrder)]);
+  private persistTrade = async (quantity: number, makerOrder: Order, takerOrder?: OwnOrder, rHash?: string) => {
+    const addOrderPromises = [this.repository.addOrderIfNotExists(makerOrder)];
+    if (takerOrder) {
+      addOrderPromises.push(this.repository.addOrderIfNotExists(takerOrder));
+    }
+    await Promise.all(addOrderPromises);
     await this.repository.addTrade({
       quantity,
+      rHash,
       makerOrderId: makerOrder.id,
-      takerOrderId: takerOrder.id,
+      takerOrderId: takerOrder ? takerOrder.id : undefined,
     });
   }
 
@@ -520,25 +533,30 @@ class OrderBook extends EventEmitter {
    * Removes all or part of a peer order from the order book and emits the `peerOrder.invalidation` event.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    */
-  public removePeerOrder = (orderId: string, pairId: string, peerPubKey: string, quantityToRemove?: number):
+  public removePeerOrder = (orderId: string, pairId: string, peerPubKey?: string, quantityToRemove?: number):
     { order: PeerOrder, fullyRemoved: boolean } => {
     const tp = this.getTradingPair(pairId);
     return tp.removePeerOrder(orderId, peerPubKey, quantityToRemove);
   }
 
-  private removePeerOrders = async (peer: Peer): Promise<void> => {
-    if (!peer.nodePubKey) {
+  private removePeerOrders = (peerPubKey?: string) => {
+    if (!peerPubKey) {
       return;
     }
 
-    this.tradingPairs.forEach((tp) => {
-      const orders = tp.removePeerOrders(peer.nodePubKey!);
-      orders.forEach((order) => {
-        this.emit('peerOrder.invalidation', order);
-      });
-    });
+    for (const pairId of this.pairs.keys()) {
+      this.removePeerPair(peerPubKey, pairId);
+    }
 
-    this.logger.debug(`removed all orders for peer ${peer.nodePubKey}`);
+    this.logger.debug(`removed all orders for peer ${peerPubKey}`);
+  }
+
+  private removePeerPair = (peerPubKey: string, pairId: string) => {
+    const tp = this.getTradingPair(pairId);
+    const orders = tp.removePeerOrders(peerPubKey);
+    orders.forEach((order) => {
+      this.emit('peerOrder.invalidation', order);
+    });
   }
 
   /**
@@ -552,8 +570,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(this.createOutgoingOrder(order)));
+        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     peer.sendOrders(outgoingOrders, reqId);
@@ -565,7 +583,7 @@ class OrderBook extends EventEmitter {
   private broadcastOrder = (order: orders.OwnOrder) => {
     if (this.pool) {
       if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
-        const outgoingOrder = this.createOutgoingOrder(order);
+        const outgoingOrder = OrderBook.createOutgoingOrder(order);
         this.pool.broadcastOrder(outgoingOrder);
       }
     }
@@ -581,11 +599,6 @@ class OrderBook extends EventEmitter {
     }
 
     return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
-  }
-
-  private createOutgoingOrder = (order: orders.OwnOrder): orders.OutgoingOrder => {
-    const { createdAt, localId, ...outgoingOrder } = order;
-    return outgoingOrder;
   }
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
@@ -612,7 +625,7 @@ class OrderBook extends EventEmitter {
       // TODO: penalize peer for invalid swap request
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.InvalidSwapRequest],
+        failureReason: SwapFailureReason.InvalidSwapRequest,
       }, requestPacket.header.id));
       return;
     }
@@ -621,7 +634,7 @@ class OrderBook extends EventEmitter {
     if (!order) {
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.OrderNotFound],
+        failureReason: SwapFailureReason.OrderNotFound,
       }, requestPacket.header.id));
       return;
     }
@@ -649,7 +662,7 @@ class OrderBook extends EventEmitter {
     } else {
       peer.sendPacket(new SwapFailedPacket({
         rHash,
-        errorMessage: SwapFailureReason[SwapFailureReason.OrderOnHold],
+        failureReason: SwapFailureReason.OrderOnHold,
       }, requestPacket.header.id));
     }
   }

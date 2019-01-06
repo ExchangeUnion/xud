@@ -82,15 +82,16 @@ abstract class Packet<T = any> implements PacketInterface {
 
       if (bodyOrPacket) {
         this.body = bodyOrPacket;
-        this.header.hash = this.hash(bodyOrPacket);
+        this.header.hash = Packet.hash(bodyOrPacket);
       }
     }
   }
-  public abstract serialize(): Uint8Array;
 
-  private hash(value: any): string {
+  private static hash(value: any): string {
     return MD5(stringify(value)).toString(CryptoJS.enc.Base64);
   }
+
+  public abstract serialize(): Uint8Array;
 
   /**
    * Verify the header hash against the packet body.
@@ -104,7 +105,7 @@ abstract class Packet<T = any> implements PacketInterface {
       return false;
     }
 
-    return this.header.hash === this.hash(this.body);
+    return this.header.hash === Packet.hash(this.body);
   }
 
   /**
