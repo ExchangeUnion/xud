@@ -219,9 +219,6 @@ export class ConnectRequest extends jspb.Message {
     getNodeUri(): string;
     setNodeUri(value: string): void;
 
-    getRetryConnecting(): boolean;
-    setRetryConnecting(value: boolean): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ConnectRequest.AsObject;
@@ -236,7 +233,6 @@ export class ConnectRequest extends jspb.Message {
 export namespace ConnectRequest {
     export type AsObject = {
         nodeUri: string,
-        retryConnecting: boolean,
     }
 }
 

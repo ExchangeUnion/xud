@@ -283,9 +283,8 @@ message ChannelBalanceResponse {
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
   string node_uri = 1 [json_name = "node_uri"];
-  // Whether to apply multiple connection retry attempts.
-  bool retry_connecting = 2 [json_name = "retry_connecting"];
 }
+
 message ConnectResponse {}
 
 message BanRequest {
