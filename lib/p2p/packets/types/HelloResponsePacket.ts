@@ -26,6 +26,7 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
 
   private static validate = (obj: pb.HelloResponsePacket.AsObject): boolean => {
     return !!(obj.id
+      && obj.reqId
       && obj.hash
       && obj.sign
       && obj.peerPubKey
@@ -41,6 +42,7 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
     return new HelloResponsePacket({
       header: {
         id: obj.id,
+        reqId: obj.reqId,
         hash: obj.hash,
       },
       body: {
@@ -62,6 +64,7 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
   public serialize(): Uint8Array {
     const msg = new pb.HelloResponsePacket();
     msg.setId(this.header.id);
+    msg.setReqId(this.header.reqId!);
     msg.setHash(this.header.hash!);
     msg.setSign(this.body!.sign);
     msg.setPeerPubKey(this.body!.peerPubKey);

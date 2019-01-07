@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { getUri } from '../../lib/utils/utils';
 import { getUnusedPort } from '../utils';
 import { DisconnectionReason, ReputationEvent } from '../../lib/types/enums';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 chai.use(chaiAsPromised);
 
@@ -77,13 +78,30 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an unexpected node pub key', async () => {
-    const connectPromise = nodeOne.service.connect({ nodeUri: getUri({
-      nodePubKey: 'thewrongpubkey',
-      host: 'localhost',
-      port: nodeTwoPort,
-    }) });
+    const randomPubKey =  (await NodeKey['generate']()).nodePubKey;
+    const connectPromise = nodeOne.service.connect({
+      nodeUri: getUri({
+        nodePubKey: randomPubKey,
+        host: 'localhost',
+        port: nodeTwoPort,
+      }),
+    });
     await expect(connectPromise).to.be.rejectedWith(
-      `node at localhost:${nodeTwoPort} sent pub key ${nodeTwo.nodePubKey}, expected thewrongpubkey`);
+      `node at localhost:${nodeTwoPort} sent pub key ${nodeTwo.nodePubKey}, expected ${randomPubKey}`);
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult).to.be.empty;
+  });
+
+  it('should fail when connecting to an invalid node pub key', async () => {
+    const invalidPubKey =  '0123456789';
+    const connectPromise = nodeOne.service.connect({
+      nodeUri: getUri({
+        nodePubKey: invalidPubKey,
+        host: 'localhost',
+        port: nodeTwoPort,
+      }),
+    });
+    await expect(connectPromise).to.be.rejectedWith('Public key is not valid for specified curve');
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });

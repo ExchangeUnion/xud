@@ -10,7 +10,6 @@ import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from '../types/p2p';
-import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate, PoolConfig } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
@@ -150,12 +149,12 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Updates the handshake data and sends a new Hello packet to currently connected
+   * Updates the node state and sends node state update packet to currently connected
    * peers to notify them of the change.
    */
   public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
     this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
-    const packet = new packets.NodeStateUpdatePacket({ nodeState: this.nodeState });
+    const packet = new packets.NodeStateUpdatePacket(this.nodeState);
     this.peers.forEach((peer) => {
       peer.sendPacket(packet);
     });

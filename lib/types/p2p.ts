@@ -24,7 +24,7 @@ export type NodeState = {
 
 export type NodeStateUpdate = {
   addresses?: Address[];
-  pairs: string[];
+  pairs?: string[];
   raidenAddress?: string;
   lndbtcPubKey?: string;
   lndltcPubKey?: string;

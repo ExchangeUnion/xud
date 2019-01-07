@@ -47,7 +47,7 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
 
     msg.setId(this.header.id);
     msg.setHash(this.header.hash!);
-    msg.setPairsList(this.body!.pairs);
+    msg.setPairsList(this.body!.pairs!);
     msg.setAddressesList(this.body!.addresses!.map((addr) => {
       const pbAddr = new pb.Address();
       pbAddr.setHost(addr.host);

@@ -405,8 +405,8 @@ export class HelloResponsePacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
 
-  getReqid(): string;
-  setReqid(value: string): void;
+  getReqId(): string;
+  setReqId(value: string): void;
 
   getHash(): string;
   setHash(value: string): void;
@@ -435,7 +435,7 @@ export class HelloResponsePacket extends jspb.Message {
 export namespace HelloResponsePacket {
   export type AsObject = {
     id: string,
-    reqid: string,
+    reqId: string,
     hash: string,
     sign: string,
     peerPubKey: string,

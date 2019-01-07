@@ -106,7 +106,7 @@ class Peer extends EventEmitter {
   }
 
   public get pairs(): string[] | undefined {
-    return this.handshakeState ? this.handshakeState.pairs : undefined;
+    return this.nodeState ? this.nodeState.pairs : undefined;
   }
 
   public get connected(): boolean {
@@ -683,6 +683,7 @@ class Peer extends EventEmitter {
       if (!this.helloRequestPacket) {
         await this.wait(PacketType.HelloRequest.toString(), Peer.RESPONSE_TIMEOUT);
       }
+
       const helloRequest = this.helloRequestPacket!;
 
       // verifying signature
@@ -736,17 +737,11 @@ class Peer extends EventEmitter {
   }
 
   private handleNodeStateUpdate = (packet: packets.NodeStateUpdatePacket): void => {
-    const { nodeState } = packet.body!;
-    this.logger.verbose(`received hello packet from ${this.nodePubKey || addressUtils.toString(this.address)}: ${JSON.stringify(nodeState)}`);
-    if (this.nodePubKey && this.nodePubKey !== nodeState.nodePubKey) {
-      // peers cannot change their nodepubkey while we are connected to them
-      // TODO: penalize?
-      this.close(DisconnectionReason.ForbiddenIdentityUpdate, nodeState.nodePubKey);
-      return;
-    }
+    const nodeStateUpdate = packet.body!;
+    const peerId = this.nodePubKey || addressUtils.toString(this.address);
+    this.logger.verbose(`received node state update packet from ${peerId}: ${JSON.stringify(nodeStateUpdate)}`);
 
-    this.nodeState = nodeState;
-
+    this.nodeState = { ...this.nodeState, ...nodeStateUpdate as NodeState };
     this.emit('nodeStateUpdate');
   }
 

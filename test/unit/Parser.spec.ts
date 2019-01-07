@@ -6,8 +6,8 @@ import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
 import { DisconnectionReason, SwapFailureReason } from '../../lib/types/enums';
 import uuid = require('uuid');
-import {Address, NodeState, NodeStateUpdate} from '../../lib/types/p2p';
-import {HelloRequestPacketBody} from "../../lib/p2p/packets/types/HelloRequestPacket";
+import { Address, NodeState, NodeStateUpdate } from '../../lib/types/p2p';
+import { HelloRequestPacketBody } from '../../lib/p2p/packets/types/HelloRequestPacket';
 
 chai.use(chaiAsPromised);
 
@@ -120,15 +120,16 @@ describe('Parser', () => {
     lndltcPubKey: uuid(),
   };
 
-
   const helloRequestPacketBody: HelloRequestPacketBody = {
+    nodeState,
     sign: uuid(),
     peerPubKey: uuid(),
     ephemeralPubKey: uuid(),
-    nodeState: nodeState,
-  }
+  };
 
   describe('test packets validation', () => {
+    /* tslint:disable max-line-length */
+
     testValidPacket(new packets.PingPacket());
     testInvalidPacket(new packets.PingPacket(undefined, uuid()));
 
@@ -136,40 +137,40 @@ describe('Parser', () => {
     testInvalidPacket(new packets.PongPacket(undefined));
 
     testValidPacket(new packets.HelloRequestPacket(helloRequestPacketBody));
-    testValidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: {...nodeState, pairs: [] }}));
-    testValidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: {...nodeState, addresses: [] }}));
-    testValidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined })}));
-    testValidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndbtcPubKey: undefined })}));
-    testValidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndltcPubKey: undefined })}));
+    testValidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: { ...nodeState, pairs: [] } }));
+    testValidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: { ...nodeState, addresses: [] } }));
+    testValidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined }) }));
+    testValidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndbtcPubKey: undefined }) }));
+    testValidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndltcPubKey: undefined }) }));
     testInvalidPacket(new packets.HelloRequestPacket(helloRequestPacketBody, uuid()));
     testInvalidPacket(new packets.HelloRequestPacket(removeUndefinedProps({ ...helloRequestPacketBody, sign: undefined })));
     testInvalidPacket(new packets.HelloRequestPacket(removeUndefinedProps({ ...helloRequestPacketBody, ephemeralPubKey: undefined })));
     testInvalidPacket(new packets.HelloRequestPacket(removeUndefinedProps({ ...helloRequestPacketBody, peerPubKey: undefined })));
-    testInvalidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined })}));
-    testInvalidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined })}));
-    testInvalidPacket(new packets.HelloRequestPacket({...helloRequestPacketBody, nodeState: { ...nodeState, addresses: [{} as Address] }}));
+    testInvalidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined }) }));
+    testInvalidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined }) }));
+    testInvalidPacket(new packets.HelloRequestPacket({ ...helloRequestPacketBody, nodeState: { ...nodeState, addresses: [{} as Address] } }));
 
-    const { ephemeralPubKey, ...helloResponsePacketBody} = helloRequestPacketBody;
-    testValidPacket(new packets.HelloResponsePacket(helloResponsePacketBody));
-    testValidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: {...nodeState, pairs: [] }}));
-    testValidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: {...nodeState, addresses: [] }}));
-    testValidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined })}));
-    testValidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndbtcPubKey: undefined })}));
-    testValidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndltcPubKey: undefined })}));
-    testInvalidPacket(new packets.HelloResponsePacket(helloRequestPacketBody, uuid()));
-    testInvalidPacket(new packets.HelloResponsePacket(removeUndefinedProps({ ...helloResponsePacketBody, sign: undefined })));
-    testInvalidPacket(new packets.HelloResponsePacket(removeUndefinedProps({ ...helloResponsePacketBody, peerPubKey: undefined })));
-    testInvalidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined })}));
-    testInvalidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined })}));
-    testInvalidPacket(new packets.HelloResponsePacket({...helloResponsePacketBody, nodeState: { ...nodeState, addresses: [{} as Address] }}));
+    const { ephemeralPubKey, ...helloResponsePacketBody } = helloRequestPacketBody;
+    testValidPacket(new packets.HelloResponsePacket(helloResponsePacketBody, uuid()));
+    testValidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: { ...nodeState, pairs: [] } }, uuid()));
+    testValidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: { ...nodeState, addresses: [] } }, uuid()));
+    testValidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined }) }, uuid()));
+    testValidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndbtcPubKey: undefined }) }, uuid()));
+    testValidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndltcPubKey: undefined }) }, uuid()));
+    testInvalidPacket(new packets.HelloResponsePacket(helloResponsePacketBody));
+    testInvalidPacket(new packets.HelloResponsePacket(removeUndefinedProps({ ...helloResponsePacketBody, sign: undefined }), uuid()));
+    testInvalidPacket(new packets.HelloResponsePacket(removeUndefinedProps({ ...helloResponsePacketBody, peerPubKey: undefined }), uuid()));
+    testInvalidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined }) }, uuid()));
+    testInvalidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined }) }, uuid()));
+    testInvalidPacket(new packets.HelloResponsePacket({ ...helloResponsePacketBody, nodeState: { ...nodeState, addresses: [{} as Address] } }, uuid()));
 
-    const { version, nodePubKey, ...nodeStateUpdate} = nodeState;
+    const { version, nodePubKey, ...nodeStateUpdate } = nodeState;
     testValidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate));
-    testValidPacket(new packets.NodeStateUpdatePacket({...nodeStateUpdate, pairs: [] }));
-    testValidPacket(new packets.NodeStateUpdatePacket({...nodeStateUpdate, addresses: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, pairs: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [] }));
     testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, raidenAddress: undefined })));
     testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndbtcPubKey: undefined })));
-    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndltcPubKey: undefined })))
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndltcPubKey: undefined })));
     testInvalidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate, uuid()));
     testInvalidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [{} as Address] }));
 
