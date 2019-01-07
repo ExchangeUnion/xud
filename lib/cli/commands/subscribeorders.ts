@@ -65,6 +65,6 @@ const subscribeOrders = (argv: Arguments) =>  {
 };
 
 const reconnect = (argv: Arguments) => {
-  console.log('Stream is closed unexpectedly, trying to reconnect');
+  console.log('Stream has closed unexpectedly, trying to reconnect');
   ensureConnection(argv, false);
 };
