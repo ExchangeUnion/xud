@@ -19,7 +19,7 @@ export const handler = (argv: Arguments) => {
 };
 
 const ensureConnection = (argv: Arguments, printError?: boolean) => {
-  loadXudClient(argv).getInfo(new xudrpc.GetInfoRequest(), (error: Error | null) => {
+  loadXudClient(argv).waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
     if (error) {
       if (printError) console.error(`${error.name}: ${error.message}`);
       setTimeout(ensureConnection.bind(undefined, argv), 3000);
@@ -40,8 +40,8 @@ const subscribeOrders = (argv: Arguments) =>  {
 
   // adding end, close, error events only once,
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
-  addedOrdersSubscription.on('end', ensureConnection.bind(undefined, argv, true));
-  addedOrdersSubscription.on('close', ensureConnection.bind(undefined, argv, true));
+  addedOrdersSubscription.on('end', reconnect.bind(undefined, argv));
+  addedOrdersSubscription.on('close', reconnect.bind(undefined, argv));
   addedOrdersSubscription.on('error', (err: Error) => {
     console.log(`Unexpected error occured: ${JSON.stringify(err)}, retrying to connect`);
     ensureConnection(argv);
@@ -62,4 +62,9 @@ const subscribeOrders = (argv: Arguments) =>  {
 
   // prevent exiting and do nothing, it's already cached above.
   swapsSubscription.on('error', () => {});
+};
+
+const reconnect = (argv: Arguments) => {
+  console.log('Stream is closed unexpectedly, trying to reconnect');
+  ensureConnection(argv, false);
 };
