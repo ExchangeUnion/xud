@@ -18,8 +18,11 @@ export const handler = (argv: Arguments) => {
   ensureConnection(argv, true);
 };
 
+let xud: any;
+
 const ensureConnection = (argv: Arguments, printError?: boolean) => {
-  loadXudClient(argv).waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
+  if (!xud) xud = loadXudClient(argv);
+  xud.waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
     if (error) {
       if (printError) console.error(`${error.name}: ${error.message}`);
       setTimeout(ensureConnection.bind(undefined, argv), 3000);
@@ -41,9 +44,8 @@ const subscribeOrders = (argv: Arguments) =>  {
   // adding end, close, error events only once,
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
   addedOrdersSubscription.on('end', reconnect.bind(undefined, argv));
-  addedOrdersSubscription.on('close', reconnect.bind(undefined, argv));
   addedOrdersSubscription.on('error', (err: Error) => {
-    console.log(`Unexpected error occured: ${JSON.stringify(err)}, retrying to connect`);
+    console.log(`Unexpected error occured: ${JSON.stringify(err)}, trying to reconnect`);
     ensureConnection(argv);
   });
 
@@ -52,7 +54,7 @@ const subscribeOrders = (argv: Arguments) =>  {
     console.log(`Order removed: ${JSON.stringify(orderRemoval.toObject())}`);
   });
 
-  // prevent exiting and do nothing, it's already cached above.
+  // prevent exiting and do nothing, it's already caught above.
   removedOrdersSubscription.on('error', () => {});
 
   const swapsSubscription = loadXudClient(argv).subscribeSwaps(new xudrpc.SubscribeSwapsRequest());
@@ -60,11 +62,11 @@ const subscribeOrders = (argv: Arguments) =>  {
     console.log(`Order swapped: ${JSON.stringify(swapResult.toObject())}`);
   });
 
-  // prevent exiting and do nothing, it's already cached above.
+  // prevent exiting and do nothing, it's already caught above.
   swapsSubscription.on('error', () => {});
 };
 
 const reconnect = (argv: Arguments) => {
-  console.log('Stream has closed unexpectedly, trying to reconnect');
+  console.log('Stream has closed, trying to reconnect');
   ensureConnection(argv, false);
 };
