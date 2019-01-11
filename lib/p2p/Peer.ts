@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import semver from 'semver';
-import { ReputationEvent, DisconnectionReason } from '../types/enums';
+import { ReputationEvent, DisconnectionReason, NetworkMagic } from '../types/enums';
 import Parser, { ParserError, ParserErrorType } from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -16,6 +16,8 @@ import { NodeState, Address, NodeConnectionInfo, PoolConfig } from '../types/p2p
 import errors from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
+import Network from './Network';
+import Framer from './Framer';
 
 const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
@@ -61,7 +63,7 @@ class Peer extends EventEmitter {
   public discoverTimer?: NodeJS.Timer;
   private opened = false;
   private socket?: Socket;
-  private parser: Parser = new Parser();
+  private parser: Parser;
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
@@ -74,9 +76,12 @@ class Peer extends EventEmitter {
   private lastSend = 0;
   private nodeState?: NodeState;
   private helloRequestPacket?: packets.HelloRequestPacket;
-  private sharedSecretKey?: string;
+  private encrypted = false;
+  private encryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
+  private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
+  private framer: Framer;
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -132,6 +137,8 @@ class Peer extends EventEmitter {
   constructor(private logger: Logger, public address: Address, private config: PoolConfig) {
     super();
 
+    this.framer = new Framer(this.network);
+    this.parser = new Parser(this.framer);
     this.bindParser(this.parser);
   }
 
@@ -294,7 +301,9 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = (packet: Packet): void => {
-    this.sendRaw(packet.toRaw());
+    const data = this.framer.frame(packet);
+    this.sendRaw(data);
+
     const recipient = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${recipient}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
@@ -639,8 +648,10 @@ class Peer extends EventEmitter {
       // key exchange
 
       const ephemeralPubKey = ecdh.generateKeys().toString('hex');
-      this.sharedSecretKey = ecdh.computeSecret(expectedNodePubKey!, 'hex').toString('hex');
-      console.log('#### SHARED SECRET KEY: ' + this.sharedSecretKey);
+      const sharedSecretKey = ecdh.computeSecret(expectedNodePubKey!, 'hex');
+      this.setEncryptionKey(sharedSecretKey);
+      this.setEncrypted(true);
+      console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
 
       // signing
 
@@ -716,8 +727,12 @@ class Peer extends EventEmitter {
       // key exchange
 
       ecdh.setPrivateKey(nodeKey.nodePrivKey);
-      this.sharedSecretKey = ecdh.computeSecret(helloRequest.body!.ephemeralPubKey, 'hex').toString('hex');
-      console.log('#### SHARED SECRET KEY: ' + this.sharedSecretKey);
+      const sharedSecretKey = ecdh.computeSecret(helloRequest.body!.ephemeralPubKey, 'hex');
+      this.setEncryptionKey(sharedSecretKey);
+      this.setEncrypted(true);
+
+     // this.parser.setKey(this.sharedSecretKey)
+      console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
 
       // send response
 
@@ -782,6 +797,16 @@ class Peer extends EventEmitter {
     this.sendPacket(packet);
 
     return packet;
+  }
+
+  private setEncryptionKey = (key: Buffer) => {
+    this.encryptionKey = key;
+ //   this.framer.setEncryptionKey(key);
+  }
+
+  private setEncrypted = (val: boolean) => {
+    this.encrypted = val;
+   // this.framer.setEncrypted(val);
   }
 }
 

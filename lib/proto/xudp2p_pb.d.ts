@@ -185,9 +185,6 @@ export class OrderPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
 
-  getHash(): string;
-  setHash(value: string): void;
-
   hasOrder(): boolean;
   clearOrder(): void;
   getOrder(): Order | undefined;
@@ -206,7 +203,6 @@ export class OrderPacket extends jspb.Message {
 export namespace OrderPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     order?: Order.AsObject,
   }
 }
@@ -214,9 +210,6 @@ export namespace OrderPacket {
 export class OrderInvalidationPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getOrderId(): string;
   setOrderId(value: string): void;
@@ -240,7 +233,6 @@ export class OrderInvalidationPacket extends jspb.Message {
 export namespace OrderInvalidationPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     orderId: string,
     pairId: string,
     quantity: number,
@@ -250,9 +242,6 @@ export namespace OrderInvalidationPacket {
 export class GetOrdersPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   clearPairIdsList(): void;
   getPairIdsList(): Array<string>;
@@ -272,7 +261,6 @@ export class GetOrdersPacket extends jspb.Message {
 export namespace GetOrdersPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     pairIdsList: Array<string>,
   }
 }
@@ -283,9 +271,6 @@ export class OrdersPacket extends jspb.Message {
 
   getReqId(): string;
   setReqId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   clearOrdersList(): void;
   getOrdersList(): Array<Order>;
@@ -306,7 +291,6 @@ export namespace OrdersPacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     ordersList: Array<Order.AsObject>,
   }
 }
@@ -314,9 +298,6 @@ export namespace OrdersPacket {
 export class NodeStateUpdatePacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   clearAddressesList(): void;
   getAddressesList(): Array<Address>;
@@ -350,7 +331,6 @@ export class NodeStateUpdatePacket extends jspb.Message {
 export namespace NodeStateUpdatePacket {
   export type AsObject = {
     id: string,
-    hash: string,
     addressesList: Array<Address.AsObject>,
     pairsList: Array<string>,
     raidenAddress: string,
@@ -362,9 +342,6 @@ export namespace NodeStateUpdatePacket {
 export class HelloRequestPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getSign(): string;
   setSign(value: string): void;
@@ -393,7 +370,6 @@ export class HelloRequestPacket extends jspb.Message {
 export namespace HelloRequestPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     sign: string,
     peerPubKey: string,
     ephemeralPubKey: string,
@@ -407,9 +383,6 @@ export class HelloResponsePacket extends jspb.Message {
 
   getReqId(): string;
   setReqId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getSign(): string;
   setSign(value: string): void;
@@ -436,7 +409,6 @@ export namespace HelloResponsePacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     sign: string,
     peerPubKey: string,
     nodeState?: NodeState.AsObject,
@@ -446,9 +418,6 @@ export namespace HelloResponsePacket {
 export class DisconnectingPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getReason(): number;
   setReason(value: number): void;
@@ -469,7 +438,6 @@ export class DisconnectingPacket extends jspb.Message {
 export namespace DisconnectingPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     reason: number,
     payload: string,
   }
@@ -502,9 +470,6 @@ export class NodesPacket extends jspb.Message {
   getReqId(): string;
   setReqId(value: string): void;
 
-  getHash(): string;
-  setHash(value: string): void;
-
   clearNodesList(): void;
   getNodesList(): Array<Node>;
   setNodesList(value: Array<Node>): void;
@@ -524,7 +489,6 @@ export namespace NodesPacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     nodesList: Array<Node.AsObject>,
   }
 }
@@ -532,9 +496,6 @@ export namespace NodesPacket {
 export class SwapRequestPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getProposedQuantity(): number;
   setProposedQuantity(value: number): void;
@@ -564,7 +525,6 @@ export class SwapRequestPacket extends jspb.Message {
 export namespace SwapRequestPacket {
   export type AsObject = {
     id: string,
-    hash: string,
     proposedQuantity: number,
     pairId: string,
     orderId: string,
@@ -579,9 +539,6 @@ export class SwapAcceptedPacket extends jspb.Message {
 
   getReqId(): string;
   setReqId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getRHash(): string;
   setRHash(value: string): void;
@@ -606,7 +563,6 @@ export namespace SwapAcceptedPacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     rHash: string,
     quantity: number,
     makerCltvDelta: number,
@@ -619,9 +575,6 @@ export class SwapCompletePacket extends jspb.Message {
 
   getReqId(): string;
   setReqId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getRHash(): string;
   setRHash(value: string): void;
@@ -640,7 +593,6 @@ export namespace SwapCompletePacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     rHash: string,
   }
 }
@@ -651,9 +603,6 @@ export class SwapFailedPacket extends jspb.Message {
 
   getReqId(): string;
   setReqId(value: string): void;
-
-  getHash(): string;
-  setHash(value: string): void;
 
   getRHash(): string;
   setRHash(value: string): void;
@@ -678,7 +627,6 @@ export namespace SwapFailedPacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    hash: string,
     rHash: string,
     errorMessage: string,
     failureReason: number,

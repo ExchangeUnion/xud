@@ -20,7 +20,6 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
 
   private static validate = (obj: pb.NodeStateUpdatePacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.pairsList
       && obj.addressesList.filter(addr => addr.host).length === obj.addressesList.length
     );
@@ -30,7 +29,6 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
     return new NodeStateUpdatePacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
       },
       body: removeUndefinedProps({
         pairs: obj.pairsList,
@@ -46,7 +44,6 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
     const msg = new pb.NodeStateUpdatePacket();
 
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setPairsList(this.body!.pairs!);
     msg.setAddressesList(this.body!.addresses!.map((addr) => {
       const pbAddr = new pb.Address();

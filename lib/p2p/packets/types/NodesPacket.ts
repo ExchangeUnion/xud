@@ -19,7 +19,6 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
 
   private static validate = (obj: pb.NodesPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.reqId
       && obj.nodesList.filter(node =>
         node.nodePubKey
@@ -35,7 +34,6 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     return new NodesPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
         reqId: obj.reqId,
       },
       body: obj.nodesList.map(node => ({
@@ -48,7 +46,6 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
   public serialize(): Uint8Array {
     const msg = new pb.NodesPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReqId(this.header.reqId!);
     msg.setNodesList(this.body!.map((node) => {
       const pbNode = new pb.Node();

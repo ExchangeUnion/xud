@@ -31,7 +31,6 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
 
   private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.rHash
     );
   }
@@ -40,7 +39,6 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return new SwapFailedPacket({
       header: removeUndefinedProps({
         id: obj.id,
-        hash: obj.hash,
         reqId: obj.reqId || undefined,
       }),
       body: removeUndefinedProps({
@@ -54,7 +52,6 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
   public serialize(): Uint8Array {
     const msg = new pb.SwapFailedPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReqId(this.header.reqId!);
     msg.setRHash(this.body!.rHash);
     if (this.body!.errorMessage) {

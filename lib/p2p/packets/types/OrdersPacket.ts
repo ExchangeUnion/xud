@@ -21,7 +21,6 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
 
   private static validate = (obj: pb.OrdersPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.reqId
       && obj.ordersList.every(order =>
         !!order.id
@@ -36,7 +35,6 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     return new OrdersPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
         reqId: obj.reqId,
       },
       body: obj.ordersList.map(pbOrder => ({
@@ -52,7 +50,6 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
   public serialize(): Uint8Array {
     const msg = new pb.OrdersPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReqId(this.header.reqId!);
     msg.setOrdersList(this.body!.map((order) => {
       const pbOrder = new pb.Order();

@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { PacketType } from './packets';
 import Packet, { isPacket } from './packets/Packet';
 import * as packetTypes from './packets/types';
+import Framer, { WireMsgHeader }   from './Framer';
 
 class ParserError {
   constructor(public type: ParserErrorType, public payload: string) { }
@@ -14,68 +15,68 @@ enum ParserErrorType {
   MaxBufferSizeExceeded,
 }
 
-const fromRaw = (type: number, binary: Uint8Array): Packet => {
+const parsePacket = (header: WireMsgHeader, payload: Uint8Array): Packet => {
   let packetOrPbObj;
-  switch (type) {
+  switch (header.type) {
     case PacketType.HelloRequest:
-      packetOrPbObj = packetTypes.HelloRequestPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.HelloRequestPacket.deserialize(payload);
       break;
     case PacketType.HelloResponse:
-      packetOrPbObj = packetTypes.HelloResponsePacket.deserialize(binary);
+      packetOrPbObj = packetTypes.HelloResponsePacket.deserialize(payload);
       break;
     case PacketType.NodeStateUpdate:
-      packetOrPbObj = packetTypes.NodeStateUpdatePacket.deserialize(binary);
+      packetOrPbObj = packetTypes.NodeStateUpdatePacket.deserialize(payload);
       break;
     case PacketType.Disconnecting:
-      packetOrPbObj = packetTypes.DisconnectingPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.DisconnectingPacket.deserialize(payload);
       break;
     case PacketType.Ping:
-      packetOrPbObj = packetTypes.PingPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.PingPacket.deserialize(payload);
       break;
     case PacketType.Pong:
-      packetOrPbObj = packetTypes.PongPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.PongPacket.deserialize(payload);
       break;
     case PacketType.Order:
-      packetOrPbObj = packetTypes.OrderPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrderPacket.deserialize(payload);
       break;
     case PacketType.OrderInvalidation:
-      packetOrPbObj = packetTypes.OrderInvalidationPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrderInvalidationPacket.deserialize(payload);
       break;
     case PacketType.GetOrders:
-      packetOrPbObj = packetTypes.GetOrdersPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.GetOrdersPacket.deserialize(payload);
       break;
     case PacketType.Orders:
-      packetOrPbObj = packetTypes.OrdersPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.OrdersPacket.deserialize(payload);
       break;
     case PacketType.GetNodes:
-      packetOrPbObj = packetTypes.GetNodesPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.GetNodesPacket.deserialize(payload);
       break;
     case PacketType.Nodes:
-      packetOrPbObj = packetTypes.NodesPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.NodesPacket.deserialize(payload);
       break;
     case PacketType.SwapRequest:
-      packetOrPbObj = packetTypes.SwapRequestPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapRequestPacket.deserialize(payload);
       break;
     case PacketType.SwapAccepted:
-      packetOrPbObj = packetTypes.SwapAcceptedPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapAcceptedPacket.deserialize(payload);
       break;
     case PacketType.SwapComplete:
-      packetOrPbObj = packetTypes.SwapCompletePacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapCompletePacket.deserialize(payload);
       break;
     case PacketType.SwapFailed:
-      packetOrPbObj = packetTypes.SwapFailedPacket.deserialize(binary);
+      packetOrPbObj = packetTypes.SwapFailedPacket.deserialize(payload);
       break;
     default:
-      throw new ParserError(ParserErrorType.UnknownPacketType, PacketType[type]);
+      throw new ParserError(ParserErrorType.UnknownPacketType, PacketType[header.type]);
   }
 
   if (!isPacket(packetOrPbObj)) {
-    throw new ParserError(ParserErrorType.InvalidPacket, `${PacketType[type]} ${JSON.stringify(packetOrPbObj)}`);
+    throw new ParserError(ParserErrorType.InvalidPacket, `${PacketType[header.type]} ${JSON.stringify(packetOrPbObj)}`);
   }
 
   const packet = packetOrPbObj;
-  if (!packet.verifyDataIntegrity()) {
-    throw new ParserError(ParserErrorType.DataIntegrityError, `${PacketType[type]} ${JSON.stringify(packet)}`);
+  if (header.checksum !== packet.checksum().readUInt32LE(0, true)) {
+    throw new ParserError(ParserErrorType.DataIntegrityError, `${PacketType[header.type]} ${JSON.stringify(packet)}`);
   }
 
   return packet;
@@ -88,84 +89,87 @@ interface Parser {
   emit(event: 'error', err: ParserError): boolean;
 }
 
-/** Protocol packet parser */
+/** Wire protocol msg parser */
 class Parser extends EventEmitter {
-
-  public static readonly PACKET_METADATA_SIZE = 5; // in bytes
   private pending: Buffer[] = [];
   private waiting = 0;
-  private waitingMetadata = 0;
-  private type = 0;
+  private waitingHeader = 0;
   private static readonly MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
 
-  constructor(private packetMetadataSize: number = Parser.PACKET_METADATA_SIZE, private maxBufferSize: number = Parser.MAX_BUFFER_SIZE) {
+  constructor(
+    private framer: Framer,
+    private msgHeaderLength: number = Framer.MSG_HEADER_LENGTH,
+    private maxBufferSize: number = Parser.MAX_BUFFER_SIZE,
+  ) {
     super();
   }
 
-  public feed = (data: Buffer): void => {
+  public feed = (chunk: Buffer): void => {
+    /* tslint:disable brace-style */
+
     const totalSize = this.pending
       .map(buffer => buffer.length)
-      .reduce((acc, curr) => acc + curr, 0) + data.length;
+      .reduce((acc, curr) => acc + curr, 0) + chunk.length;
     if (totalSize > this.maxBufferSize) {
       this.resetCycle();
       this.emit('error', new ParserError(ParserErrorType.MaxBufferSizeExceeded, totalSize.toString()));
       return;
     }
 
+    // reading through a split message
     if (this.waiting) {
-      this.read(this.waiting, data);
-    } else if (this.waitingMetadata) {
-      this.pending.push(data.slice(0, this.waitingMetadata));
-      const { type, size } = this.readMetadata(Buffer.concat(this.pending));
-      this.type = type;
+      this.read(this.waiting, chunk);
+    }
+
+    // reading through a message which is split on the header
+    else if (this.waitingHeader) {
+      this.pending.push(chunk);
+      const data = Buffer.concat(this.pending);
+      const length = this.framer.parseLength(data);
       this.pending = [];
-      this.read(size, data.slice(this.waitingMetadata));
-    } else if (data.length < this.packetMetadataSize) {
-      this.pending.push(data);
-      this.waitingMetadata = this.packetMetadataSize - data.length;
-    } else {
-      const { type, size } = this.readMetadata(data);
-      this.type = type;
-      this.read(size, data.slice(this.packetMetadataSize));
+      this.read(length + this.msgHeaderLength, data);
+    }
+
+    // starting to read a new message which is split on the header
+    else if (chunk.length < this.msgHeaderLength) {
+      this.pending.push(chunk);
+      this.waitingHeader = this.msgHeaderLength - chunk.length;
+    }
+
+    // start to read a new message
+    else {
+      const length =  this.framer.parseLength(chunk);
+      this.read(length + this.msgHeaderLength, chunk);
     }
   }
 
-  private readMetadata = (data: Buffer): { type: number, size: number } => {
-    // first byte is the packet type
-    const type = data.readUInt8(0, true);
-    // next 4 bytes are the size of the packet
-    const size = data.readUInt32LE(1, true);
+  private read = (length: number, chunk: Buffer) => {
+    this.pending.push(chunk.slice(0, length));
 
-    return { type, size };
-  }
-
-  private read = (size: number, chunk: Buffer) => {
-    this.pending.push(chunk.slice(0, size));
-
-    if (size > chunk.length) { // packet isn't complete
-      this.waiting = size - chunk.length;
-    } else { // chunk is finalizing the packet
-      this.parsePacket(this.type, this.pending);
+    if (length > chunk.length) { // message isn't complete
+      this.waiting = length - chunk.length;
+    } else { // chunk is finalizing the message
+      this.parseMessage(this.pending);
       this.resetCycle();
-      if (size < chunk.length) { // multiple packets
-        this.feed(chunk.slice(size));
+      if (length < chunk.length) { // multiple messages
+        this.feed(chunk.slice(length));
       }
     }
   }
 
   private resetCycle = () => {
     this.waiting = 0;
-    this.waitingMetadata = 0;
+    this.waitingHeader = 0;
     this.pending = [];
   }
 
-  private parsePacket = (type: number, chunks: Buffer[]): void => {
+  private parseMessage = (chunks: Buffer[]): void => {
     try {
-      const buffer = Buffer.concat(chunks);
-      const binary = Uint8Array.from(buffer);
+      const msg = Buffer.concat(chunks);
+      const { header, packet } = this.framer.unframe(msg);
 
-      const packet = fromRaw(type, binary);
-      this.emit('packet', packet);
+      const parsedPacket = parsePacket(header, Uint8Array.from(packet));
+      this.emit('packet', parsedPacket);
     } catch (err) {
       this.emit('error', err);
     }

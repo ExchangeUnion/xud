@@ -41,66 +41,58 @@ message PongPacket {
 
 message OrderPacket {
     string id = 1;
-    string hash = 2;
-    Order order = 3;
+    Order order = 2;
 }
 
 message OrderInvalidationPacket {
     string id = 1;
-    string hash = 2;
-    string order_id = 3;
-    string pair_id = 4;
-    double quantity = 5;
+    string order_id = 2;
+    string pair_id = 3;
+    double quantity = 4;
 }
 
 message GetOrdersPacket {
     string id = 1;
-    string hash = 2;
-    repeated string pair_ids = 3;
+    repeated string pair_ids = 2;
 }
 
 message OrdersPacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    repeated Order orders = 4;
+    repeated Order orders = 3;
 }
 
 message NodeStateUpdatePacket {
     string id = 1;
-    string hash = 2;
-    repeated Address addresses = 3;
-    repeated string pairs = 4;
-    string raiden_address = 5;
-    string lnd_btc_pub_key = 6;
-    string lnd_ltc_pub_key = 7;
+    repeated Address addresses = 2;
+    repeated string pairs = 3;
+    string raiden_address = 4;
+    string lnd_btc_pub_key = 5;
+    string lnd_ltc_pub_key = 6;
 }
 
 
 
 message HelloRequestPacket {
     string id = 1;
-    string hash = 2;
-    string sign = 3;
-    string peer_pub_key = 4;
-    string ephemeral_pub_key = 5;
-    NodeState node_state = 6;
+    string sign = 2;
+    string peer_pub_key = 3;
+    string ephemeral_pub_key = 4;
+    NodeState node_state = 5;
 }
 
 message HelloResponsePacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    string sign = 4;
-    string peer_pub_key = 5;
-    NodeState node_state = 6;
+    string sign = 3;
+    string peer_pub_key = 4;
+    NodeState node_state = 5;
 }
 
 message DisconnectingPacket {
     string id = 1;
-    string hash = 2;
-    uint32 reason = 3;
-    string payload = 4;
+    uint32 reason = 2;
+    string payload = 3;
 }
 
 message GetNodesPacket {
@@ -110,41 +102,36 @@ message GetNodesPacket {
 message NodesPacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    repeated Node nodes = 4;
+    repeated Node nodes = 3;
 }
 
 message SwapRequestPacket {
     string id = 1;
-    string hash = 2;
-    double proposed_quantity = 3;
-    string pair_id = 4;
-    string order_id = 5;
-    string r_hash = 6;
-    int32 taker_cltv_delta = 7;
+    double proposed_quantity = 2;
+    string pair_id = 3;
+    string order_id = 4;
+    string r_hash = 5;
+    int32 taker_cltv_delta = 6;
 }
 
 message SwapAcceptedPacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    string r_hash = 4;
-    double quantity = 5;
-    int32 maker_cltv_delta = 6;
+    string r_hash = 3;
+    double quantity = 4;
+    int32 maker_cltv_delta = 5;
 }
 
 message SwapCompletePacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    string r_hash = 4;
+    string r_hash = 3;
 }
 
 message SwapFailedPacket {
     string id = 1;
     string req_id = 2;
-    string hash = 3;
-    string r_hash = 4;
-    string error_message = 5;
-    uint32 failure_reason = 6;
+    string r_hash = 3;
+    string error_message = 4;
+    uint32 failure_reason = 5;
 }

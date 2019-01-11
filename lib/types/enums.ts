@@ -21,6 +21,16 @@ export enum Network {
   RegTest = 'regtest',
 }
 
+/**
+ * Magic value indicating packet origin network, and used to seek to next packet when stream state is unknown
+ */
+export enum NetworkMagic {
+  MainNet = 0xd9b4bef9,
+  TestNet = 0x0709110b,
+  SimNet = 0x12141c16,
+  RegTest = 0xdab5bffa,
+}
+
 export enum SwapRole {
   Taker = 0,
   Maker = 1,

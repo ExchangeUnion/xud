@@ -32,12 +32,16 @@ describe('key exchange and symmetric encryption', () => {
   });
 
   it('alice should encrypt messages that bob can decrypt', async () => {
-    const serializedPacket = crypto.randomBytes(100).toString('hex');
+    const msg = crypto.randomBytes(100);
 
-    const encrypted = CryptoJS.AES.encrypt(serializedPacket, aliceSecretKey.toString('hex')).toString();
-    const decrypted = CryptoJS.AES.decrypt(encrypted, bobSecretKey.toString('hex')).toString(CryptoJS.enc.Utf8);
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv('aes-256-cbc', aliceSecretKey, iv);
+    const encrypted = Buffer.concat([iv, cipher.update(msg), cipher.final()]);
 
-    expect(serializedPacket).to.be.equal(decrypted);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', bobSecretKey, encrypted.slice(0, 16));
+    const decrypted = Buffer.concat([decipher.update(encrypted.slice(16)), decipher.final()]);
+
+    expect(msg.toString('hex')).to.be.equal(decrypted.toString('hex'));
   });
 
   it('bob should encrypt messages that alice can decrypt', async () => {

@@ -1,6 +1,5 @@
 import PacketType from './PacketType';
-import CryptoJS from 'crypto-js';
-import MD5 from 'crypto-js/md5';
+import crypto from 'crypto';
 import uuidv1 from 'uuid/v1';
 import stringify from 'json-stable-stringify';
 
@@ -9,9 +8,6 @@ type PacketHeader = {
   id: string;
   /** The id of the received packet to which this packet is responding. */
   reqId?: string;
-  type?: PacketType;
-  /** The Base64 encoded MD5 hash of the body of the packet, to be used for error checking. */
-  hash?: string;
 };
 
 interface PacketInterface {
@@ -82,30 +78,14 @@ abstract class Packet<T = any> implements PacketInterface {
 
       if (bodyOrPacket) {
         this.body = bodyOrPacket;
-        this.header.hash = Packet.hash(bodyOrPacket);
       }
     }
   }
 
-  private static hash(value: any): string {
-    return MD5(stringify(value)).toString(CryptoJS.enc.Base64);
-  }
-
   public abstract serialize(): Uint8Array;
 
-  /**
-   * Verify the header hash against the packet body.
-   */
-  public verifyDataIntegrity(): boolean {
-    if (!this.body) {
-      return true;
-    }
-
-    if (!this.header.hash) {
-      return false;
-    }
-
-    return this.header.hash === Packet.hash(this.body);
+  public toJSON() {
+    return stringify({ header: this.header, body: this.body });
   }
 
   /**
@@ -113,15 +93,11 @@ abstract class Packet<T = any> implements PacketInterface {
    * @returns Buffer representation of the packet
    */
   public toRaw(): Buffer {
-    const msg = this.serialize();
+    return Buffer.from(this.serialize().buffer as ArrayBuffer);
+  }
 
-    const type = Buffer.alloc(1);
-    type.writeUInt8(this.type, 0, true);
-
-    const size = Buffer.allocUnsafe(4);
-    size.writeUInt32LE(msg.length, 0, true);
-
-    return Buffer.concat([type, size, Buffer.from(msg.buffer as ArrayBuffer)]);
+  public checksum(): Buffer {
+    return crypto.createHash('sha256').update(this.toJSON()).digest();
   }
 }
 
