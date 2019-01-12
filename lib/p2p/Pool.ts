@@ -573,11 +573,6 @@ class Pool extends EventEmitter {
       peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
     }
 
-    // request peer's known nodes only if p2p.discover option is true
-    if (this.config.discover) {
-      peer.sendPacket(new packets.GetNodesPacket());
-    }
-
     // if outbound, update the `lastConnected` field for the address we're actually connected to
     const addresses = peer.inbound ? peer.addresses! : peer.addresses!.map((address) => {
       if (addressUtils.areEqual(peer.address, address)) {
