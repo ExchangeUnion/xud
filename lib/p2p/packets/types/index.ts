@@ -1,6 +1,6 @@
 export { default as OrderPacket } from './OrderPacket';
-export { default as HelloRequestPacket } from './HelloRequestPacket';
-export { default as HelloResponsePacket } from './HelloResponsePacket';
+export { default as SessionInitPacket } from './SessionInitPacket';
+export { default as SessionAckPacket } from './SessionAckPacket';
 export { default as NodeStateUpdatePacket } from './NodeStateUpdatePacket';
 export { default as DisconnectingPacket } from './DisconnectingPacket';
 export { default as PingPacket } from './PingPacket';

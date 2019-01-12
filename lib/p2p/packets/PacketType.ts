@@ -1,6 +1,6 @@
 enum PacketType {
-  HelloRequest = 0,
-  HelloResponse = 1,
+  SessionInit = 0,
+  SessionAck = 1,
   NodeStateUpdate = 2,
   Disconnecting = 3,
   Ping = 4,

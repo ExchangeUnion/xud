@@ -95,8 +95,8 @@ class Framer {
   /**
    * Parse the length of a wire msg or an encrypted wire msg
    */
-  public parseLength = (msg: Buffer, encrypted: boolean): number => {
-    const value = msg.readUInt32LE(0, true);
+  public parseLength = (data: Buffer, encrypted: boolean): number => {
+    const value = data.readUInt32LE(0, true);
 
     if (encrypted) {
       if (value === this.network.magic) {
@@ -106,10 +106,10 @@ class Framer {
     }
 
     if (value !== this.network.magic) {
-      throw new Error('invalid magic network value');
+      throw new Error('invalid magic network value. msg might be encrypted');
     }
 
-    return msg.readUInt32LE(4, true);
+    return data.readUInt32LE(4, true);
   }
 
   /**

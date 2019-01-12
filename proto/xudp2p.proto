@@ -71,9 +71,7 @@ message NodeStateUpdatePacket {
     string lnd_ltc_pub_key = 6;
 }
 
-
-
-message HelloRequestPacket {
+message SessionInitPacket {
     string id = 1;
     string sign = 2;
     string peer_pub_key = 3;
@@ -81,12 +79,10 @@ message HelloRequestPacket {
     NodeState node_state = 5;
 }
 
-message HelloResponsePacket {
+message SessionAckPacket {
     string id = 1;
     string req_id = 2;
-    string sign = 3;
-    string peer_pub_key = 4;
-    NodeState node_state = 5;
+    string ephemeral_pub_key = 3;
 }
 
 message DisconnectingPacket {

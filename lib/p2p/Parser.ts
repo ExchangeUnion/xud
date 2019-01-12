@@ -19,11 +19,11 @@ enum ParserErrorType {
 const parsePacket = (header: WireMsgHeader, payload: Uint8Array): Packet => {
   let packetOrPbObj;
   switch (header.type) {
-    case PacketType.HelloRequest:
-      packetOrPbObj = packetTypes.HelloRequestPacket.deserialize(payload);
+    case PacketType.SessionInit:
+      packetOrPbObj = packetTypes.SessionInitPacket.deserialize(payload);
       break;
-    case PacketType.HelloResponse:
-      packetOrPbObj = packetTypes.HelloResponsePacket.deserialize(payload);
+    case PacketType.SessionAck:
+      packetOrPbObj = packetTypes.SessionAckPacket.deserialize(payload);
       break;
     case PacketType.NodeStateUpdate:
       packetOrPbObj = packetTypes.NodeStateUpdatePacket.deserialize(payload);

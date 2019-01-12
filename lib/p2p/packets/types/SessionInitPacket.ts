@@ -4,30 +4,31 @@ import { NodeState } from '../../../types/p2p';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
 
-export type HelloResponsePacketBody = {
+export type SessionInitPacketBody = {
   sign: string;
+  ephemeralPubKey: string;
   peerPubKey: string;
   nodeState: NodeState;
 };
 
-class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
+class SessionInitPacket extends Packet<SessionInitPacketBody> {
   public get type() {
-    return PacketType.HelloResponse;
+    return PacketType.SessionInit;
   }
 
   public get direction() {
-    return PacketDirection.Response;
+    return PacketDirection.Request;
   }
 
-  public static deserialize = (binary: Uint8Array): HelloResponsePacket | pb.HelloResponsePacket.AsObject => {
-    const obj = pb.HelloResponsePacket.deserializeBinary(binary).toObject();
-    return HelloResponsePacket.validate(obj) ? HelloResponsePacket.convert(obj) : obj;
+  public static deserialize = (binary: Uint8Array): SessionInitPacket | pb.SessionInitPacket.AsObject => {
+    const obj = pb.SessionInitPacket.deserializeBinary(binary).toObject();
+    return SessionInitPacket.validate(obj) ? SessionInitPacket.convert(obj) : obj;
   }
 
-  private static validate = (obj: pb.HelloResponsePacket.AsObject): boolean => {
+  private static validate = (obj: pb.SessionInitPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.reqId
       && obj.sign
+      && obj.ephemeralPubKey
       && obj.peerPubKey
       && obj.nodeState
       && obj.nodeState.version
@@ -37,15 +38,15 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
     );
   }
 
-  private static convert = (obj: pb.HelloResponsePacket.AsObject): HelloResponsePacket => {
-    return new HelloResponsePacket({
+  private static convert = (obj: pb.SessionInitPacket.AsObject): SessionInitPacket => {
+    return new SessionInitPacket({
       header: {
         id: obj.id,
-        reqId: obj.reqId,
       },
       body: {
         sign: obj.sign,
         peerPubKey: obj.peerPubKey,
+        ephemeralPubKey: obj.ephemeralPubKey,
         nodeState: removeUndefinedProps({
           version: obj.nodeState!.version,
           nodePubKey: obj.nodeState!.nodePubKey,
@@ -60,11 +61,11 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
   }
 
   public serialize(): Uint8Array {
-    const msg = new pb.HelloResponsePacket();
+    const msg = new pb.SessionInitPacket();
     msg.setId(this.header.id);
-    msg.setReqId(this.header.reqId!);
     msg.setSign(this.body!.sign);
     msg.setPeerPubKey(this.body!.peerPubKey);
+    msg.setEphemeralPubKey(this.body!.ephemeralPubKey);
     msg.setNodeState((() => {
       const pbNodeState = new pb.NodeState();
       pbNodeState.setVersion(this.body!.nodeState.version);
@@ -86,4 +87,4 @@ class HelloResponsePacket extends Packet<HelloResponsePacketBody> {
   }
 }
 
-export default HelloResponsePacket;
+export default SessionInitPacket;

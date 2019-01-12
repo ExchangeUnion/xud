@@ -339,7 +339,7 @@ export namespace NodeStateUpdatePacket {
   }
 }
 
-export class HelloRequestPacket extends jspb.Message {
+export class SessionInitPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
 
@@ -358,16 +358,16 @@ export class HelloRequestPacket extends jspb.Message {
   setNodeState(value?: NodeState): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): HelloRequestPacket.AsObject;
-  static toObject(includeInstance: boolean, msg: HelloRequestPacket): HelloRequestPacket.AsObject;
+  toObject(includeInstance?: boolean): SessionInitPacket.AsObject;
+  static toObject(includeInstance: boolean, msg: SessionInitPacket): SessionInitPacket.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: HelloRequestPacket, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): HelloRequestPacket;
-  static deserializeBinaryFromReader(message: HelloRequestPacket, reader: jspb.BinaryReader): HelloRequestPacket;
+  static serializeBinaryToWriter(message: SessionInitPacket, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SessionInitPacket;
+  static deserializeBinaryFromReader(message: SessionInitPacket, reader: jspb.BinaryReader): SessionInitPacket;
 }
 
-export namespace HelloRequestPacket {
+export namespace SessionInitPacket {
   export type AsObject = {
     id: string,
     sign: string,
@@ -377,41 +377,31 @@ export namespace HelloRequestPacket {
   }
 }
 
-export class HelloResponsePacket extends jspb.Message {
+export class SessionAckPacket extends jspb.Message {
   getId(): string;
   setId(value: string): void;
 
   getReqId(): string;
   setReqId(value: string): void;
 
-  getSign(): string;
-  setSign(value: string): void;
-
-  getPeerPubKey(): string;
-  setPeerPubKey(value: string): void;
-
-  hasNodeState(): boolean;
-  clearNodeState(): void;
-  getNodeState(): NodeState | undefined;
-  setNodeState(value?: NodeState): void;
+  getEphemeralPubKey(): string;
+  setEphemeralPubKey(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): HelloResponsePacket.AsObject;
-  static toObject(includeInstance: boolean, msg: HelloResponsePacket): HelloResponsePacket.AsObject;
+  toObject(includeInstance?: boolean): SessionAckPacket.AsObject;
+  static toObject(includeInstance: boolean, msg: SessionAckPacket): SessionAckPacket.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: HelloResponsePacket, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): HelloResponsePacket;
-  static deserializeBinaryFromReader(message: HelloResponsePacket, reader: jspb.BinaryReader): HelloResponsePacket;
+  static serializeBinaryToWriter(message: SessionAckPacket, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SessionAckPacket;
+  static deserializeBinaryFromReader(message: SessionAckPacket, reader: jspb.BinaryReader): SessionAckPacket;
 }
 
-export namespace HelloResponsePacket {
+export namespace SessionAckPacket {
   export type AsObject = {
     id: string,
     reqId: string,
-    sign: string,
-    peerPubKey: string,
-    nodeState?: NodeState.AsObject,
+    ephemeralPubKey: string,
   }
 }
 

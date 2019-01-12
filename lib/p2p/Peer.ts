@@ -1,7 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import crypto from 'crypto';
+import crypto, { ECDH } from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import semver from 'semver';
@@ -75,15 +75,15 @@ class Peer extends EventEmitter {
   private lastRecv = 0;
   private lastSend = 0;
   private nodeState?: NodeState;
-  private helloRequestPacket?: packets.HelloRequestPacket;
-  private encryptionEnabled = false;
-  private encryptionKey?: Buffer;
+  private sessionInitPacket?: packets.SessionInitPacket;
+  private ephemeralPubKey?: string;
+  private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
   private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
   private framer: Framer;
   /** Interval to check required responses from peer. */
-  private static readonly STALL_INTERVAL = 5000;
+  private static readonly STALL_INTERVAL = 50000;
   /** Interval for pinging peers. */
   private static readonly PING_INTERVAL = 30000;
   /** Response timeout for response packets. */
@@ -301,10 +301,7 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = (packet: Packet): void => {
-    const data = this.framer.frame(
-      packet,
-      this.encryptionEnabled ? this.encryptionKey : undefined,
-    );
+    const data = this.framer.frame(packet, this.outEncryptionKey);
     this.sendRaw(data);
 
     const peerId = this.nodePubKey || addressUtils.toString(this.address);
@@ -579,10 +576,9 @@ class Peer extends EventEmitter {
   private isPacketSolicited = (packet: Packet): boolean => {
     let solicited = true;
 
-    if (!this.opened && packet.type !== PacketType.HelloRequest && packet.type !== PacketType.HelloResponse) {
-      // until the connection is opened, we only accept hello packets
+    if (!this.opened && packet.type !== PacketType.SessionInit && packet.type !== PacketType.SessionAck) {
+      // until the connection is opened, we only accept SessionInit/SessionAck packets
       solicited = false;
-      console.log('@@@' + packet.type);
     }
     if (packet.direction === PacketDirection.Response) {
       // lookup a pending response entry for this packet by its reqId
@@ -601,8 +597,8 @@ class Peer extends EventEmitter {
 
     if (this.isPacketSolicited(packet)) {
       switch (packet.type) {
-        case PacketType.HelloRequest: {
-          this.handleHelloRequest(packet);
+        case PacketType.SessionInit: {
+          this.handleSessionInit(packet);
           break;
         }
         case PacketType.NodeStateUpdate: {
@@ -638,150 +634,106 @@ class Peer extends EventEmitter {
     }
   }
 
-  /**
-   * Sends a hello packet and waits for one to be received, if we haven't received a hello packet already.
-   */
+  private authenticate = (packet: packets.SessionInitPacket) => {
+    const { sign, ...bodyWithoutSign } = packet.body!;
+    const verified = secp256k1.verify(
+      crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
+      Buffer.from(sign, 'hex') ,
+      Buffer.from(packet.body!.nodeState.nodePubKey, 'hex'),
+    );
+
+    if (!verified) {
+      throw new Error('invalid authentication');
+    }
+  }
+
+  private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<Buffer> => {
+    const inECDH = crypto.createECDH('secp256k1');
+    const inEphemeralPubKey = inECDH.generateKeys().toString('hex');
+    const outSessionInit = this.sendSessionInit(inEphemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
+    const inSessionAck = await this.wait(outSessionInit.header.id, Peer.RESPONSE_TIMEOUT);
+    return inECDH.computeSecret(inSessionAck.body.ephemeralPubKey, 'hex');
+  }
+
+  private ackSession = async (sessionInit: packets.SessionInitPacket): Promise<Buffer> => {
+    this.authenticate(sessionInit);
+    this.nodeState = sessionInit.body!.nodeState;
+
+    const outECDH = crypto.createECDH('secp256k1');
+    const outEphemeralPubKey = outECDH.generateKeys().toString('hex');
+
+    this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey: outEphemeralPubKey }, sessionInit.header.id));
+    return outECDH.computeSecret(sessionInit.body!.ephemeralPubKey, 'hex');
+  }
+
   private handshake = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string) => {
-    const ecdh = crypto.createECDH('secp256k1');
     if (!this.inbound) {
-
-      // OUTBOUND HANDSHAKE
-
+      // outbound handshake
       assert(this.expectedNodePubKey);
+      const inKey = await this.initSession(ownNodeState, nodeKey, expectedNodePubKey!);
+      this.setInEncryption(inKey);
 
-      // key exchange
-
-      const ephemeralPubKey = ecdh.generateKeys().toString('hex');
-      const sharedSecretKey = ecdh.computeSecret(expectedNodePubKey!, 'hex');
-      this.encryptionKey = sharedSecretKey;
-      console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
-
-      // signing
-
-      let helloRequestBody: any = {
-        ephemeralPubKey,
-        peerPubKey: expectedNodePubKey!,
-        nodeState: ownNodeState,
-      };
-
-      const { signature } = secp256k1.sign(
-        crypto.createHash('sha256').update(stringify(helloRequestBody)).digest(),
-        nodeKey.nodePrivKey,
-      );
-      helloRequestBody = { ...helloRequestBody, sign: signature.toString('hex') };
-
-      // send request and wait for response
-
-      const packet = new packets.HelloRequestPacket(helloRequestBody);
-      this.sendPacket(packet);
-
-      const helloResponse = await this.wait(packet.header.id, Peer.RESPONSE_TIMEOUT);
-
-      // verifying signature
-
-      const { sign, ...bodyWithoutSign } = helloResponse.body;
-      const verified = secp256k1.verify(
-        crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
-        Buffer.from(sign, 'hex') ,
-        Buffer.from(helloResponse.body.nodeState.nodePubKey, 'hex'),
-      );
-
-      console.log('#### RESPONSE VERIFIED: ' + verified);
-
-      this.nodeState = helloResponse.body.nodeState;
-      this.enableEncryption();
-
+      const sessionInit = await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
+      const outKey = await this.ackSession(sessionInit);
+      this.setOutEncryption(outKey);
     } else {
-
-      // INBOUND HANDSHAKE
-
-      if (!this.helloRequestPacket) {
-        await this.wait(PacketType.HelloRequest.toString(), Peer.RESPONSE_TIMEOUT);
+      // inbound handshake
+      if (!this.sessionInitPacket) {
+        await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
       }
+      const sessionInit = this.sessionInitPacket!;
+      const outKey = await this.ackSession(sessionInit);
+      this.setOutEncryption(outKey);
 
-      const helloRequest = this.helloRequestPacket!;
-
-      // verifying signature
-
-      const { sign, ...bodyWithoutSign } = helloRequest.body!;
-      const verified = secp256k1.verify(
-        crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
-        Buffer.from(sign, 'hex') ,
-        Buffer.from(helloRequest.body!.nodeState.nodePubKey, 'hex'),
-      );
-
-      console.log('#### REQUEST VERIFIED: ' + verified);
-
-      this.nodeState = helloRequest.body!.nodeState;
-
-      // signing
-
-      let helloResponseBody: any = {
-        peerPubKey: helloRequest.body!.nodeState.nodePubKey,
-        nodeState: ownNodeState,
-      };
-
-      const { signature } = secp256k1.sign(
-        crypto.createHash('sha256').update(stringify(helloResponseBody)).digest(),
-        nodeKey.nodePrivKey,
-      );
-
-      helloResponseBody = { ...helloResponseBody, sign: signature.toString('hex') };
-
-      // key exchange
-
-      ecdh.setPrivateKey(nodeKey.nodePrivKey);
-      const sharedSecretKey = ecdh.computeSecret(helloRequest.body!.ephemeralPubKey, 'hex');
-      this.encryptionKey = sharedSecretKey;
-
-      console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
-
-      // send response
-
-      const packet = new packets.HelloResponsePacket(helloResponseBody, helloRequest.header.id);
-      this.sendPacket(packet);
-
-      this.enableEncryption();
+      const inKey = await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);
+      this.setInEncryption(inKey);
     }
-  }
-
-  private handleHelloRequest = (packet: packets.HelloRequestPacket): void => {
-    this.helloRequestPacket = packet;
-
-    const entry = this.responseMap.get(PacketType.HelloRequest.toString());
-    if (entry) {
-      this.responseMap.delete(PacketType.HelloRequest.toString());
-      entry.resolve(packet);
-    }
-  }
-
-  private handleNodeStateUpdate = (packet: packets.NodeStateUpdatePacket): void => {
-    const nodeStateUpdate = packet.body!;
-    const peerId = this.nodePubKey || addressUtils.toString(this.address);
-    this.logger.verbose(`received node state update packet from ${peerId}: ${JSON.stringify(nodeStateUpdate)}`);
-
-    this.nodeState = { ...this.nodeState, ...nodeStateUpdate as NodeState };
-    this.emit('nodeStateUpdate');
   }
 
   private sendPing = (): packets.PingPacket => {
     const packet = new packets.PingPacket();
-
     this.sendPacket(packet);
-
     return packet;
   }
 
   private sendGetNodes = (): packets.PingPacket => {
     const packet =  new packets.GetNodesPacket();
-
     this.sendPacket(packet);
+    return packet;
+  }
 
+  private sendPong = (pingId: string): packets.PongPacket => {
+    const packet = new packets.PongPacket(undefined, pingId);
+    this.sendPacket(packet);
     return packet;
   }
 
   private handlePing = (packet: packets.PingPacket): void  => {
     this.sendPong(packet.header.id);
+  }
+
+  private sendSessionInit = (
+    ephemeralPubKey: string,
+    ownNodeState: NodeState,
+    expectedNodePubKey: string,
+    nodeKey: NodeKey,
+  ): packets.SessionInitPacket => {
+    let body: any = {
+      ephemeralPubKey,
+      peerPubKey: expectedNodePubKey,
+      nodeState: ownNodeState,
+    };
+
+    const { signature } = secp256k1.sign(
+      crypto.createHash('sha256').update(stringify(body)).digest(),
+      nodeKey.nodePrivKey,
+    );
+
+    body = { ...body, sign: signature.toString('hex') };
+
+    const packet = new packets.SessionInitPacket(body);
+    this.sendPacket(packet);
+    return packet;
   }
 
   private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
@@ -795,20 +747,33 @@ class Peer extends EventEmitter {
     }
   }
 
-  private sendPong = (pingId: string): packets.PongPacket => {
-    const packet = new packets.PongPacket(undefined, pingId);
+  private handleSessionInit = (packet: packets.SessionInitPacket): void => {
+    this.sessionInitPacket = packet;
 
-    this.sendPacket(packet);
-
-    return packet;
+    const entry = this.responseMap.get(PacketType.SessionInit.toString());
+    if (entry) {
+      this.responseMap.delete(PacketType.SessionInit.toString());
+      entry.resolve(packet);
+    }
   }
 
-  private enableEncryption = () => {
-    assert(this.encryptionKey);
-    this.encryptionEnabled = true;
-    this.parser.setEncryptionKey(this.encryptionKey!);
+  private handleNodeStateUpdate = (packet: packets.NodeStateUpdatePacket): void => {
+    const nodeStateUpdate = packet.body!;
+    const peerId = this.nodePubKey || addressUtils.toString(this.address);
+    this.logger.verbose(`received node state update packet from ${peerId}: ${JSON.stringify(nodeStateUpdate)}`);
 
-    this.logger.error(`Peer (${this.nodePubKey}) session encryption enabled`);
+    this.nodeState = { ...this.nodeState, ...nodeStateUpdate as NodeState };
+    this.emit('nodeStateUpdate');
+  }
+
+  private setOutEncryption = (key: Buffer) => {
+    this.outEncryptionKey = key;
+    this.logger.debug(`Peer (${this.nodePubKey || addressUtils.toString(this.address)}) session out-encryption enabled`);
+  }
+
+  private setInEncryption = (key: Buffer) => {
+    this.parser.setEncryptionKey(key);
+    this.logger.debug(`Peer (${this.nodePubKey || addressUtils.toString(this.address)}) session in-encryption enabled`);
   }
 }
 
