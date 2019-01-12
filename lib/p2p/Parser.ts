@@ -1,3 +1,4 @@
+/* tslint:disable brace-style */
 import { EventEmitter } from 'events';
 import { PacketType } from './packets';
 import Packet, { isPacket } from './packets/Packet';
@@ -94,6 +95,7 @@ class Parser extends EventEmitter {
   private pending: Buffer[] = [];
   private waiting = 0;
   private waitingHeader = 0;
+  private encryptionKey?: Buffer;
   private static readonly MAX_BUFFER_SIZE = (4 * 1024 * 1024); // in bytes
 
   constructor(
@@ -104,9 +106,12 @@ class Parser extends EventEmitter {
     super();
   }
 
-  public feed = (chunk: Buffer): void => {
-    /* tslint:disable brace-style */
+  public setEncryptionKey = (key: Buffer) => {
+    this.encryptionKey = key;
+    this.msgHeaderLength = Framer.ENCRYPTED_MSG_HEADER_LENGTH;
+  }
 
+  public feed = (chunk: Buffer): void => {
     const totalSize = this.pending
       .map(buffer => buffer.length)
       .reduce((acc, curr) => acc + curr, 0) + chunk.length;
@@ -125,7 +130,7 @@ class Parser extends EventEmitter {
     else if (this.waitingHeader) {
       this.pending.push(chunk);
       const data = Buffer.concat(this.pending);
-      const length = this.framer.parseLength(data);
+      const length = this.framer.parseLength(data, !!this.encryptionKey);
       this.pending = [];
       this.read(length + this.msgHeaderLength, data);
     }
@@ -138,7 +143,7 @@ class Parser extends EventEmitter {
 
     // start to read a new message
     else {
-      const length =  this.framer.parseLength(chunk);
+      const length =  this.framer.parseLength(chunk, !!this.encryptionKey);
       this.read(length + this.msgHeaderLength, chunk);
     }
   }
@@ -166,7 +171,7 @@ class Parser extends EventEmitter {
   private parseMessage = (chunks: Buffer[]): void => {
     try {
       const msg = Buffer.concat(chunks);
-      const { header, packet } = this.framer.unframe(msg);
+      const { header, packet } = this.framer.unframe(msg, this.encryptionKey);
 
       const parsedPacket = parsePacket(header, Uint8Array.from(packet));
       this.emit('packet', parsedPacket);

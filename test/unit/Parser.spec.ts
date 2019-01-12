@@ -1,5 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import crypto from 'crypto';
 import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
@@ -17,6 +18,7 @@ describe('Parser', () => {
   const timeoutError = 'timeout';
   const network = new Network(NetworkMagic.TestNet);
   const framer = new Framer(network);
+  const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
   let parser: Parser;
 
   beforeEach(() => {
@@ -60,6 +62,17 @@ describe('Parser', () => {
       const data = framer.frame(packet);
       parser.feed(data);
     });
+
+    it(`should parse an encrypted valid ${PacketType[packet.type]} packet`, (done) => {
+      verify([packet])
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      const data = framer.frame(packet, encryptionKey);
+      parser.feed(data);
+    });
   }
 
   function testInvalidPacket(packet: Packet) {
@@ -84,6 +97,19 @@ describe('Parser', () => {
       parser.feed(data.slice(0, middleIndex));
       parser.feed(data.slice(middleIndex));
     });
+
+    it(`should parse encrypted ${PacketType[packet.type]} packet split`, (done) => {
+      verify([packet])
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      const data = framer.frame(packet, encryptionKey);
+      const middleIndex = data.length >> 1;
+      parser.feed(data.slice(0, middleIndex));
+      parser.feed(data.slice(middleIndex));
+    });
   }
 
   function testConcatenatedPackets(packets: Packet[]) {
@@ -94,6 +120,18 @@ describe('Parser', () => {
 
       parser.feed(Buffer.concat(packets.map((packet) => {
         return framer.frame(packet);
+      })));
+    });
+
+    it(`should parse encrypted ${packets.map(packet => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
+      verify(packets)
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      parser.feed(Buffer.concat(packets.map((packet) => {
+        return framer.frame(packet, encryptionKey);
       })));
     });
   }
@@ -108,6 +146,23 @@ describe('Parser', () => {
       let remaining = Buffer.alloc(0);
       packets.forEach((packet) => {
         const buffer = Buffer.concat([remaining, framer.frame(packet)]);
+        const chunk = buffer.slice(0, splitByte); // split on a specific byte
+        remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
+        parser.feed(chunk);
+      });
+      parser.feed(remaining);
+    });
+
+    it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
+      verify(packets)
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      let remaining = Buffer.alloc(0);
+      packets.forEach((packet) => {
+        const buffer = Buffer.concat([remaining, framer.frame(packet, encryptionKey)]);
         const chunk = buffer.slice(0, splitByte); // split on a specific byte
         remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
         parser.feed(chunk);

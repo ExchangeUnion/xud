@@ -76,7 +76,7 @@ class Peer extends EventEmitter {
   private lastSend = 0;
   private nodeState?: NodeState;
   private helloRequestPacket?: packets.HelloRequestPacket;
-  private encrypted = false;
+  private encryptionEnabled = false;
   private encryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
@@ -301,11 +301,14 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = (packet: Packet): void => {
-    const data = this.framer.frame(packet);
+    const data = this.framer.frame(
+      packet,
+      this.encryptionEnabled ? this.encryptionKey : undefined,
+    );
     this.sendRaw(data);
 
-    const recipient = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
-    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${recipient}: ${JSON.stringify(packet)}`);
+    const peerId = this.nodePubKey || addressUtils.toString(this.address);
+    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${peerId}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -579,6 +582,7 @@ class Peer extends EventEmitter {
     if (!this.opened && packet.type !== PacketType.HelloRequest && packet.type !== PacketType.HelloResponse) {
       // until the connection is opened, we only accept hello packets
       solicited = false;
+      console.log('@@@' + packet.type);
     }
     if (packet.direction === PacketDirection.Response) {
       // lookup a pending response entry for this packet by its reqId
@@ -649,8 +653,7 @@ class Peer extends EventEmitter {
 
       const ephemeralPubKey = ecdh.generateKeys().toString('hex');
       const sharedSecretKey = ecdh.computeSecret(expectedNodePubKey!, 'hex');
-      this.setEncryptionKey(sharedSecretKey);
-      this.setEncrypted(true);
+      this.encryptionKey = sharedSecretKey;
       console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
 
       // signing
@@ -686,6 +689,7 @@ class Peer extends EventEmitter {
       console.log('#### RESPONSE VERIFIED: ' + verified);
 
       this.nodeState = helloResponse.body.nodeState;
+      this.enableEncryption();
 
     } else {
 
@@ -728,16 +732,16 @@ class Peer extends EventEmitter {
 
       ecdh.setPrivateKey(nodeKey.nodePrivKey);
       const sharedSecretKey = ecdh.computeSecret(helloRequest.body!.ephemeralPubKey, 'hex');
-      this.setEncryptionKey(sharedSecretKey);
-      this.setEncrypted(true);
+      this.encryptionKey = sharedSecretKey;
 
-     // this.parser.setKey(this.sharedSecretKey)
       console.log('#### SHARED SECRET KEY: ' + sharedSecretKey);
 
       // send response
 
       const packet = new packets.HelloResponsePacket(helloResponseBody, helloRequest.header.id);
       this.sendPacket(packet);
+
+      this.enableEncryption();
     }
   }
 
@@ -799,14 +803,12 @@ class Peer extends EventEmitter {
     return packet;
   }
 
-  private setEncryptionKey = (key: Buffer) => {
-    this.encryptionKey = key;
- //   this.framer.setEncryptionKey(key);
-  }
+  private enableEncryption = () => {
+    assert(this.encryptionKey);
+    this.encryptionEnabled = true;
+    this.parser.setEncryptionKey(this.encryptionKey!);
 
-  private setEncrypted = (val: boolean) => {
-    this.encrypted = val;
-   // this.framer.setEncrypted(val);
+    this.logger.error(`Peer (${this.nodePubKey}) session encryption enabled`);
   }
 }
 

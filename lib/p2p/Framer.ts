@@ -19,26 +19,18 @@ type WireMsg = {
 class Framer {
   public static readonly MSG_HEADER_LENGTH = 16;
   public static readonly ENCRYPTED_MSG_HEADER_LENGTH = 4;
-  private encryptionEnabled = false;
-  private encryptionKey?: Buffer;
+  public static readonly ENCRYPTION_KEY_LENGTH = 32;
+  public static readonly ENCRYPTION_IV_LENGTH = 16;
 
   constructor(private network: Network) {
-  }
-
-  public setEncrypted = (val: boolean) => {
-    this.encryptionEnabled = val;
-  }
-
-  public setEncryptionKey = (key: Buffer): void => {
-    this.encryptionKey = key;
   }
 
   /**
    * Frame a packet with a header to be used as a wire msg
    */
-  public frame = (packet: Packet): Buffer => {
+  public frame = (packet: Packet, encryptionKey?: Buffer): Buffer => {
     const payload = packet.toRaw();
-    let msg = Buffer.allocUnsafe(16 + payload.length);
+    const msg = Buffer.allocUnsafe(Framer.MSG_HEADER_LENGTH + payload.length);
 
     // network magic value
     msg.writeUInt32LE(this.network.magic, 0, true);
@@ -56,24 +48,30 @@ class Framer {
     // payload
     payload.copy(msg, 16);
 
-    if (this.encryptionEnabled) {
-      assert(this.encryptionKey);
-
-      msg = this.encrypt(msg);
+    if (!encryptionKey) {
+      return msg;
     }
 
-    return msg;
+    const ciphertext = this.encrypt(msg, encryptionKey);
+    const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
+
+    // length
+    encryptedMsg.writeUInt32LE(ciphertext.length, 0, true);
+
+    // ciphertext
+    ciphertext.copy(encryptedMsg, 4);
+
+    return encryptedMsg;
   }
 
   /**
    * Unframe a wire msg or an encrypted wire msg
    */
-  public unframe = (data: Buffer): WireMsg => {
+  public unframe = (data: Buffer, encryptionKey?: Buffer): WireMsg => {
     let msg;
-    if (!this.encryptionEnabled) {
+    if (!encryptionKey) {
       msg = data;
     } else {
-      assert(this.encryptionKey);
       const length = data.readUInt32LE(0, true);
       const ciphertext = data.slice(4);
 
@@ -81,7 +79,7 @@ class Framer {
         throw new Error('invalid ciphertext length');
       }
 
-      msg = this.decrypt(ciphertext);
+      msg = this.decrypt(ciphertext, encryptionKey);
     }
 
     const header = this.parseHeader(msg);
@@ -97,10 +95,10 @@ class Framer {
   /**
    * Parse the length of a wire msg or an encrypted wire msg
    */
-  public parseLength = (data: Buffer): number => {
-    const value = data.readUInt32LE(0, true);
+  public parseLength = (msg: Buffer, encrypted: boolean): number => {
+    const value = msg.readUInt32LE(0, true);
 
-    if (this.encryptionEnabled) {
+    if (encrypted) {
       if (value === this.network.magic) {
         throw new Error('not encrypted');
       }
@@ -111,7 +109,7 @@ class Framer {
       throw new Error('invalid magic network value');
     }
 
-    return data.readUInt32LE(4, true);
+    return msg.readUInt32LE(4, true);
   }
 
   /**
@@ -137,23 +135,17 @@ class Framer {
     return { magic, type, length, checksum };
   }
 
-  public encrypt = (plaintext: Buffer): Buffer => {
-    assert(this.encryptionEnabled && this.encryptionKey);
+  public encrypt = (plaintext: Buffer, key: Buffer): Buffer => {
+    const iv = crypto.randomBytes(Framer.ENCRYPTION_IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
 
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', this.encryptionKey, iv);
-    const encrypted = Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
-
-    const length = Buffer.allocUnsafe(4);
-    length.writeUInt32LE(encrypted.length, 0, true);
-
-    return Buffer.concat([length, encrypted]);
+    return Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
   }
 
-  public decrypt = (ciphertext: Buffer): Buffer => {
-    const iv = ciphertext.slice(0, 16);
-    const encrypted = ciphertext.slice(16);
-    const decipher = crypto.createDecipheriv('aes-256-cbc', this.encryptionKey, iv);
+  public decrypt = (ciphertext: Buffer, key: Buffer): Buffer => {
+    const iv = ciphertext.slice(0, Framer.ENCRYPTION_IV_LENGTH);
+    const encrypted = ciphertext.slice(Framer.ENCRYPTION_IV_LENGTH);
+    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
   }
