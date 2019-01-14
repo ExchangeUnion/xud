@@ -13,7 +13,7 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../types/orders';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { NodeState, Address, NodeConnectionInfo, PoolConfig } from '../types/p2p';
-import errors from './errors';
+import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
 import Network from './Network';
@@ -83,7 +83,7 @@ class Peer extends EventEmitter {
   private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
   private framer: Framer;
   /** Interval to check required responses from peer. */
-  private static readonly STALL_INTERVAL = 50000;
+  private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static readonly PING_INTERVAL = 30000;
   /** Response timeout for response packets. */
@@ -292,9 +292,18 @@ class Peer extends EventEmitter {
       this.connectTimeout = undefined;
     }
 
+    let rejectionMsg;
+    if (reason) {
+      rejectionMsg = `Peer closed due to ${DisconnectionReason[reason]}`;
+    } else if (this.recvDisconnectionReason) {
+      rejectionMsg = `Peer disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
+    } else {
+      rejectionMsg = `Peer was destroyed`;
+    }
+
     for (const [packetType, entry] of this.responseMap) {
       this.responseMap.delete(packetType);
-      entry.reject(new Error('Peer was destroyed'));
+      entry.reject(new Error(rejectionMsg));
     }
 
     this.emit('close');
@@ -634,16 +643,35 @@ class Peer extends EventEmitter {
     }
   }
 
-  private authenticate = (packet: packets.SessionInitPacket) => {
-    const { sign, ...bodyWithoutSign } = packet.body!;
+  /**
+   * Authenticate the identity of the peer through SessionInit packet
+   * @param {SessionInitPacket} packet
+   * @param {NodeKey} nodeKey
+   */
+  private authenticate = (packet: packets.SessionInitPacket, nodeKey: NodeKey) => {
+    const body = packet.body!;
+    const { sign, ...bodyWithoutSign } = body;
+    const { nodePubKey } = body.nodeState; // the peer pubkey
+    const { peerPubKey } = body; // our own pubkey
+
+    // verify that the msg was signed the for us
+    if (peerPubKey !== nodeKey.nodePubKey) {
+      this.close(DisconnectionReason.AuthFailureInvalidTarget);
+      throw errors.AUTH_FAILURE_INVALID_TARGET(nodePubKey, peerPubKey);
+    }
+
+    // verify that the msg was signed by the peer
+    const msg = stringify(bodyWithoutSign);
+    const msgHash = crypto.createHash('sha256').update(msg).digest();
     const verified = secp256k1.verify(
-      crypto.createHash('sha256').update(stringify(bodyWithoutSign)).digest(),
-      Buffer.from(sign, 'hex') ,
-      Buffer.from(packet.body!.nodeState.nodePubKey, 'hex'),
+      msgHash,
+      Buffer.from(sign, 'hex'),
+      Buffer.from(nodePubKey, 'hex'),
     );
 
     if (!verified) {
-      throw new Error('invalid authentication');
+      this.close(DisconnectionReason.AuthFailureInvalidSignature);
+      throw errors.AUTH_FAILURE_INVALID_SIGNATURE(nodePubKey);
     }
   }
 
@@ -655,8 +683,8 @@ class Peer extends EventEmitter {
     return inECDH.computeSecret(inSessionAck.body.ephemeralPubKey, 'hex');
   }
 
-  private ackSession = async (sessionInit: packets.SessionInitPacket): Promise<Buffer> => {
-    this.authenticate(sessionInit);
+  private ackSession = async (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): Promise<Buffer> => {
+    this.authenticate(sessionInit, nodeKey);
     this.nodeState = sessionInit.body!.nodeState;
 
     const outECDH = crypto.createECDH('secp256k1');
@@ -674,7 +702,7 @@ class Peer extends EventEmitter {
       this.setInEncryption(inKey);
 
       const sessionInit = await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
-      const outKey = await this.ackSession(sessionInit);
+      const outKey = await this.ackSession(sessionInit, nodeKey);
       this.setOutEncryption(outKey);
     } else {
       // inbound handshake
@@ -682,7 +710,7 @@ class Peer extends EventEmitter {
         await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
       }
       const sessionInit = this.sessionInitPacket!;
-      const outKey = await this.ackSession(sessionInit);
+      const outKey = await this.ackSession(sessionInit, nodeKey);
       this.setOutEncryption(outKey);
 
       const inKey = await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);

@@ -107,4 +107,6 @@ export enum DisconnectionReason {
   AlreadyConnected = 8,
   Shutdown = 9,
   MalformedVersion = 10,
+  AuthFailureInvalidTarget = 11,
+  AuthFailureInvalidSignature = 12,
 }

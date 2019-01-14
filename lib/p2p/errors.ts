@@ -16,6 +16,8 @@ const errorCodes = {
   NODE_NOT_BANNED: codesPrefix.concat('.10'),
   NODE_IS_BANNED: codesPrefix.concat('.11'),
   ALREADY_CONNECTING: codesPrefix.concat('.12'),
+  AUTH_FAILURE_INVALID_TARGET: codesPrefix.concat('.13'),
+  AUTH_FAILURE_INVALID_SIGNATURE: codesPrefix.concat('.14'),
 };
 
 const errors = {
@@ -74,6 +76,14 @@ const errors = {
   ALREADY_CONNECTING: (nodePubKey: string) => ({
     message: `there is already an existing connection attempt to node ${nodePubKey}`,
     code: errorCodes.ALREADY_CONNECTING,
+  }),
+  AUTH_FAILURE_INVALID_TARGET: (nodePubKey: string, target: string) => ({
+    message: `could not authenticate peer (${nodePubKey}): invalid target (${target})`,
+    code: errorCodes.AUTH_FAILURE_INVALID_TARGET,
+  }),
+  AUTH_FAILURE_INVALID_SIGNATURE: (nodePubKey: string) => ({
+    message: `could not authenticate peer (${nodePubKey}): invalid signature`,
+    code: errorCodes.AUTH_FAILURE_INVALID_SIGNATURE,
   }),
 };
 
