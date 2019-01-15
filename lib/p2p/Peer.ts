@@ -193,7 +193,7 @@ class Peer extends EventEmitter {
    * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
    */
-  public open = async (nodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
+  public open = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || expectedNodePubKey);
@@ -205,14 +205,14 @@ class Peer extends EventEmitter {
     await this.initConnection(retryConnecting);
     this.initStall();
 
-    await this.handshake(nodeState, nodeKey, expectedNodePubKey);
+    await this.handshake(ownNodeState, nodeKey, expectedNodePubKey);
 
     if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
       this.close(DisconnectionReason.UnexpectedIdentity);
       throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
     }
 
-    if (this.nodePubKey === nodeState.nodePubKey) {
+    if (this.nodePubKey === ownNodeState.nodePubKey) {
       this.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
