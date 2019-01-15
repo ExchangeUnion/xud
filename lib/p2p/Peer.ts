@@ -439,7 +439,7 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number): any => {
+  private wait = (packetId: string, timeout?: number): Promise<Packet> => {
     const entry = this.getOrAddPendingResponseEntry(packetId);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
@@ -671,8 +671,8 @@ class Peer extends EventEmitter {
     const inECDH = crypto.createECDH('secp256k1');
     const inEphemeralPubKey = inECDH.generateKeys().toString('hex');
     const outSessionInit = this.sendSessionInit(inEphemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
-    const inSessionAck = await this.wait(outSessionInit.header.id, Peer.RESPONSE_TIMEOUT);
-    return inECDH.computeSecret(inSessionAck.body.ephemeralPubKey, 'hex');
+    const inSessionAck: packets.SessionAckPacket = await this.wait(outSessionInit.header.id, Peer.RESPONSE_TIMEOUT);
+    return inECDH.computeSecret(inSessionAck.body!.ephemeralPubKey, 'hex');
   }
 
   private ackSession = async (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): Promise<Buffer> => {
@@ -693,7 +693,7 @@ class Peer extends EventEmitter {
       const inKey = await this.initSession(ownNodeState, nodeKey, expectedNodePubKey!);
       this.setInEncryption(inKey);
 
-      const sessionInit = await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
+      const sessionInit: packets.SessionInitPacket = await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
       const outKey = await this.ackSession(sessionInit, nodeKey);
       this.setOutEncryption(outKey);
     } else {
