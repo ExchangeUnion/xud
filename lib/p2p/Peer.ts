@@ -752,10 +752,9 @@ class Peer extends EventEmitter {
       nodeState: ownNodeState,
     };
 
-    const { signature } = secp256k1.sign(
-      crypto.createHash('sha256').update(stringify(body)).digest(),
-      nodeKey.nodePrivKey,
-    );
+    const msg = stringify(body);
+    const msgHash = crypto.createHash('sha256').update(msg).digest();
+    const { signature } = secp256k1.sign(msgHash, nodeKey.nodePrivKey);
 
     body = { ...body, sign: signature.toString('hex') };
 
