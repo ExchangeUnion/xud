@@ -651,10 +651,11 @@ class Peer extends EventEmitter {
     const body = packet.body!;
     const { sign, ...bodyWithoutSign } = body;
     const { nodePubKey } = body.nodeState; // the peer pubkey
-    const { peerPubKey } = body; // our own pubkey
+    const { peerPubKey } = body; // our pubkey
 
     // verify that msg was intended for us
     if (peerPubKey !== nodeKey.nodePubKey) {
+      this.emit('reputation', ReputationEvent.InvalidAuth);
       this.close(DisconnectionReason.AuthFailureInvalidTarget);
       throw errors.AUTH_FAILURE_INVALID_TARGET(nodePubKey, peerPubKey);
     }
@@ -669,6 +670,7 @@ class Peer extends EventEmitter {
     );
 
     if (!verified) {
+      this.emit('reputation', ReputationEvent.InvalidAuth);
       this.close(DisconnectionReason.AuthFailureInvalidSignature);
       throw errors.AUTH_FAILURE_INVALID_SIGNATURE(nodePubKey);
     }

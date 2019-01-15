@@ -13,6 +13,7 @@ export const reputationEventWeight = {
   [ReputationEvent.SwapFailure]: -10,
   [ReputationEvent.SwapSuccess]: 1,
   [ReputationEvent.WireProtocolErr]: -5,
+  [ReputationEvent.InvalidAuth]: -20,
 };
 
 // TODO: inform node about getting banned

@@ -68,6 +68,7 @@ export enum ReputationEvent {
   SwapFailure = 3,
   SwapSuccess = 4,
   WireProtocolErr = 5,
+  InvalidAuth = 6,
 }
 
 export enum SwapFailureReason {
