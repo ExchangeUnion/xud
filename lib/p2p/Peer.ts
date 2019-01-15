@@ -653,7 +653,7 @@ class Peer extends EventEmitter {
     const { nodePubKey } = body.nodeState; // the peer pubkey
     const { peerPubKey } = body; // our own pubkey
 
-    // verify that the msg was signed the for us
+    // verify that msg was intended for us
     if (peerPubKey !== nodeKey.nodePubKey) {
       this.close(DisconnectionReason.AuthFailureInvalidTarget);
       throw errors.AUTH_FAILURE_INVALID_TARGET(nodePubKey, peerPubKey);
