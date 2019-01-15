@@ -42,7 +42,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const pbOrder = new pb.Order();
     pbOrder.setId(this.body!.id);
     pbOrder.setPairId(this.body!.pairId);

@@ -43,7 +43,7 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.NodesPacket();
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);

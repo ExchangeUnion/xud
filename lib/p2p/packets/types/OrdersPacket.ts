@@ -47,7 +47,7 @@ class OrdersPacket extends Packet<OrdersPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.OrdersPacket();
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);

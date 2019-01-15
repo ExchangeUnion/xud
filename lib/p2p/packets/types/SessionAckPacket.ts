@@ -41,7 +41,7 @@ class SessionAckPacket extends Packet<SessionAckPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SessionAckPacket();
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);

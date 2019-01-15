@@ -49,7 +49,7 @@ class SwapRequestPacket extends Packet<SwapRequestPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapRequestPacket();
     msg.setId(this.header.id);
     msg.setProposedQuantity(this.body!.proposedQuantity);

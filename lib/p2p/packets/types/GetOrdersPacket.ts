@@ -37,7 +37,7 @@ class GetOrdersPacket extends Packet<GetOrdersPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.GetOrdersPacket();
     msg.setId(this.header.id);
     msg.setPairIdsList(this.body!.pairIds);

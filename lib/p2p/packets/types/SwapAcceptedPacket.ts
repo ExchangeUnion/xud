@@ -47,7 +47,7 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapAcceptedPacket();
     msg.setId(this.header.id);
     msg.setReqId(this.header.reqId!);

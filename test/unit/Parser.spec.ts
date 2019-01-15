@@ -12,6 +12,7 @@ import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPa
 import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
 import { errorCodes } from '../../lib/p2p/errors';
+import stringify = require("json-stable-stringify");
 
 chai.use(chaiAsPromised);
 
@@ -45,7 +46,7 @@ describe('Parser', () => {
       wait(packets.length)
         .then((parsedPackets) => {
           for (let i = 0; i < packets.length; i += 1) {
-            expect(packets[i]).to.deep.equal(parsedPackets[i]);
+            expect(stringify(packets[i])).to.equal(stringify(parsedPackets[i]));
             expect(packets[i].type).to.equal(parsedPackets[i].type);
           }
           resolve();

@@ -60,7 +60,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SessionInitPacket();
     msg.setId(this.header.id);
     msg.setSign(this.body!.sign);

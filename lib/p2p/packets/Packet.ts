@@ -84,7 +84,7 @@ abstract class Packet<T = any> implements PacketInterface {
 
   public abstract serialize(): Uint8Array;
 
-  public toJSON() {
+  public toJSON = () => {
     return stringify({ header: this.header, body: this.body });
   }
 
@@ -92,11 +92,11 @@ abstract class Packet<T = any> implements PacketInterface {
    * Serialize this packet to binary Buffer.
    * @returns Buffer representation of the packet
    */
-  public toRaw(): Buffer {
+  public toRaw = (): Buffer => {
     return Buffer.from(this.serialize().buffer as ArrayBuffer);
   }
 
-  public checksum(): Buffer {
+  public checksum = (): Buffer => {
     return crypto.createHash('sha256').update(this.toJSON()).digest();
   }
 }

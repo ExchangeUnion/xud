@@ -28,7 +28,7 @@ class PingPacket extends Packet<undefined> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.PingPacket();
     msg.setId(this.header.id);
 

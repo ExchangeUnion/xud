@@ -40,7 +40,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.OrderInvalidationPacket();
     msg.setId(this.header.id);
     msg.setOrderId(this.body!.id);

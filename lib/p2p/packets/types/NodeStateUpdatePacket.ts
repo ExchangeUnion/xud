@@ -40,7 +40,7 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.NodeStateUpdatePacket();
 
     msg.setId(this.header.id);

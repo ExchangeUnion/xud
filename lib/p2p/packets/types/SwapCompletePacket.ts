@@ -37,7 +37,7 @@ class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapCompletePacket();
     msg.setId(this.header.id);
     msg.setRHash(this.body!.rHash);
