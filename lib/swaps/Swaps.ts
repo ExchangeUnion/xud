@@ -725,10 +725,16 @@ class Swaps extends EventEmitter {
   private handleSwapFailed = (packet: packets.SwapFailedPacket) => {
     const { rHash, errorMessage, failureReason } = packet.body!;
     const deal = this.getDeal(rHash);
+    // TODO: penalize for unexpected swap failed packets
     if (!deal) {
-      this.logger.error(`received swap error for unknown deal payment hash ${rHash}`);
+      this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
       return;
     }
+    if (deal.state !== SwapState.Active) {
+      this.logger.warn(`received swap failed packet for inactive deal with payment hash ${rHash}`);
+      return;
+    }
+
     this.failDeal(deal, failureReason, errorMessage);
     return this.persistDeal(deal);
   }
