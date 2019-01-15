@@ -1,6 +1,7 @@
 import { loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import * as xudrpc from '../../proto/xudrpc_pb';
+import { XudClient } from '../../proto/xudrpc_grpc_pb';
 
 export const command = 'streamorders [existing]';
 
@@ -18,7 +19,7 @@ export const handler = (argv: Arguments) => {
   ensureConnection(argv, true);
 };
 
-let xud: any;
+let xud: XudClient;
 
 const ensureConnection = (argv: Arguments, printError?: boolean) => {
   if (!xud) xud = loadXudClient(argv);
