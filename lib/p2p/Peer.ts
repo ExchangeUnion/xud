@@ -542,16 +542,7 @@ class Peer extends EventEmitter {
       this.close();
     });
 
-    this.socket!.on('data', (data) => {
-      this.lastRecv = Date.now();
-      const dataStr = data.toString();
-      if (this.nodePubKey !== undefined) {
-        this.logger.trace(`Received data from ${this.nodePubKey}: ${dataStr}`);
-      } else {
-        this.logger.trace(`Received data from ${addressUtils.toString(this.address)}: ${data.toString()}`);
-      }
-      this.parser.feed(data);
-    });
+    this.socket!.on('data', this.parser.feed);
 
     this.socket!.setNoDelay(true);
   }
