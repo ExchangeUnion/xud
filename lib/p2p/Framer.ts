@@ -2,6 +2,7 @@ import assert from 'assert';
 import crypto from 'crypto';
 import Network from './Network';
 import Packet from './packets/Packet';
+import errors from './errors';
 
 type WireMsgHeader = {
   magic: number,
@@ -76,7 +77,7 @@ class Framer {
       const ciphertext = data.slice(4);
 
       if (length !== ciphertext.length) {
-        throw new Error('invalid ciphertext length');
+        throw errors.FRAMER_INVALID_MSG_LENGTH(length, ciphertext.length);
       }
 
       msg = this.decrypt(ciphertext, encryptionKey);
@@ -86,7 +87,7 @@ class Framer {
     const packet = msg.slice(Framer.MSG_HEADER_LENGTH);
 
     if (header.length !== packet.length) {
-      throw new Error('invalid packet length');
+      throw errors.FRAMER_INVALID_MSG_LENGTH(header.length, packet.length);
     }
 
     return { header, packet };
@@ -100,13 +101,13 @@ class Framer {
 
     if (encrypted) {
       if (value === this.network.magic) {
-        throw new Error('not encrypted');
+        throw errors.FRAMER_MSG_NOT_ENCRYPTED;
       }
       return value;
     }
 
     if (value !== this.network.magic) {
-      throw new Error('invalid magic network value. msg might be encrypted');
+      throw errors.FRAMER_INVALID_NETWORK_MAGIC_VALUE;
     }
 
     return data.readUInt32LE(4, true);
@@ -116,9 +117,7 @@ class Framer {
    * Parse the header of a wire msg
    */
   public parseHeader = (msg: Buffer): WireMsgHeader => {
-    if (msg.length < Framer.MSG_HEADER_LENGTH) {
-      throw new Error(`invalid msg header length: data is missing`);
-    }
+    assert(msg.length >= Framer.MSG_HEADER_LENGTH, `invalid msg header length: data is missing`);
 
     // network magic value
     const magic = msg.readUInt32LE(0, true);

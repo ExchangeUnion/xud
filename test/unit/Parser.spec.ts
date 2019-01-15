@@ -1,16 +1,17 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import crypto from 'crypto';
-import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
+import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
 import { DisconnectionReason, NetworkMagic, SwapFailureReason } from '../../lib/types/enums';
 import uuid = require('uuid');
-import { Address, NodeState, NodeStateUpdate } from '../../lib/types/p2p';
+import { Address, NodeState } from '../../lib/types/p2p';
 import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPacket';
 import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
+import { errorCodes } from '../../lib/p2p/errors';
 
 chai.use(chaiAsPromised);
 
@@ -357,26 +358,36 @@ describe('Parser', () => {
       parser.feed(Buffer.alloc(0));
     });
 
-    /*
     it(`should not try parse just the header as a packet`, (done) => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.InvalidPacket) {
+          if (err === timeoutError) {
             done();
           } else {
             done(err);
           }
         });
 
-      parser.feed(Buffer.alloc(Framer.MSG_HEADER_LENGTH));
+      const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
+      const data = framer.frame(sessionInitPacket);
+      const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
+      parser.feed(header);
     });
-    */
 
-    it(`should buffer a max buffer length`, async () => {
+    it(`should buffer a max buffer length`, (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
-      await expect(wait()).to.be.rejectedWith(timeoutError);
+      wait()
+        .then(() => done('err: packet should not be parsed'))
+        .catch((err) => {
+          if (err === timeoutError) {
+            done();
+          } else {
+            done(err);
+          }
+        });
+
       parser.feed(Buffer.allocUnsafe(10));
     });
 
@@ -386,7 +397,7 @@ describe('Parser', () => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.MaxBufferSizeExceeded) {
+          if (err && err.code === errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED) {
             done();
           } else {
             done(err);

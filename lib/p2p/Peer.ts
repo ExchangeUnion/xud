@@ -1,12 +1,12 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import crypto, { ECDH } from 'crypto';
+import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import semver from 'semver';
 import { ReputationEvent, DisconnectionReason, NetworkMagic } from '../types/enums';
-import Parser, { ParserError, ParserErrorType } from './Parser';
+import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
@@ -104,6 +104,10 @@ class Peer extends EventEmitter {
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
     return this.nodeState ? this.nodeState.nodePubKey : undefined;
+  }
+
+  public get label(): string {
+    return this.nodePubKey || addressUtils.toString(this.address);
   }
 
   public get addresses(): Address[] | undefined {
@@ -255,8 +259,7 @@ class Peer extends EventEmitter {
 
     if (this.socket) {
       if (reason !== undefined) {
-        const peerId = this.nodePubKey || addressUtils.toString(this.address);
-        this.logger.debug(`closing socket with peer ${peerId}. reason: ${DisconnectionReason[reason]}`);
+        this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
         this.sentDisconnectionReason = reason;
         this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
@@ -313,8 +316,7 @@ class Peer extends EventEmitter {
     const data = this.framer.frame(packet, this.outEncryptionKey);
     this.sendRaw(data);
 
-    const peerId = this.nodePubKey || addressUtils.toString(this.address);
-    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${peerId}: ${JSON.stringify(packet)}`);
+    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
@@ -456,8 +458,10 @@ class Peer extends EventEmitter {
 
     for (const [packetId, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        this.emitError(`Peer is stalling (${packetId})`);
-        entry.reject('response timed out');
+        const request = PacketType[parseInt(packetId, 10)] || packetId;
+        const err = errors.RESPONSE_TIMEOUT(request);
+        this.emitError(err.message);
+        entry.reject(err.message);
         this.close(DisconnectionReason.ResponseStalling, packetId);
         return;
       }
@@ -496,7 +500,7 @@ class Peer extends EventEmitter {
   private fulfillResponseEntry = (packet: Packet): boolean => {
     const { reqId } = packet.header;
     if (!reqId) {
-      this.logger.debug(`Peer (${this.nodePubKey}) sent a response packet without reqId`);
+      this.logger.debug(`Peer (${this.label}) sent a response packet without reqId`);
       // TODO: penalize
       return false;
     }
@@ -504,7 +508,7 @@ class Peer extends EventEmitter {
     const entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      this.logger.debug(`Peer (${this.nodePubKey}) sent an unsolicited response packet (${reqId})`);
+      this.logger.debug(`Peer (${this.label}) sent an unsolicited response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
@@ -555,27 +559,22 @@ class Peer extends EventEmitter {
   private bindParser = (parser: Parser): void => {
     parser.on('packet', this.handlePacket);
 
-    parser.on('error', (err: ParserError) => {
+    parser.on('error', (err: {message: string, code: string}) => {
       if (this.closed) {
         return;
       }
 
-      switch (err.type) {
-        case ParserErrorType.InvalidPacket:
-          this.logger.warn(`parser: invalid peer packet: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.InvalidPacket);
-          break;
-        case ParserErrorType.UnknownPacketType:
-          this.logger.warn(`parser: unknown peer packet type: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.UnknownPacketType);
-          break;
-        case ParserErrorType.DataIntegrityError:
-          this.logger.warn(`parser: packet data integrity error: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.PacketDataIntegrityError);
-          break;
-        case ParserErrorType.MaxBufferSizeExceeded:
-          this.logger.warn(`parser: max buffer size exceeded: ${err.payload}`);
-          this.emit('reputation', ReputationEvent.MaxParserBufferSizeExceeded);
+      switch (err.code) {
+        case errorCodes.PARSER_INVALID_PACKET:
+        case errorCodes.PARSER_UNKNOWN_PACKET_TYPE:
+        case errorCodes.PARSER_DATA_INTEGRITY_ERR:
+        case errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED:
+        case errorCodes.FRAMER_MSG_NOT_ENCRYPTED:
+        case errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE:
+        case errorCodes.FRAMER_INVALID_MSG_LENGTH:
+          this.logger.warn(`Peer (${this.label}): ${err.message}`);
+          this.emit('reputation', ReputationEvent.WireProtocolErr);
+          this.close(DisconnectionReason.WireProtocolErr, err.message);
           break;
       }
     });
@@ -765,8 +764,7 @@ class Peer extends EventEmitter {
 
   private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
     if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
-      const peerId = this.nodePubKey || addressUtils.toString(this.address);
-      this.logger.debug(`received disconnecting packet from ${peerId}:${JSON.stringify(packet.body)}`);
+      this.logger.debug(`received disconnecting packet from ${this.label}:${JSON.stringify(packet.body)}`);
       this.recvDisconnectionReason = packet.body.reason;
     } else {
       // protocol violation: packet should be sent once only, with body, with `reason` field
@@ -786,8 +784,7 @@ class Peer extends EventEmitter {
 
   private handleNodeStateUpdate = (packet: packets.NodeStateUpdatePacket): void => {
     const nodeStateUpdate = packet.body!;
-    const peerId = this.nodePubKey || addressUtils.toString(this.address);
-    this.logger.verbose(`received node state update packet from ${peerId}: ${JSON.stringify(nodeStateUpdate)}`);
+    this.logger.verbose(`received node state update packet from ${this.label}: ${JSON.stringify(nodeStateUpdate)}`);
 
     this.nodeState = { ...this.nodeState, ...nodeStateUpdate as NodeState };
     this.emit('nodeStateUpdate');
@@ -795,12 +792,12 @@ class Peer extends EventEmitter {
 
   private setOutEncryption = (key: Buffer) => {
     this.outEncryptionKey = key;
-    this.logger.debug(`Peer (${this.nodePubKey || addressUtils.toString(this.address)}) session out-encryption enabled`);
+    this.logger.debug(`Peer (${this.label}) session out-encryption enabled`);
   }
 
   private setInEncryption = (key: Buffer) => {
     this.parser.setEncryptionKey(key);
-    this.logger.debug(`Peer (${this.nodePubKey || addressUtils.toString(this.address)}) session in-encryption enabled`);
+    this.logger.debug(`Peer (${this.label}) session in-encryption enabled`);
   }
 }
 

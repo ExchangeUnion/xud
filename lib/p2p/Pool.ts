@@ -346,8 +346,7 @@ class Pool extends EventEmitter {
         await peer.open(this.nodeState, this.nodeKey, nodePubKey, retryConnecting);
       } catch (err) {
         // we don't have `nodePubKey` for inbound connections, which might fail on handshake
-        const id = nodePubKey || addressUtils.toString(peer.address);
-        this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
+        this.logger.warn(`could not open connection to peer (${peer.label}): ${err}`);
 
         if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
           await this.nodes.removeAddress(nodePubKey!, peer.address);
@@ -636,7 +635,7 @@ class Pool extends EventEmitter {
       // The only situation in which the node should be connected to itself is the
       // reachability check of the advertised addresses and we don't have to log that
       if (peer.nodePubKey !== this.nodeState.nodePubKey) {
-        this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+        this.logger.error(`Peer (${peer.label}): error: ${err.message}`);
       }
     });
 
@@ -648,7 +647,7 @@ class Pool extends EventEmitter {
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.once('reputation', async (event) => {
-      this.logger.debug(`Peer (${peer.nodePubKey || addressUtils.toString(peer.address)}), received reputation event: ${ReputationEvent[event]}`);
+      this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         await this.nodes.addReputationEvent(peer.nodePubKey, event);
       }

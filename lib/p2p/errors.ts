@@ -16,8 +16,16 @@ const errorCodes = {
   NODE_NOT_BANNED: codesPrefix.concat('.10'),
   NODE_IS_BANNED: codesPrefix.concat('.11'),
   ALREADY_CONNECTING: codesPrefix.concat('.12'),
-  AUTH_FAILURE_INVALID_TARGET: codesPrefix.concat('.13'),
-  AUTH_FAILURE_INVALID_SIGNATURE: codesPrefix.concat('.14'),
+  RESPONSE_TIMEOUT: codesPrefix.concat('.13'),
+  AUTH_FAILURE_INVALID_TARGET: codesPrefix.concat('.14'),
+  AUTH_FAILURE_INVALID_SIGNATURE: codesPrefix.concat('.15'),
+  PARSER_INVALID_PACKET: codesPrefix.concat('.16'),
+  PARSER_UNKNOWN_PACKET_TYPE: codesPrefix.concat('.17'),
+  PARSER_DATA_INTEGRITY_ERR: codesPrefix.concat('.18'),
+  PARSER_MAX_BUFFER_SIZE_EXCEEDED: codesPrefix.concat('.19'),
+  FRAMER_MSG_NOT_ENCRYPTED: codesPrefix.concat('.`20'),
+  FRAMER_INVALID_NETWORK_MAGIC_VALUE: codesPrefix.concat('.21'),
+  FRAMER_INVALID_MSG_LENGTH: codesPrefix.concat('.22'),
 };
 
 const errors = {
@@ -77,6 +85,10 @@ const errors = {
     message: `there is already an existing connection attempt to node ${nodePubKey}`,
     code: errorCodes.ALREADY_CONNECTING,
   }),
+  RESPONSE_TIMEOUT: (request: string) => ({
+    message: `response timeout (${request}) `,
+    code: errorCodes.RESPONSE_TIMEOUT,
+  }),
   AUTH_FAILURE_INVALID_TARGET: (nodePubKey: string, target: string) => ({
     message: `could not authenticate peer (${nodePubKey}): invalid target (${target})`,
     code: errorCodes.AUTH_FAILURE_INVALID_TARGET,
@@ -84,6 +96,34 @@ const errors = {
   AUTH_FAILURE_INVALID_SIGNATURE: (nodePubKey: string) => ({
     message: `could not authenticate peer (${nodePubKey}): invalid signature`,
     code: errorCodes.AUTH_FAILURE_INVALID_SIGNATURE,
+  }),
+  PARSER_INVALID_PACKET: (packet: string) => ({
+    message: `parser: invalid packet: ${packet}`,
+    code: errorCodes.PARSER_INVALID_PACKET,
+  }),
+  PARSER_UNKNOWN_PACKET_TYPE: (packetType: string) => ({
+    message: `parser: unknown packet type: ${packetType}`,
+    code: errorCodes.PARSER_UNKNOWN_PACKET_TYPE,
+  }),
+  PARSER_DATA_INTEGRITY_ERR: (packet: string) => ({
+    message: `parser: packet data integrity error: ${packet}`,
+    code: errorCodes.PARSER_DATA_INTEGRITY_ERR,
+  }),
+  PARSER_MAX_BUFFER_SIZE_EXCEEDED: (size: number) => ({
+    message: `parser: max buffer size exceeded: ${size.toString()}`,
+    code: errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED,
+  }),
+  FRAMER_MSG_NOT_ENCRYPTED: {
+    message: `framer: msg is not encrypted`,
+    code: errorCodes.FRAMER_MSG_NOT_ENCRYPTED,
+  },
+  FRAMER_INVALID_NETWORK_MAGIC_VALUE: {
+    message: `framer: msg has an invalid network magic value (might be encrypted)`,
+    code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
+  },
+  FRAMER_INVALID_MSG_LENGTH: (expected: number, found: number) => ({
+    message: `framer: invalid msg length (expected: ${expected} found: ${found})`,
+    code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   }),
 };
 
