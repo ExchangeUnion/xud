@@ -1151,6 +1151,9 @@ export namespace SubscribeRemovedOrdersRequest {
 }
 
 export class SubscribeSwapsRequest extends jspb.Message {
+  getIncludeTaker(): boolean;
+  setIncludeTaker(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscribeSwapsRequest.AsObject;
   static toObject(includeInstance: boolean, msg: SubscribeSwapsRequest): SubscribeSwapsRequest.AsObject;
@@ -1163,6 +1166,7 @@ export class SubscribeSwapsRequest extends jspb.Message {
 
 export namespace SubscribeSwapsRequest {
   export type AsObject = {
+    includeTaker: boolean,
   }
 }
 

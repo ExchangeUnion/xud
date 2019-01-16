@@ -551,7 +551,7 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapResult> = (call) => {
-    this.service.subscribeSwaps((result: SwapResult) => {
+    this.service.subscribeSwaps(call.request.toObject(), (result: SwapResult) => {
       call.write(createSwapResult(result));
     });
     this.addStream(call);
