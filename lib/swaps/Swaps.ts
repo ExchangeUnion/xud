@@ -29,10 +29,16 @@ interface Swaps {
 class Swaps extends EventEmitter {
   /** A map between payment hashes and swap deals. */
   private deals = new Map<string, SwapDeal>();
+  /** A map between payment hashes and timeouts for swaps. */
+  private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
   /** The number of satoshis in a bitcoin. */
   private static readonly SATOSHIS_PER_COIN = 100000000;
+  /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
+  private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
+  /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
+  private static readonly SWAP_COMPLETE_TIMEOUT = 30000;
 
   constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
     super();
@@ -293,9 +299,11 @@ class Swaps extends EventEmitter {
     }
     const preimage = await randomBytes(32);
 
+    const rHash = createHash('sha256').update(preimage).digest('hex');
+
     const swapRequestBody: packets.SwapRequestPacketBody = {
       takerCltvDelta,
-      rHash: createHash('sha256').update(preimage).digest('hex'),
+      rHash,
       orderId: maker.id,
       pairId: maker.pairId,
       proposedQuantity: taker.quantity,
@@ -317,6 +325,8 @@ class Swaps extends EventEmitter {
       role: SwapRole.Taker,
       createTime: Date.now(),
     };
+
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_ACCEPT_TIMEOUT, rHash));
 
     this.addDeal(deal);
 
@@ -344,7 +354,8 @@ class Swaps extends EventEmitter {
     // TODO: consider the time gap between taking the routes and using them.
     // TODO: multi route support (currently only 1)
 
-    if (this.usedHashes.has(requestPacket.body!.rHash)) {
+    const rHash = requestPacket.body!.rHash;
+    if (this.usedHashes.has(rHash)) {
       this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
       return false;
     }
@@ -375,6 +386,8 @@ class Swaps extends EventEmitter {
       role: SwapRole.Maker,
       createTime: Date.now(),
     };
+
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash));
 
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
@@ -454,9 +467,18 @@ class Swaps extends EventEmitter {
     const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
     const deal = this.getDeal(rHash);
     if (!deal) {
-      this.logger.error(`received swap accepted for unrecognized deal payment hash ${rHash}`);
+      this.logger.warn(`received swap accepted for unrecognized deal: ${rHash}`);
+      // TODO: penalize peer
       return;
     }
+    if (deal.phase !== SwapPhase.SwapRequested) {
+      this.logger.warn(`received swap accepted for deal that is not in SwapRequested phase: ${rHash}`);
+      // TODO: penalize peer
+      return;
+    }
+
+    clearTimeout(this.timeouts.get(rHash));
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash));
 
     // update deal with taker's makerCltvDelta
     deal.makerCltvDelta = makerCltvDelta;
@@ -636,6 +658,12 @@ class Swaps extends EventEmitter {
 
   }
 
+  private handleSwapTimeout = (rHash: string) => {
+    const deal = this.getDeal(rHash)!;
+    this.timeouts.delete(rHash);
+    this.failDeal(deal, SwapFailureReason.Timeout);
+  }
+
   private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
@@ -650,6 +678,8 @@ class Swaps extends EventEmitter {
     deal.state = SwapState.Error;
     deal.failureReason = failureReason;
     deal.errorMessage = errorMessage;
+    clearTimeout(this.timeouts.get(deal.rHash));
+    this.timeouts.delete(deal.rHash);
     this.emit('swap.failed', deal);
   }
 
@@ -708,6 +738,9 @@ class Swaps extends EventEmitter {
         role: deal.role,
       };
       this.emit('swap.paid', swapResult);
+
+      clearTimeout(this.timeouts.get(deal.rHash));
+      this.timeouts.delete(deal.rHash);
     }
   }
 
