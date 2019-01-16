@@ -466,7 +466,34 @@
         ]
       }
     },
-    "/v1/subscribeorders": {
+    "/v1/subscribeaddedorders": {
+      "get": {
+        "summary": "Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,\nallows the client to maintain an up-to-date view of the order book. For example, an exchange that\nwants to show its users a real time list of the orders available to them would subscribe to this\nstreaming call to be alerted of new orders as they become available for trading.",
+        "operationId": "SubscribeAddedOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/xudrpcOrder"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "existing",
+            "description": "Whether to transmit all existing active orders upon establishing the stream.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/subscriberemovedorders": {
       "get": {
         "summary": "Subscribes to orders being removed - either in full or in part - from the order book. This call,\ntogether with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order\nbook. For example, an exchange that wants to show its users a real time list of the orders available\nto them would subscribe to this streaming call to be alerted when part or all of an existing order\nis no longer available for trading.",
         "operationId": "SubscribeRemovedOrders",

@@ -194,7 +194,7 @@ service Xud {
    * streaming call to be alerted of new orders as they become available for trading. */
   rpc SubscribeAddedOrders(SubscribeAddedOrdersRequest) returns (stream Order) {
     option (google.api.http) = {
-      get: "/v1/subscribeorders"
+      get: "/v1/subscribeaddedorders"
     };
   }
   
@@ -205,7 +205,7 @@ service Xud {
    * is no longer available for trading. */
   rpc SubscribeRemovedOrders(SubscribeRemovedOrdersRequest) returns (stream OrderRemoval) {
     option (google.api.http) = {
-      get: "/v1/subscribeorders"
+      get: "/v1/subscriberemovedorders"
     };
   }
 
