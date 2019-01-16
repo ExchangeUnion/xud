@@ -61,7 +61,7 @@ const streamOrders = (argv: Arguments) =>  {
   const swapsRequest = new xudrpc.SubscribeSwapsRequest();
   swapsRequest.setIncludeTaker(true);
   const swapsSubscription = loadXudClient(argv).subscribeSwaps(swapsRequest);
-  swapsSubscription.on('data', (swapResult: xudrpc.SwapResult) => {
+  swapsSubscription.on('data', (swapResult: xudrpc.SwapSuccess) => {
     console.log(`Order swapped: ${JSON.stringify(swapResult.toObject())}`);
   });
 

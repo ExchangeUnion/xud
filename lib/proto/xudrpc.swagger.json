@@ -174,7 +174,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapResult"
+              "$ref": "#/definitions/xudrpcSwapSuccess"
             }
           }
         },
@@ -518,7 +518,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapResult"
+              "$ref": "#/definitions/xudrpcSwapSuccess"
             }
           }
         },
@@ -574,7 +574,7 @@
       ],
       "default": "LND"
     },
-    "SwapResultRole": {
+    "SwapSuccessRole": {
       "type": "string",
       "enum": [
         "TAKER",
@@ -1023,13 +1023,17 @@
           "$ref": "#/definitions/xudrpcOrder",
           "description": "An own orders (or portions thereof) that matched the newly placed order."
         },
-        "swap_result": {
-          "$ref": "#/definitions/xudrpcSwapResult",
+        "swap_success": {
+          "$ref": "#/definitions/xudrpcSwapSuccess",
           "description": "A swap results of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
           "description": "The remaining portion of the order, after matches, that enters the order book."
+        },
+        "swap_failure": {
+          "$ref": "#/definitions/xudrpcSwapFailure",
+          "description": "A swap attempt that failed."
         }
       }
     },
@@ -1070,10 +1074,10 @@
           },
           "description": "A list of own orders (or portions thereof) that matched the newly placed order."
         },
-        "swap_results": {
+        "swap_successes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/xudrpcSwapResult"
+            "$ref": "#/definitions/xudrpcSwapSuccess"
           },
           "description": "A list of swap results of peer orders that matched the newly placed order."
         },
@@ -1150,7 +1154,29 @@
     "xudrpcShutdownResponse": {
       "type": "object"
     },
-    "xudrpcSwapResult": {
+    "xudrpcSwapFailure": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "The global UUID for the order that failed the swap."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the swap is for."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double",
+          "description": "The order quantity that was attempted to be swapped."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer that we attempted to swap with."
+        }
+      }
+    },
+    "xudrpcSwapSuccess": {
       "type": "object",
       "properties": {
         "order_id": {
@@ -1163,7 +1189,7 @@
         },
         "pair_id": {
           "type": "string",
-          "description": "The trading pair that this order is for."
+          "description": "The trading pair that the swap is for."
         },
         "quantity": {
           "type": "number",
@@ -1189,7 +1215,7 @@
           "description": "The node pub key of the peer that executed this order."
         },
         "role": {
-          "$ref": "#/definitions/SwapResultRole",
+          "$ref": "#/definitions/SwapSuccessRole",
           "description": "Our role in the swap, either MAKER or TAKER."
         },
         "currency_received": {

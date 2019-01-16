@@ -14,7 +14,7 @@ import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase } from '../types/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../types/db';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order } from '../types/orders';
-import { PlaceOrderEvent, PlaceOrderEventCase, PlaceOrderResult } from '../types/orderBook';
+import { PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../types/orderBook';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapResult, SwapDeal } from 'lib/swaps/types';
 import Bluebird from 'bluebird';
@@ -243,7 +243,7 @@ class OrderBook extends EventEmitter {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
-      onUpdate && onUpdate({ case: PlaceOrderEventCase.RemainingOrder, payload: stampedOrder });
+      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: stampedOrder });
 
       return {
         internalMatches: [],
@@ -310,7 +310,7 @@ class OrderBook extends EventEmitter {
         result.internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
         await this.persistTrade(portion.quantity, maker, taker);
-        onUpdate && onUpdate({ case: PlaceOrderEventCase.InternalMatch, payload: maker });
+        onUpdate && onUpdate({ type: PlaceOrderEventType.InternalMatch, payload: maker });
       } else {
         if (!this.swaps) {
           // swaps should only be undefined during integration testing of the order book
@@ -335,9 +335,10 @@ class OrderBook extends EventEmitter {
             this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           }
           result.swapResults.push(swapResult);
-          onUpdate && onUpdate({ case: PlaceOrderEventCase.SwapResult, payload: swapResult });
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
         } catch (err) {
           failedSwapQuantity += portion.quantity;
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
           this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
         }
       }
@@ -360,7 +361,7 @@ class OrderBook extends EventEmitter {
     const { remainingOrder } = result;
     if (remainingOrder && !discardRemaining) {
       this.addOwnOrder(remainingOrder);
-      onUpdate && onUpdate({ case: PlaceOrderEventCase.RemainingOrder, payload: remainingOrder });
+      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
     }
 
     return result;
