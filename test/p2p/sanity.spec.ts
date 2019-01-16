@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import { getUri } from '../../lib/utils/utils';
+import { toUri } from '../../lib/utils/uriUtils';
 import { getUnusedPort } from '../utils';
 import { DisconnectionReason, ReputationEvent } from '../../lib/types/enums';
 
@@ -51,8 +51,8 @@ describe('P2P Sanity Tests', () => {
     await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
 
     nodeTwoPort = nodeTwo['pool']['listenPort']!;
-    nodeOneUri = getUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
-    nodeTwoUri = getUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoPort });
+    nodeOneUri = toUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
+    nodeTwoUri = toUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoPort });
   });
 
   it('should connect successfully', async () => {
@@ -77,7 +77,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an unexpected node pub key', async () => {
-    const connectPromise = nodeOne.service.connect({ nodeUri: getUri({
+    const connectPromise = nodeOne.service.connect({ nodeUri: toUri({
       nodePubKey: 'thewrongpubkey',
       host: 'localhost',
       port: nodeTwoPort,
@@ -95,7 +95,7 @@ describe('P2P Sanity Tests', () => {
 
   it('should fail connecting to a non-existing node', async () => {
     const port = await getUnusedPort();
-    const connectPromise = nodeOne.service.connect({ nodeUri: getUri({ port, nodePubKey: 'notarealnodepubkey', host: 'localhost' }) });
+    const connectPromise = nodeOne.service.connect({ nodeUri: toUri({ port, nodePubKey: 'notarealnodepubkey', host: 'localhost' }) });
     await expect(connectPromise).to.be.rejectedWith(`could not connect to peer at localhost:${port}`);
   });
 
