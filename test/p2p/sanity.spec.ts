@@ -86,8 +86,7 @@ describe('P2P Sanity Tests', () => {
         port: nodeTwoPort,
       }),
     });
-    await expect(connectPromise).to.be.rejectedWith(
-      `node at localhost:${nodeTwoPort} sent pub key ${nodeTwo.nodePubKey}, expected ${randomPubKey}`);
+    await expect(connectPromise).to.be.rejectedWith(`Peer disconnected from us due to AuthFailureInvalidTarget`);
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
@@ -101,7 +100,7 @@ describe('P2P Sanity Tests', () => {
         port: nodeTwoPort,
       }),
     });
-    await expect(connectPromise).to.be.rejectedWith('Public key is not valid for specified curve');
+    await expect(connectPromise).to.be.rejectedWith(`Peer disconnected from us due to AuthFailureInvalidTarget`);
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
