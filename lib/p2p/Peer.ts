@@ -76,7 +76,6 @@ class Peer extends EventEmitter {
   private lastSend = 0;
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
-  private ephemeralPubKey?: string;
   private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
@@ -205,7 +204,7 @@ class Peer extends EventEmitter {
     await this.initConnection(retryConnecting);
     this.initStall();
 
-    await this.handshake(ownNodeState, nodeKey, expectedNodePubKey);
+    await this.handshake(ownNodeState, nodeKey);
 
     if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
       this.close(DisconnectionReason.UnexpectedIdentity);
@@ -439,15 +438,27 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number): Promise<Packet> => {
+  private wait = (packetId: string, timeout?: number, cb?: (packet :Packet) => void): Promise<Packet> => {
     const entry = this.getOrAddPendingResponseEntry(packetId);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
+
+      if (cb) {
+        entry.addCb(cb)
+      }
 
       if (timeout) {
         entry.setTimeout(timeout);
       }
     });
+  }
+
+  private waitSessionInit = async (): Promise<packets.SessionInitPacket> => {
+    if (!this.sessionInitPacket) {
+      await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
+    }
+
+    return this.sessionInitPacket!;
   }
 
   /**
@@ -667,46 +678,47 @@ class Peer extends EventEmitter {
     }
   }
 
-  private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<Buffer> => {
-    const inECDH = crypto.createECDH('secp256k1');
-    const inEphemeralPubKey = inECDH.generateKeys().toString('hex');
-    const outSessionInit = this.sendSessionInit(inEphemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
-    const inSessionAck: packets.SessionAckPacket = await this.wait(outSessionInit.header.id, Peer.RESPONSE_TIMEOUT);
-    return inECDH.computeSecret(inSessionAck.body!.ephemeralPubKey, 'hex');
+  private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<void> => {
+    const ECDH = crypto.createECDH('secp256k1');
+    const ephemeralPubKey = ECDH.generateKeys().toString('hex');
+    const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
+    this.sendPacket(packet);
+    await this.wait(packet.header.id, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
+      // enabling in-encryption synchronously,
+      // expecting the following peer msg to be encrypted
+      const sessionAck: packets.SessionAckPacket = packet;
+      const key = ECDH.computeSecret(sessionAck.body!.ephemeralPubKey, 'hex')
+      this.setInEncryption(key);
+    })
   }
 
-  private ackSession = async (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): Promise<Buffer> => {
+  private ackSession = (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): void => {
     this.authenticate(sessionInit, nodeKey);
     this.nodeState = sessionInit.body!.nodeState;
 
-    const outECDH = crypto.createECDH('secp256k1');
-    const outEphemeralPubKey = outECDH.generateKeys().toString('hex');
+    const ECDH = crypto.createECDH('secp256k1');
+    const ephemeralPubKey = ECDH.generateKeys().toString('hex');
 
-    this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey: outEphemeralPubKey }, sessionInit.header.id));
-    return outECDH.computeSecret(sessionInit.body!.ephemeralPubKey, 'hex');
+    this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey }, sessionInit.header.id));
+
+    // enabling out-encryption synchronously,
+    // so that the following msg will be encrypted
+    const key = ECDH.computeSecret(sessionInit.body!.ephemeralPubKey, 'hex');
+    this.setOutEncryption(key);
   }
 
-  private handshake = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string) => {
+  private handshake = async (ownNodeState: NodeState, nodeKey: NodeKey) => {
     if (!this.inbound) {
       // outbound handshake
       assert(this.expectedNodePubKey);
-      const inKey = await this.initSession(ownNodeState, nodeKey, expectedNodePubKey!);
-      this.setInEncryption(inKey);
-
-      const sessionInit: packets.SessionInitPacket = await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
-      const outKey = await this.ackSession(sessionInit, nodeKey);
-      this.setOutEncryption(outKey);
+      await this.initSession(ownNodeState, nodeKey, this.expectedNodePubKey!);
+      const sessionInit = await this.waitSessionInit();
+      this.ackSession(sessionInit, nodeKey);
     } else {
       // inbound handshake
-      if (!this.sessionInitPacket) {
-        await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
-      }
-      const sessionInit = this.sessionInitPacket!;
-      const outKey = await this.ackSession(sessionInit, nodeKey);
-      this.setOutEncryption(outKey);
-
-      const inKey = await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);
-      this.setInEncryption(inKey);
+      const sessionInit = await this.waitSessionInit();
+      this.ackSession(sessionInit, nodeKey);
+      await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);
     }
   }
 
@@ -732,7 +744,7 @@ class Peer extends EventEmitter {
     this.sendPong(packet.header.id);
   }
 
-  private sendSessionInit = (
+  private createSessionInitPacket = (
     ephemeralPubKey: string,
     ownNodeState: NodeState,
     expectedNodePubKey: string,
@@ -750,9 +762,7 @@ class Peer extends EventEmitter {
 
     body = { ...body, sign: signature.toString('hex') };
 
-    const packet = new packets.SessionInitPacket(body);
-    this.sendPacket(packet);
-    return packet;
+    return new packets.SessionInitPacket(body);
   }
 
   private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
@@ -799,9 +809,15 @@ class PendingResponseEntry {
   public timeout = 0;
   /** An array of tasks to resolve or reject. */
   public jobs: Job[] = [];
+  /** An array of callbacks to be called synchronously when entry resolve. */
+  public callbacks: Function[] = [];
 
   public addJob = (resolve: Function, reject: Function) => {
     this.jobs.push(new Job(resolve, reject));
+  }
+
+  public addCb = (cb: Function) => {
+    this.callbacks.push(cb);
   }
 
   public setTimeout = (timeout: number): void => {
@@ -812,7 +828,13 @@ class PendingResponseEntry {
     for (const job of this.jobs) {
       job.resolve(result);
     }
+
+    for (const cb of this.callbacks) {
+      cb(result);
+    }
+
     this.jobs.length = 0;
+    this.callbacks.length = 0;
   }
 
   public reject = (err: any) => {
