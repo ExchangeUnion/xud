@@ -1162,6 +1162,10 @@
         "currency_sent": {
           "type": "string",
           "description": "The ticker symbol of the currency sent."
+        },
+        "result": {
+          "type": "string",
+          "description": "Indicate if a swap was completed or failed."
         }
       }
     },

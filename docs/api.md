@@ -805,6 +805,7 @@
 | role | [SwapResult.Role](#xudrpc.SwapResult.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
+| result | [string](#string) |  | Indicate if a swap was completed or failed. |
 
 
 

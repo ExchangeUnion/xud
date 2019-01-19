@@ -1200,6 +1200,9 @@ export class SwapResult extends jspb.Message {
   getCurrencySent(): string;
   setCurrencySent(value: string): void;
 
+  getResult(): string;
+  setResult(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapResult.AsObject;
   static toObject(includeInstance: boolean, msg: SwapResult): SwapResult.AsObject;
@@ -1223,6 +1226,7 @@ export namespace SwapResult {
     role: SwapResult.Role,
     currencyReceived: string,
     currencySent: string,
+    result: string,
   }
 
   export enum Role {

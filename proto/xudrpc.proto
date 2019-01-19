@@ -543,6 +543,8 @@ message SwapResult {
   string currency_received = 10 [json_name = "currency_received"];
   // The ticker symbol of the currency sent.
   string currency_sent = 11 [json_name = "currency_sent"];
+  // Indicate if a swap was completed or failed.
+  string result = 12 [json_name = "result"]; 
 }
 
 message UnbanRequest {
