@@ -12,7 +12,7 @@ import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPa
 import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
 import { errorCodes } from '../../lib/p2p/errors';
-import stringify = require("json-stable-stringify");
+import stringify = require('json-stable-stringify');
 
 chai.use(chaiAsPromised);
 

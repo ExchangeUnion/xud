@@ -438,13 +438,13 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number, cb?: (packet :Packet) => void): Promise<Packet> => {
+  private wait = (packetId: string, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
     const entry = this.getOrAddPendingResponseEntry(packetId);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
 
       if (cb) {
-        entry.addCb(cb)
+        entry.addCb(cb);
       }
 
       if (timeout) {
@@ -687,9 +687,9 @@ class Peer extends EventEmitter {
       // enabling in-encryption synchronously,
       // expecting the following peer msg to be encrypted
       const sessionAck: packets.SessionAckPacket = packet;
-      const key = ECDH.computeSecret(sessionAck.body!.ephemeralPubKey, 'hex')
+      const key = ECDH.computeSecret(sessionAck.body!.ephemeralPubKey, 'hex');
       this.setInEncryption(key);
-    })
+    });
   }
 
   private ackSession = (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): void => {
