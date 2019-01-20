@@ -5,10 +5,10 @@ import Packet from './packets/Packet';
 import errors from './errors';
 
 type WireMsgHeader = {
-  magic: number,
+  magic?: number,
   type: number,
   length: number,
-  checksum: number,
+  checksum?: number,
 };
 
 type WireMsg = {
@@ -20,6 +20,7 @@ type WireMsg = {
 class Framer {
   public static readonly MSG_HEADER_LENGTH = 16;
   public static readonly ENCRYPTED_MSG_HEADER_LENGTH = 4;
+  public static readonly ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH = 8;
   public static readonly ENCRYPTION_KEY_LENGTH = 32;
   public static readonly ENCRYPTION_IV_LENGTH = 16;
 
@@ -30,67 +31,83 @@ class Framer {
    * Frame a packet with a header to be used as a wire msg
    */
   public frame = (packet: Packet, encryptionKey?: Buffer): Buffer => {
-    const payload = packet.toRaw();
-    const msg = Buffer.allocUnsafe(Framer.MSG_HEADER_LENGTH + payload.length);
+    const packetRaw = packet.toRaw();
 
-    // network magic value
-    msg.writeUInt32LE(this.network.magic, 0, true);
+    if (encryptionKey) {
+      const msg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH + packetRaw.length);
 
-    // length
-    msg.writeUInt32LE(payload.length, 4, true);
+      // length
+      msg.writeUInt32LE(packetRaw.length, 0, true);
 
-    // type
-    msg.writeUInt32LE(packet.type, 8, true);
+      // type
+      msg.writeUInt32LE(packet.type, 4, true);
 
-    // checksum
-    const checksum = packet.checksum();
-    checksum.copy(msg, 12, 0, 4);
+      // packet
+      packetRaw.copy(msg, 8);
 
-    // payload
-    payload.copy(msg, 16);
+      const ciphertext = this.encrypt(msg, encryptionKey);
+      const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
 
-    if (!encryptionKey) {
+      // length
+      encryptedMsg.writeUInt32LE(ciphertext.length, 0, true);
+
+      // ciphertext
+      ciphertext.copy(encryptedMsg, 4);
+
+      return encryptedMsg;
+    } else {
+      const msg = Buffer.allocUnsafe(Framer.MSG_HEADER_LENGTH + packetRaw.length);
+
+      // network magic value
+      msg.writeUInt32LE(this.network.magic, 0, true);
+
+      // length
+      msg.writeUInt32LE(packetRaw.length, 4, true);
+
+      // type
+      msg.writeUInt32LE(packet.type, 8, true);
+
+      // checksum
+      msg.writeUInt32LE(packet.checksum(), 12);
+
+      // payload
+      packetRaw.copy(msg, 16);
+
       return msg;
     }
-
-    const ciphertext = this.encrypt(msg, encryptionKey);
-    const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
-
-    // length
-    encryptedMsg.writeUInt32LE(ciphertext.length, 0, true);
-
-    // ciphertext
-    ciphertext.copy(encryptedMsg, 4);
-
-    return encryptedMsg;
   }
 
   /**
    * Unframe a wire msg or an encrypted wire msg
    */
-  public unframe = (data: Buffer, encryptionKey?: Buffer): WireMsg => {
-    let msg;
-    if (!encryptionKey) {
-      msg = data;
-    } else {
-      const length = data.readUInt32LE(0, true);
-      const ciphertext = data.slice(4);
+  public unframe = (msg: Buffer, encryptionKey?: Buffer): WireMsg => {
+    let wireMsg: WireMsg;
+    if (encryptionKey) {
+      const length = msg.readUInt32LE(0, true);
+      const ciphertext = msg.slice(Framer.ENCRYPTED_MSG_HEADER_LENGTH);
 
       if (length !== ciphertext.length) {
         throw errors.FRAMER_INVALID_MSG_LENGTH(length, ciphertext.length);
       }
 
-      msg = this.decrypt(ciphertext, encryptionKey);
+      const decryptedMsg = this.decrypt(ciphertext, encryptionKey);
+
+      wireMsg = {
+        header: this.parseHeader(decryptedMsg, true),
+        packet: decryptedMsg.slice(Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH),
+      };
+    } else {
+      wireMsg = {
+        header: this.parseHeader(msg, false),
+        packet: msg.slice(Framer.MSG_HEADER_LENGTH),
+      };
     }
 
-    const header = this.parseHeader(msg);
-    const packet = msg.slice(Framer.MSG_HEADER_LENGTH);
-
-    if (header.length !== packet.length) {
-      throw errors.FRAMER_INVALID_MSG_LENGTH(header.length, packet.length);
+    if (wireMsg.header.length !== wireMsg.packet.length) {
+      throw errors.FRAMER_INVALID_MSG_LENGTH(wireMsg.header.length, wireMsg.packet.length);
     }
 
-    return { header, packet };
+    return wireMsg;
   }
 
   /**
@@ -114,24 +131,36 @@ class Framer {
   }
 
   /**
-   * Parse the header of a wire msg
+   * Parse the header of a wire msg or an encrypted wire msg payload
    */
-  public parseHeader = (msg: Buffer): WireMsgHeader => {
-    assert(msg.length >= Framer.MSG_HEADER_LENGTH, `invalid msg header length: data is missing`);
+  public parseHeader = (msg: Buffer, encrypted: boolean): WireMsgHeader => {
+    if (encrypted) {
+      assert(msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH, `invalid msg header length: data is missing`);
 
-    // network magic value
-    const magic = msg.readUInt32LE(0, true);
+      // length
+      const length = msg.readUInt32LE(0, true);
 
-    // length
-    const length = msg.readUInt32LE(4, true);
+      // type
+      const type = msg.readUInt32LE(4, true);
 
-    // type
-    const type = msg.readUInt32LE(8, true);
+      return { length, type };
+    } else {
+      assert(msg.length >= Framer.MSG_HEADER_LENGTH, `invalid msg header length: data is missing`);
 
-    // checksum
-    const checksum = msg.readUInt32LE(12, true);
+      // network magic value
+      const magic = msg.readUInt32LE(0, true);
 
-    return { magic, type, length, checksum };
+      // length
+      const length = msg.readUInt32LE(4, true);
+
+      // type
+      const type = msg.readUInt32LE(8, true);
+
+      // checksum
+      const checksum = msg.readUInt32LE(12, true);
+
+      return { magic, type, length, checksum };
+    }
   }
 
   public encrypt = (plaintext: Buffer, key: Buffer): Buffer => {
