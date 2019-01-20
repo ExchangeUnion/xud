@@ -65,7 +65,7 @@ class Parser extends EventEmitter {
       this.waitingHeader = this.msgHeaderLength - chunk.length;
     }
 
-    // start to read a new message
+    // starting to read a new message
     else {
       const length =  this.parseLength(chunk);
       if (!length) {
@@ -189,7 +189,7 @@ class Parser extends EventEmitter {
     }
 
     const packet = packetOrPbObj;
-    if (header.checksum !== packet.checksum().readUInt32LE(0, true)) {
+    if (header.checksum && header.checksum !== packet.checksum()) {
       throw errors.PARSER_DATA_INTEGRITY_ERR(`${PacketType[header.type]} ${JSON.stringify(packet)}`);
     }
 

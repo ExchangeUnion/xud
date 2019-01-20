@@ -96,8 +96,15 @@ abstract class Packet<T = any> implements PacketInterface {
     return Buffer.from(this.serialize().buffer as ArrayBuffer);
   }
 
-  public checksum = (): Buffer => {
-    return crypto.createHash('sha256').update(this.toJSON()).digest();
+  /**
+   * Calculating the packet checksum using its JSON representation hash first 4 bytes.
+   */
+  public checksum = (): number => {
+    return crypto
+      .createHash('sha256')
+      .update(this.toJSON())
+      .digest()
+      .readUInt32LE(0, true);
   }
 }
 
