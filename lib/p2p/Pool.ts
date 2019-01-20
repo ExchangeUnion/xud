@@ -346,7 +346,7 @@ class Pool extends EventEmitter {
         await peer.open(this.nodeState, this.nodeKey, nodePubKey, retryConnecting);
       } catch (err) {
         // we don't have `nodePubKey` for inbound connections, which might fail on handshake
-        this.logger.warn(`could not open connection to peer (${peer.label}): ${err}`);
+        this.logger.warn(`could not open connection to peer (${peer.label}): ${err.message}`);
 
         if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
           await this.nodes.removeAddress(nodePubKey!, peer.address);
