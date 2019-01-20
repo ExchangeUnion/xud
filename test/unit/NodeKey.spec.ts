@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import chaiAsPromised = require('chai-as-promised');
 import NodeKey from '../../lib/nodekey/NodeKey';
 import secp256k1 from 'secp256k1';
 

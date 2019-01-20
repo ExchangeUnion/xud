@@ -6,7 +6,7 @@ import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../types/enums';
-import { parseUri, getUri, UriParts } from '../utils/utils';
+import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion } from '../types/orders';
 import { PlaceOrderEvent } from '../types/orderBook';
@@ -230,7 +230,7 @@ class Service extends EventEmitter {
 
     if (addresses && addresses.length > 0) {
       addresses.forEach((address) => {
-        uris.push(getUri({ nodePubKey, host: address.host, port: address.port }));
+        uris.push(toUri({ nodePubKey, host: address.host, port: address.port }));
       });
     }
 
