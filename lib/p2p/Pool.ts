@@ -126,7 +126,7 @@ class Pool extends EventEmitter {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
     });
 
-    // this.verifyReachability();
+    this.verifyReachability();
     this.connected = true;
   }
 
