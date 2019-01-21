@@ -112,13 +112,13 @@ describe('P2P Sanity Tests', () => {
       retryConnecting: true,
     });
 
-    setTimeout(() => {
+    setImmediate(() => {
       expect(nodeOne.service.connect({
         nodeUri: toUri({ port, nodePubKey, host: 'localhost' }),
         retryConnecting: false,
       })).to.be.rejectedWith(`could not connect to peer at localhost:${unusedPort}`);
       done();
-    }, 500);
+    });
 
     expect(connectPromise).to.be.rejectedWith(`Connection retry attempts to peer were revoked`);
   });
