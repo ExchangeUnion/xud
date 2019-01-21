@@ -72,6 +72,7 @@ class Peer extends EventEmitter {
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
+  private connectionRetriesRevoked = false;
   private lastRecv = 0;
   private lastSend = 0;
   private nodeState?: NodeState;
@@ -311,6 +312,10 @@ class Peer extends EventEmitter {
     this.emit('close');
   }
 
+  public revokeConnectionRetries = (): void => {
+    this.connectionRetriesRevoked = true;
+  }
+
   public sendPacket = (packet: Packet): void => {
     const data = this.framer.frame(packet, this.outEncryptionKey);
     this.sendRaw(data);
@@ -362,6 +367,7 @@ class Peer extends EventEmitter {
 
       this.socket = net.connect(this.address.port, this.address.host);
       this.inbound = false;
+      this.connectionRetriesRevoked = false;
 
       const cleanup = () => {
         if (this.connectTimeout) {
@@ -400,7 +406,13 @@ class Peer extends EventEmitter {
 
         if (Date.now() - startTime + retryDelay > Peer.CONNECTION_RETRIES_MAX_PERIOD) {
           this.close();
-          reject(errors.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED);
+          reject(errors.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED);
+          return;
+        }
+
+        if (this.connectionRetriesRevoked) {
+          this.close();
+          reject(errors.CONNECTION_RETRIES_REVOKED);
           return;
         }
 

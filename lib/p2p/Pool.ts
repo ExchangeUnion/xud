@@ -252,7 +252,7 @@ class Pool extends EventEmitter {
     if (!lastAddress) return false;
 
     try {
-      await this.addOutbound(lastAddress, nodePubKey, retryConnecting);
+      await this.addOutbound(lastAddress, nodePubKey, retryConnecting, false);
       return true;
     } catch (err) {}
 
@@ -269,7 +269,7 @@ class Pool extends EventEmitter {
       if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) continue;
 
       try {
-        await this.addOutbound(address, nodePubKey, false);
+        await this.addOutbound(address, nodePubKey, false, false);
         return true; // once we've successfully established an outbound connection, stop attempting new connections
       } catch (err) {}
     }
@@ -303,17 +303,28 @@ class Pool extends EventEmitter {
    * @param nodePubKey the nodePubKey of the node to connect to
    * @returns the connected peer
    */
-  public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean): Promise<Peer> => {
+  public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
     if (nodePubKey === this.nodeState.nodePubKey) {
       const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
       this.logger.warn(err.message);
       throw err;
-    } else if (this.nodes.isBanned(nodePubKey)) {
+    }
+
+    if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_IS_BANNED(nodePubKey);
-    } else if (this.peers.has(nodePubKey)) {
+    }
+
+    if (this.peers.has(nodePubKey)) {
       throw errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
-    } else if (this.pendingOutboundPeers.has(nodePubKey)) {
-      throw errors.ALREADY_CONNECTING(nodePubKey);
+    }
+
+    const pendingPeer = this.pendingOutboundPeers.get(nodePubKey);
+    if (pendingPeer) {
+      if (revokeConnectionRetries) {
+        pendingPeer.revokeConnectionRetries();
+      } else {
+        throw errors.ALREADY_CONNECTING(nodePubKey);
+      }
     }
 
     const peer = new Peer(this.logger, address, this.config);
@@ -348,7 +359,7 @@ class Pool extends EventEmitter {
         // we don't have `nodePubKey` for inbound connections, which might fail on handshake
         this.logger.warn(`could not open connection to peer (${peer.label}): ${err.message}`);
 
-        if (err.code === errorCodes.CONNECTING_RETRIES_MAX_PERIOD_EXCEEDED) {
+        if (err.code === errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED) {
           await this.nodes.removeAddress(nodePubKey!, peer.address);
         }
 

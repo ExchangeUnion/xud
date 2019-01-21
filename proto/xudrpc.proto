@@ -284,6 +284,7 @@ message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
   string node_uri = 1 [json_name = "node_uri"];
 }
+
 message ConnectResponse {}
 
 message BanRequest {
