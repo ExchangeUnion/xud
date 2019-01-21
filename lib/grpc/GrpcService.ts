@@ -238,7 +238,8 @@ class GrpcService {
    */
   public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {
     try {
-      await this.service.connect(call.request.toObject());
+      const { nodeUri } = call.request.toObject();
+      await this.service.connect({ nodeUri, retryConnecting: false });
       const response = new xudrpc.ConnectResponse();
       callback(null, response);
     } catch (err) {
