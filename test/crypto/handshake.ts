@@ -40,7 +40,7 @@ describe('key exchange and symmetric encryption', () => {
 });
 
 describe('authentication', () => {
-  it('alice should sign its handshake request data and bob should be able to verify it', async () => {
+  it('alice should sign its session init data and bob should be able to verify it', async () => {
     const aliceNodeKey = await NodeKey['generate']();
     const aliceNodePubKey = aliceNodeKey.nodePubKey;
     const aliceNodePrivKey = aliceNodeKey['privKey'];
