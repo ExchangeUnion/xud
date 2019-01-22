@@ -782,6 +782,11 @@
 
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls. These swap results are also returned in the responses for the respective calls. |
+
+
 
 
 
@@ -907,7 +912,7 @@
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
 | SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
 | SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) stream | Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to get real-time notifications when its orders are filled by a remote taker. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through Exchange Union network. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 
  
 
