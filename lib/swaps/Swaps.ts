@@ -326,7 +326,7 @@ class Swaps extends EventEmitter {
       createTime: Date.now(),
     };
 
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_ACCEPT_TIMEOUT, rHash));
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_ACCEPT_TIMEOUT, rHash, SwapFailureReason.DealTimedOut));
 
     this.addDeal(deal);
 
@@ -387,7 +387,7 @@ class Swaps extends EventEmitter {
       createTime: Date.now(),
     };
 
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash));
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
 
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
@@ -477,8 +477,10 @@ class Swaps extends EventEmitter {
       return;
     }
 
+    // clear the timer waiting for acceptance of our swap offer, and set a new timer waiting for
+    // the swap to be completed
     clearTimeout(this.timeouts.get(rHash));
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash));
+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
 
     // update deal with taker's makerCltvDelta
     deal.makerCltvDelta = makerCltvDelta;
@@ -658,10 +660,10 @@ class Swaps extends EventEmitter {
 
   }
 
-  private handleSwapTimeout = (rHash: string) => {
+  private handleSwapTimeout = (rHash: string, reason: SwapFailureReason) => {
     const deal = this.getDeal(rHash)!;
     this.timeouts.delete(rHash);
-    this.failDeal(deal, SwapFailureReason.Timeout);
+    this.failDeal(deal, reason);
   }
 
   private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
