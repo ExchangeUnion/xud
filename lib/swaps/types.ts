@@ -52,7 +52,7 @@ export type SwapDeal = {
   makerToTakerRoutes?: Route[];
   createTime: number;
   executeTime?: number;
-  completeTime?: number
+  completeTime?: number;
 };
 
 /** The result of a successful swap. */

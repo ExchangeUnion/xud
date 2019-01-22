@@ -84,6 +84,10 @@ export enum SwapFailureReason {
   InvalidResolveRequest = 8,
   /** The swap request attempts to reuse a payment hash. */
   PaymentHashReuse = 9,
+  /** The swap timed out while we were waiting for it to complete execution. */
+  SwapTimedOut = 10,
+  /** The deal timed out while we were waiting for the peer to respond to our swap request. */
+  DealTimedOut = 11,
 }
 
 export enum DisconnectionReason {
