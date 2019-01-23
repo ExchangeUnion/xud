@@ -1,4 +1,4 @@
-import { OwnOrder } from './orders';
+import { OwnOrder, PeerOrder } from './orders';
 import { SwapResult } from 'lib/swaps/types';
 
 export type PlaceOrderResult = {
@@ -8,12 +8,13 @@ export type PlaceOrderResult = {
 };
 
 export type PlaceOrderEvent = {
-  case: PlaceOrderEventCase;
-  payload: OwnOrder | SwapResult;
+  type: PlaceOrderEventType;
+  payload: OwnOrder | SwapResult | PeerOrder;
 };
 
-export enum PlaceOrderEventCase {
+export enum PlaceOrderEventType {
   InternalMatch,
-  SwapResult,
+  SwapSuccess,
   RemainingOrder,
+  SwapFailure,
 }
