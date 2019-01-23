@@ -3,7 +3,8 @@ import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { toUri } from '../../lib/utils/uriUtils';
 import { getUnusedPort } from '../utils';
-import { DisconnectionReason } from '../../lib/types/enums';
+import { DisconnectionReason, ReputationEvent } from '../../lib/types/enums';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 chai.use(chaiAsPromised);
 
@@ -80,12 +81,23 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an unexpected node pub key', async () => {
+    const randomPubKey =  (await NodeKey['generate']()).nodePubKey;
     const connectPromise = nodeOne.service.connect({
-      nodeUri: toUri({ nodePubKey: 'thewrongpubkey', host: 'localhost', port: nodeTwoPort }),
+      nodeUri: toUri({ nodePubKey: randomPubKey, host: 'localhost', port: nodeTwoPort }),
       retryConnecting: false,
     });
-    await expect(connectPromise).to.be.rejectedWith(
-      `node at localhost:${nodeTwoPort} sent pub key ${nodeTwo.nodePubKey}, expected thewrongpubkey`);
+    await expect(connectPromise).to.be.rejectedWith(`Peer disconnected from us due to AuthFailureInvalidTarget`);
+    const listPeersResult = await nodeOne.service.listPeers();
+    expect(listPeersResult).to.be.empty;
+  });
+
+  it('should fail when connecting to an invalid node pub key', async () => {
+    const invalidPubKey =  '0123456789';
+    const connectPromise = nodeOne.service.connect({
+      nodeUri: toUri({ nodePubKey: invalidPubKey, host: 'localhost', port: nodeTwoPort }),
+      retryConnecting: false,
+    });
+    await expect(connectPromise).to.be.rejectedWith(`Peer disconnected from us due to AuthFailureInvalidTarget`);
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });

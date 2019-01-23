@@ -22,7 +22,6 @@ class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
 
   private static validate = (obj: pb.SwapCompletePacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.rHash
     );
   }
@@ -31,7 +30,6 @@ class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
     return new SwapCompletePacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
       },
       body: {
         rHash: obj.rHash,
@@ -39,10 +37,9 @@ class SwapCompletePacket extends Packet<SwapCompletePacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapCompletePacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setRHash(this.body!.rHash);
 
     return msg.serializeBinary();

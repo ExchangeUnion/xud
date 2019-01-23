@@ -1,22 +1,30 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import Parser, { ParserErrorType } from '../../lib/p2p/Parser';
+import crypto from 'crypto';
+import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
-import { DisconnectionReason, SwapFailureReason } from '../../lib/types/enums';
+import { DisconnectionReason, NetworkMagic, SwapFailureReason } from '../../lib/types/enums';
 import uuid = require('uuid');
-import { Address } from '../../lib/types/p2p';
-import stringify from 'json-stable-stringify';
+import { Address, NodeState } from '../../lib/types/p2p';
+import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPacket';
+import Network from '../../lib/p2p/Network';
+import Framer from '../../lib/p2p/Framer';
+import { errorCodes } from '../../lib/p2p/errors';
+import stringify = require('json-stable-stringify');
 
 chai.use(chaiAsPromised);
 
 describe('Parser', () => {
   const timeoutError = 'timeout';
+  const network = new Network(NetworkMagic.TestNet);
+  const framer = new Framer(network);
+  const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
   let parser: Parser;
 
   beforeEach(() => {
-    parser = new Parser();
+    parser = new Parser(framer);
   });
 
   function wait(num = 1): Promise<Packet[]> {
@@ -38,7 +46,7 @@ describe('Parser', () => {
       wait(packets.length)
         .then((parsedPackets) => {
           for (let i = 0; i < packets.length; i += 1) {
-            expect(packets[i]).to.deep.equal(parsedPackets[i]);
+            expect(stringify(packets[i])).to.equal(stringify(parsedPackets[i]));
             expect(packets[i].type).to.equal(parsedPackets[i].type);
           }
           resolve();
@@ -53,8 +61,19 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      const raw = packet.toRaw();
-      parser.feed(raw);
+      const data = framer.frame(packet);
+      parser.feed(data);
+    });
+
+    it(`should parse an encrypted valid ${PacketType[packet.type]} packet`, (done) => {
+      verify([packet])
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      const data = framer.frame(packet, encryptionKey);
+      parser.feed(data);
     });
   }
 
@@ -64,8 +83,8 @@ describe('Parser', () => {
         .then(() => done('err: packet is valid'))
         .catch(() => done());
 
-      const raw = packet.toRaw();
-      parser.feed(raw);
+      const data = framer.frame(packet);
+      parser.feed(data);
     });
   }
 
@@ -75,10 +94,23 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      const buffer = packet.toRaw();
-      const middleIndex = buffer.length >> 1;
-      parser.feed(buffer.slice(0, middleIndex));
-      parser.feed(buffer.slice(middleIndex));
+      const data = framer.frame(packet);
+      const middleIndex = data.length >> 1;
+      parser.feed(data.slice(0, middleIndex));
+      parser.feed(data.slice(middleIndex));
+    });
+
+    it(`should parse encrypted ${PacketType[packet.type]} packet split`, (done) => {
+      verify([packet])
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      const data = framer.frame(packet, encryptionKey);
+      const middleIndex = data.length >> 1;
+      parser.feed(data.slice(0, middleIndex));
+      parser.feed(data.slice(middleIndex));
     });
   }
 
@@ -88,7 +120,21 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      parser.feed(Buffer.concat(packets.map(packet => packet.toRaw())));
+      parser.feed(Buffer.concat(packets.map((packet) => {
+        return framer.frame(packet);
+      })));
+    });
+
+    it(`should parse encrypted ${packets.map(packet => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
+      verify(packets)
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      parser.feed(Buffer.concat(packets.map((packet) => {
+        return framer.frame(packet, encryptionKey);
+      })));
     });
   }
 
@@ -101,7 +147,24 @@ describe('Parser', () => {
 
       let remaining = Buffer.alloc(0);
       packets.forEach((packet) => {
-        const buffer = Buffer.concat([remaining, packet.toRaw()]);
+        const buffer = Buffer.concat([remaining, framer.frame(packet)]);
+        const chunk = buffer.slice(0, splitByte); // split on a specific byte
+        remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
+        parser.feed(chunk);
+      });
+      parser.feed(remaining);
+    });
+
+    it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
+      verify(packets)
+        .then(done)
+        .catch(done);
+
+      parser.setEncryptionKey(encryptionKey);
+
+      let remaining = Buffer.alloc(0);
+      packets.forEach((packet) => {
+        const buffer = Buffer.concat([remaining, framer.frame(packet, encryptionKey)]);
         const chunk = buffer.slice(0, splitByte); // split on a specific byte
         remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
         parser.feed(chunk);
@@ -110,7 +173,7 @@ describe('Parser', () => {
     });
   }
 
-  const helloPacketBody = {
+  const nodeState: NodeState = {
     version: '1.0.0',
     nodePubKey: uuid(),
     addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
@@ -120,23 +183,50 @@ describe('Parser', () => {
     lndltcPubKey: uuid(),
   };
 
+  const sessionInitPacketBody: SessionInitPacketBody = {
+    nodeState,
+    sign: uuid(),
+    peerPubKey: uuid(),
+    ephemeralPubKey: uuid(),
+  };
+
   describe('test packets validation', () => {
+    /* tslint:disable max-line-length */
+
     testValidPacket(new packets.PingPacket());
     testInvalidPacket(new packets.PingPacket(undefined, uuid()));
 
     testValidPacket(new packets.PongPacket(undefined, uuid()));
     testInvalidPacket(new packets.PongPacket(undefined));
 
-    testValidPacket(new packets.HelloPacket(helloPacketBody));
-    testValidPacket(new packets.HelloPacket({ ...helloPacketBody, pairs: [] }));
-    testValidPacket(new packets.HelloPacket({ ...helloPacketBody, addresses: [] }));
-    testValidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, raidenAddress: undefined })));
-    testValidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, lndbtcPubKey: undefined })));
-    testValidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, lndltcPubKey: undefined })));
-    testInvalidPacket(new packets.HelloPacket(helloPacketBody, uuid()));
-    testInvalidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, version: undefined })));
-    testInvalidPacket(new packets.HelloPacket(removeUndefinedProps({ ...helloPacketBody, nodePubKey: undefined })));
-    testInvalidPacket(new packets.HelloPacket({ ...helloPacketBody, addresses: [{} as Address] }));
+    testValidPacket(new packets.SessionInitPacket(sessionInitPacketBody));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, pairs: [] } }));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, addresses: [] } }));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined }) }));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndbtcPubKey: undefined }) }));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndltcPubKey: undefined }) }));
+    testInvalidPacket(new packets.SessionInitPacket(sessionInitPacketBody, uuid()));
+    testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined })));
+    testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, ephemeralPubKey: undefined })));
+    testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, peerPubKey: undefined })));
+    testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined }) }));
+    testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined }) }));
+    testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, addresses: [{} as Address] } }));
+
+    const sessionAckPacketBody = { ephemeralPubKey: sessionInitPacketBody.ephemeralPubKey };
+    testValidPacket(new packets.SessionAckPacket(sessionAckPacketBody, uuid()));
+    testInvalidPacket(new packets.SessionAckPacket(sessionAckPacketBody));
+    testInvalidPacket(new packets.SessionAckPacket(removeUndefinedProps({ ...sessionAckPacketBody, ephemeralPubKey: undefined }), uuid()));
+
+    const { version, nodePubKey, ...nodeStateUpdate } = nodeState;
+    testValidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, pairs: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, raidenAddress: undefined })));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndbtcPubKey: undefined })));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndltcPubKey: undefined })));
+    testInvalidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate, uuid()));
+    testInvalidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [{} as Address] }));
 
     const disconnectingPacketBody = {
       reason: DisconnectionReason.IncompatibleProtocolVersion,
@@ -253,14 +343,14 @@ describe('Parser', () => {
   });
   describe('test TCP segmentation/concatenation support', () => {
     const pingPacket = new packets.PingPacket();
-    const helloPacket = new packets.HelloPacket(helloPacketBody);
+    const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
 
     testSplitPacket(pingPacket);
-    testSplitPacket(helloPacket);
-    testConcatenatedPackets([pingPacket, helloPacket, pingPacket]);
-    testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE - 1);
-    testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE);
-    testConcatenatedAndSplit([pingPacket, helloPacket, pingPacket], Parser.PACKET_METADATA_SIZE + 1);
+    testSplitPacket(sessionInitPacket);
+    testConcatenatedPackets([pingPacket, sessionInitPacket, pingPacket]);
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH - 1);
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH);
+    testConcatenatedAndSplit([pingPacket, sessionInitPacket, pingPacket], Framer.MSG_HEADER_LENGTH + 1);
   });
 
   describe('test more edge-cases', () => {
@@ -269,34 +359,46 @@ describe('Parser', () => {
       parser.feed(Buffer.alloc(0));
     });
 
-    it(`should try parse just the metadata as a packet`, (done) => {
+    it(`should not try parse just the header as a packet`, (done) => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.InvalidPacket) {
+          if (err === timeoutError) {
             done();
           } else {
             done(err);
           }
         });
 
-      parser.feed(Buffer.alloc(Parser.PACKET_METADATA_SIZE));
+      const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
+      const data = framer.frame(sessionInitPacket);
+      const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
+      parser.feed(header);
     });
 
-    it(`should buffer a max buffer length`, async () => {
-      parser = new Parser(Parser.PACKET_METADATA_SIZE, 10);
-
-      await expect(wait()).to.be.rejectedWith(timeoutError);
-      parser.feed(Buffer.allocUnsafe(10));
-    });
-
-    it(`should not buffer when max buffer size exceeds`,  (done) => {
-      parser = new Parser(Parser.PACKET_METADATA_SIZE, 10);
+    it(`should buffer a max buffer length`, (done) => {
+      parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
-          if (err && err.type === ParserErrorType.MaxBufferSizeExceeded) {
+          if (err === timeoutError) {
+            done();
+          } else {
+            done(err);
+          }
+        });
+
+      parser.feed(Buffer.allocUnsafe(10));
+    });
+
+    it(`should not buffer when max buffer size exceeds`,  (done) => {
+      parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
+
+      wait()
+        .then(() => done('err: packet should not be parsed'))
+        .catch((err) => {
+          if (err && err.code === errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED) {
             done();
           } else {
             done(err);
@@ -305,6 +407,5 @@ describe('Parser', () => {
 
       parser.feed(Buffer.allocUnsafe(11));
     });
-
   });
 });

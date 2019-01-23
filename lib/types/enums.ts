@@ -21,6 +21,16 @@ export enum Network {
   RegTest = 'regtest',
 }
 
+/**
+ * Magic value indicating wire msg origin network, and used to seek to next msg when stream state is unknown
+ */
+export enum NetworkMagic {
+  MainNet = 0xd9b4bef9,
+  TestNet = 0x0709110b,
+  SimNet = 0x12141c16,
+  RegTest = 0xdab5bffa,
+}
+
 export enum SwapRole {
   Taker = 0,
   Maker = 1,
@@ -57,10 +67,8 @@ export enum ReputationEvent {
   PacketTimeout = 2,
   SwapFailure = 3,
   SwapSuccess = 4,
-  MaxParserBufferSizeExceeded = 5,
-  InvalidPacket = 6,
-  UnknownPacketType = 7,
-  PacketDataIntegrityError = 8,
+  WireProtocolErr = 5,
+  InvalidAuth = 6,
 }
 
 export enum SwapFailureReason {
@@ -101,4 +109,7 @@ export enum DisconnectionReason {
   AlreadyConnected = 8,
   Shutdown = 9,
   MalformedVersion = 10,
+  AuthFailureInvalidTarget = 11,
+  AuthFailureInvalidSignature = 12,
+  WireProtocolErr = 13,
 }

@@ -6,7 +6,7 @@ import { exists, mkdir, readFile } from './utils/fsUtils';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { Network } from './types/enums';
+import { Network, NetworkMagic } from './types/enums';
 import { PoolConfig } from './types/p2p';
 
 class Config {

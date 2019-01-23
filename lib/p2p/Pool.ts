@@ -9,12 +9,13 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { HandshakeState, Address, NodeConnectionInfo, HandshakeStateUpdate, PoolConfig } from '../types/p2p';
+import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from '../types/p2p';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp, ms } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../types/enums';
 import { db } from '../types';
+import NodeKey from '../nodekey/NodeKey';
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
@@ -52,7 +53,9 @@ interface NodeConnectionIterator {
 /** A class representing a pool of peers that handles network activity. */
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
-  public handshakeData!: HandshakeState;
+  public nodeState!: NodeState;
+  /** The local node key. */
+  private nodeKey!: NodeKey;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutboundPeers = new Map<string, Peer>();
   /** A set of peers for which we have pending incoming connections. */
@@ -94,7 +97,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (handshakeData: HandshakeState): Promise<void> => {
+  public init = async (ownNodeState: NodeState, nodeKey: NodeKey): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -108,8 +111,9 @@ class Pool extends EventEmitter {
       }
     }
 
-    this.handshakeData = handshakeData;
-    this.handshakeData.addresses = this.addresses;
+    this.nodeState = ownNodeState;
+    this.nodeState.addresses = this.addresses;
+    this.nodeKey = nodeKey;
 
     this.bindNodeList();
 
@@ -145,12 +149,12 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Updates the handshake data and sends a new Hello packet to currently connected
+   * Updates the node state and sends node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updateHandshake = (handshakeUpdate: HandshakeStateUpdate) => {
-    this.handshakeData = { ...this.handshakeData, ...handshakeUpdate };
-    const packet = new packets.HelloPacket(this.handshakeData);
+  public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
+    this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
+    const packet = new packets.NodeStateUpdatePacket(this.nodeState);
     this.peers.forEach((peer) => {
       peer.sendPacket(packet);
     });
@@ -185,12 +189,12 @@ class Pool extends EventEmitter {
   }
 
   private verifyReachability = () => {
-    this.handshakeData.addresses!.forEach(async (address) => {
+    this.nodeState.addresses!.forEach(async (address) => {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
         const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config);
-        await peer.open(this.handshakeData, this.handshakeData.nodePubKey);
+        await peer.open(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
         if (err.code === errors.ATTEMPTED_CONNECTION_TO_SELF.code) {
@@ -215,7 +219,7 @@ class Pool extends EventEmitter {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
-      const isNotUs = node.nodePubKey !== this.handshakeData.nodePubKey;
+      const isNotUs = node.nodePubKey !== this.nodeState.nodePubKey;
 
       // check that it has listening addresses,
       const hasAddresses = node.lastAddress || node.addresses.length;
@@ -300,7 +304,7 @@ class Pool extends EventEmitter {
    * @returns the connected peer
    */
   public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
-    if (nodePubKey === this.handshakeData.nodePubKey) {
+    if (nodePubKey === this.nodeState.nodePubKey) {
       const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
       this.logger.warn(err.message);
       throw err;
@@ -350,11 +354,10 @@ class Pool extends EventEmitter {
     if (!isBanned) {
       this.bindPeer(peer);
       try {
-        await peer.open(this.handshakeData, nodePubKey, retryConnecting);
+        await peer.open(this.nodeState, this.nodeKey, nodePubKey, retryConnecting);
       } catch (err) {
         // we don't have `nodePubKey` for inbound connections, which might fail on handshake
-        const id = nodePubKey || addressUtils.toString(peer.address);
-        this.logger.warn(`could not open connection to peer (${id}): ${err.message}`);
+        this.logger.warn(`could not open connection to peer (${peer.label}): ${err.message}`);
 
         if (err.code === errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED) {
           await this.nodes.removeAddress(nodePubKey!, peer.address);
@@ -542,7 +545,7 @@ class Pool extends EventEmitter {
   }
 
   private handleOpen = async (peer: Peer): Promise<void> => {
-    if (!peer.nodePubKey || peer.nodePubKey === this.handshakeData.nodePubKey) {
+    if (!peer.nodePubKey || peer.nodePubKey === this.nodeState.nodePubKey) {
       return;
     }
 
@@ -575,9 +578,9 @@ class Pool extends EventEmitter {
     this.peers.set(peer.nodePubKey, peer);
     peer.active = true;
 
-    if (this.handshakeData.pairs.length > 0) {
-      // request peer's orders
-      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.handshakeData.pairs }));
+    // request peer's orders
+    if (this.nodeState.pairs.length > 0) {
+      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
     }
 
     // if outbound, update the `lastConnected` field for the address we're actually connected to
@@ -642,8 +645,8 @@ class Pool extends EventEmitter {
     peer.on('error', (err) => {
       // The only situation in which the node should be connected to itself is the
       // reachability check of the advertised addresses and we don't have to log that
-      if (peer.nodePubKey !== this.handshakeData.nodePubKey) {
-        this.logger.error(`peer error (${peer.nodePubKey}): ${err.message}`);
+      if (peer.nodePubKey !== this.nodeState.nodePubKey) {
+        this.logger.error(`Peer (${peer.label}): error: ${err.message}`);
       }
     });
 
@@ -655,7 +658,7 @@ class Pool extends EventEmitter {
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.once('reputation', async (event) => {
-      this.logger.debug(`Peer (${peer.nodePubKey || addressUtils.toString(peer.address)}), received reputation event: ${ReputationEvent[event]}`);
+      this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         await this.nodes.addReputationEvent(peer.nodePubKey, event);
       }

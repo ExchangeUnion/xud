@@ -108,7 +108,7 @@ class Xud extends EventEmitter {
         raidenAddress: this.raidenClient.address,
         lndbtcPubKey: this.lndbtcClient.pubKey,
         lndltcPubKey: this.lndltcClient.pubKey,
-      });
+      }, this.nodeKey);
 
       this.service = new Service(loggers.global, {
         version,
@@ -164,12 +164,12 @@ class Xud extends EventEmitter {
   private bind = () => {
     this.lndbtcClient.on('connectionVerified', (newPubKey) => {
       if (newPubKey) {
-        this.pool.updateHandshake({ lndbtcPubKey: newPubKey });
+        this.pool.updateNodeState({ lndbtcPubKey: newPubKey });
       }
     });
     this.lndltcClient.on('connectionVerified', (newPubKey) => {
       if (newPubKey) {
-        this.pool.updateHandshake({ lndltcPubKey: newPubKey });
+        this.pool.updateNodeState({ lndltcPubKey: newPubKey });
       }
     });
   }

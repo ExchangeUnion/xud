@@ -196,7 +196,7 @@ class OrderBook extends EventEmitter {
     this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
 
     if (this.pool) {
-      this.pool.updateHandshake({ pairs: this.pairIds });
+      this.pool.updateNodeState({ pairs: this.pairIds });
     }
     return pairInstance;
   }
@@ -234,7 +234,7 @@ class OrderBook extends EventEmitter {
     this.tradingPairs.delete(pairId);
 
     if (this.pool) {
-      this.pool.updateHandshake({ pairs: this.pairIds });
+      this.pool.updateNodeState({ pairs: this.pairIds });
     }
     return pair.destroy();
   }
