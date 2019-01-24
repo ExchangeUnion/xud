@@ -687,6 +687,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to remove. |
+| quantity | [double](#double) |  |  |
 
 
 
