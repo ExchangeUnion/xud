@@ -12,7 +12,7 @@ export const builder = {
   },
   quantity: {
     type: 'number',
-    describe: 'quantity to remove, this argument is optional',
+    describe: 'quantity to remove, if unspecified the entire order is removed',
   },
 };
 

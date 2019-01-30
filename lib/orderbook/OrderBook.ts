@@ -455,8 +455,6 @@ class OrderBook extends EventEmitter {
 
     const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
 
-    this.logger.debug(`requested removal of order, quantityToRemove: ${quantityToRemove}, order quantity: ${order.quantity}`);
-
     if (quantityToRemove) {
       this.removeOwnOrderByLocalIdWithQuantity(orderIdentifier, order, quantityToRemove, localId);
     } else {
@@ -474,17 +472,17 @@ class OrderBook extends EventEmitter {
       return this.removeOwnOrderByLocalIdWithoutQuantity(orderIdentifier, order, localId);
     }
 
-    const quantityCanBeRemoved = order.quantity - (order.hold ? order.hold : 0);
-    if (quantityToRemove <= quantityCanBeRemoved) {
+    const removableQuantity = order.quantity - order.hold;
+    if (quantityToRemove <= removableQuantity) {
       this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, quantityToRemove);
-    }else {
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, quantityCanBeRemoved);
-      let remainingToRemove = quantityToRemove - quantityCanBeRemoved;
+    } else {
+      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, removableQuantity);
+      let remainingQuantityToRemove = quantityToRemove - removableQuantity;
 
       const cleanup = (quantity: number) => {
-        remainingToRemove -= quantity;
-        this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingToRemove} remaining`);
-        if (remainingToRemove === 0) {
+        remainingQuantityToRemove -= quantity;
+        this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingQuantityToRemove} remaining`);
+        if (remainingQuantityToRemove === 0) {
           // we can stop listening for swaps once all holds are cleared
           this.swaps!.removeListener('swap.failed', failedHandler);
           this.swaps!.removeListener('swap.paid', paidHandler);
@@ -494,10 +492,10 @@ class OrderBook extends EventEmitter {
       const failedHandler = (deal: SwapDeal) => {
         if (deal.orderId === orderIdentifier.id) {
           // remove the portion that failed now that it's not on hold
-          if (deal.quantity! > remainingToRemove) {
-            this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, remainingToRemove);
-            cleanup(remainingToRemove);
-          }else {
+          if (deal.quantity! > remainingQuantityToRemove) {
+            this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, remainingQuantityToRemove);
+            cleanup(remainingQuantityToRemove);
+          } else {
             this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, deal.quantity!);
             cleanup(deal.quantity!);
           }
