@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { OrderPortion } from '../../../types/orders';
+import { OrderPortion } from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
 
 type OrderInvalidationPacketBody = OrderPortion;

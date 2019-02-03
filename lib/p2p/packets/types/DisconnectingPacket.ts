@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { DisconnectionReason } from '../../../types/enums';
+import { DisconnectionReason } from '../../../constants/enums';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
 

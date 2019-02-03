@@ -1,8 +1,8 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions, DefineAttributes } from 'sequelize';
-import { Address, NodeConnectionInfo } from './p2p';
+import { Address, NodeConnectionInfo } from '../p2p/types';
 import { SwapDeal } from '../swaps/types';
-import { Currency, Pair, OwnOrder, Order } from './orders';
-import { ReputationEvent } from './enums';
+import { Currency, Pair, OwnOrder, Order } from '../orderbook/types';
+import { ReputationEvent } from '../constants/enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = DefineAttributes & {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions

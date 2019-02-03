@@ -1,10 +1,9 @@
 import { EventEmitter } from 'events';
 import P2PRepository from './P2PRepository';
-import { NodeInstance, NodeFactory } from '../types/db';
-import { Address } from '../types/p2p';
+import { NodeInstance, NodeFactory, ReputationEventInstance } from '../db/types';
+import { Address } from './types';
 import addressUtils from '../utils/addressUtils';
-import { ReputationEvent } from '../types/enums';
-import { db } from '../types';
+import { ReputationEvent } from '../constants/enums';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -20,8 +19,8 @@ export const reputationEventWeight = {
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(event: 'node.ban', listener: (nodePubKey: string, events: db.ReputationEventInstance[]) => void): this;
-  emit(event: 'node.ban', nodePubKey: string, events: db.ReputationEventInstance[]): boolean;
+  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEventInstance[]) => void): this;
+  emit(event: 'node.ban', nodePubKey: string, events: ReputationEventInstance[]): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */

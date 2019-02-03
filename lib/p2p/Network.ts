@@ -1,4 +1,3 @@
-
 class Network {
   constructor(public magic: number) {
   }

@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { NodeConnectionInfo } from '../../../types/p2p';
+import { NodeConnectionInfo } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
 
 class NodesPacket extends Packet<NodeConnectionInfo[]> {

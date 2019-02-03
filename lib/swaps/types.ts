@@ -1,4 +1,4 @@
-import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/types/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/constants/enums';
 import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
