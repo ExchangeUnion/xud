@@ -265,6 +265,17 @@ class OrderBook extends EventEmitter {
     return addResult;
   }
 
+  /**
+   * Places an order in the order book. This method first attempts to match the order with existing
+   * orders by price and initiate swaps for any matches with peer orders. It can be called recursively
+   * for any portions of the order that fail swaps.
+   * @param order the order to place
+   * @param discardRemaining whether to discard any unmatched portion of the order, if `false` the
+   * unmatched portion will enter the order book.
+   * @param onUpdate a callback for when there are updates to the matching and order placement
+   * routine including internal matches, successful swaps, failed swaps, and remaining orders
+   * @param maxTime the deadline in epoch milliseconds for this method to end recursive calls
+   */
   private placeOrder = async (
     order: OwnOrder,
     discardRemaining = false,
@@ -278,45 +289,68 @@ class OrderBook extends EventEmitter {
       this.logger.debug(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be fully matched`);
 
       // returning the remaining order to be rolled back and handled by the initial call
-      return Promise.resolve({
+      return {
         internalMatches: [],
         swapResults: [],
         remainingOrder: order,
-      });
+      };
     }
 
-    // perform match. maker orders will be removed from the repository
+    // perform matching routine. maker orders that are matched will be removed from the order book.
     const tp = this.getTradingPair(order.pairId);
     const matchingResult = tp.match(order);
 
-    // instantiate the final response object
-    const result: PlaceOrderResult = {
-      internalMatches: [],
-      swapResults: [],
-      remainingOrder: matchingResult.remainingOrder,
+    /** Any portion of the placed order that could not be swapped or matched internally. */
+    let { remainingOrder } = matchingResult;
+    /** Local orders that matched with the placed order. */
+    const internalMatches: OwnOrder[] = [];
+    /** Successful swaps performed for the placed order. */
+    const swapResults: SwapResult[] = [];
+
+    /**
+     * The routine for retrying a portion of the order that failed a swap attempt.
+     * @param failedSwapQuantity the quantity of the failed portion to retry
+     */
+    const retryFailedSwap = async (failedSwapQuantity: number) => {
+      this.logger.debug(`repeating matching routine for ${order.id} for failed quantity of ${failedSwapQuantity}`);
+      const orderToRetry: OwnOrder = { ...order, quantity: failedSwapQuantity };
+
+      // invoke placeOrder recursively, append matches/swaps and any remaining order
+      const retryResult = await this.placeOrder(orderToRetry, true, onUpdate, maxTime);
+      internalMatches.push(...retryResult.internalMatches);
+      swapResults.push(...retryResult.swapResults);
+      if (retryResult.remainingOrder) {
+        if (remainingOrder) {
+          remainingOrder.quantity += retryResult.remainingOrder.quantity;
+        } else {
+          remainingOrder = retryResult.remainingOrder;
+        }
+      }
     };
 
-    /** The quantity that was attempted to be swapped but failed. */
-    let failedSwapQuantity = 0;
-
-    // iterate over the matches
-    for (const { maker, taker } of matchingResult.matches) {
+    /**
+     * The routine for handling matches found in the order book. This can be run in parallel
+     * so that all matches, including those which require swaps with peers, can be executed
+     * simultaneously.
+     */
+    const handleMatch = async (maker: Order, taker: OwnOrder) => {
       const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (isOwnOrder(maker)) {
-        // internal match
+        // this is an internal match which is effectively executed immediately upon being found
         this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         portion.localId = maker.localId;
-        result.internalMatches.push(maker);
+        internalMatches.push(maker);
         this.emit('ownOrder.filled', portion);
         await this.persistTrade(portion.quantity, maker, taker);
         onUpdate && onUpdate({ type: PlaceOrderEventType.InternalMatch, payload: maker });
       } else {
+        // this is a match with a peer order which cannot be considered executed until after a
+        // successful swap, which is an asynchronous process that can fail for numerous reasons
         if (!this.swaps) {
-          // swaps should only be undefined during integration testing of the order book
-          // for now we treat this case like a swap failure
+          // the swaps module should only be undefined during integration testing of the order book
+          // in this case we treat the swap as if it failed, but without retrying the failed portion
           this.emit('peerOrder.invalidation', portion);
-          failedSwapQuantity += portion.quantity;
-          continue;
+          return;
         }
 
         try {
@@ -327,43 +361,42 @@ class OrderBook extends EventEmitter {
             // swap was only partially completed
             portion.quantity = swapResult.quantity;
             const rejectedQuantity = maker.quantity - swapResult.quantity;
-            failedSwapQuantity += rejectedQuantity; // add unswapped quantity to failed quantity
             this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapResult.quantity} ` +
               `with peer ${maker.peerPubKey}, ${rejectedQuantity} quantity not accepted and will repeat matching routine`);
+            await retryFailedSwap(rejectedQuantity);
           } else {
             this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           }
-          result.swapResults.push(swapResult);
+          swapResults.push(swapResult);
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
         } catch (err) {
-          failedSwapQuantity += portion.quantity;
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
           this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
+          await retryFailedSwap(portion.quantity);
         }
       }
+    };
+
+    // iterate over the matches to be executed in parallel
+    const matchPromises: Promise<void>[] = [];
+    for (const { maker, taker } of matchingResult.matches) {
+      matchPromises.push(handleMatch(maker, taker));
     }
 
-    // if we have swap failures, attempt one retry for all available quantity. don't re-add the maker orders
-    if (failedSwapQuantity > 0) {
-      this.logger.debug(`${failedSwapQuantity} quantity of swaps failed for order ${order.id}, repeating matching routine for failed quantity`);
-      // aggregate failures quantities with the remaining order
-      const remainingOrder: OwnOrder = result.remainingOrder || { ...order, quantity: 0 };
-      remainingOrder.quantity += failedSwapQuantity;
+    // wait for all matches to complete execution, any portions that cannot be executed due to
+    // failed swaps will be added to the remaining order which may be added to the order book.
+    await Promise.all(matchPromises);
 
-      // invoke placeOrder recursively, append matches/swaps and set the consecutive remaining order
-      const remainingOrderResult = await this.placeOrder(remainingOrder, true, onUpdate, maxTime);
-      result.internalMatches.push(...remainingOrderResult.internalMatches);
-      result.swapResults.push(...remainingOrderResult.swapResults);
-      result.remainingOrder = remainingOrderResult.remainingOrder;
-    }
-
-    const { remainingOrder } = result;
     if (remainingOrder && !discardRemaining) {
       this.addOwnOrder(remainingOrder);
       onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
     }
 
-    return result;
+    return {
+      internalMatches,
+      swapResults,
+      remainingOrder,
+    };
   }
 
   /**
