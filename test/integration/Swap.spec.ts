@@ -80,7 +80,7 @@ const validSwapDeal = () => {
     makerCltvDelta: 1152,
     quantity: 0.00001,
     executeTime: 1542033726871,
-    errorReason: 'UnknownPaymentHash',
+    errorMessage: 'UnknownPaymentHash',
   };
 };
 

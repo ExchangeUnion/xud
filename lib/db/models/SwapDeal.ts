@@ -1,5 +1,5 @@
 import Sequelize from 'sequelize';
-import { db } from '../../types';
+import * as db from '../types';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.SwapDealAttributes> = {
@@ -7,7 +7,8 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     role: { type: DataTypes.TINYINT, allowNull: false },
     state: { type: DataTypes.TINYINT, allowNull: false },
     phase: { type: DataTypes.TINYINT, allowNull: false },
-    errorReason: { type: DataTypes.STRING, allowNull: true },
+    failureReason: { type: DataTypes.TINYINT, allowNull: true },
+    errorMessage: { type: DataTypes.STRING, allowNull: true },
     rPreimage: { type: DataTypes.STRING, allowNull: true },
     peerPubKey: {
       type: DataTypes.VIRTUAL,

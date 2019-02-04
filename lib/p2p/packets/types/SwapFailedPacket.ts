@@ -1,13 +1,14 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import SwapCompletePacket from './SwapCompletePacket';
 import { removeUndefinedProps } from '../../../utils/utils';
+import { SwapFailureReason } from '../../../constants/enums';
 
 // TODO: proper error handling
 export type SwapFailedPacketBody = {
   rHash: string;
-  errorMessage: string;
+  failureReason: SwapFailureReason;
+  errorMessage?: string;
 };
 
 class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
@@ -30,7 +31,6 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
 
   private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.rHash
     );
   }
@@ -39,23 +39,25 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return new SwapFailedPacket({
       header: removeUndefinedProps({
         id: obj.id,
-        hash: obj.hash,
         reqId: obj.reqId || undefined,
       }),
-      body: {
+      body: removeUndefinedProps({
         rHash: obj.rHash,
-        errorMessage: obj.errorMessage,
-      },
+        errorMessage: obj.errorMessage || undefined,
+        failureReason: obj.failureReason,
+      }),
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapFailedPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReqId(this.header.reqId!);
     msg.setRHash(this.body!.rHash);
-    msg.setErrorMessage(this.body!.errorMessage);
+    if (this.body!.errorMessage) {
+      msg.setErrorMessage(this.body!.errorMessage!);
+    }
+    msg.setFailureReason(this.body!.failureReason);
 
     return msg.serializeBinary();
   }

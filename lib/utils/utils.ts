@@ -1,15 +1,9 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
-import { assert } from 'chai';
-import { Pair } from '../types/orders';
+import { Pair } from '../orderbook/types';
 import crypto from 'crypto';
 import { promisify } from 'util';
-
-export type UriParts = {
-  nodePubKey: string;
-  host: string;
-  port: number;
-};
+import moment from 'moment';
 
 /**
  * Gets the external IP of the node.
@@ -38,30 +32,6 @@ export const getExternalIp = () => {
 };
 
 /**
- * Creates a URI from the public key, host and port.
- */
-export const getUri = (uriParts: UriParts): string => {
-  const { nodePubKey, host, port } = uriParts;
-  return `${nodePubKey}@${host}:${port}`;
-};
-
-/**
- * Splits a URI into the public key, host and port.
- */
-export const parseUri = (uri: string): UriParts => {
-  // A regex that splits the string by the symbols "@" and ":"
-  const split = uri.split(/[@:]+/);
-
-  assert(split.length === 3);
-
-  return {
-    nodePubKey: split[0],
-    host: split[1],
-    port: Number(split[2]),
-  };
-};
-
-/**
  * Check whether a variable is a non-array object
  */
 export const isObject = (val: any): boolean => {
@@ -75,9 +45,9 @@ export const isEmptyObject = (val: any): boolean => {
   return isObject(val) && Object.keys(val).length === 0;
 };
 
-/** Get the current date in the LocaleString format.
+/** Get the current date in the given dateFormat, if not provided formats with `YYYY-MM-DD hh:mm:ss.sss`.
  */
-export const getTsString = (): string => (new Date()).toLocaleString();
+export const getTsString = (dateFormat?: string): string => moment().format(dateFormat || 'YYYY-MM-DD hh:mm:ss.sss');
 
 /**
  * Recursively merge properties from different sources into a target object, overriding any

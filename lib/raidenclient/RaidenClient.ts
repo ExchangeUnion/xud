@@ -3,7 +3,7 @@ import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
 import { ms } from '../utils/utils';
-import { Order } from '../types/orders';
+import { Order } from '../orderbook/types';
 
 /**
  * A utility function to parse the payload from an http response.

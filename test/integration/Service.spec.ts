@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClients, OrderSide } from '../../lib/types/enums';
+import { SwapClients, OrderSide } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -80,7 +80,7 @@ describe('API Service', () => {
       pairId,
       includeOwnOrders: true,
     };
-    const orders = service.getOrders(args);
+    const orders = service.listOrders(args);
 
     const pairOrders = orders.get(args.pairId);
     expect(pairOrders).to.not.be.undefined;

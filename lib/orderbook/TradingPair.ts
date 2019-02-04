@@ -1,19 +1,18 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
-import { matchingEngine, orders } from '../types';
-import { OrderingDirection } from '../types/enums';
+import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
-import { isOwnOrder, Order, OwnOrder, PeerOrder } from '../types/orders';
+import { isOwnOrder, Order, OwnOrder, PeerOrder, OrderMatch, MatchingResult } from './types';
 import errors from './errors';
 
-type OrderMap<T extends orders.Order> = Map<string, T>;
+type OrderMap<T extends Order> = Map<string, T>;
 
-type OrderSidesMaps<T extends orders.Order> = {
+type OrderSidesMaps<T extends Order> = {
   buy: OrderMap<T>,
   sell: OrderMap<T>,
 };
 
-type OrderSidesArrays<T extends orders.Order> = {
+type OrderSidesArrays<T extends Order> = {
   buy: T[],
   sell: T[],
 };
@@ -31,7 +30,7 @@ class TradingPair {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
   public queues?: OrderSidesQueues;
   /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
-  public ownOrders: OrderSidesMaps<orders.OwnOrder>;
+  public ownOrders: OrderSidesMaps<OwnOrder>;
   /** A map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
   public peersOrders: Map<string, OrderSidesMaps<PeerOrder>>;
 
@@ -161,7 +160,7 @@ class TradingPair {
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
   public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
-    let peerOrdersMaps: OrderSidesMaps<orders.PeerOrder> | undefined;
+    let peerOrdersMaps: OrderSidesMaps<PeerOrder> | undefined;
 
     if (peerPubKey) {
       peerOrdersMaps = this.peersOrders.get(peerPubKey);
@@ -304,10 +303,10 @@ class TradingPair {
    * Match an order against its opposite queue. Matched maker orders will be removed from the repository
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
-  public match = (takerOrder: OwnOrder): matchingEngine.MatchingResult => {
+  public match = (takerOrder: OwnOrder): MatchingResult => {
     assert(!this.nomatching);
 
-    const matches: matchingEngine.OrderMatch[] = [];
+    const matches: OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 

@@ -26,7 +26,6 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
 
   private static validate = (obj: pb.SwapAcceptedPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.reqId
       && obj.rHash
       && obj.quantity
@@ -38,7 +37,6 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     return new SwapAcceptedPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
         reqId: obj.reqId,
       },
       body: {
@@ -49,10 +47,9 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.SwapAcceptedPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReqId(this.header.reqId!);
     msg.setRHash(this.body!.rHash);
     msg.setQuantity(this.body!.quantity);

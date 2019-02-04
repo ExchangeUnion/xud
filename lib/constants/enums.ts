@@ -21,6 +21,16 @@ export enum Network {
   RegTest = 'regtest',
 }
 
+/**
+ * Magic value indicating wire msg origin network, and used to seek to next msg when stream state is unknown
+ */
+export enum NetworkMagic {
+  MainNet = 0xd9b4bef9,
+  TestNet = 0x0709110b,
+  SimNet = 0x12141c16,
+  RegTest = 0xdab5bffa,
+}
+
 export enum SwapRole {
   Taker = 0,
   Maker = 1,
@@ -57,9 +67,8 @@ export enum ReputationEvent {
   PacketTimeout = 2,
   SwapFailure = 3,
   SwapSuccess = 4,
-  MaxParserBufferSizeExceeded = 5,
-  InvalidPacket = 6,
-  UnknownPacketType = 7,
+  WireProtocolErr = 5,
+  InvalidAuth = 6,
 }
 
 export enum SwapFailureReason {
@@ -81,7 +90,12 @@ export enum SwapFailureReason {
   SendPaymentFailure = 7,
   /** The swap resolver request from lnd was invalid. */
   InvalidResolveRequest = 8,
-  PeerFailedSwap, // TODO: this generic reason can be replaced with the failure reason reported by the peer
+  /** The swap request attempts to reuse a payment hash. */
+  PaymentHashReuse = 9,
+  /** The swap timed out while we were waiting for it to complete execution. */
+  SwapTimedOut = 10,
+  /** The deal timed out while we were waiting for the peer to respond to our swap request. */
+  DealTimedOut = 11,
 }
 
 export enum DisconnectionReason {
@@ -94,4 +108,8 @@ export enum DisconnectionReason {
   Banned = 7,
   AlreadyConnected = 8,
   Shutdown = 9,
+  MalformedVersion = 10,
+  AuthFailureInvalidTarget = 11,
+  AuthFailureInvalidSignature = 12,
+  WireProtocolErr = 13,
 }
