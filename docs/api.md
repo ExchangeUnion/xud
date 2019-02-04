@@ -21,11 +21,11 @@
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
-    - [GetOrdersRequest](#xudrpc.GetOrdersRequest)
-    - [GetOrdersResponse](#xudrpc.GetOrdersResponse)
-    - [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
     - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
+    - [ListOrdersRequest](#xudrpc.ListOrdersRequest)
+    - [ListOrdersResponse](#xudrpc.ListOrdersResponse)
+    - [ListOrdersResponse.OrdersEntry](#xudrpc.ListOrdersResponse.OrdersEntry)
     - [ListPairsRequest](#xudrpc.ListPairsRequest)
     - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
@@ -52,13 +52,14 @@
     - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
     - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
-    - [SwapResult](#xudrpc.SwapResult)
+    - [SwapFailure](#xudrpc.SwapFailure)
+    - [SwapSuccess](#xudrpc.SwapSuccess)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
-    - [SwapResult.Role](#xudrpc.SwapResult.Role)
+    - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
   
     - [Xud](#xudrpc.Xud)
@@ -323,53 +324,6 @@
 
 
 
-<a name="xudrpc.GetOrdersRequest"></a>
-
-### GetOrdersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
-| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
-
-
-
-
-
-
-<a name="xudrpc.GetOrdersResponse"></a>
-
-### GetOrdersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| orders | [GetOrdersResponse.OrdersEntry](#xudrpc.GetOrdersResponse.OrdersEntry) | repeated | A map between pair ids and their buy and sell orders. |
-
-
-
-
-
-
-<a name="xudrpc.GetOrdersResponse.OrdersEntry"></a>
-
-### GetOrdersResponse.OrdersEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [Orders](#xudrpc.Orders) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.ListCurrenciesRequest"></a>
 
 ### ListCurrenciesRequest
@@ -389,6 +343,53 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | currencies | [string](#string) | repeated | A list of ticker symbols of the supported currencies. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersRequest"></a>
+
+### ListOrdersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
+| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersResponse"></a>
+
+### ListOrdersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| orders | [ListOrdersResponse.OrdersEntry](#xudrpc.ListOrdersResponse.OrdersEntry) | repeated | A map between pair ids and their buy and sell orders. |
+
+
+
+
+
+
+<a name="xudrpc.ListOrdersResponse.OrdersEntry"></a>
+
+### ListOrdersResponse.OrdersEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [Orders](#xudrpc.Orders) |  |  |
 
 
 
@@ -588,9 +589,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| internal_match | [Order](#xudrpc.Order) |  | An own orders (or portions thereof) that matched the newly placed order. |
-| swap_result | [SwapResult](#xudrpc.SwapResult) |  | A swap results of peer orders that matched the newly placed order. |
+| internal_match | [Order](#xudrpc.Order) |  | An own order (or portion thereof) that matched the newly placed order. |
+| swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A successful swap of a peer order that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
+| swap_failure | [SwapFailure](#xudrpc.SwapFailure) |  | A swap attempt that failed. |
 
 
 
@@ -625,7 +627,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order. |
-| swap_results | [SwapResult](#xudrpc.SwapResult) | repeated | A list of swap results of peer orders that matched the newly placed order. |
+| swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 
 
@@ -782,28 +784,52 @@
 
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls. These swap results are also returned in the responses for the respective calls. |
 
 
 
 
-<a name="xudrpc.SwapResult"></a>
 
-### SwapResult
+
+<a name="xudrpc.SwapFailure"></a>
+
+### SwapFailure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order_id | [string](#string) |  | The global UUID for the order that failed the swap. |
+| pair_id | [string](#string) |  | The trading pair that the swap is for. |
+| quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
+
+
+
+
+
+
+<a name="xudrpc.SwapSuccess"></a>
+
+### SwapSuccess
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
-| pair_id | [string](#string) |  | The trading pair that this order is for. |
+| local_id | [string](#string) |  | The local id for the order that was swapped. |
 | quantity | [double](#double) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
 | amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
-| role | [SwapResult.Role](#xudrpc.SwapResult.Role) |  | Our role in the swap, either MAKER or TAKER. |
+| role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
+| pair_id | [string](#string) |  | The trading pair that the swap is for. |
 
 
 
@@ -862,9 +888,9 @@
 
 
 
-<a name="xudrpc.SwapResult.Role"></a>
+<a name="xudrpc.SwapSuccess.Role"></a>
 
-### SwapResult.Role
+### SwapSuccess.Role
 
 
 | Name | Number | Description |
@@ -894,19 +920,19 @@
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. |
 | GetNodeInfo | [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest) | [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse) | Gets general information about a node. |
-| GetOrders | [GetOrdersRequest](#xudrpc.GetOrdersRequest) | [GetOrdersResponse](#xudrpc.GetOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
+| ListOrders | [ListOrdersRequest](#xudrpc.ListOrdersRequest) | [ListOrdersResponse](#xudrpc.ListOrdersResponse) | Gets orders from the order book. This call returns the state of the order book at a given point in time, although it is not guaranteed to still be vaild by the time a response is received and processed by a client. It accepts an optional trading pair id parameter. If specified, only orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders are separated into buys and sells for each trading pair, but unsorted. |
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
-| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapResult](#xudrpc.SwapResult) | Execute a swap on a maker peer order |
+| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Execute a swap on a maker peer order |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
 | SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
 | SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapResult](#xudrpc.SwapResult) stream | Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to get real-time notifications when its orders are filled by a remote taker. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through Exchange Union network. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 
  
 

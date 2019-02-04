@@ -1,9 +1,7 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { OutgoingOrder } from '../../../types/orders';
+import { OutgoingOrder } from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import HelloPacket from './HelloPacket';
 
 class OrderPacket extends Packet<OutgoingOrder> {
   public get type() {
@@ -21,7 +19,6 @@ class OrderPacket extends Packet<OutgoingOrder> {
 
   private static validate = (obj: pb.OrderPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.id
       && obj.order
       && obj.order.pairId
@@ -34,7 +31,6 @@ class OrderPacket extends Packet<OutgoingOrder> {
     return new OrderPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
       },
       body: {
         id: obj.order!.id,
@@ -46,7 +42,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const pbOrder = new pb.Order();
     pbOrder.setId(this.body!.id);
     pbOrder.setPairId(this.body!.pairId);
@@ -56,7 +52,6 @@ class OrderPacket extends Packet<OutgoingOrder> {
 
     const msg = new pb.OrderPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setOrder(pbOrder);
 
     return msg.serializeBinary();

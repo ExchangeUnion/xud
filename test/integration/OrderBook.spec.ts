@@ -4,42 +4,13 @@ import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { orders } from '../../lib/types';
-import { SwapClients } from '../../lib/types/enums';
-import { ms } from '../../lib/utils/utils';
+import * as orders from '../../lib/orderbook/types';
+import { SwapClients } from '../../lib/constants/enums';
+import { createOwnOrder } from '../utils';
 
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);
-
-const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms()): orders.OwnOrder => ({
-  price,
-  quantity,
-  isBuy,
-  createdAt,
-  initialQuantity: quantity,
-  id: uuidv1(),
-  localId: uuidv1(),
-  pairId: PAIR_ID,
-  hold: 0,
-});
-
-const createPeerOrder = (
-  price: number,
-  quantity: number,
-  isBuy: boolean,
-  createdAt = ms(),
-  peerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345',
-): orders.PeerOrder => ({
-  quantity,
-  price,
-  isBuy,
-  createdAt,
-  peerPubKey,
-  initialQuantity: quantity,
-  id: uuidv1(),
-  pairId: PAIR_ID,
-});
 
 const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
@@ -86,8 +57,10 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55, isBuy: true, hold: 0 };
-    await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
+    const order = { pairId: PAIR_ID, quantity: 5, price: 55, isBuy: true, hold: 0 };
+    const { remainingOrder } = await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
+    expect(remainingOrder).to.not.be.undefined;
+    expect(orderBook.getOwnOrder(remainingOrder!.id, PAIR_ID)).to.not.be.undefined;
     await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
   });
 
@@ -127,17 +100,17 @@ describe('OrderBook', () => {
   it('should not add a new own order with a duplicated localId', async () => {
     const order: orders.OwnOrder = createOwnOrder(100, 10, false);
 
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
 
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
   after(async () => {
@@ -179,13 +152,13 @@ describe('nomatching OrderBook', () => {
 
   it('should not place the same order twice', async () => {
     const order = createOwnOrder(100, 10, true);
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
   it('should not remove the same order twice', async () => {
     const order = createOwnOrder(100, 10, true);
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
   });

@@ -19,6 +19,10 @@ class NodeKey {
     return this.pubKeyStr;
   }
 
+  public get nodePrivKey(): Buffer {
+    return this.privKey;
+  }
+
   /**
    * Generates a random NodeKey.
    */

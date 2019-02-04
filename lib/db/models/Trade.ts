@@ -1,10 +1,11 @@
 import Sequelize from 'sequelize';
-import { db } from '../../types';
+import * as db from '../types';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.TradeAttributes> = {
-    makerOrderId: { type: DataTypes.STRING, primaryKey: true },
-    takerOrderId: { type: DataTypes.STRING, primaryKey: true },
+    makerOrderId: { type: DataTypes.STRING, allowNull: false },
+    takerOrderId: { type: DataTypes.STRING, allowNull: true },
+    rHash: { type: DataTypes.STRING, allowNull: true },
     quantity: { type: DataTypes.DECIMAL(8), allowNull: false },
   };
 
@@ -25,7 +26,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     models.Trade.belongsTo(models.Order, {
       as: 'takerOrder',
       foreignKey: 'takerOrderId',
-      constraints: true,
+      constraints: false,
+    });
+    models.Trade.belongsTo(models.SwapDeal, {
+      foreignKey: 'rHash',
+      constraints: false,
     });
   };
 

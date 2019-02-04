@@ -1,8 +1,7 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { OrderPortion } from '../../../types/orders';
+import { OrderPortion } from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
-import OrderPacket from './OrderPacket';
 
 type OrderInvalidationPacketBody = OrderPortion;
 
@@ -22,18 +21,16 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
 
   private static validate = (obj: pb.OrderInvalidationPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.hash
       && obj.orderId
       && obj.pairId
       && obj.quantity
     );
   }
 
-  private static convert = (obj: pb.OrderInvalidationPacket.AsObject): OrderPacket => {
-    return new OrderPacket({
+  private static convert = (obj: pb.OrderInvalidationPacket.AsObject): OrderInvalidationPacket => {
+    return new OrderInvalidationPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
       },
       body: {
         id: obj.orderId,
@@ -43,10 +40,9 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.OrderInvalidationPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setOrderId(this.body!.id);
     msg.setPairId(this.body!.pairId);
     msg.setQuantity(this.body!.quantity);
