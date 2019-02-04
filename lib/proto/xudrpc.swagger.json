@@ -21,7 +21,7 @@
         "operationId": "AddCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddCurrencyResponse"
             }
@@ -48,7 +48,7 @@
         "operationId": "AddPair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddPairResponse"
             }
@@ -75,7 +75,7 @@
         "operationId": "Ban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcBanResponse"
             }
@@ -102,7 +102,7 @@
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcChannelBalanceResponse"
             }
@@ -128,7 +128,7 @@
         "operationId": "Connect",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcConnectResponse"
             }
@@ -155,7 +155,7 @@
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListCurrenciesResponse"
             }
@@ -172,9 +172,9 @@
         "operationId": "ExecuteSwap",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapResult"
+              "$ref": "#/definitions/xudrpcSwapSuccess"
             }
           }
         },
@@ -199,7 +199,7 @@
         "operationId": "GetInfo",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
             }
@@ -216,7 +216,7 @@
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetNodeInfoResponse"
             }
@@ -239,12 +239,12 @@
     "/v1/orders": {
       "get": {
         "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
-        "operationId": "GetOrders",
+        "operationId": "ListOrders",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcGetOrdersResponse"
+              "$ref": "#/definitions/xudrpcListOrdersResponse"
             }
           }
         },
@@ -276,7 +276,7 @@
         "operationId": "ListPairs",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPairsResponse"
             }
@@ -293,7 +293,7 @@
         "operationId": "ListPeers",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPeersResponse"
             }
@@ -310,7 +310,7 @@
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderEvent"
             }
@@ -337,7 +337,7 @@
         "operationId": "PlaceOrderSync",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }
@@ -364,7 +364,7 @@
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
             }
@@ -391,7 +391,7 @@
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
@@ -418,7 +418,7 @@
         "operationId": "RemovePair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairResponse"
             }
@@ -445,7 +445,7 @@
         "operationId": "Shutdown",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcShutdownResponse"
             }
@@ -466,13 +466,40 @@
         ]
       }
     },
-    "/v1/subscribeorders": {
+    "/v1/subscribeaddedorders": {
+      "get": {
+        "summary": "Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,\nallows the client to maintain an up-to-date view of the order book. For example, an exchange that\nwants to show its users a real time list of the orders available to them would subscribe to this\nstreaming call to be alerted of new orders as they become available for trading.",
+        "operationId": "SubscribeAddedOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/xudrpcOrder"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "existing",
+            "description": "Whether to transmit all existing active orders upon establishing the stream.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/subscriberemovedorders": {
       "get": {
         "summary": "Subscribes to orders being removed - either in full or in part - from the order book. This call,\ntogether with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order\nbook. For example, an exchange that wants to show its users a real time list of the orders available\nto them would subscribe to this streaming call to be alerted when part or all of an existing order\nis no longer available for trading.",
         "operationId": "SubscribeRemovedOrders",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcOrderRemoval"
             }
@@ -485,16 +512,26 @@
     },
     "/v1/subscribeswaps": {
       "get": {
-        "summary": "Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to\nget real-time notifications when its orders are filled by a remote taker. It can be used for\ntracking order executions, updating balances, and informing a trader when one of their orders\nis settled through Exchange Union network.",
+        "summary": "Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are\ntransmitted unless a flag is set to include swaps initiated by the local node. This call allows\nthe client to get real-time notifications when its orders are filled by a peer. It can be used\nfor tracking order executions, updating balances, and informing a trader when one of their orders\nis settled through the Exchange Union network.",
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapResult"
+              "$ref": "#/definitions/xudrpcSwapSuccess"
             }
           }
         },
+        "parameters": [
+          {
+            "name": "include_taker",
+            "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -532,7 +569,7 @@
         "operationId": "Unban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcUnbanResponse"
             }
@@ -563,7 +600,7 @@
       ],
       "default": "LND"
     },
-    "SwapResultRole": {
+    "SwapSuccessRole": {
       "type": "string",
       "enum": [
         "TAKER",
@@ -772,18 +809,6 @@
         }
       }
     },
-    "xudrpcGetOrdersResponse": {
-      "type": "object",
-      "properties": {
-        "orders": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/xudrpcOrders"
-          },
-          "description": "A map between pair ids and their buy and sell orders."
-        }
-      }
-    },
     "xudrpcListCurrenciesResponse": {
       "type": "object",
       "properties": {
@@ -793,6 +818,18 @@
             "type": "string"
           },
           "description": "A list of ticker symbols of the supported currencies."
+        }
+      }
+    },
+    "xudrpcListOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "orders": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcOrders"
+          },
+          "description": "A map between pair ids and their buy and sell orders."
         }
       }
     },
@@ -1052,13 +1089,17 @@
           "$ref": "#/definitions/xudrpcOrder",
           "description": "An own orders (or portions thereof) that matched the newly placed order."
         },
-        "swap_result": {
-          "$ref": "#/definitions/xudrpcSwapResult",
+        "swap_success": {
+          "$ref": "#/definitions/xudrpcSwapSuccess",
           "description": "A swap results of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
           "description": "The remaining portion of the order, after matches, that enters the order book."
+        },
+        "swap_failure": {
+          "$ref": "#/definitions/xudrpcSwapFailure",
+          "description": "A swap attempt that failed."
         }
       }
     },
@@ -1099,10 +1140,10 @@
           },
           "description": "A list of own orders (or portions thereof) that matched the newly placed order."
         },
-        "swap_results": {
+        "swap_successes": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/xudrpcSwapResult"
+            "$ref": "#/definitions/xudrpcSwapSuccess"
           },
           "description": "A list of swap results of peer orders that matched the newly placed order."
         },
@@ -1179,84 +1220,29 @@
     "xudrpcShutdownResponse": {
       "type": "object"
     },
-    "xudrpcSwap": {
+    "xudrpcSwapFailure": {
       "type": "object",
       "properties": {
-        "role": {
-          "$ref": "#/definitions/SwapSwapRole"
-        },
-        "phase": {
-          "$ref": "#/definitions/SwapSwapPhase"
-        },
-        "state": {
-          "$ref": "#/definitions/SwapSwapState"
-        },
-        "error_reason": {
-          "type": "string"
-        },
-        "peer_pub_key": {
-          "type": "string"
-        },
         "order_id": {
-          "type": "string"
+          "type": "string",
+          "description": "The global UUID for the order that failed the swap."
         },
-        "local_id": {
-          "type": "string"
-        },
-        "proposed_quantity": {
-          "type": "integer",
-          "format": "int32"
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "integer",
-          "format": "int32"
+          "type": "number",
+          "format": "double",
+          "description": "The order quantity that was attempted to be swapped."
         },
-        "taker_amount": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "taker_currency": {
-          "type": "string"
-        },
-        "taker_pub_key": {
-          "type": "string"
-        },
-        "maker_amount": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "maker_currency": {
-          "type": "string"
-        },
-        "taker_cltv_delta": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "maker_cltv_delta": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "r_hash": {
-          "type": "string"
-        },
-        "r_preimage": {
-          "type": "string"
-        },
-        "create_time": {
+        "peer_pub_key": {
           "type": "string",
-          "format": "int64"
-        },
-        "execute_time": {
-          "type": "string",
-          "format": "int64"
-        },
-        "complete_time": {
-          "type": "string",
-          "format": "int64"
+          "description": "The node pub key of the peer that we attempted to swap with."
         }
       }
     },
-    "xudrpcSwapResult": {
+    "xudrpcSwapSuccess": {
       "type": "object",
       "properties": {
         "order_id": {
@@ -1269,7 +1255,7 @@
         },
         "pair_id": {
           "type": "string",
-          "description": "The trading pair that this order is for."
+          "description": "The trading pair that the swap is for."
         },
         "quantity": {
           "type": "number",
@@ -1295,7 +1281,7 @@
           "description": "The node pub key of the peer that executed this order."
         },
         "role": {
-          "$ref": "#/definitions/SwapResultRole",
+          "$ref": "#/definitions/SwapSuccessRole",
           "description": "Our role in the swap, either MAKER or TAKER."
         },
         "currency_received": {

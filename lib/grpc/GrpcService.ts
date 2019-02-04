@@ -4,13 +4,12 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { Order, isOwnOrder, OrderPortion } from '../types/orders';
+import { Order, isOwnOrder, OrderPortion, PeerOrder, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventCase } from '../types/orderBook';
 import { SwapResult } from 'lib/swaps/types';
 
 /**
@@ -36,10 +35,10 @@ const createOrder = (order: Order) => {
 };
 
 /**
- * Creates an xudrpc SwapResult message from a [[SwapResult]].
+ * Creates an xudrpc SwapSuccess message from a [[SwapResult]].
  */
-const createSwapResult = (result: SwapResult) => {
-  const swapResult = new xudrpc.SwapResult();
+const createSwapSuccess = (result: SwapResult) => {
+  const swapResult = new xudrpc.SwapSuccess();
   swapResult.setOrderId(result.orderId);
   swapResult.setLocalId(result.localId);
   swapResult.setPairId(result.pairId);
@@ -55,6 +54,18 @@ const createSwapResult = (result: SwapResult) => {
 };
 
 /**
+ * Creates an xudrpc SwapFailure message from a [[PeerOrder]] that could not be swapped.
+ */
+const createSwapFailure = (order: PeerOrder) => {
+  const swapFailure = new xudrpc.SwapFailure();
+  swapFailure.setOrderId(order.id);
+  swapFailure.setPairId(order.pairId);
+  swapFailure.setPeerPubKey(order.peerPubKey);
+  swapFailure.setQuantity(order.quantity);
+  return swapFailure;
+};
+
+/**
  * Creates an xudrpc PlaceOrderResponse message from a [[PlaceOrderResult]].
  */
 const createPlaceOrderResponse = (result: PlaceOrderResult) => {
@@ -63,8 +74,8 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
   const internalMatches = result.internalMatches.map(match => createOrder(match));
   response.setInternalMatchesList(internalMatches);
 
-  const swapResults = result.swapResults.map(swapResult => createSwapResult(swapResult));
-  response.setSwapResultsList(swapResults);
+  const swapSuccesses = result.swapResults.map(swapResult => createSwapSuccess(swapResult));
+  response.setSwapSuccessesList(swapSuccesses);
 
   if (result.remainingOrder) {
     response.setRemainingOrder(createOrder(result.remainingOrder));
@@ -77,19 +88,22 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
  * Creates an xudrpc PlaceOrderEvent message from a [[PlaceOrderEvent]].
  */
 const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
-  const response = new xudrpc.PlaceOrderEvent();
-  switch (e.case) {
-    case PlaceOrderEventCase.InternalMatch:
-      response.setInternalMatch(createOrder(e.payload as Order));
+  const placeOrderEvent = new xudrpc.PlaceOrderEvent();
+  switch (e.type) {
+    case PlaceOrderEventType.InternalMatch:
+      placeOrderEvent.setInternalMatch(createOrder(e.payload as Order));
       break;
-    case PlaceOrderEventCase.SwapResult:
-      response.setSwapResult(createSwapResult(e.payload as SwapResult));
+    case PlaceOrderEventType.SwapSuccess:
+      placeOrderEvent.setSwapSuccess(createSwapSuccess(e.payload as SwapResult));
       break;
-    case PlaceOrderEventCase.RemainingOrder:
-      response.setRemainingOrder(createOrder(e.payload as Order));
+    case PlaceOrderEventType.RemainingOrder:
+      placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
+      break;
+    case PlaceOrderEventType.SwapFailure:
+      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as PeerOrder));
       break;
   }
-  return response;
+  return placeOrderEvent;
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -238,7 +252,8 @@ class GrpcService {
    */
   public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {
     try {
-      await this.service.connect(call.request.toObject());
+      const { nodeUri } = call.request.toObject();
+      await this.service.connect({ nodeUri, retryConnecting: false });
       const response = new xudrpc.ConnectResponse();
       callback(null, response);
     } catch (err) {
@@ -275,10 +290,10 @@ class GrpcService {
   /**
    * See [[Service.executeSwap]]
    */
-  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapResult> = async (call, callback) => {
+  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
       const result = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapResult(result));
+      callback(null, createSwapSuccess(result));
     } catch (err) {
       callback(this.getGrpcError(err), null);
     }
@@ -355,24 +370,24 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.getOrders]]
+   * See [[Service.listOrders]]
    */
-  public getOrders: grpc.handleUnaryCall<xudrpc.GetOrdersRequest, xudrpc.GetOrdersResponse> = (call, callback) => {
+  public listOrders: grpc.handleUnaryCall<xudrpc.ListOrdersRequest, xudrpc.ListOrdersResponse> = (call, callback) => {
     try {
-      const getOrdersResponse = this.service.getOrders(call.request.toObject());
-      const response = new xudrpc.GetOrdersResponse();
+      const listOrdersResponse = this.service.listOrders(call.request.toObject());
+      const response = new xudrpc.ListOrdersResponse();
 
-      const getOrdersList = <T extends Order>(orders: T[]) => {
+      const listOrdersList = <T extends Order>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
         orders.forEach(order => ordersList.push(createOrder(<Order>order)));
         return ordersList;
       };
 
       const ordersMap = response.getOrdersMap();
-      getOrdersResponse.forEach((orderArrays, pairId) => {
+      listOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(getOrdersList(orderArrays.buy));
-        orders.setSellOrdersList(getOrdersList(orderArrays.sell));
+        orders.setBuyOrdersList(listOrdersList(orderArrays.buy));
+        orders.setSellOrdersList(listOrdersList(orderArrays.sell));
 
         ordersMap.set(pairId, orders);
       });
@@ -589,9 +604,9 @@ class GrpcService {
   /*
    * See [[Service.subscribeSwaps]]
    */
-  public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapResult> = (call) => {
-    this.service.subscribeSwaps((result: SwapResult) => {
-      call.write(createSwapResult(result));
+  public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
+    this.service.subscribeSwaps(call.request.toObject(), (result: SwapResult) => {
+      call.write(createSwapSuccess(result));
     });
     this.addStream(call);
   }

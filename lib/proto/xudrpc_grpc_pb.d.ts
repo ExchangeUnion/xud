@@ -17,7 +17,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     unban: IXudService_IUnban;
     getInfo: IXudService_IGetInfo;
     getNodeInfo: IXudService_IGetNodeInfo;
-    getOrders: IXudService_IGetOrders;
+    listOrders: IXudService_IListOrders;
     listCurrencies: IXudService_IListCurrencies;
     listPairs: IXudService_IListPairs;
     listPeers: IXudService_IListPeers;
@@ -114,14 +114,14 @@ interface IXudService_IGetNodeInfo extends grpc.MethodDefinition<xudrpc_pb.GetNo
     responseSerialize: grpc.serialize<xudrpc_pb.GetNodeInfoResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetNodeInfoResponse>;
 }
-interface IXudService_IGetOrders extends grpc.MethodDefinition<xudrpc_pb.GetOrdersRequest, xudrpc_pb.GetOrdersResponse> {
-    path: string; // "/xudrpc.Xud/GetOrders"
+interface IXudService_IListOrders extends grpc.MethodDefinition<xudrpc_pb.ListOrdersRequest, xudrpc_pb.ListOrdersResponse> {
+    path: string; // "/xudrpc.Xud/ListOrders"
     requestStream: boolean; // false
     responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.GetOrdersRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.GetOrdersRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.GetOrdersResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.GetOrdersResponse>;
+    requestSerialize: grpc.serialize<xudrpc_pb.ListOrdersRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ListOrdersRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ListOrdersResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ListOrdersResponse>;
 }
 interface IXudService_IListCurrencies extends grpc.MethodDefinition<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse> {
     path: string; // "/xudrpc.Xud/ListCurrencies"
@@ -253,7 +253,7 @@ export interface IXudServer {
     unban: grpc.handleUnaryCall<xudrpc_pb.UnbanRequest, xudrpc_pb.UnbanResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
     getNodeInfo: grpc.handleUnaryCall<xudrpc_pb.GetNodeInfoRequest, xudrpc_pb.GetNodeInfoResponse>;
-    getOrders: grpc.handleUnaryCall<xudrpc_pb.GetOrdersRequest, xudrpc_pb.GetOrdersResponse>;
+    listOrders: grpc.handleUnaryCall<xudrpc_pb.ListOrdersRequest, xudrpc_pb.ListOrdersResponse>;
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
     listPairs: grpc.handleUnaryCall<xudrpc_pb.ListPairsRequest, xudrpc_pb.ListPairsResponse>;
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
@@ -297,9 +297,9 @@ export interface IXudClient {
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
-    getOrders(request: xudrpc_pb.GetOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
+    listOrders(request: xudrpc_pb.ListOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
+    listOrders(request: xudrpc_pb.ListOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
+    listOrders(request: xudrpc_pb.ListOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
     listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;
     listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;
     listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;
@@ -366,9 +366,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
     public getNodeInfo(request: xudrpc_pb.GetNodeInfoRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetNodeInfoResponse) => void): grpc.ClientUnaryCall;
-    public getOrders(request: xudrpc_pb.GetOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    public getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
-    public getOrders(request: xudrpc_pb.GetOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.GetOrdersResponse) => void): grpc.ClientUnaryCall;
+    public listOrders(request: xudrpc_pb.ListOrdersRequest, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
+    public listOrders(request: xudrpc_pb.ListOrdersRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
+    public listOrders(request: xudrpc_pb.ListOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ListOrdersResponse) => void): grpc.ClientUnaryCall;
     public listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;
     public listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, metadata: grpc.Metadata, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;
     public listCurrencies(request: xudrpc_pb.ListCurrenciesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: Error | null, response: xudrpc_pb.ListCurrenciesResponse) => void): grpc.ClientUnaryCall;

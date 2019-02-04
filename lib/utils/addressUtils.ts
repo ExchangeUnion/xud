@@ -1,5 +1,5 @@
 import { Socket } from 'net';
-import { Address } from '../types/p2p';
+import { Address } from '../p2p/types';
 import assert from 'assert';
 
 /** Helper methods for interacting with the [[Address]] type. */

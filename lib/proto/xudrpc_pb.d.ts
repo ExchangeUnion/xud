@@ -97,43 +97,39 @@ export namespace AddPairResponse {
   }
 }
 
-export class RemoveOrderRequest extends jspb.Message {
-  getOrderId(): string;
-  setOrderId(value: string): void;
+export class BanRequest extends jspb.Message {
+  getNodePubKey(): string;
+  setNodePubKey(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): RemoveOrderRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: RemoveOrderRequest): RemoveOrderRequest.AsObject;
+  toObject(includeInstance?: boolean): BanRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: BanRequest): BanRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: RemoveOrderRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): RemoveOrderRequest;
-  static deserializeBinaryFromReader(message: RemoveOrderRequest, reader: jspb.BinaryReader): RemoveOrderRequest;
+  static serializeBinaryToWriter(message: BanRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): BanRequest;
+  static deserializeBinaryFromReader(message: BanRequest, reader: jspb.BinaryReader): BanRequest;
 }
 
-export namespace RemoveOrderRequest {
+export namespace BanRequest {
   export type AsObject = {
-    orderId: string,
+    nodePubKey: string,
   }
 }
 
-export class RemoveOrderResponse extends jspb.Message {
-  getQuantityOnHold(): number;
-  setQuantityOnHold(value: number): void;
-
+export class BanResponse extends jspb.Message {
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): RemoveOrderResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: RemoveOrderResponse): RemoveOrderResponse.AsObject;
+  toObject(includeInstance?: boolean): BanResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: BanResponse): BanResponse.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: RemoveOrderResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): RemoveOrderResponse;
-  static deserializeBinaryFromReader(message: RemoveOrderResponse, reader: jspb.BinaryReader): RemoveOrderResponse;
+  static serializeBinaryToWriter(message: BanResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): BanResponse;
+  static deserializeBinaryFromReader(message: BanResponse, reader: jspb.BinaryReader): BanResponse;
 }
 
-export namespace RemoveOrderResponse {
+export namespace BanResponse {
   export type AsObject = {
-    quantityOnHold: number,
   }
 }
 
@@ -236,39 +232,67 @@ export namespace ConnectResponse {
   }
 }
 
-export class BanRequest extends jspb.Message {
-  getNodePubKey(): string;
-  setNodePubKey(value: string): void;
+export class ExecuteSwapRequest extends jspb.Message {
+  getOrderId(): string;
+  setOrderId(value: string): void;
+
+  getPairId(): string;
+  setPairId(value: string): void;
+
+  getPeerPubKey(): string;
+  setPeerPubKey(value: string): void;
+
+  getQuantity(): number;
+  setQuantity(value: number): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): BanRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: BanRequest): BanRequest.AsObject;
+  toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: BanRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): BanRequest;
-  static deserializeBinaryFromReader(message: BanRequest, reader: jspb.BinaryReader): BanRequest;
+  static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
+  static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
 }
 
-export namespace BanRequest {
+export namespace ExecuteSwapRequest {
   export type AsObject = {
-    nodePubKey: string,
+    orderId: string,
+    pairId: string,
+    peerPubKey: string,
+    quantity: number,
   }
 }
 
-export class BanResponse extends jspb.Message {
+export class SwapFailure extends jspb.Message {
+  getOrderId(): string;
+  setOrderId(value: string): void;
+
+  getPairId(): string;
+  setPairId(value: string): void;
+
+  getQuantity(): number;
+  setQuantity(value: number): void;
+
+  getPeerPubKey(): string;
+  setPeerPubKey(value: string): void;
+
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): BanResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: BanResponse): BanResponse.AsObject;
+  toObject(includeInstance?: boolean): SwapFailure.AsObject;
+  static toObject(includeInstance: boolean, msg: SwapFailure): SwapFailure.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: BanResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): BanResponse;
-  static deserializeBinaryFromReader(message: BanResponse, reader: jspb.BinaryReader): BanResponse;
+  static serializeBinaryToWriter(message: SwapFailure, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SwapFailure;
+  static deserializeBinaryFromReader(message: SwapFailure, reader: jspb.BinaryReader): SwapFailure;
 }
 
-export namespace BanResponse {
+export namespace SwapFailure {
   export type AsObject = {
+    orderId: string,
+    pairId: string,
+    quantity: number,
+    peerPubKey: string,
   }
 }
 
@@ -394,7 +418,7 @@ export namespace GetNodeInfoResponse {
   }
 }
 
-export class GetOrdersRequest extends jspb.Message {
+export class ListOrdersRequest extends jspb.Message {
   getPairId(): string;
   setPairId(value: string): void;
 
@@ -402,36 +426,36 @@ export class GetOrdersRequest extends jspb.Message {
   setIncludeOwnOrders(value: boolean): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetOrdersRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: GetOrdersRequest): GetOrdersRequest.AsObject;
+  toObject(includeInstance?: boolean): ListOrdersRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListOrdersRequest): ListOrdersRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetOrdersRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetOrdersRequest;
-  static deserializeBinaryFromReader(message: GetOrdersRequest, reader: jspb.BinaryReader): GetOrdersRequest;
+  static serializeBinaryToWriter(message: ListOrdersRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListOrdersRequest;
+  static deserializeBinaryFromReader(message: ListOrdersRequest, reader: jspb.BinaryReader): ListOrdersRequest;
 }
 
-export namespace GetOrdersRequest {
+export namespace ListOrdersRequest {
   export type AsObject = {
     pairId: string,
     includeOwnOrders: boolean,
   }
 }
 
-export class GetOrdersResponse extends jspb.Message {
+export class ListOrdersResponse extends jspb.Message {
   getOrdersMap(): jspb.Map<string, Orders>;
   clearOrdersMap(): void;
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): GetOrdersResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: GetOrdersResponse): GetOrdersResponse.AsObject;
+  toObject(includeInstance?: boolean): ListOrdersResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListOrdersResponse): ListOrdersResponse.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: GetOrdersResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): GetOrdersResponse;
-  static deserializeBinaryFromReader(message: GetOrdersResponse, reader: jspb.BinaryReader): GetOrdersResponse;
+  static serializeBinaryToWriter(message: ListOrdersResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListOrdersResponse;
+  static deserializeBinaryFromReader(message: ListOrdersResponse, reader: jspb.BinaryReader): ListOrdersResponse;
 }
 
-export namespace GetOrdersResponse {
+export namespace ListOrdersResponse {
   export type AsObject = {
     ordersMap: Array<[string, Orders.AsObject]>,
   }
@@ -918,10 +942,10 @@ export class PlaceOrderResponse extends jspb.Message {
   setInternalMatchesList(value: Array<Order>): void;
   addInternalMatches(value?: Order, index?: number): Order;
 
-  clearSwapResultsList(): void;
-  getSwapResultsList(): Array<SwapResult>;
-  setSwapResultsList(value: Array<SwapResult>): void;
-  addSwapResults(value?: SwapResult, index?: number): SwapResult;
+  clearSwapSuccessesList(): void;
+  getSwapSuccessesList(): Array<SwapSuccess>;
+  setSwapSuccessesList(value: Array<SwapSuccess>): void;
+  addSwapSuccesses(value?: SwapSuccess, index?: number): SwapSuccess;
 
   hasRemainingOrder(): boolean;
   clearRemainingOrder(): void;
@@ -941,7 +965,7 @@ export class PlaceOrderResponse extends jspb.Message {
 export namespace PlaceOrderResponse {
   export type AsObject = {
     internalMatchesList: Array<Order.AsObject>,
-    swapResultsList: Array<SwapResult.AsObject>,
+    swapSuccessesList: Array<SwapSuccess.AsObject>,
     remainingOrder?: Order.AsObject,
   }
 }
@@ -952,15 +976,20 @@ export class PlaceOrderEvent extends jspb.Message {
   getInternalMatch(): Order | undefined;
   setInternalMatch(value?: Order): void;
 
-  hasSwapResult(): boolean;
-  clearSwapResult(): void;
-  getSwapResult(): SwapResult | undefined;
-  setSwapResult(value?: SwapResult): void;
+  hasSwapSuccess(): boolean;
+  clearSwapSuccess(): void;
+  getSwapSuccess(): SwapSuccess | undefined;
+  setSwapSuccess(value?: SwapSuccess): void;
 
   hasRemainingOrder(): boolean;
   clearRemainingOrder(): void;
   getRemainingOrder(): Order | undefined;
   setRemainingOrder(value?: Order): void;
+
+  hasSwapFailure(): boolean;
+  clearSwapFailure(): void;
+  getSwapFailure(): SwapFailure | undefined;
+  setSwapFailure(value?: SwapFailure): void;
 
   getEventCase(): PlaceOrderEvent.EventCase;
   serializeBinary(): Uint8Array;
@@ -976,47 +1005,17 @@ export class PlaceOrderEvent extends jspb.Message {
 export namespace PlaceOrderEvent {
   export type AsObject = {
     internalMatch?: Order.AsObject,
-    swapResult?: SwapResult.AsObject,
+    swapSuccess?: SwapSuccess.AsObject,
     remainingOrder?: Order.AsObject,
+    swapFailure?: SwapFailure.AsObject,
   }
 
   export enum EventCase {
     EVENT_NOT_SET = 0,
     INTERNAL_MATCH = 1,
-    SWAP_RESULT = 2,
+    SWAP_SUCCESS = 2,
     REMAINING_ORDER = 3,
-  }
-}
-
-export class ExecuteSwapRequest extends jspb.Message {
-  getOrderId(): string;
-  setOrderId(value: string): void;
-
-  getPairId(): string;
-  setPairId(value: string): void;
-
-  getPeerPubKey(): string;
-  setPeerPubKey(value: string): void;
-
-  getQuantity(): number;
-  setQuantity(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
-  static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
-}
-
-export namespace ExecuteSwapRequest {
-  export type AsObject = {
-    orderId: string,
-    pairId: string,
-    peerPubKey: string,
-    quantity: number,
+    SWAP_FAILURE = 4,
   }
 }
 
@@ -1208,6 +1207,46 @@ export namespace RemoveCurrencyResponse {
   }
 }
 
+export class RemoveOrderRequest extends jspb.Message {
+  getOrderId(): string;
+  setOrderId(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RemoveOrderRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: RemoveOrderRequest): RemoveOrderRequest.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RemoveOrderRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RemoveOrderRequest;
+  static deserializeBinaryFromReader(message: RemoveOrderRequest, reader: jspb.BinaryReader): RemoveOrderRequest;
+}
+
+export namespace RemoveOrderRequest {
+  export type AsObject = {
+    orderId: string,
+  }
+}
+
+export class RemoveOrderResponse extends jspb.Message {
+  getQuantityOnHold(): number;
+  setQuantityOnHold(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RemoveOrderResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: RemoveOrderResponse): RemoveOrderResponse.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: RemoveOrderResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RemoveOrderResponse;
+  static deserializeBinaryFromReader(message: RemoveOrderResponse, reader: jspb.BinaryReader): RemoveOrderResponse;
+}
+
+export namespace RemoveOrderResponse {
+  export type AsObject = {
+    quantityOnHold: number,
+  }
+}
+
 export class RemovePairRequest extends jspb.Message {
   getPairId(): string;
   setPairId(value: string): void;
@@ -1313,6 +1352,9 @@ export namespace SubscribeRemovedOrdersRequest {
 }
 
 export class SubscribeSwapsRequest extends jspb.Message {
+  getIncludeTaker(): boolean;
+  setIncludeTaker(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SubscribeSwapsRequest.AsObject;
   static toObject(includeInstance: boolean, msg: SubscribeSwapsRequest): SubscribeSwapsRequest.AsObject;
@@ -1325,10 +1367,11 @@ export class SubscribeSwapsRequest extends jspb.Message {
 
 export namespace SubscribeSwapsRequest {
   export type AsObject = {
+    includeTaker: boolean,
   }
 }
 
-export class SwapResult extends jspb.Message {
+export class SwapSuccess extends jspb.Message {
   getOrderId(): string;
   setOrderId(value: string): void;
 
@@ -1353,8 +1396,8 @@ export class SwapResult extends jspb.Message {
   getPeerPubKey(): string;
   setPeerPubKey(value: string): void;
 
-  getRole(): SwapResult.Role;
-  setRole(value: SwapResult.Role): void;
+  getRole(): SwapSuccess.Role;
+  setRole(value: SwapSuccess.Role): void;
 
   getCurrencyReceived(): string;
   setCurrencyReceived(value: string): void;
@@ -1363,16 +1406,16 @@ export class SwapResult extends jspb.Message {
   setCurrencySent(value: string): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): SwapResult.AsObject;
-  static toObject(includeInstance: boolean, msg: SwapResult): SwapResult.AsObject;
+  toObject(includeInstance?: boolean): SwapSuccess.AsObject;
+  static toObject(includeInstance: boolean, msg: SwapSuccess): SwapSuccess.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: SwapResult, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): SwapResult;
-  static deserializeBinaryFromReader(message: SwapResult, reader: jspb.BinaryReader): SwapResult;
+  static serializeBinaryToWriter(message: SwapSuccess, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): SwapSuccess;
+  static deserializeBinaryFromReader(message: SwapSuccess, reader: jspb.BinaryReader): SwapSuccess;
 }
 
-export namespace SwapResult {
+export namespace SwapSuccess {
   export type AsObject = {
     orderId: string,
     localId: string,
@@ -1382,7 +1425,7 @@ export namespace SwapResult {
     amountReceived: number,
     amountSent: number,
     peerPubKey: string,
-    role: SwapResult.Role,
+    role: SwapSuccess.Role,
     currencyReceived: string,
     currencySent: string,
   }

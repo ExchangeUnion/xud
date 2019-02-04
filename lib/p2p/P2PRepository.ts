@@ -1,17 +1,16 @@
 import { Models } from '../db/DB';
-import { db } from '../types';
-import { NodeInstance } from '../types/db';
+import { NodeInstance, ReputationEventInstance, ReputationEventFactory, NodeFactory, ReputationEventAttributes, NodeAttributes } from '../db/types';
 import Bluebird from 'bluebird';
 
 class P2PRepository {
 
   constructor(private models: Models) {}
 
-  public getNodes = async (): Promise<db.NodeInstance[]> => {
+  public getNodes = async (): Promise<NodeInstance[]> => {
     return this.models.Node.findAll();
   }
 
-  public getNode = async (nodePubKey: string): Promise<db.NodeInstance | null> => {
+  public getNode = async (nodePubKey: string): Promise<NodeInstance | null> => {
     return this.models.Node.findOne({
       where: {
         nodePubKey,
@@ -19,7 +18,7 @@ class P2PRepository {
     });
   }
 
-  public getReputationEvents = async (node: NodeInstance): Promise<db.ReputationEventInstance[]> => {
+  public getReputationEvents = async (node: NodeInstance): Promise<ReputationEventInstance[]> => {
     return this.models.ReputationEvent.findAll({
       where: {
         nodeId: node.id,
@@ -27,16 +26,16 @@ class P2PRepository {
     });
   }
 
-  public addNode = (node: db.NodeFactory): Bluebird<db.NodeInstance> => {
-    return this.models.Node.create(<db.NodeAttributes>node);
+  public addNode = (node: NodeFactory): Bluebird<NodeInstance> => {
+    return this.models.Node.create(<NodeAttributes>node);
   }
 
-  public addReputationEvent = async (event: db.ReputationEventFactory) => {
-    return this.models.ReputationEvent.create(<db.ReputationEventAttributes>event);
+  public addReputationEvent = async (event: ReputationEventFactory) => {
+    return this.models.ReputationEvent.create(<ReputationEventAttributes>event);
   }
 
-  public addNodes = async (nodes: db.NodeFactory[]) => {
-    return this.models.Node.bulkCreate(<db.NodeAttributes[]>nodes);
+  public addNodes = async (nodes: NodeFactory[]) => {
+    return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
   }
 }
 

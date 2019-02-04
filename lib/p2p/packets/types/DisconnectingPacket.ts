@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { DisconnectionReason } from '../../../types/enums';
+import { DisconnectionReason } from '../../../constants/enums';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
 
@@ -25,7 +25,6 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
 
   private static validate = (msg: pb.DisconnectingPacket.AsObject): boolean => {
     return !!(msg.id
-      && msg.hash
       && msg.reason
     );
   }
@@ -34,7 +33,6 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     return new DisconnectingPacket({
       header: {
         id: obj.id,
-        hash: obj.hash,
       },
       body: removeUndefinedProps({
         reason: obj.reason,
@@ -43,10 +41,9 @@ class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.DisconnectingPacket();
     msg.setId(this.header.id);
-    msg.setHash(this.header.hash!);
     msg.setReason(this.body!.reason);
     msg.setPayload(this.body!.payload!);
 

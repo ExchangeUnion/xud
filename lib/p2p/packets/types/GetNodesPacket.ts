@@ -1,8 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
-import DisconnectingPacket from './DisconnectingPacket';
 
 class GetNodesPacket extends Packet<undefined> {
   public get type() {
@@ -30,7 +28,7 @@ class GetNodesPacket extends Packet<undefined> {
     });
   }
 
-  public serialize(): Uint8Array {
+  public serialize = (): Uint8Array => {
     const msg = new pb.PingPacket();
     msg.setId(this.header.id);
 

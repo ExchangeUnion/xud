@@ -5,13 +5,11 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapRole, SwapState } from '../types/enums';
-import { parseUri, getUri, UriParts } from '../utils/utils';
+import { SwapClients, OrderSide, SwapRole, SwapState } from '../constants/enums';
+import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion } from '../types/orders';
-import { PlaceOrderEvent } from '../types/orderBook';
+import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
-import SwapRepository from '../swaps/SwapRepository';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapResult } from 'lib/swaps/types';
 
@@ -158,10 +156,12 @@ class Service extends EventEmitter {
   /**
    * Connect to an XU node on a given node uri.
    */
-  public connect = async (args: { nodeUri: string }) => {
+  public connect = async (args: { nodeUri: string, retryConnecting: boolean }) => {
+    const { nodeUri, retryConnecting } = args;
+
     let uriParts: UriParts;
     try {
-      uriParts = parseUri(args.nodeUri);
+      uriParts = parseUri(nodeUri);
     } catch (err) {
       throw errors.INVALID_ARGUMENT('uri is invalid');
     }
@@ -170,7 +170,7 @@ class Service extends EventEmitter {
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
 
-    await this.pool.addOutbound({ host, port }, nodePubKey, false);
+    await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   }
 
   /*
@@ -223,13 +223,13 @@ class Service extends EventEmitter {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool.handshakeData;
+    const { nodePubKey, addresses } = this.pool.nodeState;
 
     const uris: string[] = [];
 
     if (addresses && addresses.length > 0) {
       addresses.forEach((address) => {
-        uris.push(getUri({ nodePubKey, host: address.host, port: address.port }));
+        uris.push(toUri({ nodePubKey, host: address.host, port: address.port }));
       });
     }
 
@@ -269,11 +269,11 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public getOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
+  public listOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
     const { pairId, includeOwnOrders } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
-    const getOrderTypes = (pairId: string) => {
+    const listOrderTypes = (pairId: string) => {
       const orders = this.orderBook.getPeersOrders(pairId);
 
       if (includeOwnOrders) {
@@ -287,10 +287,10 @@ class Service extends EventEmitter {
     };
 
     if (pairId) {
-      result.set(pairId, getOrderTypes(pairId));
+      result.set(pairId, listOrderTypes(pairId));
     } else {
       this.orderBook.pairIds.forEach((pairId) => {
-        result.set(pairId, getOrderTypes(pairId));
+        result.set(pairId, listOrderTypes(pairId));
       });
     }
 
@@ -407,13 +407,12 @@ class Service extends EventEmitter {
   }
 
   /*
-   * Subscribe to completed swaps that are initiated by a remote peer.
+   * Subscribe to completed swaps.
    */
-  public subscribeSwaps = async (callback: (swapResult: SwapResult) => void) => {
-    // TODO: use `ownOrder.swapped` order book event instead
+  public subscribeSwaps = async (args: { includeTaker: boolean }, callback: (swapResult: SwapResult) => void) => {
     this.swaps.on('swap.paid', (swapResult) => {
-      if (swapResult.role === SwapRole.Maker) {
-        // only alert client for maker matches, taker matches are handled via placeOrder
+      // always alert client for maker matches, taker matches only when specified
+      if (swapResult.role === SwapRole.Maker || args.includeTaker) {
         callback(swapResult);
       }
     });
