@@ -54,6 +54,7 @@
     - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
     - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
+    - [Swap](#xudrpc.Swap)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [UnbanRequest](#xudrpc.UnbanRequest)
@@ -61,6 +62,9 @@
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
+    - [Swap.SwapPhase](#xudrpc.Swap.SwapPhase)
+    - [Swap.SwapRole](#xudrpc.Swap.SwapRole)
+    - [Swap.SwapState](#xudrpc.Swap.SwapState)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
   
@@ -825,6 +829,41 @@
 
 
 
+<a name="xudrpc.Swap"></a>
+
+### Swap
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| role | [Swap.SwapRole](#xudrpc.Swap.SwapRole) |  |  |
+| phase | [Swap.SwapPhase](#xudrpc.Swap.SwapPhase) |  |  |
+| state | [Swap.SwapState](#xudrpc.Swap.SwapState) |  |  |
+| failure_reason | [int32](#int32) |  |  |
+| peer_pub_key | [string](#string) |  |  |
+| order_id | [string](#string) |  |  |
+| local_id | [string](#string) |  |  |
+| proposed_quantity | [int32](#int32) |  |  |
+| quantity | [int32](#int32) |  |  |
+| taker_amount | [int32](#int32) |  |  |
+| taker_currency | [string](#string) |  |  |
+| taker_pub_key | [string](#string) |  |  |
+| maker_amount | [int32](#int32) |  |  |
+| maker_currency | [string](#string) |  |  |
+| taker_cltv_delta | [int32](#int32) |  |  |
+| maker_cltv_delta | [int32](#int32) |  |  |
+| r_hash | [string](#string) |  |  |
+| r_preimage | [string](#string) |  |  |
+| create_time | [int64](#int64) |  |  |
+| execute_time | [int64](#int64) |  |  |
+| complete_time | [int64](#int64) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.SwapFailure"></a>
 
 ### SwapFailure
@@ -917,6 +956,47 @@
 | ---- | ------ | ----------- |
 | BUY | 0 |  |
 | SELL | 1 |  |
+
+
+
+<a name="xudrpc.Swap.SwapPhase"></a>
+
+### Swap.SwapPhase
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SwapCreated | 0 |  |
+| SwapRequested | 1 |  |
+| SwapAgreed | 2 |  |
+| AmountSent | 3 |  |
+| AmountReceived | 4 |  |
+| SwapCompleted | 5 |  |
+
+
+
+<a name="xudrpc.Swap.SwapRole"></a>
+
+### Swap.SwapRole
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| Taker | 0 |  |
+| Maker | 1 |  |
+
+
+
+<a name="xudrpc.Swap.SwapState"></a>
+
+### Swap.SwapState
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| Active | 0 |  |
+| Error | 1 |  |
+| Completed | 2 |  |
 
 
 

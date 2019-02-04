@@ -380,6 +380,50 @@ message ListSwapDealsResponse {
   repeated Swap swaps = 1 [json_name = "swaps"];
 }
 
+message Swap {
+  SwapRole role = 1 [json_name = "role"];
+  SwapPhase phase = 2 [json_name = "phase"];
+  SwapState state = 3 [json_name = "state"];
+  int32 failure_reason = 4 [json_name = "failure_reason"];
+  string peer_pub_key = 5 [json_name = "peer_pub_key"];
+  string order_id = 6 [json_name = "order_id"];
+  string local_id = 7 [json_name = "local_id"];
+  int32 proposed_quantity = 8 [json_name = "proposed_quantity"];
+  int32 quantity = 9 [json_name = "quantity"];
+  int32 taker_amount = 10 [json_name = "taker_amount"];
+  string taker_currency = 11 [json_name = "taker_currency"];
+  string taker_pub_key = 12 [json_name = "taker_pub_key"]; 
+  int32 maker_amount = 13 [json_name = "maker_amount"];
+  string maker_currency = 14 [json_name = "maker_currency"];
+  int32 taker_cltv_delta = 15 [json_name = "taker_cltv_delta"];
+  int32 maker_cltv_delta = 16 [json_name = "maker_cltv_delta"];
+  string r_hash = 17 [json_name = "r_hash"];
+  string r_preimage = 18 [json_name = "r_preimage"];
+  int64 create_time = 19 [json_name = "create_time"];
+  int64 execute_time = 20 [json_name = "execute_time"];
+  int64 complete_time = 21 [json_name = "complete_time"];
+
+   enum SwapRole {
+    Taker = 0;
+    Maker = 1;
+  }
+
+   enum SwapPhase {
+    SwapCreated = 0;
+    SwapRequested = 1;
+    SwapAgreed = 2;
+    AmountSent = 3;
+    AmountReceived = 4;
+    SwapCompleted = 5;
+  }
+
+   enum SwapState {
+    Active = 0;
+    Error = 1;
+    Completed = 2;
+  }
+}
+
 message LndChannels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
   int32 active = 1 [json_name = "active"];

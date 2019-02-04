@@ -617,6 +617,126 @@ export namespace ListSwapDealsResponse {
   }
 }
 
+export class Swap extends jspb.Message {
+  getRole(): Swap.SwapRole;
+  setRole(value: Swap.SwapRole): void;
+
+  getPhase(): Swap.SwapPhase;
+  setPhase(value: Swap.SwapPhase): void;
+
+  getState(): Swap.SwapState;
+  setState(value: Swap.SwapState): void;
+
+  getFailureReason(): number;
+  setFailureReason(value: number): void;
+
+  getPeerPubKey(): string;
+  setPeerPubKey(value: string): void;
+
+  getOrderId(): string;
+  setOrderId(value: string): void;
+
+  getLocalId(): string;
+  setLocalId(value: string): void;
+
+  getProposedQuantity(): number;
+  setProposedQuantity(value: number): void;
+
+  getQuantity(): number;
+  setQuantity(value: number): void;
+
+  getTakerAmount(): number;
+  setTakerAmount(value: number): void;
+
+  getTakerCurrency(): string;
+  setTakerCurrency(value: string): void;
+
+  getTakerPubKey(): string;
+  setTakerPubKey(value: string): void;
+
+  getMakerAmount(): number;
+  setMakerAmount(value: number): void;
+
+  getMakerCurrency(): string;
+  setMakerCurrency(value: string): void;
+
+  getTakerCltvDelta(): number;
+  setTakerCltvDelta(value: number): void;
+
+  getMakerCltvDelta(): number;
+  setMakerCltvDelta(value: number): void;
+
+  getRHash(): string;
+  setRHash(value: string): void;
+
+  getRPreimage(): string;
+  setRPreimage(value: string): void;
+
+  getCreateTime(): number;
+  setCreateTime(value: number): void;
+
+  getExecuteTime(): number;
+  setExecuteTime(value: number): void;
+
+  getCompleteTime(): number;
+  setCompleteTime(value: number): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Swap.AsObject;
+  static toObject(includeInstance: boolean, msg: Swap): Swap.AsObject;
+  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+  static serializeBinaryToWriter(message: Swap, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Swap;
+  static deserializeBinaryFromReader(message: Swap, reader: jspb.BinaryReader): Swap;
+}
+
+export namespace Swap {
+  export type AsObject = {
+    role: Swap.SwapRole,
+    phase: Swap.SwapPhase,
+    state: Swap.SwapState,
+    failureReason: number,
+    peerPubKey: string,
+    orderId: string,
+    localId: string,
+    proposedQuantity: number,
+    quantity: number,
+    takerAmount: number,
+    takerCurrency: string,
+    takerPubKey: string,
+    makerAmount: number,
+    makerCurrency: string,
+    takerCltvDelta: number,
+    makerCltvDelta: number,
+    rHash: string,
+    rPreimage: string,
+    createTime: number,
+    executeTime: number,
+    completeTime: number,
+  }
+
+  export enum SwapRole {
+    TAKER = 0,
+    MAKER = 1,
+  }
+
+  export enum SwapPhase {
+    SWAPCREATED = 0,
+    SWAPREQUESTED = 1,
+    SWAPAGREED = 2,
+    AMOUNTSENT = 3,
+    AMOUNTRECEIVED = 4,
+    SWAPCOMPLETED = 5,
+  }
+
+  export enum SwapState {
+    ACTIVE = 0,
+    ERROR = 1,
+    COMPLETED = 2,
+  }
+}
+
 export class LndChannels extends jspb.Message {
   getActive(): number;
   setActive(value: number): void;
@@ -1016,126 +1136,6 @@ export namespace PlaceOrderEvent {
     SWAP_SUCCESS = 2,
     REMAINING_ORDER = 3,
     SWAP_FAILURE = 4,
-  }
-}
-
-export class Swap extends jspb.Message {
-  getRole(): Swap.SwapRole;
-  setRole(value: Swap.SwapRole): void;
-
-  getPhase(): Swap.SwapPhase;
-  setPhase(value: Swap.SwapPhase): void;
-
-  getState(): Swap.SwapState;
-  setState(value: Swap.SwapState): void;
-
-  getErrorReason(): string;
-  setErrorReason(value: string): void;
-
-  getPeerPubKey(): string;
-  setPeerPubKey(value: string): void;
-
-  getOrderId(): string;
-  setOrderId(value: string): void;
-
-  getLocalId(): string;
-  setLocalId(value: string): void;
-
-  getProposedQuantity(): number;
-  setProposedQuantity(value: number): void;
-
-  getQuantity(): number;
-  setQuantity(value: number): void;
-
-  getTakerAmount(): number;
-  setTakerAmount(value: number): void;
-
-  getTakerCurrency(): string;
-  setTakerCurrency(value: string): void;
-
-  getTakerPubKey(): string;
-  setTakerPubKey(value: string): void;
-
-  getMakerAmount(): number;
-  setMakerAmount(value: number): void;
-
-  getMakerCurrency(): string;
-  setMakerCurrency(value: string): void;
-
-  getTakerCltvDelta(): number;
-  setTakerCltvDelta(value: number): void;
-
-  getMakerCltvDelta(): number;
-  setMakerCltvDelta(value: number): void;
-
-  getRHash(): string;
-  setRHash(value: string): void;
-
-  getRPreimage(): string;
-  setRPreimage(value: string): void;
-
-  getCreateTime(): number;
-  setCreateTime(value: number): void;
-
-  getExecuteTime(): number;
-  setExecuteTime(value: number): void;
-
-  getCompleteTime(): number;
-  setCompleteTime(value: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): Swap.AsObject;
-  static toObject(includeInstance: boolean, msg: Swap): Swap.AsObject;
-  static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-  static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: Swap, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): Swap;
-  static deserializeBinaryFromReader(message: Swap, reader: jspb.BinaryReader): Swap;
-}
-
-export namespace Swap {
-  export type AsObject = {
-    role: Swap.SwapRole,
-    phase: Swap.SwapPhase,
-    state: Swap.SwapState,
-    errorReason: string,
-    peerPubKey: string,
-    orderId: string,
-    localId: string,
-    proposedQuantity: number,
-    quantity: number,
-    takerAmount: number,
-    takerCurrency: string,
-    takerPubKey: string,
-    makerAmount: number,
-    makerCurrency: string,
-    takerCltvDelta: number,
-    makerCltvDelta: number,
-    rHash: string,
-    rPreimage: string,
-    createTime: number,
-    executeTime: number,
-    completeTime: number,
-  }
-
-  export enum SwapRole {
-    TAKER = 0,
-    MAKER = 1,
-  }
-
-  export enum SwapPhase {
-    SWAPCREATED = 0,
-    SWAPREQUESTED = 1,
-    SWAPAGREED = 2,
-    AMOUNTSENT = 3,
-    AMOUNTRECEIVED = 4,
-    SWAPCOMPLETED = 5,
-  }
-
-  export enum SwapState {
-    ACTIVE = 0,
-    ERROR = 1,
-    COMPLETED = 2,
   }
 }
 

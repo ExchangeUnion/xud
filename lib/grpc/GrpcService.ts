@@ -465,10 +465,10 @@ class GrpcService {
       const response = new xudrpc.ListSwapDealsResponse();
       listSwapsResponse.forEach((deal) => {
         const grpcSwap = new xudrpc.Swap();
-        grpcSwap.setRole(deal.role);
-        grpcSwap.setPhase(deal.phase);
-        grpcSwap.setState(deal.state);
-        grpcSwap.setErrorReason(deal.errorReason ? deal.errorReason : '');
+        grpcSwap.setRole(deal.role as number);
+        grpcSwap.setPhase(deal.phase as number);
+        grpcSwap.setState(deal.state as number);
+        grpcSwap.setFailureReason(deal.failureReason ? deal.failureReason : 0);
         grpcSwap.setPeerPubKey(deal.peerPubKey);
         grpcSwap.setOrderId(deal.orderId);
         grpcSwap.setLocalId(deal.localId);
