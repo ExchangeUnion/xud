@@ -527,10 +527,6 @@ message SwapResult {
   double quantity = 4 [json_name = "quantity"];
   // The hex-encoded payment hash for the swaps.
   string r_hash = 5 [json_name = "r_hash"];
-  // The hex-encoded preimage.
-  string r_preimage = 6 [json_name = "r_preimage"];
-  // The price of the order that's being executed.
-  int64 price = 7 [json_name = "r_preimage"];
   // The amount of subunits (satoshis) received.
   int64 amount_received = 8 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.
@@ -547,6 +543,10 @@ message SwapResult {
   string currency_received = 12 [json_name = "currency_received"];
   // The ticker symbol of the currency sent.
   string currency_sent = 13 [json_name = "currency_sent"];
+  // The hex-encoded preimage.
+  string r_preimage = 14 [json_name = "r_preimage"];
+  // The price used for the swap.
+  int64 price = 15 [json_name = "r_preimage"];
 }
 
 message UnbanRequest {

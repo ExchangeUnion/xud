@@ -1182,12 +1182,6 @@ export class SwapResult extends jspb.Message {
   getRHash(): string;
   setRHash(value: string): void;
 
-  getRPreimage(): string;
-  setRPreimage(value: string): void;
-
-  getPrice(): number;
-  setPrice(value: number): void;
-
   getAmountReceived(): number;
   setAmountReceived(value: number): void;
 
@@ -1206,6 +1200,12 @@ export class SwapResult extends jspb.Message {
   getCurrencySent(): string;
   setCurrencySent(value: string): void;
 
+  getRPreimage(): string;
+  setRPreimage(value: string): void;
+
+  getPrice(): number;
+  setPrice(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapResult.AsObject;
   static toObject(includeInstance: boolean, msg: SwapResult): SwapResult.AsObject;
@@ -1223,14 +1223,14 @@ export namespace SwapResult {
     pairId: string,
     quantity: number,
     rHash: string,
-    rPreimage: string,
-    price: number,
     amountReceived: number,
     amountSent: number,
     peerPubKey: string,
     role: SwapResult.Role,
     currencyReceived: string,
     currencySent: string,
+    rPreimage: string,
+    price: number,
   }
 
   export enum Role {
