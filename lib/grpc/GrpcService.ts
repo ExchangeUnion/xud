@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { SwapResult } from 'lib/swaps/types';
+import { SwapSuccess } from 'lib/swaps/types';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -35,22 +35,22 @@ const createOrder = (order: Order) => {
 };
 
 /**
- * Creates an xudrpc SwapSuccess message from a [[SwapResult]].
+ * Creates an xudrpc SwapSuccess message from a [[SwapSuccess]].
  */
-const createSwapSuccess = (result: SwapResult) => {
-  const swapResult = new xudrpc.SwapSuccess();
-  swapResult.setOrderId(result.orderId);
-  swapResult.setLocalId(result.localId);
-  swapResult.setPairId(result.pairId);
-  swapResult.setQuantity(result.quantity);
-  swapResult.setRHash(result.rHash);
-  swapResult.setAmountReceived(result.amountReceived);
-  swapResult.setAmountSent(result.amountSent);
-  swapResult.setCurrencyReceived(result.currencyReceived);
-  swapResult.setCurrencySent(result.currencySent);
-  swapResult.setPeerPubKey(result.peerPubKey);
-  swapResult.setRole(result.role as number);
-  return swapResult;
+const createSwapSuccess = (result: SwapSuccess) => {
+  const swapSuccess = new xudrpc.SwapSuccess();
+  swapSuccess.setOrderId(result.orderId);
+  swapSuccess.setLocalId(result.localId);
+  swapSuccess.setPairId(result.pairId);
+  swapSuccess.setQuantity(result.quantity);
+  swapSuccess.setRHash(result.rHash);
+  swapSuccess.setAmountReceived(result.amountReceived);
+  swapSuccess.setAmountSent(result.amountSent);
+  swapSuccess.setCurrencyReceived(result.currencyReceived);
+  swapSuccess.setCurrencySent(result.currencySent);
+  swapSuccess.setPeerPubKey(result.peerPubKey);
+  swapSuccess.setRole(result.role as number);
+  return swapSuccess;
 };
 
 /**
@@ -74,7 +74,7 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
   const internalMatches = result.internalMatches.map(match => createOrder(match));
   response.setInternalMatchesList(internalMatches);
 
-  const swapSuccesses = result.swapResults.map(swapResult => createSwapSuccess(swapResult));
+  const swapSuccesses = result.swapSuccesses.map(swapSuccess => createSwapSuccess(swapSuccess));
   response.setSwapSuccessesList(swapSuccesses);
 
   if (result.remainingOrder) {
@@ -94,7 +94,7 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
       placeOrderEvent.setInternalMatch(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventType.SwapSuccess:
-      placeOrderEvent.setSwapSuccess(createSwapSuccess(e.payload as SwapResult));
+      placeOrderEvent.setSwapSuccess(createSwapSuccess(e.payload as SwapSuccess));
       break;
     case PlaceOrderEventType.RemainingOrder:
       placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
@@ -566,7 +566,7 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
-    this.service.subscribeSwaps(call.request.toObject(), (result: SwapResult) => {
+    this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
     });
     this.addStream(call);

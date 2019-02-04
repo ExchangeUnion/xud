@@ -61,8 +61,8 @@ const streamOrders = (argv: Arguments) =>  {
   const swapsRequest = new xudrpc.SubscribeSwapsRequest();
   swapsRequest.setIncludeTaker(true);
   const swapsSubscription = loadXudClient(argv).subscribeSwaps(swapsRequest);
-  swapsSubscription.on('data', (swapResult: xudrpc.SwapSuccess) => {
-    console.log(`Order swapped: ${JSON.stringify(swapResult.toObject())}`);
+  swapsSubscription.on('data', (swapSuccess: xudrpc.SwapSuccess) => {
+    console.log(`Order swapped: ${JSON.stringify(swapSuccess.toObject())}`);
   });
 
   // prevent exiting and do nothing, it's already caught above.

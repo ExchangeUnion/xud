@@ -589,8 +589,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| internal_match | [Order](#xudrpc.Order) |  | An own orders (or portions thereof) that matched the newly placed order. |
-| swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A swap results of peer orders that matched the newly placed order. |
+| internal_match | [Order](#xudrpc.Order) |  | An own order (or portion thereof) that matched the newly placed order. |
+| swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A successful swap of a peer order that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 | swap_failure | [SwapFailure](#xudrpc.SwapFailure) |  | A swap attempt that failed. |
 
@@ -627,7 +627,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order. |
-| swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of swap results of peer orders that matched the newly placed order. |
+| swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 
 

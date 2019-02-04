@@ -15,7 +15,7 @@ import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapResult, SwapDeal } from 'lib/swaps/types';
+import { SwapSuccess, SwapDeal } from 'lib/swaps/types';
 import Bluebird from 'bluebird';
 
 interface OrderBook {
@@ -95,14 +95,14 @@ class OrderBook extends EventEmitter {
 
   private bindSwaps = () => {
     if (this.swaps) {
-      this.swaps.on('swap.paid', async (swapResult) => {
-        if (swapResult.role === SwapRole.Maker) {
-          const { orderId, pairId, quantity, peerPubKey } = swapResult;
+      this.swaps.on('swap.paid', async (swapSuccess) => {
+        if (swapSuccess.role === SwapRole.Maker) {
+          const { orderId, pairId, quantity, peerPubKey } = swapSuccess;
 
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
-          await this.persistTrade(swapResult.quantity, this.getOwnOrder(swapResult.orderId, swapResult.pairId), undefined, swapResult.rHash);
+          await this.persistTrade(swapSuccess.quantity, this.getOwnOrder(swapSuccess.orderId, swapSuccess.pairId), undefined, swapSuccess.rHash);
           this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         }
@@ -246,7 +246,7 @@ class OrderBook extends EventEmitter {
 
       return {
         internalMatches: [],
-        swapResults: [],
+        swapSuccesses: [],
         remainingOrder: stampedOrder,
       };
     }
@@ -291,7 +291,7 @@ class OrderBook extends EventEmitter {
       // returning the remaining order to be rolled back and handled by the initial call
       return {
         internalMatches: [],
-        swapResults: [],
+        swapSuccesses: [],
         remainingOrder: order,
       };
     }
@@ -305,7 +305,7 @@ class OrderBook extends EventEmitter {
     /** Local orders that matched with the placed order. */
     const internalMatches: OwnOrder[] = [];
     /** Successful swaps performed for the placed order. */
-    const swapResults: SwapResult[] = [];
+    const swapSuccesses: SwapSuccess[] = [];
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -318,7 +318,7 @@ class OrderBook extends EventEmitter {
       // invoke placeOrder recursively, append matches/swaps and any remaining order
       const retryResult = await this.placeOrder(orderToRetry, true, onUpdate, maxTime);
       internalMatches.push(...retryResult.internalMatches);
-      swapResults.push(...retryResult.swapResults);
+      swapSuccesses.push(...retryResult.swapSuccesses);
       if (retryResult.remainingOrder) {
         if (remainingOrder) {
           remainingOrder.quantity += retryResult.remainingOrder.quantity;
@@ -355,20 +355,20 @@ class OrderBook extends EventEmitter {
 
         try {
           this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-          const swapResult = await this.executeSwap(maker, taker);
+          const swapSuccess = await this.executeSwap(maker, taker);
 
-          if (swapResult.quantity < maker.quantity) {
+          if (swapSuccess.quantity < maker.quantity) {
             // swap was only partially completed
-            portion.quantity = swapResult.quantity;
-            const rejectedQuantity = maker.quantity - swapResult.quantity;
-            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapResult.quantity} ` +
+            portion.quantity = swapSuccess.quantity;
+            const rejectedQuantity = maker.quantity - swapSuccess.quantity;
+            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapSuccess.quantity} ` +
               `with peer ${maker.peerPubKey}, ${rejectedQuantity} quantity not accepted and will repeat matching routine`);
             await retryFailedSwap(rejectedQuantity);
           } else {
             this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           }
-          swapResults.push(swapResult);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
+          swapSuccesses.push(swapSuccess);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapSuccess });
         } catch (err) {
           this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
@@ -394,7 +394,7 @@ class OrderBook extends EventEmitter {
 
     return {
       internalMatches,
-      swapResults,
+      swapSuccesses,
       remainingOrder,
     };
   }
@@ -403,14 +403,14 @@ class OrderBook extends EventEmitter {
    * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
    * succeeds and `peerOrder.invalidation` if the swap fails.
    */
-  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     // make sure the order is in the database before we begin the swap
     await this.repository.addOrderIfNotExists(maker);
     try {
-      const swapResult = await this.swaps!.executeSwap(maker, taker);
+      const swapSuccess = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
-      return swapResult;
+      await this.persistTrade(swapSuccess.quantity, maker, taker, swapSuccess.rHash);
+      return swapSuccess;
     } catch (err) {
       this.emit('peerOrder.invalidation', maker);
       // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
@@ -513,7 +513,7 @@ class OrderBook extends EventEmitter {
         }
       };
 
-      const paidHandler = (result: SwapResult) => {
+      const paidHandler = (result: SwapSuccess) => {
         if (result.orderId === orderIdentifier.id) {
           cleanup(result.quantity);
         }
