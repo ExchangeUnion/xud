@@ -8,7 +8,6 @@ import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
-import { SwapResult } from '../../lib/swaps/types';
 
 chai.use(chaiAsPromised);
 
@@ -39,7 +38,7 @@ const validTakerOrder = () => {
   };
 };
 
-const validSwapResult = () => {
+const validSwapSuccess = () => {
   return {
     orderId: '760d5291-e43e-11e8-bd56-e5c08173fa7d',
     localId: '76c61b40-e43e-11e8-a3b5-853f31e7d8e6',
@@ -138,13 +137,13 @@ describe('Swaps.Integration', () => {
       const swapListenersAdded = sandbox.spy(swaps, 'on');
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
-      const swapResult = validSwapResult();
+      const swapSuccess = validSwapSuccess();
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.equal(swapResult);
+        .to.eventually.equal(swapSuccess);
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
-      swapResult.rHash = addDealSpy.args[0][0].rHash;
-      swaps.emit('swap.paid', swapResult);
+      swapSuccess.rHash = addDealSpy.args[0][0].rHash;
+      swaps.emit('swap.paid', swapSuccess);
       await waitForSpy(swapListenersRemoved, 'calledTwice');
     });
 

@@ -12,7 +12,7 @@ import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
-import { SwapDeal, SwapResult } from './types';
+import { SwapDeal, SwapSuccess } from './types';
 import { randomBytes } from '../utils/utils';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
@@ -20,9 +20,9 @@ type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> 
 };
 
 interface Swaps {
-  on(event: 'swap.paid', listener: (swapResult: SwapResult) => void): this;
+  on(event: 'swap.paid', listener: (swapSuccess: SwapSuccess) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
-  emit(event: 'swap.paid', swapResult: SwapResult): boolean;
+  emit(event: 'swap.paid', swapSuccess: SwapSuccess): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
 }
 
@@ -245,22 +245,22 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns A promise that is resolved once the swap is completed, or rejects otherwise
    */
-  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     await this.verifyExecution(maker, taker);
     const rHash = await this.beginSwap(maker, taker);
     if (!rHash) {
       throw new Error('cannot execute swap. rHash not found');
     }
 
-    return new Promise<SwapResult>((resolve, reject) => {
+    return new Promise<SwapSuccess>((resolve, reject) => {
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
         this.removeListener('swap.failed', onFailed);
       };
-      const onPaid = (swapResult: SwapResult) => {
-        if (swapResult.rHash === rHash) {
+      const onPaid = (swapSuccess: SwapSuccess) => {
+        if (swapSuccess.rHash === rHash) {
           cleanup();
-          resolve(swapResult);
+          resolve(swapSuccess);
         }
       };
       const onFailed = (deal: SwapDeal) => {
@@ -726,7 +726,7 @@ class Swaps extends EventEmitter {
 
     if (deal.phase === SwapPhase.AmountReceived) {
       const wasMaker = deal.role === SwapRole.Maker;
-      const swapResult = {
+      const swapSuccess = {
         orderId: deal.orderId,
         localId: deal.localId,
         pairId: deal.pairId,
@@ -739,7 +739,7 @@ class Swaps extends EventEmitter {
         peerPubKey: deal.peerPubKey,
         role: deal.role,
       };
-      this.emit('swap.paid', swapResult);
+      this.emit('swap.paid', swapSuccess);
 
       clearTimeout(this.timeouts.get(deal.rHash));
       this.timeouts.delete(deal.rHash);
