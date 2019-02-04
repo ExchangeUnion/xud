@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason } from '../types/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -9,9 +9,9 @@ import LndClient from '../lndclient/LndClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
-import { OwnOrder, PeerOrder } from '../types/orders';
+import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
-import { SwapDealInstance } from '../types/db';
+import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapResult } from './types';
 import { randomBytes } from '../utils/utils';
 

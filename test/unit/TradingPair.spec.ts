@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import Logger, { Level } from '../../lib/Logger';
 import TradingPair from '../../lib/orderbook/TradingPair';
-import { OrderingDirection } from '../../lib/types/enums';
+import { OrderingDirection } from '../../lib/constants/enums';
 import { ms } from '../../lib/utils/utils';
 import { createOwnOrder, createPeerOrder } from '../utils';
 

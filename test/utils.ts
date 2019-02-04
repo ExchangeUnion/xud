@@ -1,7 +1,7 @@
 import net from 'net';
 import { SinonSpy } from 'sinon';
 import { ms } from '../lib/utils/utils';
-import { PeerOrder, OwnOrder } from '../lib/types/orders';
+import { PeerOrder, OwnOrder } from '../lib/orderbook/types';
 import uuidv1 from 'uuid';
 
 /**

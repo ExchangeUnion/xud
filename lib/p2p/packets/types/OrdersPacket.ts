@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { orders } from '../../../types';
+import * as orders from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
 
 type OrdersPacketBody = orders.OutgoingOrder[];

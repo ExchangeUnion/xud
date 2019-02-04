@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 import { removeUndefinedProps } from '../../../utils/utils';
-import { SwapFailureReason } from '../../../types/enums';
+import { SwapFailureReason } from '../../../constants/enums';
 
 // TODO: proper error handling
 export type SwapFailedPacketBody = {

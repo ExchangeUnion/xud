@@ -1,6 +1,6 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
-import { Pair } from '../types/orders';
+import { Pair } from '../orderbook/types';
 import crypto from 'crypto';
 import { promisify } from 'util';
 import moment from 'moment';

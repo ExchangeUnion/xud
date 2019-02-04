@@ -3,7 +3,7 @@ import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { toUri } from '../../lib/utils/uriUtils';
 import { getUnusedPort } from '../utils';
-import { DisconnectionReason, ReputationEvent } from '../../lib/types/enums';
+import { DisconnectionReason } from '../../lib/constants/enums';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
 chai.use(chaiAsPromised);

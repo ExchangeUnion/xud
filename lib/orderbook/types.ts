@@ -1,5 +1,33 @@
-import { SwapClients, SwapRole, SwapState, SwapPhase } from './enums';
-import * as lndrpc from '../proto/lndrpc_pb';
+import { SwapClients } from '../constants/enums';
+import { SwapResult } from 'lib/swaps/types';
+
+export type OrderMatch = {
+  maker: Order;
+  taker: OwnOrder;
+};
+
+export type MatchingResult = {
+  matches: OrderMatch[];
+  remainingOrder?: OwnOrder;
+};
+
+export type PlaceOrderResult = {
+  internalMatches: OwnOrder[];
+  swapResults: SwapResult[];
+  remainingOrder?: OwnOrder;
+};
+
+export type PlaceOrderEvent = {
+  type: PlaceOrderEventType;
+  payload: OwnOrder | SwapResult | PeerOrder;
+};
+
+export enum PlaceOrderEventType {
+  InternalMatch,
+  SwapSuccess,
+  RemainingOrder,
+  SwapFailure,
+}
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {

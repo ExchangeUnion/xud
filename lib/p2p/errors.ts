@@ -1,6 +1,6 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
 import addressUtils from '../utils/addressUtils';
-import { Address } from '../types/p2p';
+import { Address } from './types';
 
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {

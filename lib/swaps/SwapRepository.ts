@@ -1,4 +1,4 @@
-import { db } from '../types';
+import * as db from '../db/types';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
 

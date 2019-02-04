@@ -4,8 +4,8 @@ import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { orders } from '../../lib/types';
-import { SwapClients } from '../../lib/types/enums';
+import * as orders from '../../lib/orderbook/types';
+import { SwapClients } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
 
 const PAIR_ID = 'LTC/BTC';

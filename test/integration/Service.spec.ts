@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClients, OrderSide } from '../../lib/types/enums';
+import { SwapClients, OrderSide } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
