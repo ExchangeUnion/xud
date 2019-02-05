@@ -68,7 +68,11 @@ export type TradeFactory = {
 
 export type TradeAttributes = TradeFactory;
 
-export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes>;
+export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes> & {
+  getMakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
+  getTakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
+  getSwapDeal: Sequelize.BelongsToGetAssociationMixin<SwapDealInstance>;
+};
 
 /* Node */
 export type NodeFactory = NodeConnectionInfo;
