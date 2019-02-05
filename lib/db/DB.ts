@@ -2,8 +2,8 @@ import path from 'path';
 import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
-import { db } from '../types';
-import { SwapClients } from '../types/enums';
+import * as db from './types';
+import { SwapClients } from '../constants/enums';
 import { exists, readdir } from '../utils/fsUtils';
 
 type Models = {

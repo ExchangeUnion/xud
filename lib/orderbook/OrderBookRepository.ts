@@ -1,8 +1,7 @@
-import { db } from '../types';
+import * as db from '../db/types';
 import Logger from '../Logger';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
-import { OrderAttributes } from 'lib/types/db';
 
 class OrderbookRepository {
 
@@ -42,7 +41,7 @@ class OrderbookRepository {
       where: { id: order.id },
     });
     if (count === 0) {
-      return this.models.Order.create(order);
+      return this.models.Order.upsert(order);
     } else {
       return undefined;
     }

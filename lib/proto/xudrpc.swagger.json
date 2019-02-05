@@ -1021,11 +1021,11 @@
       "properties": {
         "internal_match": {
           "$ref": "#/definitions/xudrpcOrder",
-          "description": "An own orders (or portions thereof) that matched the newly placed order."
+          "description": "An own order (or portion thereof) that matched the newly placed order."
         },
         "swap_success": {
           "$ref": "#/definitions/xudrpcSwapSuccess",
-          "description": "A swap results of peer orders that matched the newly placed order."
+          "description": "A successful swap of a peer order that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
@@ -1079,7 +1079,7 @@
           "items": {
             "$ref": "#/definitions/xudrpcSwapSuccess"
           },
-          "description": "A list of swap results of peer orders that matched the newly placed order."
+          "description": "A list of successful swaps of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",

@@ -6,16 +6,16 @@ import NodeList, { reputationEventWeight } from './NodeList';
 import P2PRepository from './P2PRepository';
 import * as packets from './packets/types';
 import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, IncomingOrder } from '../types/orders';
+import { OutgoingOrder, OrderPortion, IncomingOrder } from '../orderbook/types';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from '../types/p2p';
+import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from './types';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp, ms } from '../utils/utils';
+import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent, DisconnectionReason } from '../types/enums';
-import { db } from '../types';
+import { ReputationEvent, DisconnectionReason } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
+import { ReputationEventInstance } from 'lib/db/types';
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
@@ -177,7 +177,7 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey: string, events: db.ReputationEventInstance[]) => {
+    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEventInstance[]) => {
       this.logger.warn(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);

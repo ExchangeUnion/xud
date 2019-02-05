@@ -1,6 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { OutgoingOrder } from '../../../types/orders';
+import { OutgoingOrder } from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
 
 class OrderPacket extends Packet<OutgoingOrder> {

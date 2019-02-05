@@ -7,8 +7,8 @@ import DB from '../../lib/db/DB';
 import Config from '../../lib/Config';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
-import { Address } from '../../lib/types/p2p';
-import { DisconnectionReason } from '../../lib/types/enums';
+import { Address } from '../../lib/p2p/types';
+import { DisconnectionReason } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 

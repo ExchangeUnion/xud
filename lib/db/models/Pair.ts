@@ -1,5 +1,5 @@
 import Sequelize from 'sequelize';
-import { db } from '../../types';
+import * as db from '../types';
 import { derivePairId } from '../../utils/utils';
 
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {

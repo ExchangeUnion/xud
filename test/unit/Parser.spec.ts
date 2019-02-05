@@ -5,14 +5,15 @@ import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
-import { DisconnectionReason, NetworkMagic, SwapFailureReason } from '../../lib/types/enums';
+import { DisconnectionReason, NetworkMagic, SwapFailureReason } from '../../lib/constants/enums';
 import uuid = require('uuid');
-import { Address, NodeState } from '../../lib/types/p2p';
+import { Address, NodeState } from '../../lib/p2p/types';
 import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPacket';
 import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
 import { errorCodes } from '../../lib/p2p/errors';
 import stringify = require('json-stable-stringify');
+import net from 'net';
 
 chai.use(chaiAsPromised);
 
