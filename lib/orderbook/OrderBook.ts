@@ -495,7 +495,7 @@ class OrderBook extends EventEmitter {
     let remainingQuantityToRemove: number;
     let failedHandler: any;
 
-    const paidHandler = (result: SwapResult) => {
+    const paidHandler = (result: SwapSuccess) => {
       if (result.orderId === orderIdentifier.id) {
         cleanup(result.quantity);
       }
