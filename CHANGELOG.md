@@ -1,3 +1,22 @@
+# [1.0.0-alpha.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2019-02-06)
+
+
+### Bug Fixes
+
+* **orderbook/db:** upsert orders ([0030687](https://github.com/ExchangeUnion/xud/commit/0030687))
+
+
+### Features
+
+* **orderbook:** partial order removal ([bc3913b](https://github.com/ExchangeUnion/xud/commit/bc3913b)), closes [#714](https://github.com/ExchangeUnion/xud/issues/714)
+
+
+### Performance Improvements
+
+* **swaps/orderbook:** placeOrder parallel swaps ([1bf7ce5](https://github.com/ExchangeUnion/xud/commit/1bf7ce5)), closes [#654](https://github.com/ExchangeUnion/xud/issues/654)
+
+
+
 # [1.0.0-alpha.7](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2019-01-23)
 
 
