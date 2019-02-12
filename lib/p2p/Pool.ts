@@ -415,6 +415,11 @@ class Pool extends EventEmitter {
     }
   }
 
+  // A wrapper for [[NodeList.addReputationEvent]].
+  public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
+    return this.nodes.addReputationEvent(nodePubKey, event);
+  }
+
   public sendToPeer = (nodePubKey: string, packet: Packet) => {
     const peer = this.peers.get(nodePubKey);
     if (!peer) {
@@ -423,6 +428,10 @@ class Pool extends EventEmitter {
     peer.sendPacket(packet);
   }
 
+  /**
+   * Gets a peer by its node pub key. Throws a [[NOT_CONNECTED]] error if the pub key does not
+   * match any currently connected peer.
+   */
   public getPeer = (nodePubKey: string) => {
     const peer = this.peers.get(nodePubKey);
     if (!peer) {
@@ -660,7 +669,7 @@ class Pool extends EventEmitter {
     peer.once('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        await this.nodes.addReputationEvent(peer.nodePubKey, event);
+        await this.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }

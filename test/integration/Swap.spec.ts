@@ -111,6 +111,7 @@ describe('Swaps.Integration', () => {
     peer.getLndPubKey = () => '1234567890';
     // pool
     pool = sandbox.createStubInstance(Pool) as any;
+    pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
     // queryRoutes response
     queryRoutesResponse = () => {
