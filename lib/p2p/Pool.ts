@@ -657,7 +657,7 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => this.handlePeerClose(peer));
 
-    peer.once('reputation', async (event) => {
+    peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         await this.nodes.addReputationEvent(peer.nodePubKey, event);
