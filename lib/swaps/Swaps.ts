@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason } from '../constants/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -673,9 +673,43 @@ class Swaps extends EventEmitter {
       if (errorMessage) {
         deal.errorMessage = deal.errorMessage ? deal.errorMessage + '; ' + errorMessage : errorMessage;
       }
-      this.logger.debug('new deal error message: ' + deal.errorMessage);
+      this.logger.debug(`new deal error message for ${deal.rHash}: + ${deal.errorMessage}`);
       return;
     }
+    if (errorMessage) {
+      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}`);
+    } else {
+      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}: ${errorMessage}`);
+    }
+
+    switch (failureReason) {
+      case SwapFailureReason.SwapTimedOut:
+        // additional penalty as timeouts cause costly delays and possibly stuck HTLC outputs
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapTimeout);
+        /* falls through */
+      case SwapFailureReason.SendPaymentFailure:
+      case SwapFailureReason.NoRouteFound:
+      case SwapFailureReason.SwapClientNotSetup:
+        // something is wrong with swaps for this trading pair and peer, drop this pair
+        try {
+          this.pool.getPeer(deal.peerPubKey).deactivatePair(deal.pairId);
+        } catch (err) {
+          this.logger.debug(`could not drop trading pair ${deal.pairId} for peer ${deal.peerPubKey}`);
+        }
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapFailure);
+        break;
+      case SwapFailureReason.InvalidResolveRequest:
+      case SwapFailureReason.DealTimedOut:
+      case SwapFailureReason.InvalidSwapPacketReceived:
+      case SwapFailureReason.PaymentHashReuse:
+        // peer misbehaving, penalize the peer
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapMisbehavior);
+        break;
+      default:
+        // do nothing, the swap failed for an innocuous reason
+        break;
+    }
+
     assert(deal.state === SwapState.Active, 'deal is not Active. Can not change deal state');
     deal.state = SwapState.Error;
     deal.failureReason = failureReason;
