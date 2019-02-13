@@ -150,8 +150,29 @@ export const removeUndefinedProps = (obj: any) => {
   Object.keys(obj).forEach((key) => {
     if (obj[key] === undefined) {
       delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      removeUndefinedProps(obj[key]);
     }
   });
 
   return obj;
+};
+
+export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      map.set(key, obj[key]);
+    }
+  }
+};
+
+/**
+ * Converts an array of key value pair arrays into an object with the key value pairs.
+ */
+export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
+  const kvps: { [key: string]: T } = {};
+  for (const kvp of kvpArray.values()) {
+    kvps[kvp[0]] = kvp[1];
+  }
+  return kvps;
 };

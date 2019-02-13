@@ -109,12 +109,8 @@ export class NodeState extends jspb.Message {
   getRaidenAddress(): string;
   setRaidenAddress(value: string): void;
 
-  getLndBtcPubKey(): string;
-  setLndBtcPubKey(value: string): void;
-
-  getLndLtcPubKey(): string;
-  setLndLtcPubKey(value: string): void;
-
+  getLndPubKeysMap(): jspb.Map<string, string>;
+  clearLndPubKeysMap(): void;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): NodeState.AsObject;
   static toObject(includeInstance: boolean, msg: NodeState): NodeState.AsObject;
@@ -132,8 +128,7 @@ export namespace NodeState {
     addressesList: Array<Address.AsObject>,
     pairsList: Array<string>,
     raidenAddress: string,
-    lndBtcPubKey: string,
-    lndLtcPubKey: string,
+    lndPubKeysMap: Array<[string, string]>,
   }
 }
 
@@ -312,12 +307,8 @@ export class NodeStateUpdatePacket extends jspb.Message {
   getRaidenAddress(): string;
   setRaidenAddress(value: string): void;
 
-  getLndBtcPubKey(): string;
-  setLndBtcPubKey(value: string): void;
-
-  getLndLtcPubKey(): string;
-  setLndLtcPubKey(value: string): void;
-
+  getLndPubKeysMap(): jspb.Map<string, string>;
+  clearLndPubKeysMap(): void;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): NodeStateUpdatePacket.AsObject;
   static toObject(includeInstance: boolean, msg: NodeStateUpdatePacket): NodeStateUpdatePacket.AsObject;
@@ -334,8 +325,7 @@ export namespace NodeStateUpdatePacket {
     addressesList: Array<Address.AsObject>,
     pairsList: Array<string>,
     raidenAddress: string,
-    lndBtcPubKey: string,
-    lndLtcPubKey: string,
+    lndPubKeysMap: Array<[string, string]>,
   }
 }
 

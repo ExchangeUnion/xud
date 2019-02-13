@@ -2,7 +2,7 @@ import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
+import { removeUndefinedProps, setObjectToMap, convertKvpArrayToKvps } from '../../../utils/utils';
 
 export type SessionInitPacketBody = {
   sign: string;
@@ -53,8 +53,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
           pairs: obj.nodeState!.pairsList,
           addresses: obj.nodeState!.addressesList,
           raidenAddress: obj.nodeState!.raidenAddress || undefined,
-          lndbtcPubKey: obj.nodeState!.lndBtcPubKey || undefined,
-          lndltcPubKey: obj.nodeState!.lndLtcPubKey || undefined,
+          lndPubKeys: obj.nodeState!.lndPubKeysMap ? convertKvpArrayToKvps(obj.nodeState!.lndPubKeysMap) : undefined,
         }),
       },
     });
@@ -78,8 +77,9 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
         return pbAddr;
       }));
       pbNodeState.setRaidenAddress(this.body!.nodeState.raidenAddress!);
-      pbNodeState.setLndBtcPubKey(this.body!.nodeState.lndbtcPubKey!);
-      pbNodeState.setLndLtcPubKey(this.body!.nodeState.lndltcPubKey!);
+      if (this.body!.nodeState.lndPubKeys) {
+        setObjectToMap(this.body!.nodeState.lndPubKeys, pbNodeState.getLndPubKeysMap());
+      }
       return pbNodeState;
     })());
 
