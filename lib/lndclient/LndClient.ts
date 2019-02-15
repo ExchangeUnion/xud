@@ -53,7 +53,8 @@ class LndClient extends BaseClient {
   private credentials!: ChannelCredentials;
   private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
-  private invoiceSubscription!: ClientReadableStream<lndrpc.InvoiceSubscription>;
+  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
+
   /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
   private static readonly RECONNECT_TIMER = 5000;
 
@@ -66,6 +67,7 @@ class LndClient extends BaseClient {
    */
   constructor(private config: LndClientConfig, logger: Logger) {
     super(logger);
+
     this.cltvDelta = config.cltvdelta || 0;
   }
 
@@ -176,6 +178,7 @@ class LndClient extends BaseClient {
     if (!this.isConnected()) {
       this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
+
       try {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
@@ -299,8 +302,10 @@ class LndClient extends BaseClient {
 
     this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
     .on('error', (error) => {
+      this.invoiceSubscription = undefined;
       this.setStatus(ClientStatus.Disconnected);
       this.logger.error(`lnd has been disconnected at ${this.uri}, error: ${error}`);
+      this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
     });
   }
 
