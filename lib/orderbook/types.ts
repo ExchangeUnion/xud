@@ -1,5 +1,5 @@
 import { SwapClients } from '../constants/enums';
-import { SwapResult } from 'lib/swaps/types';
+import { SwapSuccess } from 'lib/swaps/types';
 
 export type OrderMatch = {
   maker: Order;
@@ -13,13 +13,13 @@ export type MatchingResult = {
 
 export type PlaceOrderResult = {
   internalMatches: OwnOrder[];
-  swapResults: SwapResult[];
+  swapSuccesses: SwapSuccess[];
   remainingOrder?: OwnOrder;
 };
 
 export type PlaceOrderEvent = {
   type: PlaceOrderEventType;
-  payload: OwnOrder | SwapResult | PeerOrder;
+  payload: OwnOrder | SwapSuccess | PeerOrder;
 };
 
 export enum PlaceOrderEventType {

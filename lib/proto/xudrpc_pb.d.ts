@@ -1049,6 +1049,9 @@ export class RemoveOrderRequest extends jspb.Message {
   getOrderId(): string;
   setOrderId(value: string): void;
 
+  getQuantity(): number;
+  setQuantity(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): RemoveOrderRequest.AsObject;
   static toObject(includeInstance: boolean, msg: RemoveOrderRequest): RemoveOrderRequest.AsObject;
@@ -1062,6 +1065,7 @@ export class RemoveOrderRequest extends jspb.Message {
 export namespace RemoveOrderRequest {
   export type AsObject = {
     orderId: string,
+    quantity: number,
   }
 }
 

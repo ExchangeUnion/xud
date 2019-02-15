@@ -11,6 +11,7 @@ const errorCodes = {
   PAIR_ALREADY_EXISTS: codesPrefix.concat('.7'),
   MARKET_ORDERS_NOT_ALLOWED: codesPrefix.concat('.8'),
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
+  QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
 };
 
 const errors = {
@@ -50,6 +51,11 @@ const errors = {
     message: `order with local id ${localId} does not exist`,
     code: errorCodes.LOCAL_ID_DOES_NOT_EXIST,
   }),
+  QUANTITY_DOES_NOT_MATCH: (requestedQuantity: number, orderQuantity: number) => ({
+    message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
+    code: errorCodes.QUANTITY_DOES_NOT_MATCH,
+  }),
+
 };
 
 export { errorCodes };

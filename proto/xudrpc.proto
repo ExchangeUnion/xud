@@ -45,7 +45,7 @@ service Xud {
 
   /* Removes an order from the order book by its local id. This should be called when an order is
    * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
-   * and peers are notified that the order is no longer valid. Any portion of the order that is 
+   * and peers are notified that the order is no longer valid. Any portion of the order that is
    * on hold due to ongoing swaps will not be removed until after the swap attempts complete. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
@@ -60,7 +60,7 @@ service Xud {
       get: "/v1/channelbalance"
     };
   }
-  
+
   /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
    * becomes available for swaps and trading. A handshake exchanges information about the peer's
    * supported trading and swap clients. Orders will be shared with the peer upon connection and
@@ -71,7 +71,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Bans a node and immediately disconnects from it. This can be used to prevent any connections
    * to a specific node.*/
   rpc Ban(BanRequest) returns (BanResponse) {
@@ -88,7 +88,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Gets general information about this node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
@@ -112,21 +112,21 @@ service Xud {
       get: "/v1/orders"
     };
   }
-  
+
   /* Gets a list of this node's supported currencies. */
   rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
     option (google.api.http) = {
       get: "/v1/currencies"
     };
   }
-  
+
   /* Gets a list of this nodes suported trading pairs. */
   rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
     option (google.api.http) = {
       get: "/v1/pairs"
     };
   }
-  
+
   /* Gets a list of connected peers. */
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
     option (google.api.http) = {
@@ -179,7 +179,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Begin gracefully shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -187,7 +187,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
    * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
    * wants to show its users a real time list of the orders available to them would subscribe to this
@@ -197,7 +197,7 @@ service Xud {
       get: "/v1/subscribeaddedorders"
     };
   }
-  
+
   /* Subscribes to orders being removed - either in full or in part - from the order book. This call,
    * together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order
    * book. For example, an exchange that wants to show its users a real time list of the orders available
@@ -326,7 +326,7 @@ message GetInfoResponse {
 }
 
 message GetNodeInfoRequest {
-  // The node pub key of the node for which to get information. 
+  // The node pub key of the node for which to get information.
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message GetNodeInfoResponse {
@@ -449,7 +449,7 @@ message Peer {
   // Indicates whether this peer was connected inbound.
   bool inbound = 5 [json_name = "inbound"];
   // A list of trading pair tickers supported by this peer.
-  repeated string pairs = 6 [json_name = "pairs"]; 
+  repeated string pairs = 6 [json_name = "pairs"];
   // The version of xud being used by the peer.
   string xud_version = 7 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
@@ -471,7 +471,7 @@ message PlaceOrderRequest {
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.
   repeated Order internal_matches = 1 [json_name = "internal_matches"];
-  // A list of swap results of peer orders that matched the newly placed order.
+  // A list of successful swaps of peer orders that matched the newly placed order.
   repeated SwapSuccess swap_successes = 2 [json_name = "swap_successes"];
   // The remaining portion of the order, after matches, that enters the order book.
   Order remaining_order = 3 [json_name= "remaining_order"];
@@ -479,9 +479,9 @@ message PlaceOrderResponse {
 
 message PlaceOrderEvent {
   oneof event {
-    // An own orders (or portions thereof) that matched the newly placed order.
+    // An own order (or portion thereof) that matched the newly placed order.
     Order internal_match = 1 [json_name = "internal_match"];
-    // A swap results of peer orders that matched the newly placed order.
+    // A successful swap of a peer order that matched the newly placed order.
     SwapSuccess swap_success = 2 [json_name = "swap_success"];
     // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
@@ -506,6 +506,7 @@ message RemoveCurrencyResponse {}
 message RemoveOrderRequest {
   // The local id of the order to remove.
   string order_id = 1 [json_name = "order_id"];
+  double quantity = 2 [json_name = "quantity"];
 }
 message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
@@ -532,7 +533,7 @@ message SubscribeRemovedOrdersRequest {}
 message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
   // These swap results are also returned in the responses for the respective calls.
-  bool include_taker = 1 [json_name = "include_taker"]; 
+  bool include_taker = 1 [json_name = "include_taker"];
 }
 
 message SwapSuccess {
