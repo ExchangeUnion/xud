@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { SwapSuccess } from 'lib/swaps/types';
+import { SwapSuccess } from '../swaps/types';
 
 /**
  * Creates an xudrpc Order message from a [[StampedOrder]].
@@ -44,6 +44,8 @@ const createSwapSuccess = (result: SwapSuccess) => {
   swapSuccess.setPairId(result.pairId);
   swapSuccess.setQuantity(result.quantity);
   swapSuccess.setRHash(result.rHash);
+  swapSuccess.setPrice(result.price);
+  swapSuccess.setRPreimage(result.rPreimage ? result.rPreimage : '');
   swapSuccess.setAmountReceived(result.amountReceived);
   swapSuccess.setAmountSent(result.amountSent);
   swapSuccess.setCurrencyReceived(result.currencyReceived);

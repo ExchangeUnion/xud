@@ -736,6 +736,8 @@ class Swaps extends EventEmitter {
         currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
         currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
         rHash: deal.rHash,
+        rPreimage: deal.rPreimage,
+        price: deal.price,
         peerPubKey: deal.peerPubKey,
         role: deal.role,
       };

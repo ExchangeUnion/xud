@@ -49,6 +49,8 @@ const validSwapSuccess = () => {
     currencyReceived: 'LTC',
     currencySent: 'BTC',
     rHash: 'd94c22a73d2741ed5cdcf3714f9ab3c8664793b03a54c74a08877726007d67c2',
+    rPreimage: 'eab3fe55ce502b702bca13cbb9f1e4239502911d4c8823b73708c4a4433ed87a',
+    price: 0.008,
     peerPubKey: '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
     role: 0,
   };
