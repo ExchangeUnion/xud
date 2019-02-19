@@ -550,9 +550,8 @@ class OrderBook extends EventEmitter {
    * Removes all or part of an own order from the order book and broadcasts an order invalidation packet.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
-   * @returns `true` if the order or portion thereof was removed, otherwise false
    */
-  private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string): boolean => {
+  private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string) => {
     const tp = this.getTradingPair(pairId);
     try {
       const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
@@ -564,11 +563,13 @@ class OrderBook extends EventEmitter {
       if (this.pool) {
         this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
-
-      return true;
     } catch (err) {
-      this.logger.error(`attempted to remove non-existing orderId (${orderId})`);
-      return false;
+      if (quantityToRemove !== undefined) {
+        this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);
+      } else {
+        this.logger.error(`error while removing order (${orderId})`, err);
+      }
+      throw err;
     }
   }
 
