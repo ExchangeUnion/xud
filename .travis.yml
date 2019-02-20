@@ -1,6 +1,7 @@
 language: node_js
 
 node_js:
+  - "node"
   - "lts/*"
 
 cache:
@@ -10,6 +11,3 @@ cache:
 script:
   - npm run lintNoFix
   - npm run test
-
-before_install:
-  - npm install node-pre-gyp
