@@ -119,6 +119,7 @@
   ],
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.4.0",
+    "@types/node": "^10.12.26",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
