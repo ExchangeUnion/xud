@@ -168,7 +168,7 @@
     "chai-as-promised": "^7.1.1",
     "chai-http": "^4.0.0",
     "concurrently": "^3.5.1",
-    "conventional-changelog-cli": "^2.0.11",
+    "conventional-changelog-cli": "^2.0.12",
     "grpc-tools": "^1.7.1",
     "mocha": "^5.0.5",
     "nodemon": "^1.17.5",
