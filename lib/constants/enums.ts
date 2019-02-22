@@ -51,7 +51,7 @@ export enum SwapPhase {
   SendingAmount = 3,
   /** We have received the agreed amount of the swap, and the preimage is now known to both sides. */
   AmountReceived = 4,
-  /* The swap has been formally completed and both sides have confirmed they've received payment. */
+  /** The swap has been formally completed and both sides have confirmed they've received payment. */
   SwapCompleted = 5,
 }
 
@@ -65,10 +65,15 @@ export enum ReputationEvent {
   ManualBan = 0,
   ManualUnban = 1,
   PacketTimeout = 2,
-  SwapFailure = 3,
-  SwapSuccess = 4,
-  WireProtocolErr = 5,
-  InvalidAuth = 6,
+  WireProtocolErr = 3,
+  InvalidAuth = 4,
+  SwapSuccess = 5,
+  /** When a swap is accepted and is attempted to be executed but fails. */
+  SwapFailure = 6,
+  /** When a swap is accepted and then fails due to exceeding time limits. */
+  SwapTimeout = 7,
+  /** When a swap fails due to unexpected or possibly malicious behavior. */
+  SwapMisbehavior = 8,
 }
 
 export enum SwapFailureReason {
