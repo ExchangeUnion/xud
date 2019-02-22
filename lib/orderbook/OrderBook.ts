@@ -496,7 +496,7 @@ class OrderBook extends EventEmitter {
 
     const removableQuantity = order.quantity - order.hold;
     if (remainingQuantityToRemove <= removableQuantity) {
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, quantityToRemove);
+      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, remainingQuantityToRemove);
       remainingQuantityToRemove = 0;
     } else {
       // we can't remove the entire amount because of a hold on the order
