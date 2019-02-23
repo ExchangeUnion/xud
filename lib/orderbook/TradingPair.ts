@@ -134,7 +134,8 @@ class TradingPair {
   }
 
   /**
-   * Remove all orders given a peer pubKey.
+   * Remove all of a peer's orders.
+   * @param peerPubKey the node pub key of the peer
    */
   public removePeerOrders = (peerPubKey?: string): PeerOrder[] => {
     // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues

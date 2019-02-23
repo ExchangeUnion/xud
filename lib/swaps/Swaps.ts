@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason } from '../constants/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -12,7 +12,7 @@ import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
-import { SwapDeal, SwapResult } from './types';
+import { SwapDeal, SwapSuccess } from './types';
 import { randomBytes } from '../utils/utils';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
@@ -20,9 +20,9 @@ type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> 
 };
 
 interface Swaps {
-  on(event: 'swap.paid', listener: (swapResult: SwapResult) => void): this;
+  on(event: 'swap.paid', listener: (swapSuccess: SwapSuccess) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
-  emit(event: 'swap.paid', swapResult: SwapResult): boolean;
+  emit(event: 'swap.paid', swapSuccess: SwapSuccess): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
 }
 
@@ -253,22 +253,22 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns A promise that is resolved once the swap is completed, or rejects otherwise
    */
-  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapResult> => {
+  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     await this.verifyExecution(maker, taker);
     const rHash = await this.beginSwap(maker, taker);
     if (!rHash) {
       throw new Error('cannot execute swap. rHash not found');
     }
 
-    return new Promise<SwapResult>((resolve, reject) => {
+    return new Promise<SwapSuccess>((resolve, reject) => {
       const cleanup = () => {
         this.removeListener('swap.paid', onPaid);
         this.removeListener('swap.failed', onFailed);
       };
-      const onPaid = (swapResult: SwapResult) => {
-        if (swapResult.rHash === rHash) {
+      const onPaid = (swapSuccess: SwapSuccess) => {
+        if (swapSuccess.rHash === rHash) {
           cleanup();
-          resolve(swapResult);
+          resolve(swapSuccess);
         }
       };
       const onFailed = (deal: SwapDeal) => {
@@ -681,9 +681,43 @@ class Swaps extends EventEmitter {
       if (errorMessage) {
         deal.errorMessage = deal.errorMessage ? deal.errorMessage + '; ' + errorMessage : errorMessage;
       }
-      this.logger.debug('new deal error message: ' + deal.errorMessage);
+      this.logger.debug(`new deal error message for ${deal.rHash}: + ${deal.errorMessage}`);
       return;
     }
+    if (errorMessage) {
+      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}`);
+    } else {
+      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}: ${errorMessage}`);
+    }
+
+    switch (failureReason) {
+      case SwapFailureReason.SwapTimedOut:
+        // additional penalty as timeouts cause costly delays and possibly stuck HTLC outputs
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapTimeout);
+        /* falls through */
+      case SwapFailureReason.SendPaymentFailure:
+      case SwapFailureReason.NoRouteFound:
+      case SwapFailureReason.SwapClientNotSetup:
+        // something is wrong with swaps for this trading pair and peer, drop this pair
+        try {
+          this.pool.getPeer(deal.peerPubKey).deactivatePair(deal.pairId);
+        } catch (err) {
+          this.logger.debug(`could not drop trading pair ${deal.pairId} for peer ${deal.peerPubKey}`);
+        }
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapFailure);
+        break;
+      case SwapFailureReason.InvalidResolveRequest:
+      case SwapFailureReason.DealTimedOut:
+      case SwapFailureReason.InvalidSwapPacketReceived:
+      case SwapFailureReason.PaymentHashReuse:
+        // peer misbehaving, penalize the peer
+        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapMisbehavior);
+        break;
+      default:
+        // do nothing, the swap failed for an innocuous reason
+        break;
+    }
+
     assert(deal.state === SwapState.Active, 'deal is not Active. Can not change deal state');
     deal.state = SwapState.Error;
     deal.failureReason = failureReason;
@@ -734,7 +768,7 @@ class Swaps extends EventEmitter {
 
     if (deal.phase === SwapPhase.AmountReceived) {
       const wasMaker = deal.role === SwapRole.Maker;
-      const swapResult = {
+      const swapSuccess = {
         orderId: deal.orderId,
         localId: deal.localId,
         pairId: deal.pairId,
@@ -744,10 +778,12 @@ class Swaps extends EventEmitter {
         currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
         currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
         rHash: deal.rHash,
+        rPreimage: deal.rPreimage,
+        price: deal.price,
         peerPubKey: deal.peerPubKey,
         role: deal.role,
       };
-      this.emit('swap.paid', swapResult);
+      this.emit('swap.paid', swapSuccess);
 
       clearTimeout(this.timeouts.get(deal.rHash));
       this.timeouts.delete(deal.rHash);

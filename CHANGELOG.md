@@ -1,3 +1,37 @@
+# [1.0.0-alpha.9](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2019-02-22)
+
+
+### Bug Fixes
+
+* **orderbook:** remove entire order correctly ([eec8f48](https://github.com/ExchangeUnion/xud/commit/eec8f48)), closes [#804](https://github.com/ExchangeUnion/xud/issues/804)
+* **p2p:** restore dropped pair logic ([907ee16](https://github.com/ExchangeUnion/xud/commit/907ee16)), closes [#756](https://github.com/ExchangeUnion/xud/issues/756)
+
+
+### Features
+
+* use SubscribeInvoices to monitor lnd ([#762](https://github.com/ExchangeUnion/xud/issues/762)) ([0646d6b](https://github.com/ExchangeUnion/xud/commit/0646d6b)), closes [#573](https://github.com/ExchangeUnion/xud/issues/573)
+* **swaps:** define behavior for swap errors ([1641a32](https://github.com/ExchangeUnion/xud/commit/1641a32)), closes [#661](https://github.com/ExchangeUnion/xud/issues/661)
+
+
+# [1.0.0-alpha.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2019-02-06)
+
+
+### Bug Fixes
+
+* **orderbook/db:** upsert orders ([0030687](https://github.com/ExchangeUnion/xud/commit/0030687))
+
+
+### Features
+
+* **orderbook:** partial order removal ([bc3913b](https://github.com/ExchangeUnion/xud/commit/bc3913b)), closes [#714](https://github.com/ExchangeUnion/xud/issues/714)
+
+
+### Performance Improvements
+
+* **swaps/orderbook:** placeOrder parallel swaps ([1bf7ce5](https://github.com/ExchangeUnion/xud/commit/1bf7ce5)), closes [#654](https://github.com/ExchangeUnion/xud/issues/654)
+
+
+
 # [1.0.0-alpha.7](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2019-01-23)
 
 

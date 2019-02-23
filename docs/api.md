@@ -625,8 +625,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| internal_match | [Order](#xudrpc.Order) |  | An own orders (or portions thereof) that matched the newly placed order. |
-| swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A swap results of peer orders that matched the newly placed order. |
+| internal_match | [Order](#xudrpc.Order) |  | An own order (or portion thereof) that matched the newly placed order. |
+| swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A successful swap of a peer order that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 | swap_failure | [SwapFailure](#xudrpc.SwapFailure) |  | A swap attempt that failed. |
 
@@ -663,7 +663,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order. |
-| swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of swap results of peer orders that matched the newly placed order. |
+| swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 
 
@@ -723,6 +723,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to remove. |
+| quantity | [double](#double) |  |  |
 
 
 
@@ -901,6 +902,8 @@
 | role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
+| r_preimage | [string](#string) |  | The hex-encoded preimage. |
+| price | [int64](#int64) |  | The price used for the swap. |
 
 
 

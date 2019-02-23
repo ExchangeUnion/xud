@@ -57,8 +57,10 @@ describe('OrderBook', () => {
   });
 
   it('should append two new ownOrder', async () => {
-    const order = { pairId: 'LTC/BTC', quantity: 5, price: 55, isBuy: true, hold: 0 };
-    await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
+    const order = { pairId: PAIR_ID, quantity: 5, price: 55, isBuy: true, hold: 0 };
+    const { remainingOrder } = await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
+    expect(remainingOrder).to.not.be.undefined;
+    expect(orderBook.getOwnOrder(remainingOrder!.id, PAIR_ID)).to.not.be.undefined;
     await orderBook.placeLimitOrder({ localId: uuidv1(), ...order });
   });
 
@@ -98,17 +100,17 @@ describe('OrderBook', () => {
   it('should not add a new own order with a duplicated localId', async () => {
     const order: orders.OwnOrder = createOwnOrder(100, 10, false);
 
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
 
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
 
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
   after(async () => {
@@ -150,13 +152,13 @@ describe('nomatching OrderBook', () => {
 
   it('should not place the same order twice', async () => {
     const order = createOwnOrder(100, 10, true);
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
-    expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
   it('should not remove the same order twice', async () => {
     const order = createOwnOrder(100, 10, true);
-    expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
   });

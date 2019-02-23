@@ -1,4 +1,4 @@
-import grpc, { ChannelCredentials } from 'grpc';
+import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus } from '../BaseClient';
 import errors from './errors';
@@ -53,6 +53,7 @@ class LndClient extends BaseClient {
   private credentials!: ChannelCredentials;
   private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
+  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
 
   /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
   private static readonly RECONNECT_TIMER = 5000;
@@ -195,6 +196,7 @@ class LndClient extends BaseClient {
             this.identityPubKey = newPubKey;
           }
           this.emit('connectionVerified', newPubKey);
+          this.subscribeInvoices();
         } else {
           this.setStatus(ClientStatus.OutOfSync);
           this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
@@ -291,6 +293,23 @@ class LndClient extends BaseClient {
   }
 
   /**
+   * Subscribe to invoices.
+   */
+  private subscribeInvoices = (): void => {
+    if (this.invoiceSubscription) {
+      this.invoiceSubscription.cancel();
+    }
+
+    this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
+    .on('error', (error) => {
+      this.invoiceSubscription = undefined;
+      this.setStatus(ClientStatus.Disconnected);
+      this.logger.error(`lnd has been disconnected at ${this.uri}, error: ${error}`);
+      this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+    });
+  }
+
+  /**
    * Attempt to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
@@ -324,6 +343,10 @@ class LndClient extends BaseClient {
 
   /** End all subscriptions and reconnection attempts. */
   public close = () => {
+    if (this.invoiceSubscription) {
+      this.invoiceSubscription.cancel();
+    }
+
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
     }

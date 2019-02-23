@@ -41,7 +41,7 @@ class OrderbookRepository {
       where: { id: order.id },
     });
     if (count === 0) {
-      return this.models.Order.create(order);
+      return this.models.Order.upsert(order);
     } else {
       return undefined;
     }

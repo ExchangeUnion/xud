@@ -387,7 +387,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid. Any portion of the order that is \non hold due to ongoing swaps will not be removed until after the swap attempts complete.",
+        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid. Any portion of the order that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -1124,11 +1124,11 @@
       "properties": {
         "internal_match": {
           "$ref": "#/definitions/xudrpcOrder",
-          "description": "An own orders (or portions thereof) that matched the newly placed order."
+          "description": "An own order (or portion thereof) that matched the newly placed order."
         },
         "swap_success": {
           "$ref": "#/definitions/xudrpcSwapSuccess",
-          "description": "A swap results of peer orders that matched the newly placed order."
+          "description": "A successful swap of a peer order that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
@@ -1182,7 +1182,7 @@
           "items": {
             "$ref": "#/definitions/xudrpcSwapSuccess"
           },
-          "description": "A list of swap results of peer orders that matched the newly placed order."
+          "description": "A list of successful swaps of peer orders that matched the newly placed order."
         },
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
@@ -1226,6 +1226,10 @@
         "order_id": {
           "type": "string",
           "description": "The local id of the order to remove."
+        },
+        "quantity": {
+          "type": "number",
+          "format": "double"
         }
       }
     },
@@ -1406,6 +1410,15 @@
         "currency_sent": {
           "type": "string",
           "description": "The ticker symbol of the currency sent."
+        },
+        "r_preimage": {
+          "type": "string",
+          "description": "The hex-encoded preimage."
+        },
+        "price": {
+          "type": "string",
+          "format": "int64",
+          "description": "The price used for the swap."
         }
       }
     },

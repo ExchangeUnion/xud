@@ -82,6 +82,7 @@ class Peer extends EventEmitter {
   private packetCount = 0;
   private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
   private framer: Framer;
+  private deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -114,8 +115,15 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.addresses : undefined;
   }
 
+  /** Returns a list of active trading pairs supported by this peer. */
   public get pairs(): string[] | undefined {
-    return this.nodeState ? this.nodeState.pairs : undefined;
+    if (this.nodeState) {
+      const activePairs = this.nodeState.pairs.filter((pair) => {
+        return !this.deactivatedPairs.has(pair);
+      });
+      return activePairs;
+    }
+    return undefined;
   }
 
   public get connected(): boolean {
@@ -337,6 +345,21 @@ class Peer extends EventEmitter {
   public sendNodes = (nodes: NodeConnectionInfo[], reqId: string): void => {
     const packet = new packets.NodesPacket(nodes, reqId);
     this.sendPacket(packet);
+  }
+
+  /**
+   * Manually deactivates a trading pair with this peer.
+   */
+  public deactivatePair = (pairId: string) => {
+    if (!this.nodeState) {
+      throw new Error('cannot deactivate a trading pair before handshake is complete');
+    }
+    const index = this.nodeState.pairs.indexOf(pairId);
+    if (index >= 0) {
+      this.deactivatedPairs.add(pairId);
+      this.emit('pairDropped', pairId);
+    }
+    // TODO: schedule a timer to see whether this pair can be reactivated
   }
 
   private sendRaw = (data: Buffer) => {
@@ -801,7 +824,17 @@ class Peer extends EventEmitter {
     const nodeStateUpdate = packet.body!;
     this.logger.verbose(`received node state update packet from ${this.label}: ${JSON.stringify(nodeStateUpdate)}`);
 
-    this.nodeState = { ...this.nodeState, ...nodeStateUpdate as NodeState };
+    const prevNodeState = this.nodeState;
+    if (prevNodeState) {
+      prevNodeState.pairs.forEach((pairId) => {
+        if (!nodeStateUpdate.pairs || !nodeStateUpdate.pairs.includes(pairId)) {
+          // a trading pair was in the old node state but not in the updated one
+          this.emit('pairDropped', pairId);
+        }
+      });
+    }
+
+    this.nodeState = { ...prevNodeState, ...nodeStateUpdate as NodeState };
     this.emit('nodeStateUpdate');
   }
 

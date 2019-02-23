@@ -8,7 +8,6 @@ import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
-import { SwapResult } from '../../lib/swaps/types';
 
 chai.use(chaiAsPromised);
 
@@ -39,7 +38,7 @@ const validTakerOrder = () => {
   };
 };
 
-const validSwapResult = () => {
+const validSwapSuccess = () => {
   return {
     orderId: '760d5291-e43e-11e8-bd56-e5c08173fa7d',
     localId: '76c61b40-e43e-11e8-a3b5-853f31e7d8e6',
@@ -50,6 +49,8 @@ const validSwapResult = () => {
     currencyReceived: 'LTC',
     currencySent: 'BTC',
     rHash: 'd94c22a73d2741ed5cdcf3714f9ab3c8664793b03a54c74a08877726007d67c2',
+    rPreimage: 'eab3fe55ce502b702bca13cbb9f1e4239502911d4c8823b73708c4a4433ed87a',
+    price: 0.008,
     peerPubKey: '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
     role: 0,
   };
@@ -110,6 +111,7 @@ describe('Swaps.Integration', () => {
     peer.getLndPubKey = () => '1234567890';
     // pool
     pool = sandbox.createStubInstance(Pool) as any;
+    pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
     // queryRoutes response
     queryRoutesResponse = () => {
@@ -138,13 +140,13 @@ describe('Swaps.Integration', () => {
       const swapListenersAdded = sandbox.spy(swaps, 'on');
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
-      const swapResult = validSwapResult();
+      const swapSuccess = validSwapSuccess();
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.equal(swapResult);
+        .to.eventually.equal(swapSuccess);
       await waitForSpy(swapListenersAdded);
       expect(addDealSpy.calledOnce).to.equal(true);
-      swapResult.rHash = addDealSpy.args[0][0].rHash;
-      swaps.emit('swap.paid', swapResult);
+      swapSuccess.rHash = addDealSpy.args[0][0].rHash;
+      swaps.emit('swap.paid', swapSuccess);
       await waitForSpy(swapListenersRemoved, 'calledTwice');
     });
 

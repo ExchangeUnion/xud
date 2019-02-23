@@ -11,7 +11,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapResult } from 'lib/swaps/types';
+import { SwapSuccess } from 'lib/swaps/types';
 
 /**
  * The components required by the API service layer.
@@ -112,11 +112,11 @@ class Service extends EventEmitter {
   /*
    * Remove placed order from the orderbook.
    */
-  public removeOrder = (args: { orderId: string }) => {
-    const { orderId } = args;
+  public removeOrder = (args: { orderId: string, quantity?: number }) => {
+    const { orderId, quantity } = args;
     argChecks.HAS_ORDER_ID(args);
 
-    return this.orderBook.removeOwnOrderByLocalId(orderId);
+    return this.orderBook.removeOwnOrderByLocalId(orderId, quantity);
   }
 
   /** Gets the total lightning network channel balance for a given currency. */
@@ -189,7 +189,7 @@ class Service extends EventEmitter {
     await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
-  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapResult> => {
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapSuccess> => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }
@@ -409,11 +409,11 @@ class Service extends EventEmitter {
   /*
    * Subscribe to completed swaps.
    */
-  public subscribeSwaps = async (args: { includeTaker: boolean }, callback: (swapResult: SwapResult) => void) => {
-    this.swaps.on('swap.paid', (swapResult) => {
+  public subscribeSwaps = async (args: { includeTaker: boolean }, callback: (swapSuccess: SwapSuccess) => void) => {
+    this.swaps.on('swap.paid', (swapSuccess) => {
       // always alert client for maker matches, taker matches only when specified
-      if (swapResult.role === SwapRole.Maker || args.includeTaker) {
-        callback(swapResult);
+      if (swapSuccess.role === SwapRole.Maker || args.includeTaker) {
+        callback(swapSuccess);
       }
     });
   }
