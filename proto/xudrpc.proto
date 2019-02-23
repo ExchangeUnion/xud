@@ -135,9 +135,9 @@ service Xud {
   }
 
   /* Gets a list of completed swap deals. */
-  rpc ListSwapDeals(ListSwapDealsRequest) returns (ListSwapDealsResponse) {
+  rpc ListSwaps(ListSwapsRequest) returns (ListSwapsResponse) {
     option (google.api.http) = {
-      get: "/v1/swapsdeals"
+      get: "/v1/listswaps"
     };
   }
 
@@ -373,10 +373,12 @@ message ListPeersResponse {
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
-message ListSwapDealsRequest {
-  bool all = 1 [json_name = "all"];
+message ListSwapsRequest {
+  int32 limit = 1 [json_name = "all"];
+  bool failed = 2 [json_name = "failed"];
+  bool all = 3 [json_name = "all"];
 }
-message ListSwapDealsResponse {
+message ListSwapsResponse {
   repeated Swap swaps = 1 [json_name = "swaps"];
 }
 

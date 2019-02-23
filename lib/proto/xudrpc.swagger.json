@@ -210,6 +210,46 @@
         ]
       }
     },
+    "/v1/listswaps": {
+      "get": {
+        "summary": "Gets a list of completed swap deals.",
+        "operationId": "ListSwaps",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListSwapsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "failed",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "all",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.",
@@ -526,32 +566,6 @@
           {
             "name": "include_taker",
             "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/swapsdeals": {
-      "get": {
-        "summary": "Gets a list of completed swap deals.",
-        "operationId": "ListSwapDeals",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/xudrpcListSwapDealsResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "all",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -894,7 +908,7 @@
         }
       }
     },
-    "xudrpcListSwapDealsResponse": {
+    "xudrpcListSwapsResponse": {
       "type": "object",
       "properties": {
         "swaps": {

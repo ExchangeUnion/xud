@@ -459,13 +459,13 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.ListSwapDeals]]
+   * See [[Service.listSwaps]]
    */
-  public listSwapDeals: grpc.handleUnaryCall<xudrpc.ListSwapDealsRequest, xudrpc.ListSwapDealsResponse> = async (call, callback) => {
+  public listSwaps: grpc.handleUnaryCall<xudrpc.ListSwapsRequest, xudrpc.ListSwapsResponse> = async (call, callback) => {
     try {
-      const listSwapsResponse = await this.service.listSwapDeals(call.request.toObject());
+      const listSwapsResponse = await this.service.listSwaps(call.request.toObject());
       const swaps: xudrpc.Swap[] = [];
-      const response = new xudrpc.ListSwapDealsResponse();
+      const response = new xudrpc.ListSwapsResponse();
       listSwapsResponse.forEach((deal) => {
         const grpcSwap = new xudrpc.Swap();
         grpcSwap.setRole(deal.role as number);

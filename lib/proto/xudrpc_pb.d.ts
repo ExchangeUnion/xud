@@ -575,43 +575,51 @@ export namespace ListPeersResponse {
   }
 }
 
-export class ListSwapDealsRequest extends jspb.Message {
+export class ListSwapsRequest extends jspb.Message {
+  getLimit(): number;
+  setLimit(value: number): void;
+
+  getFailed(): boolean;
+  setFailed(value: boolean): void;
+
   getAll(): boolean;
   setAll(value: boolean): void;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): ListSwapDealsRequest.AsObject;
-  static toObject(includeInstance: boolean, msg: ListSwapDealsRequest): ListSwapDealsRequest.AsObject;
+  toObject(includeInstance?: boolean): ListSwapsRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: ListSwapsRequest): ListSwapsRequest.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: ListSwapDealsRequest, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): ListSwapDealsRequest;
-  static deserializeBinaryFromReader(message: ListSwapDealsRequest, reader: jspb.BinaryReader): ListSwapDealsRequest;
+  static serializeBinaryToWriter(message: ListSwapsRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListSwapsRequest;
+  static deserializeBinaryFromReader(message: ListSwapsRequest, reader: jspb.BinaryReader): ListSwapsRequest;
 }
 
-export namespace ListSwapDealsRequest {
+export namespace ListSwapsRequest {
   export type AsObject = {
+    limit: number,
+    failed: boolean,
     all: boolean,
   }
 }
 
-export class ListSwapDealsResponse extends jspb.Message {
+export class ListSwapsResponse extends jspb.Message {
   clearSwapsList(): void;
   getSwapsList(): Array<Swap>;
   setSwapsList(value: Array<Swap>): void;
   addSwaps(value?: Swap, index?: number): Swap;
 
   serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): ListSwapDealsResponse.AsObject;
-  static toObject(includeInstance: boolean, msg: ListSwapDealsResponse): ListSwapDealsResponse.AsObject;
+  toObject(includeInstance?: boolean): ListSwapsResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: ListSwapsResponse): ListSwapsResponse.AsObject;
   static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
   static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-  static serializeBinaryToWriter(message: ListSwapDealsResponse, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): ListSwapDealsResponse;
-  static deserializeBinaryFromReader(message: ListSwapDealsResponse, reader: jspb.BinaryReader): ListSwapDealsResponse;
+  static serializeBinaryToWriter(message: ListSwapsResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ListSwapsResponse;
+  static deserializeBinaryFromReader(message: ListSwapsResponse, reader: jspb.BinaryReader): ListSwapsResponse;
 }
 
-export namespace ListSwapDealsResponse {
+export namespace ListSwapsResponse {
   export type AsObject = {
     swapsList: Array<Swap.AsObject>,
   }

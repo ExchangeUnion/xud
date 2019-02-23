@@ -12,6 +12,7 @@ import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess } from 'lib/swaps/types';
+import { SwapDealInstance } from 'lib/db/types';
 
 /**
  * The components required by the API service layer.
@@ -62,6 +63,13 @@ const argChecks = {
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClients[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
+};
+
+const filterDeals = (failed: boolean, deals: SwapDealInstance[]): SwapDealInstance[] => {
+  const filteredDeals  = deals.filter((deal) => {
+    failed ? deal.state === SwapState.Error : deal.state === SwapState.Completed;
+  });
+  return filteredDeals;
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -326,13 +334,18 @@ class Service extends EventEmitter {
    * Get all completed swap deals.
    * @returns A list of completed swap deals.
    */
-  public listSwapDeals = async (args: { all: boolean }) => {
-    const deals = await this.swaps.getCompletedDeals();
-    if (args.all) {
-      return deals;
+  // const successfulDeals = deals.filter(deal => deal.state === SwapState.Completed);
+  // return successfulDeals;
+  public listSwaps = async (args: { limit: number, failed: boolean, all: boolean }): Promise<SwapDealInstance[]> => {
+    const { limit, failed, all } = args;
+    if (all) {
+      return this.swaps.getCompletedDeals();
+    }
+
+    if (limit === 0) {
+      return filterDeals(failed, await this.swaps.getCompletedDeals());
     } else {
-      const successfulDeals = deals.filter(deal => deal.state === SwapState.Completed);
-      return successfulDeals;
+      return filterDeals(failed, await this.swaps.getCompletedDeals(limit));
     }
   }
 

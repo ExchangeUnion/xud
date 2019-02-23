@@ -30,8 +30,8 @@
     - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
-    - [ListSwapDealsRequest](#xudrpc.ListSwapDealsRequest)
-    - [ListSwapDealsResponse](#xudrpc.ListSwapDealsResponse)
+    - [ListSwapsRequest](#xudrpc.ListSwapsRequest)
+    - [ListSwapsResponse](#xudrpc.ListSwapsResponse)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
     - [Order](#xudrpc.Order)
@@ -452,14 +452,16 @@
 
 
 
-<a name="xudrpc.ListSwapDealsRequest"></a>
+<a name="xudrpc.ListSwapsRequest"></a>
 
-### ListSwapDealsRequest
+### ListSwapsRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| limit | [int32](#int32) |  |  |
+| failed | [bool](#bool) |  |  |
 | all | [bool](#bool) |  |  |
 
 
@@ -467,9 +469,9 @@
 
 
 
-<a name="xudrpc.ListSwapDealsResponse"></a>
+<a name="xudrpc.ListSwapsResponse"></a>
 
-### ListSwapDealsResponse
+### ListSwapsResponse
 
 
 
@@ -1039,7 +1041,7 @@
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |
-| ListSwapDeals | [ListSwapDealsRequest](#xudrpc.ListSwapDealsRequest) | [ListSwapDealsResponse](#xudrpc.ListSwapDealsResponse) | Gets a list of completed swap deals. |
+| ListSwaps | [ListSwapsRequest](#xudrpc.ListSwapsRequest) | [ListSwapsResponse](#xudrpc.ListSwapsResponse) | Gets a list of completed swap deals. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Execute a swap on a maker peer order |
