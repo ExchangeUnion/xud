@@ -65,6 +65,8 @@
         "asyncArrow": "always",
         "method": "never"
       }
-    ]
+    ],
+    "one-line": [true, "check-catch", "check-finally", "check-open-brace", "check-whitespace"],
+    "no-switch-case-fall-through": true
   }
 }

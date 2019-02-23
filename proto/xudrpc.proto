@@ -45,7 +45,8 @@ service Xud {
 
   /* Removes an order from the order book by its local id. This should be called when an order is
    * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
-   * and peers are notified that the order is no longer valid. */
+   * and peers are notified that the order is no longer valid. Any portion of the order that is
+   * on hold due to ongoing swaps will not be removed until after the swap attempts complete. */
   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
     option (google.api.http) = {
       post: "/v1/removeorder"
@@ -59,7 +60,7 @@ service Xud {
       get: "/v1/channelbalance"
     };
   }
-  
+
   /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
    * becomes available for swaps and trading. A handshake exchanges information about the peer's
    * supported trading and swap clients. Orders will be shared with the peer upon connection and
@@ -70,7 +71,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Bans a node and immediately disconnects from it. This can be used to prevent any connections
    * to a specific node.*/
   rpc Ban(BanRequest) returns (BanResponse) {
@@ -87,7 +88,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Gets general information about this node. */
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
     option (google.api.http) = {
@@ -106,26 +107,26 @@ service Xud {
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
    * orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders
    * are separated into buys and sells for each trading pair, but unsorted. */
-  rpc GetOrders(GetOrdersRequest) returns (GetOrdersResponse) {
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
     option (google.api.http) = {
       get: "/v1/orders"
     };
   }
-  
+
   /* Gets a list of this node's supported currencies. */
   rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
     option (google.api.http) = {
       get: "/v1/currencies"
     };
   }
-  
+
   /* Gets a list of this nodes suported trading pairs. */
   rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
     option (google.api.http) = {
       get: "/v1/pairs"
     };
   }
-  
+
   /* Gets a list of connected peers. */
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
     option (google.api.http) = {
@@ -152,7 +153,7 @@ service Xud {
 
 
   /* Execute a swap on a maker peer order */
-  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapResult) {
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapSuccess) {
     option (google.api.http) = {
       post: "/v1/executeswap"
       body: "*"
@@ -178,7 +179,7 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Begin gracefully shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -186,17 +187,17 @@ service Xud {
       body: "*"
     };
   }
-  
+
   /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
    * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
    * wants to show its users a real time list of the orders available to them would subscribe to this
    * streaming call to be alerted of new orders as they become available for trading. */
   rpc SubscribeAddedOrders(SubscribeAddedOrdersRequest) returns (stream Order) {
     option (google.api.http) = {
-      get: "/v1/subscribeorders"
+      get: "/v1/subscribeaddedorders"
     };
   }
-  
+
   /* Subscribes to orders being removed - either in full or in part - from the order book. This call,
    * together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order
    * book. For example, an exchange that wants to show its users a real time list of the orders available
@@ -204,15 +205,16 @@ service Xud {
    * is no longer available for trading. */
   rpc SubscribeRemovedOrders(SubscribeRemovedOrdersRequest) returns (stream OrderRemoval) {
     option (google.api.http) = {
-      get: "/v1/subscribeorders"
+      get: "/v1/subscriberemovedorders"
     };
   }
 
-  /* Subscribes to completed swaps that are initiated by a remote peer. This call allows the client to
-   * get real-time notifications when its orders are filled by a remote taker. It can be used for
-   * tracking order executions, updating balances, and informing a trader when one of their orders
-   * is settled through Exchange Union network. */
-  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SwapResult) {
+  /* Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are
+   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
+   * the client to get real-time notifications when its orders are filled by a peer. It can be used
+   * for tracking order executions, updating balances, and informing a trader when one of their orders
+   * is settled through the Exchange Union network. */
+  rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SwapSuccess) {
     option (google.api.http) = {
       get: "/v1/subscribeswaps"
     };
@@ -252,11 +254,11 @@ message AddPairRequest {
 }
 message AddPairResponse {}
 
-message RemoveOrderRequest {
-  // The local id of the order to remove.
-  string order_id = 1 [json_name = "order_id"];
+message BanRequest {
+  // The node pub key of the node to ban.
+  string node_pub_key = 1 [json_name = "node_pub_key"];
 }
-message RemoveOrderResponse {}
+message BanResponse {}
 
 message ChannelBalance {
   // Sum of channels balances denominated in satoshis or equivalent.
@@ -279,13 +281,30 @@ message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
   string node_uri = 1 [json_name = "node_uri"];
 }
+
 message ConnectResponse {}
 
-message BanRequest {
-  // The node pub key of the node to ban.
-  string node_pub_key = 1 [json_name = "node_pub_key"];
+message ExecuteSwapRequest {
+  // The order id of the maker order.
+  string order_id = 1 [json_name = "order_id"];
+  // The trading pair of the swap orders.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly.
+  string peer_pub_key = 3 [json_name = "peer_pub_key"];
+  // The quantity to swap. The whole order will be swapped if unspecified.
+  double quantity = 4 [json_name = "quantity"];
 }
-message BanResponse {}
+
+message SwapFailure {
+  // The global UUID for the order that failed the swap.
+  string order_id = 1;
+  // The trading pair that the swap is for.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The order quantity that was attempted to be swapped.
+  double quantity = 3 [json_name = "quantity"];
+  // The node pub key of the peer that we attempted to swap with.
+  string peer_pub_key = 4 [json_name = "peer_pub_key"];
+}
 
 message GetInfoRequest {}
 message GetInfoResponse {
@@ -307,7 +326,7 @@ message GetInfoResponse {
 }
 
 message GetNodeInfoRequest {
-  // The node pub key of the node for which to get information. 
+  // The node pub key of the node for which to get information.
   string node_pub_key = 1 [json_name = "node_pub_key"];
 }
 message GetNodeInfoResponse {
@@ -318,13 +337,13 @@ message GetNodeInfoResponse {
   bool banned = 2 [json_name = "banned"];
 }
 
-message GetOrdersRequest {
+message ListOrdersRequest {
   // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
 }
-message GetOrdersResponse {
+message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
   map<string, Orders> orders = 1 [json_name = "orders"];
 }
@@ -430,7 +449,7 @@ message Peer {
   // Indicates whether this peer was connected inbound.
   bool inbound = 5 [json_name = "inbound"];
   // A list of trading pair tickers supported by this peer.
-  repeated string pairs = 6 [json_name = "pairs"]; 
+  repeated string pairs = 6 [json_name = "pairs"];
   // The version of xud being used by the peer.
   string xud_version = 7 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
@@ -452,32 +471,23 @@ message PlaceOrderRequest {
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.
   repeated Order internal_matches = 1 [json_name = "internal_matches"];
-  // A list of swap results of peer orders that matched the newly placed order.
-  repeated SwapResult swap_results = 2 [json_name = "swap_results"];
+  // A list of successful swaps of peer orders that matched the newly placed order.
+  repeated SwapSuccess swap_successes = 2 [json_name = "swap_successes"];
   // The remaining portion of the order, after matches, that enters the order book.
   Order remaining_order = 3 [json_name= "remaining_order"];
 }
 
 message PlaceOrderEvent {
   oneof event {
-    // An own orders (or portions thereof) that matched the newly placed order.
+    // An own order (or portion thereof) that matched the newly placed order.
     Order internal_match = 1 [json_name = "internal_match"];
-    // A swap results of peer orders that matched the newly placed order.
-    SwapResult swap_result = 2 [json_name = "swap_result"];
+    // A successful swap of a peer order that matched the newly placed order.
+    SwapSuccess swap_success = 2 [json_name = "swap_success"];
     // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
+    // A swap attempt that failed.
+    SwapFailure swap_failure = 4 [json_name = "swap_failures"];
   }
-}
-
-message ExecuteSwapRequest {
-  // The trading pair of the swap orders.
-  string pair_id = 2 [json_name = "pair_id"];
-  // The order id of the maker order.
-  string order_id = 1 [json_name = "order_id"];
-  // The node pub key of the peer which owns the maker order.
-  string peer_pub_key = 3 [json_name = "peer_pub_key"];
-  // the quantity to swap. the whole order will be swapped if unspecified.
-  double quantity = 4 [json_name = "quantity"];
 }
 
 message RaidenInfo {
@@ -492,6 +502,17 @@ message RemoveCurrencyRequest {
   string currency = 1 [json_name = "currency"];
 }
 message RemoveCurrencyResponse {}
+
+message RemoveOrderRequest {
+  // The local id of the order to remove.
+  string order_id = 1 [json_name = "order_id"];
+  double quantity = 2 [json_name = "quantity"];
+}
+message RemoveOrderResponse {
+  // Any portion of the order that was on hold due to ongoing swaps at the time of the request
+  // and could not be removed until after the swaps finish.
+  double quantity_on_hold = 1 [json_name = "hold"];
+}
 
 message RemovePairRequest {
   // The trading pair ticker to remove in a format such as "LTC/BTC".
@@ -509,35 +530,43 @@ message SubscribeAddedOrdersRequest {
 
 message SubscribeRemovedOrdersRequest {}
 
-message SubscribeSwapsRequest {}
+message SubscribeSwapsRequest {
+  // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
+  // These swap results are also returned in the responses for the respective calls.
+  bool include_taker = 1 [json_name = "include_taker"];
+}
 
-message SwapResult {
+message SwapSuccess {
   // The global UUID for the order that was swapped.
   string order_id = 1;
   // The local id for the order that was swapped.
   string local_id = 2 [json_name = "local_id"];
-  // The trading pair that this order is for.
+  // The trading pair that the swap is for.
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
   double quantity = 4 [json_name = "quantity"];
   // The hex-encoded payment hash for the swaps.
   string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
-  int64 amount_received = 6 [json_name = "amount_received"];
+  int64 amount_received = 8 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.
-  int64 amount_sent = 7 [json_name = "amount_sent"];
+  int64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
-  string peer_pub_key = 8 [json_name = "peer_pub_key"];
+  string peer_pub_key = 10 [json_name = "peer_pub_key"];
   enum Role {
     TAKER = 0;
     MAKER = 1;
   }
   // Our role in the swap, either MAKER or TAKER.
-  Role role = 9 [json_name = "role"];
+  Role role = 11 [json_name = "role"];
   // The ticker symbol of the currency received.
-  string currency_received = 10 [json_name = "currency_received"];
+  string currency_received = 12 [json_name = "currency_received"];
   // The ticker symbol of the currency sent.
-  string currency_sent = 11 [json_name = "currency_sent"];
+  string currency_sent = 13 [json_name = "currency_sent"];
+  // The hex-encoded preimage.
+  string r_preimage = 14 [json_name = "r_preimage"];
+  // The price used for the swap.
+  int64 price = 15 [json_name = "r_preimage"];
 }
 
 message UnbanRequest {

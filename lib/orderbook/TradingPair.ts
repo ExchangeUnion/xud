@@ -1,19 +1,18 @@
 import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
-import { matchingEngine, orders } from '../types';
-import { OrderingDirection } from '../types/enums';
+import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
-import { isOwnOrder, Order, OwnOrder, PeerOrder } from '../types/orders';
+import { isOwnOrder, Order, OwnOrder, PeerOrder, OrderMatch, MatchingResult } from './types';
 import errors from './errors';
 
-type OrderMap<T extends orders.Order> = Map<string, T>;
+type OrderMap<T extends Order> = Map<string, T>;
 
-type OrderSidesMaps<T extends orders.Order> = {
+type OrderSidesMaps<T extends Order> = {
   buy: OrderMap<T>,
   sell: OrderMap<T>,
 };
 
-type OrderSidesArrays<T extends orders.Order> = {
+type OrderSidesArrays<T extends Order> = {
   buy: T[],
   sell: T[],
 };
@@ -31,7 +30,7 @@ class TradingPair {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
   public queues?: OrderSidesQueues;
   /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
-  public ownOrders: OrderSidesMaps<orders.OwnOrder>;
+  public ownOrders: OrderSidesMaps<OwnOrder>;
   /** A map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
   public peersOrders: Map<string, OrderSidesMaps<PeerOrder>>;
 
@@ -135,9 +134,10 @@ class TradingPair {
   }
 
   /**
-   * Remove all orders given a peer pubKey.
+   * Remove all of a peer's orders.
+   * @param peerPubKey the node pub key of the peer
    */
-  public removePeerOrders = (peerPubKey: string): PeerOrder[] => {
+  public removePeerOrders = (peerPubKey?: string): PeerOrder[] => {
     // if incoming peerPubKey is undefined or empty, don't even try to find it in order queues
     if (!peerPubKey) return [];
 
@@ -160,8 +160,21 @@ class TradingPair {
    * quantity then the entire order is removed
    * @returns the removed order or order portion, otherwise undefined if the order wasn't found
    */
-  public removePeerOrder = (orderId: string, peerPubKey: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
-    const peerOrdersMaps = this.peersOrders.get(peerPubKey);
+  public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
+    let peerOrdersMaps: OrderSidesMaps<PeerOrder> | undefined;
+
+    if (peerPubKey) {
+      peerOrdersMaps = this.peersOrders.get(peerPubKey);
+    } else {
+      // if not given a peerPubKey, we must check all peer order maps for the specified orderId
+      for (const orderSidesMaps of this.peersOrders.values()) {
+        if (orderSidesMaps.buy.has(orderId) || orderSidesMaps.sell.has(orderId)) {
+          peerOrdersMaps = orderSidesMaps;
+          break;
+        }
+      }
+    }
+
     if (!peerOrdersMaps) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
@@ -180,6 +193,7 @@ class TradingPair {
 
   private removeOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<Order>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
+    assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
     const order = maps.buy.get(orderId) || maps.sell.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
@@ -187,13 +201,19 @@ class TradingPair {
 
     if (quantityToRemove && quantityToRemove < order.quantity) {
       // if quantityToRemove is below the order quantity, reduce the order quantity
+      if (isOwnOrder(order)) {
+        assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
+      }
       order.quantity = order.quantity - quantityToRemove;
       this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
       return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
     } else {
       // otherwise, remove the order entirely
-      const list = order.isBuy ? maps.buy : maps.sell;
-      list.delete(order.id);
+      if (isOwnOrder(order)) {
+        assert(order.hold === 0, 'cannot remove an order with a hold');
+      }
+      const map = order.isBuy ? maps.buy : maps.sell;
+      map.delete(order.id);
 
       if (!this.nomatching) {
         const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
@@ -284,10 +304,10 @@ class TradingPair {
    * Match an order against its opposite queue. Matched maker orders will be removed from the repository
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
-  public match = (takerOrder: OwnOrder): matchingEngine.MatchingResult => {
+  public match = (takerOrder: OwnOrder): MatchingResult => {
     assert(!this.nomatching);
 
-    const matches: matchingEngine.OrderMatch[] = [];
+    const matches: OrderMatch[] = [];
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 

@@ -1,5 +1,5 @@
 import { hostname } from 'os';
-import grpc, { Server } from 'grpc';
+import grpc from 'grpc';
 import { pki, md } from 'node-forge';
 import assert from 'assert';
 import Logger from '../Logger';
@@ -9,13 +9,14 @@ import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
 import { HashResolverService } from '../proto/lndrpc_grpc_pb';
 import { exists, readFile, writeFile } from '../utils/fsUtils';
+import serverProxy from './serverProxy';
 
 class GrpcServer {
-  private server: Server;
+  private server: any;
   private grpcService: GrpcService;
 
   constructor(private logger: Logger, service: Service) {
-    this.server = new grpc.Server();
+    this.server = serverProxy(new grpc.Server());
 
     const grpcService = new GrpcService(logger, service);
     this.server.addService(XudService, {
@@ -29,7 +30,7 @@ class GrpcServer {
       executeSwap: grpcService.executeSwap,
       getInfo: grpcService.getInfo,
       getNodeInfo: grpcService.getNodeInfo,
-      getOrders: grpcService.getOrders,
+      listOrders: grpcService.listOrders,
       listCurrencies: grpcService.listCurrencies,
       listPairs: grpcService.listPairs,
       listPeers: grpcService.listPeers,
@@ -48,6 +49,11 @@ class GrpcServer {
     });
 
     this.grpcService = grpcService;
+
+    this.server.use((ctx: any, next: any) => {
+      logger.debug(`received call ${ctx.service.path}`);
+      next();
+    });
   }
 
   /**

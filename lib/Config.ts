@@ -3,17 +3,18 @@ import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
 import { exists, mkdir, readFile } from './utils/fsUtils';
-import { PoolConfig } from './p2p/Pool';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { Network } from './types/enums';
+import { Network } from './constants/enums';
+import { PoolConfig } from './p2p/types';
 
 class Config {
   public p2p: PoolConfig;
   public xudir: string;
   public loglevel: string;
   public logpath: string;
+  public logdateformat: string;
   public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
@@ -58,12 +59,14 @@ class Config {
     this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
+    this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = Network.TestNet;
 
     this.p2p = {
       listen: ['0.0.0.0'],
       nolisten: false,
       discover: true,
+      discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],

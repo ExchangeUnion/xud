@@ -1,3 +1,111 @@
+# [1.0.0-alpha.9](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2019-02-22)
+
+
+### Bug Fixes
+
+* **orderbook:** remove entire order correctly ([eec8f48](https://github.com/ExchangeUnion/xud/commit/eec8f48)), closes [#804](https://github.com/ExchangeUnion/xud/issues/804)
+* **p2p:** restore dropped pair logic ([907ee16](https://github.com/ExchangeUnion/xud/commit/907ee16)), closes [#756](https://github.com/ExchangeUnion/xud/issues/756)
+
+
+### Features
+
+* use SubscribeInvoices to monitor lnd ([#762](https://github.com/ExchangeUnion/xud/issues/762)) ([0646d6b](https://github.com/ExchangeUnion/xud/commit/0646d6b)), closes [#573](https://github.com/ExchangeUnion/xud/issues/573)
+* **swaps:** define behavior for swap errors ([1641a32](https://github.com/ExchangeUnion/xud/commit/1641a32)), closes [#661](https://github.com/ExchangeUnion/xud/issues/661)
+
+
+# [1.0.0-alpha.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2019-02-06)
+
+
+### Bug Fixes
+
+* **orderbook/db:** upsert orders ([0030687](https://github.com/ExchangeUnion/xud/commit/0030687))
+
+
+### Features
+
+* **orderbook:** partial order removal ([bc3913b](https://github.com/ExchangeUnion/xud/commit/bc3913b)), closes [#714](https://github.com/ExchangeUnion/xud/issues/714)
+
+
+### Performance Improvements
+
+* **swaps/orderbook:** placeOrder parallel swaps ([1bf7ce5](https://github.com/ExchangeUnion/xud/commit/1bf7ce5)), closes [#654](https://github.com/ExchangeUnion/xud/issues/654)
+
+
+
+# [1.0.0-alpha.7](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.6...v1.0.0-alpha.7) (2019-01-23)
+
+
+### Bug Fixes
+
+* **rpc:** subscribeorders http endpoints ([ce5a89a](https://github.com/ExchangeUnion/xud/commit/ce5a89a))
+* **swaps:** ignore swap failed for inactive swaps ([e89f936](https://github.com/ExchangeUnion/xud/commit/e89f936))
+
+
+### Features
+
+* add configurable logger date formatting ([ee66a6c](https://github.com/ExchangeUnion/xud/commit/ee66a6c)), closes [#686](https://github.com/ExchangeUnion/xud/issues/686) [#686](https://github.com/ExchangeUnion/xud/issues/686)
+* **cli:** improved streamorders ([#780](https://github.com/ExchangeUnion/xud/issues/780)) ([6084043](https://github.com/ExchangeUnion/xud/commit/6084043)), closes [#687](https://github.com/ExchangeUnion/xud/issues/687)
+* parse uri without port ([db91489](https://github.com/ExchangeUnion/xud/commit/db91489))
+* **p2p:** encryption & authentication ([#756](https://github.com/ExchangeUnion/xud/issues/756)) ([067378f](https://github.com/ExchangeUnion/xud/commit/067378f))
+* **p2p:** revoke connection retries ([#750](https://github.com/ExchangeUnion/xud/issues/750)) ([f56bcc3](https://github.com/ExchangeUnion/xud/commit/f56bcc3))
+* **p2p:** sending GET_NODES periodically ([#770](https://github.com/ExchangeUnion/xud/issues/770)) ([57c48de](https://github.com/ExchangeUnion/xud/commit/57c48de)), closes [#402](https://github.com/ExchangeUnion/xud/issues/402) [#402](https://github.com/ExchangeUnion/xud/issues/402)
+* **p2p:** verify version compatibility ([59aa8ff](https://github.com/ExchangeUnion/xud/commit/59aa8ff)), closes [#154](https://github.com/ExchangeUnion/xud/issues/154) [#154](https://github.com/ExchangeUnion/xud/issues/154)
+* **rpc:** failed swaps for PlaceOrder ([6c9c2a6](https://github.com/ExchangeUnion/xud/commit/6c9c2a6)), closes [#609](https://github.com/ExchangeUnion/xud/issues/609) [#734](https://github.com/ExchangeUnion/xud/issues/734)
+* **rpc:** optionally subscribe to taker swaps ([6bbfd89](https://github.com/ExchangeUnion/xud/commit/6bbfd89)), closes [#688](https://github.com/ExchangeUnion/xud/issues/688)
+* **swaps:** timeout stalled swaps ([a463056](https://github.com/ExchangeUnion/xud/commit/a463056)), closes [#653](https://github.com/ExchangeUnion/xud/issues/653)
+
+
+
+# [1.0.0-alpha.6](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2018-12-28)
+
+
+### Bug Fixes
+
+* **cli:** use correct args for executeswap ([038c6a9](https://github.com/ExchangeUnion/xud/commit/038c6a9))
+* **orderbook:** persist trade before remove order ([9ce892a](https://github.com/ExchangeUnion/xud/commit/9ce892a))
+* **orderbook:** use pairs keys iterable ([3e26753](https://github.com/ExchangeUnion/xud/commit/3e26753)), closes [#766](https://github.com/ExchangeUnion/xud/issues/766)
+* **p2p:** check before emitting open event ([f4f8dab](https://github.com/ExchangeUnion/xud/commit/f4f8dab))
+* **p2p:** don't send empty GetOrders packet ([fbacd8b](https://github.com/ExchangeUnion/xud/commit/fbacd8b))
+* **p2p:** hash order invalidations correctly ([d876e8b](https://github.com/ExchangeUnion/xud/commit/d876e8b)), closes [#767](https://github.com/ExchangeUnion/xud/issues/767)
+* **p2p:** hash outgoing orders correctly ([d5b7408](https://github.com/ExchangeUnion/xud/commit/d5b7408)), closes [#758](https://github.com/ExchangeUnion/xud/issues/758)
+* **p2p:** order invalidation packet ([#774](https://github.com/ExchangeUnion/xud/issues/774)) ([962124f](https://github.com/ExchangeUnion/xud/commit/962124f)), closes [#756](https://github.com/ExchangeUnion/xud/issues/756)
+* **p2p:** terminate inbound peers on shutdown ([b9f312a](https://github.com/ExchangeUnion/xud/commit/b9f312a))
+* **proto:** use 64 bit chan_id ints as strings ([5a9a518](https://github.com/ExchangeUnion/xud/commit/5a9a518)), closes [agreatfool/grpc_tools_node_protoc_ts#10](https://github.com/agreatfool/grpc_tools_node_protoc_ts/issues/10) [#745](https://github.com/ExchangeUnion/xud/issues/745)
+* **rpc/p2p:** unban functionality ([#731](https://github.com/ExchangeUnion/xud/issues/731)) ([e5083e5](https://github.com/ExchangeUnion/xud/commit/e5083e5))
+* **swap:** allow one extrac block to be created during swap ([0a4d149](https://github.com/ExchangeUnion/xud/commit/0a4d149))
+* **swap:** Avoid fraction in cltvDelta ([08bf957](https://github.com/ExchangeUnion/xud/commit/08bf957))
+* **swaps:** release order hold on sendpayment err ([9322a06](https://github.com/ExchangeUnion/xud/commit/9322a06))
+
+
+### Code Refactoring
+
+* **swaps:** rename errorReason swap field ([732a6d0](https://github.com/ExchangeUnion/xud/commit/732a6d0))
+
+
+### Features
+
+* **cli:** stream existing orders by default ([#730](https://github.com/ExchangeUnion/xud/issues/730)) ([a40b330](https://github.com/ExchangeUnion/xud/commit/a40b330))
+* **db:** add rHash to trade ([0c30c89](https://github.com/ExchangeUnion/xud/commit/0c30c89))
+* **db/orderbook:** persist trades from swaps ([4a2547e](https://github.com/ExchangeUnion/xud/commit/4a2547e)), closes [#608](https://github.com/ExchangeUnion/xud/issues/608)
+* **orderbook:** add assertions to removeOrder ([9350a27](https://github.com/ExchangeUnion/xud/commit/9350a27))
+* **p2p:** improve logging for p2p messaging ([32e3263](https://github.com/ExchangeUnion/xud/commit/32e3263))
+* grpc server logging ([#736](https://github.com/ExchangeUnion/xud/issues/736)) ([d538757](https://github.com/ExchangeUnion/xud/commit/d538757))
+* **p2p:** protobuf serialization/validation ([#712](https://github.com/ExchangeUnion/xud/issues/712)) ([5a030bd](https://github.com/ExchangeUnion/xud/commit/5a030bd))
+* **p2p:** verify data integrity ([#751](https://github.com/ExchangeUnion/xud/issues/751)) ([3ff06b1](https://github.com/ExchangeUnion/xud/commit/3ff06b1))
+* **p2p/db:** add failureReason field for swaps ([9cd0f4f](https://github.com/ExchangeUnion/xud/commit/9cd0f4f))
+* **p2p/orderbook:** drop orders for dropped pairs ([f9a40c2](https://github.com/ExchangeUnion/xud/commit/f9a40c2)), closes [#599](https://github.com/ExchangeUnion/xud/issues/599)
+* **rpc:** remove peerpubkey from executeswap cli ([40e0d44](https://github.com/ExchangeUnion/xud/commit/40e0d44)), closes [#694](https://github.com/ExchangeUnion/xud/issues/694)
+* **rpc/orderbook:** handle remove order with hold ([afe2fe3](https://github.com/ExchangeUnion/xud/commit/afe2fe3)), closes [#552](https://github.com/ExchangeUnion/xud/issues/552)
+* **swaps:** comprehensive SwapFailureReason ([2f3dcf5](https://github.com/ExchangeUnion/xud/commit/2f3dcf5)), closes [#671](https://github.com/ExchangeUnion/xud/issues/671)
+
+
+### BREAKING CHANGES
+
+* **p2p/db:** New `failureReason` p2p packet and database field.
+* **swaps:** Renames `errorReason` field in database.
+
+
+
 # [1.0.0-alpha.5](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2018-12-04)
 
 

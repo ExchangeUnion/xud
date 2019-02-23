@@ -1,16 +1,13 @@
 import PacketType from './PacketType';
-import CryptoJS from 'crypto-js';
-import MD5 from 'crypto-js/md5';
+import crypto from 'crypto';
 import uuidv1 from 'uuid/v1';
+import stringify from 'json-stable-stringify';
 
 type PacketHeader = {
   /** An identifer for the packet which must be unique for a given socket. */
   id: string;
   /** The id of the received packet to which this packet is responding. */
   reqId?: string;
-  type?: PacketType;
-  /** The Base64 encoded MD5 hash of the body of the packet, to be used for error checking. */
-  hash?: string;
 };
 
 interface PacketInterface {
@@ -24,6 +21,16 @@ function isPacketInterface(obj: any): obj is PacketInterface {
     return header !== undefined && typeof header.id === 'string';
   }
   return false;
+}
+
+function isPacket(obj: any): obj is Packet {
+  const p = (<Packet>obj);
+  return (
+    p.toRaw !== undefined  && typeof p.toRaw === 'function'
+    && p.serialize !== undefined && typeof p.serialize === 'function'
+    && p.type !== undefined && typeof p.type === 'number'
+    && p.direction !== undefined && typeof p.direction === 'number'
+  );
 }
 
 enum PacketDirection {
@@ -40,8 +47,6 @@ abstract class Packet<T = any> implements PacketInterface {
   public abstract get direction(): PacketDirection;
   public body?: T;
   public header: PacketHeader;
-  /** Wire protocol delimiter. */
-  public static readonly PROTOCOL_DELIMITER = 'ↂ₿ↂ';
 
   /**
    * Create a packet from a deserialized packet message.
@@ -57,15 +62,14 @@ abstract class Packet<T = any> implements PacketInterface {
 
   constructor(bodyOrPacket?: T | PacketInterface, reqId?: string) {
     if (isPacketInterface(bodyOrPacket)) {
-      // we are deserializing a received packet from a raw JSON string
-      delete bodyOrPacket.header.type; // deleting type from header because it's being used only for the wire protocol
+      // we are constructing the deserialized packet
       this.header = bodyOrPacket.header;
 
       if (bodyOrPacket.body) {
         this.body = bodyOrPacket.body;
       }
     } else {
-      // we are creating a new outgoing packet from a body
+      // we are constructing a new outgoing packet from a body
       this.header = { id: uuidv1() };
 
       if (reqId) {
@@ -74,21 +78,35 @@ abstract class Packet<T = any> implements PacketInterface {
 
       if (bodyOrPacket) {
         this.body = bodyOrPacket;
-        this.header.hash = MD5(JSON.stringify(bodyOrPacket)).toString(CryptoJS.enc.Base64);
       }
     }
   }
 
+  public abstract serialize(): Uint8Array;
+
+  public toJSON = () => {
+    return stringify({ header: this.header, body: this.body });
+  }
+
   /**
-   * Serialize this packet to JSON.
-   * @returns JSON string representing the packet
+   * Serialize this packet to binary Buffer.
+   * @returns Buffer representation of the packet
    */
-  public toRaw(): string {
-    // explicitly set the type on the header before serializing
-    const header: PacketHeader = { ...this.header, type: this.type };
-    return this.body ? JSON.stringify({ header, body: this.body }) : JSON.stringify({ header });
+  public toRaw = (): Buffer => {
+    return Buffer.from(this.serialize().buffer as ArrayBuffer);
+  }
+
+  /**
+   * Calculating the packet checksum using its JSON representation hash first 4 bytes.
+   */
+  public checksum = (): number => {
+    return crypto
+      .createHash('sha256')
+      .update(this.toJSON())
+      .digest()
+      .readUInt32LE(0, true);
   }
 }
 
 export default Packet;
-export { PacketHeader, PacketDirection, PacketInterface };
+export { PacketHeader, PacketDirection, PacketInterface, isPacket };

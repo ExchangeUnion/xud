@@ -1,6 +1,6 @@
 import { Arguments, Argv } from 'yargs';
 import { callback, loadXudClient } from './command';
-import { PlaceOrderRequest, PlaceOrderEvent, OrderSide, PlaceOrderResponse, Order, SwapResult } from '../proto/xudrpc_pb';
+import { PlaceOrderRequest, PlaceOrderEvent, OrderSide, PlaceOrderResponse, Order, SwapSuccess, SwapFailure } from '../proto/xudrpc_pb';
 
 export const orderBuilder = (argv: Argv, command: string) => argv
   .option('quantity', {
@@ -55,19 +55,22 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
         console.log(JSON.stringify(response.toObject(), undefined, 2));
       } else {
         const internalMatch = response.getInternalMatch();
-        const swapResult = response.getSwapResult();
+        const swapSuccess = response.getSwapSuccess();
         const remainingOrder = response.getRemainingOrder();
+        const swapFailure = response.getSwapFailure();
         if (internalMatch) {
           noMatches = false;
           formatInternalMatch(internalMatch.toObject());
-        } else if (swapResult) {
+        } else if (swapSuccess) {
           noMatches = false;
-          formatSwapResult(swapResult.toObject());
+          formatSwapSuccess(swapSuccess.toObject());
         } else if (remainingOrder) {
           if (noMatches) {
             console.log('no matches found');
           }
           formatRemainingOrder(remainingOrder.toObject());
+        } else if (swapFailure) {
+          formatSwapFailure(swapFailure.toObject());
         }
       }
     });
@@ -77,12 +80,12 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
 };
 
 const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
-  const { internalMatchesList, swapResultsList, remainingOrder } = response;
-  if (internalMatchesList.length === 0 && swapResultsList.length === 0) {
+  const { internalMatchesList, swapSuccessesList, remainingOrder } = response;
+  if (internalMatchesList.length === 0 && swapSuccessesList.length === 0) {
     console.log('no matches found');
   } else {
     internalMatchesList.forEach(formatInternalMatch);
-    swapResultsList.forEach(formatSwapResult);
+    swapSuccessesList.forEach(formatSwapSuccess);
   }
   if (remainingOrder) {
     formatRemainingOrder(remainingOrder);
@@ -94,9 +97,14 @@ const formatInternalMatch = (order: Order.AsObject) => {
   console.log(`matched ${order.quantity} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
 };
 
-const formatSwapResult = (swapResult: SwapResult.AsObject) => {
-  const baseCurrency = getBaseCurrency(swapResult.pairId);
-  console.log(`swapped ${swapResult.quantity} ${baseCurrency} with peer order ${swapResult.orderId}`);
+const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
+  const baseCurrency = getBaseCurrency(swapSuccess.pairId);
+  console.log(`swapped ${swapSuccess.quantity} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
+};
+
+const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
+  const baseCurrency = getBaseCurrency(swapFailure.pairId);
+  console.log(`failed to swap ${swapFailure.quantity} ${baseCurrency} with peer order ${swapFailure.orderId}`);
 };
 
 const formatRemainingOrder = (order: Order.AsObject) => {

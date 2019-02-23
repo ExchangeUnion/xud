@@ -1,4 +1,4 @@
-import { SwapRole, SwapPhase, SwapState } from 'lib/types/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/constants/enums';
 import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
@@ -12,7 +12,8 @@ export type SwapDeal = {
    */
   state: SwapState;
   /** The reason for being in the current state. */
-  errorReason?: string;
+  errorMessage?: string;
+  failureReason?: SwapFailureReason;
   /** The xud node pub key of the counterparty to this swap deal. */
   peerPubKey: string;
   /** The global order id in the XU network for the maker order being executed. */
@@ -51,11 +52,11 @@ export type SwapDeal = {
   makerToTakerRoutes?: Route[];
   createTime: number;
   executeTime?: number;
-  completeTime?: number
+  completeTime?: number;
 };
 
 /** The result of a successful swap. */
-export type SwapResult = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'role'> & {
+export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'> & {
   /** The amount of satoshis (or equivalent) received. */
   amountReceived: number;
   /** The amount of satoshis (or equivalent) sent. */

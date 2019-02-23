@@ -58,7 +58,7 @@ export default async () => {
       result += value[0] + ' = ';
       if (typeof value[1] === 'string') {
         result += '"' + value[1] + '"\n';
-      }else if (Array.isArray(value[1])) {
+      } else if (Array.isArray(value[1])) {
         result += '[]\n';
       } else {
         result += value[1] + '\n';
