@@ -1224,6 +1224,10 @@
           "type": "string",
           "description": "The local id for the order that was swapped."
         },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the swap is for."
+        },
         "quantity": {
           "type": "number",
           "format": "double",
@@ -1258,10 +1262,6 @@
         "currency_sent": {
           "type": "string",
           "description": "The ticker symbol of the currency sent."
-        },
-        "pair_id": {
-          "type": "string",
-          "description": "The trading pair that the swap is for."
         }
       }
     },

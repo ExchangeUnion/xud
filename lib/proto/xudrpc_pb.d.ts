@@ -1216,6 +1216,9 @@ export class SwapSuccess extends jspb.Message {
   getLocalId(): string;
   setLocalId(value: string): void;
 
+  getPairId(): string;
+  setPairId(value: string): void;
+
   getQuantity(): number;
   setQuantity(value: number): void;
 
@@ -1240,9 +1243,6 @@ export class SwapSuccess extends jspb.Message {
   getCurrencySent(): string;
   setCurrencySent(value: string): void;
 
-  getPairId(): string;
-  setPairId(value: string): void;
-
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapSuccess.AsObject;
   static toObject(includeInstance: boolean, msg: SwapSuccess): SwapSuccess.AsObject;
@@ -1257,6 +1257,7 @@ export namespace SwapSuccess {
   export type AsObject = {
     orderId: string,
     localId: string,
+    pairId: string,
     quantity: number,
     rHash: string,
     amountReceived: number,
@@ -1265,7 +1266,6 @@ export namespace SwapSuccess {
     role: SwapSuccess.Role,
     currencyReceived: string,
     currencySent: string,
-    pairId: string,
   }
 
   export enum Role {

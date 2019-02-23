@@ -821,6 +821,7 @@
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
+| pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [double](#double) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
 | amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
@@ -829,7 +830,6 @@
 | role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
-| pair_id | [string](#string) |  | The trading pair that the swap is for. |
 
 
 

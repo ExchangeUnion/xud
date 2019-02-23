@@ -540,28 +540,28 @@ message SwapSuccess {
   string order_id = 1;
   // The local id for the order that was swapped.
   string local_id = 2 [json_name = "local_id"];
+  // The trading pair that the swap is for.
+  string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
-  double quantity = 3 [json_name = "quantity"];
+  double quantity = 4 [json_name = "quantity"];
   // The hex-encoded payment hash for the swaps.
-  string r_hash = 4 [json_name = "r_hash"];
+  string r_hash = 5 [json_name = "r_hash"];
   // The amount of subunits (satoshis) received.
-  int64 amount_received = 5 [json_name = "amount_received"];
+  int64 amount_received = 6 [json_name = "amount_received"];
   // The amount of subunits (satoshis) sent.
-  int64 amount_sent = 6 [json_name = "amount_sent"];
+  int64 amount_sent = 7 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
-  string peer_pub_key = 7 [json_name = "peer_pub_key"];
+  string peer_pub_key = 8 [json_name = "peer_pub_key"];
   enum Role {
     TAKER = 0;
     MAKER = 1;
   }
   // Our role in the swap, either MAKER or TAKER.
-  Role role = 8 [json_name = "role"];
+  Role role = 9 [json_name = "role"];
   // The ticker symbol of the currency received.
-  string currency_received = 9 [json_name = "currency_received"];
+  string currency_received = 10 [json_name = "currency_received"];
   // The ticker symbol of the currency sent.
-  string currency_sent = 10 [json_name = "currency_sent"];
-  // The trading pair that the swap is for.
-  string pair_id = 11 [json_name = "pair_id"];
+  string currency_sent = 11 [json_name = "currency_sent"];
 }
 
 message UnbanRequest {
