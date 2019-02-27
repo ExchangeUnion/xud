@@ -179,7 +179,7 @@ class Service extends EventEmitter {
     await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
-  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapSuccess> => {
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }) => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }

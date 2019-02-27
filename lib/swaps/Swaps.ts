@@ -221,14 +221,11 @@ class Swaps extends EventEmitter {
    * A promise wrapper for a swap procedure
    * @param maker the remote maker order we are filling
    * @param taker our local taker order
-   * @returns A promise that is resolved once the swap is completed, or rejects otherwise
+   * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     await this.verifyExecution(maker, taker);
     const rHash = await this.beginSwap(maker, taker);
-    if (!rHash) {
-      throw new Error('cannot execute swap. rHash not found');
-    }
 
     return new Promise<SwapSuccess>((resolve, reject) => {
       const cleanup = () => {
@@ -244,7 +241,7 @@ class Swaps extends EventEmitter {
       const onFailed = (deal: SwapDeal) => {
         if (deal.rHash === rHash) {
           cleanup();
-          reject();
+          reject(deal.failureReason!);
         }
       };
       this.on('swap.paid', onPaid);
@@ -256,9 +253,9 @@ class Swaps extends EventEmitter {
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
    * @param maker The remote maker order we are filling
    * @param taker Our local taker order
-   * @returns The rHash for the swap, or `undefined` if the swap could not be initiated
+   * @returns The rHash for the swap, or a [[SwapFailureReason]] if the swap could not be initiated
    */
-  private beginSwap = async (maker: PeerOrder, taker: OwnOrder) => {
+  private beginSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<string> => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
@@ -307,7 +304,7 @@ class Swaps extends EventEmitter {
     if (errMsg) {
       this.logger.error(errMsg);
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      return;
+      throw SwapFailureReason.SwapClientNotSetup;
     }
     await peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 

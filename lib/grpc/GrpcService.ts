@@ -11,7 +11,7 @@ import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess } from '../swaps/types';
-import { setObjectToMap } from '../utils/utils';
+import { SwapFailureReason } from '../constants/enums';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -299,10 +299,44 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const result = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(result));
+      const swapResult = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapResult));
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      if (typeof err === 'number') {
+        // treat the error as a SwapFailureReason enum
+        let code: status;
+        switch (err) {
+          case SwapFailureReason.DealTimedOut:
+          case SwapFailureReason.SwapTimedOut:
+            code = status.DEADLINE_EXCEEDED;
+            break;
+          case SwapFailureReason.InvalidSwapRequest:
+          case SwapFailureReason.PaymentHashReuse:
+          case SwapFailureReason.InvalidResolveRequest:
+            // these cases suggest something went very wrong with our swap request
+            code = status.INTERNAL;
+            break;
+          case SwapFailureReason.NoRouteFound:
+          case SwapFailureReason.SendPaymentFailure:
+          case SwapFailureReason.SwapClientNotSetup:
+          case SwapFailureReason.OrderOnHold:
+            code = status.FAILED_PRECONDITION;
+            break;
+          case SwapFailureReason.UnexpectedLndError:
+          default:
+            code = status.UNKNOWN;
+            break;
+        }
+        const grpcError: grpc.ServiceError = {
+          code,
+          name: SwapFailureReason[err],
+          message: SwapFailureReason[err],
+        };
+        this.logger.error(grpcError);
+        callback(grpcError, null);
+      } else {
+        callback(this.getGrpcError(err), null);
+      }
     }
   }
 
