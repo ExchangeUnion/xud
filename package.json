@@ -114,7 +114,6 @@
   ],
   "dependencies": {
     "@exchangeunion/grpc-dynamic-gateway": "^0.4.0",
-    "@types/node": "^10.12.26",
     "body-parser": "^1.18.3",
     "chalk": "^2.3.2",
     "cli-table3": "^0.5.1",
@@ -151,6 +150,7 @@
     "@types/gulp": "^4.0.5",
     "@types/json-stable-stringify": "^1.0.32",
     "@types/mocha": "^5.2.0",
+    "@types/node": "^10.12.27",
     "@types/node-forge": "^0.7.5",
     "@types/secp256k1": "^3.5.0",
     "@types/semver": "^5.5.0",
