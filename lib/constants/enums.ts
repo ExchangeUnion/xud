@@ -101,6 +101,8 @@ export enum SwapFailureReason {
   SwapTimedOut = 10,
   /** The deal timed out while we were waiting for the peer to respond to our swap request. */
   DealTimedOut = 11,
+  /** The swap failed due to an unrecognized error. */
+  UnknownError = 12,
 }
 
 export enum DisconnectionReason {

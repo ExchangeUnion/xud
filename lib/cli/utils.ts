@@ -80,12 +80,13 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
 };
 
 const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
-  const { internalMatchesList, swapSuccessesList, remainingOrder } = response;
-  if (internalMatchesList.length === 0 && swapSuccessesList.length === 0) {
+  const { internalMatchesList, swapSuccessesList, swapFailuresList, remainingOrder } = response;
+  if (internalMatchesList.length === 0 && swapSuccessesList.length === 0 && swapFailuresList.length === 0) {
     console.log('no matches found');
   } else {
     internalMatchesList.forEach(formatInternalMatch);
     swapSuccessesList.forEach(formatSwapSuccess);
+    swapFailuresList.forEach(formatSwapFailure);
   }
   if (remainingOrder) {
     formatRemainingOrder(remainingOrder);

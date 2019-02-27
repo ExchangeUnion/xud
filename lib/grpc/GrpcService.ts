@@ -10,7 +10,7 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { SwapSuccess } from '../swaps/types';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
 
 /**
@@ -57,15 +57,16 @@ const createSwapSuccess = (result: SwapSuccess) => {
 };
 
 /**
- * Creates an xudrpc SwapFailure message from a [[PeerOrder]] that could not be swapped.
+ * Creates an xudrpc SwapFailure message from a [[SwapFailure]].
  */
-const createSwapFailure = (order: PeerOrder) => {
-  const swapFailure = new xudrpc.SwapFailure();
-  swapFailure.setOrderId(order.id);
-  swapFailure.setPairId(order.pairId);
-  swapFailure.setPeerPubKey(order.peerPubKey);
-  swapFailure.setQuantity(order.quantity);
-  return swapFailure;
+const createSwapFailure = (swapFailure: SwapFailure) => {
+  const grpcSwapFailure = new xudrpc.SwapFailure();
+  grpcSwapFailure.setOrderId(swapFailure.orderId);
+  grpcSwapFailure.setPairId(swapFailure.pairId);
+  grpcSwapFailure.setPeerPubKey(swapFailure.peerPubKey);
+  grpcSwapFailure.setQuantity(swapFailure.quantity);
+  grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
+  return grpcSwapFailure;
 };
 
 /**
@@ -106,7 +107,7 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
       placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventType.SwapFailure:
-      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as PeerOrder));
+      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as SwapFailure));
       break;
   }
   return placeOrderEvent;
@@ -323,6 +324,7 @@ class GrpcService {
             code = status.FAILED_PRECONDITION;
             break;
           case SwapFailureReason.UnexpectedLndError:
+          case SwapFailureReason.UnknownError:
           default:
             code = status.UNKNOWN;
             break;

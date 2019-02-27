@@ -15,7 +15,7 @@ import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapSuccess, SwapDeal } from '../swaps/types';
+import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
 import Bluebird from 'bluebird';
 
 interface OrderBook {
@@ -309,7 +309,7 @@ class OrderBook extends EventEmitter {
     /** Successful swaps performed for the placed order. */
     const swapSuccesses: SwapSuccess[] = [];
     /** Failed swaps attempted for the placed order. */
-    const swapFailures: PeerOrder[] = [];
+    const swapFailures: SwapFailure[] = [];
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -374,14 +374,26 @@ class OrderBook extends EventEmitter {
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
         } catch (err) {
           const failMsg = `swap for ${portion.quantity} failed during order matching`;
+          let failureReason: SwapFailureReason;
           if (typeof err === 'number') {
             // treat the error as a SwapFailureReason
             this.logger.warn(`${failMsg} due to ${SwapFailureReason[err]}, will repeat matching routine for failed quantity`);
+            failureReason = err;
           } else {
-            this.logger.error(`${failMsg}, will repeat matching routine for failed quantity`, err);
+            this.logger.error(`${failMsg} due to unexpected error, will repeat matching routine for failed quantity`, err);
+            failureReason = SwapFailureReason.UnknownError;
+            throw err;
           }
-          swapFailures.push(maker);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
+
+          const swapFailure: SwapFailure = {
+            failureReason,
+            orderId: maker.id,
+            pairId: maker.pairId,
+            quantity: portion.quantity,
+            peerPubKey: maker.peerPubKey,
+          };
+          swapFailures.push(swapFailure);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
           await retryFailedSwap(portion.quantity);
         }
       }
