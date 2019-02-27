@@ -474,7 +474,9 @@ message PlaceOrderResponse {
   // A list of successful swaps of peer orders that matched the newly placed order.
   repeated SwapSuccess swap_successes = 2 [json_name = "swap_successes"];
   // The remaining portion of the order, after matches, that enters the order book.
-  Order remaining_order = 3 [json_name= "remaining_order"];
+  Order remaining_order = 3 [json_name = "remaining_order"];
+  // A list of swap attempts that failed.
+  repeated SwapFailure swap_failures = 4 [json_name = "swap_failures"];
 }
 
 message PlaceOrderEvent {
@@ -486,7 +488,7 @@ message PlaceOrderEvent {
     // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
     // A swap attempt that failed.
-    SwapFailure swap_failure = 4 [json_name = "swap_failures"];
+    SwapFailure swap_failure = 4 [json_name = "swap_failure"];
   }
 }
 
