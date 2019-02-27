@@ -247,6 +247,7 @@ class OrderBook extends EventEmitter {
       return {
         internalMatches: [],
         swapSuccesses: [],
+        swapFailures: [],
         remainingOrder: stampedOrder,
       };
     }
@@ -292,6 +293,7 @@ class OrderBook extends EventEmitter {
       return {
         internalMatches: [],
         swapSuccesses: [],
+        swapFailures: [],
         remainingOrder: order,
       };
     }
@@ -306,6 +308,8 @@ class OrderBook extends EventEmitter {
     const internalMatches: OwnOrder[] = [];
     /** Successful swaps performed for the placed order. */
     const swapSuccesses: SwapSuccess[] = [];
+    /** Failed swaps attempted for the placed order. */
+    const swapFailures: PeerOrder[] = [];
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -371,6 +375,7 @@ class OrderBook extends EventEmitter {
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapSuccess });
         } catch (err) {
           this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
+          swapFailures.push(maker);
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
           await retryFailedSwap(portion.quantity);
         }
@@ -395,6 +400,7 @@ class OrderBook extends EventEmitter {
     return {
       internalMatches,
       swapSuccesses,
+      swapFailures,
       remainingOrder,
     };
   }
