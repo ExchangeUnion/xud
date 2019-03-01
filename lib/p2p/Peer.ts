@@ -207,7 +207,6 @@ class Peer extends EventEmitter {
     assert(this.inbound || expectedNodePubKey);
     assert(!retryConnecting || !this.inbound);
 
-    this.opened = true;
     this.expectedNodePubKey = expectedNodePubKey;
 
     await this.initConnection(retryConnecting);
@@ -252,6 +251,7 @@ class Peer extends EventEmitter {
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // let listeners know that this peer is ready to go
+    this.opened = true;
     this.emit('open');
   }
 
@@ -621,7 +621,7 @@ class Peer extends EventEmitter {
   private isPacketSolicited = (packet: Packet): boolean => {
     let solicited = true;
 
-    if (!this.opened && packet.type !== PacketType.SessionInit && packet.type !== PacketType.SessionAck) {
+    if (!this.opened && packet.type !== PacketType.SessionInit && packet.type !== PacketType.SessionAck && packet.type !== PacketType.Disconnecting) {
       // until the connection is opened, we only accept SessionInit/SessionAck packets
       solicited = false;
     }
