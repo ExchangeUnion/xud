@@ -118,10 +118,14 @@ class Pool extends EventEmitter {
     this.bindNodeList();
 
     this.nodes.load().then(() => {
-      this.logger.info('Connecting to known / previously connected peers');
+      if (this.nodes.count > 0) {
+        this.logger.info('Connecting to known / previously connected peers');
+      }
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
-      this.logger.info('Completed start-up connections to known peers.');
+      if (this.nodes.count > 0) {
+        this.logger.info('Completed start-up connections to known peers.');
+      }
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
     });
