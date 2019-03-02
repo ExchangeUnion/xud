@@ -626,69 +626,22 @@ export namespace ListSwapsResponse {
 }
 
 export class Swap extends jspb.Message {
-  getRole(): Swap.SwapRole;
-  setRole(value: Swap.SwapRole): void;
-
-  getPhase(): Swap.SwapPhase;
-  setPhase(value: Swap.SwapPhase): void;
-
-  getState(): Swap.SwapState;
-  setState(value: Swap.SwapState): void;
-
-  getFailureReason(): number;
-  setFailureReason(value: number): void;
-
-  getPeerPubKey(): string;
-  setPeerPubKey(value: string): void;
-
-  getOrderId(): string;
-  setOrderId(value: string): void;
-
-  getLocalId(): string;
-  setLocalId(value: string): void;
-
-  getProposedQuantity(): number;
-  setProposedQuantity(value: number): void;
-
-  getQuantity(): number;
-  setQuantity(value: number): void;
-
-  getTakerAmount(): number;
-  setTakerAmount(value: number): void;
-
-  getTakerCurrency(): string;
-  setTakerCurrency(value: string): void;
-
-  getTakerPubKey(): string;
-  setTakerPubKey(value: string): void;
-
-  getMakerAmount(): number;
-  setMakerAmount(value: number): void;
-
-  getMakerCurrency(): string;
-  setMakerCurrency(value: string): void;
-
-  getTakerCltvDelta(): number;
-  setTakerCltvDelta(value: number): void;
-
-  getMakerCltvDelta(): number;
-  setMakerCltvDelta(value: number): void;
-
-  getRHash(): string;
-  setRHash(value: string): void;
-
-  getRPreimage(): string;
-  setRPreimage(value: string): void;
-
+  hasCreateTime(): boolean;
+  clearCreateTime(): void;
   getCreateTime(): number;
   setCreateTime(value: number): void;
 
-  getExecuteTime(): number;
-  setExecuteTime(value: number): void;
+  hasSwapSuccess(): boolean;
+  clearSwapSuccess(): void;
+  getSwapSuccess(): SwapSuccess | undefined;
+  setSwapSuccess(value?: SwapSuccess): void;
 
-  getCompleteTime(): number;
-  setCompleteTime(value: number): void;
+  hasSwapFailure(): boolean;
+  clearSwapFailure(): void;
+  getSwapFailure(): SwapFailure | undefined;
+  setSwapFailure(value?: SwapFailure): void;
 
+  getSwapCase(): Swap.SwapCase;
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Swap.AsObject;
   static toObject(includeInstance: boolean, msg: Swap): Swap.AsObject;
@@ -701,47 +654,16 @@ export class Swap extends jspb.Message {
 
 export namespace Swap {
   export type AsObject = {
-    role: Swap.SwapRole,
-    phase: Swap.SwapPhase,
-    state: Swap.SwapState,
-    failureReason: number,
-    peerPubKey: string,
-    orderId: string,
-    localId: string,
-    proposedQuantity: number,
-    quantity: number,
-    takerAmount: number,
-    takerCurrency: string,
-    takerPubKey: string,
-    makerAmount: number,
-    makerCurrency: string,
-    takerCltvDelta: number,
-    makerCltvDelta: number,
-    rHash: string,
-    rPreimage: string,
     createTime: number,
-    executeTime: number,
-    completeTime: number,
+    swapSuccess?: SwapSuccess.AsObject,
+    swapFailure?: SwapFailure.AsObject,
   }
 
-  export enum SwapRole {
-    TAKER = 0,
-    MAKER = 1,
-  }
-
-  export enum SwapPhase {
-    SWAPCREATED = 0,
-    SWAPREQUESTED = 1,
-    SWAPAGREED = 2,
-    AMOUNTSENT = 3,
-    AMOUNTRECEIVED = 4,
-    SWAPCOMPLETED = 5,
-  }
-
-  export enum SwapState {
-    ACTIVE = 0,
-    ERROR = 1,
-    COMPLETED = 2,
+  export enum SwapCase {
+    SWAP_NOT_SET = 0,
+    CREATE_TIME = 1,
+    SWAP_SUCCESS = 2,
+    SWAP_FAILURE = 3,
   }
 }
 

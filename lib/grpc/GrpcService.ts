@@ -471,29 +471,25 @@ class GrpcService {
       const response = new xudrpc.ListSwapsResponse();
       listSwapsResponse.forEach((deal) => {
         const grpcSwap = new xudrpc.Swap();
-        grpcSwap.setRole(deal.role as number);
-        grpcSwap.setPhase(deal.phase as number);
-        grpcSwap.setState(deal.state as number);
-        grpcSwap.setFailureReason(deal.failureReason ? deal.failureReason : 0);
-        grpcSwap.setPeerPubKey(deal.peerPubKey);
-        grpcSwap.setOrderId(deal.orderId);
-        grpcSwap.setLocalId(deal.localId);
-        grpcSwap.setProposedQuantity(deal.proposedQuantity);
-        grpcSwap.setQuantity(deal.quantity ? deal.quantity : 0);
-        grpcSwap.setTakerAmount(deal.takerAmount);
-        grpcSwap.setTakerCurrency(deal.takerCurrency);
-        grpcSwap.setTakerPubKey(deal.takerPubKey ? deal.takerPubKey : '');
-        grpcSwap.setTakerCltvDelta(deal.takerCltvDelta);
-        grpcSwap.setMakerAmount(deal.makerAmount);
-        grpcSwap.setMakerCurrency(deal.makerCurrency);
-        grpcSwap.setMakerCltvDelta(deal.makerCltvDelta ? deal.makerCltvDelta : 0);
-        grpcSwap.setRHash(deal.rHash);
-        grpcSwap.setRPreimage(deal.rPreimage ? deal.rPreimage : '');
         grpcSwap.setCreateTime(deal.createTime);
-        grpcSwap.setExecuteTime(deal.executeTime ? deal.executeTime : 0);
-        grpcSwap.setCompleteTime(deal.completeTime ? deal.completeTime : 0);
+        if (deal.failureReason) {
+          const swapFailure = createSwapFailure(deal.Order! as PeerOrder);
+          grpcSwap.setSwapFailure(swapFailure);
+        } else {
+          const swapSuccess = new xudrpc.SwapSuccess();
+          swapSuccess.setOrderId(deal.orderId);
+          swapSuccess.setLocalId(deal.localId);
+          swapSuccess.setPairId(deal.Order!.pairId);
+          swapSuccess.setQuantity(deal.Order!.initialQuantity);
+          swapSuccess.setRHash(deal.rHash);
+          swapSuccess.setRPreimage(deal.rPreimage ? deal.rPreimage : '');
+          swapSuccess.setPeerPubKey(deal.peerPubKey);
+          swapSuccess.setRole(deal.role as number);
+          grpcSwap.setSwapSuccess(swapSuccess);
+        }
         swaps.push(grpcSwap);
       });
+
       response.setSwapsList(swaps);
       callback(null, response);
     } catch (err) {

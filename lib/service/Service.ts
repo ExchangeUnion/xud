@@ -334,8 +334,6 @@ class Service extends EventEmitter {
    * Get all completed swap deals.
    * @returns A list of completed swap deals.
    */
-  // const successfulDeals = deals.filter(deal => deal.state === SwapState.Completed);
-  // return successfulDeals;
   public listSwaps = async (args: { limit: number, failed: boolean, all: boolean }): Promise<SwapDealInstance[]> => {
     const { limit, failed, all } = args;
     if (all) {
