@@ -88,7 +88,7 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id] <include_own_orders>';
+export const command = 'listorders [pair_id] [include_own_orders] [all]';
 
 export const describe = 'list orders from the order book';
 
@@ -112,6 +112,7 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
+  console.log(argv);
   request.setPairId(pairId);
   request.setIncludeOwnOrders(argv.include_own_orders);
   request.setAll(argv.all);

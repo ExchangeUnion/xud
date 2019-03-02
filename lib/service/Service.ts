@@ -295,7 +295,7 @@ class Service extends EventEmitter {
         orders.sell = [...orders.sell, ...ownOrders.sell];
       }
 
-      if (all) {
+      if (!all) {
         // get 10 best orders
         orders.buy = sortOrders(orders.buy, true).slice(0, 10);
         orders.sell = sortOrders(orders.sell, false).slice(0, 10);
