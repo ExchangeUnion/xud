@@ -88,13 +88,24 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id]';
+export const command = 'listorders [pair_id] <include_own_orders>';
 
 export const describe = 'list orders from the order book';
 
 export const builder = {
   pair_id: {
+    describe: 'pair id for which to retrieve orders.',
     type: 'string',
+  },
+  include_own_orders: {
+    describe: 'should include own orders',
+    type: 'boolean',
+    default: true,
+  },
+  all: {
+    describe: 'return all orders',
+    type: 'boolean',
+    default: false,
   },
 };
 
@@ -102,6 +113,7 @@ export const handler = (argv: Arguments) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
-  request.setIncludeOwnOrders(true);
+  request.setIncludeOwnOrders(argv.include_own_orders);
+  request.setAll(argv.all);
   loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };
