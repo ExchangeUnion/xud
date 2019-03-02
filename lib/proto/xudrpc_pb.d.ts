@@ -1080,6 +1080,11 @@ export class PlaceOrderResponse extends jspb.Message {
   getRemainingOrder(): Order | undefined;
   setRemainingOrder(value?: Order): void;
 
+  clearSwapFailuresList(): void;
+  getSwapFailuresList(): Array<SwapFailure>;
+  setSwapFailuresList(value: Array<SwapFailure>): void;
+  addSwapFailures(value?: SwapFailure, index?: number): SwapFailure;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): PlaceOrderResponse.AsObject;
   static toObject(includeInstance: boolean, msg: PlaceOrderResponse): PlaceOrderResponse.AsObject;
@@ -1095,6 +1100,7 @@ export namespace PlaceOrderResponse {
     internalMatchesList: Array<Order.AsObject>,
     swapSuccessesList: Array<SwapSuccess.AsObject>,
     remainingOrder?: Order.AsObject,
+    swapFailuresList: Array<SwapFailure.AsObject>,
   }
 }
 

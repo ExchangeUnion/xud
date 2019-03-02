@@ -1201,6 +1201,13 @@
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
           "description": "The remaining portion of the order, after matches, that enters the order book."
+        },
+        "swap_failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcSwapFailure"
+          },
+          "description": "A list of swap attempts that failed."
         }
       }
     },

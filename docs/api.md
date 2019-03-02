@@ -667,6 +667,7 @@
 | internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order. |
 | swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
+| swap_failures | [SwapFailure](#xudrpc.SwapFailure) | repeated | A list of swap attempts that failed. |
 
 
 

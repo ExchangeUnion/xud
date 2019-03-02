@@ -14,6 +14,7 @@ export type MatchingResult = {
 export type PlaceOrderResult = {
   internalMatches: OwnOrder[];
   swapSuccesses: SwapSuccess[];
+  swapFailures: PeerOrder[];
   remainingOrder?: OwnOrder;
 };
 
