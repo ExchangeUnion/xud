@@ -38,9 +38,9 @@ interface Peer {
   on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'pairDropped', listener: (pair: string) => void): this;
   on(event: 'nodeStateUpdate', listener: () => void): this;
+  on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   once(event: 'open', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
-  once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'open'): boolean;
