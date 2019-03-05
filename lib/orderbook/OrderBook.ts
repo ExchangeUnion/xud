@@ -624,7 +624,7 @@ class OrderBook extends EventEmitter {
         orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
-    peer.sendOrders(outgoingOrders, reqId);
+    await peer.sendOrders(outgoingOrders, reqId);
   }
 
   /**
@@ -673,7 +673,7 @@ class OrderBook extends EventEmitter {
 
     if (!Swaps.validateSwapRequest(requestPacket.body!)) {
       // TODO: penalize peer for invalid swap request
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.InvalidSwapRequest,
       }, requestPacket.header.id));
@@ -682,7 +682,7 @@ class OrderBook extends EventEmitter {
 
     const order = this.tryGetOwnOrder(orderId, pairId);
     if (!order) {
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.OrderNotFound,
       }, requestPacket.header.id));
@@ -710,7 +710,7 @@ class OrderBook extends EventEmitter {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.OrderOnHold,
       }, requestPacket.header.id));

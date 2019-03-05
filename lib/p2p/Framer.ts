@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import Network from './Network';
 import Packet from './packets/Packet';
 import errors from './errors';
+import { randomBytes } from '../utils/utils';
 
 type WireMsgHeader = {
   magic?: number,
@@ -30,7 +31,7 @@ class Framer {
   /**
    * Frame a packet with a header to be used as a wire msg
    */
-  public frame = (packet: Packet, encryptionKey?: Buffer): Buffer => {
+  public frame = async (packet: Packet, encryptionKey?: Buffer): Promise<Buffer> => {
     const packetRaw = packet.toRaw();
 
     if (encryptionKey) {
@@ -45,7 +46,7 @@ class Framer {
       // packet
       packetRaw.copy(msg, 8);
 
-      const ciphertext = this.encrypt(msg, encryptionKey);
+      const ciphertext = await this.encrypt(msg, encryptionKey);
       const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
 
       // length
@@ -163,8 +164,8 @@ class Framer {
     }
   }
 
-  public encrypt = (plaintext: Buffer, key: Buffer): Buffer => {
-    const iv = crypto.randomBytes(Framer.ENCRYPTION_IV_LENGTH);
+  public encrypt = async (plaintext: Buffer, key: Buffer): Promise<Buffer> => {
+    const iv = await randomBytes(Framer.ENCRYPTION_IV_LENGTH);
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);

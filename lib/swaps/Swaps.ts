@@ -113,15 +113,14 @@ class Swaps extends EventEmitter {
   /**
    * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
+  private sendErrorToPeer = async (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
       failureReason,
       errorMessage,
     };
     this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
-    peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
-    return;
+    await peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
   }
 
   /**
@@ -338,7 +337,7 @@ class Swaps extends EventEmitter {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
       return;
     }
-    peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
+    await peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 
     this.setDealPhase(deal, SwapPhase.SwapRequested);
     return deal.rHash;
@@ -356,7 +355,7 @@ class Swaps extends EventEmitter {
 
     const rHash = requestPacket.body!.rHash;
     if (this.usedHashes.has(rHash)) {
-      this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
       return false;
     }
     const requestBody = requestPacket.body!;
@@ -397,14 +396,14 @@ class Swaps extends EventEmitter {
     const errMsg = this.verifyLndSetup(deal, peer);
     if (errMsg) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
     const lndclient = this.getClientForCurrency(deal.takerCurrency);
     if (!lndclient) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency');
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -417,7 +416,7 @@ class Swaps extends EventEmitter {
         ? `${cannotSwap}`
         : `${cannotSwap}: ${err.message}`;
       this.failDeal(deal, SwapFailureReason.NoRouteFound, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -428,7 +427,7 @@ class Swaps extends EventEmitter {
       this.logger.debug('got block height of ' + height);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedLndError, 'Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
@@ -453,7 +452,7 @@ class Swaps extends EventEmitter {
       quantity: requestBody.proposedQuantity,
     };
 
-    peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    await peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapPhase.SwapAgreed);
     return true;
   }
@@ -538,13 +537,11 @@ class Swaps extends EventEmitter {
       const responseBody: packets.SwapCompletePacketBody = { rHash };
 
       this.logger.debug('Sending swap complete to peer: ' + JSON.stringify(responseBody));
-      peer.sendPacket(new packets.SwapCompletePacket(responseBody));
-
+      await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
     } catch (err) {
       this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err.message);
       this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
-      this.sendErrorToPeer(peer, rHash, err.message);
-      return;
+      await this.sendErrorToPeer(peer, rHash, err.message);
     }
   }
 

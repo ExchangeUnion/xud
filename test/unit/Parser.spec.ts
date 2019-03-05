@@ -13,7 +13,6 @@ import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
 import { errorCodes } from '../../lib/p2p/errors';
 import stringify = require('json-stable-stringify');
-import net from 'net';
 
 chai.use(chaiAsPromised);
 
@@ -30,7 +29,7 @@ describe('Parser', () => {
 
   function wait(num = 1): Promise<Packet[]> {
     return new Promise((resolve, reject) => {
-      setTimeout(() => reject(timeoutError), 0); // expecting results to be fulfilled synchronously
+      setTimeout(() => reject(timeoutError), 50);
       const parsedPackets: Packet[] = [];
       parser.on('packet', (parsedPacket: Packet) => {
         parsedPackets.push(parsedPacket);
@@ -52,7 +51,7 @@ describe('Parser', () => {
           }
           resolve();
         })
-        .catch(err => reject(err));
+        .catch(reject);
     });
   }
 
@@ -62,8 +61,7 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      const data = framer.frame(packet);
-      parser.feed(data);
+      framer.frame(packet).then(parser.feed);
     });
 
     it(`should parse an encrypted valid ${PacketType[packet.type]} packet`, (done) => {
@@ -73,8 +71,7 @@ describe('Parser', () => {
 
       parser.setEncryptionKey(encryptionKey);
 
-      const data = framer.frame(packet, encryptionKey);
-      parser.feed(data);
+      framer.frame(packet, encryptionKey).then(parser.feed);
     });
   }
 
@@ -84,8 +81,7 @@ describe('Parser', () => {
         .then(() => done('err: packet is valid'))
         .catch(() => done());
 
-      const data = framer.frame(packet);
-      parser.feed(data);
+      framer.frame(packet).then(parser.feed);
     });
   }
 
@@ -95,10 +91,11 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      const data = framer.frame(packet);
-      const middleIndex = data.length >> 1;
-      parser.feed(data.slice(0, middleIndex));
-      parser.feed(data.slice(middleIndex));
+      framer.frame(packet).then((data) => {
+        const middleIndex = data.length >> 1;
+        parser.feed(data.slice(0, middleIndex));
+        parser.feed(data.slice(middleIndex));
+      });
     });
 
     it(`should parse encrypted ${PacketType[packet.type]} packet split`, (done) => {
@@ -108,10 +105,11 @@ describe('Parser', () => {
 
       parser.setEncryptionKey(encryptionKey);
 
-      const data = framer.frame(packet, encryptionKey);
-      const middleIndex = data.length >> 1;
-      parser.feed(data.slice(0, middleIndex));
-      parser.feed(data.slice(middleIndex));
+      framer.frame(packet, encryptionKey).then((data) => {
+        const middleIndex = data.length >> 1;
+        parser.feed(data.slice(0, middleIndex));
+        parser.feed(data.slice(middleIndex));
+      });
     });
   }
 
@@ -121,9 +119,11 @@ describe('Parser', () => {
         .then(done)
         .catch(done);
 
-      parser.feed(Buffer.concat(packets.map((packet) => {
+      Promise.all(packets.map((packet) => {
         return framer.frame(packet);
-      })));
+      })).then((buffers) => {
+        parser.feed(Buffer.concat(buffers));
+      });
     });
 
     it(`should parse encrypted ${packets.map(packet => PacketType[packet.type]).join(' ')} concatenated`, (done) => {
@@ -133,9 +133,11 @@ describe('Parser', () => {
 
       parser.setEncryptionKey(encryptionKey);
 
-      parser.feed(Buffer.concat(packets.map((packet) => {
+      Promise.all(packets.map((packet) => {
         return framer.frame(packet, encryptionKey);
-      })));
+      })).then((buffers) => {
+        parser.feed(Buffer.concat(buffers));
+      });
     });
   }
 
@@ -147,13 +149,18 @@ describe('Parser', () => {
         .catch(done);
 
       let remaining = Buffer.alloc(0);
+      const framerPromises: Promise<void>[] = [];
       packets.forEach((packet) => {
-        const buffer = Buffer.concat([remaining, framer.frame(packet)]);
-        const chunk = buffer.slice(0, splitByte); // split on a specific byte
-        remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
-        parser.feed(chunk);
+        framerPromises.push(framer.frame(packet).then((buffer) => {
+          const concatBuffer = Buffer.concat([remaining, buffer]);
+          const chunk = concatBuffer.slice(0, splitByte); // split on a specific byte
+          remaining = concatBuffer.slice(splitByte); // keep the remaining for the next chunk
+          parser.feed(chunk);
+        }));
       });
-      parser.feed(remaining);
+      Promise.all(framerPromises).then(() => {
+        parser.feed(remaining);
+      });
     });
 
     it(`should parse encrypted ${packetsStr} concatenated and split on byte ${splitByte} from each packet beginning`, (done) => {
@@ -164,13 +171,18 @@ describe('Parser', () => {
       parser.setEncryptionKey(encryptionKey);
 
       let remaining = Buffer.alloc(0);
+      const framerPromises: Promise<void>[] = [];
       packets.forEach((packet) => {
-        const buffer = Buffer.concat([remaining, framer.frame(packet, encryptionKey)]);
-        const chunk = buffer.slice(0, splitByte); // split on a specific byte
-        remaining = buffer.slice(splitByte); // keep the remaining for the next chunk
-        parser.feed(chunk);
+        framerPromises.push(framer.frame(packet, encryptionKey).then((buffer) => {
+          const concatBuffer = Buffer.concat([remaining, buffer]);
+          const chunk = concatBuffer.slice(0, splitByte); // split on a specific byte
+          remaining = concatBuffer.slice(splitByte); // keep the remaining for the next chunk
+          parser.feed(chunk);
+        }));
       });
-      parser.feed(remaining);
+      Promise.all(framerPromises).then(() => {
+        parser.feed(remaining);
+      });
     });
   }
 
@@ -372,9 +384,10 @@ describe('Parser', () => {
         });
 
       const sessionInitPacket = new packets.SessionInitPacket(sessionInitPacketBody);
-      const data = framer.frame(sessionInitPacket);
-      const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
-      parser.feed(header);
+      framer.frame(sessionInitPacket).then((data) => {
+        const header = data.slice(0, Framer.MSG_HEADER_LENGTH);
+        parser.feed(header);
+      });
     });
 
     it(`should buffer a max buffer length`, (done) => {
