@@ -26,7 +26,8 @@ interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
-  on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
+  on(event: 'peer.active', listener: (peerPubKey?: string) => void): this;
+  on(event: 'peer.close', listener: (peerPubKey?: string, rejectionMsg?: string) => void): this;
   /** Adds a listener to be called when a peer drops support for a trading pair. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
@@ -36,7 +37,8 @@ interface Pool {
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
-  emit(event: 'peer.close', peerPubKey?: string): boolean;
+  emit(event: 'peer.active', peerPubKey?: string): boolean;
+  emit(event: 'peer.close', peerPubKey?: string, rejectionMsg?: string): boolean;
   /** Notifies listeners that a peer has dropped support for a trading pair. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
@@ -592,6 +594,8 @@ class Pool extends EventEmitter {
     this.peers.set(peer.nodePubKey, peer);
     peer.active = true;
 
+    this.emit('peer.active', peer.nodePubKey);
+
     // request peer's orders
     if (this.nodeState.pairs.length > 0) {
       await peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
@@ -669,7 +673,9 @@ class Pool extends EventEmitter {
       this.pendingOutboundPeers.delete(peer.nodePubKey!);
     });
 
-    peer.once('close', () => this.handlePeerClose(peer));
+    peer.once('close', async (rejectionMsg) => {
+      await this.handlePeerClose(peer, rejectionMsg);
+    });
 
     peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
@@ -679,7 +685,7 @@ class Pool extends EventEmitter {
     });
   }
 
-  private handlePeerClose = async (peer: Peer) => {
+  private handlePeerClose = async (peer: Peer, rejectionMsg?: string) => {
     if (!peer.nodePubKey && peer.expectedNodePubKey) {
       this.pendingOutboundPeers.delete(peer.expectedNodePubKey);
     }
@@ -692,7 +698,7 @@ class Pool extends EventEmitter {
       this.pendingOutboundPeers.delete(peer.nodePubKey);
       this.peers.delete(peer.nodePubKey);
     }
-    this.emit('peer.close', peer.nodePubKey);
+    this.emit('peer.close', peer.nodePubKey, rejectionMsg);
 
     // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
     // reconnect, for that might have been due to a temporary loss in connectivity

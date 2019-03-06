@@ -170,7 +170,32 @@ class Service extends EventEmitter {
     argChecks.HAS_HOST({ host });
     argChecks.VALID_PORT({ port });
 
+    const peerActive = new Promise((resolve) => {
+      this.pool.once('peer.active', (peerPubKey) => {
+        if (peerPubKey === nodePubKey) {
+          resolve();
+        }
+      });
+    });
+
+    const peerClose: Promise<string> = new Promise((resolve) => {
+      this.pool.once('peer.close', (peerPubKey, rejectionMsg) => {
+        if (peerPubKey === nodePubKey) {
+          resolve(rejectionMsg);
+        }
+      });
+    });
+
+    const timeout: Promise<void> = new Promise((resolve) => {
+      setTimeout(resolve, 1000);
+    });
+
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
+    await peerActive;
+    const rejectionMsg = await Promise.race([peerClose, timeout]);
+    if (rejectionMsg !== undefined) {
+      throw errors.CONNECTION_CLOSED(rejectionMsg);
+    }
   }
 
   /*

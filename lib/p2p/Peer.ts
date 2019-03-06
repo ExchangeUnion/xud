@@ -40,11 +40,11 @@ interface Peer {
   on(event: 'nodeStateUpdate', listener: () => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   once(event: 'open', listener: () => void): this;
-  once(event: 'close', listener: () => void): this;
+  once(event: 'close', listener: (rejectionMsg: string) => void): this;
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'open'): boolean;
-  emit(event: 'close'): boolean;
+  emit(event: 'close', rejectionMsg: string): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
   emit(event: 'pairDropped', pair: string): boolean;
@@ -317,7 +317,7 @@ class Peer extends EventEmitter {
       entry.reject(new Error(rejectionMsg));
     }
 
-    this.emit('close');
+    this.emit('close', rejectionMsg);
   }
 
   public revokeConnectionRetries = (): void => {
