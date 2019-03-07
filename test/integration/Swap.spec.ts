@@ -107,7 +107,7 @@ describe('Swaps.Integration', () => {
     sandbox = sinon.createSandbox();
     // peer
     peer = sandbox.createStubInstance(Peer) as any;
-    peer.sendPacket = () => {};
+    peer.sendPacket = async () => {};
     peer.getLndPubKey = () => '1234567890';
     // pool
     pool = sandbox.createStubInstance(Pool) as any;
