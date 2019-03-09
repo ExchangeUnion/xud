@@ -126,7 +126,7 @@ class Service extends EventEmitter {
         || (currency.toUpperCase() === 'WETH' && this.raidenClient);
 
       if (!client) {
-        // TODO: throw an error here indicating that lnd is disabled for this currency
+        // TODO: throw an error here indicating that the client is disabled for this currency
         return { balance: 0, pendingOpenBalance: 0 };
       }
 

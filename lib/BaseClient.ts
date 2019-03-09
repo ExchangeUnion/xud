@@ -35,6 +35,7 @@ abstract class BaseClient extends EventEmitter {
    * Returns the total balance available across all channels.
    */
   public abstract channelBalance(): Promise<ChannelBalance>;
+
   public async close() {
     if (this.updateCapacityTimer) {
       clearTimeout(this.updateCapacityTimer);
