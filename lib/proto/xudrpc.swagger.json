@@ -265,8 +265,8 @@
             "format": "boolean"
           },
           {
-            "name": "all",
-            "description": "display all orders.",
+            "name": "limit",
+            "description": "Whether to return all orders.",
             "in": "query",
             "required": false,
             "type": "boolean",

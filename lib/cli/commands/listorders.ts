@@ -41,8 +41,8 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
 export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
   const formattedOrders: FormattedTradingPairOrders[] = [];
   orders.ordersMap.forEach((tradingPair) => {
-    const buy = sortOrders(tradingPair[1].buyOrdersList, true);
-    const sell = sortOrders(tradingPair[1].sellOrdersList, false);
+    const buy = tradingPair[1].buyOrdersList;
+    const sell = tradingPair[1].sellOrdersList;
     const totalRows = buy.length < sell.length
       ? sell.length : buy.length;
     const tradingPairOrders = Array.from(Array(totalRows))
@@ -66,17 +66,6 @@ const createTable = () => {
   return table;
 };
 
-const sortOrders = (orderSide: Order.AsObject[], isBuy: boolean) => {
-  return orderSide.sort((a, b) => {
-    if (a.price === b.price) {
-      return a.createdAt - b.createdAt;
-    }
-    return isBuy
-      ? a.price - b.price
-      : b.price - a.price;
-  });
-};
-
 const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
   const table = createTable();
   tradingPair.orders.forEach(order => table.push(order));
@@ -88,7 +77,7 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id] [include_own_orders] [all]';
+export const command = 'listorders [pair_id] [include_own_orders] [limit]';
 
 export const describe = 'list orders from the order book';
 
@@ -102,7 +91,7 @@ export const builder = {
     type: 'boolean',
     default: true,
   },
-  all: {
+  limit: {
     describe: 'return all orders',
     type: 'boolean',
     default: false,
@@ -112,9 +101,8 @@ export const builder = {
 export const handler = (argv: Arguments) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
-  console.log(argv);
   request.setPairId(pairId);
   request.setIncludeOwnOrders(argv.include_own_orders);
-  request.setAll(argv.all);
+  request.setLimit(argv.limit);
   loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };

@@ -1,6 +1,6 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
-import { Pair } from '../orderbook/types';
+import { Pair, PeerOrder } from '../orderbook/types';
 import crypto from 'crypto';
 import { promisify } from 'util';
 import moment from 'moment';
@@ -154,4 +154,15 @@ export const removeUndefinedProps = (obj: any) => {
   });
 
   return obj;
+};
+
+export const sortOrders = (orders: PeerOrder[], isBuy: boolean) => {
+  return orders.sort((a, b) => {
+    if (a.price === b.price) {
+      return a.createdAt - b.createdAt;
+    }
+    return isBuy
+      ? a.price - b.price
+      : b.price - a.price;
+  });
 };

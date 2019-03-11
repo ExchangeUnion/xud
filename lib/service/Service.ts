@@ -7,6 +7,7 @@ import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
+import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent, PeerOrder } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
@@ -269,24 +270,15 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, all: boolean }): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, includeOwnOrders, all } = args;
-
-    const sortOrders = (orders: PeerOrder[], isBuy: boolean) => {
-      return orders.sort((a, b) => {
-        if (a.price === b.price) {
-          return a.createdAt - b.createdAt;
-        }
-        return isBuy
-          ? a.price - b.price
-          : b.price - a.price;
-      });
-    };
+  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: boolean }): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, includeOwnOrders, limit } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
 
     const listOrderTypes = (pairId: string) => {
       const orders = this.orderBook.getPeersOrders(pairId);
+      orders.buy = sortOrders(orders.buy, true);
+      orders.sell = sortOrders(orders.sell, false);
 
       if (includeOwnOrders) {
         const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
@@ -295,10 +287,10 @@ class Service extends EventEmitter {
         orders.sell = [...orders.sell, ...ownOrders.sell];
       }
 
-      if (!all) {
+      if (!limit) {
         // get 10 best orders
-        orders.buy = sortOrders(orders.buy, true).slice(0, 10);
-        orders.sell = sortOrders(orders.sell, false).slice(0, 10);
+        orders.buy = orders.buy.slice(0, 10);
+        orders.sell = orders.buy.slice(0, 10);
       }
       return orders;
     };
