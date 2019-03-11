@@ -23,7 +23,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return !!(obj.id
       && obj.orderId
       && obj.pairId
-      && obj.quantity
+      && obj.quantity > 0
     );
   }
 

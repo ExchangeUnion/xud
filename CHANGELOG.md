@@ -1,3 +1,18 @@
+# [1.0.0-alpha.10](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2019-03-05)
+
+
+### Bug Fixes
+
+* **p2p:** handle multiple peer reputation events ([773c66e](https://github.com/ExchangeUnion/xud/commit/773c66e))
+* **p2p:** toggle opened after handshake ([914b4f3](https://github.com/ExchangeUnion/xud/commit/914b4f3))
+
+
+### Features
+
+* **rpc:** add failed swaps to PlaceOrderSync ([ab6bc55](https://github.com/ExchangeUnion/xud/commit/ab6bc55)), closes [#807](https://github.com/ExchangeUnion/xud/issues/807)
+
+
+
 # [1.0.0-alpha.9](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2019-02-22)
 
 

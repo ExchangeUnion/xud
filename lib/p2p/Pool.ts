@@ -118,10 +118,14 @@ class Pool extends EventEmitter {
     this.bindNodeList();
 
     this.nodes.load().then(() => {
-      this.logger.info('Connecting to known / previously connected peers');
+      if (this.nodes.count > 0) {
+        this.logger.info('Connecting to known / previously connected peers');
+      }
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
-      this.logger.info('Completed start-up connections to known peers.');
+      if (this.nodes.count > 0) {
+        this.logger.info('Completed start-up connections to known peers.');
+      }
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
     });
@@ -155,8 +159,8 @@ class Pool extends EventEmitter {
   public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
     this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
     const packet = new packets.NodeStateUpdatePacket(this.nodeState);
-    this.peers.forEach((peer) => {
-      peer.sendPacket(packet);
+    this.peers.forEach(async (peer) => {
+      await peer.sendPacket(packet);
     });
   }
 
@@ -170,7 +174,7 @@ class Pool extends EventEmitter {
       await this.unlisten();
     }
 
-    this.closePendingConnections();
+    await this.closePendingConnections();
     this.closePeers();
 
     this.connected = false;
@@ -183,8 +187,9 @@ class Pool extends EventEmitter {
       const peer = this.peers.get(nodePubKey);
       if (peer) {
         const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
-        peer.close(DisconnectionReason.Banned, JSON.stringify(lastNegativeEvents));
+        return peer.close(DisconnectionReason.Banned, JSON.stringify(lastNegativeEvents));
       }
+      return;
     });
   }
 
@@ -368,10 +373,10 @@ class Pool extends EventEmitter {
     }
   }
 
-  public closePeer = (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
+  public closePeer = async (nodePubKey: string, reason?: DisconnectionReason, reasonPayload?: string) => {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
-      peer.close(reason, reasonPayload);
+      await peer.close(reason, reasonPayload);
       this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
@@ -420,12 +425,12 @@ class Pool extends EventEmitter {
     return this.nodes.addReputationEvent(nodePubKey, event);
   }
 
-  public sendToPeer = (nodePubKey: string, packet: Packet) => {
+  public sendToPeer = async (nodePubKey: string, packet: Packet) => {
     const peer = this.peers.get(nodePubKey);
     if (!peer) {
       throw errors.NOT_CONNECTED(nodePubKey);
     }
-    peer.sendPacket(packet);
+    await peer.sendPacket(packet);
   }
 
   /**
@@ -453,9 +458,9 @@ class Pool extends EventEmitter {
    */
   public broadcastOrderInvalidation = ({ id, pairId, quantity }: OrderPortion, nodeToExclude?: string) => {
     const orderInvalidationPacket = new packets.OrderInvalidationPacket({ id, pairId, quantity });
-    this.peers.forEach((peer) => {
+    this.peers.forEach(async (peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {
-        peer.sendPacket(orderInvalidationPacket);
+        await peer.sendPacket(orderInvalidationPacket);
       }
     });
 
@@ -515,7 +520,7 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.GetNodes: {
-        this.handleGetNodes(peer, packet.header.id);
+        await this.handleGetNodes(peer, packet.header.id);
         break;
       }
       case PacketType.Nodes: {
@@ -560,20 +565,20 @@ class Pool extends EventEmitter {
 
     if (!this.connected) {
       // if we have disconnected the pool, don't allow any new connections to open
-      peer.close(DisconnectionReason.NotAcceptingConnections);
+      await peer.close(DisconnectionReason.NotAcceptingConnections);
       return;
     }
 
     if (this.nodes.isBanned(peer.nodePubKey)) {
       // TODO: Ban IP address for this session if banned peer attempts repeated connections.
-      peer.close(DisconnectionReason.Banned);
+      await peer.close(DisconnectionReason.Banned);
       return;
     }
 
     if (this.peers.has(peer.nodePubKey)) {
       // TODO: Penalize peers that attempt to create duplicate connections to us more then once.
       // the first time might be due connection retries
-      peer.close(DisconnectionReason.AlreadyConnected);
+      await peer.close(DisconnectionReason.AlreadyConnected);
       return;
     }
 
@@ -589,7 +594,7 @@ class Pool extends EventEmitter {
 
     // request peer's orders
     if (this.nodeState.pairs.length > 0) {
-      peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
+      await peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
     }
 
     // if outbound, update the `lastConnected` field for the address we're actually connected to
@@ -617,7 +622,7 @@ class Pool extends EventEmitter {
   /**
    * Responds to a [[GetNodesPacket]] by populating and sending a [[NodesPacket]].
    */
-  private handleGetNodes = (peer: Peer, reqId: string) => {
+  private handleGetNodes = async (peer: Peer, reqId: string) => {
     const connectedNodesInfo: NodeConnectionInfo[] = [];
     this.peers.forEach((connectedPeer) => {
       if (connectedPeer.nodePubKey !== peer.nodePubKey && connectedPeer.addresses && connectedPeer.addresses.length > 0) {
@@ -628,7 +633,7 @@ class Pool extends EventEmitter {
         });
       }
     });
-    peer.sendNodes(connectedNodesInfo, reqId);
+    await peer.sendNodes(connectedNodesInfo, reqId);
   }
 
   private bindServer = () => {
@@ -666,7 +671,7 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => this.handlePeerClose(peer));
 
-    peer.once('reputation', async (event) => {
+    peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         await this.addReputationEvent(peer.nodePubKey, event);
@@ -714,13 +719,11 @@ class Pool extends EventEmitter {
     this.peers.forEach(peer => peer.close(DisconnectionReason.Shutdown));
   }
 
-  private closePendingConnections = () => {
+  private closePendingConnections = async () => {
     for (const peer of this.pendingOutboundPeers.values()) {
-      peer.close();
+      await peer.close();
     }
-    this.pendingInboundPeers.forEach((peer) => {
-      peer.close();
-    });
+    this.pendingInboundPeers.forEach(peer => peer.close());
   }
 
   /**

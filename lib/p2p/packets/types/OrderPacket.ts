@@ -19,11 +19,11 @@ class OrderPacket extends Packet<OutgoingOrder> {
 
   private static validate = (obj: pb.OrderPacket.AsObject): boolean => {
     return !!(obj.id
-      && obj.id
       && obj.order
+      && obj.order.id
       && obj.order.pairId
-      && obj.order.price
-      && obj.order.quantity
+      && obj.order.price > 0
+      && obj.order.quantity > 0
     );
   }
 
