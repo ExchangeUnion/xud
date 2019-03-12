@@ -5,6 +5,7 @@ import { Address } from '../../p2p/types';
 export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
   const attributes: db.SequelizeAttributes<db.NodeAttributes> = {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    network: { type: DataTypes.STRING, unique: false, allowNull: false },
     nodePubKey: { type: DataTypes.STRING, unique: true, allowNull: false },
     addressesText: { type: Sequelize.TEXT, allowNull: false },
     addresses: {

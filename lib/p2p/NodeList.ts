@@ -4,6 +4,7 @@ import { NodeInstance, NodeFactory, ReputationEventInstance } from '../db/types'
 import { Address } from './types';
 import addressUtils from '../utils/addressUtils';
 import { ReputationEvent } from '../constants/enums';
+import Network from './Network';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -36,7 +37,7 @@ class NodeList extends EventEmitter {
     return this.nodes.size;
   }
 
-  constructor(private repository: P2PRepository) {
+  constructor(private repository: P2PRepository, private network: Network) {
     super();
   }
 
@@ -75,7 +76,7 @@ class NodeList extends EventEmitter {
    * Load this NodeList from the database.
    */
   public load = async (): Promise<void> => {
-    const nodes = await this.repository.getNodes();
+    const nodes = await this.repository.getNodes(this.network.xuNetwork);
 
     nodes.forEach(async (node) => {
       if (node.banned) {

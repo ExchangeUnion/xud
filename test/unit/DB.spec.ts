@@ -2,13 +2,13 @@ import chai, { expect } from 'chai';
 import DB from '../../lib/db/DB';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { SwapClients, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
+import { SwapClients, SwapPhase, SwapRole, SwapState, XUNetwork } from '../../lib/constants/enums';
 import SwapRepository from '../../lib/swaps/SwapRepository';
-import chaiAsPromised = require('chai-as-promised');
 import { SwapDeal } from '../../lib/swaps/types';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import { createOwnOrder } from '../utils';
 import { TradeFactory } from '../../lib/db/types';
+import chaiAsPromised = require('chai-as-promised');
 
 chai.use(chaiAsPromised);
 
@@ -88,6 +88,7 @@ describe('Database', () => {
     await p2pRepo.addNode({
       nodePubKey: peerPubKey,
       addresses: [],
+      network: XUNetwork.SimNet,
     });
   });
 

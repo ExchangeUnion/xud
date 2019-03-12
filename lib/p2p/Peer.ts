@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import semver from 'semver';
-import { ReputationEvent, DisconnectionReason, NetworkMagic } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -80,7 +80,7 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
-  private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
+  private network: Network;
   private framer: Framer;
   private deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
@@ -146,9 +146,9 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private config: PoolConfig) {
+  constructor(private logger: Logger, public address: Address, private config: PoolConfig, network: Network) {
     super();
-
+    this.network = network;
     this.framer = new Framer(this.network);
     this.parser = new Parser(this.framer);
     this.bindParser(this.parser);
@@ -157,8 +157,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), config);
+  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig, network: Network): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), config, network);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -305,11 +305,11 @@ class Peer extends EventEmitter {
 
     let rejectionMsg;
     if (reason) {
-      rejectionMsg = `Peer closed due to ${DisconnectionReason[reason]}`;
+      rejectionMsg = `Peer (${this.label}) closed due to ${DisconnectionReason[reason]} ${reasonPayload || ''}`;
     } else if (this.recvDisconnectionReason) {
-      rejectionMsg = `Peer disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
+      rejectionMsg = `Peer (${this.label}) disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
     } else {
-      rejectionMsg = `Peer was destroyed`;
+      rejectionMsg = `Peer (${this.label}) was destroyed`;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -607,6 +607,7 @@ class Peer extends EventEmitter {
         case errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED:
         case errorCodes.FRAMER_MSG_NOT_ENCRYPTED:
         case errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE:
+        case errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK:
         case errorCodes.FRAMER_INVALID_MSG_LENGTH:
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);

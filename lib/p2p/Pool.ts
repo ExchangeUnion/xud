@@ -13,9 +13,10 @@ import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } f
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent, DisconnectionReason } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, XUNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
 import { ReputationEventInstance } from 'lib/db/types';
+import Network from './Network';
 
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
@@ -73,10 +74,14 @@ class Pool extends EventEmitter {
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
+  private network: Network;
 
-  constructor(config: PoolConfig, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, xuNetwork: XUNetwork, private logger: Logger, models: Models) {
     super();
     this.config = config;
+    this.network = new Network(xuNetwork);
+    this.repository = new P2PRepository(models);
+    this.nodes = new NodeList(this.repository, this.network);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -86,8 +91,6 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.repository = new P2PRepository(models);
-    this.nodes = new NodeList(this.repository);
   }
 
   public get peerCount(): number {
@@ -101,6 +104,7 @@ class Pool extends EventEmitter {
     if (this.connected) {
       return;
     }
+    this.logger.info(`Connecting to ${this.network.xuNetwork} XU network`);
 
     if (this.server) {
       await this.listen();
@@ -124,7 +128,7 @@ class Pool extends EventEmitter {
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
       if (this.nodes.count > 0) {
-        this.logger.info('Completed start-up connections to known peers.');
+        this.logger.info('Completed start-up connections to known peers');
       }
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
@@ -198,7 +202,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config, this.network);
         await peer.open(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
         assert(false, errors.ATTEMPTED_CONNECTION_TO_SELF.message);
       } catch (err) {
@@ -332,7 +336,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    const peer = new Peer(this.logger, address, this.config);
+    const peer = new Peer(this.logger, address, this.config, this.network);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -468,7 +472,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger, this.config);
+    const peer = Peer.fromInbound(socket, this.logger, this.config, this.network);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
@@ -610,6 +614,7 @@ class Pool extends EventEmitter {
     if (!this.nodes.has(peer.nodePubKey)) {
       await this.nodes.createNode({
         addresses,
+        network: this.network.xuNetwork,
         nodePubKey: peer.nodePubKey,
         lastAddress: peer.inbound ? undefined : peer.address,
       });

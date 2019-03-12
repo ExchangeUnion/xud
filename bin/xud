@@ -28,10 +28,11 @@ const { argv } = require('yargs')
       type: 'string',
     },
     network: {
-      describe: 'The network the lnd clients are using',
+      describe: 'The XU network xud is running on',
       type: 'string',
       choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
       alias: 'n',
+      default: 'simnet',
     },
     nomatching: {
       describe: 'Whether to disable matching within xud',

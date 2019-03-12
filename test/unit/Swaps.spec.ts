@@ -1,11 +1,8 @@
 import { expect } from 'chai';
 import Swaps from '../../lib/swaps/Swaps';
 import { SwapDeal } from '../../lib/swaps/types';
-import Logger, { Level } from '../../lib/Logger';
 import { SwapPhase, SwapState, SwapRole } from '../../lib/constants/enums';
 import { SwapRequestPacketBody } from '../../lib/p2p/packets';
-
-const loggers = Logger.createLoggers(Level.Warn);
 
 describe('Swaps', () => {
   const quantity = 0.01;

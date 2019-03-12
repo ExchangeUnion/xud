@@ -6,7 +6,7 @@ import { exists, mkdir, readFile } from './utils/fsUtils';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { Network } from './constants/enums';
+import { XUNetwork, lnNetworks } from './constants/enums';
 import { PoolConfig } from './p2p/types';
 
 class Config {
@@ -15,7 +15,7 @@ class Config {
   public loglevel: string;
   public logpath: string;
   public logdateformat: string;
-  public network: Network;
+  public network: XUNetwork;
   public rpc: { disable: boolean, host: string, port: number };
   public lndbtc: LndClientConfig;
   public lndltc: LndClientConfig;
@@ -60,7 +60,8 @@ class Config {
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
-    this.network = Network.TestNet;
+    this.network = XUNetwork.SimNet;
+    const lnNetwork = lnNetworks[this.network];
 
     this.p2p = {
       listen: true,
@@ -92,7 +93,7 @@ class Config {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
-        this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
+        lnNetwork === lnNetworks[XUNetwork.TestNet] ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
@@ -128,7 +129,7 @@ class Config {
 
         if (props.network !== undefined && (!args || !args.network)) {
           // first check that network is a valid value
-          if (typeof props.network !== 'string' || !Object.values(Network).includes(props.network)) {
+          if (typeof props.network !== 'string' || !Object.values(XUNetwork).includes(props.network)) {
             // delete the invalid network value
             delete props.network;
           } else {
@@ -178,10 +179,11 @@ class Config {
   }
 
   private updateMacaroonPaths = (network: string) => {
-    this.network = network as Network;
+    this.network = network as XUNetwork;
+    const lnNetwork = lnNetworks[this.network];
     this.lndbtc.macaroonpath = path.join(this.lndbtc.macaroonpath, '..', '..', this.network, 'admin.macaroon');
     this.lndltc.macaroonpath = path.join(this.lndltc.macaroonpath, '..', '..',
-      this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+      lnNetwork === XUNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
   }
 
   private getDefaultDbPath = () => {

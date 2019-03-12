@@ -1,6 +1,7 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
 import addressUtils from '../utils/addressUtils';
 import { Address } from './types';
+import { XUNetwork } from '../constants/enums';
 
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
@@ -26,7 +27,8 @@ const errorCodes = {
   PARSER_MAX_BUFFER_SIZE_EXCEEDED: codesPrefix.concat('.19'),
   FRAMER_MSG_NOT_ENCRYPTED: codesPrefix.concat('.`20'),
   FRAMER_INVALID_NETWORK_MAGIC_VALUE: codesPrefix.concat('.21'),
-  FRAMER_INVALID_MSG_LENGTH: codesPrefix.concat('.22'),
+  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: codesPrefix.concat('.22'),
+  FRAMER_INVALID_MSG_LENGTH: codesPrefix.concat('.23'),
 };
 
 const errors = {
@@ -126,8 +128,12 @@ const errors = {
     message: `framer: msg has an invalid network magic value (might be encrypted)`,
     code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   },
+  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (expected: XUNetwork, found: XUNetwork) => ({
+    message: `framer: incompatible msg origin network (expected: ${expected}, found: ${found})`,
+    code: errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK,
+  }),
   FRAMER_INVALID_MSG_LENGTH: (expected: number, found: number) => ({
-    message: `framer: invalid msg length (expected: ${expected} found: ${found})`,
+    message: `framer: invalid msg length (expected: ${expected}, found: ${found})`,
     code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   }),
 };
