@@ -318,6 +318,10 @@ class RaidenClient extends BaseClient {
 
   /** Raiden client specific cleanup. */
   protected closeSpecific() {}
+  protected updateMaximumCapacity() {
+    // TODO: query actual
+    return 0;
+  }
 }
 
 export default RaidenClient;
