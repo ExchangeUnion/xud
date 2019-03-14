@@ -26,8 +26,7 @@ message NodeState {
     repeated Address addresses = 3;
     repeated string pairs = 4;
     string raiden_address = 5;
-    string lnd_btc_pub_key = 6;
-    string lnd_ltc_pub_key = 7;
+    map<string, string> lnd_pub_keys = 6;
 }
 
 message PingPacket {
@@ -67,8 +66,7 @@ message NodeStateUpdatePacket {
     repeated Address addresses = 2;
     repeated string pairs = 3;
     string raiden_address = 4;
-    string lnd_btc_pub_key = 5;
-    string lnd_ltc_pub_key = 6;
+    map<string, string> lnd_pub_keys = 6;
 }
 
 message SessionInitPacket {

@@ -18,16 +18,14 @@ export type NodeState = {
   addresses?: Address[];
   pairs: string[];
   raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys: { [currency: string]: string | undefined };
 };
 
 export type NodeStateUpdate = {
   addresses?: Address[];
   pairs?: string[];
   raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys?: { [currency: string]: string | undefined };
 };
 
 export type PoolConfig = {

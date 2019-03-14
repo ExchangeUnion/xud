@@ -54,6 +54,7 @@ describe('P2P Pool Tests', async () => {
       nodePubKey: 'test',
       version: 'test',
       pairs: [],
+      lndPubKeys: {},
     }, nodeKeyOne);
   });
 

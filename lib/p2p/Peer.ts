@@ -29,8 +29,7 @@ type PeerInfo = {
   pairs?: string[],
   xudVersion?: string,
   secondsConnected: number,
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys?: { [currency: string]: string | undefined },
 };
 
 interface Peer {
@@ -138,8 +137,7 @@ class Peer extends EventEmitter {
       pairs: this.nodeState ? this.nodeState.pairs : undefined,
       xudVersion: this.nodeState ? this.nodeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
-      lndbtcPubKey: this.getLndPubKey('BTC'),
-      lndltcPubKey: this.getLndPubKey('LTC'),
+      lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
     };
   }
 
@@ -168,18 +166,11 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getLndPubKey(chain: string): string | undefined {
-    if (!this.nodeState) {
-      return;
+  public getLndPubKey(currency: string): string | undefined {
+    if (!this.nodeState || !this.nodeState.lndPubKeys) {
+      return undefined;
     }
-    switch (chain) {
-      case 'BTC':
-        return this.nodeState.lndbtcPubKey;
-      case 'LTC':
-        return this.nodeState.lndltcPubKey;
-      default:
-        return;
-    }
+    return this.nodeState.lndPubKeys[currency];
   }
 
   public getStatus = (): string => {

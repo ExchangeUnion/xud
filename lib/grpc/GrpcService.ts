@@ -11,6 +11,7 @@ import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess } from '../swaps/types';
+import { setObjectToMap } from '../utils/utils';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -335,8 +336,10 @@ class GrpcService {
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
         return lnd;
       });
-      if (getInfoResponse.lndbtc) response.setLndbtc(getLndInfo(getInfoResponse.lndbtc));
-      if (getInfoResponse.lndltc) response.setLndltc(getLndInfo(getInfoResponse.lndltc));
+      const lndMap = response.getLndMap();
+      for (const currency in getInfoResponse.lnd) {
+        lndMap.set(currency, getLndInfo(getInfoResponse.lnd[currency]!));
+      }
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
@@ -447,8 +450,12 @@ class GrpcService {
         grpcPeer.setAddress(peer.address);
         grpcPeer.setInbound(peer.inbound);
         grpcPeer.setNodePubKey(peer.nodePubKey || '');
-        grpcPeer.setLndBtcPubKey(peer.lndbtcPubKey || '');
-        grpcPeer.setLndLtcPubKey(peer.lndltcPubKey || '');
+        if (peer.lndPubKeys) {
+          const map = grpcPeer.getLndPubKeysMap();
+          for (const key in peer.lndPubKeys) {
+            map.set(key, peer.lndPubKeys[key]);
+          }
+        }
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
