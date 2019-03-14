@@ -6,7 +6,7 @@ import { exists, mkdir, readFile } from './utils/fsUtils';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { XUNetwork, lnNetworks } from './constants/enums';
+import { lnNetworks, XUNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
 
 class Config {
@@ -111,10 +111,10 @@ class Config {
       if (args.xudir) {
         this.updateDefaultPaths(args.xudir);
       }
-      if (args.network) {
-        this.updateMacaroonPaths(args.network);
-      }
+      this.updateNetwork(args);
+      this.updateMacaroonPaths();
     }
+
     const configPath = path.join(this.xudir, 'xud.conf');
     if (!(await exists(this.xudir))) {
       await mkdir(this.xudir);
@@ -125,16 +125,6 @@ class Config {
 
         if (props.xudir && (!args || !args.xudir)) {
           this.updateDefaultPaths(props.xudir);
-        }
-
-        if (props.network !== undefined && (!args || !args.network)) {
-          // first check that network is a valid value
-          if (typeof props.network !== 'string' || !Object.values(XUNetwork).includes(props.network)) {
-            // delete the invalid network value
-            delete props.network;
-          } else {
-            this.updateMacaroonPaths(props.network);
-          }
         }
 
         // merge parsed json properties from config file to the default config
@@ -178,8 +168,26 @@ class Config {
     this.dbpath = this.getDefaultDbPath();
   }
 
-  private updateMacaroonPaths = (network: string) => {
-    this.network = network as XUNetwork;
+  private updateNetwork = (args?: { [argName: string]: any }) => {
+    const networks: { [val: string]: boolean } = {
+      [XUNetwork.MainNet]: args!.mainnet,
+      [XUNetwork.TestNet]: args!.testnet,
+      [XUNetwork.RegTest]: args!.regtest,
+    };
+
+    const selected = Object.keys(networks).filter(key => networks[key]);
+    if (selected.length > 1) {
+      throw Error('only one alternative network selection is allowed');
+    }
+
+    if (selected.length === 0) {
+      this.network = XUNetwork.SimNet;
+    } else {
+      this.network = selected[0] as XUNetwork;
+    }
+  }
+
+  private updateMacaroonPaths = () => {
     const lnNetwork = lnNetworks[this.network];
     this.lndbtc.macaroonpath = path.join(this.lndbtc.macaroonpath, '..', '..', this.network, 'admin.macaroon');
     this.lndltc.macaroonpath = path.join(this.lndltc.macaroonpath, '..', '..',

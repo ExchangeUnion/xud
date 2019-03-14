@@ -27,12 +27,20 @@ const { argv } = require('yargs')
       describe: 'Format of the logger date',
       type: 'string',
     },
-    network: {
-      describe: 'The XU network xud is running on',
-      type: 'string',
-      choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
-      alias: 'n',
-      default: 'simnet',
+    mainnet: {
+      describe: 'Whether to run XUD on mainnet',
+      type: 'boolean',
+      default: undefined,
+    },
+    testnet: {
+      describe: 'Whether to run XUD on testnet',
+      type: 'boolean',
+      default: undefined,
+    },
+    regnet: {
+      describe: 'Whether to run XUD on regnet',
+      type: 'boolean',
+      default: undefined,
     },
     nomatching: {
       describe: 'Whether to disable matching within xud',
