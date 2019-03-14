@@ -8,6 +8,7 @@ import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
+import { SwapFailureReason } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -170,13 +171,13 @@ describe('Swaps.Integration', () => {
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder()))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
     });
 
     it('will reject if unable to retrieve routes', async () => {
@@ -188,15 +189,14 @@ describe('Swaps.Integration', () => {
       lndClients.BTC!.queryRoutes = noRoutesFound;
       lndClients.LTC!.queryRoutes = noRoutesFound;
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith('Can not swap. unable to find route to destination');
-      const EXPECTED_ERROR_MSG = 'UNKNOWN';
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
-        return Promise.reject(EXPECTED_ERROR_MSG);
+        return Promise.reject('UNKNOWN');
       };
       lndClients.BTC!.queryRoutes = rejectsWithUnknownError;
       lndClients.LTC!.queryRoutes = rejectsWithUnknownError;
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith(EXPECTED_ERROR_MSG);
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedLndError);
     });
 
   });
