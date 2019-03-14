@@ -23,13 +23,15 @@ export const createConfig = (instanceid: number, p2pPort: number, network = XUNe
   rpc: {
     disable: true,
   },
-  lndbtc: {
-    disable: true,
-    nomacaroons: true,
-  },
-  lndltc: {
-    disable: true,
-    nomacaroons: true,
+  lnd: {
+    LTC: {
+      disable: true,
+      nomacaroons: true,
+    },
+    BTC: {
+      disable: true,
+      nomacaroons: true,
+    },
   },
   raiden: {
     disable: true,

@@ -168,6 +168,10 @@ class Pool extends EventEmitter {
     });
   }
 
+  public updateLndPubKey = (currency: string, pubKey: string) => {
+    this.nodeState.lndPubKeys[currency] = pubKey;
+  }
+
   public disconnect = async (): Promise<void> => {
     if (!this.connected) {
       return;
