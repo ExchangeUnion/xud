@@ -193,11 +193,11 @@ class Config {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
           this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
-            lnNetwork === XUNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+            lnNetwork === XUNetwork.TestNet ? 'testnet4' : lnNetwork, 'admin.macaroon');
           break;
         default:
           // by default we want to update the network folder name to the selected network
-          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', network, 'admin.macaroon');
+          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', lnNetwork, 'admin.macaroon');
           break;
       }
     }
