@@ -156,6 +156,7 @@ class GrpcService {
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
       case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
+      case serviceErrorCodes.CONNECTION_CLOSED:
         code = status.FAILED_PRECONDITION;
         break;
       case lndErrorCodes.LND_IS_UNAVAILABLE:
