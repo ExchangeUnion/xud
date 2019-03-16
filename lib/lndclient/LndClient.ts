@@ -346,11 +346,6 @@ class LndClient extends BaseClient {
       this.invoiceSubscription.cancel();
     }
   }
-
-  protected updateMaximumCapacity() {
-    // TODO: query actual
-    return 0;
-  }
 }
 
 export default LndClient;

@@ -22,6 +22,7 @@ abstract class BaseClient extends EventEmitter {
   protected reconnectionTimer?: NodeJS.Timer;
 
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
+  protected maximumOutboundCapacity = 0;
   protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;
@@ -44,7 +45,6 @@ abstract class BaseClient extends EventEmitter {
   }
 
   protected abstract stop(): Promise<void>;
-  protected abstract updateMaximumCapacity(): number;
 
   protected setStatus(status: ClientStatus): void {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
@@ -53,7 +53,9 @@ abstract class BaseClient extends EventEmitter {
   }
   private checkTimers() {
     if (this.status === ClientStatus.ConnectionVerified) {
-      this.updateCapacityTimer = setInterval(this.updateMaximumCapacity, this.CAPACITY_CACHE_TIMEOUT);
+      this.updateCapacityTimer = setInterval(async () => {
+        this.maximumOutboundCapacity = (await this.channelBalance()).balance;
+      }, this.CAPACITY_CACHE_TIMEOUT);
     } else {
       if (this.updateCapacityTimer) {
         clearTimeout(this.updateCapacityTimer);
