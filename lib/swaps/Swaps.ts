@@ -52,7 +52,7 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the derived `makerCurrency` and `takerCurrency` values
    */
-  private static deriveCurrencies = (pairId: string, isBuy: boolean) => {
+  public static deriveCurrencies = (pairId: string, isBuy: boolean) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
 
     const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
@@ -78,7 +78,8 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean) => {
+  public static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean) => {
+    // TODO: Below TODO is critical for ERC20 token support
     // TODO: use configurable amount of subunits/satoshis per token for each currency
     const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);

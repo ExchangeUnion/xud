@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClients } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -283,6 +283,17 @@ class OrderBook extends EventEmitter {
     onUpdate?: (e: PlaceOrderEvent) => void,
     maxTime?: number,
   ): Promise<PlaceOrderResult> => {
+    const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy);
+    const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
+    console.log(`verify that ${makerCurrency} has ${makerAmount}`);
+    const currencyInstance = await this.repository.getCurrencyById(makerCurrency);
+    if (currencyInstance) {
+      const swapClient = SwapClients[currencyInstance.getDataValue('swapClient')];
+      // TODO: get client instance
+      // const client = getClientInstance(swapClient, makerCurrency);
+      // console.log(`client for ${makerCurrency} is: ${swapClient}; ${client}`);
+      // TODO: verify client outbound capacity >= makerAmount
+    }
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {

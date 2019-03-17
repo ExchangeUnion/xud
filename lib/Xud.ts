@@ -186,6 +186,7 @@ class Xud extends EventEmitter {
     this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
+    // TODO: Also clean up Raidenclient
     for (const currency in this.lndClients) {
       this.lndClients[currency]!.close();
     }

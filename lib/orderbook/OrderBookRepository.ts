@@ -15,6 +15,10 @@ class OrderbookRepository {
     return this.models.Currency.findAll();
   }
 
+  public getCurrencyById = (id: string): Bluebird<db.CurrencyInstance | null> => {
+    return this.models.Currency.findOne({ where: { id } });
+  }
+
   public addCurrency = (currency: db.CurrencyFactory): Bluebird<db.CurrencyInstance> => {
     return this.models.Currency.create(<db.CurrencyAttributes>currency);
   }
