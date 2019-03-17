@@ -66,7 +66,6 @@ class Peer extends EventEmitter {
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
-  private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private responseMap: Map<string, PendingResponseEntry> = new Map();
@@ -88,8 +87,6 @@ class Peer extends EventEmitter {
   private static readonly PING_INTERVAL = 30000;
   /** Response timeout for response packets. */
   private static readonly RESPONSE_TIMEOUT = 10000;
-  /** Socket connection timeout for outbound peers. */
-  private static readonly CONNECTION_TIMEOUT = 10000;
   /** Connection retries min delay. */
   private static readonly CONNECTION_RETRIES_MIN_DELAY = 5000;
   /** Connection retries max delay. */
@@ -289,11 +286,6 @@ class Peer extends EventEmitter {
       this.stallTimer = undefined;
     }
 
-    if (this.connectTimeout) {
-      clearTimeout(this.connectTimeout);
-      this.connectTimeout = undefined;
-    }
-
     let rejectionMsg;
     if (reason) {
       rejectionMsg = `Peer closed due to ${DisconnectionReason[reason]}`;
@@ -384,10 +376,6 @@ class Peer extends EventEmitter {
       this.connectionRetriesRevoked = false;
 
       const cleanup = () => {
-        if (this.connectTimeout) {
-          clearTimeout(this.connectTimeout);
-          this.connectTimeout = undefined;
-        }
         this.socket!.removeListener('error', onError);
         this.socket!.removeListener('connect', onConnect);
         if (this.retryConnectionTimer) {
@@ -446,7 +434,6 @@ class Peer extends EventEmitter {
       const bind = () => {
         this.socket!.once('connect', onConnect);
         this.socket!.once('error', onError);
-        this.connectTimeout = setTimeout(() => onError(new Error('Connection timed out')), Peer.CONNECTION_TIMEOUT);
       };
 
       bind();
