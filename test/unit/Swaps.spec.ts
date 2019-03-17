@@ -1,11 +1,8 @@
 import { expect } from 'chai';
 import Swaps from '../../lib/swaps/Swaps';
 import { SwapDeal } from '../../lib/swaps/types';
-import Logger, { Level } from '../../lib/Logger';
 import { SwapPhase, SwapState, SwapRole } from '../../lib/constants/enums';
 import { SwapRequestPacketBody } from '../../lib/p2p/packets';
-
-const loggers = Logger.createLoggers(Level.Warn);
 
 describe('Swaps', () => {
   const quantity = 0.01;
@@ -13,6 +10,8 @@ describe('Swaps', () => {
   const takerCltvDelta = 144;
   const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';
   const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
+  const pairId = 'LTC/BTC';
+  const peerPubKey = '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
 
   /** A swap deal for a buy order. */
   const buyDeal: SwapDeal = {
@@ -21,14 +20,14 @@ describe('Swaps', () => {
     takerCltvDelta,
     orderId,
     rHash,
+    pairId,
+    peerPubKey,
     role: SwapRole.Maker,
     phase: SwapPhase.SwapCreated,
     state: SwapState.Active,
-    peerPubKey: '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8',
     localId: '1',
     proposedQuantity: quantity,
     isBuy: true,
-    pairId: 'LTC/BTC',
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
     makerAmount: Swaps['SATOSHIS_PER_COIN'] * quantity,

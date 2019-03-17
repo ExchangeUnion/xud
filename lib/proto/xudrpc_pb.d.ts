@@ -277,6 +277,9 @@ export class SwapFailure extends jspb.Message {
   getPeerPubKey(): string;
   setPeerPubKey(value: string): void;
 
+  getFailureReason(): string;
+  setFailureReason(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapFailure.AsObject;
   static toObject(includeInstance: boolean, msg: SwapFailure): SwapFailure.AsObject;
@@ -293,6 +296,7 @@ export namespace SwapFailure {
     pairId: string,
     quantity: number,
     peerPubKey: string,
+    failureReason: string,
   }
 }
 

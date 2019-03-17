@@ -839,6 +839,7 @@
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
+| failure_reason | [string](#string) |  | The reason why the swap failed. |
 
 
 

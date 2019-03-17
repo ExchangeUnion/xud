@@ -1183,6 +1183,10 @@
         "peer_pub_key": {
           "type": "string",
           "description": "The node pub key of the peer that we attempted to swap with."
+        },
+        "failure_reason": {
+          "type": "string",
+          "description": "The reason why the swap failed."
         }
       }
     },
