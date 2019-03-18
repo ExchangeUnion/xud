@@ -610,6 +610,7 @@ class GrpcService {
       orderRemoval.setQuantity(order.quantity);
       orderRemoval.setLocalId(order.localId || '');
       orderRemoval.setIsOwnOrder(order.localId !== undefined);
+      orderRemoval.setRemovedAt(Date.now());
       call.write(orderRemoval);
     });
     this.addStream(call);

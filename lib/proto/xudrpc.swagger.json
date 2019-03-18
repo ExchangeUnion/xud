@@ -966,6 +966,11 @@
           "type": "boolean",
           "format": "boolean",
           "description": "Whether the order being removed is a local own order or a remote peer order."
+        },
+        "removed_at": {
+          "type": "string",
+          "format": "int64",
+          "description": "The epoch time in milliseconds when the order was removed from the order book."
         }
       }
     },
@@ -1027,7 +1032,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "title": "A map of ticker symbols to lnd pub keys for this peer"
+          "description": "A map of ticker symbols to lnd pub keys for this peer."
         },
         "inbound": {
           "type": "boolean",
@@ -1228,6 +1233,11 @@
         "failure_reason": {
           "type": "string",
           "description": "The reason why the swap failed."
+        },
+        "fail_time": {
+          "type": "string",
+          "format": "int64",
+          "description": "The epoch time in milliseconds when the swap failed."
         }
       }
     },
@@ -1289,6 +1299,11 @@
           "type": "number",
           "format": "double",
           "description": "The price used for the swap."
+        },
+        "complete_time": {
+          "type": "string",
+          "format": "int64",
+          "description": "The epoch time in milliseconds when the swap was completed."
         }
       }
     },

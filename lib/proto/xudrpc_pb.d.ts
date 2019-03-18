@@ -280,6 +280,9 @@ export class SwapFailure extends jspb.Message {
   getFailureReason(): string;
   setFailureReason(value: string): void;
 
+  getFailTime(): number;
+  setFailTime(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapFailure.AsObject;
   static toObject(includeInstance: boolean, msg: SwapFailure): SwapFailure.AsObject;
@@ -297,6 +300,7 @@ export namespace SwapFailure {
     quantity: number,
     peerPubKey: string,
     failureReason: string,
+    failTime: number,
   }
 }
 
@@ -731,6 +735,9 @@ export class OrderRemoval extends jspb.Message {
   getIsOwnOrder(): boolean;
   setIsOwnOrder(value: boolean): void;
 
+  getRemovedAt(): number;
+  setRemovedAt(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): OrderRemoval.AsObject;
   static toObject(includeInstance: boolean, msg: OrderRemoval): OrderRemoval.AsObject;
@@ -748,6 +755,7 @@ export namespace OrderRemoval {
     orderId: string,
     localId: string,
     isOwnOrder: boolean,
+    removedAt: number,
   }
 }
 
@@ -1253,6 +1261,9 @@ export class SwapSuccess extends jspb.Message {
   getPrice(): number;
   setPrice(value: number): void;
 
+  getCompleteTime(): number;
+  setCompleteTime(value: number): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapSuccess.AsObject;
   static toObject(includeInstance: boolean, msg: SwapSuccess): SwapSuccess.AsObject;
@@ -1278,6 +1289,7 @@ export namespace SwapSuccess {
     currencySent: string,
     rPreimage: string,
     price: number,
+    completeTime: number,
   }
 
   export enum Role {

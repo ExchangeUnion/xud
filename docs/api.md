@@ -538,6 +538,7 @@
 | order_id | [string](#string) |  | The global UUID for the order. |
 | local_id | [string](#string) |  | The local id for the order, if applicable. |
 | is_own_order | [bool](#bool) |  | Whether the order being removed is a local own order or a remote peer order. |
+| removed_at | [int64](#int64) |  | The epoch time in milliseconds when the order was removed from the order book. |
 
 
 
@@ -586,7 +587,7 @@
 | ----- | ---- | ----- | ----------- |
 | address | [string](#string) |  | The socket address with host and port for this peer. |
 | node_pub_key | [string](#string) |  | The node pub key to uniquely identify this peer. |
-| lnd_pub_keys | [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry) | repeated | A map of ticker symbols to lnd pub keys for this peer |
+| lnd_pub_keys | [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry) | repeated | A map of ticker symbols to lnd pub keys for this peer. |
 | inbound | [bool](#bool) |  | Indicates whether this peer was connected inbound. |
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
@@ -841,6 +842,7 @@
 | quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
 | failure_reason | [string](#string) |  | The reason why the swap failed. |
+| fail_time | [int64](#int64) |  | The epoch time in milliseconds when the swap failed. |
 
 
 
@@ -868,6 +870,7 @@
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
 | price | [double](#double) |  | The price used for the swap. |
+| complete_time | [int64](#int64) |  | The epoch time in milliseconds when the swap was completed. |
 
 
 

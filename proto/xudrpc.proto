@@ -306,6 +306,8 @@ message SwapFailure {
   string peer_pub_key = 4 [json_name = "peer_pub_key"];
   // The reason why the swap failed.
   string failure_reason = 5 [json_name = "failure_reason"];
+  // The epoch time in milliseconds when the swap failed.
+  int64 fail_time = 6 [json_name = "fail_time"];
 }
 
 message GetInfoRequest {}
@@ -422,6 +424,8 @@ message OrderRemoval {
   string local_id = 4 [json_name = "local_id"];
   // Whether the order being removed is a local own order or a remote peer order.
   bool is_own_order = 5 [json_name = "is_own_order"];
+  // The epoch time in milliseconds when the order was removed from the order book.
+  int64 removed_at = 6 [json_name = "removed_at"];
 }
 
 message Orders {
@@ -443,7 +447,7 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // A map of ticker symbols to lnd pub keys for this peer 
+  // A map of ticker symbols to lnd pub keys for this peer.
   map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
   bool inbound = 4 [json_name = "inbound"];
@@ -570,6 +574,8 @@ message SwapSuccess {
   string r_preimage = 14 [json_name = "r_preimage"];
   // The price used for the swap.
   double price = 15 [json_name = "price"];
+  // The epoch time in milliseconds when the swap was completed.
+  int64 complete_time = 16 [json_name = "complete_time"];
 }
 
 message UnbanRequest {
