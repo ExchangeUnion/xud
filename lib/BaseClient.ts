@@ -37,15 +37,6 @@ abstract class BaseClient extends EventEmitter {
    */
   public abstract channelBalance(): Promise<ChannelBalance>;
 
-  public async close() {
-    if (this.updateCapacityTimer) {
-      clearTimeout(this.updateCapacityTimer);
-    }
-    await this.stop();
-  }
-
-  protected abstract stop(): Promise<void>;
-
   protected setStatus(status: ClientStatus): void {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
@@ -73,6 +64,9 @@ abstract class BaseClient extends EventEmitter {
   }
   /** Ends all connections, subscriptions, and timers for for this client. */
   public close() {
+    if (this.updateCapacityTimer) {
+      clearTimeout(this.updateCapacityTimer);
+    }
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
     }
