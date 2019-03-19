@@ -3,6 +3,7 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
+import Client from '../BaseClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../constants/enums';
@@ -120,15 +121,17 @@ class Service extends EventEmitter {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
     const getBalance = async (currency: string) => {
-      const cmdLnd = this.lndClients[currency.toUpperCase()];
+      const client = this.lndClients[currency.toUpperCase()]
+        // TODO: support all registered tokens for Raiden
+        || (currency.toUpperCase() === 'WETH' && this.raidenClient);
 
-      if (!cmdLnd) {
+      if (!client) {
         // TODO: throw an error here indicating that lnd is disabled for this currency
         return { balance: 0, pendingOpenBalance: 0 };
       }
 
-      const channelBalance = await cmdLnd.channelBalance();
-      return channelBalance.toObject();
+      const channelBalance = await client.channelBalance();
+      return channelBalance;
     };
 
     if (currency) {

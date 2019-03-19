@@ -51,18 +51,14 @@ class LndClient extends BaseClient {
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
-  private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
   private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
-
-  /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
-  private static readonly RECONNECT_TIMER = 5000;
 
   /** Time in milliseconds between attempts to recheck if lnd's backend chain is in sync. */
   private static readonly RECHECK_SYNC_TIMER = 30000;
 
   /**
-   * Create an lnd client.
+   * Creates an lnd client.
    * @param config the lnd configuration
    */
   constructor(private config: LndClientConfig, logger: Logger) {
@@ -167,7 +163,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Verify that the lnd gRPC service can be reached by attempting a `getInfo` call.
+   * Verifies that the lnd gRPC service can be reached by attempting a `getInfo` call.
    * If successful, subscribe to invoice events and store the lnd identity pubkey.
    * If not, set a timer to attempt to reach the service again in 5 seconds.
    */
@@ -212,7 +208,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Return general information concerning the lightning node including it’s identity pubkey, alias, the chains it
+   * Returns general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
@@ -220,14 +216,14 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Send a payment through the Lightning Network.
+   * Sends a payment through the Lightning Network.
    */
   public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
   /**
-   * Get a new address for the internal lnd wallet.
+   * Gets a new address for the internal lnd wallet.
    */
   public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse> => {
     const request = new lndrpc.NewAddressRequest();
@@ -236,21 +232,24 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Return the total of unspent outputs for the internal lnd wallet.
+   * Returns the total of unspent outputs for the internal lnd wallet.
    */
   public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
     return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
   /**
-   * Return the total balance available across all channels.
+   * Returns the total balance available across all channels.
    */
-  public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse> => {
-    return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>('channelBalance', new lndrpc.ChannelBalanceRequest());
+  public channelBalance = async (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
+    const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
+      'channelBalance', new lndrpc.ChannelBalanceRequest(),
+    );
+    return channelBalanceResponse.toObject();
   }
 
   /**
-   * Connect to another lnd node.
+   * Connects to another lnd node.
    */
   public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse> => {
     const request = new lndrpc.ConnectPeerRequest();
@@ -262,7 +261,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Open a channel with a connected lnd node.
+   * Opens a channel with a connected lnd node.
    */
   public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
@@ -272,28 +271,28 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * List all open channels for this node.
+   * Lists all open channels for this node.
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse> => {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
   /**
-   * List all routes to destination.
+   * Lists all routes to destination.
    */
   public queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
   /**
-   * Send amount to destination using pre-defined routes.
+   * Sends amount to destination using pre-defined routes.
    */
   public sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
   /**
-   * Subscribe to invoices.
+   * Subscribes to invoices.
    */
   private subscribeInvoices = (): void => {
     if (this.invoiceSubscription) {
@@ -310,7 +309,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Attempt to close an open channel.
+   * Attempts to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
     if (this.isDisabled()) {
@@ -341,7 +340,7 @@ class LndClient extends BaseClient {
       });
   }
 
-  /** End all subscriptions and reconnection attempts. */
+  /** Ends all subscriptions and reconnection attempts. */
   public close = () => {
     if (this.invoiceSubscription) {
       this.invoiceSubscription.cancel();
