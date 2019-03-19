@@ -45,6 +45,13 @@ abstract class BaseClient extends EventEmitter {
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
   }
+  public async close() {
+    if (this.reconnectionTimer) {
+      clearTimeout(this.reconnectionTimer);
+    }
+    await this.stop();
+  }
+  protected abstract stop(): Promise<void>;
 }
 
 export default BaseClient;
