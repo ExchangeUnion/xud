@@ -93,6 +93,7 @@ class Service extends EventEmitter {
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
 
+    // TODO: Verify that Raiden specific currencies provide a token contract address!
     await this.orderBook.addCurrency({
       tokenAddress,
       swapClient,

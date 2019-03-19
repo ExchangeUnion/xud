@@ -18,11 +18,11 @@ type ChannelBalance = {
  * A base class to represent a client for an external service such as LND or Raiden.
  */
 abstract class BaseClient extends EventEmitter {
+  public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
 
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
-  protected maximumOutboundCapacity = 0;
   protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;

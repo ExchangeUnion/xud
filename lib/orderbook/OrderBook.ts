@@ -17,6 +17,8 @@ import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
 import Bluebird from 'bluebird';
+import LndClient from 'lib/lndclient/LndClient';
+import RaidenClient from 'lib/raidenclient/RaidenClient';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -68,7 +70,10 @@ class OrderBook extends EventEmitter {
     return Array.from(this.pairs.keys());
   }
 
-  constructor(private logger: Logger, models: Models, public nomatching = false, private pool?: Pool, private swaps?: Swaps) {
+  constructor(private logger: Logger, models: Models, public nomatching = false,
+    private pool?: Pool, private swaps?: Swaps,
+    private lndClients?: { [currency: string]: LndClient | undefined },
+    private raidenClient?: RaidenClient | undefined) {
     super();
 
     this.repository = new OrderBookRepository(logger, models);
@@ -285,14 +290,22 @@ class OrderBook extends EventEmitter {
   ): Promise<PlaceOrderResult> => {
     const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy);
     const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
-    console.log(`verify that ${makerCurrency} has ${makerAmount}`);
+    console.log(`verifying that ${makerCurrency} has ${makerAmount}...`);
     const currencyInstance = await this.repository.getCurrencyById(makerCurrency);
     if (currencyInstance) {
-      const swapClient = SwapClients[currencyInstance.getDataValue('swapClient')];
-      // TODO: get client instance
-      // const client = getClientInstance(swapClient, makerCurrency);
-      // console.log(`client for ${makerCurrency} is: ${swapClient}; ${client}`);
-      // TODO: verify client outbound capacity >= makerAmount
+      const swapClient = currencyInstance.getDataValue('swapClient');
+      let client;
+      if (swapClient === SwapClients.Lnd) {
+        client = this.lndClients && this.lndClients[makerCurrency];
+      } else if (swapClient === SwapClients.Raiden) {
+        client = this.raidenClient;
+      }
+      if (!client) {
+        throw new Error(`unable to find client for currency ${makerCurrency}`);
+      }
+      if (makerAmount > client.maximumOutboundCapacity) {
+        throw new Error(`${makerCurrency} does not have the required outbound balance of: ${makerAmount}`);
+      }
     }
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match

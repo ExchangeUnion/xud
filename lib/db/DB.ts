@@ -89,6 +89,7 @@ class DB {
       promises.push(Currency.bulkCreate(<db.CurrencyAttributes[]>[
         { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
         { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+        // TODO: Enable WETH by default?
         // { id: 'ZRX', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
         // { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
       ]));

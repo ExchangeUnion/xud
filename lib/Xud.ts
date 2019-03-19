@@ -95,7 +95,8 @@ class Xud extends EventEmitter {
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.lndClients);
       initPromises.push(this.swaps.init());
 
-      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps);
+      this.orderBook = new OrderBook(loggers.orderbook, this.db.models,
+        this.config.nomatching, this.pool, this.swaps, this.lndClients, this.raidenClient);
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
