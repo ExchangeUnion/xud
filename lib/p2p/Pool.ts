@@ -310,11 +310,11 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Attempt to add an outbound peer by connecting to a given socket address.
-   * Throws an error if a connection to a node with the given nodePubKey exists or
-   * if the connection handshake shows a different nodePubKey than the one provided.
+   * Attempt to add an outbound peer by connecting to a given socket address and nodePubKey.
+   * Throws an error if a socket connection to or the handshake with the node fails for any reason.
+   * @param address the socket address of the node to connect to
    * @param nodePubKey the nodePubKey of the node to connect to
-   * @returns the connected peer
+   * @returns a promise that resolves to the connected and opened peer
    */
   public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
     if (nodePubKey === this.nodeState.nodePubKey) {
@@ -362,6 +362,12 @@ class Pool extends EventEmitter {
     } catch (err) {}
   }
 
+  /**
+   * Opens a connection to a peer and performs a routine for newly opened peers that includes
+   * requesting open orders and updating the database with the peer's information.
+   * @returns a promise that resolves once the connection has opened and the newly opened peer
+   * routine is complete
+   */
   private openPeer = async (peer: Peer, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
     this.bindPeer(peer);
 
@@ -733,6 +739,7 @@ class Pool extends EventEmitter {
     }
     this.emit('peer.close', peer.nodePubKey);
     peer.removeAllListeners();
+    peer.active = false;
 
     // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
     // reconnect, for that might have been due to a temporary loss in connectivity
