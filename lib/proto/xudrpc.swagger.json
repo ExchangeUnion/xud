@@ -1282,8 +1282,8 @@
           "description": "The hex-encoded preimage."
         },
         "price": {
-          "type": "string",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "description": "The price used for the swap."
         }
       }

@@ -297,7 +297,7 @@ message ExecuteSwapRequest {
 
 message SwapFailure {
   // The global UUID for the order that failed the swap.
-  string order_id = 1;
+  string order_id = 1 [json_name = "order_id"];
   // The trading pair that the swap is for.
   string pair_id = 2 [json_name = "pair_id"];
   // The order quantity that was attempted to be swapped.
@@ -567,7 +567,7 @@ message SwapSuccess {
   // The hex-encoded preimage.
   string r_preimage = 14 [json_name = "r_preimage"];
   // The price used for the swap.
-  int64 price = 15 [json_name = "r_preimage"];
+  double price = 15 [json_name = "price"];
 }
 
 message UnbanRequest {

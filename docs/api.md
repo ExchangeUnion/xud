@@ -866,7 +866,7 @@
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
-| price | [int64](#int64) |  | The price used for the swap. |
+| price | [double](#double) |  | The price used for the swap. |
 
 
 
