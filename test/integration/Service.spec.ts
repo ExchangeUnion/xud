@@ -32,11 +32,13 @@ describe('API Service', () => {
       rpc: {
         disable: true,
       },
-      lndbtc: {
-        disable: true,
-      },
-      lndltc: {
-        disable: true,
+      lnd: {
+        LTC: {
+          disable: true,
+        },
+        BTC: {
+          disable: true,
+        },
       },
       raiden: {
         disable: true,

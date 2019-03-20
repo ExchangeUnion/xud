@@ -22,11 +22,13 @@ describe('WebProxy', async () => {
       p2p: {
         listen: false,
       },
-      lndbtc: {
-        disable: true,
-      },
-      lndltc: {
-        disable: true,
+      lnd: {
+        LTC: {
+          disable: true,
+        },
+        BTC: {
+          disable: true,
+        },
       },
       raiden: {
         disable: true,

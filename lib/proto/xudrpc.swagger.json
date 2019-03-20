@@ -773,11 +773,11 @@
           "$ref": "#/definitions/xudrpcOrdersCount",
           "description": "The number of active, standing orders in the order book."
         },
-        "lndbtc": {
-          "$ref": "#/definitions/xudrpcLndInfo"
-        },
-        "lndltc": {
-          "$ref": "#/definitions/xudrpcLndInfo"
+        "lnd": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcLndInfo"
+          }
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
@@ -1030,13 +1030,12 @@
           "type": "string",
           "description": "The node pub key to uniquely identify this peer."
         },
-        "lnd_btc_pub_key": {
-          "type": "string",
-          "description": "The lnd BTC pub key associated with this peer."
-        },
-        "lnd_ltc_pub_key": {
-          "type": "string",
-          "description": "The lnd LTC pub key associated with this peer."
+        "lnd_pub_keys": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "A map of ticker symbols to lnd pub keys for this peer"
         },
         "inbound": {
           "type": "boolean",
@@ -1229,6 +1228,10 @@
         "peer_pub_key": {
           "type": "string",
           "description": "The node pub key of the peer that we attempted to swap with."
+        },
+        "failure_reason": {
+          "type": "string",
+          "description": "The reason why the swap failed."
         }
       }
     },
@@ -1287,8 +1290,8 @@
           "description": "The hex-encoded preimage."
         },
         "price": {
-          "type": "string",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "description": "The price used for the swap."
         }
       }

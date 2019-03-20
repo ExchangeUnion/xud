@@ -8,6 +8,7 @@ import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
+import { SwapFailureReason } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -88,8 +89,7 @@ describe('Swaps.Integration', () => {
   let db: DB;
   let pool: Pool;
   let swaps: Swaps;
-  let lndBtcClient: LndClient;
-  let lndLtcClient: LndClient;
+  const lndClients: { [currency: string]: LndClient | undefined } = {};
   let peer: Peer;
   let sandbox: SinonSandbox;
   let queryRoutesResponse;
@@ -120,14 +120,14 @@ describe('Swaps.Integration', () => {
       } as any);
     };
     // lnd btc
-    lndBtcClient = sandbox.createStubInstance(LndClient) as any;
-    lndBtcClient.queryRoutes = queryRoutesResponse;
-    lndBtcClient.isConnected = () => true;
+    lndClients.BTC = sandbox.createStubInstance(LndClient) as any;
+    lndClients.BTC!.queryRoutes = queryRoutesResponse;
+    lndClients.BTC!.isConnected = () => true;
     // lnd ltc
-    lndLtcClient = sandbox.createStubInstance(LndClient) as any;
-    lndLtcClient.isConnected = () => true;
-    lndLtcClient.queryRoutes = queryRoutesResponse;
-    swaps = new Swaps(loggers.swaps, db.models, pool, lndBtcClient, lndLtcClient);
+    lndClients.LTC = sandbox.createStubInstance(LndClient) as any;
+    lndClients.LTC!.isConnected = () => true;
+    lndClients.LTC!.queryRoutes = queryRoutesResponse;
+    swaps = new Swaps(loggers.swaps, db.models, pool, lndClients);
   });
 
   afterEach(() => {
@@ -171,13 +171,13 @@ describe('Swaps.Integration', () => {
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder()))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
     });
 
     it('will reject if unable to retrieve routes', async () => {
@@ -186,18 +186,17 @@ describe('Swaps.Integration', () => {
           getRoutesList: () => [],
         } as any);
       };
-      lndBtcClient.queryRoutes = noRoutesFound;
-      lndLtcClient.queryRoutes = noRoutesFound;
+      lndClients.BTC!.queryRoutes = noRoutesFound;
+      lndClients.LTC!.queryRoutes = noRoutesFound;
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith('Can not swap. unable to find route to destination');
-      const EXPECTED_ERROR_MSG = 'UNKNOWN';
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
-        return Promise.reject(EXPECTED_ERROR_MSG);
+        return Promise.reject('UNKNOWN');
       };
-      lndBtcClient.queryRoutes = rejectsWithUnknownError;
-      lndLtcClient.queryRoutes = rejectsWithUnknownError;
+      lndClients.BTC!.queryRoutes = rejectsWithUnknownError;
+      lndClients.LTC!.queryRoutes = rejectsWithUnknownError;
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith(EXPECTED_ERROR_MSG);
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedLndError);
     });
 
   });

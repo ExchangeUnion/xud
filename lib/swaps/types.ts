@@ -1,4 +1,4 @@
-import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/constants/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
 import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
@@ -67,4 +67,10 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
   currencySent: string;
   /** The quantity that was swapped. */
   quantity: number;
+};
+
+export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
+  /** The quantity that was attempted and failed for the swap. */
+  quantity: number;
+  failureReason: SwapFailureReason;
 };

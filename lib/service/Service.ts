@@ -3,6 +3,7 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
+import Client from '../BaseClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClients, OrderSide, SwapRole } from '../constants/enums';
@@ -19,8 +20,7 @@ import { SwapSuccess } from 'lib/swaps/types';
  */
 type ServiceComponents = {
   orderBook: OrderBook;
-  lndBtcClient: LndClient;
-  lndLtcClient: LndClient;
+  lndClients: { [currency: string]: LndClient | undefined };
   raidenClient: RaidenClient;
   pool: Pool;
   /** The version of the local xud instance. */
@@ -37,8 +37,7 @@ type XudInfo = {
   numPeers: number;
   numPairs: number;
   orders: { peer: number, own: number};
-  lndbtc?: LndInfo;
-  lndltc?: LndInfo;
+  lnd: { [currency: string]: LndInfo | undefined };
   raiden?: RaidenInfo;
 };
 
@@ -69,8 +68,7 @@ const argChecks = {
 class Service extends EventEmitter {
   public shutdown: () => void;
   private orderBook: OrderBook;
-  private lndBtcClient: LndClient;
-  private lndLtcClient: LndClient;
+  private lndClients: { [currency: string]: LndClient | undefined };
   private raidenClient: RaidenClient;
   private pool: Pool;
   private version: string;
@@ -82,8 +80,7 @@ class Service extends EventEmitter {
 
     this.shutdown = components.shutdown;
     this.orderBook = components.orderBook;
-    this.lndBtcClient = components.lndBtcClient;
-    this.lndLtcClient = components.lndLtcClient;
+    this.lndClients = components.lndClients;
     this.raidenClient = components.raidenClient;
     this.pool = components.pool;
     this.swaps = components.swaps;
@@ -125,21 +122,17 @@ class Service extends EventEmitter {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
     const getBalance = async (currency: string) => {
-      let cmdLnd: LndClient;
-      switch (currency.toUpperCase()) {
-        case 'BTC':
-          cmdLnd = this.lndBtcClient;
-          break;
-        case 'LTC':
-          cmdLnd = this.lndLtcClient;
-          break;
-        default:
-          // TODO: throw an error here indicating that lnd is disabled for this currency
-          return { balance: 0, pendingOpenBalance: 0 };
+      const client = this.lndClients[currency.toUpperCase()]
+        // TODO: support all registered tokens for Raiden
+        || (currency.toUpperCase() === 'WETH' && this.raidenClient);
+
+      if (!client) {
+        // TODO: throw an error here indicating that lnd is disabled for this currency
+        return { balance: 0, pendingOpenBalance: 0 };
       }
 
-      const channelBalance = await cmdLnd.channelBalance();
-      return channelBalance.toObject();
+      const channelBalance = await client.channelBalance();
+      return channelBalance;
     };
 
     if (currency) {
@@ -190,7 +183,7 @@ class Service extends EventEmitter {
     await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
-  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }): Promise<SwapSuccess> => {
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }) => {
     if (!this.orderBook.nomatching) {
       throw errors.NOMATCHING_MODE_IS_REQUIRED();
     }
@@ -246,14 +239,16 @@ class Service extends EventEmitter {
       numPairs += 1;
     }
 
-    const lndbtc = this.lndBtcClient.isDisabled() ? undefined : await this.lndBtcClient.getLndInfo();
-    const lndltc = this.lndLtcClient.isDisabled() ? undefined : await this.lndLtcClient.getLndInfo();
+    const lnd: { [currency: string]: LndInfo | undefined } = {};
+    for (const currency in this.lndClients) {
+      const lndClient = this.lndClients[currency]!;
+      lnd[currency] = lndClient.isDisabled() ? undefined : await lndClient.getLndInfo();
+    }
 
     const raiden = this.raidenClient.isDisabled() ? undefined : await this.raidenClient.getRaidenInfo();
 
     return {
-      lndbtc,
-      lndltc,
+      lnd,
       raiden,
       nodePubKey,
       uris,

@@ -277,6 +277,9 @@ export class SwapFailure extends jspb.Message {
   getPeerPubKey(): string;
   setPeerPubKey(value: string): void;
 
+  getFailureReason(): string;
+  setFailureReason(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): SwapFailure.AsObject;
   static toObject(includeInstance: boolean, msg: SwapFailure): SwapFailure.AsObject;
@@ -293,6 +296,7 @@ export namespace SwapFailure {
     pairId: string,
     quantity: number,
     peerPubKey: string,
+    failureReason: string,
   }
 }
 
@@ -335,16 +339,8 @@ export class GetInfoResponse extends jspb.Message {
   getOrders(): OrdersCount | undefined;
   setOrders(value?: OrdersCount): void;
 
-  hasLndbtc(): boolean;
-  clearLndbtc(): void;
-  getLndbtc(): LndInfo | undefined;
-  setLndbtc(value?: LndInfo): void;
-
-  hasLndltc(): boolean;
-  clearLndltc(): void;
-  getLndltc(): LndInfo | undefined;
-  setLndltc(value?: LndInfo): void;
-
+  getLndMap(): jspb.Map<string, LndInfo>;
+  clearLndMap(): void;
   hasRaiden(): boolean;
   clearRaiden(): void;
   getRaiden(): RaidenInfo | undefined;
@@ -368,8 +364,7 @@ export namespace GetInfoResponse {
     numPeers: number,
     numPairs: number,
     orders?: OrdersCount.AsObject,
-    lndbtc?: LndInfo.AsObject,
-    lndltc?: LndInfo.AsObject,
+    lndMap: Array<[string, LndInfo.AsObject]>,
     raiden?: RaidenInfo.AsObject,
   }
 }
@@ -819,12 +814,8 @@ export class Peer extends jspb.Message {
   getNodePubKey(): string;
   setNodePubKey(value: string): void;
 
-  getLndBtcPubKey(): string;
-  setLndBtcPubKey(value: string): void;
-
-  getLndLtcPubKey(): string;
-  setLndLtcPubKey(value: string): void;
-
+  getLndPubKeysMap(): jspb.Map<string, string>;
+  clearLndPubKeysMap(): void;
   getInbound(): boolean;
   setInbound(value: boolean): void;
 
@@ -853,8 +844,7 @@ export namespace Peer {
   export type AsObject = {
     address: string,
     nodePubKey: string,
-    lndBtcPubKey: string,
-    lndLtcPubKey: string,
+    lndPubKeysMap: Array<[string, string]>,
     inbound: boolean,
     pairsList: Array<string>,
     xudVersion: string,

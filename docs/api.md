@@ -19,6 +19,7 @@
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
+    - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
@@ -37,6 +38,7 @@
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
+    - [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry)
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
@@ -284,9 +286,24 @@
 | num_peers | [int32](#int32) |  | The number of currently connected peers. |
 | num_pairs | [int32](#int32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
-| lndbtc | [LndInfo](#xudrpc.LndInfo) |  |  |
-| lndltc | [LndInfo](#xudrpc.LndInfo) |  |  |
+| lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetInfoResponse.LndEntry"></a>
+
+### GetInfoResponse.LndEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [LndInfo](#xudrpc.LndInfo) |  |  |
 
 
 
@@ -570,12 +587,27 @@
 | ----- | ---- | ----- | ----------- |
 | address | [string](#string) |  | The socket address with host and port for this peer. |
 | node_pub_key | [string](#string) |  | The node pub key to uniquely identify this peer. |
-| lnd_btc_pub_key | [string](#string) |  | The lnd BTC pub key associated with this peer. |
-| lnd_ltc_pub_key | [string](#string) |  | The lnd LTC pub key associated with this peer. |
+| lnd_pub_keys | [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry) | repeated | A map of ticker symbols to lnd pub keys for this peer |
 | inbound | [bool](#bool) |  | Indicates whether this peer was connected inbound. |
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [int32](#int32) |  | The time in seconds that we have been connected to this peer. |
+
+
+
+
+
+
+<a name="xudrpc.Peer.LndPubKeysEntry"></a>
+
+### Peer.LndPubKeysEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -808,6 +840,7 @@
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
+| failure_reason | [string](#string) |  | The reason why the swap failed. |
 
 
 
@@ -834,7 +867,7 @@
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
-| price | [int64](#int64) |  | The price used for the swap. |
+| price | [double](#double) |  | The price used for the swap. |
 
 
 

@@ -43,64 +43,34 @@ const { argv } = require('yargs')
       type: 'string',
       alias: 'x',
     },
-    'lndbtc.certpath': {
-      describe: 'Path to the SSL certificate for lndBtc',
+    'lnd.[currency].certpath': {
+      describe: 'Path to the SSL certificate for lnd',
       type: 'string',
     },
-    'lndbtc.disable': {
-      describe: 'Disable lndBtc integration',
-      type: 'boolean',
-      default: undefined,
-    },
-    'lndbtc.host': {
-      describe: 'Host of the lndBtc gRPC interface',
-      type: 'string',
-    },
-    'lndbtc.macaroonpath': {
-      describe: 'Path of the admin macaroon for lndBtc',
-      type: 'string',
-    },
-    'lndbtc.nomacaroons': {
-      describe: 'Whether to disable macaroons for lndBtc',
-      type: 'boolean',
-      default: undefined,
-    },
-    'lndbtc.port': {
-      describe: 'Port of the lndBtc gRPC interface',
+    'lnd.[currency].cltvdelta': {
+      describe: 'CLTV delta for the final timelock',
       type: 'number',
     },
-    'lndbtc.cltvdelta': {
-      describe: 'CLTV delta for the timelock of the final hop',
-      type: 'number',
-    },
-    'lndltc.certpath': {
-      describe: 'Path to the SSL certificate for lndLtc',
-      type: 'string',
-    },
-    'lndltc.disable': {
-      describe: 'Disable lndLtc integration',
+    'lnd.[currency].disable': {
+      describe: 'Disable lnd integration',
       type: 'boolean',
       default: undefined,
     },
-    'lndltc.host': {
-      describe: 'Host of the lndLtc gRPC interface',
+    'lnd.[currency].host': {
+      describe: 'Host of the lnd gRPC interface',
       type: 'string',
     },
-    'lndltc.macaroonpath': {
-      describe: 'Path of the admin macaroon for lndLtc',
+    'lnd.[currency].macaroonpath': {
+      describe: 'Path of the admin macaroon for lnd',
       type: 'string',
     },
-    'lndltc.nomacaroons': {
-      describe: 'Whether to disable macaroons for lndLtc',
+    'lnd.[currency].nomacaroons': {
+      describe: 'Whether to disable macaroons for lnd',
       type: 'boolean',
       default: undefined,
     },
-    'lndltc.port': {
-      describe: 'Port of the lndLtc gRPC interface',
-      type: 'number',
-    },
-    'lndltc.cltvdelta': {
-      describe: 'CLTV delta for the timelock of the final hop',
+    'lnd.[currency].port': {
+      describe: 'Port for the lnd gRPC interface',
       type: 'number',
     },
     'p2p.addresses': {
@@ -113,7 +83,7 @@ const { argv } = require('yargs')
       default: undefined,
     },
     'p2p.discover': {
-      describe: 'Automatically discover and connect to new nodes with discoverminutes interval',
+      describe: 'Automatically find & connect new nodes',
       type: 'boolean',
       default: undefined,
     },
@@ -122,7 +92,7 @@ const { argv } = require('yargs')
       type: 'number',
     },
     'p2p.detectexternalip': {
-      describe: 'Detect and advertise external ip address to peers',
+      describe: 'Detect & advertise external ip address',
       type: 'boolean',
       default: undefined,
     },
@@ -159,6 +129,40 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'w',
     },
+  })
+  .coerce('lnd', (arg) => {
+    delete arg['[currency]'];
+
+    const parseBoolean = (obj, key) => {
+      if (typeof obj[key] === 'string') {
+        obj[key] = obj[key].toLowerCase() === 'true';
+      }
+    };
+    const parseNumber = (obj, key) => {
+      if (obj[key]) {
+        obj[key] = parseInt(obj[key], 10);
+      }
+    };
+
+    const currencies = Object.keys(arg);
+
+    currencies.forEach((currency) => {
+      parseBoolean(arg[currency], 'disable');
+      parseBoolean(arg[currency], 'nomacaroons');
+      parseNumber(arg[currency], 'cltvdelta');
+      parseNumber(arg[currency], 'port');
+    });
+
+    // make all currencies upper case
+    for (let n = 0; n < currencies.length; n += 1) {
+      const currency = currencies[n];
+      if (currency !== currency.toUpperCase()) {
+        arg[currency.toUpperCase()] = arg[currency];
+        delete arg[currency];
+      }
+    }
+
+    return arg;
   });
 
 // delete non-config keys from argv

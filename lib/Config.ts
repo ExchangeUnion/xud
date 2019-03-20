@@ -17,8 +17,7 @@ class Config {
   public logdateformat: string;
   public network: Network;
   public rpc: { disable: boolean, host: string, port: number };
-  public lndbtc: LndClientConfig;
-  public lndltc: LndClientConfig;
+  public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
   public instanceid = 0;
@@ -79,7 +78,7 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.lndbtc = {
+    this.lnd.BTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
@@ -88,7 +87,7 @@ class Config {
       cltvdelta: 144,
       nomacaroons: false,
     };
-    this.lndltc = {
+    this.lnd.LTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
@@ -179,9 +178,19 @@ class Config {
 
   private updateMacaroonPaths = (network: string) => {
     this.network = network as Network;
-    this.lndbtc.macaroonpath = path.join(this.lndbtc.macaroonpath, '..', '..', this.network, 'admin.macaroon');
-    this.lndltc.macaroonpath = path.join(this.lndltc.macaroonpath, '..', '..',
-      this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+    for (const currency in this.lnd) {
+      switch (currency) {
+        case 'LTC':
+          // litecoin uses a specific folder name for testnet
+          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
+            this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+          break;
+        default:
+          // by default we want to update the network folder name to the selected network
+          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', network, 'admin.macaroon');
+          break;
+      }
+    }
   }
 
   private getDefaultDbPath = () => {
