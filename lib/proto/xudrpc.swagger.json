@@ -266,11 +266,11 @@
           },
           {
             "name": "limit",
-            "description": "Whether to return all orders.",
+            "description": "The maximum number of orders to return from each side of the order book.",
             "in": "query",
             "required": false,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [

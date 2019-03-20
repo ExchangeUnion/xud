@@ -342,8 +342,8 @@ message ListOrdersRequest {
   string pair_id = 1 [json_name = "pair_id"];
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
-  // Whether to return all orders
-  bool limit = 3 [json_name = "limit"];
+  // The maximum number of orders to return from each side of the order book.
+  int32 limit = 3 [json_name = "limit"];
 }
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.

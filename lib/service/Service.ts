@@ -270,27 +270,36 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: boolean }): Map<string, OrderSidesArrays<any>> => {
+  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: number }): Map<string, OrderSidesArrays<any>> => {
     const { pairId, includeOwnOrders, limit } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
 
     const listOrderTypes = (pairId: string) => {
-      const orders = this.orderBook.getPeersOrders(pairId);
-      orders.buy = sortOrders(orders.buy, true);
-      orders.sell = sortOrders(orders.sell, false);
+      const  orders: OrderSidesArrays<any> = {
+        buy: [],
+        sell: [],
+      };
+
+      const peerOrders = this.orderBook.getPeersOrders(pairId);
+      orders.buy = peerOrders.buy;
+      orders.sell = peerOrders.sell;
 
       if (includeOwnOrders) {
-        const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
+        const ownOrders = this.orderBook.getOwnOrders(pairId);
 
         orders.buy = [...orders.buy, ...ownOrders.buy];
         orders.sell = [...orders.sell, ...ownOrders.sell];
       }
 
-      if (!limit) {
-        // get 10 best orders
-        orders.buy = orders.buy.slice(0, 10);
-        orders.sell = orders.buy.slice(0, 10);
+      // sort all orders
+      orders.buy = sortOrders(orders.buy, true);
+      orders.sell = sortOrders(orders.sell, false);
+
+      if ((limit > 0)) {
+        // get 10 best peerOrdersorders
+        orders.buy = orders.buy.slice(0, limit);
+        orders.sell = orders.buy.slice(0, limit);
       }
       return orders;
     };

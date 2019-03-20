@@ -92,9 +92,9 @@ export const builder = {
     default: true,
   },
   limit: {
-    describe: 'return all orders',
-    type: 'boolean',
-    default: false,
+    describe: 'max number of orders to return',
+    type: 'number',
+    default: 0,
   },
 };
 

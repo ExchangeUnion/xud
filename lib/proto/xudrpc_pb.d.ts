@@ -425,8 +425,8 @@ export class ListOrdersRequest extends jspb.Message {
   getIncludeOwnOrders(): boolean;
   setIncludeOwnOrders(value: boolean): void;
 
-  getLimit(): boolean;
-  setLimit(value: boolean): void;
+  getLimit(): number;
+  setLimit(value: number): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ListOrdersRequest.AsObject;
@@ -442,7 +442,7 @@ export namespace ListOrdersRequest {
   export type AsObject = {
     pairId: string,
     includeOwnOrders: boolean,
-    limit: boolean,
+    limit: number,
   }
 }
 
