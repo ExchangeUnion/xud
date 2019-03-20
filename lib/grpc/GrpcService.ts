@@ -164,6 +164,9 @@ class GrpcService {
       case p2pErrorCodes.COULD_NOT_CONNECT:
         code = status.UNAVAILABLE;
         break;
+      case p2pErrorCodes.POOL_CLOSED:
+        code = status.ABORTED;
+        break;
     }
 
     // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
