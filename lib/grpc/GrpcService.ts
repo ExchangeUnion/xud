@@ -41,7 +41,6 @@ const createOrder = (order: Order) => {
 const createSwapSuccess = (result: SwapSuccess) => {
   const swapSuccess = new xudrpc.SwapSuccess();
   swapSuccess.setOrderId(result.orderId);
-  swapSuccess.setLocalId(result.localId);
   swapSuccess.setPairId(result.pairId);
   swapSuccess.setQuantity(result.quantity);
   swapSuccess.setRHash(result.rHash);

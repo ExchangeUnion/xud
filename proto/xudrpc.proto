@@ -540,8 +540,6 @@ message SubscribeSwapsRequest {
 message SwapSuccess {
   // The global UUID for the order that was swapped.
   string order_id = 1;
-  // The local id for the order that was swapped.
-  string local_id = 2 [json_name = "local_id"];
   // The trading pair that the swap is for.
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.

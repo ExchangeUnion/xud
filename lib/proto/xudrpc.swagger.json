@@ -1234,10 +1234,6 @@
           "type": "string",
           "description": "The global UUID for the order that was swapped."
         },
-        "local_id": {
-          "type": "string",
-          "description": "The local id for the order that was swapped."
-        },
         "pair_id": {
           "type": "string",
           "description": "The trading pair that the swap is for."
