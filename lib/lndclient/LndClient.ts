@@ -340,12 +340,11 @@ class LndClient extends BaseClient {
       });
   }
 
-  /** Ends all subscriptions attempts. */
-  protected stop = () => {
+  /** Lnd client specific cleanup. */
+  protected closeSpecific = () => {
     if (this.invoiceSubscription) {
       this.invoiceSubscription.cancel();
     }
-    return Promise.resolve();
   }
 }
 

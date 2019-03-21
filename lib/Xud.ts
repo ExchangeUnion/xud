@@ -186,15 +186,14 @@ class Xud extends EventEmitter {
     this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
-    const closePromises: Promise<void>[] = [];
-    // TODO: ensure we are not in the middle of executing any trades
-
     for (const currency in this.lndClients) {
-      closePromises.push(this.lndClients[currency]!.close());
+      this.lndClients[currency]!.close();
     }
     if (!this.raidenClient.isDisabled()) {
-      closePromises.push(this.raidenClient.close());
+      this.raidenClient.close();
     }
+    // TODO: ensure we are not in the middle of executing any trades
+    const closePromises: Promise<void>[] = [];
 
     if (this.pool) {
       closePromises.push(this.pool.disconnect());

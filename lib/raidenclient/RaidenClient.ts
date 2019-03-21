@@ -317,9 +317,7 @@ class RaidenClient extends BaseClient {
   }
 
   /** Raiden client specific cleanup. */
-  protected stop() {
-    return Promise.resolve();
-  }
+  protected closeSpecific() {}
 }
 
 export default RaidenClient;
