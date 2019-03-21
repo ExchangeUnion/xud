@@ -1,3 +1,41 @@
+# [1.0.0-alpha.11](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2019-03-21)
+
+
+### Bug Fixes
+
+* **p2p:** fix connection timeout unhandled error ([d258551](https://github.com/ExchangeUnion/xud/commit/d258551))
+* **p2p:** open peer before sending session ack ([2e6e1e8](https://github.com/ExchangeUnion/xud/commit/2e6e1e8)), closes [#839](https://github.com/ExchangeUnion/xud/issues/839)
+* **p2p:** peer error logging ([67a632c](https://github.com/ExchangeUnion/xud/commit/67a632c))
+* **packets:** correct order packet validation ([1329d37](https://github.com/ExchangeUnion/xud/commit/1329d37))
+* **proto:** set price as double ([9869116](https://github.com/ExchangeUnion/xud/commit/9869116))
+
+
+### Code Refactoring
+
+* use generic lnd swap clients ([2de5c78](https://github.com/ExchangeUnion/xud/commit/2de5c78)), closes [#554](https://github.com/ExchangeUnion/xud/issues/554)
+
+
+### Features
+
+* **raiden:** add add minimum viable RaidenClient REST API integration ([5758c0c](https://github.com/ExchangeUnion/xud/commit/5758c0c))
+* **rpc:** add failureReason to SwapFailure msg ([f2d9228](https://github.com/ExchangeUnion/xud/commit/f2d9228)), closes [#807](https://github.com/ExchangeUnion/xud/issues/807)
+* **swaps:** handle taker getRoutes exceptions ([5c8c9dc](https://github.com/ExchangeUnion/xud/commit/5c8c9dc))
+
+
+### Performance Improvements
+
+* **p2p:** use async randomBytes for packet framer ([4756711](https://github.com/ExchangeUnion/xud/commit/4756711))
+
+
+### BREAKING CHANGES
+
+* Changes p2p packet structures for packets that
+communicate the node state.
+* Changes the way lnd config options are passed in via
+command line arguments.
+
+
+
 # [1.0.0-alpha.10](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2019-03-05)
 
 

@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "minCompatibleVersion": "1.0.0-alpha.3",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
