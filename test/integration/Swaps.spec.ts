@@ -4,11 +4,11 @@ import sinon, { SinonSandbox }  from 'sinon';
 import Pool from '../../lib/p2p/Pool';
 import Peer from '../../lib/p2p/Peer';
 import Swaps from '../../lib/swaps/Swaps';
-import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
 import { SwapFailureReason } from '../../lib/constants/enums';
+import BaseClient from '../../lib/BaseClient';
 
 chai.use(chaiAsPromised);
 
@@ -89,10 +89,10 @@ describe('Swaps.Integration', () => {
   let db: DB;
   let pool: Pool;
   let swaps: Swaps;
-  const lndClients: { [currency: string]: LndClient | undefined } = {};
+  const swapClients: { [currency: string]: BaseClient | undefined } = {};
   let peer: Peer;
   let sandbox: SinonSandbox;
-  let queryRoutesResponse;
+  let getRoutesResponse;
 
   before(async () => {
     db = new DB(loggers.db);
@@ -114,20 +114,20 @@ describe('Swaps.Integration', () => {
     pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
     // queryRoutes response
-    queryRoutesResponse = () => {
+    getRoutesResponse = () => {
       return Promise.resolve({
         getRoutesList: () => [1],
       } as any);
     };
     // lnd btc
-    lndClients.BTC = sandbox.createStubInstance(LndClient) as any;
-    lndClients.BTC!.queryRoutes = queryRoutesResponse;
-    lndClients.BTC!.isConnected = () => true;
+    swapClients.BTC = sandbox.createStubInstance(BaseClient) as any;
+    swapClients.BTC!.getRoutes = getRoutesResponse;
+    swapClients.BTC!.isConnected = () => true;
     // lnd ltc
-    lndClients.LTC = sandbox.createStubInstance(LndClient) as any;
-    lndClients.LTC!.isConnected = () => true;
-    lndClients.LTC!.queryRoutes = queryRoutesResponse;
-    swaps = new Swaps(loggers.swaps, db.models, pool, lndClients);
+    swapClients.LTC = sandbox.createStubInstance(BaseClient) as any;
+    swapClients.LTC!.isConnected = () => true;
+    swapClients.LTC!.getRoutes = getRoutesResponse;
+    swaps = new Swaps(loggers.swaps, db.models, pool, swapClients);
   });
 
   afterEach(() => {
@@ -182,20 +182,18 @@ describe('Swaps.Integration', () => {
 
     it('will reject if unable to retrieve routes', async () => {
       const noRoutesFound = () => {
-        return Promise.resolve({
-          getRoutesList: () => [],
-        } as any);
+        return Promise.resolve([]);
       };
-      lndClients.BTC!.queryRoutes = noRoutesFound;
-      lndClients.LTC!.queryRoutes = noRoutesFound;
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+      swapClients.BTC!.getRoutes = noRoutesFound;
+      swapClients.LTC!.getRoutes = noRoutesFound;
+      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
         return Promise.reject('UNKNOWN');
       };
-      lndClients.BTC!.queryRoutes = rejectsWithUnknownError;
-      lndClients.LTC!.queryRoutes = rejectsWithUnknownError;
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+      swapClients.BTC!.getRoutes = rejectsWithUnknownError;
+      swapClients.LTC!.getRoutes = rejectsWithUnknownError;
+      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedLndError);
     });
 

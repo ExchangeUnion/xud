@@ -482,7 +482,7 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: IncomingOrder): boolean => {
     const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
-      // TODO: penalize peer
+      // TODO: penalize peer for sending an order for an unsupported pair
       return false;
     }
 

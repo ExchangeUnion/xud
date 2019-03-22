@@ -1,5 +1,7 @@
 import Logger from './Logger';
 import { EventEmitter } from 'events';
+import { SwapDeal } from './swaps/types';
+import { Route } from './proto/lndrpc_pb';
 
 enum ClientStatus {
   NotInitialized,
@@ -15,9 +17,10 @@ type ChannelBalance = {
 };
 
 /**
- * A base class to represent a client for an external service such as LND or Raiden.
+ * A base class to represent an external swap client such as lnd or Raiden.
  */
 abstract class BaseClient extends EventEmitter {
+  public abstract readonly cltvDelta: number;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
 
@@ -36,6 +39,26 @@ abstract class BaseClient extends EventEmitter {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
   }
+
+  /**
+   * Sends payment according to the terms of a swap deal.
+   * @returns the preimage for the swap
+   */
+  public abstract async sendPayment(deal: SwapDeal): Promise<string>;
+
+  /**
+   * Gets routes for the given currency, amount and peerPubKey.
+   * @param amount the capacity of the route
+   * @param destination target node for the route
+   * @returns routes
+   */
+  public abstract async getRoutes(amount: number, destination: string): Promise<Route[]>;
+
+  /**
+   * Gets the block height of the chain backing this swap client.
+   */
+  public abstract async getHeight(): Promise<number>;
+
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;
   }

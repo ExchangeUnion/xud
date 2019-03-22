@@ -4,6 +4,7 @@ import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
 import { ms } from '../utils/utils';
 import { Order } from '../orderbook/types';
+import { SwapDeal } from 'lib/swaps/types';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -77,6 +78,7 @@ interface RaidenClient {
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
+  public readonly cltvDelta: number = 0;
   public address?: string;
   private port: number;
   private host: string;
@@ -126,6 +128,18 @@ class RaidenClient extends BaseClient {
       );
       this.reconnectionTimer = setTimeout(this.verifyConnection, RaidenClient.RECONNECT_TIMER);
     }
+  }
+
+  public sendPayment = async (_deal: SwapDeal): Promise<string> => {
+    return ''; // stub placeholder
+  }
+
+  public getRoutes =  async (_amount: number, _destination: string) => {
+    return []; // stub placeholder, query routes not currently implemented in raiden
+  }
+
+  public getHeight = async () => {
+    return 0; // raiden's API does not tell us the height
   }
 
   public getRaidenInfo = async (): Promise<RaidenInfo> => {
