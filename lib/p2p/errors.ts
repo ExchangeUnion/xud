@@ -129,7 +129,7 @@ const errors = {
   },
   FRAMER_INVALID_MSG_LENGTH: (expected: number, found: number) => ({
     message: `framer: invalid msg length (expected: ${expected} found: ${found})`,
-    code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
+    code: errorCodes.FRAMER_INVALID_MSG_LENGTH,
   }),
   POOL_CLOSED: {
     message: `p2p pool is closed and not accepting new peers`,
