@@ -15,6 +15,9 @@ cache:
     - $GOPATH/src/github.com/btcsuite
 
 before_install:
+  - GO111MODULE=on
+  - go version
+  - go env
   - . $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
@@ -23,6 +26,4 @@ before_install:
 script:
   - npm run lintNoFix
   - npm run test
-  - go version
-  - go env
   - npm run test:sim
