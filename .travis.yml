@@ -2,7 +2,7 @@
 # runner instead of the slow VM-based runner.
 sudo: false
 
-language: node_js
+language: go
 
 node_js:
   - "node"
