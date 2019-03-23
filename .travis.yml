@@ -2,7 +2,7 @@
 # runner instead of the slow VM-based runner.
 sudo: false
 
-language: go
+language: node_js
 
 node_js:
   - "node"
@@ -15,8 +15,8 @@ cache:
   directories:
     - "node_modules"
     - $GOCACHE
-    - $GOPATH/src/github.com/btcsuite
     - $GOPATH/pkg
+    - $GOPATH/src/github.com/btcsuite
 
 script:
   - npm run lintNoFix
