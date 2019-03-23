@@ -2,6 +2,7 @@
 # runner instead of the slow VM-based runner.
 sudo: false
 
+# Using go instead of node_js
 language: go
 
 go:
@@ -12,16 +13,17 @@ cache:
     - "node_modules"
     - $GOCACHE
     - $GOPATH/pkg
+    - $GOPATH/bin
     - $GOPATH/src/github.com/btcsuite
 
 before_install:
-  - GO111MODULE=on
-  - go version
-  - go env
+  - go get -u github.com/golang/dep/cmd/dep
+  - go get -u github.com/btcsuite/btcd
   - . $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
   - npm install
+  - GO111MODULE=on
 
 script:
   - npm run lintNoFix
