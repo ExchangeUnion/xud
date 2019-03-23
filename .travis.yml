@@ -8,9 +8,6 @@ node_js:
   - "node"
   - "lts/*"
 
-go:
-  - 1.11.x
-
 cache:
   directories:
     - "node_modules"
@@ -21,6 +18,5 @@ cache:
 script:
   - npm run lintNoFix
   - npm run test
-  - go version
-  - go env
+  - travis_install_go_dependencies 1.11.x -v
   - npm run test:sim
