@@ -2,11 +2,10 @@
 # runner instead of the slow VM-based runner.
 sudo: false
 
-language: node_js
+language: go
 
-node_js:
-  - "node"
-  - "lts/*"
+go:
+  - 1.11.x
 
 cache:
   directories:
@@ -15,8 +14,15 @@ cache:
     - $GOPATH/pkg
     - $GOPATH/src/github.com/btcsuite
 
+before_install:
+  - . $HOME/.nvm/nvm.sh
+  - nvm install stable
+  - nvm use stable
+  - npm install
+
 script:
   - npm run lintNoFix
   - npm run test
-  - travis_install_go_dependencies 1.11.x -v
+  - go version
+  - go env
   - npm run test:sim
