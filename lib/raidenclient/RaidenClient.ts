@@ -315,6 +315,9 @@ class RaidenClient extends BaseClient {
     const body = await parseResponseBody<{ our_address: string }>(res);
     return body.our_address;
   }
+
+  /** Raiden client specific cleanup. */
+  protected closeSpecific() {}
 }
 
 export default RaidenClient;

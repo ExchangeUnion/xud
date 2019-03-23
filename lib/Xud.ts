@@ -189,6 +189,9 @@ class Xud extends EventEmitter {
     for (const currency in this.lndClients) {
       this.lndClients[currency]!.close();
     }
+    if (!this.raidenClient.isDisabled()) {
+      this.raidenClient.close();
+    }
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
