@@ -21,5 +21,6 @@ cache:
 script:
   - npm run lintNoFix
   - npm run test
+  - go version
   - go env
   - npm run test:sim
