@@ -1,13 +1,25 @@
+# This is a weird way of telling Travis to use the fast container-based test
+# runner instead of the slow VM-based runner.
+sudo: false
+
 language: node_js
 
 node_js:
   - "node"
   - "lts/*"
 
+go:
+  - 1.11.x
+
 cache:
   directories:
     - "node_modules"
+    - $GOCACHE
+    - $GOPATH/pkg
+    - $GOPATH/src/github.com/btcsuite
 
 script:
   - npm run lintNoFix
   - npm run test
+  - go env
+  - npm run test:sim
