@@ -15,8 +15,8 @@ cache:
   directories:
     - "node_modules"
     - $GOCACHE
-    - $GOPATH/pkg
     - $GOPATH/src/github.com/btcsuite
+    - $GOPATH/pkg
 
 script:
   - npm run lintNoFix
