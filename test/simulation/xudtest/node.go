@@ -111,7 +111,6 @@ func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.Har
 	}
 
 	xudPath, err := filepath.Abs("../../")
-	fmt.Printf("\n\n#### %v\n\n", xudPath)
 	if err != nil {
 		return nil, err
 	}

@@ -23,13 +23,13 @@ before_install:
   - . $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
-  - pwd
   - npm install
 
   # workaround so that travis running 'travis_install_go_dependencies'
   # won't fail the build.
   - GO111MODULE=on
 script:
+  - ./bin/xud
   - npm run lintNoFix
   - npm run test
   - npm run test:sim
