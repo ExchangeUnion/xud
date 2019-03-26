@@ -15,12 +15,7 @@ Requirements:
 Installation & Usage:
 
 ```bash
-GO111MODULE=off go get -u github.com/golang/dep/cmd/dep
-GO111MODULE=off go get -u github.com/btcsuite/btcd
-
-git clone https://github.com/ExchangeUnion/xud-simulation.git
-cd xud-simulation
-GO111MODULE=on go test -v
+$ GO111MODULE=on go test -v
 ````
 
 ## Network Scenarios Tests
