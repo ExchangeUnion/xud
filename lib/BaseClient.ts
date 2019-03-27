@@ -21,11 +21,15 @@ type ChannelBalance = {
  */
 abstract class BaseClient extends EventEmitter {
   public abstract readonly cltvDelta: number;
+  public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
 
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
   protected static readonly RECONNECT_TIMER = 5000;
+  private updateCapacityTimer?: NodeJS.Timer;
+  /** Time in milliseconds between updating the maximum outbound capacity */
+  private CAPACITY_REFRESH_INTERVAL = 60000;
 
   constructor(protected logger: Logger) {
     super();
@@ -38,6 +42,23 @@ abstract class BaseClient extends EventEmitter {
   protected setStatus(status: ClientStatus): void {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
+    this.checkTimers();
+  }
+  private checkTimers() {
+    if (this.status === ClientStatus.ConnectionVerified) {
+      this.updateCapacityTimer = setInterval(async () => {
+        try {
+          this.maximumOutboundCapacity = (await this.channelBalance()).balance;
+        } catch (e) {
+          // TODO: Mark client as disconnected
+          this.logger.error(`failed to fetch channelbalance from client: ${e}`);
+        }
+      }, this.CAPACITY_REFRESH_INTERVAL);
+    } else {
+      if (this.updateCapacityTimer) {
+        clearInterval(this.updateCapacityTimer);
+      }
+    }
   }
 
   /**
@@ -72,6 +93,9 @@ abstract class BaseClient extends EventEmitter {
   public close() {
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
+    }
+    if (this.updateCapacityTimer) {
+      clearInterval(this.updateCapacityTimer);
     }
     this.closeSpecific();
   }
