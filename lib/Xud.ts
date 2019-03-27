@@ -78,7 +78,7 @@ class Xud extends EventEmitter {
       for (const currency in this.config.lnd) {
         const lndConfig = this.config.lnd[currency]!;
         if (!lndConfig.disable) {
-          const lndClient = new LndClient(lndConfig, loggers.lnd);
+          const lndClient = new LndClient(lndConfig, currency, loggers.lnd);
           this.lndClients[currency] = lndClient;
           initPromises.push(lndClient.init());
         }
