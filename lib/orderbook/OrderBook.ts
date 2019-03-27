@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClients } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -203,6 +203,9 @@ class OrderBook extends EventEmitter {
   public addCurrency = async (currency: CurrencyFactory) => {
     if (this.currencies.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
+    }
+    if (currency.swapClient === SwapClients.Raiden && !currency.tokenAddress) {
+      throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencies.set(currencyInstance.id, currencyInstance);
