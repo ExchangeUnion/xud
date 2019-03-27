@@ -41,11 +41,6 @@ interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
-interface LndClient {
-  on(event: 'connectionVerified', listener: (newPubKey?: string) => void): this;
-  emit(event: 'connectionVerified', newPubKey?: string): boolean;
-}
-
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
   public readonly type = SwapClient.Lnd;

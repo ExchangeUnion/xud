@@ -176,6 +176,11 @@ class Xud extends EventEmitter {
         }
       });
     }
+    this.raidenClient.on('connectionVerified', (newAddress) => {
+      if (newAddress) {
+        this.pool.updateNodeState({ raidenAddress: newAddress });
+      }
+    });
   }
 
   private shutdown = async () => {
