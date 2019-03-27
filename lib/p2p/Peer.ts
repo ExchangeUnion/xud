@@ -330,9 +330,13 @@ class Peer extends EventEmitter {
   }
 
   private sendRaw = (data: Buffer) => {
-    if (this.socket) {
-      this.socket.write(data);
-      this.lastSend = Date.now();
+    if (this.socket && !this.socket.destroyed) {
+      try {
+        this.socket.write(data);
+        this.lastSend = Date.now();
+      } catch (err) {
+        this.logger.error('failed sending data to peer', err);
+      }
     }
   }
 
