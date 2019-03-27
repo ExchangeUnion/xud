@@ -826,6 +826,9 @@ export class Peer extends jspb.Message {
   getSecondsConnected(): number;
   setSecondsConnected(value: number): void;
 
+  getRaidenAddress(): string;
+  setRaidenAddress(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Peer.AsObject;
   static toObject(includeInstance: boolean, msg: Peer): Peer.AsObject;
@@ -845,6 +848,7 @@ export namespace Peer {
     pairsList: Array<string>,
     xudVersion: string,
     secondsConnected: number,
+    raidenAddress: string,
   }
 }
 

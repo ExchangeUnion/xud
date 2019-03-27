@@ -27,6 +27,7 @@ type PeerInfo = {
   xudVersion?: string,
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
+  raidenAddress?: string,
 };
 
 interface Peer {
@@ -133,6 +134,7 @@ class Peer extends EventEmitter {
       xudVersion: this.nodeState ? this.nodeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
+      raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
     };
   }
 

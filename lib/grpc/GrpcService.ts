@@ -498,6 +498,7 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
+        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);
