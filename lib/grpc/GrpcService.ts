@@ -326,7 +326,7 @@ class GrpcService {
           case SwapFailureReason.OrderOnHold:
             code = status.FAILED_PRECONDITION;
             break;
-          case SwapFailureReason.UnexpectedLndError:
+          case SwapFailureReason.UnexpectedClientError:
           case SwapFailureReason.UnknownError:
           default:
             code = status.UNKNOWN;

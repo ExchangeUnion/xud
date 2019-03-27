@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import { ReputationEvent, DisconnectionReason, NetworkMagic } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, NetworkMagic, SwapClient } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -161,11 +161,17 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getLndPubKey(currency: string): string | undefined {
-    if (!this.nodeState || !this.nodeState.lndPubKeys) {
+  public getIdentifier(clientType: SwapClient, currency?: string): string | undefined {
+    if (!this.nodeState) {
       return undefined;
     }
-    return this.nodeState.lndPubKeys[currency];
+    if (clientType === SwapClient.Lnd && currency) {
+      return this.nodeState.lndPubKeys[currency];
+    }
+    if (clientType === SwapClient.Raiden) {
+      return this.nodeState.raidenAddress;
+    }
+    return;
   }
 
   public getStatus = (): string => {

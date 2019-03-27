@@ -2,9 +2,9 @@ import http from 'http';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
-import { ms } from '../utils/utils';
 import { Order } from '../orderbook/types';
-import { SwapDeal } from 'lib/swaps/types';
+import { SwapDeal } from '../swaps/types';
+import { SwapClient } from '../constants/enums';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -78,6 +78,7 @@ interface RaidenClient {
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
+  public readonly type = SwapClient.Raiden;
   public readonly cltvDelta: number = 0;
   public address?: string;
   private port: number;
