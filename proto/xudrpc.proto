@@ -219,6 +219,16 @@ service Xud {
       get: "/v1/subscribeswaps"
     };
   }
+
+  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
+   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
+   * the client to get real-time notifications when swap attempts are failing. It can be used for
+   * status monitoring, debugging, and testing purposes. */
+  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswapfailures"
+    };
+  }
 }
 
 enum OrderSide {
