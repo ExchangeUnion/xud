@@ -33,8 +33,13 @@ class Swaps extends EventEmitter {
   private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
-  /** The number of satoshis in a bitcoin. */
-  private static readonly SATOSHIS_PER_COIN = 100000000;
+  /** Number of smallest units per currency. */
+  // TODO: Populate the mapping from the database (Currency.decimalPlaces).
+  private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
+    BTC: 100000000,
+    LTC: 100000000,
+    WETH: 1000000000000000000,
+  };
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
@@ -82,10 +87,10 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean) => {
-    // TODO: use configurable amount of subunits/satoshis per token for each currency
-    const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
-    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);
+  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+    const [baseCurrency, quoteCurrency] = pairId.split('/');
+    const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
+    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
     const makerAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
     const takerAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
     return { makerAmount, takerAmount };
@@ -190,7 +195,7 @@ class Swaps extends EventEmitter {
     // TODO: right now we only verify that a route exists when we are the taker, we should
     // generalize the logic below to work for when we are the maker as well
     const { makerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
-    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy);
+    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
 
     const swapClient = this.swapClients[makerCurrency];
     if (!swapClient) throw new Error('swap client not found');
@@ -257,7 +262,7 @@ class Swaps extends EventEmitter {
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
 
     const quantity = Math.min(maker.quantity, taker.quantity);
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy);
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
     const clientType = this.swapClients[makerCurrency]!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
@@ -329,7 +334,7 @@ class Swaps extends EventEmitter {
 
     const { quantity, price, isBuy } = orderToAccept;
 
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy);
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy, requestBody.pairId);
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(requestBody.pairId, isBuy);
 
     const swapClient = this.swapClients[takerCurrency];
@@ -468,7 +473,7 @@ class Swaps extends EventEmitter {
         // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
-        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy);
+        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy, deal.pairId);
         deal.takerAmount = takerAmount;
         deal.makerAmount = makerAmount;
       }
