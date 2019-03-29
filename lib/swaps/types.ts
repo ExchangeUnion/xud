@@ -1,5 +1,4 @@
 import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
-import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
   /** Our role in the swap. */
@@ -75,4 +74,8 @@ export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'pe
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
   failureReason: SwapFailureReason;
+};
+
+export type Route = {
+  getTotalTimeLock: Function,
 };

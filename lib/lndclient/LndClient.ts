@@ -223,7 +223,7 @@ class LndClient extends BaseClient {
 
     if (deal.makerToTakerRoutes && deal.role === SwapRole.Maker) {
       const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes);
+      request.setRoutesList(deal.makerToTakerRoutes as lndrpc.Route[]);
       request.setPaymentHashString(deal.rHash);
 
       try {
