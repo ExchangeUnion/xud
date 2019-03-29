@@ -4,7 +4,7 @@ import "time"
 
 const (
 	defaultXudKill    = true
-	defaultXudCleanup = true
+	defaultXudCleanup = false
 	defaultTimeout    = int64(5 * time.Second)
 )
 

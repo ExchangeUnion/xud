@@ -165,8 +165,8 @@ func (*actions) placeOrderAndSwap(assert *require.Assertions, ctx context.Contex
 	res, err := srcNode.Client.PlaceOrderSync(ctx, req)
 	assert.NoError(err)
 	assert.Len(res.InternalMatches, 0)
-	assert.Len(res.SwapSuccesses, 1)
 	assert.Len(res.SwapFailures, 0)
+	assert.Len(res.SwapSuccesses, 1)
 	assert.Nil(res.RemainingOrder)
 
 	// Retrieve and verify the swap events on both nodes.

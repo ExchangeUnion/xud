@@ -33,3 +33,6 @@ script:
   - npm run lintNoFix
   - npm run test
   - npm run test:sim
+
+  # debug
+  - cat test/simulation/xuddatadir-Bob/logs/xud.log
