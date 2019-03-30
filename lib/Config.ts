@@ -107,9 +107,13 @@ class Config {
 
   public load = async (args?: { [argName: string]: any }): Promise<Config> => {
     if (args) {
-      this.updateNetwork(args.mainnet, args.testnet, args.regtest);
+      if (args.xudir) {
+        this.xudir = args.xudir;
+        this.logpath = this.getDefaultLogPath();
+      }
+      this.network = this.getNetwork(args);
+      this.dbpath = this.getDefaultDbPath();
       this.updateMacaroonPaths();
-      this.updateDefaultPaths(args.xudir);
     }
 
     const configPath = path.join(this.xudir, 'xud.conf');
@@ -120,16 +124,14 @@ class Config {
       try {
         const props = toml.parse(configText);
 
-        const updateNetwork = (props.mainnet || props.testnet || props.regtest) && (!args || !args.mainnet || args.testnet || args.regtest)
-        if (updateNetwork) {
-          this.updateNetwork(props.mainnet, props.testnet, props.regtest);
-          this.updateMacaroonPaths();
+        if (props.xudir && (!args || !args.xudir)) {
+          this.xudir = props.xudir;
+          this.logpath = this.getDefaultLogPath();
         }
 
-        const updateXuPath = props.xudir && (!args || !args.xudir);
-        if (updateXuPath || updateNetwork) {
-          this.updateDefaultPaths(props.xudir || this.xudir);
-        }
+        this.network = this.getNetwork(props);
+        this.dbpath = this.getDefaultDbPath();
+        this.updateMacaroonPaths();
 
         // merge parsed json properties from config file to the default config
         deepMerge(this, props);
@@ -160,23 +162,11 @@ class Config {
     }
   }
 
-  /**
-   * Updates the default values for all fields derived from the xu directory when a custom
-   * xu directory is specified by the config file or command line arguments.
-   */
-  private updateDefaultPaths = (xudir: string) => {
-    // if we have a custom xu directory, update the default values for all fields that are
-    // derived from the xu directory.
-    this.xudir = xudir;
-    this.logpath = this.getDefaultLogPath();
-    this.dbpath = this.getDefaultDbPath();
-  }
-
-  private updateNetwork = (mainnet: boolean, testnet: boolean, regtest: boolean) => {
+  private getNetwork = (args: { [argName: string]: any }) => {
     const networks: { [val: string]: boolean } = {
-      [XUNetwork.MainNet]: mainnet,
-      [XUNetwork.TestNet]: testnet,
-      [XUNetwork.RegTest]: regtest,
+      [XUNetwork.MainNet]: args.mainnet,
+      [XUNetwork.TestNet]: args.testnet,
+      [XUNetwork.RegTest]: args.regtest,
     };
 
     const selected = Object.keys(networks).filter(key => networks[key]);
@@ -185,9 +175,9 @@ class Config {
     }
 
     if (selected.length === 0) {
-      this.network = XUNetwork.SimNet;
+      return XUNetwork.SimNet;
     } else {
-      this.network = selected[0] as XUNetwork;
+      return selected[0] as XUNetwork;
     }
   }
 
