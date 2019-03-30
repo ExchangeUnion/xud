@@ -839,6 +839,7 @@
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
+| failure_reason | [string](#string) |  | The reason why the swap failed. |
 
 
 
@@ -865,7 +866,7 @@
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
-| price | [int64](#int64) |  | The price used for the swap. |
+| price | [double](#double) |  | The price used for the swap. |
 
 
 

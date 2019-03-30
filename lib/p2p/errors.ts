@@ -29,6 +29,7 @@ const errorCodes = {
   FRAMER_INVALID_NETWORK_MAGIC_VALUE: codesPrefix.concat('.21'),
   FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: codesPrefix.concat('.22'),
   FRAMER_INVALID_MSG_LENGTH: codesPrefix.concat('.23'),
+  POOL_CLOSED: codesPrefix.concat('.24'),
 };
 
 const errors = {
@@ -134,8 +135,12 @@ const errors = {
   }),
   FRAMER_INVALID_MSG_LENGTH: (expected: number, found: number) => ({
     message: `framer: invalid msg length (expected: ${expected}, found: ${found})`,
-    code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
+    code: errorCodes.FRAMER_INVALID_MSG_LENGTH,
   }),
+  POOL_CLOSED: {
+    message: `p2p pool is closed and not accepting new peers`,
+    code: errorCodes.POOL_CLOSED,
+  },
 };
 
 export { errorCodes };

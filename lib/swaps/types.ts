@@ -1,8 +1,8 @@
-import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from 'lib/constants/enums';
+import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
 import { Route } from '../proto/lndrpc_pb';
 
 export type SwapDeal = {
-  /** The role of the local node in the swap. */
+  /** Our role in the swap. */
   role: SwapRole;
   /** The most updated deal phase */
   phase: SwapPhase;
@@ -50,6 +50,8 @@ export type SwapDeal = {
   rPreimage?: string;
   /** The routes the maker should use to send to the taker. */
   makerToTakerRoutes?: Route[];
+  /** The identifier for the payment channel network node we should pay to complete the swap.  */
+  destination?: string;
   createTime: number;
   executeTime?: number;
   completeTime?: number;
@@ -67,4 +69,10 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
   currencySent: string;
   /** The quantity that was swapped. */
   quantity: number;
+};
+
+export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
+  /** The quantity that was attempted and failed for the swap. */
+  quantity: number;
+  failureReason: SwapFailureReason;
 };

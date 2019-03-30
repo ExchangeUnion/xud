@@ -171,8 +171,9 @@ export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) =
  */
 export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
   const kvps: { [key: string]: T } = {};
-  for (const kvp of kvpArray.values()) {
+  kvpArray.forEach((kvp) => {
     kvps[kvp[0]] = kvp[1];
-  }
+  });
+
   return kvps;
 };

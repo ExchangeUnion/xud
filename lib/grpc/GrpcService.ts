@@ -10,8 +10,8 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { SwapSuccess } from '../swaps/types';
-import { setObjectToMap } from '../utils/utils';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { SwapFailureReason } from '../constants/enums';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -57,15 +57,16 @@ const createSwapSuccess = (result: SwapSuccess) => {
 };
 
 /**
- * Creates an xudrpc SwapFailure message from a [[PeerOrder]] that could not be swapped.
+ * Creates an xudrpc SwapFailure message from a [[SwapFailure]].
  */
-const createSwapFailure = (order: PeerOrder) => {
-  const swapFailure = new xudrpc.SwapFailure();
-  swapFailure.setOrderId(order.id);
-  swapFailure.setPairId(order.pairId);
-  swapFailure.setPeerPubKey(order.peerPubKey);
-  swapFailure.setQuantity(order.quantity);
-  return swapFailure;
+const createSwapFailure = (swapFailure: SwapFailure) => {
+  const grpcSwapFailure = new xudrpc.SwapFailure();
+  grpcSwapFailure.setOrderId(swapFailure.orderId);
+  grpcSwapFailure.setPairId(swapFailure.pairId);
+  grpcSwapFailure.setPeerPubKey(swapFailure.peerPubKey);
+  grpcSwapFailure.setQuantity(swapFailure.quantity);
+  grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
+  return grpcSwapFailure;
 };
 
 /**
@@ -106,7 +107,7 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
       placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventType.SwapFailure:
-      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as PeerOrder));
+      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as SwapFailure));
       break;
   }
   return placeOrderEvent;
@@ -162,6 +163,9 @@ class GrpcService {
       case lndErrorCodes.LND_IS_UNAVAILABLE:
       case p2pErrorCodes.COULD_NOT_CONNECT:
         code = status.UNAVAILABLE;
+        break;
+      case p2pErrorCodes.POOL_CLOSED:
+        code = status.ABORTED;
         break;
     }
 
@@ -299,10 +303,45 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const result = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(result));
+      const swapResult = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapResult));
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      if (typeof err === 'number') {
+        // treat the error as a SwapFailureReason enum
+        let code: status;
+        switch (err) {
+          case SwapFailureReason.DealTimedOut:
+          case SwapFailureReason.SwapTimedOut:
+            code = status.DEADLINE_EXCEEDED;
+            break;
+          case SwapFailureReason.InvalidSwapRequest:
+          case SwapFailureReason.PaymentHashReuse:
+          case SwapFailureReason.InvalidResolveRequest:
+            // these cases suggest something went very wrong with our swap request
+            code = status.INTERNAL;
+            break;
+          case SwapFailureReason.NoRouteFound:
+          case SwapFailureReason.SendPaymentFailure:
+          case SwapFailureReason.SwapClientNotSetup:
+          case SwapFailureReason.OrderOnHold:
+            code = status.FAILED_PRECONDITION;
+            break;
+          case SwapFailureReason.UnexpectedLndError:
+          case SwapFailureReason.UnknownError:
+          default:
+            code = status.UNKNOWN;
+            break;
+        }
+        const grpcError: grpc.ServiceError = {
+          code,
+          name: SwapFailureReason[err],
+          message: SwapFailureReason[err],
+        };
+        this.logger.error(grpcError);
+        callback(grpcError, null);
+      } else {
+        callback(this.getGrpcError(err), null);
+      }
     }
   }
 
