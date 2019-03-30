@@ -1,15 +1,19 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 import PingPacket from './PingPacket';
 
 class PongPacket extends Packet<undefined> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.Pong;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Response;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): PongPacket | pb.PongPacket.AsObject => {
@@ -23,7 +27,7 @@ class PongPacket extends Packet<undefined> {
     );
   }
 
-  private static convert = (obj: pb.PongPacket.AsObject): PingPacket => {
+  private static convert = (obj: pb.PongPacket.AsObject): PongPacket => {
     return new PongPacket({
       header: {
         id: obj.id,

@@ -11,6 +11,7 @@ import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
+import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
 import { NodeState, Address, NodeConnectionInfo } from './types';
 import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
@@ -299,7 +300,7 @@ class Peer extends EventEmitter {
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
-      this.addResponseTimeout(packet.header.id, Peer.RESPONSE_TIMEOUT);
+      this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
     }
   }
 
@@ -439,8 +440,8 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
-    const entry = this.getOrAddPendingResponseEntry(packetId);
+  private wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
+    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
 
@@ -456,7 +457,7 @@ class Peer extends EventEmitter {
 
   private waitSessionInit = async (): Promise<packets.SessionInitPacket> => {
     if (!this.sessionInitPacket) {
-      await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.SessionInit.toString(), undefined, Peer.RESPONSE_TIMEOUT);
     }
 
     return this.sessionInitPacket!;
@@ -482,23 +483,23 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | undefined => {
+  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number): PendingResponseEntry | undefined => {
     if (this.closed) {
       return undefined;
     }
 
-    const entry = this.getOrAddPendingResponseEntry(packetId);
+    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     entry.setTimeout(timeout);
 
     return entry;
   }
 
-  private getOrAddPendingResponseEntry = (packetId: string): PendingResponseEntry => {
-    let entry = this.responseMap.get(packetId);
+  private getOrAddPendingResponseEntry = (reqId: string, resType: ResponseType): PendingResponseEntry => {
+    let entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      entry = new PendingResponseEntry();
-      this.responseMap.set(packetId, entry);
+      entry = new PendingResponseEntry(resType);
+      this.responseMap.set(reqId, entry);
     }
 
     return entry;
@@ -520,6 +521,17 @@ class Peer extends EventEmitter {
 
     if (!entry) {
       this.logger.debug(`Peer (${this.label}) sent an unsolicited response packet (${reqId})`);
+      // TODO: penalize
+      return false;
+    }
+
+    const isExpectedType =
+      entry.resType === undefined ||
+      (isPacketType(entry.resType) && packet.type === entry.resType) ||
+      (isPacketTypeArray(entry.resType) && entry.resType.includes(packet.type));
+
+    if (!isExpectedType) {
+      this.logger.debug(`Peer (${this.label}) sent an unsolicited packet type (${PacketType[packet.type]}) for response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
@@ -696,7 +708,7 @@ class Peer extends EventEmitter {
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
     const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
     await this.sendPacket(packet);
-    await this.wait(packet.header.id, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
+    await this.wait(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
       // enabling in-encryption synchronously,
       // expecting the following peer msg to be encrypted
       const sessionAck: packets.SessionAckPacket = packet;
@@ -852,6 +864,8 @@ class PendingResponseEntry {
   public jobs: Job[] = [];
   /** An array of callbacks to be called synchronously when entry resolve. */
   public callbacks: Function[] = [];
+
+  constructor(public resType: ResponseType) {}
 
   public addJob = (resolve: Function, reject: Function) => {
     this.jobs.push(new Job(resolve, reject));
