@@ -58,7 +58,7 @@ class Config {
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
-    this.network = XUNetwork.SimNet;
+    this.network = this.getDefaultNetwork()
     const lnNetwork = lnNetworks[this.network];
     this.dbpath = this.getDefaultDbPath();
 
@@ -121,23 +121,31 @@ class Config {
       await mkdir(this.xudir);
     } else if (await exists(configPath)) {
       const configText = await readFile(configPath, 'utf8');
+      let props;
       try {
-        const props = toml.parse(configText);
-
-        if (props.xudir && (!args || !args.xudir)) {
-          this.xudir = props.xudir;
-          this.logpath = this.getDefaultLogPath();
-        }
-
-        this.network = this.getNetwork(props);
-        this.dbpath = this.getDefaultDbPath();
-        this.updateMacaroonPaths();
-
-        // merge parsed json properties from config file to the default config
-        deepMerge(this, props);
+        props = toml.parse(configText);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
       }
+
+      if (props.xudir && (!args || !args.xudir)) {
+        this.xudir = props.xudir;
+        this.logpath = this.getDefaultLogPath();
+        this.dbpath = this.getDefaultDbPath();
+      }
+
+      if (props.network && this.network === this.getDefaultNetwork()) {
+        if (![XUNetwork.MainNet, XUNetwork.TestNet, XUNetwork.SimNet, XUNetwork.RegTest].includes(props.network)) {
+          throw new Error(`Invalid network config: ${props.network}`);
+        }
+        this.network = props.network;
+        this.logpath = this.getDefaultLogPath();
+        this.dbpath = this.getDefaultDbPath();
+        this.updateMacaroonPaths();
+      }
+
+      // merge parsed json properties from config file to the default config
+      deepMerge(this, props);
     }
 
     if (args) {
@@ -166,12 +174,13 @@ class Config {
     const networks: { [val: string]: boolean } = {
       [XUNetwork.MainNet]: args.mainnet,
       [XUNetwork.TestNet]: args.testnet,
+      [XUNetwork.SimNet]: args.simnet,
       [XUNetwork.RegTest]: args.regtest,
     };
 
     const selected = Object.keys(networks).filter(key => networks[key]);
     if (selected.length > 1) {
-      throw Error('only one alternative network selection is allowed');
+      throw Error('only one network selection is allowed');
     }
 
     if (selected.length === 0) {
@@ -208,6 +217,10 @@ class Config {
 
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
+  }
+
+  public getDefaultNetwork = (): XUNetwork => {
+    return XUNetwork.SimNet;
   }
 }
 

@@ -37,6 +37,11 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    simnet: {
+      describe: 'Whether to run XUD on simnet',
+      type: 'boolean',
+      default: undefined,
+    },
     regnet: {
       describe: 'Whether to run XUD on regnet',
       type: 'boolean',
@@ -172,7 +177,11 @@ const { argv } = require('yargs')
     }
 
     return arg;
-  });
+  })
+  .conflicts('mainnet', ['testnet', 'simnet', 'regtest'])
+  .conflicts('testnet', ['mainnet', 'simnet', 'regtest'])
+  .conflicts('simnet', ['mainnet', 'testnet', 'regtest'])
+  .conflicts('regtest', ['mainnet', 'testnet', 'simnet']);
 
 // delete non-config keys from argv
 delete argv._;
