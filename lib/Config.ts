@@ -6,7 +6,7 @@ import { exists, mkdir, readFile } from './utils/fsUtils';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { lnNetworks, XuNetwork } from './constants/enums';
+import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
 
 class Config {
@@ -59,7 +59,6 @@ class Config {
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = this.getDefaultNetwork();
-    const lnNetwork = lnNetworks[this.network];
     this.dbpath = this.getDefaultDbPath();
 
     this.p2p = {
@@ -92,7 +91,7 @@ class Config {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
-        lnNetwork === lnNetworks[XuNetwork.TestNet] ? 'testnet4' : this.network, 'admin.macaroon'),
+        this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
@@ -191,17 +190,16 @@ class Config {
   }
 
   private updateMacaroonPaths = () => {
-    const lnNetwork = lnNetworks[this.network];
     for (const currency in this.lnd) {
       switch (currency) {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
           this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
-            lnNetwork === XuNetwork.TestNet ? 'testnet4' : lnNetwork, 'admin.macaroon');
+            this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
           break;
         default:
           // by default we want to update the network folder name to the selected network
-          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', lnNetwork, 'admin.macaroon');
+          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', this.network, 'admin.macaroon');
           break;
       }
     }

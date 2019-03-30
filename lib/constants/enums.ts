@@ -29,16 +29,6 @@ export enum XuNetwork {
 }
 
 /**
- * LN network config per XU network.
- */
-export const lnNetworks = {
-  [XuNetwork.MainNet]: 'mainnet',
-  [XuNetwork.TestNet]: 'testnet',
-  [XuNetwork.SimNet]: 'testnet',
-  [XuNetwork.RegTest]: 'testnet',
-};
-
-/**
  * Magic value per XU network, indicating wire msg origin network,
  * and used to seek to next msg when stream state is unknown.
  */
