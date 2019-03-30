@@ -52,11 +52,11 @@ export const xuNetworkMagicVals = {
 /**
  * XU network per magic value.
  */
-export const magicValsXuNetwork: { [val: number]: XuNetwork} = {
-  [0xd9b4bef9]: XuNetwork.MainNet,
-  [0x0709110b]: XuNetwork.TestNet,
-  [0x12141c16]: XuNetwork.SimNet,
-  [0xdab5bffa]: XuNetwork.RegTest,
+export const magicValsXuNetwork = {
+  [xuNetworkMagicVals[XuNetwork.MainNet]]: XuNetwork.MainNet,
+  [xuNetworkMagicVals[XuNetwork.TestNet]]: XuNetwork.TestNet,
+  [xuNetworkMagicVals[XuNetwork.SimNet]]: XuNetwork.SimNet,
+  [xuNetworkMagicVals[XuNetwork.RegTest]]: XuNetwork.RegTest,
 };
 
 export enum SwapRole {
