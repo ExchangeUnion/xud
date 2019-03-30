@@ -58,7 +58,7 @@ class Config {
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
-    this.network = this.getDefaultNetwork()
+    this.network = this.getDefaultNetwork();
     const lnNetwork = lnNetworks[this.network];
     this.dbpath = this.getDefaultDbPath();
 
