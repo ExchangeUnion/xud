@@ -68,25 +68,22 @@ class DB {
       SwapDeal.sync(),
     ]);
 
-    if (initDb) {
-      // initialize database with the seed nodes for the configured network,
-      // if none already exists.
+    if (initDb && newDb) {
+      // initialize database with the seed nodes for the configured network
       const nodes = seeds.get(network);
-      if (nodes && !await Node.findOne({ where: { network } })) {
+      if (nodes) {
         await Node.bulkCreate(nodes);
       }
 
-      if (newDb) {
-        // initialize new databases with default data.
-        await Currency.bulkCreate(<db.CurrencyAttributes[]>[
-          { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-          { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-        ]);
+      // initialize new databases with default data.
+      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
+        { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+        { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+      ]);
 
-        await Pair.bulkCreate(<db.PairAttributes[]>[
-          { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-        ]);
-      }
+      await Pair.bulkCreate(<db.PairAttributes[]>[
+        { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
+      ]);
     }
   }
 

@@ -76,7 +76,7 @@ class NodeList extends EventEmitter {
    * Load this NodeList from the database.
    */
   public load = async (): Promise<void> => {
-    const nodes = await this.repository.getNodes(this.network.xuNetwork);
+    const nodes = await this.repository.getNodes();
 
     nodes.forEach(async (node) => {
       if (node.banned) {

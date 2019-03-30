@@ -54,13 +54,13 @@ class Config {
 
     // default configuration
     this.initdb = true;
-    this.dbpath = this.getDefaultDbPath();
     this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = XUNetwork.SimNet;
     const lnNetwork = lnNetworks[this.network];
+    this.dbpath = this.getDefaultDbPath();
 
     this.p2p = {
       listen: true,
@@ -107,11 +107,9 @@ class Config {
 
   public load = async (args?: { [argName: string]: any }): Promise<Config> => {
     if (args) {
-      if (args.xudir) {
-        this.updateDefaultPaths(args.xudir);
-      }
-      this.updateNetwork(args);
+      this.updateNetwork(args.mainnet, args.testnet, args.regtest);
       this.updateMacaroonPaths();
+      this.updateDefaultPaths(args.xudir);
     }
 
     const configPath = path.join(this.xudir, 'xud.conf');
@@ -122,8 +120,15 @@ class Config {
       try {
         const props = toml.parse(configText);
 
-        if (props.xudir && (!args || !args.xudir)) {
-          this.updateDefaultPaths(props.xudir);
+        const updateNetwork = (props.mainnet || props.testnet || props.regtest) && (!args || !args.mainnet || args.testnet || args.regtest)
+        if (updateNetwork) {
+          this.updateNetwork(props.mainnet, props.testnet, props.regtest);
+          this.updateMacaroonPaths();
+        }
+
+        const updateXuPath = props.xudir && (!args || !args.xudir);
+        if (updateXuPath || updateNetwork) {
+          this.updateDefaultPaths(props.xudir || this.xudir);
         }
 
         // merge parsed json properties from config file to the default config
@@ -167,11 +172,11 @@ class Config {
     this.dbpath = this.getDefaultDbPath();
   }
 
-  private updateNetwork = (args?: { [argName: string]: any }) => {
+  private updateNetwork = (mainnet: boolean, testnet: boolean, regtest: boolean) => {
     const networks: { [val: string]: boolean } = {
-      [XUNetwork.MainNet]: args!.mainnet,
-      [XUNetwork.TestNet]: args!.testnet,
-      [XUNetwork.RegTest]: args!.regtest,
+      [XUNetwork.MainNet]: mainnet,
+      [XUNetwork.TestNet]: testnet,
+      [XUNetwork.RegTest]: regtest,
     };
 
     const selected = Object.keys(networks).filter(key => networks[key]);
@@ -204,7 +209,7 @@ class Config {
   }
 
   private getDefaultDbPath = () => {
-    return path.join(this.xudir, 'xud.db');
+    return path.join(this.xudir, `xud-${this.network}.db`);
   }
 
   private getDefaultLogPath = (): string => {

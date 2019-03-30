@@ -433,7 +433,6 @@ class Pool extends EventEmitter {
       await this.nodes.createNode({
         addresses,
         nodePubKey: peerPubKey,
-        network: this.network.xuNetwork,
         lastAddress: peer.inbound ? undefined : peer.address,
       });
     } else {

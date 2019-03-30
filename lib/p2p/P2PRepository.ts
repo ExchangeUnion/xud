@@ -7,12 +7,8 @@ class P2PRepository {
 
   constructor(private models: Models) {}
 
-  public getNodes = async (network: XUNetwork): Promise<NodeInstance[]> => {
-    return this.models.Node.findAll({
-      where: {
-        network,
-      },
-    });
+  public getNodes = async (): Promise<NodeInstance[]> => {
+    return this.models.Node.findAll();
   }
 
   public getNode = async (nodePubKey: string): Promise<NodeInstance | null> => {

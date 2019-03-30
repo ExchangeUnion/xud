@@ -75,9 +75,7 @@ export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes
 };
 
 /* Node */
-export type NodeFactory = NodeConnectionInfo & {
-  network: string,
-};
+export type NodeFactory = NodeConnectionInfo;
 
 export type NodeAttributes = NodeFactory & {
   id: number;

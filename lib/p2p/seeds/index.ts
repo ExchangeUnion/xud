@@ -11,11 +11,5 @@ const seeds: { [network: string]: db.NodeAttributes[] | undefined } = {
 };
 
 export default {
-  get: (xuNetwork: XUNetwork): db.NodeAttributes[] | undefined => {
-    const nodes = seeds[xuNetwork];
-    if (!nodes) {
-      return;
-    }
-    return nodes.map(node => ({ ...node, network: xuNetwork }));
-  },
+  get: (xuNetwork: XUNetwork): db.NodeAttributes[] | undefined => seeds[xuNetwork],
 };
