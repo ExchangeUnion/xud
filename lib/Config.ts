@@ -6,7 +6,7 @@ import { exists, mkdir, readFile } from './utils/fsUtils';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { lnNetworks, XUNetwork } from './constants/enums';
+import { lnNetworks, XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
 
 class Config {
@@ -15,7 +15,7 @@ class Config {
   public loglevel: string;
   public logpath: string;
   public logdateformat: string;
-  public network: XUNetwork;
+  public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
@@ -92,7 +92,7 @@ class Config {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
-        lnNetwork === lnNetworks[XUNetwork.TestNet] ? 'testnet4' : this.network, 'admin.macaroon'),
+        lnNetwork === lnNetworks[XuNetwork.TestNet] ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
@@ -135,7 +135,7 @@ class Config {
       }
 
       if (props.network && this.network === this.getDefaultNetwork()) {
-        if (![XUNetwork.MainNet, XUNetwork.TestNet, XUNetwork.SimNet, XUNetwork.RegTest].includes(props.network)) {
+        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(props.network)) {
           throw new Error(`Invalid network config: ${props.network}`);
         }
         this.network = props.network;
@@ -172,10 +172,10 @@ class Config {
 
   private getNetwork = (args: { [argName: string]: any }) => {
     const networks: { [val: string]: boolean } = {
-      [XUNetwork.MainNet]: args.mainnet,
-      [XUNetwork.TestNet]: args.testnet,
-      [XUNetwork.SimNet]: args.simnet,
-      [XUNetwork.RegTest]: args.regtest,
+      [XuNetwork.MainNet]: args.mainnet,
+      [XuNetwork.TestNet]: args.testnet,
+      [XuNetwork.SimNet]: args.simnet,
+      [XuNetwork.RegTest]: args.regtest,
     };
 
     const selected = Object.keys(networks).filter(key => networks[key]);
@@ -184,9 +184,9 @@ class Config {
     }
 
     if (selected.length === 0) {
-      return XUNetwork.SimNet;
+      return XuNetwork.SimNet;
     } else {
-      return selected[0] as XUNetwork;
+      return selected[0] as XuNetwork;
     }
   }
 
@@ -197,7 +197,7 @@ class Config {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
           this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
-            lnNetwork === XUNetwork.TestNet ? 'testnet4' : lnNetwork, 'admin.macaroon');
+            lnNetwork === XuNetwork.TestNet ? 'testnet4' : lnNetwork, 'admin.macaroon');
           break;
         default:
           // by default we want to update the network folder name to the selected network
@@ -219,8 +219,8 @@ class Config {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
   }
 
-  public getDefaultNetwork = (): XUNetwork => {
-    return XUNetwork.SimNet;
+  public getDefaultNetwork = (): XuNetwork => {
+    return XuNetwork.SimNet;
   }
 }
 

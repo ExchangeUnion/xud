@@ -8,7 +8,7 @@ import Config from '../../lib/Config';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/p2p/types';
-import { DisconnectionReason, XUNetwork } from '../../lib/constants/enums';
+import { DisconnectionReason, XuNetwork } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -51,7 +51,7 @@ describe('P2P Pool Tests', async () => {
     db = new DB(loggers.db);
     await db.init();
 
-    pool = new Pool(config.p2p, XUNetwork.SimNet, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, XuNetwork.SimNet, loggers.p2p, db.models);
 
     await pool.init({
       nodePubKey: 'test',

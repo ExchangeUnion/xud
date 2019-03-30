@@ -3,13 +3,13 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { toUri } from '../../lib/utils/uriUtils';
-import { XUNetwork } from '../../lib/constants/enums';
+import { XuNetwork } from '../../lib/constants/enums';
 import { createConfig } from './sanity.spec';
 
 chai.use(chaiAsPromised);
 
 describe('P2P Networks Tests', () => {
-  function testConnectionFailure(srcNodeNetwork: XUNetwork, destNodeNetwork: XUNetwork) {
+  function testConnectionFailure(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should fail to connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
       const srcNodeConfig = createConfig(1, 0, srcNodeNetwork);
       const destNodeConfig = createConfig(2, 0, destNodeNetwork);
@@ -31,7 +31,7 @@ describe('P2P Networks Tests', () => {
     });
   }
 
-  function testConnectionSuccess(srcNodeNetwork: XUNetwork, destNodeNetwork: XUNetwork) {
+  function testConnectionSuccess(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should successfully connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
       const srcNodeConfig = createConfig(1, 0, srcNodeNetwork);
       const destNodeConfig = createConfig(2, 0, destNodeNetwork);
@@ -63,21 +63,21 @@ describe('P2P Networks Tests', () => {
     });
   }
 
-  testConnectionFailure(XUNetwork.MainNet, XUNetwork.SimNet);
-  testConnectionFailure(XUNetwork.MainNet, XUNetwork.TestNet);
-  testConnectionFailure(XUNetwork.MainNet, XUNetwork.RegTest);
-  testConnectionFailure(XUNetwork.TestNet, XUNetwork.MainNet);
-  testConnectionFailure(XUNetwork.TestNet, XUNetwork.SimNet);
-  testConnectionFailure(XUNetwork.TestNet, XUNetwork.RegTest);
-  testConnectionFailure(XUNetwork.SimNet, XUNetwork.MainNet);
-  testConnectionFailure(XUNetwork.SimNet, XUNetwork.TestNet);
-  testConnectionFailure(XUNetwork.SimNet, XUNetwork.RegTest);
-  testConnectionFailure(XUNetwork.RegTest, XUNetwork.MainNet);
-  testConnectionFailure(XUNetwork.RegTest, XUNetwork.TestNet);
-  testConnectionFailure(XUNetwork.RegTest, XUNetwork.SimNet);
+  testConnectionFailure(XuNetwork.MainNet, XuNetwork.SimNet);
+  testConnectionFailure(XuNetwork.MainNet, XuNetwork.TestNet);
+  testConnectionFailure(XuNetwork.MainNet, XuNetwork.RegTest);
+  testConnectionFailure(XuNetwork.TestNet, XuNetwork.MainNet);
+  testConnectionFailure(XuNetwork.TestNet, XuNetwork.SimNet);
+  testConnectionFailure(XuNetwork.TestNet, XuNetwork.RegTest);
+  testConnectionFailure(XuNetwork.SimNet, XuNetwork.MainNet);
+  testConnectionFailure(XuNetwork.SimNet, XuNetwork.TestNet);
+  testConnectionFailure(XuNetwork.SimNet, XuNetwork.RegTest);
+  testConnectionFailure(XuNetwork.RegTest, XuNetwork.MainNet);
+  testConnectionFailure(XuNetwork.RegTest, XuNetwork.TestNet);
+  testConnectionFailure(XuNetwork.RegTest, XuNetwork.SimNet);
 
-  testConnectionSuccess(XUNetwork.SimNet, XUNetwork.SimNet);
-  testConnectionSuccess(XUNetwork.TestNet, XUNetwork.TestNet);
-  testConnectionSuccess(XUNetwork.SimNet, XUNetwork.SimNet);
-  testConnectionSuccess(XUNetwork.RegTest, XUNetwork.RegTest);
+  testConnectionSuccess(XuNetwork.SimNet, XuNetwork.SimNet);
+  testConnectionSuccess(XuNetwork.TestNet, XuNetwork.TestNet);
+  testConnectionSuccess(XuNetwork.SimNet, XuNetwork.SimNet);
+  testConnectionSuccess(XuNetwork.RegTest, XuNetwork.RegTest);
 });

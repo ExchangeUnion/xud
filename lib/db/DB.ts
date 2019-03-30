@@ -3,7 +3,7 @@ import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import * as db from './types';
-import { SwapClients, XUNetwork } from '../constants/enums';
+import { SwapClients, XuNetwork } from '../constants/enums';
 import { exists, readdir } from '../utils/fsUtils';
 import seeds from '../p2p/seeds';
 
@@ -38,7 +38,7 @@ class DB {
    * Initialize the connection to the database.
    * @param initDb whether to intialize a new database with default values if no database exists
    */
-  public init = async (network = XUNetwork.SimNet, initDb = false): Promise<void> => {
+  public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
     this.models = await this.loadModels();
     const newDb = !this.storage || !(await exists(this.storage));
     try {

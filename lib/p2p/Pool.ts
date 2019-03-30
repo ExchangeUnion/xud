@@ -14,7 +14,7 @@ import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } f
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent, DisconnectionReason, XUNetwork } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
 import { ReputationEventInstance } from 'lib/db/types';
 import Network from './Network';
@@ -79,7 +79,7 @@ class Pool extends EventEmitter {
   private repository: P2PRepository;
   private network: Network;
 
-  constructor(config: PoolConfig, xuNetwork: XUNetwork, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models) {
     super();
     this.config = config;
     this.network = new Network(xuNetwork);

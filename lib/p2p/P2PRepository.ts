@@ -1,7 +1,6 @@
 import { Models } from '../db/DB';
 import { NodeInstance, ReputationEventInstance, ReputationEventFactory, NodeFactory, ReputationEventAttributes, NodeAttributes } from '../db/types';
 import Bluebird from 'bluebird';
-import { XUNetwork } from '../constants/enums';
 
 class P2PRepository {
 

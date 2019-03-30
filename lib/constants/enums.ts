@@ -14,7 +14,7 @@ export enum OrderSide {
   Sell,
 }
 
-export enum XUNetwork {
+export enum XuNetwork {
   // real coins.
   MainNet = 'mainnet',
 
@@ -32,10 +32,10 @@ export enum XUNetwork {
  * LN network config per XU network.
  */
 export const lnNetworks = {
-  [XUNetwork.MainNet]: 'mainnet',
-  [XUNetwork.TestNet]: 'testnet',
-  [XUNetwork.SimNet]: 'testnet',
-  [XUNetwork.RegTest]: 'testnet',
+  [XuNetwork.MainNet]: 'mainnet',
+  [XuNetwork.TestNet]: 'testnet',
+  [XuNetwork.SimNet]: 'testnet',
+  [XuNetwork.RegTest]: 'testnet',
 };
 
 /**
@@ -43,20 +43,20 @@ export const lnNetworks = {
  * and used to seek to next msg when stream state is unknown.
  */
 export const xuNetworkMagicVals = {
-  [XUNetwork.MainNet]: 0xd9b4bef9,
-  [XUNetwork.TestNet]: 0x0709110b,
-  [XUNetwork.SimNet]: 0x12141c16,
-  [XUNetwork.RegTest]: 0xdab5bffa,
+  [XuNetwork.MainNet]: 0xd9b4bef9,
+  [XuNetwork.TestNet]: 0x0709110b,
+  [XuNetwork.SimNet]: 0x12141c16,
+  [XuNetwork.RegTest]: 0xdab5bffa,
 };
 
 /**
  * XU network per magic value.
  */
-export const magicValsXuNetwork: { [val: number]: XUNetwork} = {
-  [0xd9b4bef9]: XUNetwork.MainNet,
-  [0x0709110b]: XUNetwork.TestNet,
-  [0x12141c16]: XUNetwork.SimNet,
-  [0xdab5bffa]: XUNetwork.RegTest,
+export const magicValsXuNetwork: { [val: number]: XuNetwork} = {
+  [0xd9b4bef9]: XuNetwork.MainNet,
+  [0x0709110b]: XuNetwork.TestNet,
+  [0x12141c16]: XuNetwork.SimNet,
+  [0xdab5bffa]: XuNetwork.RegTest,
 };
 
 export enum SwapRole {

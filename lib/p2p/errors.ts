@@ -1,7 +1,7 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
 import addressUtils from '../utils/addressUtils';
 import { Address } from './types';
-import { XUNetwork } from '../constants/enums';
+import { XuNetwork } from '../constants/enums';
 
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
@@ -129,7 +129,7 @@ const errors = {
     message: `framer: msg has an invalid network magic value (might be encrypted)`,
     code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   },
-  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (expected: XUNetwork, found: XUNetwork) => ({
+  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (expected: XuNetwork, found: XuNetwork) => ({
     message: `framer: incompatible msg origin network (expected: ${expected}, found: ${found})`,
     code: errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK,
   }),

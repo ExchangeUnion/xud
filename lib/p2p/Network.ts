@@ -1,9 +1,9 @@
-import { XUNetwork, xuNetworkMagicVals } from '../constants/enums';
+import { XuNetwork, xuNetworkMagicVals } from '../constants/enums';
 
 class Network {
   public magic: number;
 
-  constructor(public xuNetwork: XUNetwork) {
+  constructor(public xuNetwork: XuNetwork) {
     this.magic = xuNetworkMagicVals[xuNetwork];
   }
 }
