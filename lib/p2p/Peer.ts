@@ -60,13 +60,13 @@ class Peer extends EventEmitter {
   private opened = false;
   private opening = false;
   private socket?: Socket;
-  private parser: Parser;
+  private readonly parser: Parser;
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
-  private responseMap: Map<string, PendingResponseEntry> = new Map();
+  private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
   private lastRecv = 0;
@@ -76,9 +76,9 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
-  private network: Network;
-  private framer: Framer;
-  private deactivatedPairs = new Set<string>();
+  private readonly network: Network;
+  private readonly framer: Framer;
+  private readonly deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
