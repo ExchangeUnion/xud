@@ -48,7 +48,7 @@ class Swaps extends EventEmitter {
   constructor(private logger: Logger,
     private models: Models,
     private pool: Pool,
-    private swapClients: Map<string, BaseClient>,
+    public swapClients: Map<string, BaseClient>,
   ) {
     super();
     this.repository = new SwapRepository(this.models);
@@ -61,7 +61,7 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the derived `makerCurrency` and `takerCurrency` values
    */
-  private static deriveCurrencies = (pairId: string, isBuy: boolean) => {
+  public static deriveCurrencies = (pairId: string, isBuy: boolean) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
 
     const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
@@ -87,7 +87,7 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+  public static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
