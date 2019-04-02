@@ -453,6 +453,8 @@ message Peer {
   string xud_version = 6 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
   int32 seconds_connected = 7 [json_name = "seconds_connected"];
+  // The raiden address for this peer
+  string raiden_address = 8 [json_name = "raiden_address"];
 }
 
 message PlaceOrderRequest {

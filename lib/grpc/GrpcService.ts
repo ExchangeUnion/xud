@@ -326,7 +326,7 @@ class GrpcService {
           case SwapFailureReason.OrderOnHold:
             code = status.FAILED_PRECONDITION;
             break;
-          case SwapFailureReason.UnexpectedLndError:
+          case SwapFailureReason.UnexpectedClientError:
           case SwapFailureReason.UnknownError:
           default:
             code = status.UNKNOWN;
@@ -498,6 +498,7 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
+        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);

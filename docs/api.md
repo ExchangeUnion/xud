@@ -591,6 +591,7 @@
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [int32](#int32) |  | The time in seconds that we have been connected to this peer. |
+| raiden_address | [string](#string) |  | The raiden address for this peer |
 
 
 

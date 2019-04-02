@@ -6,7 +6,7 @@ import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import Client from '../BaseClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapRole } from '../constants/enums';
+import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
@@ -59,7 +59,7 @@ const argChecks = {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
-    if (!SwapClients[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+    if (!SwapClient[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
 };
 
@@ -88,7 +88,7 @@ class Service extends EventEmitter {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClients | number, decimalPlaces: number, tokenAddress?: string}) => {
+  public addCurrency = async (args: { currency: string, swapClient: SwapClient | number, decimalPlaces: number, tokenAddress?: string}) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;

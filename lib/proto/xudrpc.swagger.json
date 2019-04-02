@@ -1049,6 +1049,10 @@
           "type": "integer",
           "format": "int32",
           "description": "The time in seconds that we have been connected to this peer."
+        },
+        "raiden_address": {
+          "type": "string",
+          "title": "The raiden address for this peer"
         }
       }
     },
