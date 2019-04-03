@@ -616,6 +616,16 @@ class GrpcService {
   }
 
   /*
+   * See [[Service.subscribeSwapFailures]]
+   */
+  public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
+    this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
+      call.write(createSwapFailure(result));
+    });
+    this.addStream(call);
+  }
+
+  /*
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {

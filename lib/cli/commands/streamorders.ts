@@ -35,6 +35,7 @@ const ensureConnection = (argv: Arguments, printError?: boolean) => {
 };
 
 const streamOrders = (argv: Arguments) =>  {
+  const xudClient = loadXudClient(argv);
   const addedOrdersRequest = new xudrpc.SubscribeAddedOrdersRequest();
   addedOrdersRequest.setExisting(argv.existing);
   const addedOrdersSubscription = loadXudClient(argv).subscribeAddedOrders(addedOrdersRequest);
@@ -50,23 +51,27 @@ const streamOrders = (argv: Arguments) =>  {
     ensureConnection(argv);
   });
 
-  const removedOrdersSubscription = loadXudClient(argv).subscribeRemovedOrders(new xudrpc.SubscribeRemovedOrdersRequest());
+  const removedOrdersSubscription = xudClient.subscribeRemovedOrders(new xudrpc.SubscribeRemovedOrdersRequest());
   removedOrdersSubscription.on('data', (orderRemoval: xudrpc.OrderRemoval) => {
     console.log(`Order removed: ${JSON.stringify(orderRemoval.toObject())}`);
   });
 
-  // prevent exiting and do nothing, it's already caught above.
-  removedOrdersSubscription.on('error', () => {});
-
   const swapsRequest = new xudrpc.SubscribeSwapsRequest();
   swapsRequest.setIncludeTaker(true);
-  const swapsSubscription = loadXudClient(argv).subscribeSwaps(swapsRequest);
+  const swapsSubscription = xudClient.subscribeSwaps(swapsRequest);
   swapsSubscription.on('data', (swapSuccess: xudrpc.SwapSuccess) => {
     console.log(`Order swapped: ${JSON.stringify(swapSuccess.toObject())}`);
   });
 
+  const swapFailuresSubscription = xudClient.subscribeSwapFailures(swapsRequest);
+  swapFailuresSubscription.on('data', (swapFailure: xudrpc.SwapFailure) => {
+    console.log(`Swap failed: ${JSON.stringify(swapFailure.toObject())}`);
+  });
+
   // prevent exiting and do nothing, it's already caught above.
+  removedOrdersSubscription.on('error', () => {});
   swapsSubscription.on('error', () => {});
+  swapFailuresSubscription.on('error', () => {});
 };
 
 const reconnect = (argv: Arguments) => {
