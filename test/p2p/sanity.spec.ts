@@ -137,6 +137,12 @@ describe('P2P Sanity Tests', () => {
     expect(connectPromise).to.be.rejectedWith(`Connection retry attempts to peer were revoked`);
   });
 
+  it('should fail when connecting to a node that has banned us', async () => {
+    await nodeTwo.service.ban({ nodePubKey: nodeOne.nodePubKey });
+    await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
+      .to.be.rejectedWith('Peer disconnected from us due to Banned');
+  });
+
   after(async () => {
     await Promise.all([nodeOne['shutdown'](), nodeTwo['shutdown']()]);
   });
