@@ -17,6 +17,11 @@ type ChannelBalance = {
   pendingOpenBalance: number,
 };
 
+interface BaseClient {
+  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+}
+
 /**
  * A base class to represent an external swap client such as lnd or Raiden.
  */
@@ -100,6 +105,7 @@ abstract class BaseClient extends EventEmitter {
       clearInterval(this.updateCapacityTimer);
     }
     this.closeSpecific();
+    this.removeAllListeners();
   }
   protected abstract closeSpecific(): void;
 }

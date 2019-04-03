@@ -2,7 +2,6 @@ import http from 'http';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
-import { Order } from '../orderbook/types';
 import { SwapDeal } from '../swaps/types';
 import { SwapClient } from '../constants/enums';
 
@@ -69,11 +68,6 @@ type ChannelEvent = {
   amount?: number;
 };
 
-interface RaidenClient {
-  on(event: 'swap', listener: (order: Order) => void): this;
-  emit(event: 'swap', order: Order): boolean;
-}
-
 /**
  * A class representing a client to interact with raiden.
  */
@@ -121,7 +115,16 @@ class RaidenClient extends BaseClient {
       if (this.reconnectionTimer) {
         clearTimeout(this.reconnectionTimer);
       }
-      this.address = await this.getAddress();
+      const address = await this.getAddress();
+
+      /** The new raiden address value if different from the one we had previously. */
+      let newAddress: string | undefined;
+      if (this.address !== address) {
+        newAddress = address;
+        this.address = newAddress;
+      }
+
+      this.emit('connectionVerified', newAddress);
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
