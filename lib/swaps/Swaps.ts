@@ -13,7 +13,7 @@ import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess } from './types';
 import { randomBytes } from '../utils/utils';
-import { ResolveRequest } from 'lib/proto/hash_resolver_pb';
+import { ResolveRequest } from '../proto/hash_resolver_pb';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
