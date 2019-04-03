@@ -348,7 +348,7 @@ class LndClient extends BaseClient {
     request.setPubKey(destination);
     try {
       const routes = (await this.queryRoutes(request)).getRoutesList();
-      this.logger.debug(`got ${routes.length} route(s) to destination: ${routes}`);
+      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}`);
       return routes;
     } catch (err) {
       if (typeof err.message === 'string' && (
