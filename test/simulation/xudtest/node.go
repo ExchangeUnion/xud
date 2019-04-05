@@ -163,9 +163,9 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 	go func() {
 		defer hn.wg.Done()
 
-		err := hn.Cmd.Wait()
+		out, err := hn.Cmd.Output()
 		if err != nil {
-			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String())}
+			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out)}
 		}
 
 		// Signal any onlookers that this process has exited.
