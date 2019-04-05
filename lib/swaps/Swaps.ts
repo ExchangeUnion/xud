@@ -386,8 +386,13 @@ class Swaps extends EventEmitter {
 
     // TODO: verify that a route exists from taker to maker before accepting deal
 
+    const destination = peer.getIdentifier(swapClient.type, takerCurrency);
+    if (!destination) {
+      throw new Error(`${makerCurrency} client's pubKey not found for peer ${deal.peerPubKey}`);
+    }
+
     try {
-      deal.makerToTakerRoutes = await swapClient.getRoutes(takerAmount, deal.peerPubKey);
+      deal.makerToTakerRoutes = await swapClient.getRoutes(takerAmount, destination);
       if (deal.makerToTakerRoutes.length === 0) {
         this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
         await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
