@@ -12,6 +12,10 @@ cache:
     - $GOPATH/bin
     - $GOPATH/src/github.com/btcsuite
 
+before_install:
+  - npm install
+  - npm run compile
+
 script:
 #  - npm run lintNoFix
 #  - npm run test
