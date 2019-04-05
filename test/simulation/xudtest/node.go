@@ -190,12 +190,12 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 	// Wait until TLS certificate and admin macaroon are created before
 	// using them, up to 20 sec.
-	tlsTimeout := time.After(30 * time.Second)
+	tlsTimeout := time.After(20 * time.Second)
 	for !fileExists(hn.Cfg.TLSCertPath) {
 		select {
 		case <-tlsTimeout:
-			return nil, fmt.Errorf("timeout waiting for TLS cert " +
-				"file to be created after 30 seconds")
+			return nil, fmt.Errorf("timeout waiting for TLS cert "+
+				"file to be created after 30 seconds: %v", hn.Cfg.TLSCertPath)
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
