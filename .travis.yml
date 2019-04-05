@@ -17,7 +17,12 @@ cache:
     - $GOPATH/src/github.com/btcsuite
 
 script:
+#  - npm run lintNoFix
+#  - npm run test
   - go version
-  - npm run lintNoFix
-  - npm run test
+  - echo $GOPATH
+  - eval "$(GIMME_GO_VERSION=1.11 gimme)"
+  - go version
+  - echo $GOPATH
+
   - npm run test:sim
