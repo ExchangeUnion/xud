@@ -3,7 +3,6 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
-import Client from '../BaseClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
@@ -12,7 +11,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure } from 'lib/swaps/types';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
 
 /**
  * The components required by the API service layer.

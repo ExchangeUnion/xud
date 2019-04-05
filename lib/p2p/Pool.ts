@@ -15,7 +15,7 @@ import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
-import { ReputationEventInstance } from 'lib/db/types';
+import { ReputationEventInstance } from '../db/types';
 import semver from 'semver';
 
 const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;

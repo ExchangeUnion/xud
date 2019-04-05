@@ -1,8 +1,6 @@
 import Packet, { PacketDirection } from '../Packet';
 import PacketType from '../PacketType';
-import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
 
 export type SessionAckPacketBody = {
   ephemeralPubKey: string;

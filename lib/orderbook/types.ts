@@ -1,5 +1,5 @@
 import { SwapClient } from '../constants/enums';
-import { SwapSuccess, SwapFailure } from 'lib/swaps/types';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
 
 export type OrderMatch = {
   maker: Order;
