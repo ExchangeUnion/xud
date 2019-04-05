@@ -368,11 +368,6 @@ func TestExchangeUnionDaemon(t *testing.T) {
 		}
 	}()
 
-	t.Logf("launching xud network...")
-	if err := xudHarness.SetUp(); err != nil {
-		ht.Fatalf("cannot set up xud network: %v", err)
-	}
-
 	go func() {
 		for {
 			select {
@@ -391,6 +386,11 @@ func TestExchangeUnionDaemon(t *testing.T) {
 			}
 		}
 	}()
+
+	t.Logf("launching xud network...")
+	if err := xudHarness.SetUp(); err != nil {
+		ht.Fatalf("cannot set up xud network: %v", err)
+	}
 
 	// Run tests
 
