@@ -388,7 +388,7 @@ class Swaps extends EventEmitter {
 
     const destination = peer.getIdentifier(swapClient.type, takerCurrency);
     if (!destination) {
-      throw new Error(`${makerCurrency} client's pubKey not found for peer ${deal.peerPubKey}`);
+      throw new Error(`${takerCurrency} client's pubKey not found for peer ${deal.peerPubKey}`);
     }
 
     try {
