@@ -381,7 +381,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 						xudError.Node.Id, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
 
 				} else {
-					t.Logf("xud process finished with error (stderr):\n%v", err)
+					t.Logf("xud process finished with error (stderr):\n%v", xudError)
 				}
 			}
 		}
