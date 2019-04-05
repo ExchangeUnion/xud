@@ -152,6 +152,10 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 	var errb bytes.Buffer
 	hn.Cmd.Stderr = &errb
 
+	// Redirect stdout output to buffer
+	var out bytes.Buffer
+	hn.Cmd.Stdout = &out
+
 	if err := hn.Cmd.Start(); err != nil {
 		return err
 	}
@@ -163,9 +167,9 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 	go func() {
 		defer hn.wg.Done()
 
-		out, err := hn.Cmd.Output()
+		err := hn.Cmd.Wait()
 		if err != nil {
-			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out)}
+			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
 		}
 
 		// Signal any onlookers that this process has exited.
