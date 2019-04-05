@@ -19,10 +19,8 @@ cache:
 script:
 #  - npm run lintNoFix
 #  - npm run test
-  - go version
-  - echo $GOPATH
-  - eval "$(GIMME_GO_VERSION=1.11 gimme)"
-  - go version
-  - echo $GOPATH
 
+  - eval "$(GIMME_GO_VERSION=1.11 gimme)"
+  - go get -u github.com/golang/dep/cmd/dep
+  - go get -u github.com/btcsuite/btcd
   - npm run test:sim
