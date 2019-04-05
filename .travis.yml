@@ -12,17 +12,15 @@ cache:
     - $GOPATH/bin
     - $GOPATH/src/github.com/btcsuite
 
-before_install:
-  - npm install
-  - npm run compile
-
 script:
-#  - npm run lintNoFix
-#  - npm run test
+  - npm run lintNoFix
+  - npm run test
 
+  # network simulation tests
   - eval "$(GIMME_GO_VERSION=1.11 gimme)"
   - go get -u github.com/golang/dep/cmd/dep
   - go get -u github.com/btcsuite/btcd
+  - npm install
+  - npm run compile
   - npm run test:sim
-  - cat test/simulation/xuddatadir-Bob/logs/xud.log
-  - cat test/simulation/xuddatadir-Alice/logs/xud.log
+
