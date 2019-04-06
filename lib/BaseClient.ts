@@ -2,6 +2,7 @@ import Logger from './Logger';
 import { EventEmitter } from 'events';
 import { SwapDeal } from './swaps/types';
 import { Route } from './proto/lndrpc_pb';
+import { SwapClient } from './constants/enums';
 
 enum ClientStatus {
   NotInitialized,
@@ -16,11 +17,17 @@ type ChannelBalance = {
   pendingOpenBalance: number,
 };
 
+interface BaseClient {
+  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+}
+
 /**
  * A base class to represent an external swap client such as lnd or Raiden.
  */
 abstract class BaseClient extends EventEmitter {
   public abstract readonly cltvDelta: number;
+  public abstract readonly type: SwapClient;
   public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
@@ -98,6 +105,7 @@ abstract class BaseClient extends EventEmitter {
       clearInterval(this.updateCapacityTimer);
     }
     this.closeSpecific();
+    this.removeAllListeners();
   }
   protected abstract closeSpecific(): void;
 }

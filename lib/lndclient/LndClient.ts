@@ -6,7 +6,7 @@ import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
 import { exists, readFile } from '../utils/fsUtils';
-import { SwapState, SwapRole } from '../constants/enums';
+import { SwapState, SwapRole, SwapClient } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 
 /** The configurable options for the lnd client. */
@@ -41,13 +41,9 @@ interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
-interface LndClient {
-  on(event: 'connectionVerified', listener: (newPubKey?: string) => void): this;
-  emit(event: 'connectionVerified', newPubKey?: string): boolean;
-}
-
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
+  public readonly type = SwapClient.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
@@ -347,7 +343,7 @@ class LndClient extends BaseClient {
     request.setPubKey(destination);
     try {
       const routes = (await this.queryRoutes(request)).getRoutesList();
-      this.logger.debug(`got ${routes.length} route(s) to destination: ${routes}`);
+      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}`);
       return routes;
     } catch (err) {
       if (typeof err.message === 'string' && (
