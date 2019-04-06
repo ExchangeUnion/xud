@@ -387,14 +387,15 @@ class Swaps extends EventEmitter {
     // TODO: verify that a route exists from taker to maker before accepting deal
 
     try {
-      deal.makerToTakerRoutes = await swapClient.getRoutes(takerAmount, deal.peerPubKey);
-      if (deal.makerToTakerRoutes.length === 0) {
-        this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
-        await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
-        return false;
-      }
+      deal.makerToTakerRoutes = await swapClient.getRoutes(takerAmount, takerPubKey);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      return false;
+    }
+
+    if (deal.makerToTakerRoutes.length === 0) {
+      this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
       await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
