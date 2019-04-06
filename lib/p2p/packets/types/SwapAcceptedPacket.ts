@@ -1,4 +1,4 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 
@@ -11,12 +11,16 @@ export type SwapAcceptedPacketBody = {
 };
 
 class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.SwapAccepted;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Response;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): SwapAcceptedPacket | pb.SwapAcceptedPacket.AsObject => {

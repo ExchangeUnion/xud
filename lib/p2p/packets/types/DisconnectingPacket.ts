@@ -1,4 +1,4 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { DisconnectionReason } from '../../../constants/enums';
 import * as pb from '../../../proto/xudp2p_pb';
@@ -10,12 +10,16 @@ export type DisconnectingPacketBody = {
 };
 
 class DisconnectingPacket extends Packet<DisconnectingPacketBody> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.Disconnecting;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Unilateral;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): DisconnectingPacket | pb.DisconnectingPacket.AsObject => {

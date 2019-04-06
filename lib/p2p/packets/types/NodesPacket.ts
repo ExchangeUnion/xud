@@ -1,15 +1,19 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeConnectionInfo } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
 
 class NodesPacket extends Packet<NodeConnectionInfo[]> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.Nodes;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Response;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): NodesPacket | pb.NodesPacket.AsObject => {
@@ -20,11 +24,11 @@ class NodesPacket extends Packet<NodeConnectionInfo[]> {
   private static validate = (obj: pb.NodesPacket.AsObject): boolean => {
     return !!(obj.id
       && obj.reqId
-      && obj.nodesList.filter(node =>
-        node.nodePubKey
+      && obj.nodesList.every(node =>
+        !!node.nodePubKey
         && node.addressesList.length > 0
         && node.addressesList.every(addr => addr.port > 0 && !!addr.host),
-      ).length === obj.nodesList.length
+      )
     );
 
     // TODO: add address port/host format validation
