@@ -1,5 +1,5 @@
 /** An enumeration of payment channel network clients that support token swaps. */
-export enum SwapClients {
+export enum SwapClient {
   Lnd,
   Raiden,
 }
@@ -105,13 +105,13 @@ export enum SwapFailureReason {
   SwapClientNotSetup = 3,
   /** Could not find a route to complete the swap. */
   NoRouteFound = 4,
-  /** A call to lnd failed for an unexpected reason. */
-  UnexpectedLndError = 5,
+  /** A swap client call failed for an unexpected reason. */
+  UnexpectedClientError = 5,
   /** Received a swap packet from the peer with invalid data. */
   InvalidSwapPacketReceived = 6,
-  /** The call to lnd to send payment failed. */
+  /** The call to send payment failed. */
   SendPaymentFailure = 7,
-  /** The swap resolver request from lnd was invalid. */
+  /** The swap resolver request was invalid. */
   InvalidResolveRequest = 8,
   /** The swap request attempts to reuse a payment hash. */
   PaymentHashReuse = 9,

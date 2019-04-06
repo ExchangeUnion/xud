@@ -326,7 +326,7 @@ class GrpcService {
           case SwapFailureReason.OrderOnHold:
             code = status.FAILED_PRECONDITION;
             break;
-          case SwapFailureReason.UnexpectedLndError:
+          case SwapFailureReason.UnexpectedClientError:
           case SwapFailureReason.UnknownError:
           default:
             code = status.UNKNOWN;
@@ -498,6 +498,7 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
+        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);
@@ -610,6 +611,16 @@ class GrpcService {
       orderRemoval.setLocalId(order.localId || '');
       orderRemoval.setIsOwnOrder(order.localId !== undefined);
       call.write(orderRemoval);
+    });
+    this.addStream(call);
+  }
+
+  /*
+   * See [[Service.subscribeSwapFailures]]
+   */
+  public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
+    this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
+      call.write(createSwapFailure(result));
     });
     this.addStream(call);
   }

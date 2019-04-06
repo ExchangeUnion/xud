@@ -108,7 +108,7 @@ describe('Swaps.Integration', () => {
     // peer
     peer = sandbox.createStubInstance(Peer) as any;
     peer.sendPacket = async () => {};
-    peer.getLndPubKey = () => '1234567890';
+    peer.getIdentifier = () => '1234567890';
     // pool
     pool = sandbox.createStubInstance(Pool) as any;
     pool.addReputationEvent = () => Promise.resolve(true);
@@ -194,7 +194,7 @@ describe('Swaps.Integration', () => {
       swapClients.BTC!.getRoutes = rejectsWithUnknownError;
       swapClients.LTC!.getRoutes = rejectsWithUnknownError;
       await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedLndError);
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });
 
   });

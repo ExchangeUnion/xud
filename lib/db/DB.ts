@@ -3,7 +3,7 @@ import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import * as db from './types';
-import { SwapClients, XuNetwork } from '../constants/enums';
+import { SwapClient, XuNetwork } from '../constants/enums';
 import { exists, readdir } from '../utils/fsUtils';
 import seeds from '../p2p/seeds';
 
@@ -77,8 +77,8 @@ class DB {
 
       // initialize new databases with default data.
       await Currency.bulkCreate(<db.CurrencyAttributes[]>[
-        { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-        { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+        { id: 'BTC', swapClient: SwapClient.Lnd, decimalPlaces: 8 },
+        { id: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 8 },
       ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[

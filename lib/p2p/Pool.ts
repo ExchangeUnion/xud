@@ -16,7 +16,7 @@ import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
-import { ReputationEventInstance } from 'lib/db/types';
+import { ReputationEventInstance } from '../db/types';
 import Network from './Network';
 
 const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
@@ -165,14 +165,19 @@ class Pool extends EventEmitter {
    */
   public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
     this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
-    const packet = new packets.NodeStateUpdatePacket(this.nodeState);
-    this.peers.forEach(async (peer) => {
-      await peer.sendPacket(packet);
-    });
+    this.sendNodeStateUpdate(nodeStateUpdate);
   }
 
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    this.sendNodeStateUpdate(this.nodeState.lndPubKeys);
+  }
+
+  private sendNodeStateUpdate = (nodeStateUpdate: NodeStateUpdate) => {
+    const packet = new packets.NodeStateUpdatePacket(nodeStateUpdate);
+    this.peers.forEach(async (peer) => {
+      await peer.sendPacket(packet);
+    });
   }
 
   public disconnect = async (): Promise<void> => {
