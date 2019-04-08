@@ -139,11 +139,14 @@ class RaidenClient extends BaseClient {
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
-    return []; // stub placeholder, query routes not currently implemented in raiden
+    // stub placeholder, query routes not currently implemented in raiden
+    return [{
+      getTotalTimeLock: () => 1,
+    }];
   }
 
   public getHeight = async () => {
-    return 0; // raiden's API does not tell us the height
+    return 1; // raiden's API does not tell us the height
   }
 
   public getRaidenInfo = async (): Promise<RaidenInfo> => {

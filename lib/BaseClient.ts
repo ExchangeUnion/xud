@@ -1,7 +1,6 @@
 import Logger from './Logger';
 import { EventEmitter } from 'events';
-import { SwapDeal } from './swaps/types';
-import { Route } from './proto/lndrpc_pb';
+import { SwapDeal, Route } from './swaps/types';
 import { SwapClient } from './constants/enums';
 
 enum ClientStatus {
