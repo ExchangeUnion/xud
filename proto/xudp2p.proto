@@ -11,7 +11,7 @@ message Order {
     string id = 1;
     string pair_id = 2;
     double price = 3;
-    double quantity = 4;
+    uint64 quantity = 4;
     bool is_buy = 5;
 }
 
@@ -47,7 +47,7 @@ message OrderInvalidationPacket {
     string id = 1;
     string order_id = 2;
     string pair_id = 3;
-    double quantity = 4;
+    uint64 quantity = 4;
 }
 
 message GetOrdersPacket {
@@ -101,7 +101,7 @@ message NodesPacket {
 
 message SwapRequestPacket {
     string id = 1;
-    double proposed_quantity = 2;
+    uint64 proposed_quantity = 2;
     string pair_id = 3;
     string order_id = 4;
     string r_hash = 5;

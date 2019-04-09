@@ -498,8 +498,10 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Removes an order from the order book by its local id. Throws an error if the specified pairId
-   * is not supported or if the order to cancel could not be found.
+   * Removes all or part of an order from the order book by its local id. Throws an error if the
+   * specified pairId is not supported or if the order to cancel could not be found.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the entire
+   * order is removed.
    * @returns any quantity of the order that was on hold and could not be immediately removed.
    */
   public removeOwnOrderByLocalId = (localId: string, quantityToRemove?: number) => {

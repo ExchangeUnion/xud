@@ -255,7 +255,7 @@
 | order_id | [string](#string) |  | The order id of the maker order. |
 | pair_id | [string](#string) |  | The trading pair of the swap orders. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
-| quantity | [double](#double) |  | The quantity to swap. The whole order will be swapped if unspecified. |
+| quantity | [uint64](#uint64) |  | The quantity to swap. The whole order will be swapped if unspecified. |
 
 
 
@@ -510,7 +510,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | price | [double](#double) |  | The price of the order. |
-| quantity | [double](#double) |  | The quantity of the order. |
+| quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | id | [string](#string) |  | A UUID for this order. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order. |
@@ -518,7 +518,7 @@
 | created_at | [int64](#int64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
-| hold | [double](#double) |  | The amount on hold pending swap exectuion. |
+| hold | [uint64](#uint64) |  | The quantity on hold pending swap exectuion. |
 
 
 
@@ -533,7 +533,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| quantity | [double](#double) |  | The quantity of the order being removed. |
+| quantity | [uint64](#uint64) |  | The quantity of the order being removed. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The global UUID for the order. |
 | local_id | [string](#string) |  | The local id for the order, if applicable. |
@@ -641,7 +641,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | price | [double](#double) |  | The price of the order. |
-| quantity | [double](#double) |  | The quantity of the order. |
+| quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell. |
@@ -721,7 +721,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to remove. |
-| quantity | [double](#double) |  |  |
+| quantity | [uint64](#uint64) |  | The quantity to remove from the order. If zero or unspecified then entire order is removed. |
 
 
 
@@ -736,7 +736,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| quantity_on_hold | [double](#double) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
 
 
 
@@ -838,7 +838,7 @@
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The global UUID for the order that failed the swap. |
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
-| quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
+| quantity | [uint64](#uint64) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
 | failure_reason | [string](#string) |  | The reason why the swap failed. |
 
@@ -858,10 +858,10 @@
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
-| quantity | [double](#double) |  | The order quantity that was swapped. |
+| quantity | [uint64](#uint64) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
-| amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
-| amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
+| amount_received | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) received. |
+| amount_sent | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
 | role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |

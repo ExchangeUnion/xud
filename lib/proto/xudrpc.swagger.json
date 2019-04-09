@@ -754,8 +754,8 @@
           "description": "The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity to swap. The whole order will be swapped if unspecified."
         }
       }
@@ -928,9 +928,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -963,9 +963,9 @@
           "description": "Whether this order is a local own order or a remote peer order."
         },
         "hold": {
-          "type": "number",
-          "format": "double",
-          "description": "The amount on hold pending swap exectuion."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity on hold pending swap exectuion."
         }
       }
     },
@@ -973,8 +973,8 @@
       "type": "object",
       "properties": {
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity of the order being removed."
         },
         "pair_id": {
@@ -1113,9 +1113,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -1199,8 +1199,9 @@
           "description": "The local id of the order to remove."
         },
         "quantity": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity to remove from the order. If zero or unspecified then entire order is removed."
         }
       }
     },
@@ -1208,8 +1209,8 @@
       "type": "object",
       "properties": {
         "quantity_on_hold": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
         }
       }
@@ -1244,8 +1245,8 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was attempted to be swapped."
         },
         "peer_pub_key": {
@@ -1274,8 +1275,8 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was swapped."
         },
         "r_hash": {
@@ -1285,12 +1286,12 @@
         "amount_received": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) received."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) received."
         },
         "amount_sent": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) sent."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) sent."
         },
         "peer_pub_key": {
           "type": "string",

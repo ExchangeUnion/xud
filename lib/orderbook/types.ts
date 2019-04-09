@@ -32,7 +32,7 @@ export enum PlaceOrderEventType {
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
-  /** The number of currently available base currency tokens for the order. */
+  /** The number of currently satoshis (or equivalent) for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
@@ -70,7 +70,7 @@ type Remote = {
 type Stamp = OrderIdentifier & {
   /** Epoch timestamp when this order was created locally. */
   createdAt: number;
-  /** The number of base currency tokens initially available for the order, before any actions such as trades reduced the available quantity. */
+  /** The number of satoshis (or equivalent) initially available for the order, before any actions such as trades reduced the available quantity. */
   initialQuantity: number;
 };
 
