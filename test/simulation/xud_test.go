@@ -2,6 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
@@ -18,13 +26,6 @@ import (
 	"github.com/roasbeef/btcutil"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
 )
 
 type testCase struct {
@@ -55,7 +56,7 @@ type harnessTest struct {
 
 // newHarnessTest creates a new instance of a harnessTest from a regular
 // testing.T instance.
-func newHarnessTest(t *testing.T, ctx context.Context) *harnessTest {
+func newHarnessTest(ctx context.Context, t *testing.T) *harnessTest {
 	assert := require.New(t)
 	return &harnessTest{
 		t:        t,
@@ -99,11 +100,11 @@ func testNetworkInit(net *xudtest.NetworkHarness, ht *harnessTest) {
 		node.SetPubKey(res.NodePubKey)
 
 		// Add pair to the node.
-		ht.act.addPair(ht.assert, ht.ctx, node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
+		ht.act.addPair(ht.ctx, ht.assert, node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
 	}
 
 	// Connect Alice to Bob.
-	ht.act.connect(ht.assert, ht.ctx, net.Alice, net.Bob)
+	ht.act.connect(ht.ctx, ht.assert, net.Alice, net.Bob)
 }
 
 func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -115,7 +116,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 		PairId:   "LTC/BTC",
 		Side:     xudrpc.OrderSide_BUY,
 	}
-	ht.act.placeOrderAndBroadcast(ht.assert, ht.ctx, net.Alice, net.Bob, req)
+	ht.act.placeOrderAndBroadcast(ht.ctx, ht.assert, net.Alice, net.Bob, req)
 
 	// Place a matching order on Bob.
 	req = &xudrpc.PlaceOrderRequest{
@@ -125,7 +126,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 		PairId:   req.PairId,
 		Side:     xudrpc.OrderSide_SELL,
 	}
-	ht.act.placeOrderAndSwap(ht.assert, ht.ctx, net.Bob, net.Alice, req)
+	ht.act.placeOrderAndSwap(ht.ctx, ht.assert, net.Bob, net.Alice, req)
 }
 
 func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -137,9 +138,9 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 		Side:     xudrpc.OrderSide_BUY,
 	}
 
-	order := ht.act.placeOrderAndBroadcast(ht.assert, ht.ctx, net.Alice, net.Bob, req)
+	order := ht.act.placeOrderAndBroadcast(ht.ctx, ht.assert, net.Alice, net.Bob, req)
 
-	ht.act.removeOrderAndInvalidate(ht.assert, ht.ctx, net.Alice, net.Bob, order)
+	ht.act.removeOrderAndInvalidate(ht.ctx, ht.assert, net.Alice, net.Bob, order)
 }
 
 // Fatalf causes the current active test case to fail with a fatal error. All
@@ -182,7 +183,7 @@ func (h *harnessTest) RunTestCase(testCase *testCase, net *xudtest.NetworkHarnes
 }
 
 func TestExchangeUnionDaemon(t *testing.T) {
-	ht := newHarnessTest(t, context.Background())
+	ht := newHarnessTest(context.Background(), t)
 	cfg := loadConfig()
 
 	log.Println("installing dependencies...")
@@ -400,7 +401,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	for i, testCase := range testsCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, _ := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
-			ht := newHarnessTest(t1, ctx)
+			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudHarness)
 		})
 
@@ -445,7 +446,7 @@ func installDeps() (string, error) {
 	data, err := cmd.Output()
 	if err != nil {
 		// The program has exited with an exit code != 0
-		return "", fmt.Errorf("installation error: %v\n", string(data))
+		return "", fmt.Errorf("installation error: %v", string(data))
 	}
 
 	return string(data), nil
