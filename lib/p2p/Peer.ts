@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import { ReputationEvent, DisconnectionReason, NetworkMagic, SwapClient } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, SwapClient } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -12,7 +12,7 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
-import { NodeState, Address, NodeConnectionInfo } from './types';
+import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
@@ -62,13 +62,13 @@ class Peer extends EventEmitter {
   private opened = false;
   private opening = false;
   private socket?: Socket;
-  private parser: Parser;
+  private readonly parser: Parser;
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
-  private responseMap: Map<string, PendingResponseEntry> = new Map();
+  private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
   private lastRecv = 0;
@@ -78,9 +78,9 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
-  private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
-  private framer: Framer;
-  private deactivatedPairs = new Set<string>();
+  private readonly network: Network;
+  private readonly framer: Framer;
+  private readonly deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -142,9 +142,9 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address) {
+  constructor(private logger: Logger, public address: Address, private config: PoolConfig, network: Network) {
     super();
-
+    this.network = network;
     this.framer = new Framer(this.network);
     this.parser = new Parser(this.framer);
     this.bindParser(this.parser);
@@ -153,8 +153,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket));
+  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig, network: Network): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), config, network);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -281,11 +281,11 @@ class Peer extends EventEmitter {
 
     let rejectionMsg;
     if (reason) {
-      rejectionMsg = `Peer closed due to ${DisconnectionReason[reason]}`;
+      rejectionMsg = `Peer (${this.label}) closed due to ${DisconnectionReason[reason]} ${reasonPayload || ''}`;
     } else if (this.recvDisconnectionReason) {
-      rejectionMsg = `Peer disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
+      rejectionMsg = `Peer (${this.label}) disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
     } else {
-      rejectionMsg = `Peer was destroyed`;
+      rejectionMsg = `Peer (${this.label}) was destroyed`;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -593,6 +593,7 @@ class Peer extends EventEmitter {
         case errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED:
         case errorCodes.FRAMER_MSG_NOT_ENCRYPTED:
         case errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE:
+        case errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK:
         case errorCodes.FRAMER_INVALID_MSG_LENGTH:
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);

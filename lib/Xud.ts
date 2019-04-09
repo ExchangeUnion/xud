@@ -72,7 +72,7 @@ class Xud extends EventEmitter {
       initPromises.push(NodeKey.load(this.config.xudir, this.config.instanceid));
 
       this.db = new DB(loggers.db, this.config.dbpath);
-      await this.db.init(this.config.initdb);
+      await this.db.init(this.config.network, this.config.initdb);
 
       // setup LND clients and initialize
       for (const currency in this.config.lnd) {
@@ -90,7 +90,7 @@ class Xud extends EventEmitter {
         initPromises.push(this.raidenClient.init());
       }
 
-      this.pool = new Pool(this.config.p2p, loggers.p2p, this.db.models);
+      this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models);
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.lndClients);
       initPromises.push(this.swaps.init());

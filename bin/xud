@@ -27,11 +27,25 @@ const { argv } = require('yargs')
       describe: 'Format of the logger date',
       type: 'string',
     },
-    network: {
-      describe: 'The network the lnd clients are using',
-      type: 'string',
-      choices: ['mainnet', 'testnet', 'simnet', 'regtest'],
-      alias: 'n',
+    mainnet: {
+      describe: 'Whether to run XUD on mainnet',
+      type: 'boolean',
+      default: undefined,
+    },
+    testnet: {
+      describe: 'Whether to run XUD on testnet',
+      type: 'boolean',
+      default: undefined,
+    },
+    simnet: {
+      describe: 'Whether to run XUD on simnet',
+      type: 'boolean',
+      default: undefined,
+    },
+    regnet: {
+      describe: 'Whether to run XUD on regnet',
+      type: 'boolean',
+      default: undefined,
     },
     nomatching: {
       describe: 'Whether to disable matching within xud',
@@ -163,7 +177,11 @@ const { argv } = require('yargs')
     }
 
     return arg;
-  });
+  })
+  .conflicts('mainnet', ['testnet', 'simnet', 'regtest'])
+  .conflicts('testnet', ['mainnet', 'simnet', 'regtest'])
+  .conflicts('simnet', ['mainnet', 'testnet', 'regtest'])
+  .conflicts('regtest', ['mainnet', 'testnet', 'simnet']);
 
 // delete non-config keys from argv
 delete argv._;

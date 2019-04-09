@@ -14,22 +14,40 @@ export enum OrderSide {
   Sell,
 }
 
-export enum Network {
+export enum XuNetwork {
+  // real coins.
   MainNet = 'mainnet',
+
+  // pre-defined testnet per currency (e.g. bitcoin: testnet3, litecoin: testnet4).
   TestNet = 'testnet',
+
+  // coins are minted by Exchange Union.
   SimNet = 'simnet',
+
+  // coins are minted privately. Seed nodes are not configurable.
   RegTest = 'regtest',
 }
 
 /**
- * Magic value indicating wire msg origin network, and used to seek to next msg when stream state is unknown
+ * Magic value per XU network, indicating wire msg origin network,
+ * and used to seek to next msg when stream state is unknown.
  */
-export enum NetworkMagic {
-  MainNet = 0xd9b4bef9,
-  TestNet = 0x0709110b,
-  SimNet = 0x12141c16,
-  RegTest = 0xdab5bffa,
-}
+export const xuNetworkMagicVals = {
+  [XuNetwork.MainNet]: 0xd9b4bef9,
+  [XuNetwork.TestNet]: 0x0709110b,
+  [XuNetwork.SimNet]: 0x12141c16,
+  [XuNetwork.RegTest]: 0xdab5bffa,
+};
+
+/**
+ * XU network per magic value.
+ */
+export const magicValsXuNetwork = {
+  [xuNetworkMagicVals[XuNetwork.MainNet]]: XuNetwork.MainNet,
+  [xuNetworkMagicVals[XuNetwork.TestNet]]: XuNetwork.TestNet,
+  [xuNetworkMagicVals[XuNetwork.SimNet]]: XuNetwork.SimNet,
+  [xuNetworkMagicVals[XuNetwork.RegTest]]: XuNetwork.RegTest,
+};
 
 export enum SwapRole {
   Taker = 0,

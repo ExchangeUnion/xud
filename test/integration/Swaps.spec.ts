@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon, { SinonSandbox }  from 'sinon';
+import sinon, { SinonSandbox } from 'sinon';
 import Pool from '../../lib/p2p/Pool';
 import Peer from '../../lib/p2p/Peer';
 import Swaps from '../../lib/swaps/Swaps';

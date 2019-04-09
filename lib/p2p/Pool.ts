@@ -1,4 +1,5 @@
 import net, { Server, Socket } from 'net';
+import semver from 'semver';
 import { EventEmitter } from 'events';
 import errors, { errorCodes } from './errors';
 import Peer, { PeerInfo } from './Peer';
@@ -13,10 +14,10 @@ import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } f
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
-import { ReputationEvent, DisconnectionReason } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
 import { ReputationEventInstance } from '../db/types';
-import semver from 'semver';
+import Network from './Network';
 
 const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
@@ -76,10 +77,14 @@ class Pool extends EventEmitter {
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
+  private network: Network;
 
-  constructor(config: PoolConfig, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models) {
     super();
     this.config = config;
+    this.network = new Network(xuNetwork);
+    this.repository = new P2PRepository(models);
+    this.nodes = new NodeList(this.repository, this.network);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -89,8 +94,6 @@ class Pool extends EventEmitter {
         this.addresses.push(address);
       });
     }
-    this.repository = new P2PRepository(models);
-    this.nodes = new NodeList(this.repository);
   }
 
   public get peerCount(): number {
@@ -104,6 +107,7 @@ class Pool extends EventEmitter {
     if (this.connected) {
       return;
     }
+    this.logger.info(`Connecting to ${this.network.xuNetwork} XU network`);
 
     if (this.server) {
       await this.listen();
@@ -127,7 +131,7 @@ class Pool extends EventEmitter {
       return this.connectNodes(this.nodes, false, true);
     }).then(() => {
       if (this.nodes.count > 0) {
-        this.logger.info('Completed start-up connections to known peers.');
+        this.logger.info('Completed start-up connections to known peers');
       }
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
@@ -210,7 +214,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config, this.network);
         await peer.beginOpen(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
         await peer.close();
         assert.fail();
@@ -345,7 +349,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    const peer = new Peer(this.logger, address);
+    const peer = new Peer(this.logger, address, this.config, this.network);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -537,7 +541,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger);
+    const peer = Peer.fromInbound(socket, this.logger, this.config, this.network);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
