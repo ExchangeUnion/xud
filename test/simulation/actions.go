@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/stretchr/testify/require"
@@ -131,7 +132,7 @@ func (*actions) removeOrderAndInvalidate(assert *require.Assertions, ctx context
 	assert.NoError(err)
 
 	// Verify no quantity on hold.
-	assert.Equal(res.QuantityOnHold, 0.0)
+	assert.Equal(res.QuantityOnHold, uint64(0))
 
 	// Retrieve and verify the removed orders event on destNode.
 	e := <-destNodeRemovedOrdersChan

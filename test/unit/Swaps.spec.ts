@@ -5,7 +5,7 @@ import { SwapPhase, SwapState, SwapRole } from '../../lib/constants/enums';
 import { SwapRequestPacketBody } from '../../lib/p2p/packets';
 
 describe('Swaps', () => {
-  const quantity = 0.01;
+  const quantity = 1000000;
   const price = 0.005;
   const takerCltvDelta = 144;
   const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';

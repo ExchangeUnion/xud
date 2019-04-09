@@ -1,6 +1,7 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { ExecuteSwapRequest } from '../../proto/xudrpc_pb';
+import { SATOSHIS_PER_COIN } from '../utils';
 
 export const command = 'executeswap <pair_id> <order_id> [quantity]';
 
@@ -23,6 +24,6 @@ export const handler = (argv: Arguments) => {
   const request = new ExecuteSwapRequest();
   request.setOrderId(argv.order_id);
   request.setPairId(argv.pair_id);
-  request.setQuantity(argv.quantity);
+  request.setQuantity(argv.quantity * SATOSHIS_PER_COIN);
   loadXudClient(argv).executeSwap(request, callback(argv));
 };

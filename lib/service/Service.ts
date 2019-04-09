@@ -47,7 +47,7 @@ const argChecks = {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
-  NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
+  POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
     if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/))  {
@@ -326,7 +326,7 @@ class Service extends EventEmitter {
   ) => {
     const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
-    argChecks.NON_ZERO_QUANTITY(args);
+    argChecks.POSITIVE_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
 
     const order = {

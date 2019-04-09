@@ -111,7 +111,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	req := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    10,
-		Quantity: 0.1,
+		Quantity: 10000000,
 		PairId:   "LTC/BTC",
 		Side:     xudrpc.OrderSide_BUY,
 	}
@@ -131,7 +131,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessTest) {
 	req := &xudrpc.PlaceOrderRequest{
 		Price:    10,
-		Quantity: 10,
+		Quantity: 1000000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,

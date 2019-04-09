@@ -15,8 +15,8 @@ chai.use(chaiAsPromised);
 const validMakerOrder = () => {
   return {
     price: 0.008,
-    quantity: 0.01,
-    initialQuantity: 0.01,
+    quantity: 1000000,
+    initialQuantity: 1000000,
     pairId: 'LTC/BTC',
     isBuy: false,
     peerPubKey: '029706a877a39d9f22e1ecd1042b058bd5798b9fd79fcf8c8ced8c1f13a4aff055',
@@ -29,8 +29,8 @@ const validTakerOrder = () => {
   return {
     pairId: 'LTC/BTC',
     price: 0.008,
-    quantity: 0.01,
-    initialQuantity: 0.01,
+    quantity: 1000000,
+    initialQuantity: 1000000,
     hold: 0,
     isBuy: true,
     localId: 'bd1d6500-e34c-11e8-bedb-9ffbf8c8cc23',
@@ -44,7 +44,7 @@ const validSwapSuccess = () => {
     orderId: '760d5291-e43e-11e8-bd56-e5c08173fa7d',
     localId: '76c61b40-e43e-11e8-a3b5-853f31e7d8e6',
     pairId: 'LTC/BTC',
-    quantity: 0.00001,
+    quantity: 1000,
     amountReceived: 1000,
     amountSent: 8,
     currencyReceived: 'LTC',
@@ -63,7 +63,7 @@ const validSwapDeal = () => {
     rHash: '29bcb9097a6afe26826100919917c9044062cba1d4f6ac694029f6b8af2041c7',
     orderId: '20998481-e689-11e8-95ee-e3e71c57fbb3',
     pairId: 'LTC/BTC',
-    proposedQuantity: 0.00001,
+    proposedQuantity: 1000,
     takerCurrency: 'BTC',
     makerCurrency: 'LTC',
     takerAmount: 8,
@@ -78,7 +78,7 @@ const validSwapDeal = () => {
     role: 0,
     createTime: 1542033726862,
     makerCltvDelta: 1152,
-    quantity: 0.00001,
+    quantity: 1000,
     executeTime: 1542033726871,
     errorMessage: 'UnknownPaymentHash',
   };

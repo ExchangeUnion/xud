@@ -36,9 +36,9 @@ class Swaps extends EventEmitter {
   /** Number of smallest units per currency. */
   // TODO: Populate the mapping from the database (Currency.decimalPlaces).
   private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
-    BTC: 100000000,
-    LTC: 100000000,
-    WETH: 1000000000000000000,
+    BTC: 1,
+    LTC: 1,
+    WETH: 10 ** 10,
   };
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;

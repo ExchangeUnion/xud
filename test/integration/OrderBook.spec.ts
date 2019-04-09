@@ -188,7 +188,7 @@ describe('nomatching OrderBook', () => {
       return {
         pairId: 'LTC/BTC',
         price: 0.008,
-        quantity: 0.00001,
+        quantity: 1000,
         isBuy: false,
         localId: '',
         hold: 0,
