@@ -7,7 +7,20 @@ node_js:
 cache:
   directories:
     - "node_modules"
+    - $GOCACHE
+    - $GOPATH/pkg
+    - $GOPATH/bin
+    - $GOPATH/src/github.com/btcsuite
 
 script:
   - npm run lintNoFix
   - npm run test
+
+  # network simulation tests
+  - eval "$(GIMME_GO_VERSION=1.11 gimme)"
+  - go get -u github.com/golang/dep/cmd/dep
+  - go get -u github.com/btcsuite/btcd
+  - npm install
+  - npm run compile
+  - npm run test:sim
+

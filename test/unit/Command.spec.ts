@@ -12,7 +12,7 @@ describe('Command.listorders.formatOrders', () => {
             buyOrdersList: [
               {
                 price: 0.004321,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '10270831-e755-11e8-a96e-13e8282e2780',
                 peerPubKey: '',
@@ -24,7 +24,7 @@ describe('Command.listorders.formatOrders', () => {
               },
               {
                 price: 0.00321,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '107a5851-e755-11e8-a96e-13e8282e2780',
                 peerPubKey: '',
@@ -38,7 +38,7 @@ describe('Command.listorders.formatOrders', () => {
             sellOrdersList: [
               {
                 price: 0.00832,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '0f9af4d1-e755-11e8-8145-13a272c3a58d',
                 peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
@@ -50,7 +50,7 @@ describe('Command.listorders.formatOrders', () => {
               },
               {
                 price: 0.00859,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '0fb6e141-e755-11e8-8145-13a272c3a58d',
                 peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
@@ -62,7 +62,7 @@ describe('Command.listorders.formatOrders', () => {
               },
               {
                 price: 0.00458,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '10b23131-e755-11e8-8145-13a272c3a58d',
                 peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
@@ -74,7 +74,7 @@ describe('Command.listorders.formatOrders', () => {
               },
               {
                 price: 0.00725,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '109644c1-e755-11e8-8145-13a272c3a58d',
                 peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
@@ -86,7 +86,7 @@ describe('Command.listorders.formatOrders', () => {
               },
               {
                 price: 0.00458,
-                quantity: 1e-8,
+                quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '10ce92d1-e755-11e8-8145-13a272c3a58d',
                 peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',

@@ -23,16 +23,6 @@ function isPacketInterface(obj: any): obj is PacketInterface {
   return false;
 }
 
-function isPacket(obj: any): obj is Packet {
-  const p = (<Packet>obj);
-  return (
-    p.toRaw !== undefined  && typeof p.toRaw === 'function'
-    && p.serialize !== undefined && typeof p.serialize === 'function'
-    && p.type !== undefined && typeof p.type === 'number'
-    && p.direction !== undefined && typeof p.direction === 'number'
-  );
-}
-
 enum PacketDirection {
   /** A packet that is pushed to a peer without expecting any response. */
   Unilateral,
@@ -42,9 +32,20 @@ enum PacketDirection {
   Response,
 }
 
+type ResponseType = PacketType | PacketType[] | undefined;
+
+function isPacketType(val: any): val is PacketType {
+  return val !== undefined && typeof val === 'number' && PacketType[val] !== undefined;
+}
+
+function isPacketTypeArray(val: any): val is PacketType[] {
+  return val !== undefined && val instanceof Array && val.every(v => isPacketType(v));
+}
+
 abstract class Packet<T = any> implements PacketInterface {
   public abstract get type(): PacketType;
   public abstract get direction(): PacketDirection;
+  public abstract get responseType(): ResponseType;
   public body?: T;
   public header: PacketHeader;
 
@@ -108,5 +109,15 @@ abstract class Packet<T = any> implements PacketInterface {
   }
 }
 
+function isPacket(val: any): val is Packet {
+  const p = (<Packet>val);
+  return (
+    p.toRaw !== undefined  && typeof p.toRaw === 'function'
+    && p.serialize !== undefined && typeof p.serialize === 'function'
+    && p.type !== undefined && typeof p.type === 'number'
+    && p.direction !== undefined && typeof p.direction === 'number'
+  );
+}
+
 export default Packet;
-export { PacketHeader, PacketDirection, PacketInterface, isPacket };
+export { PacketHeader, PacketDirection, ResponseType, PacketInterface, isPacket, isPacketType, isPacketTypeArray };

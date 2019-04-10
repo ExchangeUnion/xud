@@ -15,7 +15,7 @@ import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
 import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapSuccess, SwapDeal } from 'lib/swaps/types';
+import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
 import Bluebird from 'bluebird';
 
 interface OrderBook {
@@ -309,7 +309,7 @@ class OrderBook extends EventEmitter {
     /** Successful swaps performed for the placed order. */
     const swapSuccesses: SwapSuccess[] = [];
     /** Failed swaps attempted for the placed order. */
-    const swapFailures: PeerOrder[] = [];
+    const swapFailures: SwapFailure[] = [];
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -357,27 +357,42 @@ class OrderBook extends EventEmitter {
           return;
         }
 
+        this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         try {
-          this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-          const swapSuccess = await this.executeSwap(maker, taker);
-
-          if (swapSuccess.quantity < maker.quantity) {
+          const swapResult = await this.executeSwap(maker, taker);
+          if (swapResult.quantity < maker.quantity) {
             // swap was only partially completed
-            portion.quantity = swapSuccess.quantity;
-            const rejectedQuantity = maker.quantity - swapSuccess.quantity;
-            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapSuccess.quantity} ` +
+            portion.quantity = swapResult.quantity;
+            const rejectedQuantity = maker.quantity - swapResult.quantity;
+            this.logger.info(`match partially executed on taker ${taker.id} and maker ${maker.id} for ${swapResult.quantity} ` +
               `with peer ${maker.peerPubKey}, ${rejectedQuantity} quantity not accepted and will repeat matching routine`);
             await retryFailedSwap(rejectedQuantity);
           } else {
             this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey}`);
           }
-          swapSuccesses.push(swapSuccess);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapSuccess });
+          swapSuccesses.push(swapResult);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
         } catch (err) {
-          this.logger.warn(`swap for ${portion.quantity} failed during order matching, will repeat matching routine for failed swap quantity`);
-          swapFailures.push(maker);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: maker });
-          await retryFailedSwap(portion.quantity);
+          const failMsg = `swap for ${portion.quantity} failed during order matching`;
+          if (typeof err === 'number' && SwapFailureReason[err] !== undefined) {
+            // treat the error as a SwapFailureReason
+            this.logger.warn(`${failMsg} due to ${SwapFailureReason[err]}, will repeat matching routine for failed quantity`);
+
+            const swapFailure: SwapFailure = {
+              failureReason: err,
+              orderId: maker.id,
+              pairId: maker.pairId,
+              quantity: portion.quantity,
+              peerPubKey: maker.peerPubKey,
+            };
+            swapFailures.push(swapFailure);
+            onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
+            await retryFailedSwap(portion.quantity);
+          } else {
+            // treat this as a critical error and abort matching, we only expect SwapFailureReasons to be thrown in the try block above
+            this.logger.error(`${failMsg} due to unexpected error`, err);
+            throw err;
+          }
         }
       }
     };
@@ -408,19 +423,21 @@ class OrderBook extends EventEmitter {
   /**
    * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
    * succeeds and `peerOrder.invalidation` if the swap fails.
+   * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     // make sure the order is in the database before we begin the swap
     await this.repository.addOrderIfNotExists(maker);
     try {
-      const swapSuccess = await this.swaps!.executeSwap(maker, taker);
+      const swapResult = await this.swaps!.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.persistTrade(swapSuccess.quantity, maker, taker, swapSuccess.rHash);
-      return swapSuccess;
+      await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
+      return swapResult;
     } catch (err) {
+      const failureReason: number = err;
       this.emit('peerOrder.invalidation', maker);
-      // TODO: penalize peer for failed swap? penalty severity should depend on reason for failure
-      throw err;
+      this.logger.error(`swap between orders ${maker.id} & ${taker.id} failed due to ${SwapFailureReason[failureReason]}`);
+      throw failureReason;
     }
   }
 
@@ -463,7 +480,7 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: IncomingOrder): boolean => {
     const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
-      // TODO: penalize peer
+      // TODO: penalize peer for sending an order for an unsupported pair
       return false;
     }
 
@@ -481,8 +498,10 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Removes an order from the order book by its local id. Throws an error if the specified pairId
-   * is not supported or if the order to cancel could not be found.
+   * Removes all or part of an order from the order book by its local id. Throws an error if the
+   * specified pairId is not supported or if the order to cancel could not be found.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the entire
+   * order is removed.
    * @returns any quantity of the order that was on hold and could not be immediately removed.
    */
   public removeOwnOrderByLocalId = (localId: string, quantityToRemove?: number) => {
@@ -624,7 +643,7 @@ class OrderBook extends EventEmitter {
         orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
-    peer.sendOrders(outgoingOrders, reqId);
+    await peer.sendOrders(outgoingOrders, reqId);
   }
 
   /**
@@ -673,7 +692,7 @@ class OrderBook extends EventEmitter {
 
     if (!Swaps.validateSwapRequest(requestPacket.body!)) {
       // TODO: penalize peer for invalid swap request
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.InvalidSwapRequest,
       }, requestPacket.header.id));
@@ -682,7 +701,7 @@ class OrderBook extends EventEmitter {
 
     const order = this.tryGetOwnOrder(orderId, pairId);
     if (!order) {
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.OrderNotFound,
       }, requestPacket.header.id));
@@ -710,7 +729,7 @@ class OrderBook extends EventEmitter {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
-      peer.sendPacket(new SwapFailedPacket({
+      await peer.sendPacket(new SwapFailedPacket({
         rHash,
         failureReason: SwapFailureReason.OrderOnHold,
       }, requestPacket.header.id));

@@ -1,11 +1,10 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent } from '../constants/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent, SwapClient } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
 import { createHash } from 'crypto';
 import Logger from '../Logger';
-import * as lndrpc from '../proto/lndrpc_pb';
-import LndClient from '../lndclient/LndClient';
+import BaseClient from '../BaseClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
@@ -14,6 +13,7 @@ import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess } from './types';
 import { randomBytes } from '../utils/utils';
+import { ResolveRequest } from '../proto/hash_resolver_pb';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -33,14 +33,23 @@ class Swaps extends EventEmitter {
   private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
-  /** The number of satoshis in a bitcoin. */
-  private static readonly SATOSHIS_PER_COIN = 100000000;
+  /** Number of smallest units per currency. */
+  // TODO: Populate the mapping from the database (Currency.decimalPlaces).
+  private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
+    BTC: 1,
+    LTC: 1,
+    WETH: 10 ** 10,
+  };
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
   private static readonly SWAP_COMPLETE_TIMEOUT = 30000;
 
-  constructor(private logger: Logger, private models: Models, private pool: Pool, private lndBtcClient: LndClient, private lndLtcClient: LndClient) {
+  constructor(private logger: Logger,
+    private models: Models,
+    private pool: Pool,
+    private swapClients: { [currency: string]: BaseClient | undefined },
+  ) {
     super();
     this.repository = new SwapRepository(this.models);
     this.bind();
@@ -78,10 +87,10 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean) => {
-    // TODO: use configurable amount of subunits/satoshis per token for each currency
-    const baseCurrencyAmount = Math.round(quantity * Swaps.SATOSHIS_PER_COIN);
-    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.SATOSHIS_PER_COIN);
+  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+    const [baseCurrency, quoteCurrency] = pairId.split('/');
+    const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
+    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
     const makerAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
     const takerAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
     return { makerAmount, takerAmount };
@@ -106,47 +115,39 @@ class Swaps extends EventEmitter {
    * @returns `true` if the pair has swap support, `false` otherwise
    */
   public isPairSupported = (pairId: string): boolean => {
-    // TODO: implement generic way of checking pair
-    return pairId === 'LTC/BTC' && this.lndBtcClient.isConnected() && this.lndLtcClient.isConnected();
+    const currencies = pairId.split('/');
+    const baseCurrencyClient = this.swapClients[currencies[0]];
+    const quoteCurrencyClient = this.swapClients[currencies[1]];
+    return baseCurrencyClient !== undefined && baseCurrencyClient.isConnected() &&
+      quoteCurrencyClient !== undefined && quoteCurrencyClient.isConnected();
   }
 
   /**
    * Sends an error to peer. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
+  private sendErrorToPeer = async (peer: Peer, rHash: string, failureReason: SwapFailureReason, errorMessage?: string, reqId?: string) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
       failureReason,
       errorMessage,
     };
     this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
-    peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
-    return;
+    await peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
   }
 
   /**
-   * Verifies LND setup. Make sure we are connected to BTC and LTC and that
-   * the peer has provided pub keys for these networks.
+   * Makes sure the peer has provided identifiers for the networks involved in the swap.
    * @returns undefined if the setup is verified, otherwise an error message
    */
-  private verifyLndSetup = (deal: SwapDeal, peer: Peer) => {
-    if (!peer.getLndPubKey(deal.takerCurrency)) {
+  private checkPeerIdentifiers = (deal: SwapDeal, peer: Peer) => {
+    // TODO: this verification should happen before we accept orders from the peer and should check Raiden as well
+    if (!peer.getIdentifier(SwapClient.Lnd, deal.takerCurrency)) {
       return 'peer did not provide an LND PubKey for ' + deal.takerCurrency;
     }
 
-    if (!peer.getLndPubKey(deal.makerCurrency)) {
+    if (!peer.getIdentifier(SwapClient.Lnd, deal.makerCurrency)) {
       return 'peer did not provide an LND PubKey for ' + deal.makerCurrency;
     }
-
-    // verify that this node is connected to BTC and LTC networks
-    if (!this.lndLtcClient.isConnected()) {
-      return 'Can not swap. Not connected to LTC network';
-    }
-
-    if (!this.lndBtcClient.isConnected()) {
-      return 'Can not swap. Not connected to BTC network';
-    }
-
     return;
   }
 
@@ -188,62 +189,40 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Gets a client for the specified currency.
-   * @param currency the currency of the client
-   * @returns a client if found, otherwise undefined
-   */
-  private getClientForCurrency(currency: string): LndClient | undefined {
-    switch (currency) {
-      case 'BTC':
-        return this.lndBtcClient;
-      case 'LTC':
-        return this.lndLtcClient;
-      default:
-        return;
-    }
-  }
-
-  /**
-   * Gets routes for the given currency, amount and peerPubKey.
-   * @param currency currency/chain to find routes in
-   * @param amount the capacity of the route
-   * @param peerPubKey target node for the route
-   * @returns routes
-   */
-  private getRoutes =  async (currency: string, amount: number, peerPubKey: string): Promise<lndrpc.Route[]> => {
-    const client = this.getClientForCurrency(currency);
-    if (!client) throw new Error('swap client not found');
-    const req = new lndrpc.QueryRoutesRequest();
-    req.setAmt(amount);
-    req.setFinalCltvDelta(client.cltvDelta);
-    req.setNumRoutes(1);
-    const peer = this.pool.getPeer(peerPubKey);
-    const pubKey = peer.getLndPubKey(currency);
-    if (!pubKey) {
-      throw new Error(`${currency} client's pubKey not found for peer ${peerPubKey}`);
-    }
-    req.setPubKey(pubKey);
-    const routes = (await client.queryRoutes(req)).getRoutesList();
-    this.logger.debug(`got ${routes.length} routes to destination: ${routes}`);
-    return routes;
-  }
-
-  /**
-   * Checks if a swap for two given orders can be executed.
+   * Checks if a swap for two given orders can be executed by ensuring both swap clients are active
+   * and if there exists a route to the maker.
    * @param maker maker order
    * @param taker taker order
-   * @returns nothing if the swap can be executed, throws an error with a reason otherwise
+   * @returns `void` if the swap can be executed, throws a [[SwapFailureReason]] otherwise
    */
-  private verifyExecution = async (maker: PeerOrder, taker: OwnOrder) => {
+  private verifyExecution = async (maker: PeerOrder, taker: OwnOrder): Promise<void> => {
     if (maker.pairId !== taker.pairId || !this.isPairSupported(maker.pairId)) {
-      throw new Error('pairId does not match or pair is not supported');
+      throw SwapFailureReason.SwapClientNotSetup;
     }
 
+    // TODO: right now we only verify that a route exists when we are the taker, we should
+    // generalize the logic below to work for when we are the maker as well
     const { makerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
-    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy);
-    const routes = await this.getRoutes(makerCurrency, makerAmount, maker.peerPubKey);
+    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
+
+    const swapClient = this.swapClients[makerCurrency];
+    if (!swapClient) throw new Error('swap client not found');
+
+    const peer = this.pool.getPeer(maker.peerPubKey);
+    const destination = peer.getIdentifier(swapClient.type, makerCurrency);
+    if (!destination) {
+      throw new Error(`${makerCurrency} client's pubKey not found for peer ${maker.peerPubKey}`);
+    }
+
+    let routes;
+    try {
+      routes = await swapClient.getRoutes(makerAmount, destination);
+    } catch (err) {
+      throw SwapFailureReason.UnexpectedClientError;
+    }
+
     if (routes.length === 0) {
-      throw new Error('Can not swap. unable to find route to destination');
+      throw SwapFailureReason.NoRouteFound;
     }
   }
 
@@ -251,14 +230,11 @@ class Swaps extends EventEmitter {
    * A promise wrapper for a swap procedure
    * @param maker the remote maker order we are filling
    * @param taker our local taker order
-   * @returns A promise that is resolved once the swap is completed, or rejects otherwise
+   * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     await this.verifyExecution(maker, taker);
     const rHash = await this.beginSwap(maker, taker);
-    if (!rHash) {
-      throw new Error('cannot execute swap. rHash not found');
-    }
 
     return new Promise<SwapSuccess>((resolve, reject) => {
       const cleanup = () => {
@@ -274,7 +250,7 @@ class Swaps extends EventEmitter {
       const onFailed = (deal: SwapDeal) => {
         if (deal.rHash === rHash) {
           cleanup();
-          reject();
+          reject(deal.failureReason!);
         }
       };
       this.on('swap.paid', onPaid);
@@ -286,25 +262,20 @@ class Swaps extends EventEmitter {
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
    * @param maker The remote maker order we are filling
    * @param taker Our local taker order
-   * @returns The rHash for the swap, or `undefined` if the swap could not be initiated
+   * @returns The rHash for the swap, or a [[SwapFailureReason]] if the swap could not be initiated
    */
-  private beginSwap = async (maker: PeerOrder, taker: OwnOrder) => {
+  private beginSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<string> => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
 
     const quantity = Math.min(maker.quantity, taker.quantity);
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy);
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
+    const clientType = this.swapClients[makerCurrency]!.type;
+    const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
-    let takerCltvDelta = 0;
-    switch (takerCurrency) {
-      case 'BTC':
-        takerCltvDelta = this.lndBtcClient.cltvDelta;
-        break;
-      case 'LTC':
-        takerCltvDelta = this.lndLtcClient.cltvDelta;
-        break;
-    }
+    const takerCltvDelta = this.swapClients[takerCurrency]!.cltvDelta;
+
     const preimage = await randomBytes(32);
 
     const rHash = createHash('sha256').update(preimage).digest('hex');
@@ -323,6 +294,7 @@ class Swaps extends EventEmitter {
       makerCurrency,
       takerAmount,
       makerAmount,
+      destination,
       peerPubKey: peer.nodePubKey!,
       localId: taker.localId,
       price: maker.price,
@@ -338,15 +310,14 @@ class Swaps extends EventEmitter {
 
     this.addDeal(deal);
 
-    // Verify LND setup. Make sure we are connected to BTC and LTC and that
-    // the peer is also connected to these networks.
-    const errMsg = this.verifyLndSetup(deal, peer);
+    // Verify LND setup. Make sure the peer has given us its lnd pub keys.
+    const errMsg = this.checkPeerIdentifiers(deal, peer);
     if (errMsg) {
       this.logger.error(errMsg);
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      return;
+      throw SwapFailureReason.SwapClientNotSetup;
     }
-    peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
+    await peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 
     this.setDealPhase(deal, SwapPhase.SwapRequested);
     return deal.rHash;
@@ -364,17 +335,23 @@ class Swaps extends EventEmitter {
 
     const rHash = requestPacket.body!.rHash;
     if (this.usedHashes.has(rHash)) {
-      this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, requestPacket.body!.rHash, SwapFailureReason.PaymentHashReuse, undefined, requestPacket.header.id);
       return false;
     }
     const requestBody = requestPacket.body!;
 
     const { quantity, price, isBuy } = orderToAccept;
 
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy);
+    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy, requestBody.pairId);
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(requestBody.pairId, isBuy);
 
-    const takerPubKey = peer.getLndPubKey(takerCurrency)!;
+    const swapClient = this.swapClients[takerCurrency];
+    if (!swapClient) {
+      await this.sendErrorToPeer(peer, rHash, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency', requestPacket.header.id);
+      return false;
+    }
+
+    const takerPubKey = peer.getIdentifier(swapClient.type, takerCurrency)!;
 
     const deal: SwapDeal = {
       ...requestBody,
@@ -386,6 +363,7 @@ class Swaps extends EventEmitter {
       takerAmount,
       makerCurrency,
       takerCurrency,
+      destination: takerPubKey,
       peerPubKey: peer.nodePubKey!,
       localId: orderToAccept.localId,
       phase: SwapPhase.SwapCreated,
@@ -400,68 +378,68 @@ class Swaps extends EventEmitter {
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
 
-    // Verifies LND setup. Make sure we are connected to BTC and LTC and that
-    // the peer is also connected to these networks.
-    const errMsg = this.verifyLndSetup(deal, peer);
+    // Verify LND setup. Make sure the peer has given us its lnd pub keys.
+    const errMsg = this.checkPeerIdentifiers(deal, peer);
     if (errMsg) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      return false;
+    }
+    // Make sure we are connected to swap clients for both currencies
+    if (!this.isPairSupported(deal.pairId)) {
+      this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, errMsg);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
-    const lndclient = this.getClientForCurrency(deal.takerCurrency);
-    if (!lndclient) {
-      this.failDeal(deal, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency');
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
-      return false;
-    }
+    // TODO: verify that a route exists from taker to maker before accepting deal
 
     try {
-      deal.makerToTakerRoutes = await this.getRoutes(deal.takerCurrency, takerAmount, deal.peerPubKey);
-      if (deal.makerToTakerRoutes.length === 0) throw new Error();
+      deal.makerToTakerRoutes = await swapClient.getRoutes(takerAmount, takerPubKey);
     } catch (err) {
-      const cannotSwap = 'Unable to find route to destination';
-      const errMsg = err && err.message
-        ? `${cannotSwap}`
-        : `${cannotSwap}: ${err.message}`;
-      this.failDeal(deal, SwapFailureReason.NoRouteFound, errMsg);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      return false;
+    }
+
+    if (deal.makerToTakerRoutes.length === 0) {
+      this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
     let height: number;
     try {
-      const info = await lndclient.getInfo();
-      height = info.getBlockHeight();
-      this.logger.debug('got block height of ' + height);
+      height = await swapClient.getHeight();
     } catch (err) {
-      this.failDeal(deal, SwapFailureReason.UnexpectedLndError, 'Unable to fetch block height: ' + err.message);
-      this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
+      this.failDeal(deal, SwapFailureReason.UnexpectedClientError, 'Unable to fetch block height: ' + err.message);
+      await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
-    const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
+    if (height) {
+      this.logger.debug('got block height of ' + height);
 
-    // cltvDelta can't be zero for both the LtcClient and BtcClient (checked in constructor)
-    const cltvDeltaFactor = this.lndLtcClient.cltvDelta / this.lndBtcClient.cltvDelta;
-    switch (makerCurrency) {
-      case 'BTC':
-        deal.makerCltvDelta = this.lndBtcClient.cltvDelta + Math.ceil(routeCltvDelta / cltvDeltaFactor);
-        break;
-      case 'LTC':
-        deal.makerCltvDelta = this.lndLtcClient.cltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
-        break;
+      const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
+
+      const makerClientCltvDelta = this.swapClients[makerCurrency]!.cltvDelta;
+      const takerClientCltvDelta = this.swapClients[takerCurrency]!.cltvDelta;
+
+      // cltvDelta can't be zero for swap clients (checked in constructor)
+      const cltvDeltaFactor = makerClientCltvDelta / takerClientCltvDelta;
+
+      deal.makerCltvDelta = makerClientCltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
+
+      this.logger.debug('total timelock of route = ' + routeCltvDelta + 'makerCltvDelta = ' + deal.makerCltvDelta);
     }
 
-    this.logger.debug('total timelock of route = ' + routeCltvDelta + 'makerCltvDelta = ' + deal.makerCltvDelta);
-
     const responseBody: packets.SwapAcceptedPacketBody = {
-      makerCltvDelta: deal.makerCltvDelta!,
+      makerCltvDelta: deal.makerCltvDelta || 0,
       rHash: requestBody.rHash,
       quantity: requestBody.proposedQuantity,
     };
 
-    peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    await peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapPhase.SwapAgreed);
     return true;
   }
@@ -504,64 +482,43 @@ class Swaps extends EventEmitter {
         // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
-        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy);
+        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy, deal.pairId);
         deal.takerAmount = takerAmount;
         deal.makerAmount = makerAmount;
       }
     }
 
-    let cmdLnd: LndClient;
-    // running as taker
-    switch (deal.makerCurrency) {
-      case 'BTC':
-        cmdLnd =  this.lndBtcClient;
-        break;
-      case 'LTC':
-        cmdLnd = this.lndLtcClient;
-        break;
-      default:
-        // Can't be if we check that pairID is LTC/BTC only (for now). Still...
-        return;
+    const swapClient = this.swapClients[deal.makerCurrency];
+    if (!swapClient) {
+      // We checked that we had a swap client for both currencies involved when the swap was initiated. Still...
+      return;
     }
-    const request = new lndrpc.SendRequest();
-    const makerPubKey = peer.getLndPubKey(deal.makerCurrency)!;
-    request.setAmt(deal.makerAmount);
-    request.setDestString(makerPubKey);
-    request.setPaymentHashString(deal.rHash);
-    request.setFinalCltvDelta(deal.makerCltvDelta);
 
     // TODO: use timeout on call
 
     try {
-      this.setDealPhase(deal,  SwapPhase.SendingAmount);
-      const sendPaymentResponse = await cmdLnd.sendPaymentSync(request);
-      if (sendPaymentResponse.getPaymentError()) {
-        throw new Error(sendPaymentResponse.getPaymentError());
-      }
-
-      const rPreimage = Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+      this.setDealPhase(deal, SwapPhase.SendingAmount);
+      const rPreimage = await swapClient.sendPayment(deal);
       // TODO: check preimage from payment response vs deal.preImage
+
       // swap succeeded!
       this.setDealPhase(deal, SwapPhase.SwapCompleted);
       const responseBody: packets.SwapCompletePacketBody = { rHash };
 
       this.logger.debug('Sending swap complete to peer: ' + JSON.stringify(responseBody));
-      peer.sendPacket(new packets.SwapCompletePacket(responseBody));
-
+      await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
     } catch (err) {
-      this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err.message);
       this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
-      this.sendErrorToPeer(peer, rHash, err.message);
-      return;
+      await this.sendErrorToPeer(peer, rHash, err.message);
     }
   }
 
   /**
-   * Verifies that the request from LND is valid. Checks the received amount vs
+   * Verifies that the resolve request is valid. Checks the received amount vs
    * the expected amount and the CltvDelta vs the expected one.
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
-  private validateResolveRequest = (deal: SwapDeal, resolveRequest: lndrpc.ResolveRequest)  => {
+  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
     const amount = resolveRequest.getAmount();
     let expectedAmount = 0;
     let cltvDelta = 0;
@@ -606,7 +563,7 @@ class Swaps extends EventEmitter {
   /**
    * resolveHash resolve hash to preimage.
    */
-  public resolveHash = async (resolveRequest: lndrpc.ResolveRequest) => {
+  public resolveHash = async (resolveRequest: ResolveRequest) => {
     const hash = resolveRequest.getHash();
 
     this.logger.info('ResolveHash starting with hash: ' + hash);
@@ -625,36 +582,16 @@ class Swaps extends EventEmitter {
 
     if (deal.role === SwapRole.Maker) {
       // As the maker, I need to forward the payment to the other chain
-	  this.logger.debug('Executing maker code');
+	    this.logger.debug('Executing maker code');
 
-      let cmdLnd = this.lndLtcClient;
-
-      switch (deal.makerCurrency) {
-        case 'BTC':
-          break;
-        case 'LTC':
-          cmdLnd = this.lndBtcClient;
-          break;
-      }
-
-      const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes ? deal.makerToTakerRoutes : []);
-      request.setPaymentHashString(deal.rHash);
+      const swapClient = this.swapClients[deal.takerCurrency]!;
 
       try {
         this.setDealPhase(deal, SwapPhase.SendingAmount);
-        const response = await cmdLnd.sendToRouteSync(request);
-        if (response.getPaymentError()) {
-          this.logger.error('Got error from sendPaymentSync: ' + response.getPaymentError() + ' ' + JSON.stringify(request.toObject()));
-          this.failDeal(deal, SwapFailureReason.SendPaymentFailure, response.getPaymentError());
-          return response.getPaymentError();
-        }
-
-        deal.rPreimage = Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        deal.rPreimage = await swapClient.sendPayment(deal);
         this.setDealPhase(deal, SwapPhase.AmountReceived);
         return deal.rPreimage;
       } catch (err) {
-        this.logger.error('Got exception from sendPaymentSync: ' + ' ' + JSON.stringify(request.toObject()) + err.message);
         this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
         return 'Got exception from sendPaymentSync' + err.message;
       }

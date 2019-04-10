@@ -1,8 +1,8 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
+import { removeUndefinedProps, setObjectToMap, convertKvpArrayToKvps } from '../../../utils/utils';
 
 export type SessionInitPacketBody = {
   sign: string;
@@ -12,12 +12,16 @@ export type SessionInitPacketBody = {
 };
 
 class SessionInitPacket extends Packet<SessionInitPacketBody> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.SessionInit;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Request;
+  }
+
+  public get responseType(): ResponseType {
+    return PacketType.SessionAck;
   }
 
   public static deserialize = (binary: Uint8Array): SessionInitPacket | pb.SessionInitPacket.AsObject => {
@@ -34,7 +38,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
       && obj.nodeState.version
       && obj.nodeState.nodePubKey
       && obj.nodeState.pairsList
-      && obj.nodeState.addressesList.filter(addr => addr.host).length === obj.nodeState.addressesList.length
+      && obj.nodeState.addressesList.every(addr => !!addr.host)
     );
   }
 
@@ -53,8 +57,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
           pairs: obj.nodeState!.pairsList,
           addresses: obj.nodeState!.addressesList,
           raidenAddress: obj.nodeState!.raidenAddress || undefined,
-          lndbtcPubKey: obj.nodeState!.lndBtcPubKey || undefined,
-          lndltcPubKey: obj.nodeState!.lndLtcPubKey || undefined,
+          lndPubKeys: obj.nodeState!.lndPubKeysMap ? convertKvpArrayToKvps(obj.nodeState!.lndPubKeysMap) : undefined,
         }),
       },
     });
@@ -78,8 +81,9 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
         return pbAddr;
       }));
       pbNodeState.setRaidenAddress(this.body!.nodeState.raidenAddress!);
-      pbNodeState.setLndBtcPubKey(this.body!.nodeState.lndbtcPubKey!);
-      pbNodeState.setLndLtcPubKey(this.body!.nodeState.lndltcPubKey!);
+      if (this.body!.nodeState.lndPubKeys) {
+        setObjectToMap(this.body!.nodeState.lndPubKeys, pbNodeState.getLndPubKeysMap());
+      }
       return pbNodeState;
     })());
 

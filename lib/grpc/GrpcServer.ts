@@ -42,6 +42,7 @@ class GrpcServer {
       shutdown: grpcService.shutdown,
       subscribeAddedOrders: grpcService.subscribeAddedOrders,
       subscribeRemovedOrders: grpcService.subscribeRemovedOrders,
+      subscribeSwapFailures: grpcService.subscribeSwapFailures,
       subscribeSwaps: grpcService.subscribeSwaps,
     });
 

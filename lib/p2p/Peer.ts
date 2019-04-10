@@ -4,22 +4,20 @@ import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import semver from 'semver';
-import { ReputationEvent, DisconnectionReason, NetworkMagic } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, SwapClient } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
+import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
 import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
 import Network from './Network';
 import Framer from './Framer';
-
-const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -29,8 +27,8 @@ type PeerInfo = {
   pairs?: string[],
   xudVersion?: string,
   secondsConnected: number,
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys?: { [currency: string]: string | undefined },
+  raidenAddress?: string,
 };
 
 interface Peer {
@@ -38,12 +36,10 @@ interface Peer {
   on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'pairDropped', listener: (pair: string) => void): this;
   on(event: 'nodeStateUpdate', listener: () => void): this;
-  once(event: 'open', listener: () => void): this;
+  on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   once(event: 'close', listener: () => void): this;
-  once(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
-  emit(event: 'open'): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
@@ -58,19 +54,21 @@ class Peer extends EventEmitter {
   public recvDisconnectionReason?: DisconnectionReason;
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
-  public active = false; // added to peer list
+  /** Whether the peer is included in the p2p pool list of peers and will receive broadcasted packets. */
+  public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
+  /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
   private opened = false;
+  private opening = false;
   private socket?: Socket;
-  private parser: Parser;
+  private readonly parser: Parser;
   private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
-  private connectTimeout?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
-  private responseMap: Map<string, PendingResponseEntry> = new Map();
+  private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
   private lastRecv = 0;
@@ -80,17 +78,15 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   /** A counter for packets sent to be used for assigning unique packet ids. */
   private packetCount = 0;
-  private network = new Network(NetworkMagic.TestNet); // TODO: inject from constructor to support more networks
-  private framer: Framer;
-  private deactivatedPairs = new Set<string>();
+  private readonly network: Network;
+  private readonly framer: Framer;
+  private readonly deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static readonly PING_INTERVAL = 30000;
   /** Response timeout for response packets. */
   private static readonly RESPONSE_TIMEOUT = 10000;
-  /** Socket connection timeout for outbound peers. */
-  private static readonly CONNECTION_TIMEOUT = 10000;
   /** Connection retries min delay. */
   private static readonly CONNECTION_RETRIES_MIN_DELAY = 5000;
   /** Connection retries max delay. */
@@ -98,7 +94,7 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
-  private get version(): string {
+  public get version(): string {
     return this.nodeState ? this.nodeState.version : '';
   }
 
@@ -138,17 +134,17 @@ class Peer extends EventEmitter {
       pairs: this.nodeState ? this.nodeState.pairs : undefined,
       xudVersion: this.nodeState ? this.nodeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
-      lndbtcPubKey: this.getLndPubKey('BTC'),
-      lndltcPubKey: this.getLndPubKey('LTC'),
+      lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
+      raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
     };
   }
 
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private config: PoolConfig) {
+  constructor(private logger: Logger, public address: Address, private config: PoolConfig, network: Network) {
     super();
-
+    this.network = network;
     this.framer = new Framer(this.network);
     this.parser = new Parser(this.framer);
     this.bindParser(this.parser);
@@ -157,8 +153,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), config);
+  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig, network: Network): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), config, network);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -168,18 +164,17 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getLndPubKey(chain: string): string | undefined {
+  public getIdentifier(clientType: SwapClient, currency?: string): string | undefined {
     if (!this.nodeState) {
-      return;
+      return undefined;
     }
-    switch (chain) {
-      case 'BTC':
-        return this.nodeState.lndbtcPubKey;
-      case 'LTC':
-        return this.nodeState.lndltcPubKey;
-      default:
-        return;
+    if (clientType === SwapClient.Lnd && currency) {
+      return this.nodeState.lndPubKeys[currency];
     }
+    if (clientType === SwapClient.Raiden) {
+      return this.nodeState.raidenAddress;
+    }
+    return;
   }
 
   public getStatus = (): string => {
@@ -195,81 +190,67 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Prepare a connection for use by ensuring it is active, exchanging [[HelloPacket]] with handshake data,
-   * and emit the `open` event if everything succeeds. Throw an error on unexpected handshake data.
-   * @param handshakeData our handshake data to send to the peer
-   * @param nodePubKey the expected nodePubKey of the node we are opening a connection with
+   * Prepares a peer for use by establishing a socket connection and beginning the handshake.
+   * @param ownNodeState our node state data to send to the peer
+   * @param nodeKey our identity node key
+   * @param expectedNodePubKey the expected nodePubKey of the node we are opening a connection with
    * @param retryConnecting whether to retry to connect upon failure
+   * @returns the session init packet from beginning the handshake
    */
-  public open = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
+  public beginOpen = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false):
+    Promise<packets.SessionInitPacket> => {
+    assert(!this.opening);
     assert(!this.opened);
     assert(!this.closed);
     assert(this.inbound || expectedNodePubKey);
     assert(!retryConnecting || !this.inbound);
 
+    this.opening = true;
     this.expectedNodePubKey = expectedNodePubKey;
 
     await this.initConnection(retryConnecting);
     this.initStall();
 
-    await this.handshake(ownNodeState, nodeKey);
+    return this.beginHandshake(ownNodeState, nodeKey);
+  }
 
-    if (this.expectedNodePubKey && this.nodePubKey !== this.expectedNodePubKey) {
-      this.close(DisconnectionReason.UnexpectedIdentity);
-      throw errors.UNEXPECTED_NODE_PUB_KEY(this.nodePubKey!, this.expectedNodePubKey, addressUtils.toString(this.address));
-    }
+  /**
+   * Finishes opening a peer for use by marking the peer as opened, completing the handshake,
+   * and setting up the ping packet timer.
+   * @param ownNodeState our node state data to send to the peer
+   * @param nodeKey our identity node key
+   * @param sessionInit the session init packet we received when beginning the handshake
+   */
+  public completeOpen = async (ownNodeState: NodeState, nodeKey: NodeKey, sessionInit: packets.SessionInitPacket) => {
+    assert(this.opening);
+    assert(!this.opened);
+    assert(!this.closed);
 
-    if (this.nodePubKey === ownNodeState.nodePubKey) {
-      this.close(DisconnectionReason.ConnectedToSelf);
-      throw errors.ATTEMPTED_CONNECTION_TO_SELF;
-    }
+    this.opening = false;
+    this.opened = true;
 
-    // Check if version is semantic, and higher than minCompatibleVersion.
-    if (!semver.valid(this.version)) {
-      this.close(DisconnectionReason.MalformedVersion);
-      throw errors.MALFORMED_VERSION(addressUtils.toString(this.address), this.version);
-    }
-    // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
-    if (semver.compare(this.version, minCompatibleVersion) === -1) {
-      this.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(this.address), minCompatibleVersion, this.version);
-    }
-
-    // request peer's known nodes only if p2p.discover option is true
-    if (this.config.discover) {
-      this.sendPacket(new packets.GetNodesPacket());
-      if (this.config.discoverminutes === 0) {
-        // timer is disabled
-        this.discoverTimer = undefined; // defensive programming
-      } else {
-        // timer is enabled
-        this.discoverTimer = setInterval(this.sendGetNodes, this.config.discoverminutes * 1000 * 60);
-      }
-    }
+    await this.completeHandshake(ownNodeState, nodeKey, sessionInit);
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
-
-    // let listeners know that this peer is ready to go
-    this.opened = true;
-    this.emit('open');
   }
 
   /**
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
-  public close = (reason?: DisconnectionReason, reasonPayload?: string): void => {
+  public close = async (reason?: DisconnectionReason, reasonPayload?: string): Promise<void> => {
     if (this.closed) {
       return;
     }
 
     this.closed = true;
+    this.opened = false;
 
     if (this.socket) {
       if (reason !== undefined) {
         this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
         this.sentDisconnectionReason = reason;
-        this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
+        await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
 
       if (!this.socket.destroyed) {
@@ -298,18 +279,13 @@ class Peer extends EventEmitter {
       this.stallTimer = undefined;
     }
 
-    if (this.connectTimeout) {
-      clearTimeout(this.connectTimeout);
-      this.connectTimeout = undefined;
-    }
-
     let rejectionMsg;
     if (reason) {
-      rejectionMsg = `Peer closed due to ${DisconnectionReason[reason]}`;
+      rejectionMsg = `Peer (${this.label}) closed due to ${DisconnectionReason[reason]} ${reasonPayload || ''}`;
     } else if (this.recvDisconnectionReason) {
-      rejectionMsg = `Peer disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
+      rejectionMsg = `Peer (${this.label}) disconnected from us due to ${DisconnectionReason[this.recvDisconnectionReason]}`;
     } else {
-      rejectionMsg = `Peer was destroyed`;
+      rejectionMsg = `Peer (${this.label}) was destroyed`;
     }
 
     for (const [packetType, entry] of this.responseMap) {
@@ -324,27 +300,27 @@ class Peer extends EventEmitter {
     this.connectionRetriesRevoked = true;
   }
 
-  public sendPacket = (packet: Packet): void => {
-    const data = this.framer.frame(packet, this.outEncryptionKey);
+  public sendPacket = async (packet: Packet): Promise<void> => {
+    const data = await this.framer.frame(packet, this.outEncryptionKey);
     this.sendRaw(data);
 
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
     this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
-      this.addResponseTimeout(packet.header.id, Peer.RESPONSE_TIMEOUT);
+      this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
     }
   }
 
-  public sendOrders = (orders: OutgoingOrder[], reqId: string): void => {
+  public sendOrders = async (orders: OutgoingOrder[], reqId: string): Promise<void> => {
     const packet = new packets.OrdersPacket(orders, reqId);
-    this.sendPacket(packet);
+    await this.sendPacket(packet);
   }
 
   /** Sends a [[NodesPacket]] containing node connection info to this peer. */
-  public sendNodes = (nodes: NodeConnectionInfo[], reqId: string): void => {
+  public sendNodes = async (nodes: NodeConnectionInfo[], reqId: string): Promise<void> => {
     const packet = new packets.NodesPacket(nodes, reqId);
-    this.sendPacket(packet);
+    await this.sendPacket(packet);
   }
 
   /**
@@ -363,9 +339,13 @@ class Peer extends EventEmitter {
   }
 
   private sendRaw = (data: Buffer) => {
-    if (this.socket) {
-      this.socket.write(data);
-      this.lastSend = Date.now();
+    if (this.socket && !this.socket.destroyed) {
+      try {
+        this.socket.write(data);
+        this.lastSend = Date.now();
+      } catch (err) {
+        this.logger.error('failed sending data to peer', err);
+      }
     }
   }
 
@@ -393,10 +373,6 @@ class Peer extends EventEmitter {
       this.connectionRetriesRevoked = false;
 
       const cleanup = () => {
-        if (this.connectTimeout) {
-          clearTimeout(this.connectTimeout);
-          this.connectTimeout = undefined;
-        }
         this.socket!.removeListener('error', onError);
         this.socket!.removeListener('connect', onConnect);
         if (this.retryConnectionTimer) {
@@ -418,23 +394,23 @@ class Peer extends EventEmitter {
         resolve();
       };
 
-      const onError = (err: Error) => {
+      const onError = async (err: Error) => {
         cleanup();
 
         if (!retry) {
-          this.close();
+          await this.close();
           reject(errors.COULD_NOT_CONNECT(this.address, err));
           return;
         }
 
         if (Date.now() - startTime + retryDelay > Peer.CONNECTION_RETRIES_MAX_PERIOD) {
-          this.close();
+          await this.close();
           reject(errors.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED);
           return;
         }
 
         if (this.connectionRetriesRevoked) {
-          this.close();
+          await this.close();
           reject(errors.CONNECTION_RETRIES_REVOKED);
           return;
         }
@@ -455,7 +431,6 @@ class Peer extends EventEmitter {
       const bind = () => {
         this.socket!.once('connect', onConnect);
         this.socket!.once('error', onError);
-        this.connectTimeout = setTimeout(() => onError(new Error('Connection timed out')), Peer.CONNECTION_TIMEOUT);
       };
 
       bind();
@@ -473,8 +448,8 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (packetId: string, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
-    const entry = this.getOrAddPendingResponseEntry(packetId);
+  private wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
+    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
 
@@ -490,7 +465,7 @@ class Peer extends EventEmitter {
 
   private waitSessionInit = async (): Promise<packets.SessionInitPacket> => {
     if (!this.sessionInitPacket) {
-      await this.wait(PacketType.SessionInit.toString(), Peer.RESPONSE_TIMEOUT);
+      await this.wait(PacketType.SessionInit.toString(), undefined, Peer.RESPONSE_TIMEOUT);
     }
 
     return this.sessionInitPacket!;
@@ -499,7 +474,7 @@ class Peer extends EventEmitter {
   /**
    * Potentially timeout peer if it hasn't responded.
    */
-  private checkTimeout = () => {
+  private checkTimeout = async () => {
     const now = ms();
 
     for (const [packetId, entry] of this.responseMap) {
@@ -508,8 +483,7 @@ class Peer extends EventEmitter {
         const err = errors.RESPONSE_TIMEOUT(request);
         this.emitError(err.message);
         entry.reject(err.message);
-        this.close(DisconnectionReason.ResponseStalling, packetId);
-        return;
+        await this.close(DisconnectionReason.ResponseStalling, packetId);
       }
     }
   }
@@ -517,23 +491,23 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (packetId: string, timeout: number): PendingResponseEntry | undefined => {
+  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number): PendingResponseEntry | undefined => {
     if (this.closed) {
       return undefined;
     }
 
-    const entry = this.getOrAddPendingResponseEntry(packetId);
+    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     entry.setTimeout(timeout);
 
     return entry;
   }
 
-  private getOrAddPendingResponseEntry = (packetId: string): PendingResponseEntry => {
-    let entry = this.responseMap.get(packetId);
+  private getOrAddPendingResponseEntry = (reqId: string, resType: ResponseType): PendingResponseEntry => {
+    let entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      entry = new PendingResponseEntry();
-      this.responseMap.set(packetId, entry);
+      entry = new PendingResponseEntry(resType);
+      this.responseMap.set(reqId, entry);
     }
 
     return entry;
@@ -559,6 +533,17 @@ class Peer extends EventEmitter {
       return false;
     }
 
+    const isExpectedType =
+      entry.resType === undefined ||
+      (isPacketType(entry.resType) && packet.type === entry.resType) ||
+      (isPacketTypeArray(entry.resType) && entry.resType.includes(packet.type));
+
+    if (!isExpectedType) {
+      this.logger.debug(`Peer (${this.label}) sent an unsolicited packet type (${PacketType[packet.type]}) for response packet (${reqId})`);
+      // TODO: penalize
+      return false;
+    }
+
     this.responseMap.delete(reqId);
     entry.resolve(packet);
 
@@ -576,7 +561,7 @@ class Peer extends EventEmitter {
       // socket close event will be called immediately after the socket error
     });
 
-    this.socket!.once('close', (hadError) => {
+    this.socket!.once('close', async (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake (${addressUtils.toString(this.address)})`);
@@ -585,7 +570,7 @@ class Peer extends EventEmitter {
       } else {
         this.logger.info(`Peer ${this.nodePubKey} socket closed`);
       }
-      this.close();
+      await this.close();
     });
 
     this.socket!.on('data', this.parser.feed);
@@ -596,7 +581,7 @@ class Peer extends EventEmitter {
   private bindParser = (parser: Parser): void => {
     parser.on('packet', this.handlePacket);
 
-    parser.on('error', (err: {message: string, code: string}) => {
+    parser.on('error', async (err: {message: string, code: string}) => {
       if (this.closed) {
         return;
       }
@@ -608,39 +593,37 @@ class Peer extends EventEmitter {
         case errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED:
         case errorCodes.FRAMER_MSG_NOT_ENCRYPTED:
         case errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE:
+        case errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK:
         case errorCodes.FRAMER_INVALID_MSG_LENGTH:
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);
-          this.close(DisconnectionReason.WireProtocolErr, err.message);
-          break;
+          await this.close(DisconnectionReason.WireProtocolErr, err.message);
       }
     });
   }
 
-  /** Check if a given packet is solicited and fulfill the pending response entry if it's a response. */
-  private isPacketSolicited = (packet: Packet): boolean => {
-    let solicited = true;
-
+  /** Checks if a given packet is solicited and fulfills the pending response entry if it's a response. */
+  private isPacketSolicited = async (packet: Packet): Promise<boolean> => {
     if (!this.opened && packet.type !== PacketType.SessionInit && packet.type !== PacketType.SessionAck && packet.type !== PacketType.Disconnecting) {
-      // until the connection is opened, we only accept SessionInit/SessionAck packets
-      solicited = false;
+      // until the connection is opened, we only accept SessionInit, SessionAck, and Disconnecting packets
+      return false;
     }
     if (packet.direction === PacketDirection.Response) {
       // lookup a pending response entry for this packet by its reqId
       if (!this.fulfillResponseEntry(packet)) {
-        solicited = false;
+        return false;
       }
     }
 
-    return solicited;
+    return true;
   }
 
-  private handlePacket = (packet: Packet): void => {
+  private handlePacket = async (packet: Packet): Promise<void> => {
     this.lastRecv = Date.now();
     const sender = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
     this.logger.trace(`Received ${PacketType[packet.type]} packet from ${sender}${JSON.stringify(packet)}`);
 
-    if (this.isPacketSolicited(packet)) {
+    if (await this.isPacketSolicited(packet)) {
       switch (packet.type) {
         case PacketType.SessionInit: {
           this.handleSessionInit(packet);
@@ -651,7 +634,7 @@ class Peer extends EventEmitter {
           break;
         }
         case PacketType.Ping: {
-          this.handlePing(packet);
+          await this.handlePing(packet);
           break;
         }
         case PacketType.Disconnecting: {
@@ -680,21 +663,31 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Authenticate the identity of the peer through SessionInit packet
-   * @param {SessionInitPacket} packet
-   * @param {NodeKey} nodeKey
+   * Authenticates the identity of a peer with a [[SessionInitPacket]] and sets the peer's node state.
+   * Throws an error and closes the peer if authentication fails.
+   * @param packet the session init packet
+   * @param nodePubKey our node pub key
+   * @param expectedNodePubKey the expected node pub key of the sender of the init packet
    */
-  private authenticate = (packet: packets.SessionInitPacket, nodeKey: NodeKey) => {
+  private authenticateSessionInit = async (packet: packets.SessionInitPacket, nodePubKey: string, expectedNodePubKey?: string) => {
     const body = packet.body!;
     const { sign, ...bodyWithoutSign } = body;
-    const { nodePubKey } = body.nodeState; // the peer pubkey
-    const { peerPubKey } = body; // our pubkey
+    /** The pub key of the node that sent the init packet. */
+    const sourceNodePubKey = body.nodeState.nodePubKey;
+    /** The pub key of the node that the init packet is intended for. */
+    const targetNodePubKey = body.peerPubKey;
 
-    // verify that msg was intended for us
-    if (peerPubKey !== nodeKey.nodePubKey) {
+    // verify that the init packet came from the expected node
+    if (expectedNodePubKey && expectedNodePubKey !== sourceNodePubKey) {
+      await this.close(DisconnectionReason.UnexpectedIdentity);
+      throw errors.UNEXPECTED_NODE_PUB_KEY(sourceNodePubKey, expectedNodePubKey, addressUtils.toString(this.address));
+    }
+
+    // verify that the init packet was intended for us
+    if (targetNodePubKey !== nodePubKey) {
       this.emit('reputation', ReputationEvent.InvalidAuth);
-      this.close(DisconnectionReason.AuthFailureInvalidTarget);
-      throw errors.AUTH_FAILURE_INVALID_TARGET(nodePubKey, peerPubKey);
+      await this.close(DisconnectionReason.AuthFailureInvalidTarget);
+      throw errors.AUTH_FAILURE_INVALID_TARGET(sourceNodePubKey, targetNodePubKey);
     }
 
     // verify that the msg was signed by the peer
@@ -703,22 +696,28 @@ class Peer extends EventEmitter {
     const verified = secp256k1.verify(
       msgHash,
       Buffer.from(sign, 'hex'),
-      Buffer.from(nodePubKey, 'hex'),
+      Buffer.from(sourceNodePubKey, 'hex'),
     );
 
     if (!verified) {
       this.emit('reputation', ReputationEvent.InvalidAuth);
-      this.close(DisconnectionReason.AuthFailureInvalidSignature);
-      throw errors.AUTH_FAILURE_INVALID_SIGNATURE(nodePubKey);
+      await this.close(DisconnectionReason.AuthFailureInvalidSignature);
+      throw errors.AUTH_FAILURE_INVALID_SIGNATURE(sourceNodePubKey);
     }
+
+    // finally set this peer's node state to the node state in the init packet body
+    this.nodeState = body.nodeState;
   }
 
+  /**
+   * Sends a [[SessionInitPacket]] and waits for a [[SessionAckPacket]].
+   */
   private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<void> => {
     const ECDH = crypto.createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
     const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
-    this.sendPacket(packet);
-    await this.wait(packet.header.id, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
+    await this.sendPacket(packet);
+    await this.wait(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
       // enabling in-encryption synchronously,
       // expecting the following peer msg to be encrypted
       const sessionAck: packets.SessionAckPacket = packet;
@@ -727,14 +726,14 @@ class Peer extends EventEmitter {
     });
   }
 
-  private ackSession = (sessionInit: packets.SessionInitPacket, nodeKey: NodeKey): void => {
-    this.authenticate(sessionInit, nodeKey);
-    this.nodeState = sessionInit.body!.nodeState;
-
+  /**
+   * Sends a [[SessionAckPacket]] in response to a given [[SessionInitPacket]].
+   */
+  private ackSession = async (sessionInit: packets.SessionInitPacket): Promise<void> => {
     const ECDH = crypto.createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
 
-    this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey }, sessionInit.header.id));
+    await this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey }, sessionInit.header.id));
 
     // enabling out-encryption synchronously,
     // so that the following msg will be encrypted
@@ -742,41 +741,59 @@ class Peer extends EventEmitter {
     this.setOutEncryption(key);
   }
 
-  private handshake = async (ownNodeState: NodeState, nodeKey: NodeKey) => {
+  /**
+   * Begins the handshake by waiting for a [[SessionInitPacket]] as well as sending our own
+   * [[SessionInitPacket]] first if we are the outbound peer.
+   * @returns the session init packet we receive
+   */
+  private beginHandshake = async (ownNodeState: NodeState, nodeKey: NodeKey) => {
+    let sessionInit: packets.SessionInitPacket;
     if (!this.inbound) {
       // outbound handshake
       assert(this.expectedNodePubKey);
       await this.initSession(ownNodeState, nodeKey, this.expectedNodePubKey!);
-      const sessionInit = await this.waitSessionInit();
-      this.ackSession(sessionInit, nodeKey);
+      sessionInit = await this.waitSessionInit();
+      await this.authenticateSessionInit(sessionInit, nodeKey.nodePubKey, this.expectedNodePubKey);
     } else {
       // inbound handshake
-      const sessionInit = await this.waitSessionInit();
-      this.ackSession(sessionInit, nodeKey);
+      sessionInit = await this.waitSessionInit();
+      await this.authenticateSessionInit(sessionInit, nodeKey.nodePubKey);
+    }
+    return sessionInit;
+  }
+
+  /**
+   * Completes the handshake by sending the [[SessionAckPacket]] and our [[SessionInitPacket]] if it
+   * has not been sent already, as is the case with inbound peers.
+   */
+  private completeHandshake = async (ownNodeState: NodeState, nodeKey: NodeKey, sessionInit: packets.SessionInitPacket) => {
+    if (!this.inbound) {
+      // outbound handshake
+      await this.ackSession(sessionInit);
+    } else {
+      // inbound handshake
+      await this.ackSession(sessionInit);
       await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);
     }
   }
 
-  private sendPing = (): packets.PingPacket => {
+  private sendPing = async (): Promise<void> => {
     const packet = new packets.PingPacket();
-    this.sendPacket(packet);
-    return packet;
+    await this.sendPacket(packet);
   }
 
-  private sendGetNodes = (): packets.PingPacket => {
+  public sendGetNodes = async (): Promise<void> => {
     const packet =  new packets.GetNodesPacket();
-    this.sendPacket(packet);
-    return packet;
+    await this.sendPacket(packet);
   }
 
-  private sendPong = (pingId: string): packets.PongPacket => {
+  private sendPong = async (pingId: string): Promise<void> => {
     const packet = new packets.PongPacket(undefined, pingId);
-    this.sendPacket(packet);
-    return packet;
+    await this.sendPacket(packet);
   }
 
-  private handlePing = (packet: packets.PingPacket): void  => {
-    this.sendPong(packet.header.id);
+  private handlePing = async (packet: packets.PingPacket): Promise<void>  => {
+    await this.sendPong(packet.header.id);
   }
 
   private createSessionInitPacket = (
@@ -856,6 +873,8 @@ class PendingResponseEntry {
   public jobs: Job[] = [];
   /** An array of callbacks to be called synchronously when entry resolve. */
   public callbacks: Function[] = [];
+
+  constructor(public resType: ResponseType) {}
 
   public addJob = (resolve: Function, reject: Function) => {
     this.jobs.push(new Job(resolve, reject));

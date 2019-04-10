@@ -18,16 +18,14 @@ export type NodeState = {
   addresses?: Address[];
   pairs: string[];
   raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys: { [currency: string]: string | undefined };
 };
 
 export type NodeStateUpdate = {
   addresses?: Address[];
   pairs?: string[];
   raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  lndPubKeys?: { [currency: string]: string | undefined };
 };
 
 export type PoolConfig = {
@@ -52,8 +50,3 @@ export type PoolConfig = {
    */
   addresses: string[];
 };
-
-export function isNodeState(obj: any): obj is NodeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && Array.isArray(obj.addresses)
-    && Array.isArray(obj.pairs);
-}

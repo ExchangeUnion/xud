@@ -1,16 +1,20 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeStateUpdate } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
+import { removeUndefinedProps, convertKvpArrayToKvps } from '../../../utils/utils';
 
 class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.NodeStateUpdate;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Unilateral;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): NodeStateUpdatePacket | pb.NodeStateUpdatePacket.AsObject => {
@@ -21,7 +25,7 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
   private static validate = (obj: pb.NodeStateUpdatePacket.AsObject): boolean => {
     return !!(obj.id
       && obj.pairsList
-      && obj.addressesList.filter(addr => addr.host).length === obj.addressesList.length
+      && obj.addressesList.every(addr => !!addr.host)
     );
   }
 
@@ -34,8 +38,7 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
         pairs: obj.pairsList,
         addresses: obj.addressesList,
         raidenAddress: obj.raidenAddress || undefined,
-        lndbtcPubKey: obj.lndBtcPubKey || undefined,
-        lndltcPubKey: obj.lndLtcPubKey || undefined,
+        lndPubKeys: obj.lndPubKeysMap ? convertKvpArrayToKvps(obj.lndPubKeysMap) : undefined,
       }),
     });
   }
@@ -52,8 +55,12 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
       return pbAddr;
     }));
     msg.setRaidenAddress(this.body!.raidenAddress!);
-    msg.setLndBtcPubKey(this.body!.lndbtcPubKey!);
-    msg.setLndLtcPubKey(this.body!.lndltcPubKey!);
+    if (this.body!.lndPubKeys) {
+      const map = msg.getLndPubKeysMap();
+      for (const currency in this.body!.lndPubKeys!) {
+        map.set(currency, this.body!.lndPubKeys![currency]);
+      }
+    }
 
     return msg.serializeBinary();
   }
