@@ -1,5 +1,5 @@
-import { SwapClients } from '../constants/enums';
-import { SwapSuccess, SwapFailure } from 'lib/swaps/types';
+import { SwapClient } from '../constants/enums';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
 
 export type OrderMatch = {
   maker: Order;
@@ -32,7 +32,7 @@ export enum PlaceOrderEventType {
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
-  /** The number of currently available base currency tokens for the order. */
+  /** The number of currently satoshis (or equivalent) for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
@@ -70,7 +70,7 @@ type Remote = {
 type Stamp = OrderIdentifier & {
   /** Epoch timestamp when this order was created locally. */
   createdAt: number;
-  /** The number of base currency tokens initially available for the order, before any actions such as trades reduced the available quantity. */
+  /** The number of satoshis (or equivalent) initially available for the order, before any actions such as trades reduced the available quantity. */
   initialQuantity: number;
 };
 
@@ -100,7 +100,7 @@ export type Currency = {
   /** The ticker symbol for this currency such as BTC, LTC, ETH, etc... */
   id: string;
   /** The payment channel network client to use for executing swaps. */
-  swapClient: SwapClients;
+  swapClient: SwapClient;
   /**
    * The number of places to the right of the decimal point of the smallest subunit of the currency, For example, BTC, LTC, and others
    * where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought

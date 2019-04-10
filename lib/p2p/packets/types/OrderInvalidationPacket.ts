@@ -1,4 +1,4 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { OrderPortion } from '../../../orderbook/types';
 import * as pb from '../../../proto/xudp2p_pb';
@@ -6,12 +6,16 @@ import * as pb from '../../../proto/xudp2p_pb';
 type OrderInvalidationPacketBody = OrderPortion;
 
 class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.OrderInvalidation;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Unilateral;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {

@@ -5,7 +5,7 @@ import OrderBook from '../../lib/orderbook/OrderBook';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
-import { SwapClients } from '../../lib/constants/enums';
+import { SwapClient } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
 
 const PAIR_ID = 'LTC/BTC';
@@ -16,8 +16,8 @@ const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
 
   await orderBookRepository.addCurrencies([
-    { id: currencies[0], swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-    { id: currencies[1], swapClient: SwapClients.Lnd, decimalPlaces: 8 },
+    { id: currencies[0], swapClient: SwapClient.Lnd, decimalPlaces: 8 },
+    { id: currencies[1], swapClient: SwapClient.Lnd, decimalPlaces: 8 },
   ]);
   await orderBookRepository.addPairs([
     { baseCurrency: currencies[0], quoteCurrency: currencies[1] },
@@ -188,7 +188,7 @@ describe('nomatching OrderBook', () => {
       return {
         pairId: 'LTC/BTC',
         price: 0.008,
-        quantity: 0.00001,
+        quantity: 1000,
         isBuy: false,
         localId: '',
         hold: 0,

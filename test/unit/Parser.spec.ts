@@ -5,7 +5,7 @@ import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
 import { removeUndefinedProps } from '../../lib/utils/utils';
-import { DisconnectionReason, NetworkMagic, SwapFailureReason } from '../../lib/constants/enums';
+import { DisconnectionReason, SwapFailureReason, XuNetwork } from '../../lib/constants/enums';
 import uuid = require('uuid');
 import { Address, NodeState } from '../../lib/p2p/types';
 import { SessionInitPacketBody } from '../../lib/p2p/packets/types/SessionInitPacket';
@@ -18,7 +18,7 @@ chai.use(chaiAsPromised);
 
 describe('Parser', () => {
   const timeoutError = 'timeout';
-  const network = new Network(NetworkMagic.TestNet);
+  const network = new Network(XuNetwork.SimNet);
   const framer = new Framer(network);
   const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
   let parser: Parser;

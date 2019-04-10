@@ -5,7 +5,7 @@ import { SwapPhase, SwapState, SwapRole } from '../../lib/constants/enums';
 import { SwapRequestPacketBody } from '../../lib/p2p/packets';
 
 describe('Swaps', () => {
-  const quantity = 0.01;
+  const quantity = 1000000;
   const price = 0.005;
   const takerCltvDelta = 144;
   const orderId = 'f8a85c66-7e73-43cd-9ac4-176ff4cc28a8';
@@ -30,9 +30,18 @@ describe('Swaps', () => {
     isBuy: true,
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
-    makerAmount: Swaps['SATOSHIS_PER_COIN'] * quantity,
-    takerAmount: Swaps['SATOSHIS_PER_COIN'] * quantity * price,
+    makerAmount: Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity,
+    takerAmount: Swaps['UNITS_PER_CURRENCY']['BTC'] * quantity * price,
     createTime: 1540716251106,
+  };
+
+  const buyDealEth = {
+    ...buyDeal,
+    pairId: 'WETH/BTC',
+    makerCurrency: 'WETH',
+    takerCurrency: 'BTC',
+    makerAmount: Swaps['UNITS_PER_CURRENCY']['WETH'] * quantity,
+    takerAmount: Swaps['UNITS_PER_CURRENCY']['BTC'] * quantity * price,
   };
 
   /** A swap deal for a sell order, mirrored from the buy deal for convenience. */
@@ -66,15 +75,27 @@ describe('Swaps', () => {
   });
 
   it('should calculate swap amounts for a buy order', () => {
-    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](buyDeal.quantity!, buyDeal.price, buyDeal.isBuy);
+    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+      buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId,
+    );
     expect(makerAmount).to.equal(buyDeal.makerAmount);
     expect(takerAmount).to.equal(buyDeal.takerAmount);
   });
 
   it('should calculate swap amounts for a sell order', () => {
-    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](sellDeal.quantity!, sellDeal.price, sellDeal.isBuy);
+    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+      sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId,
+    );
     expect(makerAmount).to.equal(sellDeal.makerAmount);
     expect(takerAmount).to.equal(sellDeal.takerAmount);
+  });
+
+  it('should calculate swap amounts for a WETH buy order', () => {
+    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+      buyDealEth.quantity!, buyDealEth.price, buyDealEth.isBuy, buyDealEth.pairId,
+    );
+    expect(makerAmount).to.equal(buyDealEth.makerAmount);
+    expect(takerAmount).to.equal(buyDealEth.takerAmount);
   });
 
   it(`should validate a good swap request`, () => {

@@ -50,8 +50,3 @@ export type PoolConfig = {
    */
   addresses: string[];
 };
-
-export function isNodeState(obj: any): obj is NodeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && Array.isArray(obj.addresses)
-    && Array.isArray(obj.pairs);
-}

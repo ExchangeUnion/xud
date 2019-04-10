@@ -2,8 +2,8 @@ import http from 'http';
 import Logger from '../Logger';
 import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
-import { ms } from '../utils/utils';
-import { Order } from '../orderbook/types';
+import { SwapDeal } from '../swaps/types';
+import { SwapClient } from '../constants/enums';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -68,15 +68,12 @@ type ChannelEvent = {
   amount?: number;
 };
 
-interface RaidenClient {
-  on(event: 'swap', listener: (order: Order) => void): this;
-  emit(event: 'swap', order: Order): boolean;
-}
-
 /**
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
+  public readonly type = SwapClient.Raiden;
+  public readonly cltvDelta: number = 0;
   public address?: string;
   private port: number;
   private host: string;
@@ -118,7 +115,16 @@ class RaidenClient extends BaseClient {
       if (this.reconnectionTimer) {
         clearTimeout(this.reconnectionTimer);
       }
-      this.address = await this.getAddress();
+      const address = await this.getAddress();
+
+      /** The new raiden address value if different from the one we had previously. */
+      let newAddress: string | undefined;
+      if (this.address !== address) {
+        newAddress = address;
+        this.address = newAddress;
+      }
+
+      this.emit('connectionVerified', newAddress);
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -126,6 +132,21 @@ class RaidenClient extends BaseClient {
       );
       this.reconnectionTimer = setTimeout(this.verifyConnection, RaidenClient.RECONNECT_TIMER);
     }
+  }
+
+  public sendPayment = async (_deal: SwapDeal): Promise<string> => {
+    return ''; // stub placeholder
+  }
+
+  public getRoutes =  async (_amount: number, _destination: string) => {
+    // stub placeholder, query routes not currently implemented in raiden
+    return [{
+      getTotalTimeLock: () => 1,
+    }];
+  }
+
+  public getHeight = async () => {
+    return 1; // raiden's API does not tell us the height
   }
 
   public getRaidenInfo = async (): Promise<RaidenInfo> => {
@@ -315,6 +336,9 @@ class RaidenClient extends BaseClient {
     const body = await parseResponseBody<{ our_address: string }>(res);
     return body.our_address;
   }
+
+  /** Raiden client specific cleanup. */
+  protected closeSpecific() {}
 }
 
 export default RaidenClient;

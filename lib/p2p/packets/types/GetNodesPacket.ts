@@ -1,14 +1,18 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
 
 class GetNodesPacket extends Packet<undefined> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.GetNodes;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Request;
+  }
+
+  public get responseType(): ResponseType {
+    return PacketType.Nodes;
   }
 
   public static deserialize = (binary: Uint8Array): GetNodesPacket | pb.GetNodesPacket.AsObject => {

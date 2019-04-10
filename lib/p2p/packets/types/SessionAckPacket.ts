@@ -1,20 +1,22 @@
-import Packet, { PacketDirection } from '../Packet';
+import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
-import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { removeUndefinedProps } from '../../../utils/utils';
 
 export type SessionAckPacketBody = {
   ephemeralPubKey: string;
 };
 
 class SessionAckPacket extends Packet<SessionAckPacketBody> {
-  public get type() {
+  public get type(): PacketType {
     return PacketType.SessionAck;
   }
 
-  public get direction() {
+  public get direction(): PacketDirection {
     return PacketDirection.Response;
+  }
+
+  public get responseType(): ResponseType {
+    return undefined;
   }
 
   public static deserialize = (binary: Uint8Array): SessionAckPacket | pb.SessionAckPacket.AsObject => {
