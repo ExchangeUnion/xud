@@ -165,12 +165,12 @@ class Pool extends EventEmitter {
    */
   public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
     this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
-    this.sendNodeStateUpdate(nodeStateUpdate);
+    this.sendNodeStateUpdate(this.nodeState);
   }
 
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.sendNodeStateUpdate(this.nodeState.lndPubKeys);
+    this.sendNodeStateUpdate(this.nodeState);
   }
 
   private sendNodeStateUpdate = (nodeStateUpdate: NodeStateUpdate) => {
