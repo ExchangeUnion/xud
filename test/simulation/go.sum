@@ -24,6 +24,8 @@ github.com/Masterminds/vcs v1.12.0 h1:bt9Hb4XlfmEfLnVA0MVz2NO0GFuMN5vX8iOWW38Xde
 github.com/Masterminds/vcs v1.12.0/go.mod h1:N09YCmOQr6RLxC6UNHzuVwAdodYbbnycGHSmwVJjcKA=
 github.com/NebulousLabs/go-upnp v0.0.0-20181203152547-b32978b8ccbf h1:1UP+tqdgLAKwt6NpefYq/SdyFaelU8MXOThESt6Od1U=
 github.com/NebulousLabs/go-upnp v0.0.0-20181203152547-b32978b8ccbf/go.mod h1:GbuBk21JqF+driLX3XtJYNZjGa45YDoa9IqCTzNSfEc=
+github.com/Roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141 h1:XzCtkSb4BOEfjc9jQFi3YJ0lB3eajRgyBOk70Imo6Ts=
+github.com/Roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141/go.mod h1:Q8e/TakPIqMqkD/B5e1Cgu0xzH3J3/SX2h+aOMv1i2c=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/sarama v1.21.0/go.mod h1:yuqtN/pe8cXRWG5zPaO7hCfNJp5MwmkoJEoLjkm5tCQ=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=

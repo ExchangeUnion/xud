@@ -5,6 +5,7 @@ require (
 	dmitri.shuralyov.com/app/changes v0.0.0-20181114035150-5af16e21babb // indirect
 	dmitri.shuralyov.com/service/change v0.0.0-20190203163610-217368fe4577 // indirect
 	git.apache.org/thrift.git v0.12.0 // indirect
+	github.com/Roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141 // indirect
 	github.com/Shopify/sarama v1.21.0 // indirect
 	github.com/btcsuite/btcd v0.0.0-20181013004428-67e573d211ac
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f
