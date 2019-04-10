@@ -8,6 +8,7 @@ import errors from './errors';
 import { SwapClient, OrderSide, SwapRole, SwapState } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import * as lndrpc from '../proto/lndrpc_pb';
+import { ListSwapsRequest } from '../proto/xudrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
@@ -328,17 +329,26 @@ class Service extends EventEmitter {
    * Get all completed swap deals.
    * @returns A list of completed swap deals.
    */
-  public listSwaps = async (args: { limit: number, failed: boolean, all: boolean }): Promise<SwapDealInstance[]> => {
-    const { limit, failed, all } = args;
-    if (all) {
-      return this.swaps.getCompletedDeals();
+  public listSwaps = async (args: { limit: number, status: ListSwapsRequest.Status }): Promise<SwapDealInstance[]> => {
+    const { limit, status } = args;
+
+    let deals = limit > 0 ?
+      await this.swaps.getCompletedDeals(limit) : await this.swaps.getCompletedDeals();
+
+    switch (status) {
+      case ListSwapsRequest.Status.FAILED:
+        deals = filterDeals(true, deals);
+        break;
+      case ListSwapsRequest.Status.SUCCESSFUL:
+        deals = filterDeals(false, deals);
+        break;
+      case ListSwapsRequest.Status.BOTH:
+        break;
+      default:
+        throw errors.INVALID_ARGUMENT('swap status is invalid');
     }
 
-    if (limit === 0) {
-      return filterDeals(failed, await this.swaps.getCompletedDeals());
-    } else {
-      return filterDeals(failed, await this.swaps.getCompletedDeals(limit));
-    }
+    return deals;
   }
 
   /**

@@ -21,7 +21,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     listCurrencies: IXudService_IListCurrencies;
     listPairs: IXudService_IListPairs;
     listPeers: IXudService_IListPeers;
-    listSwapDeals: IXudService_IListSwapDeals;
+    listSwaps: IXudService_IListSwaps;
     placeOrder: IXudService_IPlaceOrder;
     placeOrderSync: IXudService_IPlaceOrderSync;
     executeSwap: IXudService_IExecuteSwap;
@@ -151,14 +151,14 @@ interface IXudService_IListPeers extends grpc.MethodDefinition<xudrpc_pb.ListPee
     responseSerialize: grpc.serialize<xudrpc_pb.ListPeersResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ListPeersResponse>;
 }
-interface IXudService_IListSwapDeals extends grpc.MethodDefinition<xudrpc_pb.ListSwapDealsRequest, xudrpc_pb.ListSwapDealsResponse> {
-    path: string; // "/xudrpc.Xud/ListSwapDeals"
+interface IXudService_IListSwaps extends grpc.MethodDefinition<xudrpc_pb.ListSwapsRequest, xudrpc_pb.ListSwapsResponse> {
+    path: string; // "/xudrpc.Xud/ListSwaps"
     requestStream: boolean; // false
     responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.ListSwapDealsRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.ListSwapDealsRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.ListSwapDealsResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.ListSwapDealsResponse>;
+    requestSerialize: grpc.serialize<xudrpc_pb.ListSwapsRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ListSwapsRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ListSwapsResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ListSwapsResponse>;
 }
 interface IXudService_IPlaceOrder extends grpc.MethodDefinition<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent> {
     path: string; // "/xudrpc.Xud/PlaceOrder"
@@ -267,7 +267,7 @@ export interface IXudServer {
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
     listPairs: grpc.handleUnaryCall<xudrpc_pb.ListPairsRequest, xudrpc_pb.ListPairsResponse>;
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
-    listSwapDeals: grpc.handleUnaryCall<xudrpc_pb.ListSwapDealsRequest, xudrpc_pb.ListSwapDealsResponse>;
+    listSwaps: grpc.handleUnaryCall<xudrpc_pb.ListSwapsRequest, xudrpc_pb.ListSwapsResponse>;
     placeOrder: grpc.handleServerStreamingCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
     executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.SwapSuccess>;
@@ -320,6 +320,9 @@ export interface IXudClient {
     listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
+    listSwaps(request: xudrpc_pb.ListSwapsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
+    listSwaps(request: xudrpc_pb.ListSwapsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
+    listSwaps(request: xudrpc_pb.ListSwapsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;
@@ -388,6 +391,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
+    public listSwaps(request: xudrpc_pb.ListSwapsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
+    public listSwaps(request: xudrpc_pb.ListSwapsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
+    public listSwaps(request: xudrpc_pb.ListSwapsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListSwapsResponse) => void): grpc.ClientUnaryCall;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     public placeOrder(request: xudrpc_pb.PlaceOrderRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.PlaceOrderEvent>;
     public placeOrderSync(request: xudrpc_pb.PlaceOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.PlaceOrderResponse) => void): grpc.ClientUnaryCall;

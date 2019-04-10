@@ -231,18 +231,16 @@
             "format": "int32"
           },
           {
-            "name": "failed",
+            "name": "status",
             "in": "query",
             "required": false,
-            "type": "boolean",
-            "format": "boolean"
-          },
-          {
-            "name": "all",
-            "in": "query",
-            "required": false,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "string",
+            "enum": [
+              "BOTH",
+              "SUCCESSFUL",
+              "FAILED"
+            ],
+            "default": "BOTH"
           }
         ],
         "tags": [
@@ -640,6 +638,15 @@
         "RAIDEN"
       ],
       "default": "LND"
+    },
+    "ListSwapsRequestStatus": {
+      "type": "string",
+      "enum": [
+        "BOTH",
+        "SUCCESSFUL",
+        "FAILED"
+      ],
+      "default": "BOTH"
     },
     "SwapSuccessRole": {
       "type": "string",

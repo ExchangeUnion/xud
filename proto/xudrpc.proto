@@ -386,8 +386,12 @@ message ListPeersResponse {
 
 message ListSwapsRequest {
   int32 limit = 1 [json_name = "all"];
-  bool failed = 2 [json_name = "failed"];
-  bool all = 3 [json_name = "all"];
+  Status status = 3 [json_name = "status"]; 
+  enum Status {
+    BOTH = 0;
+    SUCCESSFUL = 1;
+    FAILED = 2;
+  }
 }
 message ListSwapsResponse {
   repeated Swap swaps = 1 [json_name = "swaps"];

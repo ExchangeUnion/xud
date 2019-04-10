@@ -63,6 +63,7 @@
     - [UnbanResponse](#xudrpc.UnbanResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [ListSwapsRequest.Status](#xudrpc.ListSwapsRequest.Status)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -475,8 +476,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | limit | [int32](#int32) |  |  |
-| failed | [bool](#bool) |  |  |
-| all | [bool](#bool) |  |  |
+| status | [ListSwapsRequest.Status](#xudrpc.ListSwapsRequest.Status) |  |  |
 
 
 
@@ -963,6 +963,19 @@
 | ---- | ------ | ----------- |
 | LND | 0 |  |
 | RAIDEN | 1 |  |
+
+
+
+<a name="xudrpc.ListSwapsRequest.Status"></a>
+
+### ListSwapsRequest.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BOTH | 0 |  |
+| SUCCESSFUL | 1 |  |
+| FAILED | 2 |  |
 
 
 

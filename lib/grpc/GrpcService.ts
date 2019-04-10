@@ -520,7 +520,7 @@ class GrpcService {
         const grpcSwap = new xudrpc.Swap();
         grpcSwap.setCreateTime(deal.createTime);
         if (deal.failureReason) {
-          const swapFailure = createSwapFailure(deal.Order! as PeerOrder);
+          const swapFailure = createSwapFailure(deal as SwapFailure);
           grpcSwap.setSwapFailure(swapFailure);
         } else {
           const swapSuccess = new xudrpc.SwapSuccess();

@@ -609,6 +609,113 @@ export namespace ListPeersResponse {
     }
 }
 
+export class ListSwapsRequest extends jspb.Message { 
+    getLimit(): number;
+    setLimit(value: number): void;
+
+    getStatus(): ListSwapsRequest.Status;
+    setStatus(value: ListSwapsRequest.Status): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListSwapsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ListSwapsRequest): ListSwapsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListSwapsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListSwapsRequest;
+    static deserializeBinaryFromReader(message: ListSwapsRequest, reader: jspb.BinaryReader): ListSwapsRequest;
+}
+
+export namespace ListSwapsRequest {
+    export type AsObject = {
+        limit: number,
+        status: ListSwapsRequest.Status,
+    }
+
+    export enum Status {
+    BOTH = 0,
+    SUCCESSFUL = 1,
+    FAILED = 2,
+    }
+
+}
+
+export class ListSwapsResponse extends jspb.Message { 
+    clearSwapsList(): void;
+    getSwapsList(): Array<Swap>;
+    setSwapsList(value: Array<Swap>): void;
+    addSwaps(value?: Swap, index?: number): Swap;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListSwapsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ListSwapsResponse): ListSwapsResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListSwapsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListSwapsResponse;
+    static deserializeBinaryFromReader(message: ListSwapsResponse, reader: jspb.BinaryReader): ListSwapsResponse;
+}
+
+export namespace ListSwapsResponse {
+    export type AsObject = {
+        swapsList: Array<Swap.AsObject>,
+    }
+}
+
+export class Swap extends jspb.Message { 
+
+    hasCreateTime(): boolean;
+    clearCreateTime(): void;
+    getCreateTime(): number;
+    setCreateTime(value: number): void;
+
+
+    hasSwapSuccess(): boolean;
+    clearSwapSuccess(): void;
+    getSwapSuccess(): SwapSuccess | undefined;
+    setSwapSuccess(value?: SwapSuccess): void;
+
+
+    hasSwapFailure(): boolean;
+    clearSwapFailure(): void;
+    getSwapFailure(): SwapFailure | undefined;
+    setSwapFailure(value?: SwapFailure): void;
+
+
+    getSwapCase(): Swap.SwapCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Swap.AsObject;
+    static toObject(includeInstance: boolean, msg: Swap): Swap.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Swap, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Swap;
+    static deserializeBinaryFromReader(message: Swap, reader: jspb.BinaryReader): Swap;
+}
+
+export namespace Swap {
+    export type AsObject = {
+        createTime: number,
+        swapSuccess?: SwapSuccess.AsObject,
+        swapFailure?: SwapFailure.AsObject,
+    }
+
+    export enum SwapCase {
+        SWAP_NOT_SET = 0,
+    
+    CREATE_TIME = 1,
+
+    SWAP_SUCCESS = 2,
+
+    SWAP_FAILURE = 3,
+
+    }
+
+}
+
 export class LndChannels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;
