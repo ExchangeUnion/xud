@@ -374,27 +374,25 @@ class OrderBook extends EventEmitter {
           onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
         } catch (err) {
           const failMsg = `swap for ${portion.quantity} failed during order matching`;
-          let failureReason: SwapFailureReason;
-          if (typeof err === 'number') {
+          if (typeof err === 'number' && SwapFailureReason[err] !== undefined) {
             // treat the error as a SwapFailureReason
             this.logger.warn(`${failMsg} due to ${SwapFailureReason[err]}, will repeat matching routine for failed quantity`);
-            failureReason = err;
+
+            const swapFailure: SwapFailure = {
+              failureReason: err,
+              orderId: maker.id,
+              pairId: maker.pairId,
+              quantity: portion.quantity,
+              peerPubKey: maker.peerPubKey,
+            };
+            swapFailures.push(swapFailure);
+            onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
+            await retryFailedSwap(portion.quantity);
           } else {
-            this.logger.error(`${failMsg} due to unexpected error, will repeat matching routine for failed quantity`, err);
-            failureReason = SwapFailureReason.UnknownError;
+            // treat this as a critical error and abort matching, we only expect SwapFailureReasons to be thrown in the try block above
+            this.logger.error(`${failMsg} due to unexpected error`, err);
             throw err;
           }
-
-          const swapFailure: SwapFailure = {
-            failureReason,
-            orderId: maker.id,
-            pairId: maker.pairId,
-            quantity: portion.quantity,
-            peerPubKey: maker.peerPubKey,
-          };
-          swapFailures.push(swapFailure);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
-          await retryFailedSwap(portion.quantity);
         }
       }
     };
@@ -482,7 +480,7 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: IncomingOrder): boolean => {
     const tp = this.tradingPairs.get(order.pairId);
     if (!tp) {
-      // TODO: penalize peer
+      // TODO: penalize peer for sending an order for an unsupported pair
       return false;
     }
 
@@ -500,8 +498,10 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Removes an order from the order book by its local id. Throws an error if the specified pairId
-   * is not supported or if the order to cancel could not be found.
+   * Removes all or part of an order from the order book by its local id. Throws an error if the
+   * specified pairId is not supported or if the order to cancel could not be found.
+   * @param quantityToRemove the quantity to remove from the order, if undefined then the entire
+   * order is removed.
    * @returns any quantity of the order that was on hold and could not be immediately removed.
    */
   public removeOwnOrderByLocalId = (localId: string, quantityToRemove?: number) => {

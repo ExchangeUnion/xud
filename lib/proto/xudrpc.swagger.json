@@ -518,6 +518,33 @@
         ]
       }
     },
+    "/v1/subscribeswapfailures": {
+      "get": {
+        "summary": "Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are\ntransmitted unless a flag is set to include swaps initiated by the local node. This call allows\nthe client to get real-time notifications when swap attempts are failing. It can be used for\nstatus monitoring, debugging, and testing purposes.",
+        "operationId": "SubscribeSwapFailures",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcSwapFailure"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "include_taker",
+            "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/subscribeswaps": {
       "get": {
         "summary": "Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are\ntransmitted unless a flag is set to include swaps initiated by the local node. This call allows\nthe client to get real-time notifications when its orders are filled by a peer. It can be used\nfor tracking order executions, updating balances, and informing a trader when one of their orders\nis settled through the Exchange Union network.",
@@ -735,8 +762,8 @@
           "description": "The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity to swap. The whole order will be swapped if unspecified."
         }
       }
@@ -909,9 +936,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -944,9 +971,9 @@
           "description": "Whether this order is a local own order or a remote peer order."
         },
         "hold": {
-          "type": "number",
-          "format": "double",
-          "description": "The amount on hold pending swap exectuion."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity on hold pending swap exectuion."
         }
       }
     },
@@ -954,8 +981,8 @@
       "type": "object",
       "properties": {
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity of the order being removed."
         },
         "pair_id": {
@@ -1057,6 +1084,10 @@
           "type": "integer",
           "format": "int32",
           "description": "The time in seconds that we have been connected to this peer."
+        },
+        "raiden_address": {
+          "type": "string",
+          "title": "The raiden address for this peer"
         }
       }
     },
@@ -1090,9 +1121,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -1176,8 +1207,9 @@
           "description": "The local id of the order to remove."
         },
         "quantity": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity to remove from the order. If zero or unspecified then entire order is removed."
         }
       }
     },
@@ -1185,8 +1217,8 @@
       "type": "object",
       "properties": {
         "quantity_on_hold": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
         }
       }
@@ -1221,8 +1253,8 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was attempted to be swapped."
         },
         "peer_pub_key": {
@@ -1251,8 +1283,8 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was swapped."
         },
         "r_hash": {
@@ -1262,12 +1294,12 @@
         "amount_received": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) received."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) received."
         },
         "amount_sent": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) sent."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) sent."
         },
         "peer_pub_key": {
           "type": "string",
@@ -1350,6 +1382,18 @@
         }
       },
       "title": "Stream result of xudrpcPlaceOrderEvent"
+    },
+    "xudrpcSwapFailure": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapFailure"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapFailure"
     },
     "xudrpcSwapSuccess": {
       "type": "object",

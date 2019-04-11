@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import Network from './Network';
 import Packet from './packets/Packet';
 import errors from './errors';
+import { magicValsXuNetwork } from '../constants/enums';
 import { randomBytes } from '../utils/utils';
 
 type WireMsgHeader = {
@@ -125,7 +126,12 @@ class Framer {
     }
 
     if (value !== this.network.magic) {
-      throw errors.FRAMER_INVALID_NETWORK_MAGIC_VALUE;
+      const network = magicValsXuNetwork[value];
+      if (network) {
+        throw errors.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK(this.network.xuNetwork, network);
+      } else {
+        throw errors.FRAMER_INVALID_NETWORK_MAGIC_VALUE;
+      }
     }
 
     return data.readUInt32LE(4, true);

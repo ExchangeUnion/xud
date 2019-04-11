@@ -3,17 +3,16 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
-import Client from '../BaseClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClients, OrderSide, SwapRole } from '../constants/enums';
+import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent, PeerOrder } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess } from 'lib/swaps/types';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
 
 /**
  * The components required by the API service layer.
@@ -49,7 +48,7 @@ const argChecks = {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
-  NON_ZERO_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity === 0) throw errors.INVALID_ARGUMENT('quantity must not equal 0'); },
+  POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
     if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/))  {
@@ -60,7 +59,7 @@ const argChecks = {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
-    if (!SwapClients[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+    if (!SwapClient[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
 };
 
@@ -89,7 +88,7 @@ class Service extends EventEmitter {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClients | number, decimalPlaces: number, tokenAddress?: string}) => {
+  public addCurrency = async (args: { currency: string, swapClient: SwapClient | number, decimalPlaces: number, tokenAddress?: string}) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
@@ -345,7 +344,7 @@ class Service extends EventEmitter {
   ) => {
     const { pairId, price, quantity, orderId, side } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
-    argChecks.NON_ZERO_QUANTITY(args);
+    argChecks.POSITIVE_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
 
     const order = {
@@ -413,6 +412,18 @@ class Service extends EventEmitter {
       // always alert client for maker matches, taker matches only when specified
       if (swapSuccess.role === SwapRole.Maker || args.includeTaker) {
         callback(swapSuccess);
+      }
+    });
+  }
+
+  /*
+   * Subscribe to failed swaps.
+   */
+  public subscribeSwapFailures = async (args: { includeTaker: boolean }, callback: (swapFailure: SwapFailure) => void) => {
+    this.swaps.on('swap.failed', (deal) => {
+      // always alert client for maker matches, taker matches only when specified
+      if (deal.role === SwapRole.Maker || args.includeTaker) {
+        callback(deal as SwapFailure);
       }
     });
   }

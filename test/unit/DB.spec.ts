@@ -2,13 +2,13 @@ import chai, { expect } from 'chai';
 import DB from '../../lib/db/DB';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { SwapClients, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
+import { SwapClient, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
 import SwapRepository from '../../lib/swaps/SwapRepository';
-import chaiAsPromised = require('chai-as-promised');
 import { SwapDeal } from '../../lib/swaps/types';
 import P2PRepository from '../../lib/p2p/P2PRepository';
 import { createOwnOrder } from '../utils';
 import { TradeFactory } from '../../lib/db/types';
+import chaiAsPromised = require('chai-as-promised');
 
 chai.use(chaiAsPromised);
 
@@ -16,7 +16,7 @@ const PAIR_ID = 'LTC/BTC';
 const loggers = Logger.createLoggers(Level.Warn);
 
 const price = 0.005;
-const quantity = 0.1;
+const quantity = 10000000;
 const peerPubKey = '03029c6a4d80c91da9e40529ec41c93b17cc9d7956b59c7d8334b0318d4a86aef8';
 const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
 
@@ -64,12 +64,12 @@ describe('Database', () => {
   it('should add two currencies', async () => {
     const btcPromise = orderBookRepo.addCurrency({
       id: 'BTC',
-      swapClient: SwapClients.Lnd,
+      swapClient: SwapClient.Lnd,
       decimalPlaces: 8,
     });
     const ltcPromise = orderBookRepo.addCurrency({
       id: 'LTC',
-      swapClient: SwapClients.Lnd,
+      swapClient: SwapClient.Lnd,
       decimalPlaces: 8,
     });
     await Promise.all([btcPromise, ltcPromise]);
@@ -142,7 +142,7 @@ describe('Database', () => {
   });
 
   it('should add two own orders and a trade between them', async () => {
-    const tradeQuantity = 0.1;
+    const tradeQuantity = 10000000;
     const maker = createOwnOrder(price, tradeQuantity, true);
     const taker = createOwnOrder(price, tradeQuantity, false);
     await Promise.all([orderBookRepo.addOrderIfNotExists(maker), orderBookRepo.addOrderIfNotExists(taker)]);

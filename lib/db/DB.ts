@@ -3,8 +3,9 @@ import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import * as db from './types';
-import { SwapClients } from '../constants/enums';
+import { SwapClient, XuNetwork } from '../constants/enums';
 import { exists, readdir } from '../utils/fsUtils';
+import seeds from '../p2p/seeds';
 
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
@@ -37,7 +38,7 @@ class DB {
    * Initialize the connection to the database.
    * @param initDb whether to intialize a new database with default values if no database exists
    */
-  public init = async (initDb = false): Promise<void> => {
+  public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
     this.models = await this.loadModels();
     const newDb = !this.storage || !(await exists(this.storage));
     try {
@@ -67,47 +68,27 @@ class DB {
       SwapDeal.sync(),
     ]);
 
-    if (newDb && initDb) {
-      // populate new databases with default data
-      // TODO: make seed peers configurable
-      const promises: Bluebird<any>[] = [];
-      promises.push(Node.bulkCreate(<db.NodeAttributes[]>[
-        {
-          nodePubKey: '02b66438730d1fcdf4a4ae5d3d73e847a272f160fee2938e132b52cab0a0d9cfc6',
-          addresses: [{ host: 'xud1.test.exchangeunion.com', port: 8885 }],
-        },
-        {
-          nodePubKey: '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0a',
-          addresses: [{ host: 'xud2.test.exchangeunion.com', port: 8885 }],
-        },
-        {
-          nodePubKey: '03fd337659e99e628d0487e4f87acf93e353db06f754dccc402f2de1b857a319d0',
-          addresses: [{ host: 'xud3.test.exchangeunion.com', port: 8885 }],
-        },
-      ]));
+    if (initDb && newDb) {
+      // initialize database with the seed nodes for the configured network
+      const nodes = seeds.get(network);
+      if (nodes) {
+        await Node.bulkCreate(nodes);
+      }
 
-      promises.push(Currency.bulkCreate(<db.CurrencyAttributes[]>[
-        { id: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-        { id: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 8 },
-        // { id: 'ZRX', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
-        // { id: 'GNT', swapClient: SwapClients.Raiden, decimalPlaces: 18 },
-      ]));
-
-      await Promise.all(promises);
+      // initialize new databases with default data.
+      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
+        { id: 'BTC', swapClient: SwapClient.Lnd, decimalPlaces: 8 },
+        { id: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 8 },
+      ]);
 
       await Pair.bulkCreate(<db.PairAttributes[]>[
         { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-        // { baseCurrency: 'ZRX', quoteCurrency: 'GNT' },
       ]);
     }
   }
 
   public close = (): Bluebird<void> => {
     return this.sequelize.close();
-  }
-
-  public dropTables = (): Bluebird<void> => {
-    return this.sequelize.drop();
   }
 
   private loadModels = async (): Promise<Models> => {

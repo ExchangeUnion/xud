@@ -8,7 +8,7 @@ import Config from '../../lib/Config';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/p2p/types';
-import { DisconnectionReason } from '../../lib/constants/enums';
+import { DisconnectionReason, XuNetwork } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -21,13 +21,16 @@ describe('P2P Pool Tests', async () => {
 
   const createPeer = (nodePubKey: string, addresses: Address[]) => {
     const peer = sandbox.createStubInstance(Peer) as any;
-    peer.address = addresses[0];
-    peer.nodeState = {
-      addresses,
-      nodePubKey,
-      version: 'test',
-      pairs: ['LTC/BTC'],
+    peer.beginOpen = () => {
+      peer.nodeState = {
+        addresses,
+        nodePubKey,
+        version: '100.0.0',
+        pairs: ['LTC/BTC'],
+      };
+      peer.address = addresses[0];
     };
+    peer.completeOpen = () => {};
     peer.socket = {};
     peer.sendPacket = () => {};
     peer.close = () => {
@@ -48,7 +51,7 @@ describe('P2P Pool Tests', async () => {
     db = new DB(loggers.db);
     await db.init();
 
-    pool = new Pool(config.p2p, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, XuNetwork.SimNet, loggers.p2p, db.models);
 
     await pool.init({
       nodePubKey: 'test',
@@ -58,15 +61,15 @@ describe('P2P Pool Tests', async () => {
     }, nodeKeyOne);
   });
 
-  it('should handle an opened peer', async () => {
+  it('should open a connection with a peer', async () => {
     const currentNodeCount = pool['nodes'].count;
 
     const addresses = [{ host: '123.123.123.123', port: 8885 }];
     const peer = createPeer(nodeKeyOne.nodePubKey, addresses);
 
-    const handleOpenPromise = pool['handleOpen'](peer);
-    expect(handleOpenPromise).to.be.fulfilled;
-    await handleOpenPromise;
+    const openPromise = pool['openPeer'](peer, nodeKeyOne.nodePubKey);
+    expect(openPromise).to.be.fulfilled;
+    await openPromise;
     expect(pool['nodes'].count).to.equal(currentNodeCount + 1);
     expect(pool['nodes'].has(nodeKeyOne.nodePubKey)).to.be.true;
 
@@ -108,7 +111,7 @@ describe('P2P Pool Tests', async () => {
     const addresses = [{ host: '86.75.30.9', port: 8885 }];
     const peer = createPeer(nodeKeyOne.nodePubKey, addresses);
 
-    pool['handleOpen'](peer);
+    await pool['openPeer'](peer, nodeKeyOne.nodePubKey);
 
     const nodeInstance = await db.models.Node.find({
       where: {

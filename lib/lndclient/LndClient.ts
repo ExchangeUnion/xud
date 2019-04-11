@@ -6,6 +6,8 @@ import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
 import { exists, readFile } from '../utils/fsUtils';
+import { SwapState, SwapRole, SwapClient } from '../constants/enums';
+import { SwapDeal } from '../swaps/types';
 
 /** The configurable options for the lnd client. */
 type LndClientConfig = {
@@ -39,13 +41,9 @@ interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
-interface LndClient {
-  on(event: 'connectionVerified', listener: (newPubKey?: string) => void): this;
-  emit(event: 'connectionVerified', newPubKey?: string): boolean;
-}
-
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
+  public readonly type = SwapClient.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
@@ -61,7 +59,7 @@ class LndClient extends BaseClient {
    * Creates an lnd client.
    * @param config the lnd configuration
    */
-  constructor(private config: LndClientConfig, logger: Logger) {
+  constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
     super(logger);
 
     this.cltvDelta = config.cltvdelta || 0;
@@ -94,7 +92,7 @@ class LndClient extends BaseClient {
       const adminMacaroon = await readFile(macaroonpath);
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
     } else {
-      this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
+      this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
     }
     // set status as disconnected until we can verify the connection
     this.setStatus(ClientStatus.Disconnected);
@@ -172,7 +170,7 @@ class LndClient extends BaseClient {
       throw(errors.LND_IS_DISABLED);
     }
     if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd for ${this.currency} at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
@@ -195,12 +193,12 @@ class LndClient extends BaseClient {
           this.subscribeInvoices();
         } else {
           this.setStatus(ClientStatus.OutOfSync);
-          this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.error(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
           this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECHECK_SYNC_TIMER);
         }
       } catch (err) {
         this.setStatus(ClientStatus.Disconnected);
-        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
+        this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
         this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
       }
@@ -215,10 +213,65 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+
+    if (deal.makerToTakerRoutes && deal.role === SwapRole.Maker) {
+      const request = new lndrpc.SendToRouteRequest();
+      request.setRoutesList(deal.makerToTakerRoutes as lndrpc.Route[]);
+      request.setPaymentHashString(deal.rHash);
+
+      try {
+        const sendToRouteResponse = await this.sendToRouteSync(request);
+        const sendPaymentError = sendToRouteResponse.getPaymentError();
+        if (sendPaymentError) {
+          this.logger.error(`sendToRouteSync failed with payment error: ${sendPaymentError}`);
+          throw new Error(sendPaymentError);
+        }
+
+        return Buffer.from(sendToRouteResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+      } catch (err) {
+        this.logger.error(`Got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
+        throw err;
+      }
+    } else if (deal.destination) {
+      const request = new lndrpc.SendRequest();
+      request.setDestString(deal.destination);
+      request.setPaymentHashString(deal.rHash);
+
+      if (deal.role === SwapRole.Taker) {
+        // we are the taker paying the maker
+        request.setFinalCltvDelta(deal.makerCltvDelta!);
+        request.setAmt(deal.makerAmount);
+      } else {
+        // we are the maker paying the taker
+        request.setFinalCltvDelta(deal.takerCltvDelta);
+        request.setAmt(deal.takerAmount);
+      }
+
+      try {
+        const sendPaymentResponse = await this.sendPaymentSync(request);
+        const sendPaymentError = sendPaymentResponse.getPaymentError();
+        if (sendPaymentError) {
+          this.logger.error(`sendPaymentSync failed with payment error: ${sendPaymentError}`);
+          throw new Error(sendPaymentError);
+        }
+
+        return Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+      } catch (err) {
+        this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
+        throw err;
+      }
+    } else {
+      assert.fail('swap deal must have a route or destination to send payment');
+      return '';
+    }
+  }
+
   /**
    * Sends a payment through the Lightning Network.
    */
-  public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+  private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
@@ -246,6 +299,11 @@ class LndClient extends BaseClient {
       'channelBalance', new lndrpc.ChannelBalanceRequest(),
     );
     return channelBalanceResponse.toObject();
+  }
+
+  public getHeight = async () => {
+    const info = await this.getInfo();
+    return info.getBlockHeight();
   }
 
   /**
@@ -277,17 +335,40 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
+  public getRoutes =  async (amount: number, destination: string): Promise<lndrpc.Route[]> => {
+    const request = new lndrpc.QueryRoutesRequest();
+    request.setAmt(amount);
+    request.setFinalCltvDelta(this.cltvDelta);
+    request.setNumRoutes(1);
+    request.setPubKey(destination);
+    try {
+      const routes = (await this.queryRoutes(request)).getRoutesList();
+      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}`);
+      return routes;
+    } catch (err) {
+      if (typeof err.message === 'string' && (
+        err.message.includes('unable to find a path to destination') ||
+        err.message.includes('target not found')
+      )) {
+        return [];
+      } else {
+        this.logger.error(`error calling queryRoutes for ${this.currency} to ${destination}: ${JSON.stringify(err)}`);
+        throw err;
+      }
+    }
+  }
+
   /**
    * Lists all routes to destination.
    */
-  public queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
+  private queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
   /**
    * Sends amount to destination using pre-defined routes.
    */
-  public sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
+  private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
@@ -303,7 +384,7 @@ class LndClient extends BaseClient {
     .on('error', (error) => {
       this.invoiceSubscription = undefined;
       this.setStatus(ClientStatus.Disconnected);
-      this.logger.error(`lnd has been disconnected at ${this.uri}, error: ${error}`);
+      this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
       this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
     });
   }
@@ -340,14 +421,10 @@ class LndClient extends BaseClient {
       });
   }
 
-  /** Ends all subscriptions and reconnection attempts. */
-  public close = () => {
+  /** Lnd client specific cleanup. */
+  protected closeSpecific = () => {
     if (this.invoiceSubscription) {
       this.invoiceSubscription.cancel();
-    }
-
-    if (this.reconnectionTimer) {
-      clearTimeout(this.reconnectionTimer);
     }
   }
 }
