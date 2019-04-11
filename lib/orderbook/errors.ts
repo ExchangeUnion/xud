@@ -12,6 +12,7 @@ const errorCodes = {
   MARKET_ORDERS_NOT_ALLOWED: codesPrefix.concat('.8'),
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
   QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
+  CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
 };
 
 const errors = {
@@ -38,6 +39,10 @@ const errors = {
   CURRENCY_ALREADY_EXISTS: (currency: string) => ({
     message: `currency ${currency} already exists`,
     code: errorCodes.CURRENCY_ALREADY_EXISTS,
+  }),
+  CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: (currency: string) => ({
+    message: `currency: ${currency} is missing Ethereum contract (token) address`,
+    code: errorCodes.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS,
   }),
   PAIR_ALREADY_EXISTS: (pairId: string) => ({
     message: `trading pair ${pairId} already exists`,
