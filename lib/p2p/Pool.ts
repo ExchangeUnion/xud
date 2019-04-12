@@ -74,6 +74,10 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** This node's listening external socket addresses to advertise to peers. */
   private addresses: Address[] = [];
+  /** This node's P2P blacklist IP addresses */
+  private blacklist: string[] = [];
+  /** This node's P2P whitelist IP addresses */
+  private whitelist: string[] = [];
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
@@ -92,6 +96,12 @@ class Pool extends EventEmitter {
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
         this.addresses.push(address);
+      });
+      config.blacklist.forEach((addressString) => {
+        this.blacklist.push(addressString);
+      });
+      config.whitelist.forEach((addressString) => {
+        this.whitelist.push(addressString);
       });
     }
   }
@@ -550,6 +560,18 @@ class Pool extends EventEmitter {
   private handleSocket = async (socket: Socket) => {
     if (!socket.remoteAddress) { // client disconnected, socket is destroyed
       this.logger.debug('Ignoring disconnected peer');
+      socket.destroy();
+      return;
+    }
+
+    if (this.blacklist.findIndex(a => a === socket.remoteAddress) !== -1) {
+      this.logger.debug(`Ignoring the peer (${socket.remoteAddress}) in the blacklist`);
+      socket.destroy();
+      return;
+    }
+
+    if (this.whitelist.length !== 0 && this.whitelist.findIndex(a => a === socket.remoteAddress) !== -1) {
+      this.logger.debug(`Ignoring the peer (${socket.remoteAddress}) out of the whitelist`);
       socket.destroy();
       return;
     }

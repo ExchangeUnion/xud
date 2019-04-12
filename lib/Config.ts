@@ -68,6 +68,8 @@ class Config {
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
+      blacklist: [],
+      whitelist: [],
     };
     this.rpc = {
       disable: false,

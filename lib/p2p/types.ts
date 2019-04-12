@@ -49,4 +49,15 @@ export type PoolConfig = {
    * It will be advertised with peers for them to try to connect to the server in the future.
    */
   addresses: string[];
+
+  /**
+   * An array of IP addresses or host names which can be used as a whitelist to limit connecting peers.
+   * Is will bypass all peers when it is empty.
+   */
+  whitelist: string[];
+
+  /**
+   * An array of IP addresses or host names which can be used as a blacklist to limit connecting peers.
+   */
+  blacklist: string[];
 };
