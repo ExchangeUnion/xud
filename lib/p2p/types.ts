@@ -15,18 +15,13 @@ export type NodeConnectionInfo = {
 export type NodeState = {
   version: string;
   nodePubKey: string;
-  addresses?: Address[];
+  addresses: Address[];
   pairs: string[];
-  raidenAddress?: string;
+  raidenAddress: string;
   lndPubKeys: { [currency: string]: string | undefined };
 };
 
-export type NodeStateUpdate = {
-  addresses?: Address[];
-  pairs?: string[];
-  raidenAddress?: string;
-  lndPubKeys?: { [currency: string]: string | undefined };
-};
+export type NodeStateUpdate = Pick<NodeState, Exclude<keyof NodeState, 'version' | 'nodePubKey'>>;
 
 export type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */

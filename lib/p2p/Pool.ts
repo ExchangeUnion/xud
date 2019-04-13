@@ -103,7 +103,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (ownNodeState: NodeState, nodeKey: NodeKey): Promise<void> => {
+  public init = async (ownNodeState: Pick<NodeState, Exclude<keyof NodeState, 'addresses'>>, nodeKey: NodeKey): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -118,8 +118,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    this.nodeState = ownNodeState;
-    this.nodeState.addresses = this.addresses;
+    this.nodeState = { ...ownNodeState, addresses: this.addresses };
     this.nodeKey = nodeKey;
 
     this.bindNodeList();
@@ -160,21 +159,34 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Updates the node state and sends node state update packet to currently connected
+   * Updates our active trading pairs and sends a node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
-    this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
-    this.sendNodeStateUpdate(this.nodeState);
+  public updatePairs = (pairs: string[]) => {
+    this.nodeState.pairs = pairs;
+    this.sendNodeStateUpdate();
   }
 
+  /**
+   * Updates our raiden address and sends a node state update packet to currently connected
+   * peers to notify them of the change.
+   */
+  public updateRaidenAddress = (raidenAddress: string) => {
+    this.nodeState.raidenAddress = raidenAddress;
+    this.sendNodeStateUpdate();
+  }
+
+  /**
+   * Updates our lnd pub key for a given currency and sends a node state update packet to currently
+   * connected peers to notify them of the change.
+   */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.sendNodeStateUpdate(this.nodeState);
+    this.sendNodeStateUpdate();
   }
 
-  private sendNodeStateUpdate = (nodeStateUpdate: NodeStateUpdate) => {
-    const packet = new packets.NodeStateUpdatePacket(nodeStateUpdate);
+  private sendNodeStateUpdate = () => {
+    const packet = new packets.NodeStateUpdatePacket(this.nodeState);
     this.peers.forEach(async (peer) => {
       await peer.sendPacket(packet);
     });
@@ -210,7 +222,7 @@ class Pool extends EventEmitter {
   }
 
   private verifyReachability = () => {
-    this.nodeState.addresses!.forEach(async (address) => {
+    this.nodeState.addresses.forEach(async (address) => {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
