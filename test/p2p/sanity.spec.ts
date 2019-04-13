@@ -73,6 +73,17 @@ describe('P2P Sanity Tests', () => {
     expect(listPeersResult[0].nodePubKey).to.equal(nodeTwo.nodePubKey);
   });
 
+  it('should update the node state', (done) => {
+    const raidenAddress = '0xbb9bc244d798123fde783fcc1c72d3bb8c189413';
+    const nodeTwoPeer = nodeOne['pool'].getPeer(nodeTwo.nodePubKey);
+    nodeTwoPeer.on('nodeStateUpdate', () => {
+      expect(nodeTwoPeer['nodeState']!.raidenAddress).to.equal(raidenAddress);
+      done();
+    });
+
+    nodeTwo['pool'].updateRaidenAddress(raidenAddress);
+  });
+
   it('should fail connecting to the same node', async () => {
     await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
       .to.be.rejectedWith('already connected');
