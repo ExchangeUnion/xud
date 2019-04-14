@@ -90,7 +90,7 @@ class Peer extends EventEmitter {
   /** Connection retries min delay. */
   private static readonly CONNECTION_RETRIES_MIN_DELAY = 5000;
   /** Connection retries max delay. */
-  private static readonly CONNECTION_RETRIES_MAX_DELAY = 3600000;
+  private static readonly CONNECTION_RETRIES_MAX_DELAY = 300000;
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
