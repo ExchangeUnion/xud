@@ -96,6 +96,32 @@
         ]
       }
     },
+    "/v1/changepassword": {
+      "post": {
+        "operationId": "ChangePassword",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcChangePasswordResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcChangePasswordRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/channelbalance": {
       "get": {
         "summary": "Gets the total balance available across all payment channels for one or all currencies.",
@@ -166,6 +192,32 @@
         ]
       }
     },
+    "/v1/estimatefee": {
+      "post": {
+        "operationId": "EstimateFee",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcEstimateFeeResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcEstimateFeeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/executeswap": {
       "post": {
         "summary": "Execute a swap on a maker peer order",
@@ -193,6 +245,58 @@
         ]
       }
     },
+    "/v1/genseed": {
+      "post": {
+        "operationId": "GenSeed",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcGenSeedResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcGenSeedRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/gettransactions": {
+      "post": {
+        "operationId": "GetTransactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcTransactionDetails"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcGetTransactionsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/info": {
       "get": {
         "summary": "Gets general information about this node.",
@@ -205,6 +309,84 @@
             }
           }
         },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/initwallet": {
+      "post": {
+        "operationId": "InitWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcInitWalletResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcInitWalletRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/listunspent": {
+      "post": {
+        "operationId": "ListUnspent",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcListUnspentResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcListUnspentRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/newaddress": {
+      "post": {
+        "operationId": "NewAddress",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcNewAddressResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcNewAddressRequest"
+            }
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -439,6 +621,58 @@
         ]
       }
     },
+    "/v1/sendcoins": {
+      "post": {
+        "operationId": "SendCoins",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcSendCoinsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcSendCoinsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/sendmany": {
+      "post": {
+        "operationId": "SendMany",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcSendManyResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcSendManyRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/shutdown": {
       "post": {
         "summary": "Begin gracefully shutting down xud.",
@@ -564,6 +798,22 @@
         ]
       }
     },
+    "/v1/subscribetransactions": {
+      "get": {
+        "operationId": "SubscribeTransactions",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/lnrpcTransaction"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/unban": {
       "post": {
         "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.",
@@ -590,6 +840,58 @@
           "Xud"
         ]
       }
+    },
+    "/v1/unlockwallet": {
+      "post": {
+        "operationId": "UnlockWallet",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcUnlockWalletResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcUnlockWalletRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/walletbalance": {
+      "post": {
+        "operationId": "WalletBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/lnrpcWalletBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/lnrpcWalletBalanceRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
     }
   },
   "definitions": {
@@ -608,6 +910,480 @@
         "MAKER"
       ],
       "default": "TAKER"
+    },
+    "lnrpcAddressType": {
+      "type": "string",
+      "enum": [
+        "WITNESS_PUBKEY_HASH",
+        "NESTED_PUBKEY_HASH",
+        "UNUSED_WITNESS_PUBKEY_HASH",
+        "UNUSED_NESTED_PUBKEY_HASH"
+      ],
+      "default": "WITNESS_PUBKEY_HASH",
+      "description": "- `p2wkh`: Pay to witness key hash (`WITNESS_PUBKEY_HASH` = 0)\n- `np2wkh`: Pay to nested witness key hash (`NESTED_PUBKEY_HASH` = 1)",
+      "title": "* \n`AddressType` has to be one of:"
+    },
+    "lnrpcChanBackupSnapshot": {
+      "type": "object",
+      "properties": {
+        "single_chan_backups": {
+          "$ref": "#/definitions/lnrpcChannelBackups",
+          "description": "*\nThe set of new channels that have been added since the last channel backup\nsnapshot was requested."
+        },
+        "multi_chan_backup": {
+          "$ref": "#/definitions/lnrpcMultiChanBackup",
+          "description": "*\nA multi-channel backup that covers all open channels currently known to\nlnd."
+        }
+      }
+    },
+    "lnrpcChangePasswordRequest": {
+      "type": "object",
+      "properties": {
+        "current_password": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\ncurrent_password should be the current valid passphrase used to unlock the\ndaemon."
+        },
+        "new_password": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nnew_password should be the new passphrase that will be needed to unlock the\ndaemon."
+        }
+      }
+    },
+    "lnrpcChangePasswordResponse": {
+      "type": "object"
+    },
+    "lnrpcChannelBackup": {
+      "type": "object",
+      "properties": {
+        "chan_point": {
+          "$ref": "#/definitions/lnrpcChannelPoint",
+          "description": "*\nIdentifies the channel that this backup belongs to."
+        },
+        "chan_backup": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nIs an encrypted single-chan backup. this can be passed to\nRestoreChannelBackups, or the WalletUnlocker Innit and Unlock methods in\norder to trigger the recovery protocol."
+        }
+      }
+    },
+    "lnrpcChannelBackups": {
+      "type": "object",
+      "properties": {
+        "chan_backups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcChannelBackup"
+          },
+          "description": "*\nA set of single-chan static channel backups."
+        }
+      }
+    },
+    "lnrpcChannelPoint": {
+      "type": "object",
+      "properties": {
+        "funding_txid_bytes": {
+          "type": "string",
+          "format": "byte",
+          "title": "/ Txid of the funding transaction"
+        },
+        "funding_txid_str": {
+          "type": "string",
+          "title": "/ Hex-encoded string representing the funding transaction"
+        },
+        "output_index": {
+          "type": "integer",
+          "format": "int64",
+          "title": "/ The index of the output of the funding transaction"
+        }
+      }
+    },
+    "lnrpcEstimateFeeRequest": {
+      "type": "object",
+      "properties": {
+        "AddrToAmount": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "description": "/ The map from addresses to amounts for the transaction."
+        },
+        "target_conf": {
+          "type": "integer",
+          "format": "int32",
+          "description": "/ The target number of blocks that this transaction should be confirmed by."
+        }
+      }
+    },
+    "lnrpcEstimateFeeResponse": {
+      "type": "object",
+      "properties": {
+        "fee_sat": {
+          "type": "string",
+          "format": "int64",
+          "description": "/ The total fee in satoshis."
+        },
+        "feerate_sat_per_byte": {
+          "type": "string",
+          "format": "int64",
+          "description": "/ The fee rate in satoshi/byte."
+        }
+      }
+    },
+    "lnrpcGenSeedRequest": {
+      "type": "object",
+      "properties": {
+        "aezeed_passphrase": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\naezeed_passphrase is an optional user provided passphrase that will be used\nto encrypt the generated aezeed cipher seed."
+        },
+        "seed_entropy": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nseed_entropy is an optional 16-bytes generated via CSPRNG. If not\nspecified, then a fresh set of randomness will be used to create the seed."
+        }
+      }
+    },
+    "lnrpcGenSeedResponse": {
+      "type": "object",
+      "properties": {
+        "cipher_seed_mnemonic": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "*\ncipher_seed_mnemonic is a 24-word mnemonic that encodes a prior aezeed\ncipher seed obtained by the user. This field is optional, as if not\nprovided, then the daemon will generate a new cipher seed for the user.\nOtherwise, then the daemon will attempt to recover the wallet state linked\nto this cipher seed."
+        },
+        "enciphered_seed": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nenciphered_seed are the raw aezeed cipher seed bytes. This is the raw\ncipher text before run through our mnemonic encoding scheme."
+        }
+      }
+    },
+    "lnrpcGetTransactionsRequest": {
+      "type": "object"
+    },
+    "lnrpcInitWalletRequest": {
+      "type": "object",
+      "properties": {
+        "wallet_password": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nwallet_password is the passphrase that should be used to encrypt the\nwallet. This MUST be at least 8 chars in length. After creation, this\npassword is required to unlock the daemon."
+        },
+        "cipher_seed_mnemonic": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "*\ncipher_seed_mnemonic is a 24-word mnemonic that encodes a prior aezeed\ncipher seed obtained by the user. This may have been generated by the\nGenSeed method, or be an existing seed."
+        },
+        "aezeed_passphrase": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\naezeed_passphrase is an optional user provided passphrase that will be used\nto encrypt the generated aezeed cipher seed."
+        },
+        "recovery_window": {
+          "type": "integer",
+          "format": "int32",
+          "description": "*\nrecovery_window is an optional argument specifying the address lookahead\nwhen restoring a wallet seed. The recovery window applies to each\nindividual branch of the BIP44 derivation paths. Supplying a recovery\nwindow of zero indicates that no addresses should be recovered, such after\nthe first initialization of the wallet."
+        },
+        "channel_backups": {
+          "$ref": "#/definitions/lnrpcChanBackupSnapshot",
+          "description": "*\nchannel_backups is an optional argument that allows clients to recover the\nsettled funds within a set of channels. This should be populated if the\nuser was unable to close out all channels and sweep funds before partial or\ntotal data loss occurred. If specified, then after on-chain recovery of\nfunds, lnd begin to carry out the data loss recovery protocol in order to\nrecover the funds in each channel from a remote force closed transaction."
+        }
+      }
+    },
+    "lnrpcInitWalletResponse": {
+      "type": "object"
+    },
+    "lnrpcListUnspentRequest": {
+      "type": "object",
+      "properties": {
+        "min_confs": {
+          "type": "integer",
+          "format": "int32",
+          "description": "/ The minimum number of confirmations to be included."
+        },
+        "max_confs": {
+          "type": "integer",
+          "format": "int32",
+          "description": "/ The maximum number of confirmations to be included."
+        }
+      }
+    },
+    "lnrpcListUnspentResponse": {
+      "type": "object",
+      "properties": {
+        "utxos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcUtxo"
+          },
+          "title": "/ A list of utxos"
+        }
+      }
+    },
+    "lnrpcMultiChanBackup": {
+      "type": "object",
+      "properties": {
+        "chan_points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcChannelPoint"
+          },
+          "description": "*\nIs the set of all channels that are included in this multi-channel backup."
+        },
+        "multi_chan_backup": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nA single encrypted blob containing all the static channel backups of the\nchannel listed above. This can be stored as a single file or blob, and\nsafely be replaced with any prior/future versions."
+        }
+      }
+    },
+    "lnrpcNewAddressRequest": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/lnrpcAddressType",
+          "title": "/ The address type"
+        }
+      }
+    },
+    "lnrpcNewAddressResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "title": "/ The newly generated wallet address"
+        }
+      }
+    },
+    "lnrpcOutPoint": {
+      "type": "object",
+      "properties": {
+        "txid_bytes": {
+          "type": "string",
+          "format": "byte",
+          "description": "/ Raw bytes representing the transaction id."
+        },
+        "txid_str": {
+          "type": "string",
+          "description": "/ Reversed, hex-encoded string representing the transaction id."
+        },
+        "output_index": {
+          "type": "integer",
+          "format": "int64",
+          "description": "/ The index of the output on the transaction."
+        }
+      }
+    },
+    "lnrpcSendCoinsRequest": {
+      "type": "object",
+      "properties": {
+        "addr": {
+          "type": "string",
+          "title": "/ The address to send coins to"
+        },
+        "amount": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The amount in satoshis to send"
+        },
+        "target_conf": {
+          "type": "integer",
+          "format": "int32",
+          "description": "/ The target number of blocks that this transaction should be confirmed by."
+        },
+        "sat_per_byte": {
+          "type": "string",
+          "format": "int64",
+          "description": "/ A manual fee rate set in sat/byte that should be used when crafting the transaction."
+        },
+        "send_all": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "*\nIf set, then the amount field will be ignored, and lnd will attempt to\nsend all the coins under control of the internal wallet to the specified\naddress."
+        }
+      }
+    },
+    "lnrpcSendCoinsResponse": {
+      "type": "object",
+      "properties": {
+        "txid": {
+          "type": "string",
+          "title": "/ The transaction ID of the transaction"
+        }
+      }
+    },
+    "lnrpcSendManyRequest": {
+      "type": "object",
+      "properties": {
+        "AddrToAmount": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "/ The map from addresses to amounts"
+        },
+        "target_conf": {
+          "type": "integer",
+          "format": "int32",
+          "description": "/ The target number of blocks that this transaction should be confirmed by."
+        },
+        "sat_per_byte": {
+          "type": "string",
+          "format": "int64",
+          "description": "/ A manual fee rate set in sat/byte that should be used when crafting the transaction."
+        }
+      }
+    },
+    "lnrpcSendManyResponse": {
+      "type": "object",
+      "properties": {
+        "txid": {
+          "type": "string",
+          "title": "/ The id of the transaction"
+        }
+      }
+    },
+    "lnrpcTransaction": {
+      "type": "object",
+      "properties": {
+        "tx_hash": {
+          "type": "string",
+          "title": "/ The transaction hash"
+        },
+        "amount": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The transaction amount, denominated in satoshis"
+        },
+        "num_confirmations": {
+          "type": "integer",
+          "format": "int32",
+          "title": "/ The number of confirmations"
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "/ The hash of the block this transaction was included in"
+        },
+        "block_height": {
+          "type": "integer",
+          "format": "int32",
+          "title": "/ The height of the block this transaction was included in"
+        },
+        "time_stamp": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ Timestamp of this transaction"
+        },
+        "total_fees": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ Fees paid for this transaction"
+        },
+        "dest_addresses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "/ Addresses that received funds for this transaction"
+        }
+      }
+    },
+    "lnrpcTransactionDetails": {
+      "type": "object",
+      "properties": {
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/lnrpcTransaction"
+          },
+          "description": "/ The list of transactions relevant to the wallet."
+        }
+      }
+    },
+    "lnrpcUnlockWalletRequest": {
+      "type": "object",
+      "properties": {
+        "wallet_password": {
+          "type": "string",
+          "format": "byte",
+          "description": "*\nwallet_password should be the current valid passphrase for the daemon. This\nwill be required to decrypt on-disk material that the daemon requires to\nfunction properly."
+        },
+        "recovery_window": {
+          "type": "integer",
+          "format": "int32",
+          "description": "*\nrecovery_window is an optional argument specifying the address lookahead\nwhen restoring a wallet seed. The recovery window applies to each\ninvdividual branch of the BIP44 derivation paths. Supplying a recovery\nwindow of zero indicates that no addresses should be recovered, such after\nthe first initialization of the wallet."
+        },
+        "channel_backups": {
+          "$ref": "#/definitions/lnrpcChanBackupSnapshot",
+          "description": "*\nchannel_backups is an optional argument that allows clients to recover the\nsettled funds within a set of channels. This should be populated if the\nuser was unable to close out all channels and sweep funds before partial or\ntotal data loss occurred. If specified, then after on-chain recovery of\nfunds, lnd begin to carry out the data loss recovery protocol in order to\nrecover the funds in each channel from a remote force closed transaction."
+        }
+      }
+    },
+    "lnrpcUnlockWalletResponse": {
+      "type": "object"
+    },
+    "lnrpcUtxo": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/lnrpcAddressType",
+          "title": "/ The type of address"
+        },
+        "address": {
+          "type": "string",
+          "title": "/ The address"
+        },
+        "amount_sat": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The value of the unspent coin in satoshis"
+        },
+        "pk_script": {
+          "type": "string",
+          "title": "/ The pkscript in hex"
+        },
+        "outpoint": {
+          "$ref": "#/definitions/lnrpcOutPoint",
+          "title": "/ The outpoint in format txid:n"
+        },
+        "confirmations": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The number of confirmations for the Utxo"
+        }
+      }
+    },
+    "lnrpcWalletBalanceRequest": {
+      "type": "object"
+    },
+    "lnrpcWalletBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "total_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The balance of the wallet"
+        },
+        "confirmed_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The confirmed balance of a wallet(with \u003e= 1 confirmations)"
+        },
+        "unconfirmed_balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "/ The unconfirmed balance of a wallet(with 0 confirmations)"
+        }
+      }
     },
     "protobufAny": {
       "type": "object",
@@ -1339,6 +2115,18 @@
     }
   },
   "x-stream-definitions": {
+    "lnrpcTransaction": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/lnrpcTransaction"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of lnrpcTransaction"
+    },
     "xudrpcOrder": {
       "type": "object",
       "properties": {

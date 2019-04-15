@@ -5,6 +5,7 @@
 
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
+import * as lndrpc_pb from "./lndrpc_pb";
 
 export class AddCurrencyRequest extends jspb.Message { 
     getCurrency(): string;

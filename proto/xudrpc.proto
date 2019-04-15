@@ -21,6 +21,7 @@
 syntax = "proto3";
 
 import "annotations.proto";
+import "lndrpc.proto";
 
 package xudrpc;
 
@@ -186,6 +187,89 @@ service Xud {
       post: "/v1/shutdown"
       body: "*"
     };
+  }
+
+  rpc GenSeed(lnrpc.GenSeedRequest) returns (lnrpc.GenSeedResponse) {
+    option (google.api.http) = {
+      post: "/v1/genseed"
+      body: "*"
+    };
+  }
+
+  rpc InitWallet(lnrpc.InitWalletRequest) returns (lnrpc.InitWalletResponse) {
+    option (google.api.http) = {
+      post: "/v1/initwallet"
+      body: "*"
+    };
+  }
+
+  rpc UnlockWallet(lnrpc.UnlockWalletRequest) returns (lnrpc.UnlockWalletResponse) {
+    option (google.api.http) = {
+      post: "/v1/unlockwallet"
+      body: "*"
+    };
+  }
+
+  rpc ChangePassword(lnrpc.ChangePasswordRequest) returns (lnrpc.ChangePasswordResponse) {
+    option (google.api.http) = {
+      post: "/v1/changepassword"
+      body: "*"
+    };
+  }
+
+  rpc WalletBalance(lnrpc.WalletBalanceRequest) returns (lnrpc.WalletBalanceResponse) {
+    option (google.api.http) = {
+      post: "/v1/walletbalance"
+      body: "*"
+    };
+  }
+ 
+  rpc GetTransactions(lnrpc.GetTransactionsRequest) returns (lnrpc.TransactionDetails) {
+    option (google.api.http) = {
+      post: "/v1/gettransactions"
+      body: "*"
+    };
+  }
+
+  rpc EstimateFee(lnrpc.EstimateFeeRequest) returns (lnrpc.EstimateFeeResponse) {
+    option (google.api.http) = {
+      post: "/v1/estimatefee"
+      body: "*"
+    };
+  }
+
+  rpc ListUnspent(lnrpc.ListUnspentRequest) returns (lnrpc.ListUnspentResponse) {
+    option (google.api.http) = {
+      post: "/v1/listunspent"
+      body: "*"
+    };
+  }
+
+  rpc SendCoins(lnrpc.SendCoinsRequest) returns (lnrpc.SendCoinsResponse) {
+    option (google.api.http) = {
+      post: "/v1/sendcoins"
+      body: "*"
+    };
+  }
+
+  rpc SendMany(lnrpc.SendManyRequest) returns (lnrpc.SendManyResponse) {
+    option (google.api.http) = {
+      post: "/v1/sendmany"
+      body: "*"
+    };
+  }
+
+  rpc NewAddress(lnrpc.NewAddressRequest) returns (lnrpc.NewAddressResponse) {
+    option (google.api.http) = {
+      post: "/v1/newaddress"
+      body: "*"
+    };
+  }
+
+  rpc SubscribeTransactions(lnrpc.GetTransactionsRequest) returns (stream lnrpc.Transaction) {
+    option (google.api.http) = {
+      get: "/v1/subscribetransactions"
+    };    
   }
 
   /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
