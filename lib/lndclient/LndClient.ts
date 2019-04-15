@@ -79,6 +79,7 @@ class LndClient extends BaseClient {
       shouldDisable = true;
     }
     if (shouldDisable) {
+      this.setStatus(ClientStatus.Disabled);
       return;
     }
 
