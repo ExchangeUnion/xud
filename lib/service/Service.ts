@@ -12,7 +12,7 @@ import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
-
+import { ResolveRequest } from '../proto/hash_resolver_pb';
 /**
  * The components required by the API service layer.
  */
@@ -84,6 +84,10 @@ class Service extends EventEmitter {
     this.swaps = components.swaps;
 
     this.version = components.version;
+  }
+
+  private getLndClient = (client: string): LndClient | undefined => {
+    return this.lndClients[client.toUpperCase()];
   }
 
   /** Adds a currency. */
@@ -411,10 +415,102 @@ class Service extends EventEmitter {
   }
 
   /**
-   * resolveHash resolve hash to preimage.
+   * ResolveHash resolve hash to preimage.
    */
-  public resolveHash = async (request: lndrpc.ResolveRequest) => {
+  public resolveHash = async (request: ResolveRequest) => {
     return this.swaps.resolveHash(request);
+  }
+
+  /**
+   * Generate a new aezeed cipher seed given an optional passphrase
+   */
+  public genSeed = async (args: { aezeed_passphrase: string, seed_entropy: string, currency: string }) => {
+    const client = this.getLndClient(args.currency);
+    return client!.genSeed(args.aezeed_passphrase, args.seed_entropy);
+  }
+
+  /**
+   * init wallet
+   */
+  public initWallet = async (args: {
+    currency: string, wallet_password: string,
+    cipher_seed_mnemonice: string[] , eazeed_passphrase: string , recovery_window: number , channel_backups?: lndrpc.ChanBackupSnapshot }) => {
+    const client = this.getLndClient(args.currency);
+    return client!.initWallet(args.wallet_password, args.cipher_seed_mnemonice, args.eazeed_passphrase, args.recovery_window, args.channel_backups);
+  }
+
+  /**
+   * unlock wallet
+   */
+  public unlockWallet = async (args: {currency: string, wallet_password: string,
+    recovery_window: number, channel_backups?: lndrpc.ChanBackupSnapshot }) => {
+    const client = this.getLndClient(args.currency);
+    return client!.unlockWallet(args.wallet_password, args.recovery_window, args.channel_backups);
+  }
+
+  /**
+   * change password
+   */
+  public changePassword = async (args: {currency: string, current_password: string, new_password: string}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.changePassword(args.current_password, args.current_password);
+  }
+
+  /**
+   * wallet balance
+   */
+  public walletBalance = async (args: {currency: string}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.walletBalance();
+  }
+
+  /**
+   * get transactions
+   */
+  public getTransactions = async (args: {currency: string}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.getTransactions();
+  }
+
+  /**
+   * estimate fee
+   */
+  public estimateFee = async (args: {currency: string, target_conf: number}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.estimateFee(args.target_conf);
+  }
+
+  /**
+   * list unspent
+   */
+  public listUnspent = async (args: {currency: string, min_confs: number, max_confs: number}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.listUnspent(args.min_confs, args.max_confs);
+  }
+
+  /**
+   * send coins
+   */
+  public sendCoins = async (args: {currency: string, address: string, amount: number, target_conf: number,
+    sat_per_byte: number, send_all: boolean}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.sendCoins(args.address, args.amount, args.target_conf, args.sat_per_byte, args.send_all);
+  }
+
+  /**
+   * send many
+   */
+  public sendMany = async (args: {currency: string, target_conf: number, sat_per_byte: number}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.sendMany(args.target_conf, args.sat_per_byte);
+  }
+
+  /**
+   * new address
+   */
+  public newAddress = async (args: {currency: string, addressType: number}) => {
+    const client = this.getLndClient(args.currency);
+    return client!.newAddress(args.addressType);
   }
 }
 export default Service;

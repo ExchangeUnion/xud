@@ -278,17 +278,10 @@ class LndClient extends BaseClient {
   /**
    * Gets a new address for the internal lnd wallet.
    */
-  public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse> => {
+  public newAddress = (addressType: lndrpc.AddressType): Promise<lndrpc.NewAddressResponse> => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
     return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
-  }
-
-  /**
-   * Returns the total of unspent outputs for the internal lnd wallet.
-   */
-  public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
-    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
   /**
@@ -304,6 +297,125 @@ class LndClient extends BaseClient {
   public getHeight = async () => {
     const info = await this.getInfo();
     return info.getBlockHeight();
+  }
+
+  /**
+   * GenSeed
+   */
+  public genSeed = (aezeed_passphrase: string, seed_entropy: string): Promise<lndrpc.GenSeedResponse> => {
+    const request = new lndrpc.GenSeedRequest();
+    request.setAezeedPassphrase(aezeed_passphrase);
+    request.setSeedEntropy(seed_entropy);
+    return this.unaryCall<lndrpc.GenSeedRequest, lndrpc.GenSeedResponse>('genSeed', request);
+  }
+
+  /**
+   * InitWallet
+   */
+  public initWallet = (
+    wallet_password: string,
+    cipher_seed_mnemonic: string[],
+    aezeed_passphrase: string, recovery_window: number, channel_backups?: lndrpc.ChanBackupSnapshot): Promise<lndrpc.InitWalletResponse> => {
+    const request = new lndrpc.InitWalletRequest();
+    request.setWalletPassword(wallet_password);
+    request.setCipherSeedMnemonicList(cipher_seed_mnemonic);
+    request.setAezeedPassphrase(aezeed_passphrase);
+    request.setRecoveryWindow(recovery_window);
+    request.setChannelBackups(channel_backups);
+    return this.unaryCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>('initWallet', request);
+  }
+
+  /**
+   * UnlockWallet
+   */
+  public unlockWallet = (wallet_password: string, recovery_window: number, channel_backups?: lndrpc.ChanBackupSnapshot)
+  : Promise<lndrpc.UnlockWalletResponse> => {
+    const request = new lndrpc.UnlockWalletRequest();
+    request.setWalletPassword(wallet_password);
+    request.setRecoveryWindow(recovery_window);
+    request.setChannelBackups(channel_backups);
+    return this.unaryCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>('unlockWallet', request);
+  }
+
+  /**
+   * Change wallet password
+   */
+  public changePassword = (current_password: string, new_password: string): Promise<lndrpc.ChangePasswordResponse> => {
+    const request = new lndrpc.ChangePasswordRequest();
+    request.setCurrentPassword(current_password);
+    request.setNewPassword(new_password);
+    return this.unaryCall<lndrpc.ChangePasswordRequest, lndrpc.ChangePasswordResponse>('changePassword', request);
+  }
+
+  /**
+   * Returns the total of unspent outputs for the internal lnd wallet.
+   */
+  public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
+    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
+  }
+
+  /**
+   * Get Transactions
+   */
+  public getTransactions = (): Promise<lndrpc.TransactionDetails> => {
+    const request = new lndrpc.GetTransactionsRequest();
+    return this.unaryCall<lndrpc.GetTransactionsRequest, lndrpc.TransactionDetails>('getTransactions', request);
+  }
+
+  /**
+   * Estimate Fee
+   */
+  public estimateFee = async (target_conf: number): Promise<lndrpc.EstimateFeeResponse> => {
+    const request = new lndrpc.EstimateFeeRequest();
+    request.setTargetConf(target_conf);
+    return this.unaryCall<lndrpc.EstimateFeeRequest, lndrpc.EstimateFeeResponse>('estimateFee', request);
+  }
+
+  /**
+   * SendCoins
+   */
+  public sendCoins = (address: string, amount: number, target_conf: number, sat_per_byte: number, send_all: boolean)
+  : Promise<lndrpc.SendCoinsResponse> => {
+    const request = new lndrpc.SendCoinsRequest();
+    request.setAddr(address);
+    request.setAmount(amount);
+    request.setTargetConf(target_conf);
+    request.setSatPerByte(sat_per_byte);
+    request.setSendAll(send_all);
+    return this.unaryCall<lndrpc.SendCoinsRequest, lndrpc.SendCoinsResponse>('sendCoins', request);
+  }
+
+  /**
+   * ListUnspent
+   */
+  public listUnspent = (min_confs: number, max_confs: number): Promise<lndrpc.ListUnspentResponse> => {
+    const request = new lndrpc.ListUnspentRequest();
+    request.setMaxConfs(max_confs);
+    request.setMinConfs(min_confs);
+    return this.unaryCall<lndrpc.ListUnspentRequest, lndrpc.ListUnspentResponse>('listUnspent', request);
+  }
+
+  /**
+   * SendMany
+   */
+  public sendMany = (target_conf: number, sat_per_byte: number): Promise<lndrpc.SendManyResponse> => {
+    const request = new lndrpc.SendManyRequest();
+    request.setSatPerByte(sat_per_byte);
+    request.setTargetConf(target_conf);
+    return this.unaryCall<lndrpc.SendManyRequest, lndrpc.SendManyResponse>('sendMany', request);
+  }
+
+  /**
+   * Subscribe Transactions
+   */
+  public subscribeTransactions = (): void => {
+    const subscription = this.lightning.subscribeTransactions(new lndrpc.GetTransactionsRequest, this.meta);
+    subscription.on('data', (res) => {
+      return res;
+    });
+    subscription.on('error', (err) => {
+      return err;
+    });
   }
 
   /**
