@@ -74,7 +74,7 @@ type ChannelEvent = {
 class RaidenClient extends BaseClient {
   public readonly type = SwapClient.Raiden;
   public readonly cltvDelta: number = 0;
-  public address?: string;
+  public address = '';
   private port: number;
   private host: string;
 
@@ -160,7 +160,7 @@ class RaidenClient extends BaseClient {
     } else {
       try {
         channels = (await this.getChannels()).length;
-        address = this.address!;
+        address = this.address;
       } catch (err) {
         error = err.message;
       }

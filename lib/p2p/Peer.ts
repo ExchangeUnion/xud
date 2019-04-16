@@ -841,17 +841,15 @@ class Peer extends EventEmitter {
     const nodeStateUpdate = packet.body!;
     this.logger.verbose(`received node state update packet from ${this.label}: ${JSON.stringify(nodeStateUpdate)}`);
 
-    const prevNodeState = this.nodeState;
-    if (prevNodeState) {
-      prevNodeState.pairs.forEach((pairId) => {
-        if (!nodeStateUpdate.pairs || !nodeStateUpdate.pairs.includes(pairId)) {
-          // a trading pair was in the old node state but not in the updated one
-          this.emit('pairDropped', pairId);
-        }
-      });
-    }
+    const prevNodeState = this.nodeState!;
+    prevNodeState.pairs.forEach((pairId) => {
+      if (!nodeStateUpdate.pairs.includes(pairId)) {
+        // a trading pair was in the old node state but not in the updated one
+        this.emit('pairDropped', pairId);
+      }
+    });
 
-    this.nodeState = { ...prevNodeState, ...nodeStateUpdate as NodeState };
+    this.nodeState = { ...nodeStateUpdate, nodePubKey: prevNodeState.nodePubKey, version: prevNodeState.version };
     this.emit('nodeStateUpdate');
   }
 
