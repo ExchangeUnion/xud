@@ -70,12 +70,24 @@ func (*actions) connect(ctx context.Context, assert *require.Assertions, srcNode
 
 func (*actions) placeOrderAndBroadcast(ctx context.Context, assert *require.Assertions, srcNode, destNode *xudtest.HarnessNode,
 	req *xudrpc.PlaceOrderRequest) *xudrpc.Order {
-	// 	Fetch nodes current order book state.
+	// Subscribe to added orders on destNode
+	destNodeAddedOrderChan := subscribeAddedOrders(ctx, destNode)
+
+	// Fetch nodes current order book state.
 	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(ctx, srcNode, destNode)
 	assert.NoError(err)
 
-	// Subscribe to added orders on destNode
-	destNodeAddedOrderChan := subscribeAddedOrders(ctx, destNode)
+	// Ensure that destNode is connected to srcNode
+	resListPeers, err := destNode.Client.ListPeers(context.Background(), &xudrpc.ListPeersRequest{})
+	assert.NoError(err)
+	hasPeer := false
+	for i := 0; i < len(resListPeers.Peers); i++ {
+		if resListPeers.Peers[i].NodePubKey == srcNode.PubKey() {
+			hasPeer = true
+			break
+		}
+	}
+	assert.True(hasPeer)
 
 	// Place the order on srcNode and verify the result.
 	res, err := srcNode.Client.PlaceOrderSync(ctx, req)
@@ -119,12 +131,26 @@ func (*actions) placeOrderAndBroadcast(ctx context.Context, assert *require.Asse
 }
 
 func (*actions) removeOrderAndInvalidate(ctx context.Context, assert *require.Assertions, srcNode, destNode *xudtest.HarnessNode, order *xudrpc.Order) {
-	// 	Fetch nodes current order book state.
-	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(ctx, srcNode, destNode)
-	assert.NoError(err)
-
 	// Subscribe to removed orders on destNode.
 	destNodeRemovedOrdersChan := subscribeRemovedOrders(ctx, destNode)
+
+	// Fetch nodes current order book state.
+	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(ctx, srcNode, destNode)
+	assert.NoError(err)
+	assert.NotZero(prevSrcNodeCount)
+	assert.NotZero(prevDestNodeCount)
+
+	// Ensure that destNode is connected to srcNode
+	resListPeers, err := destNode.Client.ListPeers(context.Background(), &xudrpc.ListPeersRequest{})
+	assert.NoError(err)
+	hasPeer := false
+	for i := 0; i < len(resListPeers.Peers); i++ {
+		if resListPeers.Peers[i].NodePubKey == srcNode.PubKey() {
+			hasPeer = true
+			break
+		}
+	}
+	assert.True(hasPeer)
 
 	// Remove the order on srcNode.
 	req := &xudrpc.RemoveOrderRequest{OrderId: order.OwnOrPeer.(*xudrpc.Order_LocalId).LocalId}
