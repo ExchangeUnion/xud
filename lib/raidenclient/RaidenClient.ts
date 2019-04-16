@@ -3,7 +3,10 @@ import Logger from '../Logger';
 import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
 import { SwapDeal } from '../swaps/types';
-import { SwapClient } from '../constants/enums';
+import { SwapClient, SwapState, SwapRole } from '../constants/enums';
+import assert from 'assert';
+import OrderBookRepository from '../orderbook/OrderBookRepository';
+import { Models } from '../db/DB';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -68,25 +71,33 @@ type ChannelEvent = {
   amount?: number;
 };
 
+type TokenPaymentResponse = {
+  secret: string;
+};
+
 /**
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
   public readonly type = SwapClient.Raiden;
-  public readonly cltvDelta: number = 0;
-  public address?: string;
+  public readonly cltvDelta: number = 1;
+  public address = '';
+  public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
+  private repository: OrderBookRepository;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger) {
+  constructor(config: RaidenClientConfig, logger: Logger, models: Models) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
+
+    this.repository = new OrderBookRepository(logger, models);
 
     if (disable) {
       this.setStatus(ClientStatus.Disabled);
@@ -101,9 +112,25 @@ class RaidenClient extends BaseClient {
       this.logger.error(`can't init raiden. raiden is disabled`);
       return;
     }
+    // associate the client with all currencies that have a contract address
+    await this.setCurrencies();
     // set status as disconnected until we can verify the connection
     this.setStatus(ClientStatus.Disconnected);
     await this.verifyConnection();
+  }
+
+  private setCurrencies = async () => {
+    try {
+      const currencies = await this.repository.getCurrencies();
+      const raidenCurrencies = currencies.filter((currency) => {
+        const tokenAddress = currency.getDataValue('tokenAddress');
+        if (tokenAddress) {
+          this.tokenAddresses.set(currency.getDataValue('id'), tokenAddress);
+        }
+      });
+    } catch (e) {
+      this.logger.error('failed to set tokenAddresses for Raiden', e);
+    }
   }
 
   /**
@@ -134,8 +161,32 @@ class RaidenClient extends BaseClient {
     }
   }
 
-  public sendPayment = async (_deal: SwapDeal): Promise<string> => {
-    return ''; // stub placeholder
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+    assert(deal.destination);
+    let amount = 0;
+    let tokenAddress;
+    if (deal.role === SwapRole.Maker) {
+      // we are the maker paying the taker
+      amount = deal.takerAmount;
+      tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
+    } else {
+      // we are the taker paying the maker
+      amount = deal.makerAmount;
+      tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
+    }
+    try {
+      if (!tokenAddress) {
+        throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+      }
+      // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
+      // https://github.com/ExchangeUnion/xud/issues/870
+      const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
+      return tokenPaymentResponse.secret;
+    } catch (e) {
+      this.logger.error(`Got exception from RaidenClient.tokenPayment:`, e);
+      throw e;
+    }
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
@@ -160,7 +211,7 @@ class RaidenClient extends BaseClient {
     } else {
       try {
         channels = (await this.getChannels()).length;
-        address = this.address!;
+        address = this.address;
       } catch (err) {
         error = err.message;
       }
@@ -305,15 +356,25 @@ class RaidenClient extends BaseClient {
    * @param amount
    * @param secret_hash optional; provide your own secret hash
    */
-  private tokenPayment = async (token_address: string, target_address: string, amount: number, secret_hash?: string): Promise<{}> => {
+  private tokenPayment = async (
+    token_address: string,
+    target_address: string,
+    amount: number,
+    secret_hash?: string,
+  ): Promise<TokenPaymentResponse> => {
     const endpoint = `payments/${token_address}/${target_address}`;
-    let payload = { amount };
+    let payload = {
+      amount,
+      // Raiden payment will timeout without an error if the identifier
+      // is not specified.
+      identifier: Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1),
+    };
     if (secret_hash) {
       payload = Object.assign(payload, { secret_hash });
     }
     const res = await this.sendRequest(endpoint, 'POST', payload);
     const body = await parseResponseBody(res);
-    return body;
+    return body as TokenPaymentResponse;
   }
 
   /**

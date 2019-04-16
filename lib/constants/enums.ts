@@ -62,9 +62,9 @@ export enum SwapPhase {
   /** The terms of the swap have been agreed to, and we will attempt to execute it. */
   SwapAgreed = 2,
   /**
-   * We have commanded lnd to send payment according to the agreed terms. The payment (and swap)
+   * We have commanded swap client to send payment according to the agreed terms. The payment (and swap)
    * could still fail due to no route with sufficient capacity, lack of cooperation from the
-   * receiver or any intermediary node along the route, or an unexpected error from lnd.
+   * receiver or any intermediary node along the route, or an unexpected error from swap client.
    */
   SendingAmount = 3,
   /** We have received the agreed amount of the swap, and the preimage is now known to both sides. */

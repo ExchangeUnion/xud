@@ -103,7 +103,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (ownNodeState: NodeState, nodeKey: NodeKey): Promise<void> => {
+  public init = async (ownNodeState: Pick<NodeState, Exclude<keyof NodeState, 'addresses'>>, nodeKey: NodeKey): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -118,8 +118,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    this.nodeState = ownNodeState;
-    this.nodeState.addresses = this.addresses;
+    this.nodeState = { ...ownNodeState, addresses: this.addresses };
     this.nodeKey = nodeKey;
 
     this.bindNodeList();
@@ -160,21 +159,34 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Updates the node state and sends node state update packet to currently connected
+   * Updates our active trading pairs and sends a node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updateNodeState = (nodeStateUpdate: NodeStateUpdate) => {
-    this.nodeState = { ...this.nodeState, ...nodeStateUpdate };
-    this.sendNodeStateUpdate(nodeStateUpdate);
+  public updatePairs = (pairs: string[]) => {
+    this.nodeState.pairs = pairs;
+    this.sendNodeStateUpdate();
   }
 
+  /**
+   * Updates our raiden address and sends a node state update packet to currently connected
+   * peers to notify them of the change.
+   */
+  public updateRaidenAddress = (raidenAddress: string) => {
+    this.nodeState.raidenAddress = raidenAddress;
+    this.sendNodeStateUpdate();
+  }
+
+  /**
+   * Updates our lnd pub key for a given currency and sends a node state update packet to currently
+   * connected peers to notify them of the change.
+   */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.sendNodeStateUpdate(this.nodeState.lndPubKeys);
+    this.sendNodeStateUpdate();
   }
 
-  private sendNodeStateUpdate = (nodeStateUpdate: NodeStateUpdate) => {
-    const packet = new packets.NodeStateUpdatePacket(nodeStateUpdate);
+  private sendNodeStateUpdate = () => {
+    const packet = new packets.NodeStateUpdatePacket(this.nodeState);
     this.peers.forEach(async (peer) => {
       await peer.sendPacket(packet);
     });
@@ -184,15 +196,7 @@ class Pool extends EventEmitter {
     if (!this.connected) {
       return;
     }
-
-    // ensure we stop listening for new peers before disconnecting from peers
-    if (this.server && this.server.listening) {
-      await this.unlisten();
-    }
-
-    await this.closePendingConnections();
-    this.closePeers();
-
+    await Promise.all([this.unlisten(), this.closePendingConnections(), this.closePeers()]);
     this.connected = false;
   }
 
@@ -210,7 +214,7 @@ class Pool extends EventEmitter {
   }
 
   private verifyReachability = () => {
-    this.nodeState.addresses!.forEach(async (address) => {
+    this.nodeState.addresses.forEach(async (address) => {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
@@ -750,36 +754,37 @@ class Pool extends EventEmitter {
     peer.removeAllListeners();
     peer.active = false;
 
-    // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
-    // reconnect, for that might have been due to a temporary loss in connectivity
-    const unintentionalDisconnect =
+    const shouldReconnect =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
-      (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
+      (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling ||
+       peer.recvDisconnectionReason === DisconnectionReason.AlreadyConnected ||
+       peer.recvDisconnectionReason === DisconnectionReason.Shutdown);
     const addresses = peer.addresses || [];
 
-    let lastAddress;
-    if (peer.inbound) {
-      lastAddress = addresses.length > 0 ? addresses[0] : undefined;
-    } else {
-      lastAddress = peer.address;
-    }
-
-    if (peer.nodePubKey && unintentionalDisconnect && (addresses.length || lastAddress)) {
+    if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
-      const node = { lastAddress, addresses, nodePubKey: peer.nodePubKey };
+      const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);
     }
   }
 
   private closePeers = () => {
-    this.peers.forEach(peer => peer.close(DisconnectionReason.Shutdown));
+    const closePromises = [];
+    for (const peer of this.peers.values()) {
+      closePromises.push(peer.close(DisconnectionReason.Shutdown));
+    }
+    return Promise.all(closePromises);
   }
 
-  private closePendingConnections = async () => {
+  private closePendingConnections = () => {
+    const closePromises = [];
     for (const peer of this.pendingOutboundPeers.values()) {
-      await peer.close();
+      closePromises.push(peer.close());
     }
-    this.pendingInboundPeers.forEach(peer => peer.close());
+    for (const peer of this.pendingInboundPeers) {
+      closePromises.push(peer.close());
+    }
+    return Promise.all(closePromises);
   }
 
   /**
@@ -813,10 +818,15 @@ class Pool extends EventEmitter {
    * @return a promise that resolves once the server is no longer listening
    */
   private unlisten = () => {
+    if (this.server && this.server.listening) {
+      this.server.close(); // stop listening for new connections
+    }
     return new Promise<void>((resolve) => {
-      this.server!.close(() => {
+      if (this.server) {
+        this.server.once('close', resolve);
+      } else {
         resolve();
-      });
+      }
     });
   }
 }
