@@ -196,15 +196,7 @@ class Pool extends EventEmitter {
     if (!this.connected) {
       return;
     }
-
-    // ensure we stop listening for new peers before disconnecting from peers
-    if (this.server && this.server.listening) {
-      await this.unlisten();
-    }
-
-    await this.closePendingConnections();
-    this.closePeers();
-
+    await Promise.all([this.unlisten(), this.closePendingConnections(), this.closePeers()]);
     this.connected = false;
   }
 
@@ -762,36 +754,37 @@ class Pool extends EventEmitter {
     peer.removeAllListeners();
     peer.active = false;
 
-    // if handshake passed and peer disconnected from us for stalling or without specifying any reason -
-    // reconnect, for that might have been due to a temporary loss in connectivity
-    const unintentionalDisconnect =
+    const shouldReconnect =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
-      (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling);
+      (peer.recvDisconnectionReason === undefined || peer.recvDisconnectionReason === DisconnectionReason.ResponseStalling ||
+       peer.recvDisconnectionReason === DisconnectionReason.AlreadyConnected ||
+       peer.recvDisconnectionReason === DisconnectionReason.Shutdown);
     const addresses = peer.addresses || [];
 
-    let lastAddress;
-    if (peer.inbound) {
-      lastAddress = addresses.length > 0 ? addresses[0] : undefined;
-    } else {
-      lastAddress = peer.address;
-    }
-
-    if (peer.nodePubKey && unintentionalDisconnect && (addresses.length || lastAddress)) {
+    if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
-      const node = { lastAddress, addresses, nodePubKey: peer.nodePubKey };
+      const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);
     }
   }
 
   private closePeers = () => {
-    this.peers.forEach(peer => peer.close(DisconnectionReason.Shutdown));
+    const closePromises = [];
+    for (const peer of this.peers.values()) {
+      closePromises.push(peer.close(DisconnectionReason.Shutdown));
+    }
+    return Promise.all(closePromises);
   }
 
-  private closePendingConnections = async () => {
+  private closePendingConnections = () => {
+    const closePromises = [];
     for (const peer of this.pendingOutboundPeers.values()) {
-      await peer.close();
+      closePromises.push(peer.close());
     }
-    this.pendingInboundPeers.forEach(peer => peer.close());
+    for (const peer of this.pendingInboundPeers) {
+      closePromises.push(peer.close());
+    }
+    return Promise.all(closePromises);
   }
 
   /**
@@ -825,10 +818,15 @@ class Pool extends EventEmitter {
    * @return a promise that resolves once the server is no longer listening
    */
   private unlisten = () => {
+    if (this.server && this.server.listening) {
+      this.server.close(); // stop listening for new connections
+    }
     return new Promise<void>((resolve) => {
-      this.server!.close(() => {
+      if (this.server) {
+        this.server.once('close', resolve);
+      } else {
         resolve();
-      });
+      }
     });
   }
 }
