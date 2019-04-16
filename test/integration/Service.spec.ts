@@ -23,6 +23,7 @@ describe('API Service', () => {
   before(async () => {
     const config = {
       initdb: false,
+      nosanitychecks: true,
       dbpath: ':memory:',
       loglevel: 'warn',
       logpath: '',

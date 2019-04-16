@@ -68,7 +68,8 @@ class OrderBook extends EventEmitter {
     return Array.from(this.pairs.keys());
   }
 
-  constructor(private logger: Logger, models: Models, public nomatching = false, private pool?: Pool, private swaps?: Swaps) {
+  constructor(private logger: Logger, models: Models, public nomatching = false,
+    private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
     this.repository = new OrderBookRepository(logger, models);
@@ -299,6 +300,19 @@ class OrderBook extends EventEmitter {
         swapFailures: [],
         remainingOrder: order,
       };
+    }
+
+    if (!this.nosanitychecks) {
+      // check if sufficient outbound channel capacity exists
+      const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
+      const swapClient = this.swaps && this.swaps.swapClients.get(makerCurrency);
+      if (!swapClient) {
+        throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
+      }
+      if (makerAmount > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount);
+      }
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.
