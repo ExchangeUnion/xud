@@ -54,11 +54,26 @@ abstract class BaseClient extends EventEmitter {
 
   private setTimers = async () => {
     if (this.status === ClientStatus.ConnectionVerified) {
-      await this.updateCapacity();
-      this.updateCapacityTimer = setInterval(this.updateCapacity, BaseClient.CAPACITY_REFRESH_INTERVAL);
+      if (!this.updateCapacityTimer) {
+        await this.updateCapacity();
+        this.updateCapacityTimer = setInterval(this.updateCapacity, BaseClient.CAPACITY_REFRESH_INTERVAL);
+      }
+
+      if (this.reconnectionTimer) {
+        clearTimeout(this.reconnectionTimer);
+        this.reconnectionTimer = undefined;
+      }
     } else {
       if (this.updateCapacityTimer) {
         clearInterval(this.updateCapacityTimer);
+        this.updateCapacityTimer = undefined;
+      }
+      if (this.status !== ClientStatus.Disabled) {
+        if (!this.reconnectionTimer) {
+          this.reconnectionTimer = setTimeout(this.verifyConnection, BaseClient.RECONNECT_TIMER);
+        } else {
+          this.reconnectionTimer.refresh();
+        }
       }
     }
   }
@@ -71,6 +86,12 @@ abstract class BaseClient extends EventEmitter {
       this.logger.error(`failed to fetch channelbalance from client: ${e}`);
     }
   }
+
+  /**
+   * Verifies that the swap client can be reached and is in an operational state
+   * and sets the [[ClientStatus]] accordingly.
+   */
+  protected abstract async verifyConnection(): Promise<void>;
 
   /**
    * Sends payment according to the terms of a swap deal.

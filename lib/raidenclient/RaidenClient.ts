@@ -129,15 +129,9 @@ class RaidenClient extends BaseClient {
     }
   }
 
-  /**
-   * Verifies that Raiden REST service can be reached by attempting a `getAddress` call.
-   */
-  private verifyConnection = async () => {
+  protected verifyConnection = async () => {
     this.logger.info(`trying to verify connection to raiden with uri: ${this.host}:${this.port}`);
     try {
-      if (this.reconnectionTimer) {
-        clearTimeout(this.reconnectionTimer);
-      }
       const address = await this.getAddress();
 
       /** The new raiden address value if different from the one we had previously. */
@@ -153,7 +147,7 @@ class RaidenClient extends BaseClient {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
       );
-      this.reconnectionTimer = setTimeout(this.verifyConnection, RaidenClient.RECONNECT_TIMER);
+      await this.setStatus(ClientStatus.Disconnected);
     }
   }
 

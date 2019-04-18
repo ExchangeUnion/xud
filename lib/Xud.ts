@@ -89,8 +89,8 @@ class Xud extends EventEmitter {
 
       // setup raiden client and connect if configured
       this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden, this.db.models);
+      await this.raidenClient.init();
       if (!this.raidenClient.isDisabled()) {
-        await this.raidenClient.init();
         for (const currency of this.raidenClient.tokenAddresses.keys()) {
           swapClients.set(currency, this.raidenClient);
         }
