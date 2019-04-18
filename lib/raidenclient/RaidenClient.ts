@@ -85,6 +85,7 @@ class RaidenClient extends BaseClient {
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
+  private disable: boolean;
   private repository: OrderBookRepository;
 
   /**
@@ -96,26 +97,21 @@ class RaidenClient extends BaseClient {
 
     this.port = port;
     this.host = host;
+    this.disable = disable;
 
     this.repository = new OrderBookRepository(logger, models);
-
-    if (disable) {
-      this.setStatus(ClientStatus.Disabled);
-    }
   }
 
   /**
    * Checks for connectivity and gets our Raiden account address
    */
   public init = async () => {
-    if (this.isDisabled()) {
-      this.logger.error(`can't init raiden. raiden is disabled`);
+    if (this.disable) {
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
     // associate the client with all currencies that have a contract address
     await this.setCurrencies();
-    // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
     await this.verifyConnection();
   }
 
@@ -152,7 +148,7 @@ class RaidenClient extends BaseClient {
       }
 
       this.emit('connectionVerified', newAddress);
-      this.setStatus(ClientStatus.ConnectionVerified);
+      await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
@@ -321,6 +317,7 @@ class RaidenClient extends BaseClient {
    * Returns the total balance available across all channels.
    */
   public channelBalance = async (): Promise<ChannelBalance> => {
+    // TODO: refine logic to determine balance per token rather than all combined
     const channels = await this.getChannels();
     const balance = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)

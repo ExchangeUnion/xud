@@ -30,12 +30,12 @@ abstract class BaseClient extends EventEmitter {
   public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
-
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
   protected static readonly RECONNECT_TIMER = 5000;
+
   private updateCapacityTimer?: NodeJS.Timer;
   /** Time in milliseconds between updating the maximum outbound capacity */
-  private CAPACITY_REFRESH_INTERVAL = 60000;
+  private static CAPACITY_REFRESH_INTERVAL = 60000;
 
   constructor(protected logger: Logger) {
     super();
@@ -45,25 +45,30 @@ abstract class BaseClient extends EventEmitter {
    * Returns the total balance available across all channels.
    */
   public abstract channelBalance(): Promise<ChannelBalance>;
-  protected setStatus(status: ClientStatus): void {
+
+  protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
-    this.checkTimers();
+    await this.setTimers();
   }
-  private checkTimers() {
+
+  private setTimers = async () => {
     if (this.status === ClientStatus.ConnectionVerified) {
-      this.updateCapacityTimer = setInterval(async () => {
-        try {
-          this.maximumOutboundCapacity = (await this.channelBalance()).balance;
-        } catch (e) {
-          // TODO: Mark client as disconnected
-          this.logger.error(`failed to fetch channelbalance from client: ${e}`);
-        }
-      }, this.CAPACITY_REFRESH_INTERVAL);
+      await this.updateCapacity();
+      this.updateCapacityTimer = setInterval(this.updateCapacity, BaseClient.CAPACITY_REFRESH_INTERVAL);
     } else {
       if (this.updateCapacityTimer) {
         clearInterval(this.updateCapacityTimer);
       }
+    }
+  }
+
+  private updateCapacity = async () => {
+    try {
+      this.maximumOutboundCapacity = (await this.channelBalance()).balance;
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalance from client: ${e}`);
     }
   }
 

@@ -79,7 +79,7 @@ class LndClient extends BaseClient {
       shouldDisable = true;
     }
     if (shouldDisable) {
-      this.setStatus(ClientStatus.Disabled);
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
 
@@ -96,8 +96,8 @@ class LndClient extends BaseClient {
       this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
     }
     // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
-    return this.verifyConnection();
+    await this.setStatus(ClientStatus.Disconnected);
+    await this.verifyConnection();
   }
 
   public get pubKey() {
@@ -178,7 +178,7 @@ class LndClient extends BaseClient {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
-          this.setStatus(ClientStatus.ConnectionVerified);
+          await this.setStatus(ClientStatus.ConnectionVerified);
           if (this.reconnectionTimer) {
             clearTimeout(this.reconnectionTimer);
             this.reconnectionTimer = undefined;
@@ -193,12 +193,12 @@ class LndClient extends BaseClient {
           this.emit('connectionVerified', newPubKey);
           this.subscribeInvoices();
         } else {
-          this.setStatus(ClientStatus.OutOfSync);
+          await this.setStatus(ClientStatus.OutOfSync);
           this.logger.error(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
           this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECHECK_SYNC_TIMER);
         }
       } catch (err) {
-        this.setStatus(ClientStatus.Disconnected);
+        await this.setStatus(ClientStatus.Disconnected);
         this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
         this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
@@ -382,9 +382,9 @@ class LndClient extends BaseClient {
     }
 
     this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
-    .on('error', (error) => {
+    .on('error', async (error) => {
       this.invoiceSubscription = undefined;
-      this.setStatus(ClientStatus.Disconnected);
+      await this.setStatus(ClientStatus.Disconnected);
       this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
       this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
     });

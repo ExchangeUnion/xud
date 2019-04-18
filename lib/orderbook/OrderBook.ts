@@ -311,7 +311,7 @@ class OrderBook extends EventEmitter {
         throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
       }
       if (makerAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount);
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount, swapClient.maximumOutboundCapacity);
       }
     }
 
