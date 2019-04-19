@@ -135,7 +135,7 @@ service Xud {
   }
 
   /* List all events related to the order. */
-  rpc ListOrderHistory(ListOrderHistoryRequest) returns (stream ListOrderHistoryResponse) {
+  rpc ListOrderHistory(ListOrderHistoryRequest) returns (ListOrderHistoryResponse) {
     option (google.api.http) = {
       get: "/v1/listorderhistory",
     };

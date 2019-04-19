@@ -216,9 +216,9 @@
         "operationId": "ListOrderHistory",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "A successful response.",
             "schema": {
-              "$ref": "#/x-stream-definitions/xudrpcListOrderHistoryResponse"
+              "$ref": "#/definitions/xudrpcListOrderHistoryResponse"
             }
           }
         },
@@ -1367,18 +1367,6 @@
     }
   },
   "x-stream-definitions": {
-    "xudrpcListOrderHistoryResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/xudrpcListOrderHistoryResponse"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of xudrpcListOrderHistoryResponse"
-    },
     "xudrpcOrder": {
       "type": "object",
       "properties": {

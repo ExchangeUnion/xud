@@ -989,7 +989,7 @@
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |
-| ListOrderHistory | [ListOrderHistoryRequest](#xudrpc.ListOrderHistoryRequest) | [ListOrderHistoryResponse](#xudrpc.ListOrderHistoryResponse) stream | List all events related to the order. |
+| ListOrderHistory | [ListOrderHistoryRequest](#xudrpc.ListOrderHistoryRequest) | [ListOrderHistoryResponse](#xudrpc.ListOrderHistoryResponse) | List all events related to the order. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Execute a swap on a maker peer order |
