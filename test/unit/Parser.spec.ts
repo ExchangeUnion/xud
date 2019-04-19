@@ -214,7 +214,6 @@ describe('Parser', () => {
     testValidPacket(new packets.SessionInitPacket(sessionInitPacketBody));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, pairs: [] } }));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, addresses: [] } }));
-    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, raidenAddress: undefined }) }));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, BTC: undefined } }) }));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, LTC: undefined } }) }));
     testInvalidPacket(new packets.SessionInitPacket(sessionInitPacketBody, uuid()));
@@ -234,7 +233,6 @@ describe('Parser', () => {
     testValidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate));
     testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, pairs: [] }));
     testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [] }));
-    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, raidenAddress: undefined })));
     testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndPubKeys: { ...nodeStateUpdate.lndPubKeys, BTC: undefined } })));
     testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndPubKeys: { ...nodeStateUpdate.lndPubKeys, LTC: undefined } })));
     testInvalidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate, uuid()));

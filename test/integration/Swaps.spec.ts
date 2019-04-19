@@ -89,7 +89,7 @@ describe('Swaps.Integration', () => {
   let db: DB;
   let pool: Pool;
   let swaps: Swaps;
-  const swapClients: { [currency: string]: BaseClient | undefined } = {};
+  const swapClients = new Map<string, BaseClient>();
   let peer: Peer;
   let sandbox: SinonSandbox;
   let getRoutesResponse;
@@ -120,13 +120,15 @@ describe('Swaps.Integration', () => {
       } as any);
     };
     // lnd btc
-    swapClients.BTC = sandbox.createStubInstance(BaseClient) as any;
-    swapClients.BTC!.getRoutes = getRoutesResponse;
-    swapClients.BTC!.isConnected = () => true;
+    const btcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    btcSwapClient.getRoutes = getRoutesResponse;
+    btcSwapClient.isConnected = () => true;
+    swapClients.set('BTC', btcSwapClient);
     // lnd ltc
-    swapClients.LTC = sandbox.createStubInstance(BaseClient) as any;
-    swapClients.LTC!.isConnected = () => true;
-    swapClients.LTC!.getRoutes = getRoutesResponse;
+    const ltcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    ltcSwapClient.isConnected = () => true;
+    ltcSwapClient.getRoutes = getRoutesResponse;
+    swapClients.set('LTC', ltcSwapClient);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClients);
   });
 
@@ -184,15 +186,23 @@ describe('Swaps.Integration', () => {
       const noRoutesFound = () => {
         return Promise.resolve([]);
       };
-      swapClients.BTC!.getRoutes = noRoutesFound;
-      swapClients.LTC!.getRoutes = noRoutesFound;
+      let btcSwapClient = swapClients.get('BTC');
+      btcSwapClient!.getRoutes = noRoutesFound;
+      swapClients.set('BTC', btcSwapClient!);
+      let ltcSwapClient = swapClients.get('LTC');
+      ltcSwapClient!.getRoutes = noRoutesFound;
+      swapClients.set('LTC', ltcSwapClient!);
       await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
         return Promise.reject('UNKNOWN');
       };
-      swapClients.BTC!.getRoutes = rejectsWithUnknownError;
-      swapClients.LTC!.getRoutes = rejectsWithUnknownError;
+      btcSwapClient = swapClients.get('BTC');
+      btcSwapClient!.getRoutes = rejectsWithUnknownError;
+      swapClients.set('BTC', btcSwapClient!);
+      ltcSwapClient = swapClients.get('LTC');
+      ltcSwapClient!.getRoutes = rejectsWithUnknownError;
+      swapClients.set('LTC', ltcSwapClient!);
       await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });

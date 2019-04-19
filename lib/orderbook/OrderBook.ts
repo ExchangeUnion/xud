@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -68,7 +68,8 @@ class OrderBook extends EventEmitter {
     return Array.from(this.pairs.keys());
   }
 
-  constructor(private logger: Logger, models: Models, public nomatching = false, private pool?: Pool, private swaps?: Swaps) {
+  constructor(private logger: Logger, models: Models, public nomatching = false,
+    private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
     this.repository = new OrderBookRepository(logger, models);
@@ -195,7 +196,7 @@ class OrderBook extends EventEmitter {
     this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
 
     if (this.pool) {
-      this.pool.updateNodeState({ pairs: this.pairIds });
+      this.pool.updatePairs(this.pairIds);
     }
     return pairInstance;
   }
@@ -203,6 +204,9 @@ class OrderBook extends EventEmitter {
   public addCurrency = async (currency: CurrencyFactory) => {
     if (this.currencies.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
+    }
+    if (currency.swapClient === SwapClient.Raiden && !currency.tokenAddress) {
+      throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencies.set(currencyInstance.id, currencyInstance);
@@ -233,7 +237,7 @@ class OrderBook extends EventEmitter {
     this.tradingPairs.delete(pairId);
 
     if (this.pool) {
-      this.pool.updateNodeState({ pairs: this.pairIds });
+      this.pool.updatePairs(this.pairIds);
     }
     return pair.destroy();
   }
@@ -296,6 +300,19 @@ class OrderBook extends EventEmitter {
         swapFailures: [],
         remainingOrder: order,
       };
+    }
+
+    if (!this.nosanitychecks) {
+      // check if sufficient outbound channel capacity exists
+      const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
+      const swapClient = this.swaps && this.swaps.swapClients.get(makerCurrency);
+      if (!swapClient) {
+        throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
+      }
+      if (makerAmount > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount);
+      }
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.

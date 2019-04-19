@@ -56,8 +56,8 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
           nodePubKey: obj.nodeState!.nodePubKey,
           pairs: obj.nodeState!.pairsList,
           addresses: obj.nodeState!.addressesList,
-          raidenAddress: obj.nodeState!.raidenAddress || undefined,
-          lndPubKeys: obj.nodeState!.lndPubKeysMap ? convertKvpArrayToKvps(obj.nodeState!.lndPubKeysMap) : undefined,
+          raidenAddress: obj.nodeState!.raidenAddress,
+          lndPubKeys: convertKvpArrayToKvps(obj.nodeState!.lndPubKeysMap),
         }),
       },
     });
@@ -74,13 +74,13 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
       pbNodeState.setVersion(this.body!.nodeState.version);
       pbNodeState.setNodePubKey(this.body!.nodeState.nodePubKey);
       pbNodeState.setPairsList(this.body!.nodeState.pairs);
-      pbNodeState.setAddressesList(this.body!.nodeState.addresses!.map((addr) => {
+      pbNodeState.setAddressesList(this.body!.nodeState.addresses.map((addr) => {
         const pbAddr = new pb.Address();
         pbAddr.setHost(addr.host);
         pbAddr.setPort(addr.port);
         return pbAddr;
       }));
-      pbNodeState.setRaidenAddress(this.body!.nodeState.raidenAddress!);
+      pbNodeState.setRaidenAddress(this.body!.nodeState.raidenAddress);
       if (this.body!.nodeState.lndPubKeys) {
         setObjectToMap(this.body!.nodeState.lndPubKeys, pbNodeState.getLndPubKeysMap());
       }

@@ -48,7 +48,7 @@ class Swaps extends EventEmitter {
   constructor(private logger: Logger,
     private models: Models,
     private pool: Pool,
-    private swapClients: { [currency: string]: BaseClient | undefined },
+    public swapClients: Map<string, BaseClient>,
   ) {
     super();
     this.repository = new SwapRepository(this.models);
@@ -61,7 +61,7 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the derived `makerCurrency` and `takerCurrency` values
    */
-  private static deriveCurrencies = (pairId: string, isBuy: boolean) => {
+  public static deriveCurrencies = (pairId: string, isBuy: boolean) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
 
     const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
@@ -87,7 +87,7 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
-  private static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+  public static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
@@ -116,8 +116,8 @@ class Swaps extends EventEmitter {
    */
   public isPairSupported = (pairId: string): boolean => {
     const currencies = pairId.split('/');
-    const baseCurrencyClient = this.swapClients[currencies[0]];
-    const quoteCurrencyClient = this.swapClients[currencies[1]];
+    const baseCurrencyClient = this.swapClients.get(currencies[0]);
+    const quoteCurrencyClient = this.swapClients.get(currencies[1]);
     return baseCurrencyClient !== undefined && baseCurrencyClient.isConnected() &&
       quoteCurrencyClient !== undefined && quoteCurrencyClient.isConnected();
   }
@@ -140,13 +140,20 @@ class Swaps extends EventEmitter {
    * @returns undefined if the setup is verified, otherwise an error message
    */
   private checkPeerIdentifiers = (deal: SwapDeal, peer: Peer) => {
-    // TODO: this verification should happen before we accept orders from the peer and should check Raiden as well
-    if (!peer.getIdentifier(SwapClient.Lnd, deal.takerCurrency)) {
-      return 'peer did not provide an LND PubKey for ' + deal.takerCurrency;
+    // TODO: this verification should happen before we accept orders from the peer
+    const takerSwapClient = this.swapClients.get(deal.takerCurrency);
+    if (!takerSwapClient) {
+      return `unable to get swap client for ${deal.takerCurrency}`;
     }
-
-    if (!peer.getIdentifier(SwapClient.Lnd, deal.makerCurrency)) {
-      return 'peer did not provide an LND PubKey for ' + deal.makerCurrency;
+    if (!peer.getIdentifier(takerSwapClient.type, deal.takerCurrency)) {
+      return `peer did not provide an identifier for ${deal.takerCurrency}`;
+    }
+    const makerSwapClient = this.swapClients.get(deal.makerCurrency);
+    if (!makerSwapClient) {
+      return `unable to get swap client for ${deal.makerCurrency}`;
+    }
+    if (!peer.getIdentifier(makerSwapClient.type, deal.makerCurrency)) {
+      return `peer did not provide an identifier for ${deal.makerCurrency}`;
     }
     return;
   }
@@ -197,7 +204,7 @@ class Swaps extends EventEmitter {
     const { makerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
     const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
 
-    const swapClient = this.swapClients[makerCurrency];
+    const swapClient = this.swapClients.get(makerCurrency);
     if (!swapClient) throw new Error('swap client not found');
 
     const peer = this.pool.getPeer(maker.peerPubKey);
@@ -263,10 +270,10 @@ class Swaps extends EventEmitter {
 
     const quantity = Math.min(maker.quantity, taker.quantity);
     const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
-    const clientType = this.swapClients[makerCurrency]!.type;
+    const clientType = this.swapClients.get(makerCurrency)!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
-    const takerCltvDelta = this.swapClients[takerCurrency]!.cltvDelta;
+    const takerCltvDelta = this.swapClients.get(takerCurrency)!.cltvDelta;
 
     const preimage = await randomBytes(32);
 
@@ -337,7 +344,7 @@ class Swaps extends EventEmitter {
     const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy, requestBody.pairId);
     const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(requestBody.pairId, isBuy);
 
-    const swapClient = this.swapClients[takerCurrency];
+    const swapClient = this.swapClients.get(takerCurrency);
     if (!swapClient) {
       await this.sendErrorToPeer(peer, rHash, SwapFailureReason.SwapClientNotSetup, 'Unsupported taker currency', requestPacket.header.id);
       return false;
@@ -414,8 +421,8 @@ class Swaps extends EventEmitter {
 
       const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
 
-      const makerClientCltvDelta = this.swapClients[makerCurrency]!.cltvDelta;
-      const takerClientCltvDelta = this.swapClients[takerCurrency]!.cltvDelta;
+      const makerClientCltvDelta = this.swapClients.get(makerCurrency)!.cltvDelta;
+      const takerClientCltvDelta = this.swapClients.get(takerCurrency)!.cltvDelta;
 
       // cltvDelta can't be zero for swap clients (checked in constructor)
       const cltvDeltaFactor = makerClientCltvDelta / takerClientCltvDelta;
@@ -426,7 +433,7 @@ class Swaps extends EventEmitter {
     }
 
     const responseBody: packets.SwapAcceptedPacketBody = {
-      makerCltvDelta: deal.makerCltvDelta || 0,
+      makerCltvDelta: deal.makerCltvDelta || 1,
       rHash: requestBody.rHash,
       quantity: requestBody.proposedQuantity,
     };
@@ -480,7 +487,7 @@ class Swaps extends EventEmitter {
       }
     }
 
-    const swapClient = this.swapClients[deal.makerCurrency];
+    const swapClient = this.swapClients.get(deal.makerCurrency);
     if (!swapClient) {
       // We checked that we had a swap client for both currencies involved when the swap was initiated. Still...
       return;
@@ -576,7 +583,7 @@ class Swaps extends EventEmitter {
       // As the maker, I need to forward the payment to the other chain
 	    this.logger.debug('Executing maker code');
 
-      const swapClient = this.swapClients[deal.takerCurrency]!;
+      const swapClient = this.swapClients.get(deal.takerCurrency)!;
 
       try {
         this.setDealPhase(deal, SwapPhase.SendingAmount);
