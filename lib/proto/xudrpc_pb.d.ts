@@ -609,6 +609,44 @@ export namespace ListPeersResponse {
     }
 }
 
+export class ListOrderHistoryRequest extends jspb.Message { 
+    getOrderId(): string;
+    setOrderId(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListOrderHistoryRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ListOrderHistoryRequest): ListOrderHistoryRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListOrderHistoryRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListOrderHistoryRequest;
+    static deserializeBinaryFromReader(message: ListOrderHistoryRequest, reader: jspb.BinaryReader): ListOrderHistoryRequest;
+}
+
+export namespace ListOrderHistoryRequest {
+    export type AsObject = {
+        orderId: string,
+    }
+}
+
+export class ListOrderHistoryResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListOrderHistoryResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: ListOrderHistoryResponse): ListOrderHistoryResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListOrderHistoryResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListOrderHistoryResponse;
+    static deserializeBinaryFromReader(message: ListOrderHistoryResponse, reader: jspb.BinaryReader): ListOrderHistoryResponse;
+}
+
+export namespace ListOrderHistoryResponse {
+    export type AsObject = {
+    }
+}
+
 export class LndChannels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;

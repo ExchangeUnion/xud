@@ -210,6 +210,31 @@
         ]
       }
     },
+    "/v1/listorderhistory": {
+      "get": {
+        "summary": "List all events related to the order.",
+        "operationId": "ListOrderHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcListOrderHistoryResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.",
@@ -830,6 +855,9 @@
         }
       }
     },
+    "xudrpcListOrderHistoryResponse": {
+      "type": "object"
+    },
     "xudrpcListOrdersResponse": {
       "type": "object",
       "properties": {
@@ -1339,6 +1367,18 @@
     }
   },
   "x-stream-definitions": {
+    "xudrpcListOrderHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcListOrderHistoryResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcListOrderHistoryResponse"
+    },
     "xudrpcOrder": {
       "type": "object",
       "properties": {
