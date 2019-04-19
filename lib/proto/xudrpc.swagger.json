@@ -231,7 +231,7 @@
             "format": "int32"
           },
           {
-            "name": "status",
+            "name": "requested_swap_state",
             "in": "query",
             "required": false,
             "type": "string",
@@ -639,7 +639,7 @@
       ],
       "default": "LND"
     },
-    "ListSwapsRequestStatus": {
+    "ListSwapsRequestRequestedSwapState": {
       "type": "string",
       "enum": [
         "BOTH",

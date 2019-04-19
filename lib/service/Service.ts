@@ -64,13 +64,6 @@ const argChecks = {
   },
 };
 
-const filterDeals = (failed: boolean, deals: SwapDealInstance[]): SwapDealInstance[] => {
-  const filteredDeals  = deals.filter((deal) => {
-    failed ? deal.state === SwapState.Error : deal.state === SwapState.Completed;
-  });
-  return filteredDeals;
-};
-
 /** Class containing the available RPC methods for XUD */
 class Service extends EventEmitter {
   public shutdown: () => void;
@@ -326,23 +319,23 @@ class Service extends EventEmitter {
   }
 
   /**
-   * Get all completed swap deals.
+   * Get completed swap deals.
    * @returns A list of completed swap deals.
    */
-  public listSwaps = async (args: { limit: number, status: ListSwapsRequest.Status }): Promise<SwapDealInstance[]> => {
-    const { limit, status } = args;
+  public listSwaps = async (args: { limit: number, requestedSwapState: ListSwapsRequest.RequestedSwapState }): Promise<SwapDealInstance[]> => {
+    const { limit, requestedSwapState } = args;
+    let deals;
+    const queryLimit = limit > 0 ? limit : undefined;
 
-    let deals = limit > 0 ?
-      await this.swaps.getCompletedDeals(limit) : await this.swaps.getCompletedDeals();
-
-    switch (status) {
-      case ListSwapsRequest.Status.FAILED:
-        deals = filterDeals(true, deals);
+    switch (requestedSwapState) {
+      case ListSwapsRequest.RequestedSwapState.FAILED:
+        deals = await this.swaps.getCompletedDeals(SwapState.Error, queryLimit);
         break;
-      case ListSwapsRequest.Status.SUCCESSFUL:
-        deals = filterDeals(false, deals);
+      case ListSwapsRequest.RequestedSwapState.SUCCESSFUL:
+        deals = await this.swaps.getCompletedDeals(SwapState.Completed, queryLimit);
         break;
-      case ListSwapsRequest.Status.BOTH:
+      case ListSwapsRequest.RequestedSwapState.BOTH:
+        deals = await this.swaps.getCompletedDeals(undefined, queryLimit);
         break;
       default:
         throw errors.INVALID_ARGUMENT('swap status is invalid');

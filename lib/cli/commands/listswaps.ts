@@ -2,26 +2,26 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { ListSwapsRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'listswaps [limit] [failed]';
+export const command = 'listswaps [limit] [status]';
 
 export const builder = {
   limit: {
-    description: 'the maximum number of deals to display',
+    description: 'the maximum number of deals to list',
     type: 'number',
     default: 0,
   },
   status: {
-    description: 'display list failed deals',
+    description: 'list failed deals',
     type: 'boolean',
-    default: ListSwapsRequest.Status.BOTH,
+    default: ListSwapsRequest.RequestedSwapState.BOTH,
   },
 };
 
-export const describe = 'get completed swap deals';
+export const describe = 'list completed or failed swaps';
 
 export const handler = (argv: Arguments) => {
   const request = new ListSwapsRequest();
   request.setLimit(argv.limit);
-  request.setStatus(argv.status);
+  request.setRequestedSwapState(argv.status);
   loadXudClient(argv).listSwaps(request, callback(argv));
 };

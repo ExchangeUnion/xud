@@ -1,16 +1,22 @@
 import * as db from '../db/types';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
+import { SwapState } from '../constants/enums';
 
 class SwapRepository {
 
   constructor(private models: Models) {}
 
-  public getSwapDeals = (limit?: number): Bluebird<db.SwapDealInstance[]> => {
+  public getSwapDeals = (status = SwapState.Completed, limit?: number): Bluebird<db.SwapDealInstance[]> => {
+    const query = status ? status : {};
+
     if (limit) {
-      return this.models.SwapDeal.findAll({ limit, include: [this.models.Node, this.models.Order] });
+      return this.models.SwapDeal.findAll({
+        limit,
+        where : query,
+        include: [this.models.Node, this.models.Order] });
     } else {
-      return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
+      return this.models.SwapDeal.findAll({ where : query, include: [this.models.Node, this.models.Order] });
     }
   }
 

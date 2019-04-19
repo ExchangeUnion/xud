@@ -386,8 +386,8 @@ message ListPeersResponse {
 
 message ListSwapsRequest {
   int32 limit = 1 [json_name = "all"];
-  Status status = 3 [json_name = "status"]; 
-  enum Status {
+  RequestedSwapState requested_swap_state = 2 [json_name = "requested_swap_state"]; 
+  enum RequestedSwapState {
     BOTH = 0;
     SUCCESSFUL = 1;
     FAILED = 2;
@@ -398,8 +398,8 @@ message ListSwapsResponse {
 }
 
 message Swap {
+  int64 create_time = 1 [json_name = "create_time"];
   oneof swap {
-    int64 create_time = 1 [json_name = "create_time"];
     SwapSuccess swap_success = 2 [json_name = "swap_success"];
     SwapFailure swap_failure = 3 [json_name = "swap_failure"];
   }

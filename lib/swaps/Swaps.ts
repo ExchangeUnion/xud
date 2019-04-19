@@ -182,8 +182,8 @@ class Swaps extends EventEmitter {
    * Gets all completed swap deals.
    * @returns A list of all completed deals.
    */
-  public getCompletedDeals = async (limit?: number): Promise<SwapDealInstance[]> => {
-    return await this.repository.getSwapDeals(limit);
+  public getCompletedDeals = async (state = SwapState.Active, limit?: number): Promise<SwapDealInstance[]> => {
+    return await this.repository.getSwapDeals(state, limit);
   }
 
   public addDeal = (deal: SwapDeal) => {

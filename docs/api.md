@@ -63,7 +63,7 @@
     - [UnbanResponse](#xudrpc.UnbanResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
-    - [ListSwapsRequest.Status](#xudrpc.ListSwapsRequest.Status)
+    - [ListSwapsRequest.RequestedSwapState](#xudrpc.ListSwapsRequest.RequestedSwapState)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -476,7 +476,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | limit | [int32](#int32) |  |  |
-| status | [ListSwapsRequest.Status](#xudrpc.ListSwapsRequest.Status) |  |  |
+| requested_swap_state | [ListSwapsRequest.RequestedSwapState](#xudrpc.ListSwapsRequest.RequestedSwapState) |  |  |
 
 
 
@@ -966,9 +966,9 @@
 
 
 
-<a name="xudrpc.ListSwapsRequest.Status"></a>
+<a name="xudrpc.ListSwapsRequest.RequestedSwapState"></a>
 
-### ListSwapsRequest.Status
+### ListSwapsRequest.RequestedSwapState
 
 
 | Name | Number | Description |

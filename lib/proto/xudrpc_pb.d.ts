@@ -613,8 +613,8 @@ export class ListSwapsRequest extends jspb.Message {
     getLimit(): number;
     setLimit(value: number): void;
 
-    getStatus(): ListSwapsRequest.Status;
-    setStatus(value: ListSwapsRequest.Status): void;
+    getRequestedSwapState(): ListSwapsRequest.RequestedSwapState;
+    setRequestedSwapState(value: ListSwapsRequest.RequestedSwapState): void;
 
 
     serializeBinary(): Uint8Array;
@@ -630,10 +630,10 @@ export class ListSwapsRequest extends jspb.Message {
 export namespace ListSwapsRequest {
     export type AsObject = {
         limit: number,
-        status: ListSwapsRequest.Status,
+        requestedSwapState: ListSwapsRequest.RequestedSwapState,
     }
 
-    export enum Status {
+    export enum RequestedSwapState {
     BOTH = 0,
     SUCCESSFUL = 1,
     FAILED = 2,
@@ -665,9 +665,6 @@ export namespace ListSwapsResponse {
 }
 
 export class Swap extends jspb.Message { 
-
-    hasCreateTime(): boolean;
-    clearCreateTime(): void;
     getCreateTime(): number;
     setCreateTime(value: number): void;
 
@@ -706,8 +703,6 @@ export namespace Swap {
     export enum SwapCase {
         SWAP_NOT_SET = 0,
     
-    CREATE_TIME = 1,
-
     SWAP_SUCCESS = 2,
 
     SWAP_FAILURE = 3,
