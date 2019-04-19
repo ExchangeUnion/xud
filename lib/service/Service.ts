@@ -9,7 +9,7 @@ import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion, PlaceOrderEvent, PeerOrder } from '../orderbook/types';
+import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
@@ -290,8 +290,7 @@ class Service extends EventEmitter {
       orders.buy = sortOrders(orders.buy, true);
       orders.sell = sortOrders(orders.sell, false);
 
-      if ((limit > 0)) {
-        // get 10 best peerOrdersorders
+      if (limit > 0) {
         orders.buy = orders.buy.slice(0, limit);
         orders.sell = orders.buy.slice(0, limit);
       }

@@ -84,11 +84,11 @@ export const describe = 'list orders from the order book';
 
 export const builder = {
   pair_id: {
-    describe: 'pair id for which to retrieve orders.',
+    describe: 'trading pair for which to retrieve orders',
     type: 'string',
   },
   include_own_orders: {
-    describe: 'should include own orders',
+    describe: 'whether to include own orders',
     type: 'boolean',
     default: true,
   },
