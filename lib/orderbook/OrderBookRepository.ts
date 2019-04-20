@@ -47,6 +47,31 @@ class OrderbookRepository {
     }
   }
 
+  public getOrder = async (orderId: string): Promise<db.OrderInstance | null> => {
+    const order = await this.models.Order.findOne({
+      where: {
+        id: orderId,
+      },
+    });
+
+    return order;
+  }
+
+  public getTrades = async (orderId: string, order = false): Promise<db.TradeInstance[]> => {
+    if (order) {
+      return await this.models.Trade.findAll({
+        order: [['createdAt', 'DESC']],
+        where: {
+          makerOrderId: orderId,
+        }});
+    } else {
+      return await this.models.Trade.findAll({
+        where: {
+          makerOrderId: orderId,
+        }});
+    }
+  }
+
   public addTrade = (trade: db.TradeFactory) => {
     return this.models.Trade.create(trade);
   }

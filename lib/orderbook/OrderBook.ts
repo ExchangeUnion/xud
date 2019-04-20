@@ -132,6 +132,14 @@ class OrderBook extends EventEmitter {
     });
   }
 
+  public getOrder = async (orderId: string) => {
+    return this.repository.getOrder(orderId);
+  }
+
+  public getTrades = async (orderId: string, order = false) => {
+    return this.repository.getTrades(orderId, order);
+  }
+
   /**
    * Get lists of buy and sell orders of peers.
    */

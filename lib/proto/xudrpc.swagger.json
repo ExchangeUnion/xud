@@ -856,7 +856,21 @@
       }
     },
     "xudrpcListOrderHistoryResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "trades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcTrade"
+          }
+        },
+        "swaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcSwapSuccess"
+          }
+        }
+      }
     },
     "xudrpcListOrdersResponse": {
       "type": "object",
@@ -1345,6 +1359,24 @@
           "type": "number",
           "format": "double",
           "description": "The price used for the swap."
+        }
+      }
+    },
+    "xudrpcTrade": {
+      "type": "object",
+      "properties": {
+        "maker_order_id": {
+          "type": "string"
+        },
+        "taker_order_id": {
+          "type": "string"
+        },
+        "r_hash": {
+          "type": "string"
+        },
+        "quantity": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

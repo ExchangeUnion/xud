@@ -58,6 +58,7 @@
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
+    - [Trade](#xudrpc.Trade)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
   
@@ -387,6 +388,12 @@
 
 ### ListOrderHistoryResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trades | [Trade](#xudrpc.Trade) | repeated |  |
+| swaps | [SwapSuccess](#xudrpc.SwapSuccess) | repeated |  |
 
 
 
@@ -895,6 +902,24 @@
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
 | price | [double](#double) |  | The price used for the swap. |
+
+
+
+
+
+
+<a name="xudrpc.Trade"></a>
+
+### Trade
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maker_order_id | [string](#string) |  |  |
+| taker_order_id | [string](#string) |  |  |
+| r_hash | [string](#string) |  |  |
+| quantity | [int64](#int64) |  |  |
 
 
 

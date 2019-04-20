@@ -12,6 +12,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
+import { SwapDealInstance } from 'lib/db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -53,6 +54,22 @@ const createSwapSuccess = (result: SwapSuccess) => {
   swapSuccess.setCurrencySent(result.currencySent);
   swapSuccess.setPeerPubKey(result.peerPubKey);
   swapSuccess.setRole(result.role as number);
+  return swapSuccess;
+};
+
+/**
+ * Creates an xudrpc SwapSuccess message from a [[SwapDealInstance]].
+ */
+const createSwapSuccessFromSwapDealInstance = (deal: SwapDealInstance) => {
+  const swapSuccess = new xudrpc.SwapSuccess();
+  swapSuccess.setOrderId(deal.orderId);
+  swapSuccess.setLocalId(deal.localId);
+  swapSuccess.setPairId(deal.Order!.pairId);
+  swapSuccess.setQuantity(deal.Order!.initialQuantity);
+  swapSuccess.setRHash(deal.rHash);
+  swapSuccess.setRPreimage(deal.rPreimage ? deal.rPreimage : '');
+  swapSuccess.setPeerPubKey(deal.peerPubKey);
+  swapSuccess.setRole(deal.role as number);
   return swapSuccess;
 };
 
@@ -502,6 +519,38 @@ class GrpcService {
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.listOrderHistory]]
+   */
+  public listOrderHistory: grpc.handleUnaryCall<xudrpc.ListOrderHistoryRequest, xudrpc.ListOrderHistoryResponse> = async (call, callback) => {
+    try {
+      const orderHistory = await this.service.listOrderHistory(call.request.toObject());
+      const response = new xudrpc.ListOrderHistoryResponse();
+
+      const trades: xudrpc.Trade[] = [];
+      const swapDeals: xudrpc.SwapSuccess[] = [];
+
+      orderHistory.trades.forEach((trade) => {
+        const tradeRpc = new xudrpc.Trade();
+        tradeRpc.setMakerOrderId(trade.makerOrderId);
+        tradeRpc.setTakerOrderId(trade.takerOrderId ? trade.takerOrderId  : '');
+        tradeRpc.setQuantity(trade.quantity);
+        tradeRpc.setRHash(trade.rHash ? trade.rHash : '');
+        trades.push(tradeRpc);
+      });
+      orderHistory.swapDeals.forEach((swap) => {
+        const swapDeal = createSwapSuccessFromSwapDealInstance(swap);
+        swapDeals.push(swapDeal);
+      });
+
+      response.setTradesList(trades);
+      response.setSwapsList(swapDeals);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

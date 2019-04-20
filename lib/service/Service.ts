@@ -12,6 +12,7 @@ import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { TradeInstance, SwapDealInstance } from 'lib/db/types';
 
 /**
  * The components required by the API service layer.
@@ -314,6 +315,22 @@ class Service extends EventEmitter {
    */
   public listPeers = () => {
     return this.pool.listPeers();
+  }
+
+  public listOrderHistory = async (args: { orderId: string }): Promise<{trades: TradeInstance[], swapDeals: SwapDealInstance[]}> => {
+    const order = await this.orderBook.getOrder(args.orderId);
+
+    if (order === null) {
+      throw errors.PAIRID_NON_EXISTENT();
+    }
+
+    const trades = await this.orderBook.getTrades(order!.id, true);
+    const swapDeals = await this.swaps.getDeals(true);
+
+    return {
+      trades,
+      swapDeals,
+    };
   }
 
   /**

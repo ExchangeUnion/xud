@@ -6,8 +6,12 @@ class SwapRepository {
 
   constructor(private models: Models) {}
 
-  public getSwapDeals = (): Bluebird<db.SwapDealInstance[]> => {
-    return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
+  public getSwapDeals = (order = false): Bluebird<db.SwapDealInstance[]> => {
+    if (order) {
+      return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order], order: [['createdAt', 'DESC']] });
+    } else {
+      return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
+    }
   }
 
   public getSwapDeal = async (rHash: string): Promise<db.SwapDealInstance | null> => {

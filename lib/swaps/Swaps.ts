@@ -170,6 +170,12 @@ class Swaps extends EventEmitter {
   }
 
   /**
+   * Get swap deals from DB
+   */
+  public getDeals = async (order = false) => {
+    return this.repository.getSwapDeals(order);
+  }
+  /**
    * Gets a deal by its rHash value.
    * @param rHash The rHash value of the deal to get.
    * @returns A deal if one is found, otherwise undefined.
