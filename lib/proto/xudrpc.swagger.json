@@ -211,7 +211,7 @@
       }
     },
     "/v1/listorderhistory": {
-      "get": {
+      "post": {
         "summary": "List all events related to the order.",
         "operationId": "ListOrderHistory",
         "responses": {
@@ -224,10 +224,12 @@
         },
         "parameters": [
           {
-            "name": "order_id",
-            "in": "query",
-            "required": false,
-            "type": "string"
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcListOrderHistoryRequest"
+            }
           }
         ],
         "tags": [
@@ -855,6 +857,14 @@
         }
       }
     },
+    "xudrpcListOrderHistoryRequest": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcListOrderHistoryResponse": {
       "type": "object",
       "properties": {
@@ -1376,7 +1386,7 @@
         },
         "quantity": {
           "type": "string",
-          "format": "int64"
+          "format": "uint64"
         }
       }
     },

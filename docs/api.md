@@ -919,7 +919,7 @@
 | maker_order_id | [string](#string) |  |  |
 | taker_order_id | [string](#string) |  |  |
 | r_hash | [string](#string) |  |  |
-| quantity | [int64](#int64) |  |  |
+| quantity | [uint64](#uint64) |  |  |
 
 
 
