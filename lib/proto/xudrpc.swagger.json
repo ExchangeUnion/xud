@@ -263,6 +263,14 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          },
+          {
+            "name": "limit",
+            "description": "The maximum number of orders to return from each side of the order book.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [

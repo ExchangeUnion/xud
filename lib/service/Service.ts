@@ -7,6 +7,7 @@ import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
+import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
 import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
@@ -263,20 +264,36 @@ class Service extends EventEmitter {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (args: { pairId: string, includeOwnOrders: boolean }): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, includeOwnOrders } = args;
+  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: number }): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, includeOwnOrders, limit } = args;
 
     const result = new Map<string, OrderSidesArrays<any>>();
+
     const listOrderTypes = (pairId: string) => {
-      const orders = this.orderBook.getPeersOrders(pairId);
+      const  orders: OrderSidesArrays<any> = {
+        buy: [],
+        sell: [],
+      };
+
+      const peerOrders = this.orderBook.getPeersOrders(pairId);
+      orders.buy = peerOrders.buy;
+      orders.sell = peerOrders.sell;
 
       if (includeOwnOrders) {
-        const ownOrders: OrderSidesArrays<any> = this.orderBook.getOwnOrders(pairId);
+        const ownOrders = this.orderBook.getOwnOrders(pairId);
 
         orders.buy = [...orders.buy, ...ownOrders.buy];
         orders.sell = [...orders.sell, ...ownOrders.sell];
       }
 
+      // sort all orders
+      orders.buy = sortOrders(orders.buy, true);
+      orders.sell = sortOrders(orders.sell, false);
+
+      if (limit > 0) {
+        orders.buy = orders.buy.slice(0, limit);
+        orders.sell = orders.buy.slice(0, limit);
+      }
       return orders;
     };
 

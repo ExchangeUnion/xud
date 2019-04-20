@@ -1,6 +1,6 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
-import { Pair } from '../orderbook/types';
+import { Pair, Order } from '../orderbook/types';
 import crypto from 'crypto';
 import { promisify } from 'util';
 import moment from 'moment';
@@ -176,4 +176,15 @@ export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: strin
   });
 
   return kvps;
+};
+
+export const sortOrders = (orders: Order[], isBuy: boolean): Order[] => {
+  return orders.sort((a: Order, b: Order) => {
+    if (a.price === b.price) {
+      return a.createdAt - b.createdAt;
+    }
+    return isBuy
+      ? a.price - b.price
+      : b.price - a.price;
+  });
 };
