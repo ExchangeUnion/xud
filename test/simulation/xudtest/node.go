@@ -3,12 +3,6 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/lntest"
-	"github.com/ExchangeUnion/xud-simulation/xudrpc"
-	"github.com/go-errors/errors"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"net"
 	"os"
 	"os/exec"
@@ -17,6 +11,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ExchangeUnion/xud-simulation/lntest"
+	"github.com/ExchangeUnion/xud-simulation/xudrpc"
+	"github.com/go-errors/errors"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -50,7 +51,6 @@ func (cfg nodeConfig) genArgs() []string {
 	var args []string
 
 	args = append(args, "--initdb=false")
-	args = append(args, "--nosanitychecks=true")
 	args = append(args, "--loglevel=debug")
 	args = append(args, "--raiden.disable")
 
