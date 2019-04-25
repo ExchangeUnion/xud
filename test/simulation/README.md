@@ -9,7 +9,7 @@ This project uses [go modules](https://github.com/golang/go/wiki/Modules)
     
 Requirements:
 
-* Golang version >= 1.11
+* Golang version >= 1.12
 * Git
 
 Installation & Usage:
