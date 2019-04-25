@@ -5,7 +5,7 @@ import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
-import { exists, readFile } from '../utils/fsUtils';
+import { promises as fs } from 'fs';
 import { SwapState, SwapRole, SwapClient } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 
@@ -64,34 +64,38 @@ class LndClient extends BaseClient {
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
-    let shouldDisable = disable;
+    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
 
-    if (!(await exists(certpath))) {
-      this.logger.error('could not find lnd certificate, is lnd installed?');
-      shouldDisable = true;
-    }
-    if (!nomacaroons && !(await exists(macaroonpath))) {
-      this.logger.error('could not find lnd macaroon, is lnd installed?');
-      shouldDisable = true;
-    }
-    if (shouldDisable) {
+    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
+    if (disable) {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
 
-    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
-    this.uri = `${host}:${port}`;
-    const lndCert = await readFile(certpath);
-    this.credentials = grpc.credentials.createSsl(lndCert);
+    try {
+      const lndCert = await fs.readFile(certpath);
+      this.credentials = grpc.credentials.createSsl(lndCert);
+    } catch (err) {
+      this.logger.error('could not load lnd certificate, is lnd installed?');
+      await this.setStatus(ClientStatus.Disabled);
+      return;
+    }
 
     this.meta = new grpc.Metadata();
     if (!nomacaroons) {
-      const adminMacaroon = await readFile(macaroonpath);
-      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      try {
+        const adminMacaroon = await fs.readFile(macaroonpath);
+        this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      } catch (err) {
+        this.logger.error('could not load lnd macaroon, is lnd installed?');
+        await this.setStatus(ClientStatus.Disabled);
+        return;
+      }
     } else {
       this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
     }
+
+    this.uri = `${host}:${port}`;
     await this.verifyConnection();
   }
 
