@@ -198,6 +198,32 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
+  /**
+   * Gets the preimage in hex format from an lnd SendResponse message.
+   */
+  private getPreimageFromSendResponse = (response: lndrpc.SendResponse) => {
+    return Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+  }
+
+  public sendSmallestAmount = async (rHash: string, destination: string) => {
+    const sendRequest = new lndrpc.SendRequest();
+    sendRequest.setAmt(1);
+    sendRequest.setDestString(destination);
+    sendRequest.setPaymentHashString(rHash);
+    let sendPaymentResponse: lndrpc.SendResponse;
+    try {
+      sendPaymentResponse = await this.sendPaymentSync(sendRequest);
+    } catch (err) {
+      this.logger.error(`got exception from sendPaymentSync`, err.message);
+      throw err;
+    }
+    const paymentError = sendPaymentResponse.getPaymentError();
+    if (paymentError) {
+      throw new Error(paymentError);
+    }
+    return this.getPreimageFromSendResponse(sendPaymentResponse);
+  }
+
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
 
@@ -214,9 +240,9 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return Buffer.from(sendToRouteResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        return this.getPreimageFromSendResponse(sendToRouteResponse);
       } catch (err) {
-        this.logger.error(`Got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
+        this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
       }
     } else if (deal.destination) {
@@ -242,9 +268,9 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        return this.getPreimageFromSendResponse(sendPaymentResponse);
       } catch (err) {
-        this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
+        this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
       }
     } else {

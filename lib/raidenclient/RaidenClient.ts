@@ -151,6 +151,16 @@ class RaidenClient extends BaseClient {
     }
   }
 
+  public sendSmallestAmount = async (rHash: string, destination: string, currency: string) => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, destination, 1, rHash);
+    return tokenPaymentResponse.secret;
+  }
+
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
@@ -165,18 +175,14 @@ class RaidenClient extends BaseClient {
       amount = deal.makerAmount;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
     }
-    try {
-      if (!tokenAddress) {
-        throw(errors.TOKEN_ADDRESS_NOT_FOUND);
-      }
-      // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
-      // https://github.com/ExchangeUnion/xud/issues/870
-      const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
-      return tokenPaymentResponse.secret;
-    } catch (e) {
-      this.logger.error(`Got exception from RaidenClient.tokenPayment:`, e);
-      throw e;
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
+    // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
+    // https://github.com/ExchangeUnion/xud/issues/870
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
+    return tokenPaymentResponse.secret;
+
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
@@ -363,9 +369,14 @@ class RaidenClient extends BaseClient {
     if (secret_hash) {
       payload = Object.assign(payload, { secret_hash });
     }
-    const res = await this.sendRequest(endpoint, 'POST', payload);
-    const body = await parseResponseBody(res);
-    return body as TokenPaymentResponse;
+    try {
+      const res = await this.sendRequest(endpoint, 'POST', payload);
+      const body = await parseResponseBody<TokenPaymentResponse>(res);
+      return body;
+    } catch (e) {
+      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      throw e;
+    }
   }
 
   /**

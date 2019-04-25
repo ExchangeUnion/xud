@@ -499,6 +499,35 @@ export namespace NodesPacket {
     }
 }
 
+export class SanitySwapPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+    getRHash(): string;
+    setRHash(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SanitySwapPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SanitySwapPacket): SanitySwapPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SanitySwapPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SanitySwapPacket;
+    static deserializeBinaryFromReader(message: SanitySwapPacket, reader: jspb.BinaryReader): SanitySwapPacket;
+}
+
+export namespace SanitySwapPacket {
+    export type AsObject = {
+        id: string,
+        currency: string,
+        rHash: string,
+    }
+}
+
 export class SwapRequestPacket extends jspb.Message { 
     getId(): string;
     setId(value: string): void;

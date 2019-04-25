@@ -100,6 +100,13 @@ abstract class BaseClient extends EventEmitter {
   public abstract async sendPayment(deal: SwapDeal): Promise<string>;
 
   /**
+   * Sends the smallest amount supported by the client to the given destination.
+   * Throws an error if the payment fails.
+   * @returns the preimage for the payment hash
+   */
+  public abstract async sendSmallestAmount(rHash: string, destination: string, currency: string): Promise<string>;
+
+  /**
    * Gets routes for the given currency, amount and peerPubKey.
    * @param amount the capacity of the route
    * @param destination target node for the route

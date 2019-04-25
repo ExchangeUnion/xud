@@ -138,7 +138,7 @@ class Service extends EventEmitter {
       argChecks.VALID_CURRENCY(args);
       balances.set(currency, await getBalance(currency));
     } else {
-      for (const currency of this.orderBook.currencies.keys()) {
+      for (const currency of this.orderBook.currencies) {
         balances.set(currency, await getBalance(currency));
       }
     }
@@ -314,7 +314,7 @@ class Service extends EventEmitter {
    */
   public listCurrencies = () => {
     const pairs = new Map<string, Pair>();
-    return Array.from(this.orderBook.currencies.keys());
+    return Array.from(this.orderBook.currencies);
   }
 
   /**
