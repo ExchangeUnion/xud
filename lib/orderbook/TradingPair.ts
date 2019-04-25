@@ -158,7 +158,7 @@ class TradingPair {
    * Removes all or part of a peer order.
    * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
    * quantity then the entire order is removed
-   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
   public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
     let peerOrdersMaps: OrderSidesMaps<PeerOrder> | undefined;
@@ -185,12 +185,18 @@ class TradingPair {
    * Removes all or part of an own order.
    * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
    * quantity then the entire order is removed
-   * @returns true if the entire order was removed, or false if only part of the order was removed
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
   public removeOwnOrder = (orderId: string, quantityToRemove?: number): { order: OwnOrder, fullyRemoved: boolean} => {
     return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
   }
 
+  /**
+   * Removes all or part of an order.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
+   */
   private removeOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<Order>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
     assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
