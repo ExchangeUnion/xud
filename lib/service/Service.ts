@@ -344,7 +344,7 @@ class Service extends EventEmitter {
       throw errors.PAIRID_NON_EXISTENT();
     }
 
-    const trades = await this.orderBook.getTrades(order!.id, true);
+    const trades = await this.orderBook.getTrades(order.id, true);
     const swapDeals = await this.swaps.getDeals(true);
 
     return {
