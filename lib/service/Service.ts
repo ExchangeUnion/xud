@@ -317,6 +317,9 @@ class Service extends EventEmitter {
     return this.pool.listPeers();
   }
 
+  /**
+   * Get all trades, swaps and order status related to an order.
+   */
   public listOrderHistory = async (args: { orderId: string }): Promise<{trades: TradeInstance[], swapDeals: SwapDealInstance[]}> => {
     const order = await this.orderBook.getOrder(args.orderId);
 

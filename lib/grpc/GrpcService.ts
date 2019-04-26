@@ -544,6 +544,7 @@ class GrpcService {
         tradeRpc.setRHash(trade.rHash ? trade.rHash : '');
         trades.push(tradeRpc);
       });
+
       orderHistory.swapDeals.forEach((swap) => {
         const swapDeal = createSwapSuccessFromSwapDealInstance(swap);
         swapDeals.push(swapDeal);
@@ -551,6 +552,7 @@ class GrpcService {
 
       response.setTradesList(trades);
       response.setSwapsList(swapDeals);
+
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
