@@ -526,7 +526,7 @@ class GrpcService {
         grpcSwap.setCreateTime(deal.createTime);
         if (deal.errorMessage) {
           const swapFailure = new xudrpc.SwapFailure();
-          swapFailure.setFailureReason(deal.failureReason ? getSwapFailureReason(deal.failureReason!) : '');
+          swapFailure.setFailureReason(deal.failureReason ? getSwapFailureReason(deal.failureReason) : '');
           swapFailure.setOrderId(deal.orderId);
           swapFailure.setPairId(deal.Order!.pairId);
           swapFailure .setPeerPubKey(deal.peerPubKey);
