@@ -113,6 +113,11 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
   return placeOrderEvent;
 };
 
+const getSwapFailureReason = (reason: SwapFailureReason) => {
+  // turns enum param into string
+  return SwapFailureReason[reason];
+};
+
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
   /** The set of active streaming calls. */
@@ -520,7 +525,12 @@ class GrpcService {
         const grpcSwap = new xudrpc.Swap();
         grpcSwap.setCreateTime(deal.createTime);
         if (deal.errorMessage) {
-          const swapFailure = createSwapFailure(deal);
+          const swapFailure = new xudrpc.SwapFailure();
+          swapFailure.setFailureReason(deal.failureReason ? getSwapFailureReason(deal.failureReason!) : '');
+          swapFailure.setOrderId(deal.orderId);
+          swapFailure.setPairId(deal.Order!.pairId);
+          swapFailure .setPeerPubKey(deal.peerPubKey);
+          swapFailure.setQuantity(deal.quantity ? deal.quantity : 0);
           grpcSwap.setSwapFailure(swapFailure);
         } else {
           const swapSuccess = new xudrpc.SwapSuccess();
