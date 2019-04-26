@@ -89,8 +89,8 @@ class Xud extends EventEmitter {
 
       // setup raiden client and connect if configured
       this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden, this.db.models);
+      await this.raidenClient.init();
       if (!this.raidenClient.isDisabled()) {
-        await this.raidenClient.init();
         for (const currency of this.raidenClient.tokenAddresses.keys()) {
           swapClients.set(currency, this.raidenClient);
         }
@@ -101,7 +101,7 @@ class Xud extends EventEmitter {
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, swapClients);
       initPromises.push(this.swaps.init());
 
-      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps);
+      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps, this.config.nosanitychecks);
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel

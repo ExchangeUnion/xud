@@ -85,6 +85,7 @@ class RaidenClient extends BaseClient {
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
+  private disable: boolean;
   private repository: OrderBookRepository;
 
   /**
@@ -96,26 +97,21 @@ class RaidenClient extends BaseClient {
 
     this.port = port;
     this.host = host;
+    this.disable = disable;
 
     this.repository = new OrderBookRepository(logger, models);
-
-    if (disable) {
-      this.setStatus(ClientStatus.Disabled);
-    }
   }
 
   /**
    * Checks for connectivity and gets our Raiden account address
    */
   public init = async () => {
-    if (this.isDisabled()) {
-      this.logger.error(`can't init raiden. raiden is disabled`);
+    if (this.disable) {
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
     // associate the client with all currencies that have a contract address
     await this.setCurrencies();
-    // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
     await this.verifyConnection();
   }
 
@@ -133,15 +129,9 @@ class RaidenClient extends BaseClient {
     }
   }
 
-  /**
-   * Verifies that Raiden REST service can be reached by attempting a `getAddress` call.
-   */
-  private verifyConnection = async () => {
+  protected verifyConnection = async () => {
     this.logger.info(`trying to verify connection to raiden with uri: ${this.host}:${this.port}`);
     try {
-      if (this.reconnectionTimer) {
-        clearTimeout(this.reconnectionTimer);
-      }
       const address = await this.getAddress();
 
       /** The new raiden address value if different from the one we had previously. */
@@ -152,13 +142,23 @@ class RaidenClient extends BaseClient {
       }
 
       this.emit('connectionVerified', newAddress);
-      this.setStatus(ClientStatus.ConnectionVerified);
+      await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
       );
-      this.reconnectionTimer = setTimeout(this.verifyConnection, RaidenClient.RECONNECT_TIMER);
+      await this.setStatus(ClientStatus.Disconnected);
     }
+  }
+
+  public sendSmallestAmount = async (rHash: string, destination: string, currency: string) => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, destination, 1, rHash);
+    return tokenPaymentResponse.secret;
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
@@ -175,18 +175,14 @@ class RaidenClient extends BaseClient {
       amount = deal.makerAmount;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
     }
-    try {
-      if (!tokenAddress) {
-        throw(errors.TOKEN_ADDRESS_NOT_FOUND);
-      }
-      // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
-      // https://github.com/ExchangeUnion/xud/issues/870
-      const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
-      return tokenPaymentResponse.secret;
-    } catch (e) {
-      this.logger.error(`Got exception from RaidenClient.tokenPayment:`, e);
-      throw e;
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
+    // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
+    // https://github.com/ExchangeUnion/xud/issues/870
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
+    return tokenPaymentResponse.secret;
+
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
@@ -321,6 +317,7 @@ class RaidenClient extends BaseClient {
    * Returns the total balance available across all channels.
    */
   public channelBalance = async (): Promise<ChannelBalance> => {
+    // TODO: refine logic to determine balance per token rather than all combined
     const channels = await this.getChannels();
     const balance = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
@@ -372,9 +369,14 @@ class RaidenClient extends BaseClient {
     if (secret_hash) {
       payload = Object.assign(payload, { secret_hash });
     }
-    const res = await this.sendRequest(endpoint, 'POST', payload);
-    const body = await parseResponseBody(res);
-    return body as TokenPaymentResponse;
+    try {
+      const res = await this.sendRequest(endpoint, 'POST', payload);
+      const body = await parseResponseBody<TokenPaymentResponse>(res);
+      return body;
+    } catch (e) {
+      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      throw e;
+    }
   }
 
   /**

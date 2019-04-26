@@ -2,11 +2,16 @@ import { expect } from 'chai';
 import uuidv1 from 'uuid/v1';
 import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
+import Pool from '../../lib/p2p/Pool';
+import Swaps from '../../lib/swaps/Swaps';
+import LndClient from '../../lib/lndclient/LndClient';
+import BaseClient from '../../lib/BaseClient';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
 import { SwapClient } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
+import sinon, { SinonSandbox }  from 'sinon';
 
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
@@ -26,15 +31,34 @@ const initValues = async (db: DB) => {
 
 describe('OrderBook', () => {
   let db: DB;
+  let pool: Pool;
+  let swaps: Swaps;
   let orderBook: OrderBook;
+  let sandbox: SinonSandbox;
 
   before(async () => {
     db = new DB(loggers.db);
     await db.init();
 
     await initValues(db);
-    orderBook = new OrderBook(loggers.orderbook, db.models);
+
+    sandbox = sinon.createSandbox();
+    pool = sandbox.createStubInstance(Pool) as any;
+    pool.broadcastOrder = () => {};
+    pool.broadcastOrderInvalidation = () => {};
+    swaps = sandbox.createStubInstance(Swaps) as any;
+    swaps.isPairSupported = () => true;
+    const lndBTC = sandbox.createStubInstance(LndClient) as any;
+    const lndLTC = sandbox.createStubInstance(LndClient) as any;
+    swaps.swapClients = new Map<string, BaseClient>();
+    swaps.swapClients.set('BTC', lndBTC);
+    swaps.swapClients.set('LTC', lndLTC);
+    orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);
     await orderBook.init();
+  });
+
+  after(async () => {
+    sandbox.restore();
   });
 
   const getOwnOrder = (order: orders.OwnOrder): orders.OwnOrder | undefined => {
@@ -51,8 +75,8 @@ describe('OrderBook', () => {
   };
 
   it('should have trading pairs loaded', () => {
-    orderBook.pairs.forEach((pair) => {
-      expect(orderBook.tradingPairs).to.have.key(pair.id);
+    orderBook.pairIds.forEach((pairId) => {
+      expect(orderBook.tradingPairs).to.have.key(pairId);
     });
   });
 

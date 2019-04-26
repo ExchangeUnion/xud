@@ -3,7 +3,7 @@ import { formatOrders } from '../../lib/cli/commands/listorders';
 import { ListOrdersResponse } from '../../lib/proto/xudrpc_pb';
 
 describe('Command.listorders.formatOrders', () => {
-  it('should flatten, format and sort orders', () => {
+  it('should flatten and format orders', () => {
     const jsonOrders: ListOrdersResponse.AsObject = {
       ordersMap: [
         [
@@ -104,17 +104,6 @@ describe('Command.listorders.formatOrders', () => {
     const output = formatOrders(jsonOrders);
     expect(output.length).to.equal(1);
     expect(output[0].pairId).to.equal('LTC/BTC');
-    const expectedFirstRow = [
-      '\u001b[36m0.00000001\u001b[39m',
-      '\u001b[36m0.004321\u001b[39m',
-      '\u001b[36mX\u001b[39m',
-      '0.00000001',
-      '0.00458',
-      '',
-    ];
-    const expectedLastRow = ['', '', '', '0.00000001', '0.00859', ''];
     expect(output[0].orders.length).to.equal(5);
-    expect(output[0].orders[0]).to.deep.equal(expectedFirstRow);
-    expect(output[0].orders[4]).to.deep.equal(expectedLastRow);
   });
 });

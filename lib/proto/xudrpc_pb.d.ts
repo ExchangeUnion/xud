@@ -448,6 +448,9 @@ export class ListOrdersRequest extends jspb.Message {
     getIncludeOwnOrders(): boolean;
     setIncludeOwnOrders(value: boolean): void;
 
+    getLimit(): number;
+    setLimit(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListOrdersRequest.AsObject;
@@ -463,6 +466,7 @@ export namespace ListOrdersRequest {
     export type AsObject = {
         pairId: string,
         includeOwnOrders: boolean,
+        limit: number,
     }
 }
 
@@ -862,6 +866,49 @@ export namespace Order {
     PEER_PUB_KEY = 5,
 
     LOCAL_ID = 6,
+
+    }
+
+}
+
+export class OrderUpdate extends jspb.Message { 
+
+    hasOrder(): boolean;
+    clearOrder(): void;
+    getOrder(): Order | undefined;
+    setOrder(value?: Order): void;
+
+
+    hasOrderRemoval(): boolean;
+    clearOrderRemoval(): void;
+    getOrderRemoval(): OrderRemoval | undefined;
+    setOrderRemoval(value?: OrderRemoval): void;
+
+
+    getOrderUpdateCase(): OrderUpdate.OrderUpdateCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OrderUpdate.AsObject;
+    static toObject(includeInstance: boolean, msg: OrderUpdate): OrderUpdate.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OrderUpdate, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OrderUpdate;
+    static deserializeBinaryFromReader(message: OrderUpdate, reader: jspb.BinaryReader): OrderUpdate;
+}
+
+export namespace OrderUpdate {
+    export type AsObject = {
+        order?: Order.AsObject,
+        orderRemoval?: OrderRemoval.AsObject,
+    }
+
+    export enum OrderUpdateCase {
+        ORDERUPDATE_NOT_SET = 0,
+    
+    ORDER = 1,
+
+    ORDER_REMOVAL = 2,
 
     }
 
@@ -1340,41 +1387,24 @@ export namespace ShutdownResponse {
     }
 }
 
-export class SubscribeAddedOrdersRequest extends jspb.Message { 
+export class SubscribeOrdersRequest extends jspb.Message { 
     getExisting(): boolean;
     setExisting(value: boolean): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SubscribeAddedOrdersRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: SubscribeAddedOrdersRequest): SubscribeAddedOrdersRequest.AsObject;
+    toObject(includeInstance?: boolean): SubscribeOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeOrdersRequest): SubscribeOrdersRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SubscribeAddedOrdersRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SubscribeAddedOrdersRequest;
-    static deserializeBinaryFromReader(message: SubscribeAddedOrdersRequest, reader: jspb.BinaryReader): SubscribeAddedOrdersRequest;
+    static serializeBinaryToWriter(message: SubscribeOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeOrdersRequest;
+    static deserializeBinaryFromReader(message: SubscribeOrdersRequest, reader: jspb.BinaryReader): SubscribeOrdersRequest;
 }
 
-export namespace SubscribeAddedOrdersRequest {
+export namespace SubscribeOrdersRequest {
     export type AsObject = {
         existing: boolean,
-    }
-}
-
-export class SubscribeRemovedOrdersRequest extends jspb.Message { 
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SubscribeRemovedOrdersRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: SubscribeRemovedOrdersRequest): SubscribeRemovedOrdersRequest.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SubscribeRemovedOrdersRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SubscribeRemovedOrdersRequest;
-    static deserializeBinaryFromReader(message: SubscribeRemovedOrdersRequest, reader: jspb.BinaryReader): SubscribeRemovedOrdersRequest;
-}
-
-export namespace SubscribeRemovedOrdersRequest {
-    export type AsObject = {
     }
 }
 
