@@ -641,27 +641,23 @@ class GrpcService {
   }
 
   /*
-   * See [[Service.subscribeAddedOrders]]
+   * See [[Service.subscribeOrders]]
    */
-  public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders(call.request.toObject(), (order: Order) => {
-      call.write(createOrder(order));
-    });
-    this.addStream(call);
-  }
-
-  /*
-   * See [[Service.subscribeRemovedOrders]]
-   */
-  public subscribeRemovedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeRemovedOrdersRequest, xudrpc.OrderRemoval> = (call) => {
-    this.service.subscribeRemovedOrders((order: OrderPortion) => {
-      const orderRemoval = new xudrpc.OrderRemoval();
-      orderRemoval.setPairId(order.pairId);
-      orderRemoval.setOrderId(order.id);
-      orderRemoval.setQuantity(order.quantity);
-      orderRemoval.setLocalId(order.localId || '');
-      orderRemoval.setIsOwnOrder(order.localId !== undefined);
-      call.write(orderRemoval);
+  public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (call) => {
+    this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
+      const orderUpdate = new xudrpc.OrderUpdate();
+      if (order) {
+        orderUpdate.setOrder(createOrder(order));
+      } else if (orderRemoval) {
+        const grpcOrderRemoval = new xudrpc.OrderRemoval();
+        grpcOrderRemoval.setPairId(orderRemoval.pairId);
+        grpcOrderRemoval.setOrderId(orderRemoval.id);
+        grpcOrderRemoval.setQuantity(orderRemoval.quantity);
+        grpcOrderRemoval.setLocalId(orderRemoval.localId || '');
+        grpcOrderRemoval.setIsOwnOrder(orderRemoval.localId !== undefined);
+        orderUpdate.setOrderRemoval(grpcOrderRemoval);
+      }
+      call.write(orderUpdate);
     });
     this.addStream(call);
   }

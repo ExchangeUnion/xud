@@ -7,14 +7,14 @@ import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
-import { ms, derivePairId } from '../utils/utils';
+import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
-import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
+import { SwapRequestPacket, SwapFailedPacket, GetOrdersPacket } from '../p2p/packets';
 import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
 import Bluebird from 'bluebird';
 
@@ -48,24 +48,29 @@ interface OrderBook {
 
 /** A class representing an orderbook containing all orders for all active trading pairs. */
 class OrderBook extends EventEmitter {
-  /** A map of supported currency tickers to currency instances. */
-  public currencies = new Map<string, CurrencyInstance>();
-  /** A map of supported trading pair tickers and pair database instances. */
-  public pairs = new Map<string, PairInstance>();
-
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
   /** A map between own orders local id and their global id. */
   private localIdMap = new Map<string, OrderIdentifier>();
 
+  /** A map of supported currency tickers to currency instances. */
+  private currencyInstances = new Map<string, CurrencyInstance>();
+  /** A map of supported trading pair tickers and pair database instances. */
+  private pairInstances = new Map<string, PairInstance>();
   private repository: OrderBookRepository;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
   private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 10000; // 10 sec
+  /** Max time for sanity swaps to succeed. */
+  private static readonly MAX_SANITY_SWAP_TIME = 15000;
 
   /** Gets an array of supported pair ids. */
   public get pairIds() {
-    return Array.from(this.pairs.keys());
+    return Array.from(this.pairInstances.keys());
+  }
+
+  public get currencies() {
+    return this.currencyInstances.keys();
   }
 
   constructor(private logger: Logger, models: Models, public nomatching = false,
@@ -91,6 +96,22 @@ class OrderBook extends EventEmitter {
       this.pool.on('packet.swapRequest', this.handleSwapRequest);
       this.pool.on('peer.close', this.removePeerOrders);
       this.pool.on('peer.pairDropped', this.removePeerPair);
+      this.pool.on('peer.pairsAdvertised', this.verifyPeerPairs);
+      this.pool.on('peer.nodeStateUpdate', (peer) => {
+        // remove any trading pairs for which we no longer have both swap client identifiers
+        peer.activePairs.forEach((activePairId) => {
+          const [baseCurrency, quoteCurrency] = activePairId.split('/');
+          const isCurrencySupported = (currency: string) => {
+            const currencyAttributes = this.getCurrencyAttributes(currency);
+            return currencyAttributes && peer.getIdentifier(currencyAttributes.swapClient, currency);
+          };
+
+          if (!isCurrencySupported(baseCurrency) || !isCurrencySupported(quoteCurrency)) {
+            // this peer's node state no longer supports at least one of the currencies for this trading pair
+            peer.deactivatePair(activePairId);
+          }
+        });
+      });
     }
   }
 
@@ -125,19 +146,33 @@ class OrderBook extends EventEmitter {
     const pairs = results[0] as PairInstance[];
     const currencies = results[1] as CurrencyInstance[];
 
-    currencies.forEach(currency => this.currencies.set(currency.id, currency));
+    currencies.forEach(currency => this.currencyInstances.set(currency.id, currency));
     pairs.forEach((pair) => {
-      this.pairs.set(pair.id, pair);
+      this.pairInstances.set(pair.id, pair);
       this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
     });
   }
 
+  /**
+   * Get order by id
+   * @param { string } orderId  - order id
+   */
   public getOrder = async (orderId: string) => {
     return this.repository.getOrder(orderId);
   }
 
+  /**
+   * Get trades by order id
+   * @param { string } orderId - order id
+   * @param { boolean } order - sort trades by data of creation
+   */
   public getTrades = async (orderId: string, order = false) => {
     return this.repository.getTrades(orderId, order);
+  }
+
+  public getCurrencyAttributes(symbol: string) {
+    const currencyInstance = this.currencyInstances.get(symbol);
+    return currencyInstance ? currencyInstance.toJSON() : undefined;
   }
 
   /**
@@ -189,18 +224,18 @@ class OrderBook extends EventEmitter {
 
   public addPair = async (pair: Pair) => {
     const pairId = derivePairId(pair);
-    if (this.pairs.has(pairId)) {
+    if (this.pairInstances.has(pairId)) {
       throw errors.PAIR_ALREADY_EXISTS(pairId);
     }
-    if (!this.currencies.has(pair.baseCurrency)) {
+    if (!this.currencyInstances.has(pair.baseCurrency)) {
       throw errors.CURRENCY_DOES_NOT_EXIST(pair.baseCurrency);
     }
-    if (!this.currencies.has(pair.quoteCurrency)) {
+    if (!this.currencyInstances.has(pair.quoteCurrency)) {
       throw errors.CURRENCY_DOES_NOT_EXIST(pair.quoteCurrency);
     }
 
     const pairInstance = await this.repository.addPair(pair);
-    this.pairs.set(pairInstance.id, pairInstance);
+    this.pairInstances.set(pairInstance.id, pairInstance);
     this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
 
     if (this.pool) {
@@ -210,25 +245,25 @@ class OrderBook extends EventEmitter {
   }
 
   public addCurrency = async (currency: CurrencyFactory) => {
-    if (this.currencies.has(currency.id)) {
+    if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
     if (currency.swapClient === SwapClient.Raiden && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
-    this.currencies.set(currencyInstance.id, currencyInstance);
+    this.currencyInstances.set(currencyInstance.id, currencyInstance);
   }
 
   public removeCurrency = (currencyId: string): Bluebird<void> => {
-    const currency = this.currencies.get(currencyId);
+    const currency = this.currencyInstances.get(currencyId);
     if (currency) {
-      for (const pair of this.pairs.values()) {
+      for (const pair of this.pairInstances.values()) {
         if (currencyId === pair.baseCurrency || currencyId === pair.quoteCurrency) {
           throw errors.CURRENCY_CANNOT_BE_REMOVED(currencyId, pair.id);
         }
       }
-      this.currencies.delete(currencyId);
+      this.currencyInstances.delete(currencyId);
       return currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
@@ -236,12 +271,12 @@ class OrderBook extends EventEmitter {
   }
 
   public removePair = (pairId: string) => {
-    const pair = this.pairs.get(pairId);
+    const pair = this.pairInstances.get(pairId);
     if (!pair) {
       throw errors.PAIR_DOES_NOT_EXIST(pairId);
     }
 
-    this.pairs.delete(pairId);
+    this.pairInstances.delete(pairId);
     this.tradingPairs.delete(pairId);
 
     if (this.pool) {
@@ -319,7 +354,7 @@ class OrderBook extends EventEmitter {
         throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
       }
       if (makerAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount);
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount, swapClient.maximumOutboundCapacity);
       }
     }
 
@@ -638,7 +673,7 @@ class OrderBook extends EventEmitter {
       return;
     }
 
-    for (const pairId of this.pairs.keys()) {
+    for (const pairId of this.pairInstances.keys()) {
       this.removePeerPair(peerPubKey, pairId);
     }
 
@@ -651,6 +686,74 @@ class OrderBook extends EventEmitter {
     orders.forEach((order) => {
       this.emit('peerOrder.invalidation', order);
     });
+  }
+
+  /**
+   * Verifies a list of trading pair tickers for a peer. Checks that the peer has advertised
+   * lnd pub keys for both the base and quote currencies for each pair, and also attempts a
+   * "sanity swap" for each currency which is a 1 satoshi for 1 satoshi swap of a given currency
+   * that demonstrates that we can both accept and receive payments for this peer.
+   * @param pairIds the list of trading pair ids to verify
+   */
+  private verifyPeerPairs = async (peer: Peer, pairIds: string[]) => {
+    if (!this.swaps) {
+      return;
+    }
+
+    if (this.nosanitychecks) {
+      // we have disabled sanity checks, so assume all pairs should be activated
+      pairIds.forEach(pair => peer.activePairs.add(pair));
+      return;
+    }
+
+    // identify the unique currencies we need to verify for specified trading pairs
+    const currenciesToVerify = new Set<string>();
+    pairIds.forEach((pairId) => {
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
+      currenciesToVerify.add(baseCurrency);
+      currenciesToVerify.add(quoteCurrency);
+    });
+
+    const verifiedCurrencies = new Set<string>();
+    const verifiedPairs: string[] = [];
+    const sanitySwapPromises: Promise<void>[] = [];
+
+    if (this.swaps) {
+      // Set a time limit for all sanity swaps to complete.
+      const sanitySwapTimeout = setTimeoutPromise(OrderBook.MAX_SANITY_SWAP_TIME, false);
+
+      currenciesToVerify.forEach((currency) => {
+        if (this.currencyInstances.has(currency)) {
+          // perform sanity swaps for each of the currencies that we support
+          const sanitySwapPromise = new Promise<void>(async (resolve) => {
+            // success resolves to true if the sanity swap succeeds before the timeout
+            const success = await Promise.race([this.swaps!.executeSanitySwap(currency, peer), sanitySwapTimeout]);
+            if (success) {
+              verifiedCurrencies.add(currency);
+            }
+            resolve();
+          });
+          sanitySwapPromises.push(sanitySwapPromise);
+        }
+      });
+    }
+
+    // wait for all sanity swaps to finish or timeout
+    await Promise.all(sanitySwapPromises);
+
+    // activate pairs that have had both currencies verified
+    pairIds.forEach(async (pairId) => {
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
+      if (verifiedCurrencies.has(baseCurrency) && verifiedCurrencies.has(quoteCurrency)) {
+        peer.activePairs.add(pairId);
+        verifiedPairs.push(pairId);
+      }
+    });
+
+    if (verifiedPairs.length) {
+      // request peer's orders for newly activated trading pairs
+      await peer.sendPacket(new GetOrdersPacket({ pairIds: verifiedPairs }));
+    }
   }
 
   /**

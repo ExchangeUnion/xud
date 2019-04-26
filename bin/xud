@@ -52,6 +52,11 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    nosanitychecks: {
+      describe: 'Whether to disable order sanity checks',
+      type: 'boolean',
+      default: undefined,
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',

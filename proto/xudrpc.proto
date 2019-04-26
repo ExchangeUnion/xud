@@ -196,24 +196,13 @@ service Xud {
     };
   }
 
-  /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
-   * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
-   * wants to show its users a real time list of the orders available to them would subscribe to this
-   * streaming call to be alerted of new orders as they become available for trading. */
-  rpc SubscribeAddedOrders(SubscribeAddedOrdersRequest) returns (stream Order) {
+  /* Subscribes to orders being added to and removed from the order book. This call allows the client
+   * to maintain an up-to-date view of the order book. For example, an exchange that wants to show
+   * its users a real time view of the orders available to them would subscribe to this streaming
+   * call to be alerted as new orders are added and expired orders are removed. */
+  rpc SubscribeOrders(SubscribeOrdersRequest) returns (stream OrderUpdate) {
     option (google.api.http) = {
-      get: "/v1/subscribeaddedorders"
-    };
-  }
-
-  /* Subscribes to orders being removed - either in full or in part - from the order book. This call,
-   * together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order
-   * book. For example, an exchange that wants to show its users a real time list of the orders available
-   * to them would subscribe to this streaming call to be alerted when part or all of an existing order
-   * is no longer available for trading. */
-  rpc SubscribeRemovedOrders(SubscribeRemovedOrdersRequest) returns (stream OrderRemoval) {
-    option (google.api.http) = {
-      get: "/v1/subscriberemovedorders"
+      get: "/v1/subscribeorders"
     };
   }
 
@@ -361,6 +350,8 @@ message ListOrdersRequest {
   string pair_id = 1 [json_name = "pair_id"];
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
+  // The maximum number of orders to return from each side of the order book.
+  int32 limit = 3 [json_name = "limit"];
 }
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
@@ -443,6 +434,15 @@ message Order {
   bool is_own_order = 9 [json_name = "is_own_order"];
   // The quantity on hold pending swap exectuion.
   uint64 hold = 10 [json_name = "hold"];
+}
+
+message OrderUpdate {
+  oneof order_update {
+    // An order that was added to the order book.
+    Order order = 1 [json_name = "order"];
+    // An order (or portion thereof) that was removed from the order book.
+    OrderRemoval order_removal = 2 [json_name = "order_removal"];
+  }
 }
 
 message OrderRemoval {
@@ -561,12 +561,10 @@ message RemovePairResponse {}
 message ShutdownRequest {}
 message ShutdownResponse {}
 
-message SubscribeAddedOrdersRequest {
+message SubscribeOrdersRequest {
   // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
 }
-
-message SubscribeRemovedOrdersRequest {}
 
 message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.

@@ -34,16 +34,22 @@ type PeerInfo = {
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
-  on(event: 'pairDropped', listener: (pair: string) => void): this;
-  on(event: 'nodeStateUpdate', listener: () => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
+  /** Adds a listener to be called when the peer has newly advertised pairs. */
+  on(event: 'pairsAdvertised', listener: (pairIds: string[]) => void): this;
+  /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
+  on(event: 'pairDropped', listener: (pairId: string) => void): this;
+  on(event: 'nodeStateUpdate', listener: () => void): this;
   once(event: 'close', listener: () => void): this;
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
-  emit(event: 'pairDropped', pair: string): boolean;
+  /** Notifies listeners that the peer has advertised pairs to verify. */
+  emit(event: 'pairsAdvertised', pairIds: string[]): boolean;
+  /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
+  emit(event: 'pairDropped', pairId: string): boolean;
   emit(event: 'nodeStateUpdate'): boolean;
 }
 
@@ -58,6 +64,8 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
+  /** Trading pairs advertised by this peer which we have verified that we can swap. */
+  public activePairs = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
   private opened = false;
   private opening = false;
@@ -68,6 +76,7 @@ class Peer extends EventEmitter {
   private retryConnectionTimer?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
+  private checkPairsTimer?: NodeJS.Timer;
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
@@ -85,6 +94,8 @@ class Peer extends EventEmitter {
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static readonly PING_INTERVAL = 30000;
+  /** Interval for checking if we can reactivate any inactive pairs with peers. */
+  private static readonly CHECK_PAIRS_INTERVAL = 60000;
   /** Response timeout for response packets. */
   private static readonly RESPONSE_TIMEOUT = 10000;
   /** Connection retries min delay. */
@@ -111,15 +122,12 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.addresses : undefined;
   }
 
-  /** Returns a list of active trading pairs supported by this peer. */
-  public get pairs(): string[] | undefined {
+  /** Returns a list of trading pairs advertised by this peer. */
+  public get advertisedPairs(): string[] {
     if (this.nodeState) {
-      const activePairs = this.nodeState.pairs.filter((pair) => {
-        return !this.deactivatedPairs.has(pair);
-      });
-      return activePairs;
+      return this.nodeState.pairs;
     }
-    return undefined;
+    return [];
   }
 
   public get connected(): boolean {
@@ -131,7 +139,7 @@ class Peer extends EventEmitter {
       address: addressUtils.toString(this.address),
       nodePubKey: this.nodeState ? this.nodeState.nodePubKey : undefined,
       inbound: this.inbound,
-      pairs: this.nodeState ? this.nodeState.pairs : undefined,
+      pairs: Array.from(this.activePairs),
       xudVersion: this.nodeState ? this.nodeState.version : undefined,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
@@ -233,6 +241,9 @@ class Peer extends EventEmitter {
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
+
+    // Setup a timer to periodicially check if we can swap inactive pairs
+    this.checkPairsTimer = setInterval(this.checkPairs, Peer.CHECK_PAIRS_INTERVAL);
   }
 
   /**
@@ -272,6 +283,11 @@ class Peer extends EventEmitter {
     if (this.pingTimer) {
       clearInterval(this.pingTimer);
       this.pingTimer = undefined;
+    }
+
+    if (this.checkPairsTimer) {
+      clearInterval(this.checkPairsTimer);
+      this.checkPairsTimer = undefined;
     }
 
     if (this.stallTimer) {
@@ -330,12 +346,10 @@ class Peer extends EventEmitter {
     if (!this.nodeState) {
       throw new Error('cannot deactivate a trading pair before handshake is complete');
     }
-    const index = this.nodeState.pairs.indexOf(pairId);
-    if (index >= 0) {
-      this.deactivatedPairs.add(pairId);
+    if (this.activePairs.delete(pairId)) {
       this.emit('pairDropped', pairId);
     }
-    // TODO: schedule a timer to see whether this pair can be reactivated
+    // TODO: notify peer that we have deactivated this pair?
   }
 
   private sendRaw = (data: Buffer) => {
@@ -777,6 +791,13 @@ class Peer extends EventEmitter {
     }
   }
 
+  private checkPairs = () => {
+    const inactivePairs = this.advertisedPairs.filter(pair => !this.activePairs.has(pair));
+    if (inactivePairs.length) {
+      this.emit('pairsAdvertised', inactivePairs);
+    }
+  }
+
   private sendPing = async (): Promise<void> => {
     const packet = new packets.PingPacket();
     await this.sendPacket(packet);
@@ -842,14 +863,26 @@ class Peer extends EventEmitter {
     this.logger.verbose(`received node state update packet from ${this.label}: ${JSON.stringify(nodeStateUpdate)}`);
 
     const prevNodeState = this.nodeState!;
-    prevNodeState.pairs.forEach((pairId) => {
+    /** A list of trading pairs that are advertised in this node state update that weren't advertised before. */
+    const addedPairs: string[] = [];
+
+    this.activePairs.forEach((pairId) => {
       if (!nodeStateUpdate.pairs.includes(pairId)) {
-        // a trading pair was in the old node state but not in the updated one
+        // a trading pair was previously active but is not in the updated node state
+        this.activePairs.delete(pairId);
         this.emit('pairDropped', pairId);
       }
     });
 
+    nodeStateUpdate.pairs.forEach((pairId) => {
+      if (!prevNodeState.pairs.includes(pairId)) {
+        // a trading pair in the updated node state was not in the old one
+        addedPairs.push(pairId);
+      }
+    });
+
     this.nodeState = { ...nodeStateUpdate, nodePubKey: prevNodeState.nodePubKey, version: prevNodeState.version };
+    this.emit('pairsAdvertised', addedPairs);
     this.emit('nodeStateUpdate');
   }
 
