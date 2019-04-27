@@ -42,6 +42,7 @@
     - [NewAddressRequest](#xudrpc.NewAddressRequest)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
+    - [OrderUpdate](#xudrpc.OrderUpdate)
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
@@ -60,8 +61,7 @@
     - [SendManyRequest](#xudrpc.SendManyRequest)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
-    - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
-    - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
+    - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
@@ -465,6 +465,7 @@
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
 | include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+| limit | [int32](#int32) |  | The maximum number of orders to return from each side of the order book. |
 
 
 
@@ -659,6 +660,22 @@
 | order_id | [string](#string) |  | The global UUID for the order. |
 | local_id | [string](#string) |  | The local id for the order, if applicable. |
 | is_own_order | [bool](#bool) |  | Whether the order being removed is a local own order or a remote peer order. |
+
+
+
+
+
+
+<a name="xudrpc.OrderUpdate"></a>
+
+### OrderUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order | [Order](#xudrpc.Order) |  | An order that was added to the order book. |
+| order_removal | [OrderRemoval](#xudrpc.OrderRemoval) |  | An order (or portion thereof) that was removed from the order book. |
 
 
 
@@ -941,25 +958,15 @@
 
 
 
-<a name="xudrpc.SubscribeAddedOrdersRequest"></a>
+<a name="xudrpc.SubscribeOrdersRequest"></a>
 
-### SubscribeAddedOrdersRequest
+### SubscribeOrdersRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | existing | [bool](#bool) |  | Whether to transmit all existing active orders upon establishing the stream. |
-
-
-
-
-
-
-<a name="xudrpc.SubscribeRemovedOrdersRequest"></a>
-
-### SubscribeRemovedOrdersRequest
-
 
 
 
@@ -1148,8 +1155,7 @@
 | SendMany | [SendManyRequest](#xudrpc.SendManyRequest) | [.lnrpc.SendManyResponse](#lnrpc.SendManyResponse) |  |
 | NewAddress | [NewAddressRequest](#xudrpc.NewAddressRequest) | [.lnrpc.NewAddressResponse](#lnrpc.NewAddressResponse) |  |
 | SubscribeTransactions | [.lnrpc.GetTransactionsRequest](#lnrpc.GetTransactionsRequest) | [.lnrpc.Transaction](#lnrpc.Transaction) stream |  |
-| SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
-| SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
+| SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
 

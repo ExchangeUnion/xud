@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"context"
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
@@ -25,7 +26,6 @@ import (
 	btcclient "github.com/roasbeef/btcd/rpcclient"
 	"github.com/roasbeef/btcutil"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 )
 
 type testCase struct {
@@ -132,7 +132,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessTest) {
 	req := &xudrpc.PlaceOrderRequest{
 		Price:    10,
-		Quantity: 1000000000,
+		Quantity: 1000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,

@@ -15,6 +15,7 @@ enum PacketType {
   SwapAccepted = 13,
   SwapComplete = 14,
   SwapFailed = 15,
+  SanitySwap = 16,
 }
 
 export default PacketType;

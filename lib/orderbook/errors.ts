@@ -13,6 +13,8 @@ const errorCodes = {
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
   QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
   CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
+  SWAP_CLIENT_NOT_FOUND: codesPrefix.concat('.12'),
+  INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.13'),
 };
 
 const errors = {
@@ -60,7 +62,14 @@ const errors = {
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),
-
+  SWAP_CLIENT_NOT_FOUND: (currency: string) => ({
+    message: `unable to find swap client for currency ${currency}`,
+    code: errorCodes.SWAP_CLIENT_NOT_FOUND,
+  }),
+  INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number, availableAmount: number) => ({
+    message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,
+    code: errorCodes.INSUFFICIENT_OUTBOUND_BALANCE,
+  }),
 };
 
 export { errorCodes };

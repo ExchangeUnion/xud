@@ -14,7 +14,7 @@ The Exchange Union Daemon (`xud`) powers [Exchange Union](https://www.exchangeun
 
 ## Install
 
-If you already have [Node.js](https://nodejs.org/en/download/) installed, you can install `xud` via npm by running
+If you already have [Node.js](https://nodejs.org/en/download/) (min 10.15.3) installed, you can install `xud` via npm by running
 
 ```bash
 sudo npm install xud -g --unsafe-perm
@@ -45,9 +45,9 @@ You can find more information on how to use `xud` in the wiki at [Running xud](h
 
 Note: If you installed `xud` globally via npm, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
 
-## Code Documentation
+## Documentation
 
-Read the [TypeDoc here](https://exchangeunion.github.io/xud-typedoc/).
+Read the `xud` API documentation [here](http://api.exchangeunion.com) and code documentation [here](http://typedoc.exchangeunion.com/).
 
 ## License
 

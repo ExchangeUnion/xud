@@ -445,6 +445,14 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          },
+          {
+            "name": "limit",
+            "description": "The maximum number of orders to return from each side of the order book.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [
@@ -700,15 +708,15 @@
         ]
       }
     },
-    "/v1/subscribeaddedorders": {
+    "/v1/subscribeorders": {
       "get": {
-        "summary": "Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,\nallows the client to maintain an up-to-date view of the order book. For example, an exchange that\nwants to show its users a real time list of the orders available to them would subscribe to this\nstreaming call to be alerted of new orders as they become available for trading.",
-        "operationId": "SubscribeAddedOrders",
+        "summary": "Subscribes to orders being added to and removed from the order book. This call allows the client\nto maintain an up-to-date view of the order book. For example, an exchange that wants to show\nits users a real time view of the orders available to them would subscribe to this streaming\ncall to be alerted as new orders are added and expired orders are removed.",
+        "operationId": "SubscribeOrders",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/xudrpcOrder"
+              "$ref": "#/x-stream-definitions/xudrpcOrderUpdate"
             }
           }
         },
@@ -722,23 +730,6 @@
             "format": "boolean"
           }
         ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/subscriberemovedorders": {
-      "get": {
-        "summary": "Subscribes to orders being removed - either in full or in part - from the order book. This call,\ntogether with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order\nbook. For example, an exchange that wants to show its users a real time list of the orders available\nto them would subscribe to this streaming call to be alerted when part or all of an existing order\nis no longer available for trading.",
-        "operationId": "SubscribeRemovedOrders",
-        "responses": {
-          "200": {
-            "description": "A successful response.(streaming responses)",
-            "schema": {
-              "$ref": "#/x-stream-definitions/xudrpcOrderRemoval"
-            }
-          }
-        },
         "tags": [
           "Xud"
         ]
@@ -1848,6 +1839,19 @@
       ],
       "default": "BUY"
     },
+    "xudrpcOrderUpdate": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "An order that was added to the order book."
+        },
+        "order_removal": {
+          "$ref": "#/definitions/xudrpcOrderRemoval",
+          "description": "An order (or portion thereof) that was removed from the order book."
+        }
+      }
+    },
     "xudrpcOrders": {
       "type": "object",
       "properties": {
@@ -2225,29 +2229,17 @@
       },
       "title": "Stream result of lnrpcTransaction"
     },
-    "xudrpcOrder": {
+    "xudrpcOrderUpdate": {
       "type": "object",
       "properties": {
         "result": {
-          "$ref": "#/definitions/xudrpcOrder"
+          "$ref": "#/definitions/xudrpcOrderUpdate"
         },
         "error": {
           "$ref": "#/definitions/runtimeStreamError"
         }
       },
-      "title": "Stream result of xudrpcOrder"
-    },
-    "xudrpcOrderRemoval": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/xudrpcOrderRemoval"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of xudrpcOrderRemoval"
+      "title": "Stream result of xudrpcOrderUpdate"
     },
     "xudrpcPlaceOrderEvent": {
       "type": "object",

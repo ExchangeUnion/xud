@@ -25,6 +25,7 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
   private static validate = (obj: pb.NodeStateUpdatePacket.AsObject): boolean => {
     return !!(obj.id
       && obj.pairsList
+      && obj.lndPubKeysMap
       && obj.addressesList.every(addr => !!addr.host)
     );
   }
@@ -37,8 +38,8 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
       body: removeUndefinedProps({
         pairs: obj.pairsList,
         addresses: obj.addressesList,
-        raidenAddress: obj.raidenAddress || undefined,
-        lndPubKeys: obj.lndPubKeysMap ? convertKvpArrayToKvps(obj.lndPubKeysMap) : undefined,
+        raidenAddress: obj.raidenAddress,
+        lndPubKeys: convertKvpArrayToKvps(obj.lndPubKeysMap),
       }),
     });
   }
@@ -47,19 +48,17 @@ class NodeStateUpdatePacket extends Packet<NodeStateUpdate> {
     const msg = new pb.NodeStateUpdatePacket();
 
     msg.setId(this.header.id);
-    msg.setPairsList(this.body!.pairs!);
-    msg.setAddressesList(this.body!.addresses!.map((addr) => {
+    msg.setPairsList(this.body!.pairs);
+    msg.setAddressesList(this.body!.addresses.map((addr) => {
       const pbAddr = new pb.Address();
       pbAddr.setHost(addr.host);
       pbAddr.setPort(addr.port);
       return pbAddr;
     }));
-    msg.setRaidenAddress(this.body!.raidenAddress!);
-    if (this.body!.lndPubKeys) {
-      const map = msg.getLndPubKeysMap();
-      for (const currency in this.body!.lndPubKeys!) {
-        map.set(currency, this.body!.lndPubKeys![currency]);
-      }
+    msg.setRaidenAddress(this.body!.raidenAddress);
+    const map = msg.getLndPubKeysMap();
+    for (const currency in this.body!.lndPubKeys) {
+      map.set(currency, this.body!.lndPubKeys[currency]);
     }
 
     return msg.serializeBinary();

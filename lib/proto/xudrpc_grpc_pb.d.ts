@@ -40,8 +40,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     sendMany: IXudService_ISendMany;
     newAddress: IXudService_INewAddress;
     subscribeTransactions: IXudService_ISubscribeTransactions;
-    subscribeAddedOrders: IXudService_ISubscribeAddedOrders;
-    subscribeRemovedOrders: IXudService_ISubscribeRemovedOrders;
+    subscribeOrders: IXudService_ISubscribeOrders;
     subscribeSwaps: IXudService_ISubscribeSwaps;
     subscribeSwapFailures: IXudService_ISubscribeSwapFailures;
 }
@@ -325,23 +324,14 @@ interface IXudService_ISubscribeTransactions extends grpc.MethodDefinition<lndrp
     responseSerialize: grpc.serialize<lndrpc_pb.Transaction>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.Transaction>;
 }
-interface IXudService_ISubscribeAddedOrders extends grpc.MethodDefinition<xudrpc_pb.SubscribeAddedOrdersRequest, xudrpc_pb.Order> {
-    path: string; // "/xudrpc.Xud/SubscribeAddedOrders"
+interface IXudService_ISubscribeOrders extends grpc.MethodDefinition<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate> {
+    path: string; // "/xudrpc.Xud/SubscribeOrders"
     requestStream: boolean; // false
     responseStream: boolean; // true
-    requestSerialize: grpc.serialize<xudrpc_pb.SubscribeAddedOrdersRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.SubscribeAddedOrdersRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.Order>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.Order>;
-}
-interface IXudService_ISubscribeRemovedOrders extends grpc.MethodDefinition<xudrpc_pb.SubscribeRemovedOrdersRequest, xudrpc_pb.OrderRemoval> {
-    path: string; // "/xudrpc.Xud/SubscribeRemovedOrders"
-    requestStream: boolean; // false
-    responseStream: boolean; // true
-    requestSerialize: grpc.serialize<xudrpc_pb.SubscribeRemovedOrdersRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.SubscribeRemovedOrdersRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.OrderRemoval>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.OrderRemoval>;
+    requestSerialize: grpc.serialize<xudrpc_pb.SubscribeOrdersRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.SubscribeOrdersRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.OrderUpdate>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.OrderUpdate>;
 }
 interface IXudService_ISubscribeSwaps extends grpc.MethodDefinition<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapSuccess> {
     path: string; // "/xudrpc.Xud/SubscribeSwaps"
@@ -396,8 +386,7 @@ export interface IXudServer {
     sendMany: grpc.handleUnaryCall<xudrpc_pb.SendManyRequest, lndrpc_pb.SendManyResponse>;
     newAddress: grpc.handleUnaryCall<xudrpc_pb.NewAddressRequest, lndrpc_pb.NewAddressResponse>;
     subscribeTransactions: grpc.handleServerStreamingCall<lndrpc_pb.GetTransactionsRequest, lndrpc_pb.Transaction>;
-    subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeAddedOrdersRequest, xudrpc_pb.Order>;
-    subscribeRemovedOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeRemovedOrdersRequest, xudrpc_pb.OrderRemoval>;
+    subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
     subscribeSwaps: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapSuccess>;
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
 }
@@ -494,10 +483,8 @@ export interface IXudClient {
     newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
     subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
-    subscribeAddedOrders(request: xudrpc_pb.SubscribeAddedOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.Order>;
-    subscribeAddedOrders(request: xudrpc_pb.SubscribeAddedOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.Order>;
-    subscribeRemovedOrders(request: xudrpc_pb.SubscribeRemovedOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderRemoval>;
-    subscribeRemovedOrders(request: xudrpc_pb.SubscribeRemovedOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderRemoval>;
+    subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
+    subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
@@ -597,10 +584,8 @@ export class XudClient extends grpc.Client implements IXudClient {
     public newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     public subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
     public subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
-    public subscribeAddedOrders(request: xudrpc_pb.SubscribeAddedOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.Order>;
-    public subscribeAddedOrders(request: xudrpc_pb.SubscribeAddedOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.Order>;
-    public subscribeRemovedOrders(request: xudrpc_pb.SubscribeRemovedOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderRemoval>;
-    public subscribeRemovedOrders(request: xudrpc_pb.SubscribeRemovedOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderRemoval>;
+    public subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
+    public subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     public subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
