@@ -32,7 +32,7 @@
     "test:p2p": "mocha -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha -r ts-node/register test/crypto/*",
-    "test:sim": "(cd test/simulation && GO111MODULE=on go test -v)",
+    "test:sim": "(npm run compile && cd test/simulation && GO111MODULE=on go test -v)",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
     "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
