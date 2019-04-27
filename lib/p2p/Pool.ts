@@ -31,8 +31,12 @@ interface Pool {
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
-  /** Adds a listener to be called when a peer drops support for a trading pair. */
+  /** Adds a listener to be called when a peer has newly advertised pairs. */
+  on(event: 'peer.pairsAdvertised', listener: (peer: Peer, pairIds: string[]) => void): this;
+  /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
+  on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
+  on(event: 'packet.sanitySwap', listener: (packet: packets.SanitySwapPacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
@@ -41,8 +45,12 @@ interface Pool {
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
-  /** Notifies listeners that a peer has dropped support for a trading pair. */
+  /** Notifies listeners that a peer has newly activated pairs. */
+  emit(event: 'peer.pairsAdvertised', peer: Peer, pairIds: string[]): boolean;
+  /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
+  emit(event: 'peer.nodeStateUpdate', peer: Peer): boolean;
+  emit(event: 'packet.sanitySwap', packet: packets.SanitySwapPacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
@@ -411,6 +419,8 @@ class Pool extends EventEmitter {
     this.peers.set(peerPubKey, peer);
     peer.active = true;
 
+    this.emit('peer.pairsAdvertised', peer, peer.advertisedPairs);
+
     // request peer's known nodes only if p2p.discover option is true
     if (this.config.discover) {
       await peer.sendGetNodes();
@@ -421,11 +431,6 @@ class Pool extends EventEmitter {
         // timer is enabled
         peer.discoverTimer = setInterval(peer.sendGetNodes, this.config.discoverminutes * 1000 * 60);
       }
-    }
-
-    // request peer's orders
-    if (this.nodeState.pairs.length > 0) {
-      await peer.sendPacket(new packets.GetOrdersPacket({ pairIds: this.nodeState.pairs }));
     }
 
     // if outbound, update the `lastConnected` field for the address we're actually connected to
@@ -524,9 +529,11 @@ class Pool extends EventEmitter {
 
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
-    this.peers.forEach(peer => peer.sendPacket(orderPacket));
-
-    // TODO: send only to peers which accepts the pairId
+    this.peers.forEach(async (peer) => {
+      if (peer.activePairs.has(order.pairId)) {
+        await peer.sendPacket(orderPacket);
+      }
+    });
   }
 
   /**
@@ -573,7 +580,12 @@ class Pool extends EventEmitter {
         const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
-        this.emit('packet.order', incomingOrder);
+
+        if (peer.activePairs.has(incomingOrder.pairId)) {
+          this.emit('packet.order', incomingOrder);
+        } else {
+          this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
+        }
         break;
       }
       case PacketType.OrderInvalidation: {
@@ -592,7 +604,11 @@ class Pool extends EventEmitter {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
         receivedOrders.forEach((order) => {
-          this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
+          if (peer.activePairs.has(order.pairId)) {
+            this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
+          } else {
+            this.logger.debug(`received order ${order.id} for deactivated trading pair`);
+          }
         });
         break;
       }
@@ -610,6 +626,11 @@ class Pool extends EventEmitter {
         });
         this.logger.verbose(`received ${nodes.length} nodes (${newNodesCount} new) from ${peer.nodePubKey}`);
         await this.connectNodes(nodes);
+        break;
+      }
+      case PacketType.SanitySwap: {
+        this.logger.debug(`received sanitySwap from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.emit('packet.sanitySwap', packet, peer);
         break;
       }
       case PacketType.SwapRequest: {
@@ -717,6 +738,15 @@ class Pool extends EventEmitter {
     peer.on('pairDropped', (pairId) => {
       // drop all orders for trading pairs that are no longer supported
       this.emit('peer.pairDropped', peer.nodePubKey!, pairId);
+    });
+
+    peer.on('pairsAdvertised', (pairIds) => {
+      // drop all orders for trading pairs that are no longer supported
+      this.emit('peer.pairsAdvertised', peer, pairIds);
+    });
+
+    peer.on('nodeStateUpdate', () => {
+      this.emit('peer.nodeStateUpdate', peer);
     });
 
     peer.on('error', (err) => {

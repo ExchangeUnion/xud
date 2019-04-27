@@ -27,9 +27,9 @@ class Config {
   public dbpath: string;
   /** Whether matching will be disabled */
   public nomatching: boolean;
-  /** Whether to disable sanity checks that verify that the orders can possibly
-   * be swapped before adding them to the order book, can be enabled for
-   * testing & debugging purposes.
+  /**
+   * Whether to disable sanity checks that verify that the orders can possibly be swapped
+   * before adding them to the order book, can be enabled for testing & debugging purposes.
    */
   public nosanitychecks: boolean;
 

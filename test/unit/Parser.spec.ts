@@ -21,6 +21,7 @@ describe('Parser', () => {
   const network = new Network(XuNetwork.SimNet);
   const framer = new Framer(network);
   const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
+  const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
   let parser: Parser;
 
   beforeEach(() => {
@@ -303,11 +304,20 @@ describe('Parser', () => {
     testValidPacket(new packets.OrdersPacket([], uuid()));
     testInvalidPacket(new packets.OrdersPacket(ordersPacketBody));
 
+    const sanitySwapPacketBody = {
+      rHash,
+      currency: 'BTC',
+    };
+    testValidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody));
+    testInvalidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody, uuid()));
+    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, currency: undefined })));
+    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, rHash: undefined })));
+
     const swapRequestPacketBody = {
+      rHash,
       proposedQuantity: 10,
       pairId: uuid(),
       orderId: uuid(),
-      rHash: uuid(),
       takerCltvDelta: 10,
     };
     testValidPacket(new packets.SwapRequestPacket(swapRequestPacketBody));
@@ -320,7 +330,7 @@ describe('Parser', () => {
     testInvalidPacket(new packets.SwapRequestPacket(removeUndefinedProps({ ...swapRequestPacketBody, takerCltvDelta: 0 })));
 
     const swapAcceptedPacketBody = {
-      rHash: uuid(),
+      rHash,
       quantity: 10,
       makerCltvDelta: 10,
     };
@@ -333,14 +343,14 @@ describe('Parser', () => {
     testInvalidPacket(new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 })));
 
     const swapCompletePacketBody = {
-      rHash: uuid(),
+      rHash,
     };
     testValidPacket(new packets.SwapCompletePacket(swapCompletePacketBody));
     testInvalidPacket(new packets.SwapCompletePacket(swapCompletePacketBody, uuid()));
     testInvalidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, rHash: undefined })));
 
     const swapFailedPacketBody = {
-      rHash: uuid(),
+      rHash,
       errorMessage: 'this is a test',
       failureReason: SwapFailureReason.SendPaymentFailure,
     };

@@ -138,7 +138,7 @@ class Service extends EventEmitter {
       argChecks.VALID_CURRENCY(args);
       balances.set(currency, await getBalance(currency));
     } else {
-      for (const currency of this.orderBook.currencies.keys()) {
+      for (const currency of this.orderBook.currencies) {
         balances.set(currency, await getBalance(currency));
       }
     }
@@ -314,7 +314,7 @@ class Service extends EventEmitter {
    */
   public listCurrencies = () => {
     const pairs = new Map<string, Pair>();
-    return Array.from(this.orderBook.currencies.keys());
+    return Array.from(this.orderBook.currencies);
   }
 
   /**
@@ -377,30 +377,25 @@ class Service extends EventEmitter {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeAddedOrders = (args: { existing: boolean }, callback: (order: Order) => void) => {
+  public subscribeOrders = (args: { existing: boolean }, callback: (order?: Order, orderRemoval?: OrderPortion) => void) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buy.forEach(callback);
-        peerOrders.buy.forEach(callback);
-        ownOrders.sell.forEach(callback);
-        peerOrders.sell.forEach(callback);
+        ownOrders.buy.forEach(order => callback(order));
+        peerOrders.buy.forEach(order => callback(order));
+        ownOrders.sell.forEach(order => callback(order));
+        peerOrders.sell.forEach(order => callback(order));
       });
     }
 
-    this.orderBook.on('peerOrder.incoming', callback);
-    this.orderBook.on('ownOrder.added', callback);
-  }
+    this.orderBook.on('peerOrder.incoming', order => callback(order));
+    this.orderBook.on('ownOrder.added', order => callback(order));
 
-  /**
-   * Subscribe to orders being removed from the order book.
-   */
-  public subscribeRemovedOrders = async (callback: (order: OrderPortion) => void) => {
-    this.orderBook.on('peerOrder.invalidation', order => callback(order));
-    this.orderBook.on('peerOrder.filled', order => callback(order));
-    this.orderBook.on('ownOrder.filled', order => callback(order));
-    this.orderBook.on('ownOrder.swapped', order => callback(order));
+    this.orderBook.on('peerOrder.invalidation', orderRemoval => callback(undefined, orderRemoval));
+    this.orderBook.on('peerOrder.filled', orderRemoval => callback(undefined, orderRemoval));
+    this.orderBook.on('ownOrder.filled', orderRemoval => callback(undefined, orderRemoval));
+    this.orderBook.on('ownOrder.swapped', orderRemoval => callback(undefined, orderRemoval));
   }
 
   /*

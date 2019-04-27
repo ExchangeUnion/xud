@@ -99,6 +99,12 @@ message NodesPacket {
     repeated Node nodes = 3;
 }
 
+message SanitySwapPacket {
+    string id = 1;
+    string currency = 2;
+    string r_hash = 3;
+}
+
 message SwapRequestPacket {
     string id = 1;
     uint64 proposed_quantity = 2;

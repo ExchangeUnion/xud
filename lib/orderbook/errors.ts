@@ -66,8 +66,8 @@ const errors = {
     message: `unable to find swap client for currency ${currency}`,
     code: errorCodes.SWAP_CLIENT_NOT_FOUND,
   }),
-  INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number) => ({
-    message: `${currency} does not have sufficient outbound balance of: ${amount}`,
+  INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number, availableAmount: number) => ({
+    message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,
     code: errorCodes.INSUFFICIENT_OUTBOUND_BALANCE,
   }),
 };

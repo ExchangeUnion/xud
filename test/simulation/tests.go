@@ -271,7 +271,7 @@ func (a *actions) unban(srcNode, destNode *xudtest.HarnessNode) {
 func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 	req *xudrpc.PlaceOrderRequest) *xudrpc.Order {
 	// Subscribe to added orders on destNode
-	destNodeAddedOrderChan := subscribeAddedOrders(a.ctx, destNode)
+	destNodeOrderChan := subscribeOrders(a.ctx, destNode)
 
 	// Fetch nodes current order book state.
 	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
@@ -291,10 +291,10 @@ func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 	a.assert.Equal(res.RemainingOrder.OwnOrPeer.(*xudrpc.Order_LocalId).LocalId, req.OrderId)
 
 	// Retrieve and verify the added order event on destNode.
-	e := <-destNodeAddedOrderChan
+	e := <-destNodeOrderChan
 	a.assert.NoError(e.err)
-	a.assert.NotNil(e.order)
-	peerOrder := e.order
+	a.assert.NotNil(e.orderUpdate)
+	peerOrder := e.orderUpdate.GetOrder()
 
 	// Verify the peer order.
 	a.assert.NotEqual(peerOrder.Id, req.OrderId) // Local id should not equal the global id.
@@ -320,7 +320,7 @@ func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 
 func (a *actions) removeOrderAndInvalidate(srcNode, destNode *xudtest.HarnessNode, order *xudrpc.Order) {
 	// Subscribe to removed orders on destNode.
-	destNodeRemovedOrdersChan := subscribeRemovedOrders(a.ctx, destNode)
+	destNodeOrdersChan := subscribeOrders(a.ctx, destNode)
 
 	// Fetch nodes current order book state.
 	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
@@ -340,15 +340,16 @@ func (a *actions) removeOrderAndInvalidate(srcNode, destNode *xudtest.HarnessNod
 	a.assert.Equal(res.QuantityOnHold, uint64(0))
 
 	// Retrieve and verify the removed orders event on destNode.
-	e := <-destNodeRemovedOrdersChan
+	e := <-destNodeOrdersChan
 	a.assert.NoError(e.err)
-	a.assert.NotNil(e.orderRemoval)
+	a.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
 
 	// Verify the order removal.
-	a.assert.Empty(e.orderRemoval.LocalId)
-	a.assert.Equal(e.orderRemoval.Quantity, order.Quantity)
-	a.assert.Equal(e.orderRemoval.PairId, order.PairId)
-	a.assert.False(e.orderRemoval.IsOwnOrder)
+	a.assert.Empty(orderRemoval.LocalId)
+	a.assert.Equal(orderRemoval.Quantity, order.Quantity)
+	a.assert.Equal(orderRemoval.PairId, order.PairId)
+	a.assert.False(orderRemoval.IsOwnOrder)
 
 	// Verify that the order was removed from the order books.
 	srcNodeCount, destNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
@@ -422,19 +423,19 @@ func (a *actions) verifyPeer(srcNode, destNode *xudtest.HarnessNode) {
 	a.assert.Equal(resListPeers.Peers[peerIndex].LndPubKeys["LTC"], destNode.LndLtcNode.PubKeyStr)
 }
 
-type subscribeAddedOrdersEvent struct {
-	order *xudrpc.Order
-	err   error
+type subscribeOrdersEvent struct {
+	orderUpdate *xudrpc.OrderUpdate
+	err         error
 }
 
-func subscribeAddedOrders(ctx context.Context, node *xudtest.HarnessNode) <-chan *subscribeAddedOrdersEvent {
-	out := make(chan *subscribeAddedOrdersEvent, 1)
+func subscribeOrders(ctx context.Context, node *xudtest.HarnessNode) <-chan *subscribeOrdersEvent {
+	out := make(chan *subscribeOrdersEvent, 1)
 
 	// Subscribe before starting a non-blocking routine.
-	req := xudrpc.SubscribeAddedOrdersRequest{}
-	stream, err := node.Client.SubscribeAddedOrders(ctx, &req)
+	req := xudrpc.SubscribeOrdersRequest{}
+	stream, err := node.Client.SubscribeOrders(ctx, &req)
 	if err != nil {
-		out <- &subscribeAddedOrdersEvent{nil, err}
+		out <- &subscribeOrdersEvent{nil, err}
 		return out
 	}
 
@@ -442,7 +443,7 @@ func subscribeAddedOrders(ctx context.Context, node *xudtest.HarnessNode) <-chan
 		go func() {
 			for {
 				order, err := stream.Recv()
-				out <- &subscribeAddedOrdersEvent{order, err}
+				out <- &subscribeOrdersEvent{order, err}
 				if err != nil {
 					break
 				}
@@ -452,45 +453,7 @@ func subscribeAddedOrders(ctx context.Context, node *xudtest.HarnessNode) <-chan
 		select {
 		case <-ctx.Done():
 			if e := ctx.Err(); e != context.Canceled {
-				out <- &subscribeAddedOrdersEvent{nil, errors.New("timeout reached before event was received")}
-			}
-		}
-	}()
-
-	return out
-}
-
-type subscribeRemovedOrdersEvent struct {
-	orderRemoval *xudrpc.OrderRemoval
-	err          error
-}
-
-func subscribeRemovedOrders(ctx context.Context, node *xudtest.HarnessNode) <-chan *subscribeRemovedOrdersEvent {
-	out := make(chan *subscribeRemovedOrdersEvent, 1)
-
-	// Subscribe before starting a non-blocking routine.
-	req := xudrpc.SubscribeRemovedOrdersRequest{}
-	stream, err := node.Client.SubscribeRemovedOrders(ctx, &req)
-	if err != nil {
-		out <- &subscribeRemovedOrdersEvent{nil, err}
-		return out
-	}
-
-	go func() {
-		go func() {
-			for {
-				orderRemoval, err := stream.Recv()
-				out <- &subscribeRemovedOrdersEvent{orderRemoval, err}
-				if err != nil {
-					break
-				}
-			}
-		}()
-
-		select {
-		case <-ctx.Done():
-			if e := ctx.Err(); e != context.Canceled {
-				out <- &subscribeRemovedOrdersEvent{nil, errors.New("timeout reached before event was received")}
+				out <- &subscribeOrdersEvent{nil, errors.New("timeout reached before event was received")}
 			}
 		}
 	}()
