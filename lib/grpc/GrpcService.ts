@@ -4,7 +4,7 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
+import { ResolveRequest, ResolveResponse } from '../proto/hash_resolver_pb';
 import { Order, isOwnOrder, OrderPortion, PeerOrder, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
@@ -13,7 +13,6 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
-import { callback } from 'lib/cli/command';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].

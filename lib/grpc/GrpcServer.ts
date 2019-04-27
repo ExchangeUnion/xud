@@ -7,7 +7,7 @@ import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
-import { HashResolverService } from '../proto/lndrpc_grpc_pb';
+import { HashResolverService } from '../proto/hash_resolver_grpc_pb';
 import { exists, readFile, writeFile } from '../utils/fsUtils';
 import serverProxy from './serverProxy';
 

@@ -134,7 +134,9 @@ class LndClient extends BaseClient {
           active: lnd.getNumActiveChannels(),
           pending: lnd.getNumPendingChannels(),
         };
-        chains = lnd.getChainsList(),
+        chains = lnd.getChainsList().map((chain: lndrpc.Chain) => {
+          return chain.getChain();
+        }),
         blockheight = lnd.getBlockHeight(),
         uris = lnd.getUrisList(),
         version = lnd.getVersion();
