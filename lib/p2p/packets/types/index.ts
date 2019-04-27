@@ -14,3 +14,4 @@ export { default as SwapRequestPacket, SwapRequestPacketBody } from './SwapReque
 export { default as SwapAcceptedPacket, SwapAcceptedPacketBody } from './SwapAcceptedPacket';
 export { default as SwapCompletePacket, SwapCompletePacketBody } from './SwapCompletePacket';
 export { default as SwapFailedPacket, SwapFailedPacketBody } from './SwapFailedPacket';
+export { default as SanitySwapPacket, SanitySwapPacketBody } from './SanitySwapPacket';

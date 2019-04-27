@@ -3,7 +3,10 @@ import Logger from '../Logger';
 import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
 import errors from './errors';
 import { SwapDeal } from '../swaps/types';
-import { SwapClient } from '../constants/enums';
+import { SwapClient, SwapState, SwapRole } from '../constants/enums';
+import assert from 'assert';
+import OrderBookRepository from '../orderbook/OrderBookRepository';
+import { Models } from '../db/DB';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -68,53 +71,67 @@ type ChannelEvent = {
   amount?: number;
 };
 
+type TokenPaymentResponse = {
+  secret: string;
+};
+
 /**
  * A class representing a client to interact with raiden.
  */
 class RaidenClient extends BaseClient {
   public readonly type = SwapClient.Raiden;
-  public readonly cltvDelta: number = 0;
-  public address?: string;
+  public readonly cltvDelta: number = 1;
+  public address = '';
+  public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
+  private disable: boolean;
+  private repository: OrderBookRepository;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger) {
+  constructor(config: RaidenClientConfig, logger: Logger, models: Models) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
+    this.disable = disable;
 
-    if (disable) {
-      this.setStatus(ClientStatus.Disabled);
-    }
+    this.repository = new OrderBookRepository(logger, models);
   }
 
   /**
    * Checks for connectivity and gets our Raiden account address
    */
   public init = async () => {
-    if (this.isDisabled()) {
-      this.logger.error(`can't init raiden. raiden is disabled`);
+    if (this.disable) {
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
-    // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
+    // associate the client with all currencies that have a contract address
+    await this.setCurrencies();
     await this.verifyConnection();
   }
 
-  /**
-   * Verifies that Raiden REST service can be reached by attempting a `getAddress` call.
-   */
-  private verifyConnection = async () => {
+  private setCurrencies = async () => {
+    try {
+      const currencies = await this.repository.getCurrencies();
+      const raidenCurrencies = currencies.filter((currency) => {
+        const tokenAddress = currency.getDataValue('tokenAddress');
+        if (tokenAddress) {
+          this.tokenAddresses.set(currency.getDataValue('id'), tokenAddress);
+        }
+      });
+    } catch (e) {
+      this.logger.error('failed to set tokenAddresses for Raiden', e);
+    }
+  }
+
+  protected verifyConnection = async () => {
     this.logger.info(`trying to verify connection to raiden with uri: ${this.host}:${this.port}`);
     try {
-      if (this.reconnectionTimer) {
-        clearTimeout(this.reconnectionTimer);
-      }
       const address = await this.getAddress();
 
       /** The new raiden address value if different from the one we had previously. */
@@ -125,17 +142,47 @@ class RaidenClient extends BaseClient {
       }
 
       this.emit('connectionVerified', newAddress);
-      this.setStatus(ClientStatus.ConnectionVerified);
+      await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
       );
-      this.reconnectionTimer = setTimeout(this.verifyConnection, RaidenClient.RECONNECT_TIMER);
+      await this.setStatus(ClientStatus.Disconnected);
     }
   }
 
-  public sendPayment = async (_deal: SwapDeal): Promise<string> => {
-    return ''; // stub placeholder
+  public sendSmallestAmount = async (rHash: string, destination: string, currency: string) => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, destination, 1, rHash);
+    return tokenPaymentResponse.secret;
+  }
+
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+    assert(deal.destination);
+    let amount = 0;
+    let tokenAddress;
+    if (deal.role === SwapRole.Maker) {
+      // we are the maker paying the taker
+      amount = deal.takerAmount;
+      tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
+    } else {
+      // we are the taker paying the maker
+      amount = deal.makerAmount;
+      tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
+    }
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+    // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
+    // https://github.com/ExchangeUnion/xud/issues/870
+    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
+    return tokenPaymentResponse.secret;
+
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
@@ -160,7 +207,7 @@ class RaidenClient extends BaseClient {
     } else {
       try {
         channels = (await this.getChannels()).length;
-        address = this.address!;
+        address = this.address;
       } catch (err) {
         error = err.message;
       }
@@ -270,6 +317,7 @@ class RaidenClient extends BaseClient {
    * Returns the total balance available across all channels.
    */
   public channelBalance = async (): Promise<ChannelBalance> => {
+    // TODO: refine logic to determine balance per token rather than all combined
     const channels = await this.getChannels();
     const balance = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
@@ -305,15 +353,30 @@ class RaidenClient extends BaseClient {
    * @param amount
    * @param secret_hash optional; provide your own secret hash
    */
-  private tokenPayment = async (token_address: string, target_address: string, amount: number, secret_hash?: string): Promise<{}> => {
+  private tokenPayment = async (
+    token_address: string,
+    target_address: string,
+    amount: number,
+    secret_hash?: string,
+  ): Promise<TokenPaymentResponse> => {
     const endpoint = `payments/${token_address}/${target_address}`;
-    let payload = { amount };
+    let payload = {
+      amount,
+      // Raiden payment will timeout without an error if the identifier
+      // is not specified.
+      identifier: Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1),
+    };
     if (secret_hash) {
       payload = Object.assign(payload, { secret_hash });
     }
-    const res = await this.sendRequest(endpoint, 'POST', payload);
-    const body = await parseResponseBody(res);
-    return body;
+    try {
+      const res = await this.sendRequest(endpoint, 'POST', payload);
+      const body = await parseResponseBody<TokenPaymentResponse>(res);
+      return body;
+    } catch (e) {
+      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      throw e;
+    }
   }
 
   /**

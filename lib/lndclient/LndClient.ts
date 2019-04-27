@@ -52,9 +52,6 @@ class LndClient extends BaseClient {
   private identityPubKey?: string;
   private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
 
-  /** Time in milliseconds between attempts to recheck if lnd's backend chain is in sync. */
-  private static readonly RECHECK_SYNC_TIMER = 30000;
-
   /**
    * Creates an lnd client.
    * @param config the lnd configuration
@@ -79,6 +76,7 @@ class LndClient extends BaseClient {
       shouldDisable = true;
     }
     if (shouldDisable) {
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
 
@@ -94,9 +92,7 @@ class LndClient extends BaseClient {
     } else {
       this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
     }
-    // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
-    return this.verifyConnection();
+    await this.verifyConnection();
   }
 
   public get pubKey() {
@@ -160,12 +156,7 @@ class LndClient extends BaseClient {
     };
   }
 
-  /**
-   * Verifies that the lnd gRPC service can be reached by attempting a `getInfo` call.
-   * If successful, subscribe to invoice events and store the lnd identity pubkey.
-   * If not, set a timer to attempt to reach the service again in 5 seconds.
-   */
-  public verifyConnection = async () => {
+  protected verifyConnection = async () => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
@@ -177,11 +168,7 @@ class LndClient extends BaseClient {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
-          this.setStatus(ClientStatus.ConnectionVerified);
-          if (this.reconnectionTimer) {
-            clearTimeout(this.reconnectionTimer);
-            this.reconnectionTimer = undefined;
-          }
+          await this.setStatus(ClientStatus.ConnectionVerified);
 
           /** The new lnd pub key value if different from the one we had previously. */
           let newPubKey: string | undefined;
@@ -192,15 +179,13 @@ class LndClient extends BaseClient {
           this.emit('connectionVerified', newPubKey);
           this.subscribeInvoices();
         } else {
-          this.setStatus(ClientStatus.OutOfSync);
-          this.logger.error(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
-          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECHECK_SYNC_TIMER);
+          await this.setStatus(ClientStatus.OutOfSync);
+          this.logger.warn(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
         }
       } catch (err) {
-        this.setStatus(ClientStatus.Disconnected);
         this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
-        this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+        await this.setStatus(ClientStatus.Disconnected);
       }
     }
   }
@@ -211,6 +196,32 @@ class LndClient extends BaseClient {
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
+  }
+
+  /**
+   * Gets the preimage in hex format from an lnd SendResponse message.
+   */
+  private getPreimageFromSendResponse = (response: lndrpc.SendResponse) => {
+    return Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+  }
+
+  public sendSmallestAmount = async (rHash: string, destination: string) => {
+    const sendRequest = new lndrpc.SendRequest();
+    sendRequest.setAmt(1);
+    sendRequest.setDestString(destination);
+    sendRequest.setPaymentHashString(rHash);
+    let sendPaymentResponse: lndrpc.SendResponse;
+    try {
+      sendPaymentResponse = await this.sendPaymentSync(sendRequest);
+    } catch (err) {
+      this.logger.error(`got exception from sendPaymentSync`, err.message);
+      throw err;
+    }
+    const paymentError = sendPaymentResponse.getPaymentError();
+    if (paymentError) {
+      throw new Error(paymentError);
+    }
+    return this.getPreimageFromSendResponse(sendPaymentResponse);
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
@@ -229,9 +240,9 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return Buffer.from(sendToRouteResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        return this.getPreimageFromSendResponse(sendToRouteResponse);
       } catch (err) {
-        this.logger.error(`Got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
+        this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
       }
     } else if (deal.destination) {
@@ -257,9 +268,9 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return Buffer.from(sendPaymentResponse.getPaymentPreimage_asB64(), 'base64').toString('hex');
+        return this.getPreimageFromSendResponse(sendPaymentResponse);
       } catch (err) {
-        this.logger.error(`Got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
+        this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
       }
     } else {
@@ -381,11 +392,10 @@ class LndClient extends BaseClient {
     }
 
     this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
-    .on('error', (error) => {
+    .on('error', async (error) => {
       this.invoiceSubscription = undefined;
-      this.setStatus(ClientStatus.Disconnected);
       this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
-      this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+      await this.setStatus(ClientStatus.Disconnected);
     });
   }
 

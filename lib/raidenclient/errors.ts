@@ -8,6 +8,7 @@ const errorCodes = {
   INVALID: codesPrefix.concat('.4'),
   SERVER_ERROR: codesPrefix.concat('.5'),
   UNEXPECTED: codesPrefix.concat('.6'),
+  TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
 };
 
 const errors = {
@@ -34,6 +35,10 @@ const errors = {
   UNEXPECTED: {
     message: 'unexpected error during raiden request',
     code: errorCodes.UNEXPECTED,
+  },
+  TOKEN_ADDRESS_NOT_FOUND: {
+    message: 'raiden token address not found',
+    code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
   },
 };
 

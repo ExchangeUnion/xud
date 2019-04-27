@@ -9,7 +9,7 @@ This project uses [go modules](https://github.com/golang/go/wiki/Modules)
     
 Requirements:
 
-* Golang version >= 1.11
+* Golang version >= 1.12
 * Git
 
 Installation & Usage:
@@ -38,7 +38,7 @@ $ GO111MODULE=on go test -v
 - [ ] Peer disconnection should trigger orders removal to all his orders.
 
 ### Node State
-- [ ] Removed pair should trigger order removal for all the pair's orders, and removed from connected peers' order books.
+- [ ] Removed pair or swap client (lnd/raiden) disconnected (after timeout elapsed) should trigger order removal for all the pair's orders, and removed from connected peers' order books.
 - [ ] Updated `LND-BTC`/`LND-LTC` public keys should propagate over the network.
 
 ### Swaps

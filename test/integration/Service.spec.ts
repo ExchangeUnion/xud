@@ -23,6 +23,7 @@ describe('API Service', () => {
   before(async () => {
     const config = {
       initdb: false,
+      nosanitychecks: true,
       dbpath: ':memory:',
       loglevel: 'warn',
       logpath: '',
@@ -81,6 +82,7 @@ describe('API Service', () => {
     const args = {
       pairId,
       includeOwnOrders: true,
+      limit: 0,
     };
     const orders = service.listOrders(args);
 

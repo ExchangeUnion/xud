@@ -4,6 +4,7 @@ import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
+import BaseClient from './BaseClient';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import GrpcServer from './grpc/GrpcServer';
@@ -74,28 +75,33 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
+      const swapClients = new Map<string, BaseClient>();
       // setup LND clients and initialize
       for (const currency in this.config.lnd) {
         const lndConfig = this.config.lnd[currency]!;
         if (!lndConfig.disable) {
           const lndClient = new LndClient(lndConfig, currency, loggers.lnd);
           this.lndClients[currency] = lndClient;
+          swapClients.set(currency, lndClient);
           initPromises.push(lndClient.init());
         }
       }
 
       // setup raiden client and connect if configured
-      this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden);
+      this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden, this.db.models);
+      await this.raidenClient.init();
       if (!this.raidenClient.isDisabled()) {
-        initPromises.push(this.raidenClient.init());
+        for (const currency of this.raidenClient.tokenAddresses.keys()) {
+          swapClients.set(currency, this.raidenClient);
+        }
       }
 
       this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models);
 
-      this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.lndClients);
+      this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, swapClients);
       initPromises.push(this.swaps.init());
 
-      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps);
+      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps, this.config.nosanitychecks);
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
@@ -178,7 +184,7 @@ class Xud extends EventEmitter {
     }
     this.raidenClient.on('connectionVerified', (newAddress) => {
       if (newAddress) {
-        this.pool.updateNodeState({ raidenAddress: newAddress });
+        this.pool.updateRaidenAddress(newAddress);
       }
     });
   }

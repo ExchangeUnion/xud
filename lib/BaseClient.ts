@@ -30,12 +30,12 @@ abstract class BaseClient extends EventEmitter {
   public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
-
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
   protected static readonly RECONNECT_TIMER = 5000;
+
   private updateCapacityTimer?: NodeJS.Timer;
   /** Time in milliseconds between updating the maximum outbound capacity */
-  private CAPACITY_REFRESH_INTERVAL = 60000;
+  private static CAPACITY_REFRESH_INTERVAL = 60000;
 
   constructor(protected logger: Logger) {
     super();
@@ -45,33 +45,66 @@ abstract class BaseClient extends EventEmitter {
    * Returns the total balance available across all channels.
    */
   public abstract channelBalance(): Promise<ChannelBalance>;
-  protected setStatus(status: ClientStatus): void {
+
+  protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
-    this.checkTimers();
+    await this.setTimers();
   }
-  private checkTimers() {
+
+  private setTimers = async () => {
     if (this.status === ClientStatus.ConnectionVerified) {
-      this.updateCapacityTimer = setInterval(async () => {
-        try {
-          this.maximumOutboundCapacity = (await this.channelBalance()).balance;
-        } catch (e) {
-          // TODO: Mark client as disconnected
-          this.logger.error(`failed to fetch channelbalance from client: ${e}`);
-        }
-      }, this.CAPACITY_REFRESH_INTERVAL);
+      if (!this.updateCapacityTimer) {
+        await this.updateCapacity();
+        this.updateCapacityTimer = setInterval(this.updateCapacity, BaseClient.CAPACITY_REFRESH_INTERVAL);
+      }
+
+      if (this.reconnectionTimer) {
+        clearTimeout(this.reconnectionTimer);
+        this.reconnectionTimer = undefined;
+      }
     } else {
       if (this.updateCapacityTimer) {
         clearInterval(this.updateCapacityTimer);
+        this.updateCapacityTimer = undefined;
+      }
+      if (this.status !== ClientStatus.Disabled) {
+        if (!this.reconnectionTimer) {
+          this.reconnectionTimer = setTimeout(this.verifyConnection, BaseClient.RECONNECT_TIMER);
+        } else {
+          this.reconnectionTimer.refresh();
+        }
       }
     }
   }
+
+  private updateCapacity = async () => {
+    try {
+      this.maximumOutboundCapacity = (await this.channelBalance()).balance;
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalance from client: ${e}`);
+    }
+  }
+
+  /**
+   * Verifies that the swap client can be reached and is in an operational state
+   * and sets the [[ClientStatus]] accordingly.
+   */
+  protected abstract async verifyConnection(): Promise<void>;
 
   /**
    * Sends payment according to the terms of a swap deal.
    * @returns the preimage for the swap
    */
   public abstract async sendPayment(deal: SwapDeal): Promise<string>;
+
+  /**
+   * Sends the smallest amount supported by the client to the given destination.
+   * Throws an error if the payment fails.
+   * @returns the preimage for the payment hash
+   */
+  public abstract async sendSmallestAmount(rHash: string, destination: string, currency: string): Promise<string>;
 
   /**
    * Gets routes for the given currency, amount and peerPubKey.
