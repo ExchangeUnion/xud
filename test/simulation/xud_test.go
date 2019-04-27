@@ -68,6 +68,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	log.Printf("\n%v", output)
 
 	// Create XUD network instance without launching it.
+	t.Logf("xud: creating network")
 	xudHarness, err := xudtest.NewNetworkHarness()
 	if err != nil {
 		ht.Fatalf("unable to create xud network harness: %v", err)
@@ -245,7 +246,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	// Launch XUD network.
 	xudHarness.SetLnd(lndBtcNetworkHarness, "BTC")
 	xudHarness.SetLnd(lndLtcNetworkHarness, "LTC")
-	t.Logf("launching xud network...")
+	t.Logf("xud: launching network...")
 	if err := xudHarness.Start(); err != nil {
 		ht.Fatalf("cannot start xud network: %v", err)
 	}
