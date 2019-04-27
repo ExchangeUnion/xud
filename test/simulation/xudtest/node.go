@@ -211,8 +211,8 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 		select {
 		case <-tlsTimeout:
 			return nil, fmt.Errorf("timeout waiting for TLS cert "+
-				"file to be created after 30 seconds: %v", hn.Cfg.TLSCertPath)
-		case <-time.After(100 * time.Millisecond):
+				"file to be created after 20 seconds: %v", hn.Cfg.TLSCertPath)
+		case <-time.After(1 * time.Second):
 		}
 	}
 
