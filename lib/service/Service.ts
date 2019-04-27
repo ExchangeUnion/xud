@@ -424,42 +424,39 @@ class Service extends EventEmitter {
   /**
    * Generate a new aezeed cipher seed given an optional passphrase
    */
-  public genSeed = async (args: { aezeed_passphrase: string, seed_entropy: string, currency: string }) => {
+  public genSeed = async (args: { request: lndrpc.GenSeedRequest, currency: string }): Promise<lndrpc.GenSeedResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.genSeed(args.aezeed_passphrase, args.seed_entropy);
+    return client!.genSeed(args.request);
   }
 
   /**
    * init wallet
    */
-  public initWallet = async (args: {
-    currency: string, wallet_password: string,
-    cipher_seed_mnemonice: string[] , eazeed_passphrase: string , recovery_window: number , channel_backups?: lndrpc.ChanBackupSnapshot }) => {
+  public initWallet = async (args: { request: lndrpc.InitWalletRequest, currency: string }): Promise<lndrpc.InitWalletResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.initWallet(args.wallet_password, args.cipher_seed_mnemonice, args.eazeed_passphrase, args.recovery_window, args.channel_backups);
+    return client!.initWallet(args.request);
   }
 
   /**
    * unlock wallet
    */
-  public unlockWallet = async (args: {currency: string, wallet_password: string,
-    recovery_window: number, channel_backups?: lndrpc.ChanBackupSnapshot }) => {
+  public unlockWallet = async (args: {request: lndrpc.UnlockWalletRequest, currency: string}): Promise<lndrpc.UnlockWalletResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.unlockWallet(args.wallet_password, args.recovery_window, args.channel_backups);
+    return client!.unlockWallet(args.request);
   }
 
   /**
    * change password
    */
-  public changePassword = async (args: {currency: string, current_password: string, new_password: string}) => {
+  public changePassword = async (args: {currency: string, request: lndrpc.ChangePasswordRequest}): Promise<lndrpc.ChangePasswordResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.changePassword(args.current_password, args.current_password);
+    return client!.changePassword(args.request);
   }
 
   /**
    * wallet balance
    */
-  public walletBalance = async (args: {currency: string}) => {
+  public walletBalance = async (args: {currency: string}): Promise<lndrpc.WalletBalanceResponse> => {
     const client = this.getLndClient(args.currency);
     return client!.walletBalance();
   }
@@ -467,7 +464,7 @@ class Service extends EventEmitter {
   /**
    * get transactions
    */
-  public getTransactions = async (args: {currency: string}) => {
+  public getTransactions = async (args: {currency: string}): Promise<lndrpc.TransactionDetails> => {
     const client = this.getLndClient(args.currency);
     return client!.getTransactions();
   }
@@ -475,43 +472,43 @@ class Service extends EventEmitter {
   /**
    * estimate fee
    */
-  public estimateFee = async (args: {currency: string, target_conf: number}) => {
+  public estimateFee = async (args: {currency: string, request: lndrpc.EstimateFeeRequest}): Promise<lndrpc.EstimateFeeResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.estimateFee(args.target_conf);
+    return client!.estimateFee(args.request);
   }
 
   /**
    * list unspent
    */
-  public listUnspent = async (args: {currency: string, min_confs: number, max_confs: number}) => {
+  public listUnspent = async (args: {currency: string, request: lndrpc.ListUnspentRequest}): Promise<lndrpc.ListUnspentResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.listUnspent(args.min_confs, args.max_confs);
+    return client!.listUnspent(args.request);
   }
 
   /**
    * send coins
    */
-  public sendCoins = async (args: {currency: string, address: string, amount: number, target_conf: number,
-    sat_per_byte: number, send_all: boolean}) => {
+  public sendCoins = async (args: {currency: string, request: lndrpc.SendCoinsRequest}): Promise<lndrpc.SendCoinsResponse> => {
     const client = this.getLndClient(args.currency);
-    return client!.sendCoins(args.address, args.amount, args.target_conf, args.sat_per_byte, args.send_all);
+    return client!.sendCoins(args.request);
   }
 
   /**
    * send many
    */
-  public sendMany = async (args: {currency: string, target_conf: number, sat_per_byte: number}) => {
+  public sendMany = async (args: {currency: string, request: lndrpc.SendManyRequest}) => {
     const client = this.getLndClient(args.currency);
-    return client!.sendMany(args.target_conf, args.sat_per_byte);
+    return client!.sendMany(args.request);
   }
 
   /**
    * new address
    */
-  public newAddress = async (args: {currency: string, addressType: number}) => {
+  public newAddress = async (args: {currency: string, request: lndrpc.NewAddressRequest}) => {
     const client = this.getLndClient(args.currency);
-    return client!.newAddress(args.addressType);
+    return client!.newAddress(args.request);
   }
 }
+
 export default Service;
 export { ServiceComponents };

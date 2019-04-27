@@ -113,7 +113,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcChangePasswordRequest"
+              "$ref": "#/definitions/xudrpcChangePasswordRequest"
             }
           }
         ],
@@ -209,7 +209,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcEstimateFeeRequest"
+              "$ref": "#/definitions/xudrpcEstimateFeeRequest"
             }
           }
         ],
@@ -262,7 +262,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcGenSeedRequest"
+              "$ref": "#/definitions/xudrpcGenSeedRequest"
             }
           }
         ],
@@ -288,7 +288,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcGetTransactionsRequest"
+              "$ref": "#/definitions/xudrpcGetTransactionsRequest"
             }
           }
         ],
@@ -331,7 +331,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcInitWalletRequest"
+              "$ref": "#/definitions/xudrpcInitWalletRequest"
             }
           }
         ],
@@ -357,7 +357,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcListUnspentRequest"
+              "$ref": "#/definitions/xudrpcListUnspentRequest"
             }
           }
         ],
@@ -383,7 +383,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcNewAddressRequest"
+              "$ref": "#/definitions/xudrpcNewAddressRequest"
             }
           }
         ],
@@ -638,7 +638,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcSendCoinsRequest"
+              "$ref": "#/definitions/xudrpcSendCoinsRequest"
             }
           }
         ],
@@ -664,7 +664,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcSendManyRequest"
+              "$ref": "#/definitions/xudrpcSendManyRequest"
             }
           }
         ],
@@ -884,7 +884,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcWalletBalanceRequest"
+              "$ref": "#/definitions/xudrpcWalletBalanceRequest"
             }
           }
         ],
@@ -1063,9 +1063,6 @@
           "description": "*\nenciphered_seed are the raw aezeed cipher seed bytes. This is the raw\ncipher text before run through our mnemonic encoding scheme."
         }
       }
-    },
-    "lnrpcGetTransactionsRequest": {
-      "type": "object"
     },
     "lnrpcInitWalletRequest": {
       "type": "object",
@@ -1362,9 +1359,6 @@
         }
       }
     },
-    "lnrpcWalletBalanceRequest": {
-      "type": "object"
-    },
     "lnrpcWalletBalanceResponse": {
       "type": "object",
       "properties": {
@@ -1475,6 +1469,17 @@
     "xudrpcBanResponse": {
       "type": "object"
     },
+    "xudrpcChangePasswordRequest": {
+      "type": "object",
+      "properties": {
+        "change_password": {
+          "$ref": "#/definitions/lnrpcChangePasswordRequest"
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcChannelBalance": {
       "type": "object",
       "properties": {
@@ -1514,6 +1519,17 @@
     "xudrpcConnectResponse": {
       "type": "object"
     },
+    "xudrpcEstimateFeeRequest": {
+      "type": "object",
+      "properties": {
+        "estimate_fee": {
+          "$ref": "#/definitions/lnrpcEstimateFeeRequest"
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcExecuteSwapRequest": {
       "type": "object",
       "properties": {
@@ -1533,6 +1549,17 @@
           "type": "string",
           "format": "uint64",
           "description": "The quantity to swap. The whole order will be swapped if unspecified."
+        }
+      }
+    },
+    "xudrpcGenSeedRequest": {
+      "type": "object",
+      "properties": {
+        "gen_seed": {
+          "$ref": "#/definitions/lnrpcGenSeedRequest"
+        },
+        "currency": {
+          "type": "string"
         }
       }
     },
@@ -1594,6 +1621,25 @@
         }
       }
     },
+    "xudrpcGetTransactionsRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcInitWalletRequest": {
+      "type": "object",
+      "properties": {
+        "init_wallet": {
+          "$ref": "#/definitions/lnrpcInitWalletRequest"
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcListCurrenciesResponse": {
       "type": "object",
       "properties": {
@@ -1639,6 +1685,17 @@
             "$ref": "#/definitions/xudrpcPeer"
           },
           "description": "The list of connected peers."
+        }
+      }
+    },
+    "xudrpcListUnspentRequest": {
+      "type": "object",
+      "properties": {
+        "list_unspent": {
+          "$ref": "#/definitions/lnrpcListUnspentRequest"
+        },
+        "currency": {
+          "type": "string"
         }
       }
     },
@@ -1691,6 +1748,17 @@
           "type": "string"
         },
         "alias": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcNewAddressRequest": {
+      "type": "object",
+      "properties": {
+        "new_address": {
+          "$ref": "#/definitions/lnrpcNewAddressRequest"
+        },
+        "currency": {
           "type": "string"
         }
       }
@@ -2003,6 +2071,28 @@
     "xudrpcRemovePairResponse": {
       "type": "object"
     },
+    "xudrpcSendCoinsRequest": {
+      "type": "object",
+      "properties": {
+        "send_coins": {
+          "$ref": "#/definitions/lnrpcSendCoinsRequest"
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
+    "xudrpcSendManyRequest": {
+      "type": "object",
+      "properties": {
+        "send_many": {
+          "$ref": "#/definitions/lnrpcSendManyRequest"
+        },
+        "currency": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcShutdownRequest": {
       "type": "object"
     },
@@ -2112,6 +2202,14 @@
     },
     "xudrpcUnbanResponse": {
       "type": "object"
+    },
+    "xudrpcWalletBalanceRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        }
+      }
     }
   },
   "x-stream-definitions": {

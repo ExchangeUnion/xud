@@ -3,6 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
+import * as lndrpc from '../proto/lndrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
 import { Order, isOwnOrder, OrderPortion, PeerOrder, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
@@ -12,6 +13,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
+import { callback } from 'lib/cli/command';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -255,6 +257,21 @@ class GrpcService {
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * change wallet password. See [[Service.changePassword]]
+   */
+  public changePassword: grpc.handleUnaryCall<xudrpc.ChangePasswordRequest, lndrpc.ChangePasswordResponse> = async (call, callback) => {
+    try {
+      const request = await this.service.changePassword({
+        request: call.request.getChangePassword()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, request);
+    } catch (err) {
+      callback(err, null);
     }
   }
 
@@ -573,6 +590,150 @@ class GrpcService {
       if (resolveResponse) {
         response.setPreimage(resolveResponse);
       }
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Generate a new aezeed cipher seed given an optional passphrase. See [[Service.genSeed]]
+   */
+  public genSeed: grpc.handleUnaryCall<xudrpc.GenSeedRequest, lndrpc.GenSeedResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.genSeed({
+        request: call.request.getGenSeed()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Initiate wallet. See [[Service.initWallet]]
+   */
+  public initWallet: grpc.handleUnaryCall<xudrpc.InitWalletRequest, lndrpc.InitWalletResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.initWallet({
+        request: call.request.getInitWallet()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Unlock Wallet. See [[Service.unlockWallet]]
+   */
+  public unlockWallet: grpc.handleUnaryCall<xudrpc.InitWalletRequest, lndrpc.InitWalletResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.unlockWallet({
+        request: call.request.getInitWallet()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Wallet balance. See [[Service.walletBalance]]
+   */
+  public walletBalance: grpc.handleUnaryCall<xudrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.walletBalance(call.request.toObject());
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Get transactions. See [[Service.getTransactions]]
+   */
+  public getTransactions: grpc.handleUnaryCall<xudrpc.GetTransactionsRequest, lndrpc.TransactionDetails> = async (call, callback) =>  {
+    try {
+      const response = await this.service.getTransactions(call.request.toObject());
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Estimate fee. See [[Service.estimateFee]]
+   */
+  public estimateFee: grpc.handleUnaryCall<xudrpc.EstimateFeeRequest, lndrpc.EstimateFeeResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.estimateFee({
+        request: call.request.getEstimateFee()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * list unspent. See [[Service.listUnspent]]
+   */
+  public listUnspent: grpc.handleUnaryCall<xudrpc.ListUnspentRequest, lndrpc.ListUnspentResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.listUnspent({
+        request: call.request.getListUnspent()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Send coins. See [[Service.sendCoins]]
+   */
+  public sendCoins: grpc.handleUnaryCall<xudrpc.SendCoinsRequest, lndrpc.SendCoinsResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.sendCoins({
+        currency: call.request.getCurrency(),
+        request: call.request.getSendCoins()!,
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * Send many. See [[Service.sendMany]]
+   */
+  public sendMany: grpc.handleUnaryCall<xudrpc.SendManyRequest, lndrpc.SendManyResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.sendMany({
+        request: call.request.getSendMany()!,
+        currency: call.request.getCurrency(),
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), err);
+    }
+  }
+
+  /**
+   * New address. See [[Service.newAddress]]
+   */
+  public newAddress: grpc.handleUnaryCall<xudrpc.NewAddressRequest, lndrpc.NewAddressResponse> = async (call, callback) => {
+    try {
+      const response = await this.service.newAddress({
+        currency: call.request.getCurrency(),
+        request: call.request.getNewAddress()!,
+      });
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

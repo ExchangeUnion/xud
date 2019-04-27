@@ -10,18 +10,23 @@
     - [AddPairResponse](#xudrpc.AddPairResponse)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
+    - [ChangePasswordRequest](#xudrpc.ChangePasswordRequest)
     - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
     - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
+    - [EstimateFeeRequest](#xudrpc.EstimateFeeRequest)
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
+    - [GenSeedRequest](#xudrpc.GenSeedRequest)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
+    - [GetTransactionsRequest](#xudrpc.GetTransactionsRequest)
+    - [InitWalletRequest](#xudrpc.InitWalletRequest)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
     - [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse)
     - [ListOrdersRequest](#xudrpc.ListOrdersRequest)
@@ -31,8 +36,10 @@
     - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
+    - [ListUnspentRequest](#xudrpc.ListUnspentRequest)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
+    - [NewAddressRequest](#xudrpc.NewAddressRequest)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [Orders](#xudrpc.Orders)
@@ -49,6 +56,8 @@
     - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
+    - [SendCoinsRequest](#xudrpc.SendCoinsRequest)
+    - [SendManyRequest](#xudrpc.SendManyRequest)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
@@ -58,6 +67,7 @@
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
+    - [WalletBalanceRequest](#xudrpc.WalletBalanceRequest)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
@@ -157,6 +167,22 @@
 
 
 
+<a name="xudrpc.ChangePasswordRequest"></a>
+
+### ChangePasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| change_password | [lnrpc.ChangePasswordRequest](#lnrpc.ChangePasswordRequest) |  |  |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.ChannelBalance"></a>
 
 ### ChannelBalance
@@ -244,6 +270,22 @@
 
 
 
+<a name="xudrpc.EstimateFeeRequest"></a>
+
+### EstimateFeeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| estimate_fee | [lnrpc.EstimateFeeRequest](#lnrpc.EstimateFeeRequest) |  |  |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.ExecuteSwapRequest"></a>
 
 ### ExecuteSwapRequest
@@ -256,6 +298,22 @@
 | pair_id | [string](#string) |  | The trading pair of the swap orders. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
 | quantity | [uint64](#uint64) |  | The quantity to swap. The whole order will be swapped if unspecified. |
+
+
+
+
+
+
+<a name="xudrpc.GenSeedRequest"></a>
+
+### GenSeedRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| gen_seed | [lnrpc.GenSeedRequest](#lnrpc.GenSeedRequest) |  |  |
+| currency | [string](#string) |  |  |
 
 
 
@@ -335,6 +393,37 @@
 | ----- | ---- | ----- | ----------- |
 | reputationScore | [int32](#int32) |  | The node&#39;s reputation score. Points are subtracted for unexpected or potentially malicious behavior. Points are added when swaps are successfully executed. |
 | banned | [bool](#bool) |  | Whether the node is currently banned. |
+
+
+
+
+
+
+<a name="xudrpc.GetTransactionsRequest"></a>
+
+### GetTransactionsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.InitWalletRequest"></a>
+
+### InitWalletRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| init_wallet | [lnrpc.InitWalletRequest](#lnrpc.InitWalletRequest) |  |  |
+| currency | [string](#string) |  |  |
 
 
 
@@ -463,6 +552,22 @@
 
 
 
+<a name="xudrpc.ListUnspentRequest"></a>
+
+### ListUnspentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| list_unspent | [lnrpc.ListUnspentRequest](#lnrpc.ListUnspentRequest) |  |  |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.LndChannels"></a>
 
 ### LndChannels
@@ -495,6 +600,22 @@
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |
 | alias | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.NewAddressRequest"></a>
+
+### NewAddressRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| new_address | [lnrpc.NewAddressRequest](#lnrpc.NewAddressRequest) |  |  |
+| currency | [string](#string) |  |  |
 
 
 
@@ -768,6 +889,38 @@
 
 
 
+<a name="xudrpc.SendCoinsRequest"></a>
+
+### SendCoinsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| send_coins | [lnrpc.SendCoinsRequest](#lnrpc.SendCoinsRequest) |  |  |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.SendManyRequest"></a>
+
+### SendManyRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| send_many | [lnrpc.SendManyRequest](#lnrpc.SendManyRequest) |  |  |
+| currency | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.ShutdownRequest"></a>
 
 ### ShutdownRequest
@@ -899,6 +1052,21 @@
 
 
 
+
+<a name="xudrpc.WalletBalanceRequest"></a>
+
+### WalletBalanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  |  |
+
+
+
+
+
  
 
 
@@ -968,17 +1136,17 @@
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
-| GenSeed | [.lnrpc.GenSeedRequest](#lnrpc.GenSeedRequest) | [.lnrpc.GenSeedResponse](#lnrpc.GenSeedResponse) |  |
-| InitWallet | [.lnrpc.InitWalletRequest](#lnrpc.InitWalletRequest) | [.lnrpc.InitWalletResponse](#lnrpc.InitWalletResponse) |  |
+| GenSeed | [GenSeedRequest](#xudrpc.GenSeedRequest) | [.lnrpc.GenSeedResponse](#lnrpc.GenSeedResponse) |  |
+| InitWallet | [InitWalletRequest](#xudrpc.InitWalletRequest) | [.lnrpc.InitWalletResponse](#lnrpc.InitWalletResponse) |  |
 | UnlockWallet | [.lnrpc.UnlockWalletRequest](#lnrpc.UnlockWalletRequest) | [.lnrpc.UnlockWalletResponse](#lnrpc.UnlockWalletResponse) |  |
-| ChangePassword | [.lnrpc.ChangePasswordRequest](#lnrpc.ChangePasswordRequest) | [.lnrpc.ChangePasswordResponse](#lnrpc.ChangePasswordResponse) |  |
-| WalletBalance | [.lnrpc.WalletBalanceRequest](#lnrpc.WalletBalanceRequest) | [.lnrpc.WalletBalanceResponse](#lnrpc.WalletBalanceResponse) |  |
-| GetTransactions | [.lnrpc.GetTransactionsRequest](#lnrpc.GetTransactionsRequest) | [.lnrpc.TransactionDetails](#lnrpc.TransactionDetails) |  |
-| EstimateFee | [.lnrpc.EstimateFeeRequest](#lnrpc.EstimateFeeRequest) | [.lnrpc.EstimateFeeResponse](#lnrpc.EstimateFeeResponse) |  |
-| ListUnspent | [.lnrpc.ListUnspentRequest](#lnrpc.ListUnspentRequest) | [.lnrpc.ListUnspentResponse](#lnrpc.ListUnspentResponse) |  |
-| SendCoins | [.lnrpc.SendCoinsRequest](#lnrpc.SendCoinsRequest) | [.lnrpc.SendCoinsResponse](#lnrpc.SendCoinsResponse) |  |
-| SendMany | [.lnrpc.SendManyRequest](#lnrpc.SendManyRequest) | [.lnrpc.SendManyResponse](#lnrpc.SendManyResponse) |  |
-| NewAddress | [.lnrpc.NewAddressRequest](#lnrpc.NewAddressRequest) | [.lnrpc.NewAddressResponse](#lnrpc.NewAddressResponse) |  |
+| ChangePassword | [ChangePasswordRequest](#xudrpc.ChangePasswordRequest) | [.lnrpc.ChangePasswordResponse](#lnrpc.ChangePasswordResponse) |  |
+| WalletBalance | [WalletBalanceRequest](#xudrpc.WalletBalanceRequest) | [.lnrpc.WalletBalanceResponse](#lnrpc.WalletBalanceResponse) |  |
+| GetTransactions | [GetTransactionsRequest](#xudrpc.GetTransactionsRequest) | [.lnrpc.TransactionDetails](#lnrpc.TransactionDetails) |  |
+| EstimateFee | [EstimateFeeRequest](#xudrpc.EstimateFeeRequest) | [.lnrpc.EstimateFeeResponse](#lnrpc.EstimateFeeResponse) |  |
+| ListUnspent | [ListUnspentRequest](#xudrpc.ListUnspentRequest) | [.lnrpc.ListUnspentResponse](#lnrpc.ListUnspentResponse) |  |
+| SendCoins | [SendCoinsRequest](#xudrpc.SendCoinsRequest) | [.lnrpc.SendCoinsResponse](#lnrpc.SendCoinsResponse) |  |
+| SendMany | [SendManyRequest](#xudrpc.SendManyRequest) | [.lnrpc.SendManyResponse](#lnrpc.SendManyResponse) |  |
+| NewAddress | [NewAddressRequest](#xudrpc.NewAddressRequest) | [.lnrpc.NewAddressResponse](#lnrpc.NewAddressResponse) |  |
 | SubscribeTransactions | [.lnrpc.GetTransactionsRequest](#lnrpc.GetTransactionsRequest) | [.lnrpc.Transaction](#lnrpc.Transaction) stream |  |
 | SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
 | SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |

@@ -250,6 +250,34 @@ export namespace ConnectResponse {
     }
 }
 
+export class ChangePasswordRequest extends jspb.Message { 
+
+    hasChangePassword(): boolean;
+    clearChangePassword(): void;
+    getChangePassword(): lndrpc_pb.ChangePasswordRequest | undefined;
+    setChangePassword(value?: lndrpc_pb.ChangePasswordRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ChangePasswordRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ChangePasswordRequest): ChangePasswordRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ChangePasswordRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ChangePasswordRequest;
+    static deserializeBinaryFromReader(message: ChangePasswordRequest, reader: jspb.BinaryReader): ChangePasswordRequest;
+}
+
+export namespace ChangePasswordRequest {
+    export type AsObject = {
+        changePassword?: lndrpc_pb.ChangePasswordRequest.AsObject,
+        currency: string,
+    }
+}
+
 export class ExecuteSwapRequest extends jspb.Message { 
     getOrderId(): string;
     setOrderId(value: string): void;
@@ -280,6 +308,34 @@ export namespace ExecuteSwapRequest {
         pairId: string,
         peerPubKey: string,
         quantity: number,
+    }
+}
+
+export class EstimateFeeRequest extends jspb.Message { 
+
+    hasEstimateFee(): boolean;
+    clearEstimateFee(): void;
+    getEstimateFee(): lndrpc_pb.EstimateFeeRequest | undefined;
+    setEstimateFee(value?: lndrpc_pb.EstimateFeeRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): EstimateFeeRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: EstimateFeeRequest): EstimateFeeRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: EstimateFeeRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): EstimateFeeRequest;
+    static deserializeBinaryFromReader(message: EstimateFeeRequest, reader: jspb.BinaryReader): EstimateFeeRequest;
+}
+
+export namespace EstimateFeeRequest {
+    export type AsObject = {
+        estimateFee?: lndrpc_pb.EstimateFeeRequest.AsObject,
+        currency: string,
     }
 }
 
@@ -442,6 +498,83 @@ export namespace GetNodeInfoResponse {
     }
 }
 
+export class GetTransactionsRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GetTransactionsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetTransactionsRequest): GetTransactionsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GetTransactionsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetTransactionsRequest;
+    static deserializeBinaryFromReader(message: GetTransactionsRequest, reader: jspb.BinaryReader): GetTransactionsRequest;
+}
+
+export namespace GetTransactionsRequest {
+    export type AsObject = {
+        currency: string,
+    }
+}
+
+export class GenSeedRequest extends jspb.Message { 
+
+    hasGenSeed(): boolean;
+    clearGenSeed(): void;
+    getGenSeed(): lndrpc_pb.GenSeedRequest | undefined;
+    setGenSeed(value?: lndrpc_pb.GenSeedRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GenSeedRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GenSeedRequest): GenSeedRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: GenSeedRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GenSeedRequest;
+    static deserializeBinaryFromReader(message: GenSeedRequest, reader: jspb.BinaryReader): GenSeedRequest;
+}
+
+export namespace GenSeedRequest {
+    export type AsObject = {
+        genSeed?: lndrpc_pb.GenSeedRequest.AsObject,
+        currency: string,
+    }
+}
+
+export class InitWalletRequest extends jspb.Message { 
+
+    hasInitWallet(): boolean;
+    clearInitWallet(): void;
+    getInitWallet(): lndrpc_pb.InitWalletRequest | undefined;
+    setInitWallet(value?: lndrpc_pb.InitWalletRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): InitWalletRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: InitWalletRequest): InitWalletRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: InitWalletRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): InitWalletRequest;
+    static deserializeBinaryFromReader(message: InitWalletRequest, reader: jspb.BinaryReader): InitWalletRequest;
+}
+
+export namespace InitWalletRequest {
+    export type AsObject = {
+        initWallet?: lndrpc_pb.InitWalletRequest.AsObject,
+        currency: string,
+    }
+}
+
 export class ListOrdersRequest extends jspb.Message { 
     getPairId(): string;
     setPairId(value: string): void;
@@ -487,6 +620,34 @@ export namespace ListOrdersResponse {
     export type AsObject = {
 
         ordersMap: Array<[string, Orders.AsObject]>,
+    }
+}
+
+export class ListUnspentRequest extends jspb.Message { 
+
+    hasListUnspent(): boolean;
+    clearListUnspent(): void;
+    getListUnspent(): lndrpc_pb.ListUnspentRequest | undefined;
+    setListUnspent(value?: lndrpc_pb.ListUnspentRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ListUnspentRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ListUnspentRequest): ListUnspentRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ListUnspentRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ListUnspentRequest;
+    static deserializeBinaryFromReader(message: ListUnspentRequest, reader: jspb.BinaryReader): ListUnspentRequest;
+}
+
+export namespace ListUnspentRequest {
+    export type AsObject = {
+        listUnspent?: lndrpc_pb.ListUnspentRequest.AsObject,
+        currency: string,
     }
 }
 
@@ -688,6 +849,34 @@ export namespace LndInfo {
         urisList: Array<string>,
         version: string,
         alias: string,
+    }
+}
+
+export class NewAddressRequest extends jspb.Message { 
+
+    hasNewAddress(): boolean;
+    clearNewAddress(): void;
+    getNewAddress(): lndrpc_pb.NewAddressRequest | undefined;
+    setNewAddress(value?: lndrpc_pb.NewAddressRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): NewAddressRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: NewAddressRequest): NewAddressRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: NewAddressRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): NewAddressRequest;
+    static deserializeBinaryFromReader(message: NewAddressRequest, reader: jspb.BinaryReader): NewAddressRequest;
+}
+
+export namespace NewAddressRequest {
+    export type AsObject = {
+        newAddress?: lndrpc_pb.NewAddressRequest.AsObject,
+        currency: string,
     }
 }
 
@@ -1205,6 +1394,62 @@ export namespace RemovePairResponse {
     }
 }
 
+export class SendCoinsRequest extends jspb.Message { 
+
+    hasSendCoins(): boolean;
+    clearSendCoins(): void;
+    getSendCoins(): lndrpc_pb.SendCoinsRequest | undefined;
+    setSendCoins(value?: lndrpc_pb.SendCoinsRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SendCoinsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SendCoinsRequest): SendCoinsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SendCoinsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SendCoinsRequest;
+    static deserializeBinaryFromReader(message: SendCoinsRequest, reader: jspb.BinaryReader): SendCoinsRequest;
+}
+
+export namespace SendCoinsRequest {
+    export type AsObject = {
+        sendCoins?: lndrpc_pb.SendCoinsRequest.AsObject,
+        currency: string,
+    }
+}
+
+export class SendManyRequest extends jspb.Message { 
+
+    hasSendMany(): boolean;
+    clearSendMany(): void;
+    getSendMany(): lndrpc_pb.SendManyRequest | undefined;
+    setSendMany(value?: lndrpc_pb.SendManyRequest): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SendManyRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SendManyRequest): SendManyRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SendManyRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SendManyRequest;
+    static deserializeBinaryFromReader(message: SendManyRequest, reader: jspb.BinaryReader): SendManyRequest;
+}
+
+export namespace SendManyRequest {
+    export type AsObject = {
+        sendMany?: lndrpc_pb.SendManyRequest.AsObject,
+        currency: string,
+    }
+}
+
 export class ShutdownRequest extends jspb.Message { 
 
     serializeBinary(): Uint8Array;
@@ -1412,6 +1657,27 @@ export class UnbanResponse extends jspb.Message {
 
 export namespace UnbanResponse {
     export type AsObject = {
+    }
+}
+
+export class WalletBalanceRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): WalletBalanceRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: WalletBalanceRequest): WalletBalanceRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: WalletBalanceRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): WalletBalanceRequest;
+    static deserializeBinaryFromReader(message: WalletBalanceRequest, reader: jspb.BinaryReader): WalletBalanceRequest;
+}
+
+export namespace WalletBalanceRequest {
+    export type AsObject = {
+        currency: string,
     }
 }
 

@@ -189,14 +189,14 @@ service Xud {
     };
   }
 
-  rpc GenSeed(lnrpc.GenSeedRequest) returns (lnrpc.GenSeedResponse) {
+  rpc GenSeed(GenSeedRequest) returns (lnrpc.GenSeedResponse) {
     option (google.api.http) = {
       post: "/v1/genseed"
       body: "*"
     };
   }
 
-  rpc InitWallet(lnrpc.InitWalletRequest) returns (lnrpc.InitWalletResponse) {
+  rpc InitWallet(InitWalletRequest) returns (lnrpc.InitWalletResponse) {
     option (google.api.http) = {
       post: "/v1/initwallet"
       body: "*"
@@ -210,56 +210,56 @@ service Xud {
     };
   }
 
-  rpc ChangePassword(lnrpc.ChangePasswordRequest) returns (lnrpc.ChangePasswordResponse) {
+  rpc ChangePassword(ChangePasswordRequest) returns (lnrpc.ChangePasswordResponse) {
     option (google.api.http) = {
       post: "/v1/changepassword"
       body: "*"
     };
   }
 
-  rpc WalletBalance(lnrpc.WalletBalanceRequest) returns (lnrpc.WalletBalanceResponse) {
+  rpc WalletBalance(WalletBalanceRequest) returns (lnrpc.WalletBalanceResponse) {
     option (google.api.http) = {
       post: "/v1/walletbalance"
       body: "*"
     };
   }
  
-  rpc GetTransactions(lnrpc.GetTransactionsRequest) returns (lnrpc.TransactionDetails) {
+  rpc GetTransactions(GetTransactionsRequest) returns (lnrpc.TransactionDetails) {
     option (google.api.http) = {
       post: "/v1/gettransactions"
       body: "*"
     };
   }
 
-  rpc EstimateFee(lnrpc.EstimateFeeRequest) returns (lnrpc.EstimateFeeResponse) {
+  rpc EstimateFee(EstimateFeeRequest) returns (lnrpc.EstimateFeeResponse) {
     option (google.api.http) = {
       post: "/v1/estimatefee"
       body: "*"
     };
   }
 
-  rpc ListUnspent(lnrpc.ListUnspentRequest) returns (lnrpc.ListUnspentResponse) {
+  rpc ListUnspent(ListUnspentRequest) returns (lnrpc.ListUnspentResponse) {
     option (google.api.http) = {
       post: "/v1/listunspent"
       body: "*"
     };
   }
 
-  rpc SendCoins(lnrpc.SendCoinsRequest) returns (lnrpc.SendCoinsResponse) {
+  rpc SendCoins(SendCoinsRequest) returns (lnrpc.SendCoinsResponse) {
     option (google.api.http) = {
       post: "/v1/sendcoins"
       body: "*"
     };
   }
 
-  rpc SendMany(lnrpc.SendManyRequest) returns (lnrpc.SendManyResponse) {
+  rpc SendMany(SendManyRequest) returns (lnrpc.SendManyResponse) {
     option (google.api.http) = {
       post: "/v1/sendmany"
       body: "*"
     };
   }
 
-  rpc NewAddress(lnrpc.NewAddressRequest) returns (lnrpc.NewAddressResponse) {
+  rpc NewAddress(NewAddressRequest) returns (lnrpc.NewAddressResponse) {
     option (google.api.http) = {
       post: "/v1/newaddress"
       body: "*"
@@ -378,6 +378,11 @@ message ConnectRequest {
 
 message ConnectResponse {}
 
+message ChangePasswordRequest {
+  lnrpc.ChangePasswordRequest change_password = 1 [json_name = "change_password"];
+  string currency = 2 [json_name = "currency"];
+}
+
 message ExecuteSwapRequest {
   // The order id of the maker order.
   string order_id = 1 [json_name = "order_id"];
@@ -387,6 +392,11 @@ message ExecuteSwapRequest {
   string peer_pub_key = 3 [json_name = "peer_pub_key"];
   // The quantity to swap. The whole order will be swapped if unspecified.
   uint64 quantity = 4 [json_name = "quantity"];
+}
+
+message EstimateFeeRequest {
+  lnrpc.EstimateFeeRequest estimate_fee = 1 [json_name = "estimate_fee"];
+  string currency = 2 [json_name = "currency"];
 }
 
 message SwapFailure {
@@ -432,6 +442,20 @@ message GetNodeInfoResponse {
   bool banned = 2 [json_name = "banned"];
 }
 
+message GetTransactionsRequest {
+  string currency = 1 [json_name = "currency"];
+}
+
+message GenSeedRequest {
+  lnrpc.GenSeedRequest gen_seed = 1 [json_name = "gen_seed"];
+  string currency = 2 [json_name = "currency"];
+}
+
+message InitWalletRequest {
+  lnrpc.InitWalletRequest init_wallet = 1 [json_name = "init_wallet"];
+  string currency = 2 [json_name = "currency"];
+}
+
 message ListOrdersRequest {
   // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
@@ -441,6 +465,11 @@ message ListOrdersRequest {
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
   map<string, Orders> orders = 1 [json_name = "orders"];
+}
+
+message ListUnspentRequest {
+  lnrpc.ListUnspentRequest list_unspent = 1 [json_name = "list_unspent"];
+  string currency = 2 [json_name = "currency"];
 }
 
 message ListCurrenciesRequest {}
@@ -478,6 +507,11 @@ message LndInfo {
   repeated string uris = 5 [json_name = "uris"];
   string version = 6 [json_name = "version"];
   string alias = 7 [json_name = "alias"];
+}
+
+message NewAddressRequest {
+  lnrpc.NewAddressRequest new_address = 1 [json_name = "new_address"];
+  string currency = 2 [json_name = "currency"];
 }
 
 message Order {
@@ -618,6 +652,15 @@ message RemovePairRequest {
 }
 message RemovePairResponse {}
 
+message SendCoinsRequest {
+  lnrpc.SendCoinsRequest send_coins = 1 [json_name = "send_coins"];
+  string currency = 2 [json_name = "currency"];
+}
+
+message SendManyRequest {
+  lnrpc.SendManyRequest send_many = 1 [json_name = "send_many"];
+  string currency = 2 [json_name = "currency"];
+}
 message ShutdownRequest {}
 message ShutdownResponse {}
 
@@ -674,3 +717,7 @@ message UnbanRequest {
   bool reconnect = 2  [json_name = "reconnect"];
 }
 message UnbanResponse {}
+
+message WalletBalanceRequest {
+  string currency = 1 [json_name = "currency"];
+}
