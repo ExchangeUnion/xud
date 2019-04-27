@@ -69,6 +69,7 @@ class GrpcServer {
     if (!(await exists(tlsCertPath)) || !(await exists(tlsKeyPath))) {
       this.logger.debug('Could not find gRPC TLS certificate. Generating new one');
       const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
+      this.logger.debug('gRPC TLS certificate created');
 
       certificate = Buffer.from(tlsCert);
       privateKey = Buffer.from(tlsKey);
