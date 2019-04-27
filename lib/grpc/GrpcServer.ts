@@ -38,6 +38,7 @@ class GrpcServer {
       placeOrderSync: grpcService.placeOrderSync,
       removeCurrency: grpcService.removeCurrency,
       removePair: grpcService.removePair,
+      discoverNodes: grpcService.discoverNodes,
       shutdown: grpcService.shutdown,
       subscribeOrders: grpcService.subscribeOrders,
       subscribeSwapFailures: grpcService.subscribeSwapFailures,

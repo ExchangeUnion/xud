@@ -563,6 +563,31 @@ class GrpcService {
     }
   }
 
+  /**
+   * See [[Service.discoverNodes]]
+   */
+  public discoverNodes: grpc.handleUnaryCall<xudrpc.DiscoverNodesRequest, xudrpc.DiscoverNodesResponse> = async (call, callback) => {
+    try {
+      const nodes = await this.service.discoverNodes(call.request.toObject());
+      const response = new xudrpc.DiscoverNodesResponse();
+      response.setNodesList(nodes.map((node) => {
+        const grpcNode = new xudrpc.NodeConnectionInfo();
+        grpcNode.setNodepubkey(node.nodePubKey);
+        grpcNode.setAddressesList(node.addresses.map((address) => {
+          const grpcAddress = new xudrpc.Address();
+          grpcAddress.setHost(address.host);
+          grpcAddress.setPort(address.port);
+          return grpcAddress;
+        }));
+        return grpcNode;
+      }));
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
   /*
    * Resolving LND hash. See [[Service.resolveHash]]
    */

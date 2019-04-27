@@ -166,6 +166,33 @@
         ]
       }
     },
+    "/v1/discovernodes": {
+      "post": {
+        "summary": "Discover nodes from a specific peer. Apply new connection and return the list.",
+        "operationId": "DiscoverNodes",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDiscoverNodesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDiscoverNodesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/executeswap": {
       "post": {
         "summary": "Execute a swap on a maker peer order",
@@ -678,6 +705,18 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
+    "xudrpcAddress": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "xudrpcBanRequest": {
       "type": "object",
       "properties": {
@@ -728,6 +767,26 @@
     },
     "xudrpcConnectResponse": {
       "type": "object"
+    },
+    "xudrpcDiscoverNodesRequest": {
+      "type": "object",
+      "properties": {
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer to discover nodes from."
+        }
+      }
+    },
+    "xudrpcDiscoverNodesResponse": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcNodeConnectionInfo"
+          }
+        }
+      }
     },
     "xudrpcExecuteSwapRequest": {
       "type": "object",
@@ -907,6 +966,20 @@
         },
         "alias": {
           "type": "string"
+        }
+      }
+    },
+    "xudrpcNodeConnectionInfo": {
+      "type": "object",
+      "properties": {
+        "nodePubKey": {
+          "type": "string"
+        },
+        "addresses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcAddress"
+          }
         }
       }
     },

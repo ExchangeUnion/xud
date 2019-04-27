@@ -180,6 +180,14 @@ service Xud {
     };
   }
 
+  /* Discover nodes from a specific peer. Apply new connection and return the list. */
+  rpc DiscoverNodes(DiscoverNodesRequest) returns (DiscoverNodesResponse) {
+      option (google.api.http) = {
+      post: "/v1/discovernodes"
+      body: "*"
+    };
+  }
+
   /* Begin gracefully shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -534,6 +542,14 @@ message RemovePairRequest {
 }
 message RemovePairResponse {}
 
+message DiscoverNodesRequest {
+    // The node pub key of the peer to discover nodes from.
+    string peer_pub_key = 1 [json_name = "peer_pub_key"];
+}
+message DiscoverNodesResponse {
+    repeated NodeConnectionInfo nodes = 1;
+}
+
 message ShutdownRequest {}
 message ShutdownResponse {}
 
@@ -588,3 +604,13 @@ message UnbanRequest {
   bool reconnect = 2  [json_name = "reconnect"];
 }
 message UnbanResponse {}
+
+message NodeConnectionInfo {
+    string nodePubKey = 1 [json_name = "node_pub_key"];
+    repeated Address addresses = 2 [json_name = "addresses"];
+}
+
+message Address {
+    string host = 1 [json_name = "host"];
+    int32 port = 2 [json_name = "port"];
+}

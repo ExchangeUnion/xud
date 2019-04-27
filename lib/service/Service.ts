@@ -47,6 +47,9 @@ const argChecks = {
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
+  HAS_PEER_PUB_KEY: ({ peerPubKey }: { peerPubKey: string }) => {
+    if (peerPubKey === '') throw errors.INVALID_ARGUMENT('peerPubKey must be specified');
+  },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
@@ -372,6 +375,14 @@ class Service extends EventEmitter {
     const { pairId } = args;
 
     return this.orderBook.removePair(pairId);
+  }
+
+  /** Removes a trading pair. */
+  public discoverNodes = async (args: { peerPubKey: string }) => {
+    argChecks.HAS_PEER_PUB_KEY(args);
+    const { peerPubKey } = args;
+
+    return this.pool.discoverNodes(peerPubKey);
   }
 
   /*

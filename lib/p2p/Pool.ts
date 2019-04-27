@@ -502,6 +502,15 @@ class Pool extends EventEmitter {
     }
   }
 
+  public discoverNodes = async (peerPubKey: string): Promise<NodeConnectionInfo[]> => {
+    const peer = this.peers.get(peerPubKey);
+    if (!peer) {
+      throw errors.NOT_CONNECTED(peerPubKey);
+    }
+
+    return peer.discoverNodes();
+  }
+
   // A wrapper for [[NodeList.addReputationEvent]].
   public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
     return this.nodes.addReputationEvent(nodePubKey, event);
