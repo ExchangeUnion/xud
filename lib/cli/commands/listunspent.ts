@@ -22,7 +22,7 @@ export const builder = {
   },
 };
 
-export const handeler = (argv: Arguments) => {
+export const handler = (argv: Arguments) => {
   const request = new ListUnspentRequest();
   request.setCurrency(argv.currency);
   const lndRequest = new LndRequest();

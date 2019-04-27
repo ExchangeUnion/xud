@@ -1,4 +1,5 @@
 import { Arguments, Argv } from 'yargs';
+import { AddressType } from '../proto/lndrpc_pb';
 import { callback, loadXudClient } from './command';
 import { PlaceOrderRequest, PlaceOrderEvent, OrderSide, PlaceOrderResponse, Order, SwapSuccess, SwapFailure } from '../proto/xudrpc_pb';
 
@@ -116,3 +117,14 @@ const formatRemainingOrder = (order: Order.AsObject) => {
 };
 
 const getBaseCurrency = (pairId: string) => pairId.substring(0, pairId.indexOf('/'));
+
+export const selectAddressType = (type: string) => {
+  switch (type.toLowerCase()) {
+    case 'np2wkh': return AddressType.NESTED_PUBKEY_HASH;
+    case 'unusednp2wkh': return AddressType.UNUSED_NESTED_PUBKEY_HASH;
+    case 'unusedp2wkh': return AddressType.UNUSED_WITNESS_PUBKEY_HASH;
+    case 'p2wkh': return AddressType.WITNESS_PUBKEY_HASH;
+
+    default: throw `invalid address type: ${type}`;
+  }
+};

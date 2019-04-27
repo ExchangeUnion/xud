@@ -12,14 +12,14 @@ export const builder = {
     description: 'select witch client to use',
     type: 'string',
   },
-  // addrtoamount
   target_conf: {
     description: 'The target number of blocks that this transaction should be confirmed by',
     type: 'number',
   },
 };
 
-export const handeler = (argv: Arguments) => {
+export const hande = (argv: Arguments) => {
+  console.log(argv);
   const request = new EstimateFeeRequest();
   const lndrequest = new LndRequest();
   request.setCurrency(argv.currency);

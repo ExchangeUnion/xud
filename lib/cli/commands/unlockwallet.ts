@@ -23,7 +23,7 @@ export const builder = {
   // channel_backups
 };
 
-export const handeler = (argv: Arguments) => {
+export const handler = (argv: Arguments) => {
   const request = new UnlockWalletRequest();
   const lndrequest = new LndRequest();
   request.setCurrency(argv.currency);

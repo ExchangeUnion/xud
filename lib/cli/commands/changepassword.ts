@@ -22,7 +22,7 @@ export const builder = {
   },
 };
 
-export const handeler = (argv: Arguments) => {
+export const handler = (argv: Arguments) => {
   const request = new ChangePasswordRequest();
   const lndrequest = new LndRequest();
   request.setCurrency(argv.currency);
