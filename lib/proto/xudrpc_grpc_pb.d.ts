@@ -234,12 +234,12 @@ interface IXudService_IInitWallet extends grpc.MethodDefinition<xudrpc_pb.InitWa
     responseSerialize: grpc.serialize<lndrpc_pb.InitWalletResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.InitWalletResponse>;
 }
-interface IXudService_IUnlockWallet extends grpc.MethodDefinition<lndrpc_pb.UnlockWalletRequest, lndrpc_pb.UnlockWalletResponse> {
+interface IXudService_IUnlockWallet extends grpc.MethodDefinition<xudrpc_pb.UnlockWalletRequest, lndrpc_pb.UnlockWalletResponse> {
     path: string; // "/xudrpc.Xud/UnlockWallet"
     requestStream: boolean; // false
     responseStream: boolean; // false
-    requestSerialize: grpc.serialize<lndrpc_pb.UnlockWalletRequest>;
-    requestDeserialize: grpc.deserialize<lndrpc_pb.UnlockWalletRequest>;
+    requestSerialize: grpc.serialize<xudrpc_pb.UnlockWalletRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.UnlockWalletRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.UnlockWalletResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.UnlockWalletResponse>;
 }
@@ -315,12 +315,12 @@ interface IXudService_INewAddress extends grpc.MethodDefinition<xudrpc_pb.NewAdd
     responseSerialize: grpc.serialize<lndrpc_pb.NewAddressResponse>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.NewAddressResponse>;
 }
-interface IXudService_ISubscribeTransactions extends grpc.MethodDefinition<lndrpc_pb.GetTransactionsRequest, lndrpc_pb.Transaction> {
+interface IXudService_ISubscribeTransactions extends grpc.MethodDefinition<xudrpc_pb.GetTransactionsRequest, lndrpc_pb.Transaction> {
     path: string; // "/xudrpc.Xud/SubscribeTransactions"
     requestStream: boolean; // false
     responseStream: boolean; // true
-    requestSerialize: grpc.serialize<lndrpc_pb.GetTransactionsRequest>;
-    requestDeserialize: grpc.deserialize<lndrpc_pb.GetTransactionsRequest>;
+    requestSerialize: grpc.serialize<xudrpc_pb.GetTransactionsRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.GetTransactionsRequest>;
     responseSerialize: grpc.serialize<lndrpc_pb.Transaction>;
     responseDeserialize: grpc.deserialize<lndrpc_pb.Transaction>;
 }
@@ -376,7 +376,7 @@ export interface IXudServer {
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
     genSeed: grpc.handleUnaryCall<xudrpc_pb.GenSeedRequest, lndrpc_pb.GenSeedResponse>;
     initWallet: grpc.handleUnaryCall<xudrpc_pb.InitWalletRequest, lndrpc_pb.InitWalletResponse>;
-    unlockWallet: grpc.handleUnaryCall<lndrpc_pb.UnlockWalletRequest, lndrpc_pb.UnlockWalletResponse>;
+    unlockWallet: grpc.handleUnaryCall<xudrpc_pb.UnlockWalletRequest, lndrpc_pb.UnlockWalletResponse>;
     changePassword: grpc.handleUnaryCall<xudrpc_pb.ChangePasswordRequest, lndrpc_pb.ChangePasswordResponse>;
     walletBalance: grpc.handleUnaryCall<xudrpc_pb.WalletBalanceRequest, lndrpc_pb.WalletBalanceResponse>;
     getTransactions: grpc.handleUnaryCall<xudrpc_pb.GetTransactionsRequest, lndrpc_pb.TransactionDetails>;
@@ -385,7 +385,7 @@ export interface IXudServer {
     sendCoins: grpc.handleUnaryCall<xudrpc_pb.SendCoinsRequest, lndrpc_pb.SendCoinsResponse>;
     sendMany: grpc.handleUnaryCall<xudrpc_pb.SendManyRequest, lndrpc_pb.SendManyResponse>;
     newAddress: grpc.handleUnaryCall<xudrpc_pb.NewAddressRequest, lndrpc_pb.NewAddressResponse>;
-    subscribeTransactions: grpc.handleServerStreamingCall<lndrpc_pb.GetTransactionsRequest, lndrpc_pb.Transaction>;
+    subscribeTransactions: grpc.handleServerStreamingCall<xudrpc_pb.GetTransactionsRequest, lndrpc_pb.Transaction>;
     subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
     subscribeSwaps: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapSuccess>;
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
@@ -454,9 +454,9 @@ export interface IXudClient {
     initWallet(request: xudrpc_pb.InitWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
     initWallet(request: xudrpc_pb.InitWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
     initWallet(request: xudrpc_pb.InitWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
-    unlockWallet(request: lndrpc_pb.UnlockWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
-    unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
-    unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    unlockWallet(request: xudrpc_pb.UnlockWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    unlockWallet(request: xudrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    unlockWallet(request: xudrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
@@ -481,8 +481,8 @@ export interface IXudClient {
     newAddress(request: xudrpc_pb.NewAddressRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
-    subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
-    subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
+    subscribeTransactions(request: xudrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
+    subscribeTransactions(request: xudrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
     subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
@@ -555,9 +555,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public initWallet(request: xudrpc_pb.InitWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
     public initWallet(request: xudrpc_pb.InitWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
     public initWallet(request: xudrpc_pb.InitWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.InitWalletResponse) => void): grpc.ClientUnaryCall;
-    public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
-    public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
-    public unlockWallet(request: lndrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    public unlockWallet(request: xudrpc_pb.UnlockWalletRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    public unlockWallet(request: xudrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
+    public unlockWallet(request: xudrpc_pb.UnlockWalletRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.UnlockWalletResponse) => void): grpc.ClientUnaryCall;
     public changePassword(request: xudrpc_pb.ChangePasswordRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
     public changePassword(request: xudrpc_pb.ChangePasswordRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.ChangePasswordResponse) => void): grpc.ClientUnaryCall;
@@ -582,8 +582,8 @@ export class XudClient extends grpc.Client implements IXudClient {
     public newAddress(request: xudrpc_pb.NewAddressRequest, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     public newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
     public newAddress(request: xudrpc_pb.NewAddressRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: lndrpc_pb.NewAddressResponse) => void): grpc.ClientUnaryCall;
-    public subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
-    public subscribeTransactions(request: lndrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
+    public subscribeTransactions(request: xudrpc_pb.GetTransactionsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
+    public subscribeTransactions(request: xudrpc_pb.GetTransactionsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<lndrpc_pb.Transaction>;
     public subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     public subscribeOrders(request: xudrpc_pb.SubscribeOrdersRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.OrderUpdate>;
     public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;

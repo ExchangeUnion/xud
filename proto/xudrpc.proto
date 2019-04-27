@@ -203,7 +203,7 @@ service Xud {
     };
   }
 
-  rpc UnlockWallet(lnrpc.UnlockWalletRequest) returns (lnrpc.UnlockWalletResponse) {
+  rpc UnlockWallet(UnlockWalletRequest) returns (lnrpc.UnlockWalletResponse) {
     option (google.api.http) = {
       post: "/v1/unlockwallet"
       body: "*"
@@ -266,7 +266,7 @@ service Xud {
     };
   }
 
-  rpc SubscribeTransactions(lnrpc.GetTransactionsRequest) returns (stream lnrpc.Transaction) {
+  rpc SubscribeTransactions(GetTransactionsRequest) returns (stream lnrpc.Transaction) {
     option (google.api.http) = {
       get: "/v1/subscribetransactions"
     };    
@@ -432,7 +432,8 @@ message GetNodeInfoResponse {
 }
 
 message GetTransactionsRequest {
-  string currency = 1 [json_name = "currency"];
+  lnrpc.GetTransactionsRequest get_transactions = 1 [json_name = "get_transactions"];
+  string currency = 2 [json_name = "currency"];
 }
 
 message GenSeedRequest {
@@ -716,6 +717,11 @@ message UnbanRequest {
 }
 message UnbanResponse {}
 
-message WalletBalanceRequest {
+message UnlockWalletRequest {
   string currency = 1 [json_name = "currency"];
+  lnrpc.UnlockWalletRequest unlock_wallet = 2 [json_name = "unlock_wallet"];
+} 
+message WalletBalanceRequest {
+  lnrpc.WalletBalanceRequest wallet_balance = 1 [json_name = "wallet_balance"]; 
+  string currency = 2 [json_name = "currency"];
 }

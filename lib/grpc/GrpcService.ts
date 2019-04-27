@@ -629,10 +629,10 @@ class GrpcService {
   /**
    * Unlock Wallet. See [[Service.unlockWallet]]
    */
-  public unlockWallet: grpc.handleUnaryCall<xudrpc.InitWalletRequest, lndrpc.InitWalletResponse> = async (call, callback) => {
+  public unlockWallet: grpc.handleUnaryCall<xudrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse> = async (call, callback) => {
     try {
       const response = await this.service.unlockWallet({
-        request: call.request.getInitWallet()!,
+        request: call.request.getUnlockWallet()!,
         currency: call.request.getCurrency(),
       });
       callback(null, response);
@@ -748,6 +748,21 @@ class GrpcService {
     } catch (err) {
       callback(this.getGrpcError(err), null);
     }
+  }
+
+  /**
+   * Subscribe transactions [[Service.subscribeTransactions]]
+   */
+  public subscribeTransactions: grpc.handleServerStreamingCall<xudrpc.GetTransactionsRequest, lndrpc.Transaction> = (call) => {
+    this.service.subscribeTransactions({
+      currency: call.request.getCurrency(),
+      request: call.request.getGetTransactions()!,
+    },
+    (data: lndrpc.Transaction) => {
+      call.write(data);
+    },
+  );
+    this.addStream(call);
   }
 
   /*

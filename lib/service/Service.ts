@@ -378,6 +378,14 @@ class Service extends EventEmitter {
     return this.orderBook.removePair(pairId);
   }
 
+  /**
+   * Subscribe transactions [[Service.subscribeTransactions]]
+   */
+  public subscribeTransactions = (args: { currency: string, request: lndrpc.GetTransactionsRequest }, callback: (tx: lndrpc.Transaction) => void) => {
+    const client = this.getLndClient(args.currency);
+    client!.subscribeTransactions(args.request, callback);
+  }
+
   /*
    * Subscribe to orders being added to the order book.
    */

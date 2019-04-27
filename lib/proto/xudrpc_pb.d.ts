@@ -499,6 +499,12 @@ export namespace GetNodeInfoResponse {
 }
 
 export class GetTransactionsRequest extends jspb.Message { 
+
+    hasGetTransactions(): boolean;
+    clearGetTransactions(): void;
+    getGetTransactions(): lndrpc_pb.GetTransactionsRequest | undefined;
+    setGetTransactions(value?: lndrpc_pb.GetTransactionsRequest): void;
+
     getCurrency(): string;
     setCurrency(value: string): void;
 
@@ -515,6 +521,7 @@ export class GetTransactionsRequest extends jspb.Message {
 
 export namespace GetTransactionsRequest {
     export type AsObject = {
+        getTransactions?: lndrpc_pb.GetTransactionsRequest.AsObject,
         currency: string,
     }
 }
@@ -1690,7 +1697,41 @@ export namespace UnbanResponse {
     }
 }
 
+export class UnlockWalletRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    hasUnlockWallet(): boolean;
+    clearUnlockWallet(): void;
+    getUnlockWallet(): lndrpc_pb.UnlockWalletRequest | undefined;
+    setUnlockWallet(value?: lndrpc_pb.UnlockWalletRequest): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): UnlockWalletRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: UnlockWalletRequest): UnlockWalletRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: UnlockWalletRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnlockWalletRequest;
+    static deserializeBinaryFromReader(message: UnlockWalletRequest, reader: jspb.BinaryReader): UnlockWalletRequest;
+}
+
+export namespace UnlockWalletRequest {
+    export type AsObject = {
+        currency: string,
+        unlockWallet?: lndrpc_pb.UnlockWalletRequest.AsObject,
+    }
+}
+
 export class WalletBalanceRequest extends jspb.Message { 
+
+    hasWalletBalance(): boolean;
+    clearWalletBalance(): void;
+    getWalletBalance(): lndrpc_pb.WalletBalanceRequest | undefined;
+    setWalletBalance(value?: lndrpc_pb.WalletBalanceRequest): void;
+
     getCurrency(): string;
     setCurrency(value: string): void;
 
@@ -1707,6 +1748,7 @@ export class WalletBalanceRequest extends jspb.Message {
 
 export namespace WalletBalanceRequest {
     export type AsObject = {
+        walletBalance?: lndrpc_pb.WalletBalanceRequest.AsObject,
         currency: string,
     }
 }

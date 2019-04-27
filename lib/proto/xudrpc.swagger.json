@@ -800,6 +800,14 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -849,7 +857,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/lnrpcUnlockWalletRequest"
+              "$ref": "#/definitions/xudrpcUnlockWalletRequest"
             }
           }
         ],
@@ -1054,6 +1062,9 @@
           "description": "*\nenciphered_seed are the raw aezeed cipher seed bytes. This is the raw\ncipher text before run through our mnemonic encoding scheme."
         }
       }
+    },
+    "lnrpcGetTransactionsRequest": {
+      "type": "object"
     },
     "lnrpcInitWalletRequest": {
       "type": "object",
@@ -1350,6 +1361,9 @@
         }
       }
     },
+    "lnrpcWalletBalanceRequest": {
+      "type": "object"
+    },
     "lnrpcWalletBalanceResponse": {
       "type": "object",
       "properties": {
@@ -1615,6 +1629,9 @@
     "xudrpcGetTransactionsRequest": {
       "type": "object",
       "properties": {
+        "get_transactions": {
+          "$ref": "#/definitions/lnrpcGetTransactionsRequest"
+        },
         "currency": {
           "type": "string"
         }
@@ -2207,9 +2224,23 @@
     "xudrpcUnbanResponse": {
       "type": "object"
     },
+    "xudrpcUnlockWalletRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        },
+        "unlock_wallet": {
+          "$ref": "#/definitions/lnrpcUnlockWalletRequest"
+        }
+      }
+    },
     "xudrpcWalletBalanceRequest": {
       "type": "object",
       "properties": {
+        "wallet_balance": {
+          "$ref": "#/definitions/lnrpcWalletBalanceRequest"
+        },
         "currency": {
           "type": "string"
         }

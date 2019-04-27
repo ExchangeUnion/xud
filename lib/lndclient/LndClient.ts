@@ -380,19 +380,6 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Subscribe Transactions
-   */
-  public subscribeTransactions = (): void => {
-    const subscription = this.lightning.subscribeTransactions(new lndrpc.GetTransactionsRequest, this.meta);
-    subscription.on('data', (res) => {
-      return res;
-    });
-    subscription.on('error', (err) => {
-      return err;
-    });
-  }
-
-  /**
    * Connects to another lnd node.
    */
   public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse> => {
@@ -456,6 +443,21 @@ class LndClient extends BaseClient {
    */
   private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
+  }
+
+  /**
+   * Subscribe Transactions
+   */
+  public subscribeTransactions = (request: lndrpc.GetTransactionsRequest, callback: (tx: lndrpc.Transaction) => void) => {
+    const subscribe = this.lightning.subscribeTransactions(request, this.meta);
+    subscribe.on('data', (data: lndrpc.Transaction) => {
+      callback(data);
+    });
+
+    subscribe.on('error', async (error) => {
+      this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
+      await this.setStatus(ClientStatus.Disconnected);
+    });
   }
 
   /**

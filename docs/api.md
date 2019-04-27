@@ -67,6 +67,7 @@
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
+    - [UnlockWalletRequest](#xudrpc.UnlockWalletRequest)
     - [WalletBalanceRequest](#xudrpc.WalletBalanceRequest)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
@@ -407,6 +408,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| get_transactions | [lnrpc.GetTransactionsRequest](#lnrpc.GetTransactionsRequest) |  |  |
 | currency | [string](#string) |  |  |
 
 
@@ -1060,6 +1062,22 @@
 
 
 
+<a name="xudrpc.UnlockWalletRequest"></a>
+
+### UnlockWalletRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  |  |
+| unlock_wallet | [lnrpc.UnlockWalletRequest](#lnrpc.UnlockWalletRequest) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.WalletBalanceRequest"></a>
 
 ### WalletBalanceRequest
@@ -1068,6 +1086,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| wallet_balance | [lnrpc.WalletBalanceRequest](#lnrpc.WalletBalanceRequest) |  |  |
 | currency | [string](#string) |  |  |
 
 
@@ -1145,7 +1164,7 @@
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
 | GenSeed | [GenSeedRequest](#xudrpc.GenSeedRequest) | [.lnrpc.GenSeedResponse](#lnrpc.GenSeedResponse) |  |
 | InitWallet | [InitWalletRequest](#xudrpc.InitWalletRequest) | [.lnrpc.InitWalletResponse](#lnrpc.InitWalletResponse) |  |
-| UnlockWallet | [.lnrpc.UnlockWalletRequest](#lnrpc.UnlockWalletRequest) | [.lnrpc.UnlockWalletResponse](#lnrpc.UnlockWalletResponse) |  |
+| UnlockWallet | [UnlockWalletRequest](#xudrpc.UnlockWalletRequest) | [.lnrpc.UnlockWalletResponse](#lnrpc.UnlockWalletResponse) |  |
 | ChangePassword | [ChangePasswordRequest](#xudrpc.ChangePasswordRequest) | [.lnrpc.ChangePasswordResponse](#lnrpc.ChangePasswordResponse) |  |
 | WalletBalance | [WalletBalanceRequest](#xudrpc.WalletBalanceRequest) | [.lnrpc.WalletBalanceResponse](#lnrpc.WalletBalanceResponse) |  |
 | GetTransactions | [GetTransactionsRequest](#xudrpc.GetTransactionsRequest) | [.lnrpc.TransactionDetails](#lnrpc.TransactionDetails) |  |
@@ -1154,7 +1173,7 @@
 | SendCoins | [SendCoinsRequest](#xudrpc.SendCoinsRequest) | [.lnrpc.SendCoinsResponse](#lnrpc.SendCoinsResponse) |  |
 | SendMany | [SendManyRequest](#xudrpc.SendManyRequest) | [.lnrpc.SendManyResponse](#lnrpc.SendManyResponse) |  |
 | NewAddress | [NewAddressRequest](#xudrpc.NewAddressRequest) | [.lnrpc.NewAddressResponse](#lnrpc.NewAddressResponse) |  |
-| SubscribeTransactions | [.lnrpc.GetTransactionsRequest](#lnrpc.GetTransactionsRequest) | [.lnrpc.Transaction](#lnrpc.Transaction) stream |  |
+| SubscribeTransactions | [GetTransactionsRequest](#xudrpc.GetTransactionsRequest) | [.lnrpc.Transaction](#lnrpc.Transaction) stream |  |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
