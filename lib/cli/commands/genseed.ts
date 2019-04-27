@@ -3,9 +3,9 @@ import { GenSeedRequest } from '../../proto/xudrpc_pb';
 import { GenSeedRequest as LndGenSeedRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'genseed';
+export const command = 'genseed <currency> [aezeed_pass_phrase] [seed_entropy]';
 
-export const describe = 'todo';
+export const describe = 'generate a new aezeed cipher seed given an optional passphrase';
 
 export const builder = {
   currency: {
@@ -13,13 +13,13 @@ export const builder = {
     type: 'string',
   },
   aezeed_pass_phrase: {
-    description: 'todo',
+    description: 'an optional passphrase',
     type: 'string',
   },
   seed_entropy: {
-      description: 'todo',
-      type: 'string',
-  }
+    description: 'optional 16-bytes generated via CSPRNG',
+    type: 'string',
+  },
 };
 
 export const handeler = (argv: Arguments) => {

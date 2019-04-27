@@ -3,9 +3,9 @@ import { ListUnspentRequest } from '../../proto/xudrpc_pb';
 import { ListUnspentRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'listunspent';
+export const command = 'listunspent <currency> <max_confs> <min_confs>';
 
-export const describe = 'list unspent transactions';
+export const describe = 'get a list of all utxos spendable by the wallet with a number of confirmations between the specified minimum and maximum';
 
 export const builder = {
   currency: {
@@ -13,11 +13,11 @@ export const builder = {
     type: 'string',
   },
   max_confs: {
-    description: 'todo',
+    description: 'The minimum number of confirmations to be included',
     type: 'number',
   },
-  mix_confs: {
-    description: 'todo',
+  min_confs: {
+    description: 'The maximum number of confirmations to be included',
     type: 'number',
   },
 };
@@ -27,7 +27,7 @@ export const handeler = (argv: Arguments) => {
   request.setCurrency(argv.currency);
   const lndRequest = new LndRequest();
   lndRequest.setMaxConfs(argv.max_confs);
-  lndRequest.setMinConfs(argv.mix_confs);
+  lndRequest.setMinConfs(argv.min_confs);
   request.setListUnspent(lndRequest);
   loadXudClient(argv).listUnspent(request, callback(argv));
 };

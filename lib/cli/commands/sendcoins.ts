@@ -3,9 +3,9 @@ import { SendCoinsRequest } from '../../proto/xudrpc_pb';
 import { SendCoinsRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'sendcoins';
+export const command = 'sendcoins <currency> <addr> <amount> <sat_per_byte> <target_conf> [send_all]';
 
-export const describe = 'send coins';
+export const describe = 'executes a request to send coins to a particular address';
 
 export const builder = {
   currency: {
@@ -13,15 +13,15 @@ export const builder = {
     type: 'string',
   },
   addr: {
-    description: 'address to send to',
+    description: 'the address to send coins to',
     type: 'string',
   },
   amount: {
-    description: 'amount to send',
+    description: 'amount in satoshis to send',
     type: 'number',
   },
   sat_per_byte: {
-    description: 'satosihs per byte',
+    description: 'satoshis per byte',
     type: 'number',
   },
   send_all: {
@@ -30,9 +30,9 @@ export const builder = {
     default: false,
   },
   target_conf: {
-      description: 'todo',
-      type: 'number',
-  }
+    description: 'target number of blocks that this transaction should be confirmed by',
+    type: 'number',
+  },
 };
 
 export const handeler = (argv: Arguments) => {

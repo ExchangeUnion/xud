@@ -3,7 +3,7 @@ import { NewAddressRequest } from '../../proto/xudrpc_pb';
 import { NewAddressRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'newaddress <type>';
+export const command = 'newaddress <currency> <type>';
 
 export const describe = 'get new address for wallet';
 

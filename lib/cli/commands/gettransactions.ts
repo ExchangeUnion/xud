@@ -3,7 +3,7 @@ import { GetTransactionsRequest } from '../../proto/xudrpc_pb';
 import { GetTransactionsRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'gettransactions';
+export const command = 'gettransactions <currency>';
 
 export const describe = 'get transactions';
 

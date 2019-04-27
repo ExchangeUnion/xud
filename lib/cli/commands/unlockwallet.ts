@@ -3,7 +3,7 @@ import { UnlockWalletRequest } from '../../proto/xudrpc_pb';
 import { UnlockWalletRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'unlockwallet';
+export const command = 'unlockwallet <currency> <wallet_password> [recovery_window]';
 
 export const describe = 'unlock lnd wallet';
 
@@ -13,13 +13,14 @@ export const builder = {
     type: 'string',
   },
   recovery_window: {
-    description: 'todo',
+    description: 'specify the address lookahead when restoring a wallet seed',
     type: 'number',
   },
   wallet_password: {
     description: 'password for wallet',
     type: 'string',
   },
+  // channel_backups
 };
 
 export const handeler = (argv: Arguments) => {

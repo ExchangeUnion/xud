@@ -3,9 +3,9 @@ import { SendManyRequest } from '../../proto/xudrpc_pb';
 import { SendManyRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'sendmany <sat_per_byte> <target_conf>';
+export const command = 'sendmany <currency> <sat_per_byte> <target_conf>';
 
-export const describe = 'todo';
+export const describe = 'transaction that creates multiple specified outputs in parallel';
 
 export const builder = {
   currency: {
@@ -13,11 +13,12 @@ export const builder = {
     type: 'string',
   },
   sat_per_byte: {
-    description: 'sathosies per byte',
+    description: 'satoshis per byte',
     type: 'number',
   },
+  // AddrToAmount
   target_conf: {
-    description: 'todo',
+    description: 'target number of blocks that this transaction should be confirmed by',
     type: 'number',
   },
 };

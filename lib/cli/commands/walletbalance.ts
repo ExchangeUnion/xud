@@ -3,7 +3,7 @@ import { WalletBalanceRequest } from '../../proto/xudrpc_pb';
 import { WalletBalanceRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'walletbalance';
+export const command = 'walletbalance <currency>';
 
 export const describe = 'get wallet balance';
 
@@ -11,10 +11,6 @@ export const builder = {
   currency: {
     description: 'select witch client to use',
     type: 'string',
-  },
-  target_conf: {
-    description: 'todo',
-    type: 'number',
   },
 };
 

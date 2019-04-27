@@ -3,7 +3,7 @@ import { ChangePasswordRequest } from '../../proto/xudrpc_pb';
 import { ChangePasswordRequest as LndRequest } from '../../proto/lndrpc_pb';
 import { Arguments } from 'yargs';
 
-export const command = 'changepassword';
+export const command = 'changepassword <currency> <current_password> <new_password>';
 
 export const describe = 'change password for lnd wallet';
 
