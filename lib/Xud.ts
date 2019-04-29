@@ -4,7 +4,7 @@ import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
-import BaseClient from './BaseClient';
+import SwapClient from './swaps/SwapClient';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import GrpcServer from './grpc/GrpcServer';
@@ -75,7 +75,7 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
-      const swapClients = new Map<string, BaseClient>();
+      const swapClients = new Map<string, SwapClient>();
       // setup LND clients and initialize
       for (const currency in this.config.lnd) {
         const lndConfig = this.config.lnd[currency]!;

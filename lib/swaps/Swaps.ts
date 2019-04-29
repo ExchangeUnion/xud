@@ -3,7 +3,7 @@ import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
 import Logger from '../Logger';
-import BaseClient from '../BaseClient';
+import SwapClient from './SwapClient';
 import Pool from '../p2p/Pool';
 import { EventEmitter } from 'events';
 import SwapRepository from './SwapRepository';
@@ -51,7 +51,7 @@ class Swaps extends EventEmitter {
   constructor(private logger: Logger,
     private models: Models,
     private pool: Pool,
-    public swapClients: Map<string, BaseClient>,
+    public swapClients: Map<string, SwapClient>,
   ) {
     super();
     this.repository = new SwapRepository(this.models);

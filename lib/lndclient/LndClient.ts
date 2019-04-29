@@ -1,12 +1,12 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import BaseClient, { ClientStatus } from '../BaseClient';
+import SwapClient, { ClientStatus } from '../swaps/SwapClient';
 import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
 import { promises as fs } from 'fs';
-import { SwapState, SwapRole, SwapClient } from '../constants/enums';
+import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 
 /** The configurable options for the lnd client. */
@@ -42,8 +42,8 @@ interface LightningMethodIndex extends LightningClient {
 }
 
 /** A class representing a client to interact with lnd. */
-class LndClient extends BaseClient {
-  public readonly type = SwapClient.Lnd;
+class LndClient extends SwapClient {
+  public readonly type = SwapClientType.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;

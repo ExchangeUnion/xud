@@ -5,11 +5,11 @@ import OrderBook from '../../lib/orderbook/OrderBook';
 import Pool from '../../lib/p2p/Pool';
 import Swaps from '../../lib/swaps/Swaps';
 import LndClient from '../../lib/lndclient/LndClient';
-import BaseClient from '../../lib/BaseClient';
+import SwapClient from '../../lib/swaps/SwapClient';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
-import { SwapClient } from '../../lib/constants/enums';
+import { SwapClientType } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
 import sinon, { SinonSandbox }  from 'sinon';
 
@@ -21,8 +21,8 @@ const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(db.models);
 
   await orderBookRepository.addCurrencies([
-    { id: currencies[0], swapClient: SwapClient.Lnd, decimalPlaces: 8 },
-    { id: currencies[1], swapClient: SwapClient.Lnd, decimalPlaces: 8 },
+    { id: currencies[0], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
+    { id: currencies[1], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   ]);
   await orderBookRepository.addPairs([
     { baseCurrency: currencies[0], quoteCurrency: currencies[1] },
@@ -50,7 +50,7 @@ describe('OrderBook', () => {
     swaps.isPairSupported = () => true;
     const lndBTC = sandbox.createStubInstance(LndClient) as any;
     const lndLTC = sandbox.createStubInstance(LndClient) as any;
-    swaps.swapClients = new Map<string, BaseClient>();
+    swaps.swapClients = new Map<string, SwapClient>();
     swaps.swapClients.set('BTC', lndBTC);
     swaps.swapClients.set('LTC', lndLTC);
     orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);

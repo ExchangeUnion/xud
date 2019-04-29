@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import DB from '../../lib/db/DB';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
-import { SwapClient, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
+import { SwapClientType, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
 import SwapRepository from '../../lib/swaps/SwapRepository';
 import { SwapDeal } from '../../lib/swaps/types';
 import P2PRepository from '../../lib/p2p/P2PRepository';
@@ -64,12 +64,12 @@ describe('Database', () => {
   it('should add two currencies', async () => {
     const btcPromise = orderBookRepo.addCurrency({
       id: 'BTC',
-      swapClient: SwapClient.Lnd,
+      swapClient: SwapClientType.Lnd,
       decimalPlaces: 8,
     });
     const ltcPromise = orderBookRepo.addCurrency({
       id: 'LTC',
-      swapClient: SwapClient.Lnd,
+      swapClient: SwapClientType.Lnd,
       decimalPlaces: 8,
     });
     await Promise.all([btcPromise, ltcPromise]);
