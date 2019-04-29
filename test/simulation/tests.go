@@ -159,7 +159,7 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 
 	req := &xudrpc.PlaceOrderRequest{
 		Price:    10,
-		Quantity: 1000000000,
+		Quantity: 100000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,

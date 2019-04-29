@@ -21,8 +21,3 @@ script:
   - go get -u github.com/btcsuite/btcd
   - npm install
   - npm run test:sim
-  - cat test/simulation/xuddatadir-Alice/logs/xud.log
-  - cat test/simulation/xuddatadir-Bob/logs/xud.log
-  - cat test/simulation/xuddatadir-Carol/logs/xud.log
-  - cat test/simulation/xuddatadir-Dave/logs/xud.log
-

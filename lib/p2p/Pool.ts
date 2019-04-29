@@ -245,7 +245,7 @@ class Pool extends EventEmitter {
    * If the node is banned, already connected, or has no listening addresses, then do nothing.
    * Additionally, if we're already trying to connect to a given node also do nothing.
    * @param nodes a collection of nodes with a `forEach` iterator to attempt to connect to
-   * @param allowKnown whether to allow nodes we are already aware of, defaults to true
+   * @param allowKnown whether to allow connecting to nodes we are already aware of, defaults to true
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
