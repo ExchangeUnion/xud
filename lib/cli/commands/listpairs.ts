@@ -25,6 +25,7 @@ const displayPairs = (pairs: ListPairsResponse.AsObject) => {
   formatPairs(pairs).forEach((pair) => {
     table.push(pair);
   });
+  console.log(colors.underline(colors.bold('\nPair IDs:')));
   console.log(table.toString());
 };
 
