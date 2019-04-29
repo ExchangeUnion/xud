@@ -129,6 +129,8 @@ describe('Swaps.Integration', () => {
     ltcSwapClient.isConnected = () => true;
     ltcSwapClient.getRoutes = getRoutesResponse;
     swapClients.set('LTC', ltcSwapClient);
+    btcSwapClient['removeInvoice'] = async () => {};
+    ltcSwapClient['removeInvoice'] = async () => {};
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClients);
   });
 

@@ -7,11 +7,11 @@ import errors from './errors';
 import { SwapClientType, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
-import * as lndrpc from '../proto/lndrpc_pb';
 import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { ResolveRequest } from '../proto/hash_resolver_pb';
 
 /**
  * The components required by the API service layer.
@@ -423,8 +423,8 @@ class Service extends EventEmitter {
   /**
    * resolveHash resolve hash to preimage.
    */
-  public resolveHash = async (request: lndrpc.ResolveRequest) => {
-    return this.swaps.resolveHash(request);
+  public resolveHash = async (request: ResolveRequest) => {
+    return this.swaps.handleResolveRequest(request);
   }
 }
 export default Service;

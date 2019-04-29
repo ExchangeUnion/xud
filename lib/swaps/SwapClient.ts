@@ -116,6 +116,12 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract async getRoutes(amount: number, destination: string): Promise<Route[]>;
 
+  public abstract async addInvoice(rHash: string, amount: number): Promise<void>;
+
+  public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
+
+  public abstract async removeInvoice(rHash: string): Promise<void>;
+
   /**
    * Gets the block height of the chain backing this swap client.
    */

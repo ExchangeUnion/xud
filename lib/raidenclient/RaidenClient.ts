@@ -143,7 +143,18 @@ class RaidenClient extends SwapClient {
       secret_hash: deal.rHash,
     });
     return tokenPaymentResponse.secret;
+  }
 
+  public addInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public settleInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public removeInvoice = async () => {
+    // not implemented, raiden does not use invoices
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {

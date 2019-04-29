@@ -10,6 +10,7 @@
     - [AddPairResponse](#xudrpc.AddPairResponse)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
+    - [Chain](#xudrpc.Chain)
     - [ChannelBalance](#xudrpc.ChannelBalance)
     - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
     - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
@@ -151,6 +152,22 @@
 
 ### BanResponse
 
+
+
+
+
+
+
+<a name="xudrpc.Chain"></a>
+
+### Chain
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| chain | [string](#string) |  | The blockchain the swap client is on (eg bitcoin, litecoin) |
+| network | [string](#string) |  | The network the swap client is on (eg regtest, testnet, mainnet) |
 
 
 
@@ -491,7 +508,7 @@
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) |  |  |
 | channels | [LndChannels](#xudrpc.LndChannels) |  |  |
-| chains | [string](#string) | repeated |  |
+| chains | [Chain](#xudrpc.Chain) | repeated |  |
 | blockheight | [int32](#int32) |  |  |
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |

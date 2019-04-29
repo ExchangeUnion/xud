@@ -690,6 +690,19 @@
     "xudrpcBanResponse": {
       "type": "object"
     },
+    "xudrpcChain": {
+      "type": "object",
+      "properties": {
+        "chain": {
+          "type": "string",
+          "title": "The blockchain the swap client is on (eg bitcoin, litecoin)"
+        },
+        "network": {
+          "type": "string",
+          "title": "The network the swap client is on (eg regtest, testnet, mainnet)"
+        }
+      }
+    },
     "xudrpcChannelBalance": {
       "type": "object",
       "properties": {
@@ -889,7 +902,7 @@
         "chains": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/xudrpcChain"
           }
         },
         "blockheight": {
