@@ -1,15 +1,18 @@
 package xudtest
 
 import (
-	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"sync"
+
+	"github.com/ExchangeUnion/xud-simulation/lntest"
 )
 
-type xudError struct {
+// XudError is an error along with the node the error resulted from
+type XudError struct {
 	Node *HarnessNode
 	Err  error
 }
 
+// NetworkHarness is an integration testing harness for xud.
 type NetworkHarness struct {
 	ActiveNodes map[int]*HarnessNode
 
@@ -21,17 +24,18 @@ type NetworkHarness struct {
 	lndBtcNetwork *lntest.NetworkHarness
 	lndLtcNetwork *lntest.NetworkHarness
 
-	errorChan chan *xudError
+	errorChan chan *XudError
 
 	quit chan struct{}
 
 	mtx sync.Mutex
 }
 
+// NewNetworkHarness creates and returns a new network harness.
 func NewNetworkHarness() (*NetworkHarness, error) {
 	n := NetworkHarness{
 		ActiveNodes: make(map[int]*HarnessNode),
-		errorChan:   make(chan *xudError),
+		errorChan:   make(chan *XudError),
 		quit:        make(chan struct{}),
 	}
 	return &n, nil
@@ -44,12 +48,13 @@ func (n *NetworkHarness) newNode(name string) (*HarnessNode, error) {
 	}
 
 	n.mtx.Lock()
-	n.ActiveNodes[node.Id] = node
+	n.ActiveNodes[node.ID] = node
 	n.mtx.Unlock()
 
 	return node, nil
 }
 
+// Start starts this xud node and its corresponding lnd nodes.
 func (n *NetworkHarness) Start() error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, 4)
@@ -78,34 +83,33 @@ func (n *NetworkHarness) Start() error {
 	return nil
 }
 
+// SetUp creates the xud nodes to be used for this harness.
 func (n *NetworkHarness) SetUp() error {
-	node, err := n.newNode("Alice")
+	var err error
+	n.Alice, err = n.newNode("Alice")
 	if err != nil {
 		return err
 	}
-	n.Alice = node
+	n.Bob, err = n.newNode("Bob")
+	if err != nil {
+		return err
+	}
 
-	node, err = n.newNode("Bob")
+	n.Carol, err = n.newNode("Carol")
 	if err != nil {
 		return err
 	}
-	n.Bob = node
 
-	node, err = n.newNode("Carol")
+	n.Dave, err = n.newNode("Dave")
 	if err != nil {
 		return err
 	}
-	n.Carol = node
-
-	node, err = n.newNode("Dave")
-	if err != nil {
-		return err
-	}
-	n.Dave = node
 
 	return nil
 }
 
+// SetLnd sets the lnd configuration for all nodes in the harness for a
+// specified chain.
 func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
 	n.lndBtcNetwork = ln
 	n.Alice.SetLnd(ln.Alice, chain)
@@ -117,7 +121,7 @@ func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
 // ProcessErrors returns a channel used for reporting any fatal process errors.
 // If any of the active nodes within the harness' test network incur a fatal
 // error, that error is sent over this channel.
-func (n *NetworkHarness) ProcessErrors() <-chan *xudError {
+func (n *NetworkHarness) ProcessErrors() <-chan *XudError {
 	return n.errorChan
 }
 
@@ -128,7 +132,7 @@ func (n *NetworkHarness) TearDownAll(kill bool, cleanup bool) error {
 			return err
 		}
 
-		delete(n.ActiveNodes, node.Id)
+		delete(n.ActiveNodes, node.ID)
 	}
 
 	close(n.errorChan)

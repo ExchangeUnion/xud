@@ -295,8 +295,8 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 						hex.EncodeToString(hn.PubKey[:logPubKeyBytes]))
 					err := os.Rename(fileName, newFileName)
 					if err != nil {
-						fmt.Errorf("could not rename %s to %s: %v",
-							fileName, newFileName, err)
+						fmt.Println(fmt.Errorf("could not rename %s to %s: %v",
+							fileName, newFileName, err))
 					}
 				}
 			}
