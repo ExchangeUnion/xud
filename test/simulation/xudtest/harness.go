@@ -15,6 +15,8 @@ type NetworkHarness struct {
 
 	Alice *HarnessNode
 	Bob   *HarnessNode
+	Carol *HarnessNode
+	Dave  *HarnessNode
 
 	lndBtcNetwork *lntest.NetworkHarness
 	lndLtcNetwork *lntest.NetworkHarness
@@ -26,19 +28,17 @@ type NetworkHarness struct {
 	mtx sync.Mutex
 }
 
-func NewNetworkHarness(lndBtcNetwork *lntest.NetworkHarness, lndLtcNetwork *lntest.NetworkHarness) (*NetworkHarness, error) {
+func NewNetworkHarness() (*NetworkHarness, error) {
 	n := NetworkHarness{
-		lndBtcNetwork: lndBtcNetwork,
-		lndLtcNetwork: lndLtcNetwork,
-		ActiveNodes:   make(map[int]*HarnessNode),
-		errorChan:     make(chan *xudError),
-		quit:          make(chan struct{}),
+		ActiveNodes: make(map[int]*HarnessNode),
+		errorChan:   make(chan *xudError),
+		quit:        make(chan struct{}),
 	}
 	return &n, nil
 }
 
-func (n *NetworkHarness) newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.HarnessNode) (*HarnessNode, error) {
-	node, err := newNode(name, lndBtcNode, lndLtcNode)
+func (n *NetworkHarness) newNode(name string) (*HarnessNode, error) {
+	node, err := newNode(name)
 	if err != nil {
 		return nil, err
 	}
@@ -47,36 +47,27 @@ func (n *NetworkHarness) newNode(name string, lndBtcNode *lntest.HarnessNode, ln
 	n.ActiveNodes[node.Id] = node
 	n.mtx.Unlock()
 
-	if err := node.start(n.errorChan); err != nil {
-		return nil, err
-	}
-
 	return node, nil
 }
 
-func (n *NetworkHarness) SetUp() error {
+func (n *NetworkHarness) Start() error {
 	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		node, err := n.newNode("Alice", n.lndBtcNetwork.Alice, n.lndLtcNetwork.Alice)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		n.Alice = node
-	}()
-	go func() {
-		defer wg.Done()
-		node, err := n.newNode("Bob", n.lndBtcNetwork.Bob, n.lndLtcNetwork.Bob)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		n.Bob = node
+	errChan := make(chan error, 4)
+	wg.Add(4)
 
-	}()
+	for _, _node := range n.ActiveNodes {
+		node := _node
+		go func() {
+			defer wg.Done()
+			if err := node.start(n.errorChan); err != nil {
+				if err != nil {
+					errChan <- err
+					return
+				}
+			}
+		}()
+	}
+
 	wg.Wait()
 	select {
 	case err := <-errChan:
@@ -85,6 +76,42 @@ func (n *NetworkHarness) SetUp() error {
 	}
 
 	return nil
+}
+
+func (n *NetworkHarness) SetUp() error {
+	node, err := n.newNode("Alice")
+	if err != nil {
+		return err
+	}
+	n.Alice = node
+
+	node, err = n.newNode("Bob")
+	if err != nil {
+		return err
+	}
+	n.Bob = node
+
+	node, err = n.newNode("Carol")
+	if err != nil {
+		return err
+	}
+	n.Carol = node
+
+	node, err = n.newNode("Dave")
+	if err != nil {
+		return err
+	}
+	n.Dave = node
+
+	return nil
+}
+
+func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
+	n.lndBtcNetwork = ln
+	n.Alice.SetLnd(ln.Alice, chain)
+	n.Bob.SetLnd(ln.Bob, chain)
+	n.Carol.SetLnd(ln.Carol, chain)
+	n.Dave.SetLnd(ln.Dave, chain)
 }
 
 // ProcessErrors returns a channel used for reporting any fatal process errors.

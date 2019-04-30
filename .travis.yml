@@ -15,11 +15,9 @@ script:
   - npm run lintNoFix
   - npm run test
 
-  # network simulation tests
+  # network simulation integration tests
   - eval "$(GIMME_GO_VERSION=1.12 gimme)"
   - go get -u github.com/golang/dep/cmd/dep
   - go get -u github.com/btcsuite/btcd
   - npm install
-  - npm run compile
   - npm run test:sim
-

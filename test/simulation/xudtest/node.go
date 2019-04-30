@@ -52,11 +52,12 @@ func (cfg nodeConfig) genArgs() []string {
 
 	args = append(args, "--initdb=false")
 	args = append(args, "--loglevel=debug")
-	args = append(args, "--raiden.disable")
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
-	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))
 	args = append(args, fmt.Sprintf("--rpc.port=%v", cfg.RPCPort))
+
+	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))
+	args = append(args, fmt.Sprintf("--p2p.addresses=%v", cfg.P2PAddr()))
 
 	args = append(args, fmt.Sprintf("--lnd.BTC.host=%v", cfg.LndBtcHost))
 	args = append(args, fmt.Sprintf("--lnd.BTC.port=%v", cfg.LndBtcPort))
@@ -67,6 +68,8 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.port=%v", cfg.LndLtcPort))
 	args = append(args, fmt.Sprintf("--lnd.LTC.certpath=%v", cfg.LndLtcCertPath))
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
+
+	args = append(args, "--raiden.disable")
 
 	return args
 }
@@ -103,7 +106,7 @@ func (cfg nodeConfig) P2PAddr() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(cfg.P2PPort))
 }
 
-func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.HarnessNode) (*HarnessNode, error) {
+func newNode(name string) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
 	dataDir, err := filepath.Abs("./xuddatadir-" + name)
@@ -117,16 +120,8 @@ func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.Har
 	}
 
 	cfg := nodeConfig{
-		DataDir:        dataDir,
-		XUDPath:        xudPath,
-		LndBtcHost:     "127.0.0.1",
-		LndBtcPort:     lndBtcNode.Cfg.RPCPort,
-		LndBtcCertPath: lndBtcNode.Cfg.TLSCertPath,
-		LndBtcMacPath:  lndBtcNode.Cfg.AdminMacPath,
-		LndLtcHost:     "127.0.0.1",
-		LndLtcPort:     lndLtcNode.Cfg.RPCPort,
-		LndLtcCertPath: lndLtcNode.Cfg.TLSCertPath,
-		LndLtcMacPath:  lndLtcNode.Cfg.AdminMacPath,
+		DataDir: dataDir,
+		XUDPath: xudPath,
 	}
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
@@ -134,12 +129,27 @@ func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.Har
 	cfg.RPCPort = baseRpcPort + nodeNum
 
 	return &HarnessNode{
-		Cfg:        &cfg,
-		Name:       name,
-		Id:         nodeNum,
-		LndBtcNode: lndBtcNode,
-		LndLtcNode: lndLtcNode,
+		Cfg:  &cfg,
+		Name: name,
+		Id:   nodeNum,
 	}, nil
+}
+
+func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
+	switch chain {
+	case "BTC":
+		hn.Cfg.LndBtcHost = "127.0.0.1"
+		hn.Cfg.LndBtcPort = lndNode.Cfg.RPCPort
+		hn.Cfg.LndBtcCertPath = lndNode.Cfg.TLSCertPath
+		hn.Cfg.LndBtcMacPath = lndNode.Cfg.AdminMacPath
+		hn.LndBtcNode = lndNode
+	case "LTC":
+		hn.Cfg.LndLtcHost = "127.0.0.1"
+		hn.Cfg.LndLtcPort = lndNode.Cfg.RPCPort
+		hn.Cfg.LndLtcCertPath = lndNode.Cfg.TLSCertPath
+		hn.Cfg.LndLtcMacPath = lndNode.Cfg.AdminMacPath
+		hn.LndLtcNode = lndNode
+	}
 }
 
 // Start launches a new running process of xud.
@@ -200,8 +210,8 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 		select {
 		case <-tlsTimeout:
 			return nil, fmt.Errorf("timeout waiting for TLS cert "+
-				"file to be created after 30 seconds: %v", hn.Cfg.TLSCertPath)
-		case <-time.After(100 * time.Millisecond):
+				"file to be created after 20 seconds: %v", hn.Cfg.TLSCertPath)
+		case <-time.After(1 * time.Second):
 		}
 	}
 
@@ -277,6 +287,10 @@ func (hn *HarnessNode) PubKey() string {
 
 func (hn *HarnessNode) SetPubKey(pubKey string) {
 	hn.pubKey = pubKey
+}
+
+func (hn *HarnessNode) NodeURI() string {
+	return fmt.Sprintf("%v@%v", hn.PubKey(), hn.Cfg.P2PAddr())
 }
 
 // fileExists reports whether the named file or directory exists.

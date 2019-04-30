@@ -40,10 +40,12 @@ type NetworkHarness struct {
 
 	nodesByPub map[string]*HarnessNode
 
-	// Alice and Bob are the initial seeder nodes that are automatically
+	// The initial seeder nodes that are automatically
 	// created to be the initial participants of the test network.
 	Alice *HarnessNode
 	Bob   *HarnessNode
+	Carol *HarnessNode
+	Dave  *HarnessNode
 
 	seenTxns             chan *Hash
 	bitcoinWatchRequests chan *txWatchRequest
@@ -128,7 +130,7 @@ func (f *fakeLogger) Println(args ...interface{})               {}
 // rpc clients capable of communicating with the initial seeder nodes are
 // created. Nodes are initialized with the given extra command line flags, which
 // should be formatted properly - "--arg=value".
-func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCfg *HashResolverConfig) error {
+func (n *NetworkHarness) SetUp(lndArgs []string, resolverConfigs map[string]*HashResolverConfig) error {
 	// Swap out grpc's default logger with out fake logger which drops the
 	// statements on the floor.
 	grpclog.SetLogger(&fakeLogger{})
@@ -136,11 +138,11 @@ func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCf
 	// Start the initial seeder nodes within the test network, then connect
 	// their respective RPC clients.
 	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
-	wg.Add(2)
+	errChan := make(chan error, 4)
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
-		node, err := n.NewNode("Alice", lndArgs, n.chain, aliceResolverCfg)
+		node, err := n.NewNode("Alice", lndArgs, n.chain, resolverConfigs["Alice"])
 		if err != nil {
 			errChan <- err
 			return
@@ -149,12 +151,30 @@ func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCf
 	}()
 	go func() {
 		defer wg.Done()
-		node, err := n.NewNode("Bob", lndArgs, n.chain, bobResolverCfg)
+		node, err := n.NewNode("Bob", lndArgs, n.chain, resolverConfigs["Bob"])
 		if err != nil {
 			errChan <- err
 			return
 		}
 		n.Bob = node
+	}()
+	go func() {
+		defer wg.Done()
+		node, err := n.NewNode("Carol", lndArgs, n.chain, resolverConfigs["Carol"])
+		if err != nil {
+			errChan <- err
+			return
+		}
+		n.Carol = node
+	}()
+	go func() {
+		defer wg.Done()
+		node, err := n.NewNode("Dave", lndArgs, n.chain, resolverConfigs["Dave"])
+		if err != nil {
+			errChan <- err
+			return
+		}
+		n.Dave = node
 	}()
 	wg.Wait()
 	select {
