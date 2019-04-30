@@ -11,7 +11,7 @@
   "scripts": {
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "config": "gulp config.create",
-    "compile": "cross-os precompile && tsc && cross-os postcompile",
+    "compile": "tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
     "dev": "npm run compile && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
@@ -42,11 +42,6 @@
       "linux": "rsync -am --include '*/' --include '*.js*' --exclude '*' lib/proto/ dist/proto",
       "darwin": "rsync -am --include '*/' --include '*.js*' --exclude '*' lib/proto/ dist/proto",
       "win32": "xcopy /s lib\\proto\\*.js* dist\\proto\\* >nul"
-    },
-    "precompile": {
-      "linux": "rm -rf ./dist",
-      "darwin": "rm -rf ./dist",
-      "win32": "rd /q /s dist || cd ."
     },
     "protoFixDeprecation": {
       "linux": "sed -i -- 's/new Buffer(/Buffer.from(/g' lib/proto/*.js",
@@ -175,8 +170,8 @@
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.10.0",
     "tslint-no-circular-imports": "^0.5.0",
-    "typedoc": "^0.13.0",
-    "typescript": "^3.1.6"
+    "typedoc": "^0.14.2",
+    "typescript": "^3.4.5"
   },
   "engines": {
     "node": ">=10.2.0"
