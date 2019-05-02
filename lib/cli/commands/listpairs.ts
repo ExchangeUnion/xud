@@ -7,15 +7,15 @@ import { getPairId } from '../../utils/utils';
 
 const HEADERS = [
   colors.red('PairId'),
-  colors.green('Base'),
+  colors.red('Base'),
   colors.red('Quote'),
 ];
 
 const formatPairs = (pairs: ListPairsResponse.AsObject): string[][] => {
   const formatted: string[][] = [];
   pairs.pairsList.forEach((pair) => {
-    const pairString = getPairId(pair);
-    formatted.push([pair, pairString.baseCurrency, pairString.quoteCurrency]);
+    const { baseCurrency, quoteCurrency } = getPairId(pair);
+    formatted.push([pair, baseCurrency, quoteCurrency]);
   });
   return formatted;
 };

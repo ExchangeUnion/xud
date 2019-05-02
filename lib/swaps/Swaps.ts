@@ -12,7 +12,7 @@ import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
 import { ResolveRequest } from '../proto/hash_resolver_pb';
 import { SwapDeal, SwapSuccess, SanitySwap } from './types';
-import { generatePreimageAndHash } from '../utils/utils';
+import { generatePreimageAndHash, getPairId } from '../utils/utils';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -65,7 +65,7 @@ class Swaps extends EventEmitter {
    * @returns An object with the derived `makerCurrency` and `takerCurrency` values
    */
   public static deriveCurrencies = (pairId: string, isBuy: boolean) => {
-    const [baseCurrency, quoteCurrency] = pairId.split('/');
+    const { baseCurrency, quoteCurrency } = getPairId(pairId);
 
     const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
     const takerCurrency = isBuy ? quoteCurrency : baseCurrency;
@@ -91,7 +91,7 @@ class Swaps extends EventEmitter {
    * @returns An object with the calculated `makerAmount` and `takerAmount` values
    */
   public static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
-    const [baseCurrency, quoteCurrency] = pairId.split('/');
+    const { baseCurrency, quoteCurrency } = getPairId(pairId);
     const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
     const makerAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
