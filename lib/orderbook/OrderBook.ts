@@ -332,16 +332,15 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    if (!this.nosanitychecks) {
+    if (!this.nosanitychecks && this.swaps) {
       // check if sufficient outbound channel capacity exists
-      const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
-      const swapClient = this.swaps && this.swaps.swapClients.get(makerCurrency);
+      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const swapClient = this.swaps.swapClients.get(outboundCurrency);
       if (!swapClient) {
-        throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
+        throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      if (makerAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount, swapClient.maximumOutboundCapacity);
+      if (outboundAmount > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, swapClient.maximumOutboundCapacity);
       }
     }
 
