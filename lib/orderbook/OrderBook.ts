@@ -31,6 +31,8 @@ interface OrderBook {
   on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
+  /** Adds a listener to be called when a local order was removed */
+  on(event: 'ownOrder.removed', listener: (order: OrderPortion) => void): this;
 
   /** Notifies listeners that a remote order was added */
   emit(event: 'peerOrder.incoming', order: PeerOrder): boolean;
@@ -44,6 +46,8 @@ interface OrderBook {
   emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
+  /** Notifies listeners that a local order was removed */
+  emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
 }
 
 /** A class representing an orderbook containing all orders for all active trading pairs. */
@@ -124,9 +128,9 @@ class OrderBook extends EventEmitter {
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
-          await this.persistTrade(swapSuccess.quantity, this.getOwnOrder(swapSuccess.orderId, swapSuccess.pairId), undefined, swapSuccess.rHash);
-          this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+          const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
+          await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
         }
       });
       this.swaps.on('swap.failed', (deal) => {
@@ -618,19 +622,21 @@ class OrderBook extends EventEmitter {
    * Removes all or part of an own order from the order book and broadcasts an order invalidation packet.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
+   * @returns the removed portion of the order
    */
   private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string) => {
     const tp = this.getTradingPair(pairId);
     try {
       const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
+      this.emit('ownOrder.removed', removeResult.order);
       if (removeResult.fullyRemoved) {
-        const localId = (removeResult.order).localId;
-        this.localIdMap.delete(localId);
+        this.localIdMap.delete(removeResult.order.localId);
       }
 
       if (this.pool) {
         this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
+      return removeResult.order;
     } catch (err) {
       if (quantityToRemove !== undefined) {
         this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);

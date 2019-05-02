@@ -395,7 +395,7 @@ class Service extends EventEmitter {
     this.orderBook.on('peerOrder.invalidation', orderRemoval => callback(undefined, orderRemoval));
     this.orderBook.on('peerOrder.filled', orderRemoval => callback(undefined, orderRemoval));
     this.orderBook.on('ownOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.swapped', orderRemoval => callback(undefined, orderRemoval));
+    this.orderBook.on('ownOrder.removed', orderRemoval => callback(undefined, orderRemoval));
   }
 
   /*
