@@ -62,7 +62,13 @@ interface NodeConnectionIterator {
   forEach: (callback: (node: NodeConnectionInfo) => void) => void;
 }
 
-/** A class representing a pool of peers that handles network activity. */
+/** Represents a pool of peers that handles all  network activity. */
+
+/**
+ * Represents a pool of peers that handles all p2p network activity. This tracks all active and
+ * pending peers, optionally runs a server to listen for incoming connections, and is the primary
+ * interface for other modules to interact with the p2p layer.
+ */
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public nodeState!: NodeState;

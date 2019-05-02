@@ -50,7 +50,11 @@ interface OrderBook {
   emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
 }
 
-/** A class representing an orderbook containing all orders for all active trading pairs. */
+/**
+ * Represents an order book containing all orders for all active trading pairs. This encompasses
+ * all orders tracked locally and is the primary interface with which other modules interact with
+ * the order book.
+ */
 class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
@@ -756,8 +760,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.buyArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sellArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);
