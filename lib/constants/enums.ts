@@ -14,6 +14,13 @@ export enum OrderSide {
   Sell,
 }
 
+export enum OrderStatus {
+  FILLED  = 0,
+  PARTIALLYFILLED = 1,
+  OPEN = 2,
+  CANCELLED = 3,
+}
+
 export enum XuNetwork {
   // real coins.
   MainNet = 'mainnet',

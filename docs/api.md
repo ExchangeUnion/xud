@@ -63,6 +63,7 @@
     - [UnbanResponse](#xudrpc.UnbanResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [ListOrderHistoryResponse.OrderStatus](#xudrpc.ListOrderHistoryResponse.OrderStatus)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -394,6 +395,7 @@
 | ----- | ---- | ----- | ----------- |
 | trades | [Trade](#xudrpc.Trade) | repeated |  |
 | swaps | [SwapSuccess](#xudrpc.SwapSuccess) | repeated |  |
+| status | [ListOrderHistoryResponse.OrderStatus](#xudrpc.ListOrderHistoryResponse.OrderStatus) |  |  |
 
 
 
@@ -970,6 +972,20 @@
 | ---- | ------ | ----------- |
 | LND | 0 |  |
 | RAIDEN | 1 |  |
+
+
+
+<a name="xudrpc.ListOrderHistoryResponse.OrderStatus"></a>
+
+### ListOrderHistoryResponse.OrderStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FILLED | 0 |  |
+| PARTIALLYFILLED | 1 |  |
+| OPEN | 2 |  |
+| CANCELLED | 3 |  |
 
 
 

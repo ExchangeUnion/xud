@@ -619,6 +619,16 @@
       ],
       "default": "LND"
     },
+    "ListOrderHistoryResponseOrderStatus": {
+      "type": "string",
+      "enum": [
+        "FILLED",
+        "PARTIALLYFILLED",
+        "OPEN",
+        "CANCELLED"
+      ],
+      "default": "FILLED"
+    },
     "SwapSuccessRole": {
       "type": "string",
       "enum": [
@@ -870,6 +880,9 @@
           "items": {
             "$ref": "#/definitions/xudrpcSwapSuccess"
           }
+        },
+        "status": {
+          "$ref": "#/definitions/ListOrderHistoryResponseOrderStatus"
         }
       }
     },

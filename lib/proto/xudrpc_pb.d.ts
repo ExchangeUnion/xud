@@ -645,6 +645,9 @@ export class ListOrderHistoryResponse extends jspb.Message {
     setSwapsList(value: Array<SwapSuccess>): void;
     addSwaps(value?: SwapSuccess, index?: number): SwapSuccess;
 
+    getStatus(): ListOrderHistoryResponse.OrderStatus;
+    setStatus(value: ListOrderHistoryResponse.OrderStatus): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListOrderHistoryResponse.AsObject;
@@ -660,7 +663,16 @@ export namespace ListOrderHistoryResponse {
     export type AsObject = {
         tradesList: Array<Trade.AsObject>,
         swapsList: Array<SwapSuccess.AsObject>,
+        status: ListOrderHistoryResponse.OrderStatus,
     }
+
+    export enum OrderStatus {
+    FILLED = 0,
+    PARTIALLYFILLED = 1,
+    OPEN = 2,
+    CANCELLED = 3,
+    }
+
 }
 
 export class Trade extends jspb.Message { 

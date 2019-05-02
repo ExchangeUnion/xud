@@ -5,7 +5,7 @@ import LndClient, { LndInfo } from '../lndclient/LndClient';
 import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
+import { SwapClient, OrderSide, SwapRole, OrderStatus } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
@@ -337,7 +337,8 @@ class Service extends EventEmitter {
   /**
    * Get all trades, swaps and order status related to an order.
    */
-  public listOrderHistory = async (args: { orderId: string }): Promise<{trades: TradeInstance[], swapDeals: SwapDealInstance[]}> => {
+  public listOrderHistory = async (args: { orderId: string }): Promise<{
+    trades: TradeInstance[], swapDeals: SwapDealInstance[], status: OrderStatus}> => {
     const order = await this.orderBook.getOrder(args.orderId);
 
     if (order === null) {
@@ -347,7 +348,22 @@ class Service extends EventEmitter {
     const trades = await this.orderBook.getTrades(order.id, true);
     const swapDeals = await this.swaps.getDeals(true);
 
+    let quantity = 0;
+    let status: OrderStatus;
+    trades.forEach((trade) => {
+      quantity = quantity + trade.quantity;
+    });
+
+    if (quantity === order.initialQuantity) {
+      status = OrderStatus.FILLED;
+    } else if (quantity < order.initialQuantity && quantity !== 0) {
+      status = OrderStatus.PARTIALLYFILLED;
+    } else {
+      // TODO: check logs for canceled order
+      status = OrderStatus.OPEN;
+    }
     return {
+      status,
       trades,
       swapDeals,
     };

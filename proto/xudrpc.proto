@@ -383,6 +383,14 @@ message ListOrderHistoryRequest {
 message ListOrderHistoryResponse {
   repeated Trade trades = 1 [json_name = "trades"];
   repeated SwapSuccess swaps = 2 [json_name = "swaps"];
+  OrderStatus status = 3 [json_name = "status"];
+
+  enum OrderStatus {
+    FILLED  = 0;
+    PARTIALLYFILLED = 1;
+    OPEN = 2;
+    CANCELLED = 3;
+  };
 }
 
 message Trade {
