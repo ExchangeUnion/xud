@@ -59,20 +59,6 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Derives the maker and taker currency for a swap.
-   * @param pairId The trading pair id for the swap
-   * @param isBuy Whether the maker order in the swap is a buy
-   * @returns An object with the derived `makerCurrency` and `takerCurrency` values
-   */
-  public static deriveCurrencies = (pairId: string, isBuy: boolean) => {
-    const [baseCurrency, quoteCurrency] = pairId.split('/');
-
-    const makerCurrency = isBuy ? baseCurrency : quoteCurrency;
-    const takerCurrency = isBuy ? quoteCurrency : baseCurrency;
-    return { makerCurrency, takerCurrency };
-  }
-
-  /**
    * Checks if a swap request is valid. This is a shallow check that only detects critical
    * inconsistencies and verifies only whether the request can possibly lead to a successful swap.
    * @returns `true` if the request is valid, otherwise `false`
@@ -84,19 +70,40 @@ class Swaps extends EventEmitter {
   }
 
   /**
-   * Calculates the amount of subunits/satoshis each side of a swap should receive.
+   * Calculates the currencies and amounts of subunits/satoshis each side of a swap should receive.
    * @param quantity The quantity being swapped
    * @param price The price for the swap
    * @param isBuy Whether the maker order in the swap is a buy
-   * @returns An object with the calculated `makerAmount` and `takerAmount` values
+   * @returns An object with the calculated maker and taker values.
    */
-  public static calculateSwapAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+  private static calculateMakerTakerAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+    const { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount } =
+      Swaps.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+    return {
+      makerCurrency: inboundCurrency,
+      makerAmount: inboundAmount,
+      takerCurrency: outboundCurrency,
+      takerAmount: outboundAmount,
+    };
+  }
+
+  /**
+   * Calculates the incoming and outgoing currencies and amounts of subunits/satoshis for an order if it is swapped.
+   * @param quantity The quantity of the order
+   * @param price The price of the order
+   * @param isBuy Whether the order is a buy
+   * @returns An object with the calculated incoming and outgoing values.
+   */
+  public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
     const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
-    const makerAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
-    const takerAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
-    return { makerAmount, takerAmount };
+
+    const inboundCurrency = isBuy ? baseCurrency : quoteCurrency;
+    const inboundAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
+    const outboundCurrency = isBuy ? quoteCurrency : baseCurrency;
+    const outboundAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
+    return { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount };
   }
 
   public init = async () => {
@@ -188,8 +195,7 @@ class Swaps extends EventEmitter {
       throw SwapFailureReason.SwapClientNotSetup;
     }
 
-    const { makerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
-    const { makerAmount } = Swaps.calculateSwapAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
+    const { makerCurrency, makerAmount } = Swaps.calculateMakerTakerAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
 
     const swapClient = this.swapClients.get(makerCurrency)!;
 
@@ -292,10 +298,9 @@ class Swaps extends EventEmitter {
   private beginSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<string> => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
-    const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(maker.pairId, maker.isBuy);
-
     const quantity = Math.min(maker.quantity, taker.quantity);
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } =
+      Swaps.calculateMakerTakerAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
     const clientType = this.swapClients.get(makerCurrency)!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
@@ -362,8 +367,7 @@ class Swaps extends EventEmitter {
 
     const { quantity, price, isBuy } = orderToAccept;
 
-    const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, price, isBuy, requestBody.pairId);
-    const { makerCurrency, takerCurrency } = Swaps.deriveCurrencies(requestBody.pairId, isBuy);
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, requestBody.pairId);
 
     const swapClient = this.swapClients.get(takerCurrency);
     if (!swapClient) {
@@ -493,7 +497,7 @@ class Swaps extends EventEmitter {
         // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
-        const { makerAmount, takerAmount } = Swaps.calculateSwapAmounts(quantity, deal.price, deal.isBuy, deal.pairId);
+        const { makerAmount, takerAmount } = Swaps.calculateMakerTakerAmounts(quantity, deal.price, deal.isBuy, deal.pairId);
         deal.takerAmount = takerAmount;
         deal.makerAmount = makerAmount;
       }
