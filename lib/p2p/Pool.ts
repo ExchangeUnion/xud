@@ -10,7 +10,7 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, IncomingOrder } from '../orderbook/types';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from './types';
+import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
@@ -92,7 +92,7 @@ class Pool extends EventEmitter {
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
-    this.nodes = new NodeList(this.repository, this.network);
+    this.nodes = new NodeList(this.repository);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -226,7 +226,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config, this.network);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.network);
         await peer.beginOpen(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
         await peer.close();
         assert.fail();
@@ -361,7 +361,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    const peer = new Peer(this.logger, address, this.config, this.network);
+    const peer = new Peer(this.logger, address, this.network);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -552,7 +552,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger, this.config, this.network);
+    const peer = Peer.fromInbound(socket, this.logger, this.network);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);

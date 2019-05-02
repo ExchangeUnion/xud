@@ -12,7 +12,7 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
-import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
+import { NodeState, Address, NodeConnectionInfo } from './types';
 import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
@@ -80,16 +80,11 @@ class Peer extends EventEmitter {
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
-  private lastRecv = 0;
-  private lastSend = 0;
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
   private outEncryptionKey?: Buffer;
-  /** A counter for packets sent to be used for assigning unique packet ids. */
-  private packetCount = 0;
   private readonly network: Network;
   private readonly framer: Framer;
-  private readonly deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -150,7 +145,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private config: PoolConfig, network: Network) {
+  constructor(private logger: Logger, public address: Address, network: Network) {
     super();
     this.network = network;
     this.framer = new Framer(this.network);
@@ -161,8 +156,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig, network: Network): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), config, network);
+  public static fromInbound = (socket: Socket, logger: Logger, network: Network): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), network);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -321,7 +316,6 @@ class Peer extends EventEmitter {
     this.sendRaw(data);
 
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
-    this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
       this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
@@ -356,7 +350,6 @@ class Peer extends EventEmitter {
     if (this.socket && !this.socket.destroyed) {
       try {
         this.socket.write(data);
-        this.lastSend = Date.now();
       } catch (err) {
         this.logger.error('failed sending data to peer', err);
       }
@@ -633,7 +626,6 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = async (packet: Packet): Promise<void> => {
-    this.lastRecv = Date.now();
     const sender = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
     this.logger.trace(`Received ${PacketType[packet.type]} packet from ${sender}${JSON.stringify(packet)}`);
 

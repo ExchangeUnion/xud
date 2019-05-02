@@ -123,7 +123,7 @@ class Xud extends EventEmitter {
         raidenAddress: this.raidenClient.address,
       }, this.nodeKey);
 
-      this.service = new Service(loggers.global, {
+      this.service = new Service({
         version,
         orderBook: this.orderBook,
         lndClients: this.lndClients,

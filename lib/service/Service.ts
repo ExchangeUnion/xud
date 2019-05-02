@@ -1,4 +1,3 @@
-import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
@@ -9,7 +8,7 @@ import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
 import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
@@ -74,7 +73,7 @@ class Service extends EventEmitter {
   private swaps: Swaps;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private logger: Logger, components: ServiceComponents) {
+  constructor(components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
@@ -313,7 +312,6 @@ class Service extends EventEmitter {
    * @returns A list of supported currency ticker symbols
    */
   public listCurrencies = () => {
-    const pairs = new Map<string, Pair>();
     return Array.from(this.orderBook.currencies);
   }
 
