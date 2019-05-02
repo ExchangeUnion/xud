@@ -158,8 +158,8 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
 	req := &xudrpc.PlaceOrderRequest{
-		Price:    10,
-		Quantity: 100000000,
+		Price:    0.02,
+		Quantity: 10000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,
@@ -180,7 +180,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	// Place an order on Alice.
 	req := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
-		Price:    10,
+		Price:    0.02,
 		Quantity: 10000000,
 		PairId:   "LTC/BTC",
 		Side:     xudrpc.OrderSide_BUY,
