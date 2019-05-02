@@ -7,6 +7,7 @@ import { SwapClient, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
 import OrderBookRepository from '../orderbook/OrderBookRepository';
 import { Models } from '../db/DB';
+import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 /**
  * A utility function to parse the payload from an http response.
@@ -26,54 +27,6 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
     });
   });
 }
-
-/**
- * The configurable options for the raiden client.
- */
-type RaidenClientConfig = {
-  disable: boolean;
-  host: string;
-  port: number;
-};
-
-/** General information about the state of this raiden client. */
-type RaidenInfo = {
-  error?: string;
-  address?: string;
-  channels?: number;
-  version?: string;
-};
-
-/**
- * The payload for the [[openChannel]] call.
- */
-type OpenChannelPayload = {
-  partner_address: string;
-  token_address: string;
-  balance: number;
-  settle_timeout: 100;
-};
-
-/**
- * A raiden payment channel.
- */
-type Channel = OpenChannelPayload & {
-  channel_address: string;
-  state: string;
-};
-
-/**
- * A raiden channel event.
- */
-type ChannelEvent = {
-  event_type: string;
-  identifier?: number;
-  amount?: number;
-};
-
-type TokenPaymentResponse = {
-  secret: string;
-};
 
 /**
  * A class representing a client to interact with raiden.
@@ -157,7 +110,12 @@ class RaidenClient extends BaseClient {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
 
-    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, destination, 1, rHash);
+    const tokenPaymentResponse = await this.tokenPayment({
+      token_address: tokenAddress,
+      target_address: destination,
+      amount: 1,
+      secret_hash: rHash,
+    });
     return tokenPaymentResponse.secret;
   }
 
@@ -180,7 +138,11 @@ class RaidenClient extends BaseClient {
     }
     // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
     // https://github.com/ExchangeUnion/xud/issues/870
-    const tokenPaymentResponse = await this.tokenPayment(tokenAddress, deal.destination!, amount);
+    const tokenPaymentResponse = await this.tokenPayment({
+      amount,
+      token_address: tokenAddress,
+      target_address: deal.destination!,
+    });
     return tokenPaymentResponse.secret;
 
   }
@@ -353,21 +315,11 @@ class RaidenClient extends BaseClient {
    * @param amount
    * @param secret_hash optional; provide your own secret hash
    */
-  private tokenPayment = async (
-    token_address: string,
-    target_address: string,
-    amount: number,
-    secret_hash?: string,
-  ): Promise<TokenPaymentResponse> => {
-    const endpoint = `payments/${token_address}/${target_address}`;
-    let payload = {
-      amount,
-      // Raiden payment will timeout without an error if the identifier
-      // is not specified.
-      identifier: Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1),
-    };
-    if (secret_hash) {
-      payload = Object.assign(payload, { secret_hash });
+  private tokenPayment = async (payload: TokenPaymentRequest): Promise<TokenPaymentResponse> => {
+    const endpoint = `payments/${payload.token_address}/${payload.target_address}`;
+    payload.identifier = Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1);
+    if (payload.secret_hash) {
+      payload.secret_hash = `0x${payload.secret_hash}`;
     }
     try {
       const res = await this.sendRequest(endpoint, 'POST', payload);
