@@ -367,4 +367,3 @@ class RaidenClient extends SwapClient {
 }
 
 export default RaidenClient;
-export { RaidenClientConfig, RaidenInfo, OpenChannelPayload };

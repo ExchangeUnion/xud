@@ -14,6 +14,7 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
+import HttpServer from './http/HttpServer';
 
 const version: string = require('../package.json').version;
 
@@ -35,6 +36,7 @@ class Xud extends EventEmitter {
   private pool!: Pool;
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
+  private httpServer?: HttpServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
@@ -133,6 +135,11 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
+      if (!this.raidenClient.isDisabled()) {
+        this.httpServer = new HttpServer(loggers.http, this.service);
+        await this.httpServer.listen(this.config.http.port);
+      }
+
       // start rpc server last
       if (!this.config.rpc.disable) {
         this.rpcServer = new GrpcServer(loggers.rpc, this.service);
@@ -203,9 +210,13 @@ class Xud extends EventEmitter {
     if (!this.raidenClient.isDisabled()) {
       this.raidenClient.close();
     }
+
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
+    if (this.httpServer) {
+      closePromises.push(this.httpServer.close());
+    }
     if (this.pool) {
       closePromises.push(this.pool.disconnect());
     }
