@@ -10,8 +10,7 @@ import { sortOrders } from '../utils/utils';
 import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
-import { ResolveRequest } from '../proto/hash_resolver_pb';
+import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
 
 /**
  * The components required by the API service layer.
