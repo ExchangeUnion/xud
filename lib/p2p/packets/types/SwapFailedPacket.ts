@@ -59,7 +59,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     msg.setReqId(this.header.reqId!);
     msg.setRHash(this.body!.rHash);
     if (this.body!.errorMessage) {
-      msg.setErrorMessage(this.body!.errorMessage!);
+      msg.setErrorMessage(this.body!.errorMessage);
     }
     msg.setFailureReason(this.body!.failureReason);
 
