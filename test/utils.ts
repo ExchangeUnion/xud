@@ -47,7 +47,7 @@ export const waitForSpy = (spy: SinonSpy, property = 'called') => {
 /**
  * Creates and returns an os-specific directory for temp files.
  */
-export const getTempDir = (unique = false) => {
+export const getTempDir = (unique: boolean) => {
   let dir = path.join(os.tmpdir(), 'xud-test');
   if (unique) {
     dir = path.join(dir, uuidv1());
