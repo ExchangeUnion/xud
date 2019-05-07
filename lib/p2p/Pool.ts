@@ -502,7 +502,7 @@ class Pool extends EventEmitter {
     }
   }
 
-  public discoverNodes = async (peerPubKey: string): Promise<NodeConnectionInfo[]> => {
+  public discoverNodes = async (peerPubKey: string): Promise<number> => {
     const peer = this.peers.get(peerPubKey);
     if (!peer) {
       throw errors.NOT_CONNECTED(peerPubKey);

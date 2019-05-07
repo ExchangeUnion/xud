@@ -809,10 +809,10 @@ class Peer extends EventEmitter {
     return packet;
   }
 
-  public discoverNodes = async (): Promise<NodeConnectionInfo[]> => {
+  public discoverNodes = async (): Promise<number> => {
     const packet = await this.sendGetNodes();
     const res = await this.wait(packet.header.id, packet.responseType);
-    return res.body;
+    return res.body.length;
   }
 
   private sendPong = async (pingId: string): Promise<void> => {

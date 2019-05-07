@@ -8,7 +8,6 @@
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
-    - [Address](#xudrpc.Address)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [ChannelBalance](#xudrpc.ChannelBalance)
@@ -36,7 +35,6 @@
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
-    - [NodeConnectionInfo](#xudrpc.NodeConnectionInfo)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [OrderUpdate](#xudrpc.OrderUpdate)
@@ -130,22 +128,6 @@
 
 ### AddPairResponse
 
-
-
-
-
-
-
-<a name="xudrpc.Address"></a>
-
-### Address
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  |  |
-| port | [int32](#int32) |  |  |
 
 
 
@@ -287,7 +269,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| nodes | [NodeConnectionInfo](#xudrpc.NodeConnectionInfo) | repeated |  |
+| num_nodes | [int32](#int32) |  |  |
 
 
 
@@ -546,22 +528,6 @@
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |
 | alias | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.NodeConnectionInfo"></a>
-
-### NodeConnectionInfo
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| nodePubKey | [string](#string) |  |  |
-| addresses | [Address](#xudrpc.Address) | repeated |  |
 
 
 

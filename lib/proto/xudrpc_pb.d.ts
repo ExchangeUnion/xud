@@ -1273,10 +1273,8 @@ export namespace DiscoverNodesRequest {
 }
 
 export class DiscoverNodesResponse extends jspb.Message { 
-    clearNodesList(): void;
-    getNodesList(): Array<NodeConnectionInfo>;
-    setNodesList(value: Array<NodeConnectionInfo>): void;
-    addNodes(value?: NodeConnectionInfo, index?: number): NodeConnectionInfo;
+    getNumNodes(): number;
+    setNumNodes(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -1291,7 +1289,7 @@ export class DiscoverNodesResponse extends jspb.Message {
 
 export namespace DiscoverNodesResponse {
     export type AsObject = {
-        nodesList: Array<NodeConnectionInfo.AsObject>,
+        numNodes: number,
     }
 }
 
@@ -1485,58 +1483,6 @@ export class UnbanResponse extends jspb.Message {
 
 export namespace UnbanResponse {
     export type AsObject = {
-    }
-}
-
-export class NodeConnectionInfo extends jspb.Message { 
-    getNodepubkey(): string;
-    setNodepubkey(value: string): void;
-
-    clearAddressesList(): void;
-    getAddressesList(): Array<Address>;
-    setAddressesList(value: Array<Address>): void;
-    addAddresses(value?: Address, index?: number): Address;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): NodeConnectionInfo.AsObject;
-    static toObject(includeInstance: boolean, msg: NodeConnectionInfo): NodeConnectionInfo.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: NodeConnectionInfo, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): NodeConnectionInfo;
-    static deserializeBinaryFromReader(message: NodeConnectionInfo, reader: jspb.BinaryReader): NodeConnectionInfo;
-}
-
-export namespace NodeConnectionInfo {
-    export type AsObject = {
-        nodepubkey: string,
-        addressesList: Array<Address.AsObject>,
-    }
-}
-
-export class Address extends jspb.Message { 
-    getHost(): string;
-    setHost(value: string): void;
-
-    getPort(): number;
-    setPort(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): Address.AsObject;
-    static toObject(includeInstance: boolean, msg: Address): Address.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: Address, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): Address;
-    static deserializeBinaryFromReader(message: Address, reader: jspb.BinaryReader): Address;
-}
-
-export namespace Address {
-    export type AsObject = {
-        host: string,
-        port: number,
     }
 }
 

@@ -568,19 +568,10 @@ class GrpcService {
    */
   public discoverNodes: grpc.handleUnaryCall<xudrpc.DiscoverNodesRequest, xudrpc.DiscoverNodesResponse> = async (call, callback) => {
     try {
-      const nodes = await this.service.discoverNodes(call.request.toObject());
+      const numNodes = await this.service.discoverNodes(call.request.toObject());
+
       const response = new xudrpc.DiscoverNodesResponse();
-      response.setNodesList(nodes.map((node) => {
-        const grpcNode = new xudrpc.NodeConnectionInfo();
-        grpcNode.setNodepubkey(node.nodePubKey);
-        grpcNode.setAddressesList(node.addresses.map((address) => {
-          const grpcAddress = new xudrpc.Address();
-          grpcAddress.setHost(address.host);
-          grpcAddress.setPort(address.port);
-          return grpcAddress;
-        }));
-        return grpcNode;
-      }));
+      response.setNumNodes(numNodes);
 
       callback(null, response);
     } catch (err) {

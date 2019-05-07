@@ -377,7 +377,7 @@ class Service extends EventEmitter {
     return this.orderBook.removePair(pairId);
   }
 
-  /** Removes a trading pair. */
+  /** Discover nodes from a specific peer and apply new connections */
   public discoverNodes = async (args: { peerPubKey: string }) => {
     argChecks.HAS_PEER_PUB_KEY(args);
     const { peerPubKey } = args;

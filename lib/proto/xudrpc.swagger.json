@@ -705,18 +705,6 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
-    "xudrpcAddress": {
-      "type": "object",
-      "properties": {
-        "host": {
-          "type": "string"
-        },
-        "port": {
-          "type": "integer",
-          "format": "int32"
-        }
-      }
-    },
     "xudrpcBanRequest": {
       "type": "object",
       "properties": {
@@ -780,11 +768,9 @@
     "xudrpcDiscoverNodesResponse": {
       "type": "object",
       "properties": {
-        "nodes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcNodeConnectionInfo"
-          }
+        "num_nodes": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -966,20 +952,6 @@
         },
         "alias": {
           "type": "string"
-        }
-      }
-    },
-    "xudrpcNodeConnectionInfo": {
-      "type": "object",
-      "properties": {
-        "nodePubKey": {
-          "type": "string"
-        },
-        "addresses": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcAddress"
-          }
         }
       }
     },
