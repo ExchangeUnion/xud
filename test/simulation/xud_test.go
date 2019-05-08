@@ -291,7 +291,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 }
 
 func installDeps() (string, error) {
-	cmd := exec.Command("sh", "./install.sh")
+	cmd := exec.Command("./install.sh")
 
 	data, err := cmd.Output()
 	if err != nil {

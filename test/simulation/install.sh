@@ -10,7 +10,7 @@ delete_dir() {
 
 temp_gopath=$PWD/temp/go
 temp_lndpath=${temp_gopath}/src/github.com/lightningnetwork/lnd
-LND_COMMIT="v0.6.1-beta-rc2"
+LND_TAG="v0.6.1-beta"
 if [ -f ${temp_lndpath}/lnd-debug ]
 then
   LND_VERSION=$(${temp_lndpath}/lnd-debug --version)
@@ -18,7 +18,7 @@ else
   LND_VERSION=""
 fi
 
-if [[ $LND_VERSION == *"$LND_COMMIT" ]]; then
+if [[ $LND_VERSION == *"$LND_TAG" ]]; then
     echo "lnd already installed"
 else
     echo "deleting temporary gopath directory"
@@ -28,7 +28,7 @@ else
     GO111MODULE=off go get -u github.com/btcsuite/btcd
 
     echo "starting lnd clone..."
-    if ! git clone -b v0.6.1-beta-rc2 --depth 1 https://github.com/lightningnetwork/lnd ${temp_lndpath} > /dev/null 2>&1; then
+    if ! git clone -b ${LND_TAG} --depth 1 https://github.com/lightningnetwork/lnd ${temp_lndpath} > /dev/null 2>&1; then
        echo "unable to git clone lnd"
        exit 1
     fi

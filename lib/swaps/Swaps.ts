@@ -549,7 +549,12 @@ class Swaps extends EventEmitter {
       return;
     }
 
-    await takerSwapClient.addInvoice(deal.rHash, deal.takerAmount);
+    try {
+      await takerSwapClient.addInvoice(deal.rHash, deal.takerAmount);
+    } catch (err) {
+      this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
+      await this.sendErrorToPeer(peer, rHash, err.message);
+    }
 
     try {
       this.setDealPhase(deal, SwapPhase.SendingAmount);
