@@ -5,23 +5,19 @@ import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { getPairId } from '../../utils/utils';
 
-const HEADERS = [
-  colors.red('PairId'),
-  colors.red('Base'),
-  colors.red('Quote'),
-];
+const HEADERS = [colors.red('PairId')];
 
 const formatPairs = (pairs: ListPairsResponse.AsObject): string[][] => {
   const formatted: string[][] = [];
   pairs.pairsList.forEach((pair) => {
     const { baseCurrency, quoteCurrency } = getPairId(pair);
-    formatted.push([pair, baseCurrency, quoteCurrency]);
+    formatted.push([`${baseCurrency} / ${quoteCurrency}`]);
   });
   return formatted;
 };
 
 const displayPairs = (pairs: ListPairsResponse.AsObject) => {
-  const table = new Table({ head: HEADERS, colWidths: [10, 20] }) as HorizontalTable;
+  const table = new Table({ head: HEADERS }) as HorizontalTable;
   formatPairs(pairs).forEach((pair) => {
     table.push(pair);
   });
