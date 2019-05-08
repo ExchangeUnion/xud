@@ -5,7 +5,9 @@ import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import assert from 'assert';
-import { exists, readFile } from '../utils/fsUtils';
+import { promises as fs } from 'fs';
+import { SwapState, SwapRole, SwapClient } from '../constants/enums';
+import { SwapDeal } from '../swaps/types';
 
 /** The configurable options for the lnd client. */
 type LndClientConfig = {
@@ -39,33 +41,22 @@ interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
-interface LndClient {
-  on(event: 'connectionVerified', listener: (newPubKey?: string) => void): this;
-  emit(event: 'connectionVerified', newPubKey?: string): boolean;
-}
-
 /** A class representing a client to interact with lnd. */
 class LndClient extends BaseClient {
+  public readonly type = SwapClient.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
-  private reconnectionTimer?: NodeJS.Timer;
   private identityPubKey?: string;
   private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
 
-  /** Time in milliseconds between attempts to recheck connectivity to lnd if it is lost. */
-  private static readonly RECONNECT_TIMER = 5000;
-
-  /** Time in milliseconds between attempts to recheck if lnd's backend chain is in sync. */
-  private static readonly RECHECK_SYNC_TIMER = 30000;
-
   /**
-   * Create an lnd client.
+   * Creates an lnd client.
    * @param config the lnd configuration
    */
-  constructor(private config: LndClientConfig, logger: Logger) {
+  constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
     super(logger);
 
     this.cltvDelta = config.cltvdelta || 0;
@@ -73,36 +64,39 @@ class LndClient extends BaseClient {
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
-    let shouldDisable = disable;
+    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
 
-    if (!(await exists(certpath))) {
-      this.logger.error('could not find lnd certificate, is lnd installed?');
-      shouldDisable = true;
-    }
-    if (!nomacaroons && !(await exists(macaroonpath))) {
-      this.logger.error('could not find lnd macaroon, is lnd installed?');
-      shouldDisable = true;
-    }
-    if (shouldDisable) {
+    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
+    if (disable) {
+      await this.setStatus(ClientStatus.Disabled);
       return;
     }
 
-    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
-    this.uri = `${host}:${port}`;
-    const lndCert = await readFile(certpath);
-    this.credentials = grpc.credentials.createSsl(lndCert);
+    try {
+      const lndCert = await fs.readFile(certpath);
+      this.credentials = grpc.credentials.createSsl(lndCert);
+    } catch (err) {
+      this.logger.error('could not load lnd certificate, is lnd installed?');
+      await this.setStatus(ClientStatus.Disabled);
+      return;
+    }
 
     this.meta = new grpc.Metadata();
     if (!nomacaroons) {
-      const adminMacaroon = await readFile(macaroonpath);
-      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      try {
+        const adminMacaroon = await fs.readFile(macaroonpath);
+        this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      } catch (err) {
+        this.logger.error('could not load lnd macaroon, is lnd installed?');
+        await this.setStatus(ClientStatus.Disabled);
+        return;
+      }
     } else {
-      this.logger.info(`macaroons are disabled for lnd at ${this.uri}`);
+      this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
     }
-    // set status as disconnected until we can verify the connection
-    this.setStatus(ClientStatus.Disconnected);
-    return this.verifyConnection();
+
+    this.uri = `${host}:${port}`;
+    await this.verifyConnection();
   }
 
   public get pubKey() {
@@ -166,28 +160,19 @@ class LndClient extends BaseClient {
     };
   }
 
-  /**
-   * Verify that the lnd gRPC service can be reached by attempting a `getInfo` call.
-   * If successful, subscribe to invoice events and store the lnd identity pubkey.
-   * If not, set a timer to attempt to reach the service again in 5 seconds.
-   */
-  public verifyConnection = async () => {
+  protected verifyConnection = async () => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
     if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd with uri: ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd for ${this.currency} at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
-          this.setStatus(ClientStatus.ConnectionVerified);
-          if (this.reconnectionTimer) {
-            clearTimeout(this.reconnectionTimer);
-            this.reconnectionTimer = undefined;
-          }
+          await this.setStatus(ClientStatus.ConnectionVerified);
 
           /** The new lnd pub key value if different from the one we had previously. */
           let newPubKey: string | undefined;
@@ -198,21 +183,19 @@ class LndClient extends BaseClient {
           this.emit('connectionVerified', newPubKey);
           this.subscribeInvoices();
         } else {
-          this.setStatus(ClientStatus.OutOfSync);
-          this.logger.error(`lnd at ${this.uri} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
-          this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECHECK_SYNC_TIMER);
+          await this.setStatus(ClientStatus.OutOfSync);
+          this.logger.warn(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
         }
       } catch (err) {
-        this.setStatus(ClientStatus.Disconnected);
-        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
+        this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
-        this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+        await this.setStatus(ClientStatus.Disconnected);
       }
     }
   }
 
   /**
-   * Return general information concerning the lightning node including it’s identity pubkey, alias, the chains it
+   * Returns general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
@@ -220,14 +203,95 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Send a payment through the Lightning Network.
+   * Gets the preimage in hex format from an lnd SendResponse message.
    */
-  public sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+  private getPreimageFromSendResponse = (response: lndrpc.SendResponse) => {
+    return Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
+  }
+
+  public sendSmallestAmount = async (rHash: string, destination: string) => {
+    const sendRequest = new lndrpc.SendRequest();
+    sendRequest.setAmt(1);
+    sendRequest.setDestString(destination);
+    sendRequest.setPaymentHashString(rHash);
+    let sendPaymentResponse: lndrpc.SendResponse;
+    try {
+      sendPaymentResponse = await this.sendPaymentSync(sendRequest);
+    } catch (err) {
+      this.logger.error(`got exception from sendPaymentSync`, err.message);
+      throw err;
+    }
+    const paymentError = sendPaymentResponse.getPaymentError();
+    if (paymentError) {
+      throw new Error(paymentError);
+    }
+    return this.getPreimageFromSendResponse(sendPaymentResponse);
+  }
+
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+
+    if (deal.makerToTakerRoutes && deal.role === SwapRole.Maker) {
+      const request = new lndrpc.SendToRouteRequest();
+      request.setRoutesList(deal.makerToTakerRoutes as lndrpc.Route[]);
+      request.setPaymentHashString(deal.rHash);
+
+      try {
+        const sendToRouteResponse = await this.sendToRouteSync(request);
+        const sendPaymentError = sendToRouteResponse.getPaymentError();
+        if (sendPaymentError) {
+          this.logger.error(`sendToRouteSync failed with payment error: ${sendPaymentError}`);
+          throw new Error(sendPaymentError);
+        }
+
+        return this.getPreimageFromSendResponse(sendToRouteResponse);
+      } catch (err) {
+        this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
+        throw err;
+      }
+    } else if (deal.destination) {
+      const request = new lndrpc.SendRequest();
+      request.setDestString(deal.destination);
+      request.setPaymentHashString(deal.rHash);
+
+      if (deal.role === SwapRole.Taker) {
+        // we are the taker paying the maker
+        request.setFinalCltvDelta(deal.makerCltvDelta!);
+        request.setAmt(deal.makerAmount);
+      } else {
+        // we are the maker paying the taker
+        request.setFinalCltvDelta(deal.takerCltvDelta);
+        request.setAmt(deal.takerAmount);
+      }
+
+      try {
+        const sendPaymentResponse = await this.sendPaymentSync(request);
+        const sendPaymentError = sendPaymentResponse.getPaymentError();
+        if (sendPaymentError) {
+          this.logger.error(`sendPaymentSync failed with payment error: ${sendPaymentError}`);
+          throw new Error(sendPaymentError);
+        }
+
+        return this.getPreimageFromSendResponse(sendPaymentResponse);
+      } catch (err) {
+        this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
+        throw err;
+      }
+    } else {
+      assert.fail('swap deal must have a route or destination to send payment');
+      return '';
+    }
+  }
+
+  /**
+   * Sends a payment through the Lightning Network.
+   */
+  private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
   /**
-   * Get a new address for the internal lnd wallet.
+   * Gets a new address for the internal lnd wallet.
    */
   public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse> => {
     const request = new lndrpc.NewAddressRequest();
@@ -236,21 +300,29 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Return the total of unspent outputs for the internal lnd wallet.
+   * Returns the total of unspent outputs for the internal lnd wallet.
    */
   public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
     return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
   /**
-   * Return the total balance available across all channels.
+   * Returns the total balance available across all channels.
    */
-  public channelBalance = (): Promise<lndrpc.ChannelBalanceResponse> => {
-    return this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>('channelBalance', new lndrpc.ChannelBalanceRequest());
+  public channelBalance = async (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
+    const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
+      'channelBalance', new lndrpc.ChannelBalanceRequest(),
+    );
+    return channelBalanceResponse.toObject();
+  }
+
+  public getHeight = async () => {
+    const info = await this.getInfo();
+    return info.getBlockHeight();
   }
 
   /**
-   * Connect to another lnd node.
+   * Connects to another lnd node.
    */
   public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse> => {
     const request = new lndrpc.ConnectPeerRequest();
@@ -262,7 +334,7 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * Open a channel with a connected lnd node.
+   * Opens a channel with a connected lnd node.
    */
   public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
@@ -272,28 +344,51 @@ class LndClient extends BaseClient {
   }
 
   /**
-   * List all open channels for this node.
+   * Lists all open channels for this node.
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse> => {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
+  public getRoutes =  async (amount: number, destination: string): Promise<lndrpc.Route[]> => {
+    const request = new lndrpc.QueryRoutesRequest();
+    request.setAmt(amount);
+    request.setFinalCltvDelta(this.cltvDelta);
+    request.setNumRoutes(1);
+    request.setPubKey(destination);
+    try {
+      const routes = (await this.queryRoutes(request)).getRoutesList();
+      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}`);
+      return routes;
+    } catch (err) {
+      if (typeof err.message === 'string' && (
+        err.message.includes('unable to find a path to destination') ||
+        err.message.includes('target not found')
+      )) {
+        return [];
+      } else {
+        this.logger.error(`error calling queryRoutes for ${this.currency} to ${destination}: ${JSON.stringify(err)}`);
+        throw err;
+      }
+    }
+  }
+
   /**
-   * List all routes to destination.
+   * Lists all routes to destination.
    */
-  public queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
+  private queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
   /**
-   * Send amount to destination using pre-defined routes.
+   * Sends amount to destination using pre-defined routes.
    */
-  public sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
+  private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
   /**
-   * Subscribe to invoices.
+   * Subscribes to invoices.
    */
   private subscribeInvoices = (): void => {
     if (this.invoiceSubscription) {
@@ -301,16 +396,15 @@ class LndClient extends BaseClient {
     }
 
     this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
-    .on('error', (error) => {
+    .on('error', async (error) => {
       this.invoiceSubscription = undefined;
-      this.setStatus(ClientStatus.Disconnected);
-      this.logger.error(`lnd has been disconnected at ${this.uri}, error: ${error}`);
-      this.reconnectionTimer = setTimeout(this.verifyConnection, LndClient.RECONNECT_TIMER);
+      this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
+      await this.setStatus(ClientStatus.Disconnected);
     });
   }
 
   /**
-   * Attempt to close an open channel.
+   * Attempts to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
     if (this.isDisabled()) {
@@ -341,14 +435,10 @@ class LndClient extends BaseClient {
       });
   }
 
-  /** End all subscriptions and reconnection attempts. */
-  public close = () => {
+  /** Lnd client specific cleanup. */
+  protected closeSpecific = () => {
     if (this.invoiceSubscription) {
       this.invoiceSubscription.cancel();
-    }
-
-    if (this.reconnectionTimer) {
-      clearTimeout(this.reconnectionTimer);
     }
   }
 }

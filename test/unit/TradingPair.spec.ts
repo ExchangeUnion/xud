@@ -11,10 +11,10 @@ const loggers = Logger.createLoggers(Level.Warn);
 let tp: TradingPair;
 
 const isEmpty = (tp: TradingPair) => {
-  expect(tp.ownOrders.buy).to.be.empty;
-  expect(tp.ownOrders.sell).to.be.empty;
-  expect(tp.queues!.buy.isEmpty()).to.be.true;
-  expect(tp.queues!.sell.isEmpty()).to.be.true;
+  expect(tp.ownOrders.buyMap).to.be.empty;
+  expect(tp.ownOrders.sellMap).to.be.empty;
+  expect(tp.queues!.buyQueue.isEmpty()).to.be.true;
+  expect(tp.queues!.sellQueue.isEmpty()).to.be.true;
 };
 
 const init = () => {
@@ -156,7 +156,7 @@ describe('TradingPair.match', () => {
     matches.forEach((match) => {
       expect(match.maker.quantity).to.equal(5);
     });
-    const peekResult = tp.queues!.sell.peek();
+    const peekResult = tp.queues!.sellQueue.peek();
     expect(peekResult).to.not.be.undefined;
     expect(peekResult!.quantity).to.equal(1);
   });
@@ -240,13 +240,13 @@ describe('TradingPair.removePeerOrders', () => {
     tp.addPeerOrder(firstHostOrders[0]);
     tp.addPeerOrder(firstHostOrders[1]);
     tp.addPeerOrder(createPeerOrder(100, 5, false, ms(), secondPeerPubKey));
-    expect(tp.getPeersOrders().sell.length).to.equal(3);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(3);
 
     const removedOrders = tp.removePeerOrders(firstPeerPubKey);
     expect(removedOrders.length).to.equal(2);
     expect(JSON.stringify(removedOrders)).to.be.equals(JSON.stringify(firstHostOrders));
-    expect(tp.queues!.sell.size).to.equal(1);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.queues!.sellQueue.size).to.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const matchingResult = tp.match(createOwnOrder(100, 15, true));
     expect(matchingResult.remainingOrder).to.not.be.undefined;
@@ -289,8 +289,8 @@ describe('TradingPair queues and maps integrity', () => {
   it('queue and map should both remove an own order', () => {
     const ownOrder = createOwnOrder(100, 10, false);
     tp.addOwnOrder(ownOrder);
-    expect(tp.ownOrders.sell.size).to.equal(1);
-    expect(tp.queues!.sell.size).to.be.equal(1);
+    expect(tp.ownOrders.sellMap.size).to.equal(1);
+    expect(tp.queues!.sellQueue.size).to.be.equal(1);
 
     tp.removeOwnOrder(ownOrder.id);
     isEmpty(tp);
@@ -299,25 +299,25 @@ describe('TradingPair queues and maps integrity', () => {
   it('queue and map should both remove a peer order', () => {
     const peerOrder = createPeerOrder(100, 10, false);
     tp['addPeerOrder'](peerOrder);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
-    expect(tp.queues!.sell.size).to.be.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
+    expect(tp.queues!.sellQueue.size).to.be.equal(1);
 
     tp['removePeerOrder'](peerOrder.id, peerOrder.peerPubKey);
-    expect(tp.getPeersOrders().sell).to.be.empty;
-    expect(tp.queues!.sell.isEmpty()).to.be.true;
+    expect(tp.getPeersOrders().sellArray).to.be.empty;
+    expect(tp.queues!.sellQueue.isEmpty()).to.be.true;
   });
 
   it('queue and map should have the same order instance after a partial peer order removal', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     tp.addPeerOrder(peerOrder);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const removeResult = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 3);
     expect(removeResult.order.quantity).to.equal(3);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
-    const queueRemainingOrder = tp.queues!.sell.peek();
+    const queueRemainingOrder = tp.queues!.sellQueue.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
@@ -325,14 +325,14 @@ describe('TradingPair queues and maps integrity', () => {
   it('queue and map should have the same order instance after a partial match / maker order split', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     tp.addPeerOrder(peerOrder);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 3, true);
     const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
     const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
-    const queueRemainingOrder = tp.queues!.sell.peek();
+    const queueRemainingOrder = tp.queues!.sellQueue.peek();
     expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
@@ -340,7 +340,7 @@ describe('TradingPair queues and maps integrity', () => {
   it('queue and map should both have the maker order removed after a full match', () => {
     const peerOrder = createPeerOrder(100, 10, false, ms());
     tp.addPeerOrder(peerOrder);
-    expect(tp.getPeersOrders().sell.length).to.equal(1);
+    expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const ownOrder = createOwnOrder(100, 10, true);
     const matchingResult = tp.match(ownOrder);
@@ -350,7 +350,7 @@ describe('TradingPair queues and maps integrity', () => {
       peerOrder.id,
       peerOrder.peerPubKey,
     )).to.throw(`order with id ${peerOrder.id} for peer ${peerOrder.peerPubKey} could not be found`);
-    const queueRemainingOrder = tp.queues!.sell.peek();
+    const queueRemainingOrder = tp.queues!.sellQueue.peek();
     expect(queueRemainingOrder).to.be.undefined;
   });
 });

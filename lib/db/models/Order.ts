@@ -6,10 +6,10 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     id: { type: DataTypes.STRING, primaryKey: true, allowNull: false },
     nodeId: { type: DataTypes.INTEGER, allowNull: true },
     localId: { type: DataTypes.STRING, allowNull: true },
-    initialQuantity: { type: DataTypes.DECIMAL(8), allowNull: false },
+    initialQuantity: { type: DataTypes.BIGINT, allowNull: false },
     pairId: { type: DataTypes.STRING, allowNull: false },
     price: {
-      type: DataTypes.DECIMAL(8),
+      type: DataTypes.DOUBLE,
       allowNull: true,
       set(this: db.OrderInstance, value: number) {
         if (value === 0 || value === Number.MAX_VALUE) {

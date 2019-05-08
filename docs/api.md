@@ -19,6 +19,7 @@
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
+    - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
     - [GetNodeInfoRequest](#xudrpc.GetNodeInfoRequest)
     - [GetNodeInfoResponse](#xudrpc.GetNodeInfoResponse)
     - [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest)
@@ -34,9 +35,11 @@
     - [LndInfo](#xudrpc.LndInfo)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
+    - [OrderUpdate](#xudrpc.OrderUpdate)
     - [Orders](#xudrpc.Orders)
     - [OrdersCount](#xudrpc.OrdersCount)
     - [Peer](#xudrpc.Peer)
+    - [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry)
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
@@ -49,8 +52,7 @@
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
-    - [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest)
-    - [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest)
+    - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
@@ -253,7 +255,7 @@
 | order_id | [string](#string) |  | The order id of the maker order. |
 | pair_id | [string](#string) |  | The trading pair of the swap orders. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
-| quantity | [double](#double) |  | The quantity to swap. The whole order will be swapped if unspecified. |
+| quantity | [uint64](#uint64) |  | The quantity to swap. The whole order will be swapped if unspecified. |
 
 
 
@@ -284,9 +286,24 @@
 | num_peers | [int32](#int32) |  | The number of currently connected peers. |
 | num_pairs | [int32](#int32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
-| lndbtc | [LndInfo](#xudrpc.LndInfo) |  |  |
-| lndltc | [LndInfo](#xudrpc.LndInfo) |  |  |
+| lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.GetInfoResponse.LndEntry"></a>
+
+### GetInfoResponse.LndEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [LndInfo](#xudrpc.LndInfo) |  |  |
 
 
 
@@ -359,6 +376,7 @@
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
 | include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+| limit | [int32](#int32) |  | The maximum number of orders to return from each side of the order book. |
 
 
 
@@ -493,7 +511,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | price | [double](#double) |  | The price of the order. |
-| quantity | [double](#double) |  | The quantity of the order. |
+| quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | id | [string](#string) |  | A UUID for this order. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order. |
@@ -501,7 +519,7 @@
 | created_at | [int64](#int64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
-| hold | [double](#double) |  | The amount on hold pending swap exectuion. |
+| hold | [uint64](#uint64) |  | The quantity on hold pending swap exectuion. |
 
 
 
@@ -516,11 +534,27 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| quantity | [double](#double) |  | The quantity of the order being removed. |
+| quantity | [uint64](#uint64) |  | The quantity of the order being removed. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The global UUID for the order. |
 | local_id | [string](#string) |  | The local id for the order, if applicable. |
 | is_own_order | [bool](#bool) |  | Whether the order being removed is a local own order or a remote peer order. |
+
+
+
+
+
+
+<a name="xudrpc.OrderUpdate"></a>
+
+### OrderUpdate
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order | [Order](#xudrpc.Order) |  | An order that was added to the order book. |
+| order_removal | [OrderRemoval](#xudrpc.OrderRemoval) |  | An order (or portion thereof) that was removed from the order book. |
 
 
 
@@ -569,12 +603,28 @@
 | ----- | ---- | ----- | ----------- |
 | address | [string](#string) |  | The socket address with host and port for this peer. |
 | node_pub_key | [string](#string) |  | The node pub key to uniquely identify this peer. |
-| lnd_btc_pub_key | [string](#string) |  | The lnd BTC pub key associated with this peer. |
-| lnd_ltc_pub_key | [string](#string) |  | The lnd LTC pub key associated with this peer. |
+| lnd_pub_keys | [Peer.LndPubKeysEntry](#xudrpc.Peer.LndPubKeysEntry) | repeated | A map of ticker symbols to lnd pub keys for this peer |
 | inbound | [bool](#bool) |  | Indicates whether this peer was connected inbound. |
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [int32](#int32) |  | The time in seconds that we have been connected to this peer. |
+| raiden_address | [string](#string) |  | The raiden address for this peer |
+
+
+
+
+
+
+<a name="xudrpc.Peer.LndPubKeysEntry"></a>
+
+### Peer.LndPubKeysEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -608,7 +658,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | price | [double](#double) |  | The price of the order. |
-| quantity | [double](#double) |  | The quantity of the order. |
+| quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell. |
@@ -629,6 +679,7 @@
 | internal_matches | [Order](#xudrpc.Order) | repeated | A list of own orders (or portions thereof) that matched the newly placed order. |
 | swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
+| swap_failures | [SwapFailure](#xudrpc.SwapFailure) | repeated | A list of swap attempts that failed. |
 
 
 
@@ -687,7 +738,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to remove. |
-| quantity | [double](#double) |  |  |
+| quantity | [uint64](#uint64) |  | The quantity to remove from the order. If zero or unspecified then entire order is removed. |
 
 
 
@@ -702,7 +753,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| quantity_on_hold | [double](#double) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
+| quantity_on_hold | [uint64](#uint64) |  | Any portion of the order that was on hold due to ongoing swaps at the time of the request and could not be removed until after the swaps finish. |
 
 
 
@@ -754,25 +805,15 @@
 
 
 
-<a name="xudrpc.SubscribeAddedOrdersRequest"></a>
+<a name="xudrpc.SubscribeOrdersRequest"></a>
 
-### SubscribeAddedOrdersRequest
+### SubscribeOrdersRequest
 
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | existing | [bool](#bool) |  | Whether to transmit all existing active orders upon establishing the stream. |
-
-
-
-
-
-
-<a name="xudrpc.SubscribeRemovedOrdersRequest"></a>
-
-### SubscribeRemovedOrdersRequest
-
 
 
 
@@ -804,8 +845,9 @@
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The global UUID for the order that failed the swap. |
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
-| quantity | [double](#double) |  | The order quantity that was attempted to be swapped. |
+| quantity | [uint64](#uint64) |  | The order quantity that was attempted to be swapped. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that we attempted to swap with. |
+| failure_reason | [string](#string) |  | The reason why the swap failed. |
 
 
 
@@ -823,16 +865,16 @@
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | local_id | [string](#string) |  | The local id for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
-| quantity | [double](#double) |  | The order quantity that was swapped. |
+| quantity | [uint64](#uint64) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
-| amount_received | [int64](#int64) |  | The amount of subunits (satoshis) received. |
-| amount_sent | [int64](#int64) |  | The amount of subunits (satoshis) sent. |
+| amount_received | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) received. |
+| amount_sent | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
 | role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
-| price | [int64](#int64) |  | The price used for the swap. |
+| price | [double](#double) |  | The price used for the swap. |
 
 
 
@@ -933,9 +975,9 @@
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
-| SubscribeAddedOrders | [SubscribeAddedOrdersRequest](#xudrpc.SubscribeAddedOrdersRequest) | [Order](#xudrpc.Order) stream | Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted of new orders as they become available for trading. |
-| SubscribeRemovedOrders | [SubscribeRemovedOrdersRequest](#xudrpc.SubscribeRemovedOrdersRequest) | [OrderRemoval](#xudrpc.OrderRemoval) stream | Subscribes to orders being removed - either in full or in part - from the order book. This call, together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time list of the orders available to them would subscribe to this streaming call to be alerted when part or all of an existing order is no longer available for trading. |
+| SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
+| SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
 
  
 

@@ -1,21 +1,22 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import sinon, { SinonSandbox }  from 'sinon';
+import sinon, { SinonSandbox } from 'sinon';
 import Pool from '../../lib/p2p/Pool';
 import Peer from '../../lib/p2p/Peer';
 import Swaps from '../../lib/swaps/Swaps';
-import LndClient from '../../lib/lndclient/LndClient';
 import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
+import { SwapFailureReason } from '../../lib/constants/enums';
+import BaseClient from '../../lib/BaseClient';
 
 chai.use(chaiAsPromised);
 
 const validMakerOrder = () => {
   return {
     price: 0.008,
-    quantity: 0.01,
-    initialQuantity: 0.01,
+    quantity: 1000000,
+    initialQuantity: 1000000,
     pairId: 'LTC/BTC',
     isBuy: false,
     peerPubKey: '029706a877a39d9f22e1ecd1042b058bd5798b9fd79fcf8c8ced8c1f13a4aff055',
@@ -28,8 +29,8 @@ const validTakerOrder = () => {
   return {
     pairId: 'LTC/BTC',
     price: 0.008,
-    quantity: 0.01,
-    initialQuantity: 0.01,
+    quantity: 1000000,
+    initialQuantity: 1000000,
     hold: 0,
     isBuy: true,
     localId: 'bd1d6500-e34c-11e8-bedb-9ffbf8c8cc23',
@@ -43,7 +44,7 @@ const validSwapSuccess = () => {
     orderId: '760d5291-e43e-11e8-bd56-e5c08173fa7d',
     localId: '76c61b40-e43e-11e8-a3b5-853f31e7d8e6',
     pairId: 'LTC/BTC',
-    quantity: 0.00001,
+    quantity: 1000,
     amountReceived: 1000,
     amountSent: 8,
     currencyReceived: 'LTC',
@@ -62,7 +63,7 @@ const validSwapDeal = () => {
     rHash: '29bcb9097a6afe26826100919917c9044062cba1d4f6ac694029f6b8af2041c7',
     orderId: '20998481-e689-11e8-95ee-e3e71c57fbb3',
     pairId: 'LTC/BTC',
-    proposedQuantity: 0.00001,
+    proposedQuantity: 1000,
     takerCurrency: 'BTC',
     makerCurrency: 'LTC',
     takerAmount: 8,
@@ -77,7 +78,7 @@ const validSwapDeal = () => {
     role: 0,
     createTime: 1542033726862,
     makerCltvDelta: 1152,
-    quantity: 0.00001,
+    quantity: 1000,
     executeTime: 1542033726871,
     errorMessage: 'UnknownPaymentHash',
   };
@@ -88,11 +89,10 @@ describe('Swaps.Integration', () => {
   let db: DB;
   let pool: Pool;
   let swaps: Swaps;
-  let lndBtcClient: LndClient;
-  let lndLtcClient: LndClient;
+  const swapClients = new Map<string, BaseClient>();
   let peer: Peer;
   let sandbox: SinonSandbox;
-  let queryRoutesResponse;
+  let getRoutesResponse;
 
   before(async () => {
     db = new DB(loggers.db);
@@ -107,27 +107,29 @@ describe('Swaps.Integration', () => {
     sandbox = sinon.createSandbox();
     // peer
     peer = sandbox.createStubInstance(Peer) as any;
-    peer.sendPacket = () => {};
-    peer.getLndPubKey = () => '1234567890';
+    peer.sendPacket = async () => {};
+    peer.getIdentifier = () => '1234567890';
     // pool
     pool = sandbox.createStubInstance(Pool) as any;
     pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
     // queryRoutes response
-    queryRoutesResponse = () => {
+    getRoutesResponse = () => {
       return Promise.resolve({
         getRoutesList: () => [1],
       } as any);
     };
     // lnd btc
-    lndBtcClient = sandbox.createStubInstance(LndClient) as any;
-    lndBtcClient.queryRoutes = queryRoutesResponse;
-    lndBtcClient.isConnected = () => true;
+    const btcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    btcSwapClient.getRoutes = getRoutesResponse;
+    btcSwapClient.isConnected = () => true;
+    swapClients.set('BTC', btcSwapClient);
     // lnd ltc
-    lndLtcClient = sandbox.createStubInstance(LndClient) as any;
-    lndLtcClient.isConnected = () => true;
-    lndLtcClient.queryRoutes = queryRoutesResponse;
-    swaps = new Swaps(loggers.swaps, db.models, pool, lndBtcClient, lndLtcClient);
+    const ltcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    ltcSwapClient.isConnected = () => true;
+    ltcSwapClient.getRoutes = getRoutesResponse;
+    swapClients.set('LTC', ltcSwapClient);
+    swaps = new Swaps(loggers.swaps, db.models, pool, swapClients);
   });
 
   afterEach(() => {
@@ -171,33 +173,38 @@ describe('Swaps.Integration', () => {
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder()))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder))
-        .to.eventually.be.rejectedWith('pairId does not match or pair is not supported');
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
     });
 
     it('will reject if unable to retrieve routes', async () => {
       const noRoutesFound = () => {
-        return Promise.resolve({
-          getRoutesList: () => [],
-        } as any);
+        return Promise.resolve([]);
       };
-      lndBtcClient.queryRoutes = noRoutesFound;
-      lndLtcClient.queryRoutes = noRoutesFound;
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith('Can not swap. unable to find route to destination');
-      const EXPECTED_ERROR_MSG = 'UNKNOWN';
+      let btcSwapClient = swapClients.get('BTC');
+      btcSwapClient!.getRoutes = noRoutesFound;
+      swapClients.set('BTC', btcSwapClient!);
+      let ltcSwapClient = swapClients.get('LTC');
+      ltcSwapClient!.getRoutes = noRoutesFound;
+      swapClients.set('LTC', ltcSwapClient!);
+      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
-        return Promise.reject(EXPECTED_ERROR_MSG);
+        return Promise.reject('UNKNOWN');
       };
-      lndBtcClient.queryRoutes = rejectsWithUnknownError;
-      lndLtcClient.queryRoutes = rejectsWithUnknownError;
-      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
-        .to.eventually.be.rejectedWith(EXPECTED_ERROR_MSG);
+      btcSwapClient = swapClients.get('BTC');
+      btcSwapClient!.getRoutes = rejectsWithUnknownError;
+      swapClients.set('BTC', btcSwapClient!);
+      ltcSwapClient = swapClients.get('LTC');
+      ltcSwapClient!.getRoutes = rejectsWithUnknownError;
+      swapClients.set('LTC', ltcSwapClient!);
+      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });
 
   });

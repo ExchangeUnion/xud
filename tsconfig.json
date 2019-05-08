@@ -12,6 +12,8 @@
     "noEmitOnError": false,
     "lib": ["dom","ES2017"],
     "declaration": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
 
     /* Additional Checks */
     "noUnusedLocals": false,                  /* Report errors on unused locals. */

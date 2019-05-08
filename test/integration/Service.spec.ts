@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClients, OrderSide } from '../../lib/constants/enums';
+import { SwapClient, OrderSide } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -23,6 +23,7 @@ describe('API Service', () => {
   before(async () => {
     const config = {
       initdb: false,
+      nosanitychecks: true,
       dbpath: ':memory:',
       loglevel: 'warn',
       logpath: '',
@@ -32,11 +33,13 @@ describe('API Service', () => {
       rpc: {
         disable: true,
       },
-      lndbtc: {
-        disable: true,
-      },
-      lndltc: {
-        disable: true,
+      lnd: {
+        LTC: {
+          disable: true,
+        },
+        BTC: {
+          disable: true,
+        },
       },
       raiden: {
         disable: true,
@@ -49,8 +52,8 @@ describe('API Service', () => {
   });
 
   it('should add two currencies', async () => {
-    const addCurrencyPromises = [service.addCurrency({ currency: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 0 }),
-      service.addCurrency({ currency: 'BTC', swapClient: SwapClients.Lnd, decimalPlaces: 0 })];
+    const addCurrencyPromises = [service.addCurrency({ currency: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 }),
+      service.addCurrency({ currency: 'BTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 })];
     await expect(Promise.all(addCurrencyPromises)).to.be.fulfilled;
   });
 
@@ -79,15 +82,16 @@ describe('API Service', () => {
     const args = {
       pairId,
       includeOwnOrders: true,
+      limit: 0,
     };
     const orders = service.listOrders(args);
 
     const pairOrders = orders.get(args.pairId);
     expect(pairOrders).to.not.be.undefined;
 
-    expect(pairOrders!.buy).to.have.length(1);
+    expect(pairOrders!.buyArray).to.have.length(1);
 
-    const order = pairOrders!.buy[0];
+    const order = pairOrders!.buyArray[0];
     expect(order.price).to.equal(placeOrderArgs.price);
     expect(order.quantity).to.equal(placeOrderArgs.quantity);
     expect(order.pairId).to.equal(placeOrderArgs.pairId);
@@ -97,21 +101,21 @@ describe('API Service', () => {
 
   it('should remove an order', () => {
     const tp = xud['orderBook'].tradingPairs.get('LTC/BTC')!;
-    expect(tp.ownOrders.buy.has(orderId!)).to.be.true;
+    expect(tp.ownOrders.buyMap.has(orderId!)).to.be.true;
     const args = {
       orderId: '1',
     };
     service.removeOrder(args);
-    expect(tp.ownOrders.buy.has(orderId!)).to.be.false;
+    expect(tp.ownOrders.buyMap.has(orderId!)).to.be.false;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {
-    const tooLongAddCurrencyPromise = service.addCurrency({ currency: 'BITCOIN', swapClient: SwapClients.Lnd, decimalPlaces: 0 });
+    const tooLongAddCurrencyPromise = service.addCurrency({ currency: 'BITCOIN', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
     await expect(tooLongAddCurrencyPromise).to.be.rejectedWith('currency must consist of 2 to 5 upper case English letters or numbers');
   });
 
   it('should fail adding a currency with an invalid letter in its ticker', async () => {
-    const invalidLetterAddCurrencyPromise = service.addCurrency({ currency: 'ÑEO', swapClient: SwapClients.Lnd, decimalPlaces: 0 });
+    const invalidLetterAddCurrencyPromise = service.addCurrency({ currency: 'ÑEO', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
     await expect(invalidLetterAddCurrencyPromise).to.be.rejectedWith('currency must consist of 2 to 5 upper case English letters or numbers');
   });
 
@@ -121,7 +125,7 @@ describe('API Service', () => {
   });
 
   it('should fail adding a currency that already exists', async () => {
-    const addCurrencyPromise = service.addCurrency({ currency: 'LTC', swapClient: SwapClients.Lnd, decimalPlaces: 0 });
+    const addCurrencyPromise = service.addCurrency({ currency: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
     await expect(addCurrencyPromise).to.be.rejectedWith('currency LTC already exists');
   });
 

@@ -3,6 +3,7 @@ import { callback, loadXudClient } from '../command';
 import { ListOrdersRequest, ListOrdersResponse, Order, OrderSide } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { SATOSHIS_PER_COIN } from '../utils';
 
 type FormattedTradingPairOrders = {
   pairId: string,
@@ -29,7 +30,7 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
   if (order) {
     const isOwn = order.isOwnOrder ? 'X' : '';
     return [
-      order.quantity.toFixed(8),
+      (order.quantity / SATOSHIS_PER_COIN).toFixed(8),
       order.price.toString(),
       isOwn,
     ].map(i => order.isOwnOrder ? colors.cyan(i) : i);
@@ -41,8 +42,8 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
 export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
   const formattedOrders: FormattedTradingPairOrders[] = [];
   orders.ordersMap.forEach((tradingPair) => {
-    const buy = sortOrders(tradingPair[1].buyOrdersList, true);
-    const sell = sortOrders(tradingPair[1].sellOrdersList, false);
+    const buy = tradingPair[1].buyOrdersList;
+    const sell = tradingPair[1].sellOrdersList;
     const totalRows = buy.length < sell.length
       ? sell.length : buy.length;
     const tradingPairOrders = Array.from(Array(totalRows))
@@ -66,17 +67,6 @@ const createTable = () => {
   return table;
 };
 
-const sortOrders = (orderSide: Order.AsObject[], isBuy: boolean) => {
-  return orderSide.sort((a, b) => {
-    if (a.price === b.price) {
-      return a.createdAt - b.createdAt;
-    }
-    return isBuy
-      ? a.price - b.price
-      : b.price - a.price;
-  });
-};
-
 const displayOrdersTable = (tradingPair: FormattedTradingPairOrders) => {
   const table = createTable();
   tradingPair.orders.forEach(order => table.push(order));
@@ -88,13 +78,24 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id]';
+export const command = 'listorders [pair_id] [include_own_orders] [limit]';
 
 export const describe = 'list orders from the order book';
 
 export const builder = {
   pair_id: {
+    describe: 'trading pair for which to retrieve orders',
     type: 'string',
+  },
+  include_own_orders: {
+    describe: 'whether to include own orders',
+    type: 'boolean',
+    default: true,
+  },
+  limit: {
+    describe: 'max number of orders to return',
+    type: 'number',
+    default: 0,
   },
 };
 
@@ -102,6 +103,7 @@ export const handler = (argv: Arguments) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
-  request.setIncludeOwnOrders(true);
+  request.setIncludeOwnOrders(argv.include_own_orders);
+  request.setLimit(argv.limit);
   loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };

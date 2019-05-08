@@ -10,10 +10,11 @@ import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
-import { SwapSuccess } from '../swaps/types';
+import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { SwapFailureReason } from '../constants/enums';
 
 /**
- * Creates an xudrpc Order message from a [[StampedOrder]].
+ * Creates an xudrpc Order message from an [[Order]].
  */
 const createOrder = (order: Order) => {
   const grpcOrder = new xudrpc.Order();
@@ -56,15 +57,16 @@ const createSwapSuccess = (result: SwapSuccess) => {
 };
 
 /**
- * Creates an xudrpc SwapFailure message from a [[PeerOrder]] that could not be swapped.
+ * Creates an xudrpc SwapFailure message from a [[SwapFailure]].
  */
-const createSwapFailure = (order: PeerOrder) => {
-  const swapFailure = new xudrpc.SwapFailure();
-  swapFailure.setOrderId(order.id);
-  swapFailure.setPairId(order.pairId);
-  swapFailure.setPeerPubKey(order.peerPubKey);
-  swapFailure.setQuantity(order.quantity);
-  return swapFailure;
+const createSwapFailure = (swapFailure: SwapFailure) => {
+  const grpcSwapFailure = new xudrpc.SwapFailure();
+  grpcSwapFailure.setOrderId(swapFailure.orderId);
+  grpcSwapFailure.setPairId(swapFailure.pairId);
+  grpcSwapFailure.setPeerPubKey(swapFailure.peerPubKey);
+  grpcSwapFailure.setQuantity(swapFailure.quantity);
+  grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
+  return grpcSwapFailure;
 };
 
 /**
@@ -78,6 +80,9 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
 
   const swapSuccesses = result.swapSuccesses.map(swapSuccess => createSwapSuccess(swapSuccess));
   response.setSwapSuccessesList(swapSuccesses);
+
+  const swapFailures = result.swapFailures.map(swapFailure => createSwapFailure(swapFailure));
+  response.setSwapFailuresList(swapFailures);
 
   if (result.remainingOrder) {
     response.setRemainingOrder(createOrder(result.remainingOrder));
@@ -102,7 +107,7 @@ const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
       placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
       break;
     case PlaceOrderEventType.SwapFailure:
-      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as PeerOrder));
+      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as SwapFailure));
       break;
   }
   return placeOrderEvent;
@@ -158,6 +163,9 @@ class GrpcService {
       case lndErrorCodes.LND_IS_UNAVAILABLE:
       case p2pErrorCodes.COULD_NOT_CONNECT:
         code = status.UNAVAILABLE;
+        break;
+      case p2pErrorCodes.POOL_CLOSED:
+        code = status.ABORTED;
         break;
     }
 
@@ -295,10 +303,45 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const result = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(result));
+      const swapResult = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapResult));
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      if (typeof err === 'number') {
+        // treat the error as a SwapFailureReason enum
+        let code: status;
+        switch (err) {
+          case SwapFailureReason.DealTimedOut:
+          case SwapFailureReason.SwapTimedOut:
+            code = status.DEADLINE_EXCEEDED;
+            break;
+          case SwapFailureReason.InvalidSwapRequest:
+          case SwapFailureReason.PaymentHashReuse:
+          case SwapFailureReason.InvalidResolveRequest:
+            // these cases suggest something went very wrong with our swap request
+            code = status.INTERNAL;
+            break;
+          case SwapFailureReason.NoRouteFound:
+          case SwapFailureReason.SendPaymentFailure:
+          case SwapFailureReason.SwapClientNotSetup:
+          case SwapFailureReason.OrderOnHold:
+            code = status.FAILED_PRECONDITION;
+            break;
+          case SwapFailureReason.UnexpectedClientError:
+          case SwapFailureReason.UnknownError:
+          default:
+            code = status.UNKNOWN;
+            break;
+        }
+        const grpcError: grpc.ServiceError = {
+          code,
+          name: SwapFailureReason[err],
+          message: SwapFailureReason[err],
+        };
+        this.logger.error(grpcError);
+        callback(grpcError, null);
+      } else {
+        callback(this.getGrpcError(err), null);
+      }
     }
   }
 
@@ -332,8 +375,10 @@ class GrpcService {
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
         return lnd;
       });
-      if (getInfoResponse.lndbtc) response.setLndbtc(getLndInfo(getInfoResponse.lndbtc));
-      if (getInfoResponse.lndltc) response.setLndltc(getLndInfo(getInfoResponse.lndltc));
+      const lndMap = response.getLndMap();
+      for (const currency in getInfoResponse.lnd) {
+        lndMap.set(currency, getLndInfo(getInfoResponse.lnd[currency]!));
+      }
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
@@ -389,8 +434,8 @@ class GrpcService {
       const ordersMap = response.getOrdersMap();
       listOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(listOrdersList(orderArrays.buy));
-        orders.setSellOrdersList(listOrdersList(orderArrays.sell));
+        orders.setBuyOrdersList(listOrdersList(orderArrays.buyArray));
+        orders.setSellOrdersList(listOrdersList(orderArrays.sellArray));
 
         ordersMap.set(pairId, orders);
       });
@@ -444,11 +489,16 @@ class GrpcService {
         grpcPeer.setAddress(peer.address);
         grpcPeer.setInbound(peer.inbound);
         grpcPeer.setNodePubKey(peer.nodePubKey || '');
-        grpcPeer.setLndBtcPubKey(peer.lndbtcPubKey || '');
-        grpcPeer.setLndLtcPubKey(peer.lndltcPubKey || '');
+        if (peer.lndPubKeys) {
+          const map = grpcPeer.getLndPubKeysMap();
+          for (const key in peer.lndPubKeys) {
+            map.set(key, peer.lndPubKeys[key]);
+          }
+        }
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
+        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);
@@ -540,27 +590,33 @@ class GrpcService {
   }
 
   /*
-   * See [[Service.subscribeAddedOrders]]
+   * See [[Service.subscribeOrders]]
    */
-  public subscribeAddedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeAddedOrdersRequest, xudrpc.Order> = (call) => {
-    this.service.subscribeAddedOrders(call.request.toObject(), (order: Order) => {
-      call.write(createOrder(order));
+  public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (call) => {
+    this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
+      const orderUpdate = new xudrpc.OrderUpdate();
+      if (order) {
+        orderUpdate.setOrder(createOrder(order));
+      } else if (orderRemoval) {
+        const grpcOrderRemoval = new xudrpc.OrderRemoval();
+        grpcOrderRemoval.setPairId(orderRemoval.pairId);
+        grpcOrderRemoval.setOrderId(orderRemoval.id);
+        grpcOrderRemoval.setQuantity(orderRemoval.quantity);
+        grpcOrderRemoval.setLocalId(orderRemoval.localId || '');
+        grpcOrderRemoval.setIsOwnOrder(orderRemoval.localId !== undefined);
+        orderUpdate.setOrderRemoval(grpcOrderRemoval);
+      }
+      call.write(orderUpdate);
     });
     this.addStream(call);
   }
 
   /*
-   * See [[Service.subscribeRemovedOrders]]
+   * See [[Service.subscribeSwapFailures]]
    */
-  public subscribeRemovedOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeRemovedOrdersRequest, xudrpc.OrderRemoval> = (call) => {
-    this.service.subscribeRemovedOrders((order: OrderPortion) => {
-      const orderRemoval = new xudrpc.OrderRemoval();
-      orderRemoval.setPairId(order.pairId);
-      orderRemoval.setOrderId(order.id);
-      orderRemoval.setQuantity(order.quantity);
-      orderRemoval.setLocalId(order.localId || '');
-      orderRemoval.setIsOwnOrder(order.localId !== undefined);
-      call.write(orderRemoval);
+  public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
+    this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
+      call.write(createSwapFailure(result));
     });
     this.addStream(call);
   }

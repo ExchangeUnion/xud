@@ -15,29 +15,25 @@ export type NodeConnectionInfo = {
 export type NodeState = {
   version: string;
   nodePubKey: string;
-  addresses?: Address[];
+  addresses: Address[];
   pairs: string[];
-  raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
+  raidenAddress: string;
+  lndPubKeys: { [currency: string]: string | undefined };
 };
 
-export type NodeStateUpdate = {
-  addresses?: Address[];
-  pairs?: string[];
-  raidenAddress?: string;
-  lndbtcPubKey?: string;
-  lndltcPubKey?: string;
-};
+export type NodeStateUpdate = Pick<NodeState, Exclude<keyof NodeState, 'version' | 'nodePubKey'>>;
 
 export type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
   detectexternalip: boolean;
 
-  /** If false, don't send GET_NODES when connecting, defaults to true. */
+  /** Whether to send a GetNodes packet to discover new nodes upon connecting to peers, defaults to true. */
   discover: boolean;
 
-  /** GET_NODES scheduler in minutes, discover option should be true. */
+  /**
+   * Time interval between sending GetNodes packets to already connected peers. Measured in
+   * minutes, only applies if discover option is true.
+   */
   discoverminutes: number;
 
   /** List or uris to listen on for incoming connections */
@@ -55,8 +51,3 @@ export type PoolConfig = {
    */
   addresses: string[];
 };
-
-export function isNodeState(obj: any): obj is NodeState {
-  return obj && typeof obj.version === 'string' && typeof obj.nodePubKey === 'string' && Array.isArray(obj.addresses)
-    && Array.isArray(obj.pairs);
-}

@@ -2,11 +2,11 @@ import os from 'os';
 import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
-import { exists, mkdir, readFile } from './utils/fsUtils';
+import { promises as fs } from 'fs';
 import { LndClientConfig } from './lndclient/LndClient';
 import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
-import { Network } from './constants/enums';
+import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
 
 class Config {
@@ -15,10 +15,9 @@ class Config {
   public loglevel: string;
   public logpath: string;
   public logdateformat: string;
-  public network: Network;
+  public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
-  public lndbtc: LndClientConfig;
-  public lndltc: LndClientConfig;
+  public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
   public instanceid = 0;
@@ -28,6 +27,11 @@ class Config {
   public dbpath: string;
   /** Whether matching will be disabled */
   public nomatching: boolean;
+  /**
+   * Whether to disable sanity checks that verify that the orders can possibly be swapped
+   * before adding them to the order book, can be enabled for testing & debugging purposes.
+   */
+  public nosanitychecks: boolean;
 
   constructor() {
     const platform = os.platform();
@@ -55,12 +59,13 @@ class Config {
 
     // default configuration
     this.initdb = true;
-    this.dbpath = this.getDefaultDbPath();
     this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
-    this.network = Network.TestNet;
+    this.network = this.getDefaultNetwork();
+    this.dbpath = this.getDefaultDbPath();
+    this.nosanitychecks = false;
 
     this.p2p = {
       listen: ['0.0.0.0'],
@@ -80,7 +85,7 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.lndbtc = {
+    this.lnd.BTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
@@ -89,11 +94,11 @@ class Config {
       cltvdelta: 144,
       nomacaroons: false,
     };
-    this.lndltc = {
+    this.lnd.LTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
-        this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
+        this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       cltvdelta: 576,
@@ -109,40 +114,44 @@ class Config {
   public load = async (args?: { [argName: string]: any }): Promise<Config> => {
     if (args) {
       if (args.xudir) {
-        this.updateDefaultPaths(args.xudir);
+        this.xudir = args.xudir;
+        this.logpath = this.getDefaultLogPath();
       }
-      if (args.network) {
-        this.updateMacaroonPaths(args.network);
-      }
+      this.network = this.getNetwork(args);
+      this.dbpath = this.getDefaultDbPath();
+      this.updateMacaroonPaths();
     }
+
     const configPath = path.join(this.xudir, 'xud.conf');
-    if (!(await exists(this.xudir))) {
-      await mkdir(this.xudir);
-    } else if (await exists(configPath)) {
-      const configText = await readFile(configPath, 'utf8');
+    await this.mkDirIfNotExist(this.xudir);
+    try {
+      const configText = await fs.readFile(configPath, 'utf8');
+      let props;
       try {
-        const props = toml.parse(configText);
-
-        if (props.xudir && (!args || !args.xudir)) {
-          this.updateDefaultPaths(props.xudir);
-        }
-
-        if (props.network !== undefined && (!args || !args.network)) {
-          // first check that network is a valid value
-          if (typeof props.network !== 'string' || !Object.values(Network).includes(props.network)) {
-            // delete the invalid network value
-            delete props.network;
-          } else {
-            this.updateMacaroonPaths(props.network);
-          }
-        }
-
-        // merge parsed json properties from config file to the default config
-        deepMerge(this, props);
+        props = toml.parse(configText);
       } catch (e) {
         throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
       }
-    }
+
+      if (props.xudir && (!args || !args.xudir)) {
+        this.xudir = props.xudir;
+        this.logpath = this.getDefaultLogPath();
+        this.dbpath = this.getDefaultDbPath();
+      }
+
+      if (props.network && this.network === this.getDefaultNetwork()) {
+        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(props.network)) {
+          throw new Error(`Invalid network config: ${props.network}`);
+        }
+        this.network = props.network;
+        this.logpath = this.getDefaultLogPath();
+        this.dbpath = this.getDefaultDbPath();
+        this.updateMacaroonPaths();
+      }
+
+      // merge parsed json properties from config file to the default config
+      deepMerge(this, props);
+    } catch (err) {}
 
     if (args) {
       // override our config file with command line arguments
@@ -153,40 +162,64 @@ class Config {
       this.loglevel = this.getDefaultLogLevel();
     }
 
-    await this.createLogDir(this.logpath);
+    const logDir = path.dirname(this.logpath);
+    await this.mkDirIfNotExist(logDir);
 
     return this;
   }
 
-  private createLogDir = async (logPath: string) => {
-    const dir = path.dirname(logPath);
-
-    if (!(await exists(dir))) {
-      await mkdir(dir);
+  /**
+   * Creates a directory if it does not exist, otherwise does nothing.
+   */
+  private mkDirIfNotExist = async (dirPath: string) => {
+    try {
+      await fs.mkdir(dirPath);
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        // ignore the error if the directory already exists, otherwise throw
+        throw err;
+      }
     }
   }
 
-  /**
-   * Updates the default values for all fields derived from the xu directory when a custom
-   * xu directory is specified by the config file or command line arguments.
-   */
-  private updateDefaultPaths = (xudir: string) => {
-    // if we have a custom xu directory, update the default values for all fields that are
-    // derived from the xu directory.
-    this.xudir = xudir;
-    this.logpath = this.getDefaultLogPath();
-    this.dbpath = this.getDefaultDbPath();
+  private getNetwork = (args: { [argName: string]: any }) => {
+    const networks: { [val: string]: boolean } = {
+      [XuNetwork.MainNet]: args.mainnet,
+      [XuNetwork.TestNet]: args.testnet,
+      [XuNetwork.SimNet]: args.simnet,
+      [XuNetwork.RegTest]: args.regtest,
+    };
+
+    const selected = Object.keys(networks).filter(key => networks[key]);
+    if (selected.length > 1) {
+      throw Error('only one network selection is allowed');
+    }
+
+    if (selected.length === 0) {
+      return XuNetwork.SimNet;
+    } else {
+      return selected[0] as XuNetwork;
+    }
   }
 
-  private updateMacaroonPaths = (network: string) => {
-    this.network = network as Network;
-    this.lndbtc.macaroonpath = path.join(this.lndbtc.macaroonpath, '..', '..', this.network, 'admin.macaroon');
-    this.lndltc.macaroonpath = path.join(this.lndltc.macaroonpath, '..', '..',
-      this.network === Network.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+  private updateMacaroonPaths = () => {
+    for (const currency in this.lnd) {
+      switch (currency) {
+        case 'LTC':
+          // litecoin uses a specific folder name for testnet
+          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
+            this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+          break;
+        default:
+          // by default we want to update the network folder name to the selected network
+          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', this.network, 'admin.macaroon');
+          break;
+      }
+    }
   }
 
   private getDefaultDbPath = () => {
-    return path.join(this.xudir, 'xud.db');
+    return path.join(this.xudir, `xud-${this.network}.db`);
   }
 
   private getDefaultLogPath = (): string => {
@@ -195,6 +228,10 @@ class Config {
 
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
+  }
+
+  public getDefaultNetwork = (): XuNetwork => {
+    return XuNetwork.SimNet;
   }
 }
 

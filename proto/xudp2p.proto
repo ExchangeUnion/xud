@@ -11,7 +11,7 @@ message Order {
     string id = 1;
     string pair_id = 2;
     double price = 3;
-    double quantity = 4;
+    uint64 quantity = 4;
     bool is_buy = 5;
 }
 
@@ -26,8 +26,7 @@ message NodeState {
     repeated Address addresses = 3;
     repeated string pairs = 4;
     string raiden_address = 5;
-    string lnd_btc_pub_key = 6;
-    string lnd_ltc_pub_key = 7;
+    map<string, string> lnd_pub_keys = 6;
 }
 
 message PingPacket {
@@ -48,7 +47,7 @@ message OrderInvalidationPacket {
     string id = 1;
     string order_id = 2;
     string pair_id = 3;
-    double quantity = 4;
+    uint64 quantity = 4;
 }
 
 message GetOrdersPacket {
@@ -67,8 +66,7 @@ message NodeStateUpdatePacket {
     repeated Address addresses = 2;
     repeated string pairs = 3;
     string raiden_address = 4;
-    string lnd_btc_pub_key = 5;
-    string lnd_ltc_pub_key = 6;
+    map<string, string> lnd_pub_keys = 6;
 }
 
 message SessionInitPacket {
@@ -101,9 +99,15 @@ message NodesPacket {
     repeated Node nodes = 3;
 }
 
+message SanitySwapPacket {
+    string id = 1;
+    string currency = 2;
+    string r_hash = 3;
+}
+
 message SwapRequestPacket {
     string id = 1;
-    double proposed_quantity = 2;
+    uint64 proposed_quantity = 2;
     string pair_id = 3;
     string order_id = 4;
     string r_hash = 5;

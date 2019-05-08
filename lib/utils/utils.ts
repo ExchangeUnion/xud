@@ -1,7 +1,7 @@
 import http from 'http';
 import p2pErrors from '../p2p/errors';
-import { Pair } from '../orderbook/types';
-import crypto from 'crypto';
+import { Pair, Order } from '../orderbook/types';
+import crypto, { createHash } from 'crypto';
 import { promisify } from 'util';
 import moment from 'moment';
 
@@ -143,6 +143,9 @@ export const isPlainObject = (obj: any) => {
   return Object.getPrototypeOf(obj) === proto;
 };
 
+/** A promisified wrapper for the NodeJS `setTimeout` method. */
+export const setTimeoutPromise = promisify(setTimeout);
+
 /** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
 export const randomBytes = promisify(crypto.randomBytes);
 
@@ -150,8 +153,49 @@ export const removeUndefinedProps = (obj: any) => {
   Object.keys(obj).forEach((key) => {
     if (obj[key] === undefined) {
       delete obj[key];
+    } else if (typeof obj[key] === 'object') {
+      removeUndefinedProps(obj[key]);
     }
   });
 
   return obj;
+};
+
+export const setObjectToMap = (obj: any, map: { set: (key: string, value: any) => any }) => {
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      map.set(key, obj[key]);
+    }
+  }
+};
+
+/**
+ * Converts an array of key value pair arrays into an object with the key value pairs.
+ */
+export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: string]: T } => {
+  const kvps: { [key: string]: T } = {};
+  kvpArray.forEach((kvp) => {
+    kvps[kvp[0]] = kvp[1];
+  });
+
+  return kvps;
+};
+
+export const sortOrders = (orders: Order[], isBuy: boolean): Order[] => {
+  return orders.sort((a: Order, b: Order) => {
+    if (a.price === b.price) {
+      return a.createdAt - b.createdAt;
+    }
+    return isBuy
+      ? a.price - b.price
+      : b.price - a.price;
+  });
+};
+
+/** Returns a random payment preimage and hash in hex encoding. */
+export const generatePreimageAndHash = async () => {
+  const bytes = await randomBytes(32);
+  const rPreimage = bytes.toString('hex');
+  const rHash = createHash('sha256').update(bytes).digest('hex');
+  return { rPreimage, rHash };
 };

@@ -1,5 +1,5 @@
 /** An enumeration of payment channel network clients that support token swaps. */
-export enum SwapClients {
+export enum SwapClient {
   Lnd,
   Raiden,
 }
@@ -14,22 +14,40 @@ export enum OrderSide {
   Sell,
 }
 
-export enum Network {
+export enum XuNetwork {
+  // real coins.
   MainNet = 'mainnet',
+
+  // pre-defined testnet per currency (e.g. bitcoin: testnet3, litecoin: testnet4).
   TestNet = 'testnet',
+
+  // coins are minted by Exchange Union.
   SimNet = 'simnet',
+
+  // coins are minted privately. Seed nodes are not configurable.
   RegTest = 'regtest',
 }
 
 /**
- * Magic value indicating wire msg origin network, and used to seek to next msg when stream state is unknown
+ * Magic value per XU network, indicating wire msg origin network,
+ * and used to seek to next msg when stream state is unknown.
  */
-export enum NetworkMagic {
-  MainNet = 0xd9b4bef9,
-  TestNet = 0x0709110b,
-  SimNet = 0x12141c16,
-  RegTest = 0xdab5bffa,
-}
+export const xuNetworkMagicVals = {
+  [XuNetwork.MainNet]: 0xd9b4bef9,
+  [XuNetwork.TestNet]: 0x0709110b,
+  [XuNetwork.SimNet]: 0x12141c16,
+  [XuNetwork.RegTest]: 0xdab5bffa,
+};
+
+/**
+ * XU network per magic value.
+ */
+export const magicValsXuNetwork = {
+  [xuNetworkMagicVals[XuNetwork.MainNet]]: XuNetwork.MainNet,
+  [xuNetworkMagicVals[XuNetwork.TestNet]]: XuNetwork.TestNet,
+  [xuNetworkMagicVals[XuNetwork.SimNet]]: XuNetwork.SimNet,
+  [xuNetworkMagicVals[XuNetwork.RegTest]]: XuNetwork.RegTest,
+};
 
 export enum SwapRole {
   Taker = 0,
@@ -44,9 +62,9 @@ export enum SwapPhase {
   /** The terms of the swap have been agreed to, and we will attempt to execute it. */
   SwapAgreed = 2,
   /**
-   * We have commanded lnd to send payment according to the agreed terms. The payment (and swap)
+   * We have commanded swap client to send payment according to the agreed terms. The payment (and swap)
    * could still fail due to no route with sufficient capacity, lack of cooperation from the
-   * receiver or any intermediary node along the route, or an unexpected error from lnd.
+   * receiver or any intermediary node along the route, or an unexpected error from swap client.
    */
   SendingAmount = 3,
   /** We have received the agreed amount of the swap, and the preimage is now known to both sides. */
@@ -87,13 +105,13 @@ export enum SwapFailureReason {
   SwapClientNotSetup = 3,
   /** Could not find a route to complete the swap. */
   NoRouteFound = 4,
-  /** A call to lnd failed for an unexpected reason. */
-  UnexpectedLndError = 5,
+  /** A swap client call failed for an unexpected reason. */
+  UnexpectedClientError = 5,
   /** Received a swap packet from the peer with invalid data. */
   InvalidSwapPacketReceived = 6,
-  /** The call to lnd to send payment failed. */
+  /** The call to send payment failed. */
   SendPaymentFailure = 7,
-  /** The swap resolver request from lnd was invalid. */
+  /** The swap resolver request was invalid. */
   InvalidResolveRequest = 8,
   /** The swap request attempts to reuse a payment hash. */
   PaymentHashReuse = 9,
@@ -101,6 +119,8 @@ export enum SwapFailureReason {
   SwapTimedOut = 10,
   /** The deal timed out while we were waiting for the peer to respond to our swap request. */
   DealTimedOut = 11,
+  /** The swap failed due to an unrecognized error. */
+  UnknownError = 12,
 }
 
 export enum DisconnectionReason {

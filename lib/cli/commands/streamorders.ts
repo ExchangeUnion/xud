@@ -35,38 +35,41 @@ const ensureConnection = (argv: Arguments, printError?: boolean) => {
 };
 
 const streamOrders = (argv: Arguments) =>  {
-  const addedOrdersRequest = new xudrpc.SubscribeAddedOrdersRequest();
-  addedOrdersRequest.setExisting(argv.existing);
-  const addedOrdersSubscription = loadXudClient(argv).subscribeAddedOrders(addedOrdersRequest);
-  addedOrdersSubscription.on('data', (order: xudrpc.Order) => {
-    console.log(`Order added: ${JSON.stringify(order.toObject())}`);
+  const xudClient = loadXudClient(argv);
+  const ordersReqeust = new xudrpc.SubscribeOrdersRequest();
+  ordersReqeust.setExisting(argv.existing);
+  const ordersSubscription = loadXudClient(argv).subscribeOrders(ordersReqeust);
+  ordersSubscription.on('data', (orderUpdate: xudrpc.OrderUpdate) => {
+    if (orderUpdate.getOrder() !== undefined) {
+      console.log(`Order added: ${JSON.stringify(orderUpdate.getOrder()!.toObject())}`);
+    } else if (orderUpdate.getOrderRemoval() !== undefined) {
+      console.log(`Order removed: ${JSON.stringify(orderUpdate.getOrderRemoval()!.toObject())}`);
+    }
   });
 
   // adding end, close, error events only once,
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
-  addedOrdersSubscription.on('end', reconnect.bind(undefined, argv));
-  addedOrdersSubscription.on('error', (err: Error) => {
+  ordersSubscription.on('end', reconnect.bind(undefined, argv));
+  ordersSubscription.on('error', (err: Error) => {
     console.log(`Unexpected error occured: ${JSON.stringify(err)}, trying to reconnect`);
     ensureConnection(argv);
   });
 
-  const removedOrdersSubscription = loadXudClient(argv).subscribeRemovedOrders(new xudrpc.SubscribeRemovedOrdersRequest());
-  removedOrdersSubscription.on('data', (orderRemoval: xudrpc.OrderRemoval) => {
-    console.log(`Order removed: ${JSON.stringify(orderRemoval.toObject())}`);
-  });
-
-  // prevent exiting and do nothing, it's already caught above.
-  removedOrdersSubscription.on('error', () => {});
-
   const swapsRequest = new xudrpc.SubscribeSwapsRequest();
   swapsRequest.setIncludeTaker(true);
-  const swapsSubscription = loadXudClient(argv).subscribeSwaps(swapsRequest);
+  const swapsSubscription = xudClient.subscribeSwaps(swapsRequest);
   swapsSubscription.on('data', (swapSuccess: xudrpc.SwapSuccess) => {
     console.log(`Order swapped: ${JSON.stringify(swapSuccess.toObject())}`);
   });
 
+  const swapFailuresSubscription = xudClient.subscribeSwapFailures(swapsRequest);
+  swapFailuresSubscription.on('data', (swapFailure: xudrpc.SwapFailure) => {
+    console.log(`Swap failed: ${JSON.stringify(swapFailure.toObject())}`);
+  });
+
   // prevent exiting and do nothing, it's already caught above.
   swapsSubscription.on('error', () => {});
+  swapFailuresSubscription.on('error', () => {});
 };
 
 const reconnect = (argv: Arguments) => {

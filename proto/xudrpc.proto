@@ -188,24 +188,13 @@ service Xud {
     };
   }
 
-  /* Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,
-   * allows the client to maintain an up-to-date view of the order book. For example, an exchange that
-   * wants to show its users a real time list of the orders available to them would subscribe to this
-   * streaming call to be alerted of new orders as they become available for trading. */
-  rpc SubscribeAddedOrders(SubscribeAddedOrdersRequest) returns (stream Order) {
+  /* Subscribes to orders being added to and removed from the order book. This call allows the client
+   * to maintain an up-to-date view of the order book. For example, an exchange that wants to show
+   * its users a real time view of the orders available to them would subscribe to this streaming
+   * call to be alerted as new orders are added and expired orders are removed. */
+  rpc SubscribeOrders(SubscribeOrdersRequest) returns (stream OrderUpdate) {
     option (google.api.http) = {
-      get: "/v1/subscribeaddedorders"
-    };
-  }
-
-  /* Subscribes to orders being removed - either in full or in part - from the order book. This call,
-   * together with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order
-   * book. For example, an exchange that wants to show its users a real time list of the orders available
-   * to them would subscribe to this streaming call to be alerted when part or all of an existing order
-   * is no longer available for trading. */
-  rpc SubscribeRemovedOrders(SubscribeRemovedOrdersRequest) returns (stream OrderRemoval) {
-    option (google.api.http) = {
-      get: "/v1/subscriberemovedorders"
+      get: "/v1/subscribeorders"
     };
   }
 
@@ -217,6 +206,16 @@ service Xud {
   rpc SubscribeSwaps(SubscribeSwapsRequest) returns (stream SwapSuccess) {
     option (google.api.http) = {
       get: "/v1/subscribeswaps"
+    };
+  }
+
+  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
+   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
+   * the client to get real-time notifications when swap attempts are failing. It can be used for
+   * status monitoring, debugging, and testing purposes. */
+  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswapfailures"
     };
   }
 }
@@ -292,18 +291,20 @@ message ExecuteSwapRequest {
   // The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly.
   string peer_pub_key = 3 [json_name = "peer_pub_key"];
   // The quantity to swap. The whole order will be swapped if unspecified.
-  double quantity = 4 [json_name = "quantity"];
+  uint64 quantity = 4 [json_name = "quantity"];
 }
 
 message SwapFailure {
   // The global UUID for the order that failed the swap.
-  string order_id = 1;
+  string order_id = 1 [json_name = "order_id"];
   // The trading pair that the swap is for.
   string pair_id = 2 [json_name = "pair_id"];
   // The order quantity that was attempted to be swapped.
-  double quantity = 3 [json_name = "quantity"];
+  uint64 quantity = 3 [json_name = "quantity"];
   // The node pub key of the peer that we attempted to swap with.
   string peer_pub_key = 4 [json_name = "peer_pub_key"];
+  // The reason why the swap failed.
+  string failure_reason = 5 [json_name = "failure_reason"];
 }
 
 message GetInfoRequest {}
@@ -320,9 +321,8 @@ message GetInfoResponse {
   int32 num_pairs = 5 [json_name = "num_pairs"];
   // The number of active, standing orders in the order book.
   OrdersCount orders = 6 [json_name = "orders"];
-  LndInfo lndbtc = 7 [json_name = "lndbtc"];
-  LndInfo lndltc = 8 [json_name = "lndltc"];
-  RaidenInfo raiden = 9 [json_name = "raiden"];
+  map<string, LndInfo> lnd = 7 [json_name = "lnd"];
+  RaidenInfo raiden = 8 [json_name = "raiden"];
 }
 
 message GetNodeInfoRequest {
@@ -342,6 +342,8 @@ message ListOrdersRequest {
   string pair_id = 1 [json_name = "pair_id"];
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
+  // The maximum number of orders to return from each side of the order book.
+  int32 limit = 3 [json_name = "limit"];
 }
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
@@ -388,8 +390,8 @@ message LndInfo {
 message Order {
   // The price of the order.
   double price = 1 [json_name = "price"];
-  // The quantity of the order.
-  double quantity = 2 [json_name = "quantity"];
+  // The quantity of the order in satoshis.
+  uint64 quantity = 2 [json_name = "quantity"];
   // The trading pair that this order is for.
   string pair_id = 3 [json_name = "pair_id"];
   // A UUID for this order.
@@ -406,13 +408,22 @@ message Order {
   OrderSide side = 8 [json_name = "side"];
   // Whether this order is a local own order or a remote peer order.
   bool is_own_order = 9 [json_name = "is_own_order"];
-  // The amount on hold pending swap exectuion.
-  double hold = 10 [json_name = "hold"];
+  // The quantity on hold pending swap exectuion.
+  uint64 hold = 10 [json_name = "hold"];
+}
+
+message OrderUpdate {
+  oneof order_update {
+    // An order that was added to the order book.
+    Order order = 1 [json_name = "order"];
+    // An order (or portion thereof) that was removed from the order book.
+    OrderRemoval order_removal = 2 [json_name = "order_removal"];
+  }
 }
 
 message OrderRemoval {
   // The quantity of the order being removed.
-  double quantity = 1 [json_name = "quantity"];
+  uint64 quantity = 1 [json_name = "quantity"];
   // The trading pair that the order is for.
   string pair_id = 2 [json_name = "pair_id"];
   // The global UUID for the order.
@@ -442,25 +453,25 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // The lnd BTC pub key associated with this peer.
-  string lnd_btc_pub_key = 3 [json_name = "lnd_btc_pub_key"];
-  // The lnd LTC pub key associated with this peer.
-  string lnd_ltc_pub_key = 4 [json_name = "lnd_ltc_pub_key"];
+  // A map of ticker symbols to lnd pub keys for this peer 
+  map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
-  bool inbound = 5 [json_name = "inbound"];
+  bool inbound = 4 [json_name = "inbound"];
   // A list of trading pair tickers supported by this peer.
-  repeated string pairs = 6 [json_name = "pairs"];
+  repeated string pairs = 5 [json_name = "pairs"];
   // The version of xud being used by the peer.
-  string xud_version = 7 [json_name = "xud_version"];
+  string xud_version = 6 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
-  int32 seconds_connected = 8 [json_name = "seconds_connected"];
+  int32 seconds_connected = 7 [json_name = "seconds_connected"];
+  // The raiden address for this peer
+  string raiden_address = 8 [json_name = "raiden_address"];
 }
 
 message PlaceOrderRequest {
   // The price of the order.
   double price = 1 [json_name = "price"];
-  // The quantity of the order.
-  double quantity = 2 [json_name = "quantity"];
+  // The quantity of the order in satoshis.
+  uint64 quantity = 2 [json_name = "quantity"];
   // The trading pair that the order is for.
   string pair_id = 3 [json_name = "pair_id"];
   // The local id to assign to the order.
@@ -474,7 +485,9 @@ message PlaceOrderResponse {
   // A list of successful swaps of peer orders that matched the newly placed order.
   repeated SwapSuccess swap_successes = 2 [json_name = "swap_successes"];
   // The remaining portion of the order, after matches, that enters the order book.
-  Order remaining_order = 3 [json_name= "remaining_order"];
+  Order remaining_order = 3 [json_name = "remaining_order"];
+  // A list of swap attempts that failed.
+  repeated SwapFailure swap_failures = 4 [json_name = "swap_failures"];
 }
 
 message PlaceOrderEvent {
@@ -486,7 +499,7 @@ message PlaceOrderEvent {
     // The remaining portion of the order, after matches, that enters the order book.
     Order remaining_order = 3 [json_name= "remaining_order"];
     // A swap attempt that failed.
-    SwapFailure swap_failure = 4 [json_name = "swap_failures"];
+    SwapFailure swap_failure = 4 [json_name = "swap_failure"];
   }
 }
 
@@ -506,12 +519,13 @@ message RemoveCurrencyResponse {}
 message RemoveOrderRequest {
   // The local id of the order to remove.
   string order_id = 1 [json_name = "order_id"];
-  double quantity = 2 [json_name = "quantity"];
+  // The quantity to remove from the order. If zero or unspecified then entire order is removed.
+  uint64 quantity = 2 [json_name = "quantity"];
 }
 message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
-  double quantity_on_hold = 1 [json_name = "hold"];
+  uint64 quantity_on_hold = 1 [json_name = "hold"];
 }
 
 message RemovePairRequest {
@@ -523,12 +537,10 @@ message RemovePairResponse {}
 message ShutdownRequest {}
 message ShutdownResponse {}
 
-message SubscribeAddedOrdersRequest {
+message SubscribeOrdersRequest {
   // Whether to transmit all existing active orders upon establishing the stream.
   bool existing = 1 [json_name = "existing"];
 }
-
-message SubscribeRemovedOrdersRequest {}
 
 message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
@@ -544,12 +556,12 @@ message SwapSuccess {
   // The trading pair that the swap is for.
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
-  double quantity = 4 [json_name = "quantity"];
+  uint64 quantity = 4 [json_name = "quantity"];
   // The hex-encoded payment hash for the swaps.
   string r_hash = 5 [json_name = "r_hash"];
-  // The amount of subunits (satoshis) received.
+  // The amount of the smallest base unit of the currency (like satoshis or wei) received.
   int64 amount_received = 8 [json_name = "amount_received"];
-  // The amount of subunits (satoshis) sent.
+  // The amount of the smallest base unit of the currency (like satoshis or wei) sent.
   int64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
   string peer_pub_key = 10 [json_name = "peer_pub_key"];
@@ -566,7 +578,7 @@ message SwapSuccess {
   // The hex-encoded preimage.
   string r_preimage = 14 [json_name = "r_preimage"];
   // The price used for the swap.
-  int64 price = 15 [json_name = "r_preimage"];
+  double price = 15 [json_name = "price"];
 }
 
 message UnbanRequest {

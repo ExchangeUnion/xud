@@ -263,6 +263,14 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          },
+          {
+            "name": "limit",
+            "description": "The maximum number of orders to return from each side of the order book.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
           }
         ],
         "tags": [
@@ -466,15 +474,15 @@
         ]
       }
     },
-    "/v1/subscribeaddedorders": {
+    "/v1/subscribeorders": {
       "get": {
-        "summary": "Subscribes to orders being added to the order book. This call, together with SubscribeRemovedOrders,\nallows the client to maintain an up-to-date view of the order book. For example, an exchange that\nwants to show its users a real time list of the orders available to them would subscribe to this\nstreaming call to be alerted of new orders as they become available for trading.",
-        "operationId": "SubscribeAddedOrders",
+        "summary": "Subscribes to orders being added to and removed from the order book. This call allows the client\nto maintain an up-to-date view of the order book. For example, an exchange that wants to show\nits users a real time view of the orders available to them would subscribe to this streaming\ncall to be alerted as new orders are added and expired orders are removed.",
+        "operationId": "SubscribeOrders",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/xudrpcOrder"
+              "$ref": "#/x-stream-definitions/xudrpcOrderUpdate"
             }
           }
         },
@@ -493,18 +501,28 @@
         ]
       }
     },
-    "/v1/subscriberemovedorders": {
+    "/v1/subscribeswapfailures": {
       "get": {
-        "summary": "Subscribes to orders being removed - either in full or in part - from the order book. This call,\ntogether with SubscribeAddedOrders, allows the client to maintain an up-to-date view of the order\nbook. For example, an exchange that wants to show its users a real time list of the orders available\nto them would subscribe to this streaming call to be alerted when part or all of an existing order\nis no longer available for trading.",
-        "operationId": "SubscribeRemovedOrders",
+        "summary": "Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are\ntransmitted unless a flag is set to include swaps initiated by the local node. This call allows\nthe client to get real-time notifications when swap attempts are failing. It can be used for\nstatus monitoring, debugging, and testing purposes.",
+        "operationId": "SubscribeSwapFailures",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/xudrpcOrderRemoval"
+              "$ref": "#/x-stream-definitions/xudrpcSwapFailure"
             }
           }
         },
+        "parameters": [
+          {
+            "name": "include_taker",
+            "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
         "tags": [
           "Xud"
         ]
@@ -727,8 +745,8 @@
           "description": "The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity to swap. The whole order will be swapped if unspecified."
         }
       }
@@ -765,11 +783,11 @@
           "$ref": "#/definitions/xudrpcOrdersCount",
           "description": "The number of active, standing orders in the order book."
         },
-        "lndbtc": {
-          "$ref": "#/definitions/xudrpcLndInfo"
-        },
-        "lndltc": {
-          "$ref": "#/definitions/xudrpcLndInfo"
+        "lnd": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcLndInfo"
+          }
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
@@ -901,9 +919,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -936,9 +954,9 @@
           "description": "Whether this order is a local own order or a remote peer order."
         },
         "hold": {
-          "type": "number",
-          "format": "double",
-          "description": "The amount on hold pending swap exectuion."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity on hold pending swap exectuion."
         }
       }
     },
@@ -946,8 +964,8 @@
       "type": "object",
       "properties": {
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The quantity of the order being removed."
         },
         "pair_id": {
@@ -976,6 +994,19 @@
         "SELL"
       ],
       "default": "BUY"
+    },
+    "xudrpcOrderUpdate": {
+      "type": "object",
+      "properties": {
+        "order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "An order that was added to the order book."
+        },
+        "order_removal": {
+          "$ref": "#/definitions/xudrpcOrderRemoval",
+          "description": "An order (or portion thereof) that was removed from the order book."
+        }
+      }
     },
     "xudrpcOrders": {
       "type": "object",
@@ -1022,13 +1053,12 @@
           "type": "string",
           "description": "The node pub key to uniquely identify this peer."
         },
-        "lnd_btc_pub_key": {
-          "type": "string",
-          "description": "The lnd BTC pub key associated with this peer."
-        },
-        "lnd_ltc_pub_key": {
-          "type": "string",
-          "description": "The lnd LTC pub key associated with this peer."
+        "lnd_pub_keys": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "A map of ticker symbols to lnd pub keys for this peer"
         },
         "inbound": {
           "type": "boolean",
@@ -1050,6 +1080,10 @@
           "type": "integer",
           "format": "int32",
           "description": "The time in seconds that we have been connected to this peer."
+        },
+        "raiden_address": {
+          "type": "string",
+          "title": "The raiden address for this peer"
         }
       }
     },
@@ -1083,9 +1117,9 @@
           "description": "The price of the order."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
-          "description": "The quantity of the order."
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity of the order in satoshis."
         },
         "pair_id": {
           "type": "string",
@@ -1121,6 +1155,13 @@
         "remaining_order": {
           "$ref": "#/definitions/xudrpcOrder",
           "description": "The remaining portion of the order, after matches, that enters the order book."
+        },
+        "swap_failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcSwapFailure"
+          },
+          "description": "A list of swap attempts that failed."
         }
       }
     },
@@ -1162,8 +1203,9 @@
           "description": "The local id of the order to remove."
         },
         "quantity": {
-          "type": "number",
-          "format": "double"
+          "type": "string",
+          "format": "uint64",
+          "description": "The quantity to remove from the order. If zero or unspecified then entire order is removed."
         }
       }
     },
@@ -1171,8 +1213,8 @@
       "type": "object",
       "properties": {
         "quantity_on_hold": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "Any portion of the order that was on hold due to ongoing swaps at the time of the request\nand could not be removed until after the swaps finish."
         }
       }
@@ -1207,13 +1249,17 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was attempted to be swapped."
         },
         "peer_pub_key": {
           "type": "string",
           "description": "The node pub key of the peer that we attempted to swap with."
+        },
+        "failure_reason": {
+          "type": "string",
+          "description": "The reason why the swap failed."
         }
       }
     },
@@ -1233,8 +1279,8 @@
           "description": "The trading pair that the swap is for."
         },
         "quantity": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
+          "format": "uint64",
           "description": "The order quantity that was swapped."
         },
         "r_hash": {
@@ -1244,12 +1290,12 @@
         "amount_received": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) received."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) received."
         },
         "amount_sent": {
           "type": "string",
           "format": "int64",
-          "description": "The amount of subunits (satoshis) sent."
+          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) sent."
         },
         "peer_pub_key": {
           "type": "string",
@@ -1272,8 +1318,8 @@
           "description": "The hex-encoded preimage."
         },
         "price": {
-          "type": "string",
-          "format": "int64",
+          "type": "number",
+          "format": "double",
           "description": "The price used for the swap."
         }
       }
@@ -1297,29 +1343,17 @@
     }
   },
   "x-stream-definitions": {
-    "xudrpcOrder": {
+    "xudrpcOrderUpdate": {
       "type": "object",
       "properties": {
         "result": {
-          "$ref": "#/definitions/xudrpcOrder"
+          "$ref": "#/definitions/xudrpcOrderUpdate"
         },
         "error": {
           "$ref": "#/definitions/runtimeStreamError"
         }
       },
-      "title": "Stream result of xudrpcOrder"
-    },
-    "xudrpcOrderRemoval": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/xudrpcOrderRemoval"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of xudrpcOrderRemoval"
+      "title": "Stream result of xudrpcOrderUpdate"
     },
     "xudrpcPlaceOrderEvent": {
       "type": "object",
@@ -1332,6 +1366,18 @@
         }
       },
       "title": "Stream result of xudrpcPlaceOrderEvent"
+    },
+    "xudrpcSwapFailure": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapFailure"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapFailure"
     },
     "xudrpcSwapSuccess": {
       "type": "object",
