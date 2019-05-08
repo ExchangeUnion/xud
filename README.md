@@ -20,11 +20,11 @@ If you already have [Node.js](https://nodejs.org/en/download/) (min 10.15.3) ins
 sudo npm install xud -g --unsafe-perm
 ```
 
-Detailed instructions for installing `xud` can be found in the wiki on our [Installation](https://github.com/ExchangeUnion/xud/wiki/Installation) page. Instructions for installing via Docker are on our [Docker](https://github.com/ExchangeUnion/xud/wiki/Docker) page.
+Detailed instructions for installing `xud` can be found in the wiki on our [Installation](https://github.com/ExchangeUnion/xud/wiki/Installation) page.
 
 ## Usage
 
-Open a new terminal and launch `xud`. 
+Open a new terminal and launch `xud`.
 
 ```
 $ ./xud
