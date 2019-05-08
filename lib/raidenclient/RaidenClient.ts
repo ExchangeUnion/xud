@@ -136,12 +136,11 @@ class RaidenClient extends BaseClient {
     if (!tokenAddress) {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
-    // TODO: Secret hash. Depending on sha256 <-> keccak256 problem:
-    // https://github.com/ExchangeUnion/xud/issues/870
     const tokenPaymentResponse = await this.tokenPayment({
       amount,
       token_address: tokenAddress,
       target_address: deal.destination!,
+      secret_hash: deal.rHash,
     });
     return tokenPaymentResponse.secret;
 

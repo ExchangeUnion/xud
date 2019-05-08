@@ -56,6 +56,6 @@ export type TokenPaymentRequest = {
   token_address: string,
   target_address: string,
   amount: number,
-  secret_hash?: string,
+  secret_hash: string,
   identifier?: number,
 };
