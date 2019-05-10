@@ -89,9 +89,9 @@ describe('API Service', () => {
     const pairOrders = orders.get(args.pairId);
     expect(pairOrders).to.not.be.undefined;
 
-    expect(pairOrders!.buy).to.have.length(1);
+    expect(pairOrders!.buyArray).to.have.length(1);
 
-    const order = pairOrders!.buy[0];
+    const order = pairOrders!.buyArray[0];
     expect(order.price).to.equal(placeOrderArgs.price);
     expect(order.quantity).to.equal(placeOrderArgs.quantity);
     expect(order.pairId).to.equal(placeOrderArgs.pairId);
@@ -101,12 +101,12 @@ describe('API Service', () => {
 
   it('should remove an order', () => {
     const tp = xud['orderBook'].tradingPairs.get('LTC/BTC')!;
-    expect(tp.ownOrders.buy.has(orderId!)).to.be.true;
+    expect(tp.ownOrders.buyMap.has(orderId!)).to.be.true;
     const args = {
       orderId: '1',
     };
     service.removeOrder(args);
-    expect(tp.ownOrders.buy.has(orderId!)).to.be.false;
+    expect(tp.ownOrders.buyMap.has(orderId!)).to.be.false;
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {

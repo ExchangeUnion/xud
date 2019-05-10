@@ -63,7 +63,7 @@ describe('OrderBook', () => {
 
   const getOwnOrder = (order: orders.OwnOrder): orders.OwnOrder | undefined => {
     const ownOrders = orderBook.getOwnOrders(order.pairId);
-    const arr = order.isBuy ? ownOrders.buy : ownOrders.sell;
+    const arr = order.isBuy ? ownOrders.buyArray : ownOrders.sellArray;
 
     for (const orderItem of arr) {
       if (orderItem.id === order.id) {

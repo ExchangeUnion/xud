@@ -234,8 +234,8 @@ class Service extends EventEmitter {
       const peerOrders = this.orderBook.getPeersOrders(pairId);
       const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-      peerOrdersCount += Object.keys(peerOrders.buy).length + Object.keys(peerOrders.sell).length;
-      ownOrdersCount += Object.keys(ownOrders.buy).length + Object.keys(ownOrders.sell).length;
+      peerOrdersCount += Object.keys(peerOrders.buyArray).length + Object.keys(peerOrders.sellArray).length;
+      ownOrdersCount += Object.keys(ownOrders.buyArray).length + Object.keys(ownOrders.sellArray).length;
       numPairs += 1;
     }
 
@@ -272,28 +272,28 @@ class Service extends EventEmitter {
 
     const listOrderTypes = (pairId: string) => {
       const  orders: OrderSidesArrays<any> = {
-        buy: [],
-        sell: [],
+        buyArray: [],
+        sellArray: [],
       };
 
       const peerOrders = this.orderBook.getPeersOrders(pairId);
-      orders.buy = peerOrders.buy;
-      orders.sell = peerOrders.sell;
+      orders.buyArray = peerOrders.buyArray;
+      orders.sellArray = peerOrders.sellArray;
 
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-        orders.buy = [...orders.buy, ...ownOrders.buy];
-        orders.sell = [...orders.sell, ...ownOrders.sell];
+        orders.buyArray = [...orders.buyArray, ...ownOrders.buyArray];
+        orders.sellArray = [...orders.sellArray, ...ownOrders.sellArray];
       }
 
       // sort all orders
-      orders.buy = sortOrders(orders.buy, true);
-      orders.sell = sortOrders(orders.sell, false);
+      orders.buyArray = sortOrders(orders.buyArray, true);
+      orders.sellArray = sortOrders(orders.sellArray, false);
 
       if (limit > 0) {
-        orders.buy = orders.buy.slice(0, limit);
-        orders.sell = orders.buy.slice(0, limit);
+        orders.buyArray = orders.buyArray.slice(0, limit);
+        orders.sellArray = orders.buyArray.slice(0, limit);
       }
       return orders;
     };
@@ -418,10 +418,10 @@ class Service extends EventEmitter {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
         const peerOrders = this.orderBook.getPeersOrders(pair);
-        ownOrders.buy.forEach(order => callback(order));
-        peerOrders.buy.forEach(order => callback(order));
-        ownOrders.sell.forEach(order => callback(order));
-        peerOrders.sell.forEach(order => callback(order));
+        ownOrders.buyArray.forEach(order => callback(order));
+        peerOrders.buyArray.forEach(order => callback(order));
+        ownOrders.sellArray.forEach(order => callback(order));
+        peerOrders.sellArray.forEach(order => callback(order));
       });
     }
 
@@ -431,7 +431,7 @@ class Service extends EventEmitter {
     this.orderBook.on('peerOrder.invalidation', orderRemoval => callback(undefined, orderRemoval));
     this.orderBook.on('peerOrder.filled', orderRemoval => callback(undefined, orderRemoval));
     this.orderBook.on('ownOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.swapped', orderRemoval => callback(undefined, orderRemoval));
+    this.orderBook.on('ownOrder.removed', orderRemoval => callback(undefined, orderRemoval));
   }
 
   /*

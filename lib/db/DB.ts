@@ -4,7 +4,7 @@ import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import * as db from './types';
 import { SwapClient, XuNetwork } from '../constants/enums';
-import { exists, readdir } from '../utils/fsUtils';
+import { promises as fs } from 'fs';
 import seeds from '../p2p/seeds';
 
 type Models = {
@@ -40,7 +40,18 @@ class DB {
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
     this.models = await this.loadModels();
-    const newDb = !this.storage || !(await exists(this.storage));
+    let newDb = !this.storage;
+    if (this.storage) {
+      // check if database file exists
+      try {
+        await fs.access(this.storage);
+      } catch (err) {
+        if (err.code === 'ENOENT') {
+          newDb = true;
+        }
+      }
+    }
+
     try {
       await this.sequelize.authenticate();
       this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
@@ -94,7 +105,7 @@ class DB {
   private loadModels = async (): Promise<Models> => {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
-    (await readdir(modelsFolder))
+    (await fs.readdir(modelsFolder))
       // filter for only files that end in .js or .ts (but not .d.ts)
       .filter(file => file !== path.basename(__filename) && file.match(/.js$|(^.?|\.[^d]|[^.]d|[^.][^d])\.ts$/))
       .forEach((file) => {

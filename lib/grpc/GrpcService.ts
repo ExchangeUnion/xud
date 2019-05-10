@@ -451,8 +451,8 @@ class GrpcService {
       const ordersMap = response.getOrdersMap();
       listOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(listOrdersList(orderArrays.buy));
-        orders.setSellOrdersList(listOrdersList(orderArrays.sell));
+        orders.setBuyOrdersList(listOrdersList(orderArrays.buyArray));
+        orders.setSellOrdersList(listOrdersList(orderArrays.sellArray));
 
         ordersMap.set(pairId, orders);
       });

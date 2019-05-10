@@ -62,7 +62,13 @@ interface NodeConnectionIterator {
   forEach: (callback: (node: NodeConnectionInfo) => void) => void;
 }
 
-/** A class representing a pool of peers that handles network activity. */
+/** Represents a pool of peers that handles all  network activity. */
+
+/**
+ * Represents a pool of peers that handles all p2p network activity. This tracks all active and
+ * pending peers, optionally runs a server to listen for incoming connections, and is the primary
+ * interface for other modules to interact with the p2p layer.
+ */
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public nodeState!: NodeState;
@@ -135,7 +141,7 @@ class Pool extends EventEmitter {
       if (this.nodes.count > 0) {
         this.logger.info('Connecting to known / previously connected peers');
       }
-      return this.connectNodes(this.nodes, false, true);
+      return this.connectNodes(this.nodes, true, true);
     }).then(() => {
       if (this.nodes.count > 0) {
         this.logger.info('Completed start-up connections to known peers');
@@ -245,11 +251,11 @@ class Pool extends EventEmitter {
    * If the node is banned, already connected, or has no listening addresses, then do nothing.
    * Additionally, if we're already trying to connect to a given node also do nothing.
    * @param nodes a collection of nodes with a `forEach` iterator to attempt to connect to
-   * @param ignoreKnown whether to ignore nodes we are already aware of, defaults to false
+   * @param allowKnown whether to allow connecting to nodes we are already aware of, defaults to true
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-  private connectNodes = (nodes: NodeConnectionIterator, ignoreKnown = false, retryConnecting = false) => {
+  private connectNodes = (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
@@ -258,11 +264,11 @@ class Pool extends EventEmitter {
       // check that it has listening addresses,
       const hasAddresses = node.lastAddress || node.addresses.length;
 
-      // ignore nodes that we already know if ignoreKnown is true
-      const isNotIgnored = this.nodes.has(node.nodePubKey) && !ignoreKnown;
+      // if allowKnown is false, allow nodes that we don't aware of
+      const isAllowed = allowKnown || !this.nodes.has(node.nodePubKey);
 
       // determine whether we should attempt to connect
-      if (isNotUs && hasAddresses && isNotIgnored) {
+      if (isNotUs && hasAddresses && isAllowed) {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });

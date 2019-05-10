@@ -53,7 +53,7 @@ interface Peer {
   emit(event: 'nodeStateUpdate'): boolean;
 }
 
-/** Represents a remote XU peer */
+/** Represents a remote peer and manages a TCP socket and incoming/outgoing communication with that peer. */
 class Peer extends EventEmitter {
   // TODO: properties documentation
   public inbound!: boolean;

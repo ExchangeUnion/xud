@@ -31,6 +31,8 @@ interface OrderBook {
   on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
+  /** Adds a listener to be called when a local order was removed */
+  on(event: 'ownOrder.removed', listener: (order: OrderPortion) => void): this;
 
   /** Notifies listeners that a remote order was added */
   emit(event: 'peerOrder.incoming', order: PeerOrder): boolean;
@@ -44,9 +46,15 @@ interface OrderBook {
   emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
+  /** Notifies listeners that a local order was removed */
+  emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
 }
 
-/** A class representing an orderbook containing all orders for all active trading pairs. */
+/**
+ * Represents an order book containing all orders for all active trading pairs. This encompasses
+ * all orders tracked locally and is the primary interface with which other modules interact with
+ * the order book.
+ */
 class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
@@ -124,9 +132,9 @@ class OrderBook extends EventEmitter {
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
-          await this.persistTrade(swapSuccess.quantity, this.getOwnOrder(swapSuccess.orderId, swapSuccess.pairId), undefined, swapSuccess.rHash);
-          this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+          const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
+          await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
         }
       });
       this.swaps.on('swap.failed', (deal) => {
@@ -345,16 +353,15 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    if (!this.nosanitychecks) {
+    if (!this.nosanitychecks && this.swaps) {
       // check if sufficient outbound channel capacity exists
-      const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
-      const swapClient = this.swaps && this.swaps.swapClients.get(makerCurrency);
+      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const swapClient = this.swaps.swapClients.get(outboundCurrency);
       if (!swapClient) {
-        throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
+        throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      if (makerAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount, swapClient.maximumOutboundCapacity);
+      if (outboundAmount > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, swapClient.maximumOutboundCapacity);
       }
     }
 
@@ -635,19 +642,21 @@ class OrderBook extends EventEmitter {
    * Removes all or part of an own order from the order book and broadcasts an order invalidation packet.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
+   * @returns the removed portion of the order
    */
   private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string) => {
     const tp = this.getTradingPair(pairId);
     try {
       const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
+      this.emit('ownOrder.removed', removeResult.order);
       if (removeResult.fullyRemoved) {
-        const localId = (removeResult.order).localId;
-        this.localIdMap.delete(localId);
+        this.localIdMap.delete(removeResult.order.localId);
       }
 
       if (this.pool) {
         this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
+      return removeResult.order;
     } catch (err) {
       if (quantityToRemove !== undefined) {
         this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);
@@ -767,8 +776,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.buyArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sellArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);
