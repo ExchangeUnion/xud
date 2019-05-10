@@ -348,20 +348,23 @@ class Service extends EventEmitter {
     const trades = await this.orderBook.getTrades(order.id, true);
     const swapDeals = await this.swaps.getDeals(true);
 
+    const isInOrderBook = this.orderBook.getOwnOrder(order.id, order.pairId);
     let quantity = 0;
-    let status: OrderStatus;
+    let status: OrderStatus = OrderStatus.OPEN;
     trades.forEach((trade) => {
       quantity = quantity + trade.quantity;
     });
 
-    if (quantity === order.initialQuantity) {
+    if (!isInOrderBook && quantity === order.initialQuantity) {
       status = OrderStatus.FILLED;
-    } else if (quantity < order.initialQuantity && quantity !== 0) {
-      status = OrderStatus.PARTIALLYFILLED;
-    } else {
-      // TODO: check logs for canceled order
+    } else if (!isInOrderBook && trades.length === 0) {
+      status = OrderStatus.CANCELLED;
+    } else if (isInOrderBook && trades.length === 0) {
       status = OrderStatus.OPEN;
+    } else if (isInOrderBook && quantity < order.initialQuantity) {
+      status = OrderStatus.PARTIALLYFILLED;
     }
+
     return {
       status,
       trades,
