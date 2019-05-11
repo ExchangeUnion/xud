@@ -38,7 +38,7 @@ interface GrpcResponse {
   toObject: Function;
 }
 
-export const callback = (argv: Arguments, formatOutput?: Function) => {
+export const callback = (argv: Arguments, formatOutput?: Function, displayJson?: Function) => {
   return (error: Error | null, response: GrpcResponse) => {
     if (error) {
       console.error(`${error.name}: ${error.message}`);
@@ -47,9 +47,13 @@ export const callback = (argv: Arguments, formatOutput?: Function) => {
       if (Object.keys(responseObj).length === 0) {
         console.log('success');
       } else {
-        !argv.json && formatOutput
-          ? formatOutput(responseObj)
-          : console.log(JSON.stringify(responseObj, undefined, 2));
+        if (!argv.json && formatOutput) {
+          formatOutput(responseObj, argv);
+        } else {
+          displayJson
+            ? displayJson(responseObj, argv)
+            : console.log(JSON.stringify(responseObj, undefined, 2));
+        }
       }
     }
   };
