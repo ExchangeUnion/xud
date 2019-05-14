@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId, setTimeoutPromise, getPairCurrencies } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -50,7 +50,11 @@ interface OrderBook {
   emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
 }
 
-/** A class representing an orderbook containing all orders for all active trading pairs. */
+/**
+ * Represents an order book containing all orders for all active trading pairs. This encompasses
+ * all orders tracked locally and is the primary interface with which other modules interact with
+ * the order book.
+ */
 class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
@@ -235,7 +239,7 @@ class OrderBook extends EventEmitter {
     if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
-    if (currency.swapClient === SwapClient.Raiden && !currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Raiden && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });

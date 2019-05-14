@@ -3,8 +3,7 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { Order, isOwnOrder, OrderPortion, PeerOrder, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
+import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
@@ -316,7 +315,6 @@ class GrpcService {
             break;
           case SwapFailureReason.InvalidSwapRequest:
           case SwapFailureReason.PaymentHashReuse:
-          case SwapFailureReason.InvalidResolveRequest:
             // these cases suggest something went very wrong with our swap request
             code = status.INTERNAL;
             break;
@@ -361,7 +359,15 @@ class GrpcService {
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
         if (lndInfo.blockheight) lnd.setBlockheight(lndInfo.blockheight);
-        if (lndInfo.chains) lnd.setChainsList(lndInfo.chains);
+        if (lndInfo.chains) {
+          const chains: xudrpc.Chain[] = lndInfo.chains.map((chain) => {
+            const xudChain = new xudrpc.Chain();
+            xudChain.setChain(chain.chain);
+            xudChain.setNetwork(chain.network);
+            return xudChain;
+          });
+          lnd.setChainsList(chains);
+        }
         if (lndInfo.channels) {
           const channels = new xudrpc.LndChannels();
           channels.setActive(lndInfo.channels.active);
@@ -434,8 +440,8 @@ class GrpcService {
       const ordersMap = response.getOrdersMap();
       listOrdersResponse.forEach((orderArrays, pairId) => {
         const orders = new xudrpc.Orders();
-        orders.setBuyOrdersList(listOrdersList(orderArrays.buy));
-        orders.setSellOrdersList(listOrdersList(orderArrays.sell));
+        orders.setBuyOrdersList(listOrdersList(orderArrays.buyArray));
+        orders.setSellOrdersList(listOrdersList(orderArrays.sellArray));
 
         ordersMap.set(pairId, orders);
       });
@@ -557,22 +563,6 @@ class GrpcService {
       await this.service.removePair(call.request.toObject());
       const response = new xudrpc.RemovePairResponse();
 
-      callback(null, response);
-    } catch (err) {
-      callback(this.getGrpcError(err), null);
-    }
-  }
-
-  /*
-   * Resolving LND hash. See [[Service.resolveHash]]
-   */
-  public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
-    try {
-      const resolveResponse = await this.service.resolveHash(call.request);
-      const response = new ResolveResponse();
-      if (resolveResponse) {
-        response.setPreimage(resolveResponse);
-      }
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);
