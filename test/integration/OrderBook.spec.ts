@@ -18,7 +18,7 @@ const currencies = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);
 
 const initValues = async (db: DB) => {
-  const orderBookRepository = new OrderBookRepository(loggers.orderbook, db.models);
+  const orderBookRepository = new OrderBookRepository(db.models);
 
   await orderBookRepository.addCurrencies([
     { id: currencies[0], swapClient: SwapClient.Lnd, decimalPlaces: 8 },

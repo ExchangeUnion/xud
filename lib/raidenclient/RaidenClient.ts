@@ -52,7 +52,7 @@ class RaidenClient extends BaseClient {
     this.host = host;
     this.disable = disable;
 
-    this.repository = new OrderBookRepository(logger, models);
+    this.repository = new OrderBookRepository(models);
   }
 
   /**
@@ -71,7 +71,7 @@ class RaidenClient extends BaseClient {
   private setCurrencies = async () => {
     try {
       const currencies = await this.repository.getCurrencies();
-      const raidenCurrencies = currencies.filter((currency) => {
+      currencies.filter((currency) => {
         const tokenAddress = currency.getDataValue('tokenAddress');
         if (tokenAddress) {
           this.tokenAddresses.set(currency.getDataValue('id'), tokenAddress);
@@ -248,7 +248,7 @@ class RaidenClient extends BaseClient {
   /**
    * Queries for events tied to a specific channel.
    */
-  private getChannelEvents = async (channel_address: string) => {
+  public getChannelEvents = async (channel_address: string) => {
     // TODO: specify a "from_block"  query argument to only get events since a specific block.
     const endpoint = `events/channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
@@ -304,7 +304,7 @@ class RaidenClient extends BaseClient {
    */
   public closeChannel = async (channel_address: string): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
+    await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
   }
 
   /**
@@ -337,7 +337,7 @@ class RaidenClient extends BaseClient {
    */
   public depositToChannel = async (channel_address: string, balance: number): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'PATCH', { balance });
+    await this.sendRequest(endpoint, 'PATCH', { balance });
   }
 
   /**

@@ -56,7 +56,7 @@ describe('Database', () => {
 
   before(async () => {
     await db.init();
-    orderBookRepo = new OrderBookRepository(loggers.db, db.models);
+    orderBookRepo = new OrderBookRepository(db.models);
     p2pRepo = new P2PRepository(db.models);
     swapRepo = new SwapRepository(db.models);
   });

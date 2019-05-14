@@ -4,7 +4,7 @@ import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
 import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
-import { Order, isOwnOrder, OrderPortion, PeerOrder, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
+import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';

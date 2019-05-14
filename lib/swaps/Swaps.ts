@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent, SwapClient } from '../constants/enums';
+import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -513,8 +513,7 @@ class Swaps extends EventEmitter {
 
     try {
       this.setDealPhase(deal, SwapPhase.SendingAmount);
-      const rPreimage = await swapClient.sendPayment(deal);
-      // TODO: check preimage from payment response vs deal.preImage
+      await swapClient.sendPayment(deal);
 
       // swap succeeded!
       this.setDealPhase(deal, SwapPhase.SwapCompleted);

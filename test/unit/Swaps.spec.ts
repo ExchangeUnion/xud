@@ -54,14 +54,6 @@ describe('Swaps', () => {
     makerAmount: buyDeal.takerAmount,
   };
 
-  const buyOrder = {
-    quantity,
-    price,
-    pairId,
-    isBuy: true,
-  };
-  const sellOrder = { ...buyOrder, isBuy: false };
-
   const swapRequest: SwapRequestPacketBody = {
     takerCltvDelta,
     orderId,

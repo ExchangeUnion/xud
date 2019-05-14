@@ -85,7 +85,7 @@ class OrderBook extends EventEmitter {
     private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
-    this.repository = new OrderBookRepository(logger, models);
+    this.repository = new OrderBookRepository(models);
 
     this.bindPool();
     this.bindSwaps();
