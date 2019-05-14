@@ -3,14 +3,14 @@ import { Arguments } from 'yargs';
 import { ListPairsRequest, ListPairsResponse } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { getPairId } from '../../utils/utils';
+import { getPairCurrencies } from '../../utils/utils';
 
-const HEADERS = [colors.red('PairId')];
+const HEADERS = [colors.blue('PairId')];
 
 const formatPairs = (pairs: ListPairsResponse.AsObject): string[][] => {
   const formatted: string[][] = [];
   pairs.pairsList.forEach((pair) => {
-    const { baseCurrency, quoteCurrency } = getPairId(pair);
+    const { baseCurrency, quoteCurrency } = getPairCurrencies(pair);
     formatted.push([`${baseCurrency} / ${quoteCurrency}`]);
   });
   return formatted;

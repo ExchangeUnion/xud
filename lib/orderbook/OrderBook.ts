@@ -7,7 +7,7 @@ import errors from './errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
-import { ms, derivePairId, setTimeoutPromise, getPairId } from '../utils/utils';
+import { ms, derivePairId, setTimeoutPromise, getPairCurrencies } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
@@ -81,7 +81,7 @@ class OrderBook extends EventEmitter {
     private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
-    this.repository = new OrderBookRepository(logger, models);
+    this.repository = new OrderBookRepository(models);
 
     this.bindPool();
     this.bindSwaps();
@@ -697,7 +697,7 @@ class OrderBook extends EventEmitter {
     // identify the unique currencies we need to verify for specified trading pairs
     const currenciesToVerify = new Set<string>();
     pairIds.forEach((pairId) => {
-      const { baseCurrency, quoteCurrency } = getPairId(pairId);
+      const { baseCurrency, quoteCurrency } = getPairCurrencies(pairId);
       currenciesToVerify.add(baseCurrency);
       currenciesToVerify.add(quoteCurrency);
     });
@@ -731,7 +731,7 @@ class OrderBook extends EventEmitter {
 
     // activate pairs that have had both currencies verified
     pairIds.forEach(async (pairId) => {
-      const { baseCurrency, quoteCurrency } = getPairId(pairId);
+      const { baseCurrency, quoteCurrency } = getPairCurrencies(pairId);
       if (verifiedCurrencies.has(baseCurrency) && verifiedCurrencies.has(quoteCurrency)) {
         peer.activePairs.add(pairId);
         verifiedPairs.push(pairId);
@@ -755,8 +755,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.buyArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sellArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);

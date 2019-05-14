@@ -12,7 +12,7 @@ import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
 import { ResolveRequest } from '../proto/hash_resolver_pb';
 import { SwapDeal, SwapSuccess, SanitySwap } from './types';
-import { generatePreimageAndHash, getPairId } from '../utils/utils';
+import { generatePreimageAndHash } from '../utils/utils';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
