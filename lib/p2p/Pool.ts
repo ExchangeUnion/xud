@@ -824,7 +824,7 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Start listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
+   * Starts listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
    * a random available port is used and will be assigned to `this.listenPort`.
    * @return a promise that resolves once the server is listening, or rejects if it fails to listen
    */
@@ -850,7 +850,7 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Stop listening for incoming p2p connections.
+   * Stops listening for incoming p2p connections.
    * @return a promise that resolves once the server is no longer listening
    */
   private unlisten = () => {

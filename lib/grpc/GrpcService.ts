@@ -11,7 +11,6 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
-import { ResolveRequest, ResolveResponse } from '../proto/hash_resolver_pb';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -316,7 +315,6 @@ class GrpcService {
             break;
           case SwapFailureReason.InvalidSwapRequest:
           case SwapFailureReason.PaymentHashReuse:
-          case SwapFailureReason.InvalidResolveRequest:
             // these cases suggest something went very wrong with our swap request
             code = status.INTERNAL;
             break;
@@ -565,22 +563,6 @@ class GrpcService {
       await this.service.removePair(call.request.toObject());
       const response = new xudrpc.RemovePairResponse();
 
-      callback(null, response);
-    } catch (err) {
-      callback(this.getGrpcError(err), null);
-    }
-  }
-
-  /*
-   * Resolving LND hash. See [[Service.resolveHash]]
-   */
-  public resolveHash: grpc.handleUnaryCall<ResolveRequest, ResolveResponse> = async (call, callback) => {
-    try {
-      const resolveResponse = await this.service.resolveHash(call.request);
-      const response = new ResolveResponse();
-      if (resolveResponse) {
-        response.setPreimage(resolveResponse);
-      }
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

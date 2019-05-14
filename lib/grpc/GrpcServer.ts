@@ -9,7 +9,6 @@ import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
 import { promises as fs } from 'fs';
 import serverProxy from './serverProxy';
-import { HashResolverService } from '../proto/hash_resolver_grpc_pb';
 
 class GrpcServer {
   private server: any;
@@ -42,10 +41,6 @@ class GrpcServer {
       subscribeOrders: grpcService.subscribeOrders,
       subscribeSwapFailures: grpcService.subscribeSwapFailures,
       subscribeSwaps: grpcService.subscribeSwaps,
-    });
-
-    this.server.addService(HashResolverService, {
-      resolveHash: grpcService.resolveHash,
     });
 
     this.grpcService = grpcService;

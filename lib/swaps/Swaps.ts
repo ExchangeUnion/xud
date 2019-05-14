@@ -10,8 +10,7 @@ import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
-import { ResolveRequest } from '../proto/hash_resolver_pb';
-import { SwapDeal, SwapSuccess, SanitySwap } from './types';
+import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
 import { generatePreimageAndHash } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 
@@ -575,49 +574,40 @@ class Swaps extends EventEmitter {
 
   /**
    * Verifies that the resolve request is valid. Checks the received amount vs
-   * the expected amount and the CltvDelta vs the expected one.
+   * the expected amount.
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
-    const amount = resolveRequest.getAmount();
-    let expectedAmount = 0;
-    let cltvDelta = 0;
+    const { amount } = resolveRequest;
+    let expectedAmount: number;
     let source: string;
     let destination: string;
 
     switch (deal.role) {
       case SwapRole.Maker:
         expectedAmount = deal.makerAmount;
-        cltvDelta = deal.makerCltvDelta!;
         source = 'Taker';
         destination = 'Maker';
         break;
       case SwapRole.Taker:
         expectedAmount = deal.takerAmount;
-        cltvDelta = deal.takerCltvDelta;
         source = 'Maker';
         destination = 'Taker';
         break;
       default:
-        this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Unknown role detected');
+        // this case should never happen, something is very wrong if so.
+        this.failDeal(deal, SwapFailureReason.UnknownError, 'Unknown role detected for swap deal');
         return false;
     }
-    // convert expected amount to mSat
-    expectedAmount = expectedAmount * 1000;
+
+    // TODO: convert amount to satoshis 1E-8
 
     if (amount < expectedAmount) {
-      this.logger.error(`received ${amount} mSat, expected ${expectedAmount} mSat`);
+      this.logger.error(`received ${amount}, expected ${expectedAmount}`);
       this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, `Amount sent from ${source} to ${destination} is too small`);
       return false;
     }
 
-    // allow 1 additional one block to be created during the swap
-    if (cltvDelta - 1 > resolveRequest.getTimeout() - resolveRequest.getHeightNow()) {
-      this.logger.error(`got timeout ${resolveRequest.getTimeout()} at height ${resolveRequest.getHeightNow()}`);
-      this.logger.error(`cltvDelta is ${resolveRequest.getTimeout() - resolveRequest.getHeightNow()} expected delta of ${cltvDelta}`);
-      this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, `cltvDelta sent from ${source} to ${destination} is too small`);
-      return false;
-    }
     return true;
   }
 
@@ -708,8 +698,7 @@ class Swaps extends EventEmitter {
   }
 
   public handleResolveRequest = async (resolveRequest: ResolveRequest): Promise<string> => {
-    const rHash = resolveRequest.getHash();
-    const amount = resolveRequest.getAmount() / 1000;
+    const { amount, rHash } = resolveRequest;
 
     this.logger.debug('handleResolveRequest starting with hash: ' + rHash);
 
