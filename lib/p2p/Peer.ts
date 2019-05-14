@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import { ReputationEvent, DisconnectionReason, SwapClient } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -167,14 +167,14 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getIdentifier(clientType: SwapClient, currency?: string): string | undefined {
+  public getIdentifier(clientType: SwapClientType, currency?: string): string | undefined {
     if (!this.nodeState) {
       return undefined;
     }
-    if (clientType === SwapClient.Lnd && currency) {
+    if (clientType === SwapClientType.Lnd && currency) {
       return this.nodeState.lndPubKeys[currency];
     }
-    if (clientType === SwapClient.Raiden) {
+    if (clientType === SwapClientType.Raiden) {
       return this.nodeState.raidenAddress;
     }
     return;
@@ -455,7 +455,7 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
+  public wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
     const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);

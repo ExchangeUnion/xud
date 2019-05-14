@@ -3,7 +3,6 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import { ResolveRequest, ResolveResponse } from '../proto/lndrpc_pb';
 import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
@@ -12,6 +11,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/LndClient';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
+import { ResolveRequest, ResolveResponse } from '../proto/hash_resolver_pb';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -361,7 +361,15 @@ class GrpcService {
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
         if (lndInfo.blockheight) lnd.setBlockheight(lndInfo.blockheight);
-        if (lndInfo.chains) lnd.setChainsList(lndInfo.chains);
+        if (lndInfo.chains) {
+          const chains: xudrpc.Chain[] = lndInfo.chains.map((chain) => {
+            const xudChain = new xudrpc.Chain();
+            xudChain.setChain(chain.chain);
+            xudChain.setNetwork(chain.network);
+            return xudChain;
+          });
+          lnd.setChainsList(chains);
+        }
         if (lndInfo.channels) {
           const channels = new xudrpc.LndChannels();
           channels.setActive(lndInfo.channels.active);

@@ -36,7 +36,7 @@ interface Pool {
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
-  on(event: 'packet.sanitySwap', listener: (packet: packets.SanitySwapPacket, peer: Peer) => void): this;
+  on(event: 'packet.sanitySwap', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
@@ -50,7 +50,7 @@ interface Pool {
   /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'peer.nodeStateUpdate', peer: Peer): boolean;
-  emit(event: 'packet.sanitySwap', packet: packets.SanitySwapPacket, peer: Peer): boolean;
+  emit(event: 'packet.sanitySwap', packet: packets.SanitySwapInitPacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;

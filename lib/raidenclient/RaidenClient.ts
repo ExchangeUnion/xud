@@ -1,9 +1,9 @@
 import http from 'http';
 import Logger from '../Logger';
-import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
+import SwapClient, { ClientStatus, ChannelBalance } from '../swaps/SwapClient';
 import errors from './errors';
 import { SwapDeal } from '../swaps/types';
-import { SwapClient, SwapState, SwapRole } from '../constants/enums';
+import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
 import OrderBookRepository from '../orderbook/OrderBookRepository';
 import { Models } from '../db/DB';
@@ -31,8 +31,8 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 /**
  * A class representing a client to interact with raiden.
  */
-class RaidenClient extends BaseClient {
-  public readonly type = SwapClient.Raiden;
+class RaidenClient extends SwapClient {
+  public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
   public address = '';
   public tokenAddresses = new Map<string, string>();
@@ -143,7 +143,18 @@ class RaidenClient extends BaseClient {
       secret_hash: deal.rHash,
     });
     return tokenPaymentResponse.secret;
+  }
 
+  public addInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public settleInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public removeInvoice = async () => {
+    // not implemented, raiden does not use invoices
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {

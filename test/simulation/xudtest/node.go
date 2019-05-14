@@ -54,6 +54,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--loglevel=debug")
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
+
 	args = append(args, fmt.Sprintf("--rpc.port=%v", cfg.RPCPort))
 
 	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))

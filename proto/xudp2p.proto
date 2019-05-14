@@ -99,10 +99,15 @@ message NodesPacket {
     repeated Node nodes = 3;
 }
 
-message SanitySwapPacket {
+message SanitySwapInitPacket {
     string id = 1;
     string currency = 2;
     string r_hash = 3;
+}
+
+message SanitySwapAckPacket {
+    string id = 1;
+    string req_id = 2;
 }
 
 message SwapRequestPacket {
