@@ -15,7 +15,8 @@ Requirements:
 Installation & Usage:
 
 ```bash
-$ GO111MODULE=on go test -v
+$ export PATH=$PATH:$PWD/go/bin
+$ GOPATH=$PWD/go GO111MODULE=on go test -v
 ````
 
 ## Network Scenarios Tests
