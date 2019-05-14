@@ -21,9 +21,9 @@ import (
 )
 
 var (
-	numActiveNodes int32 = 0
-	baseP2pPort          = 40000
-	baseRpcPort          = 30000
+	numActiveNodes int32
+	baseP2PPort    = 40000
+	baseRPCPort    = 30000
 )
 
 type nodeConfig struct {
@@ -83,7 +83,7 @@ type HarnessNode struct {
 	Cmd *exec.Cmd
 
 	Name   string
-	Id     int
+	ID     int
 	pubKey string
 
 	LndBtcNode *lntest.HarnessNode
@@ -126,16 +126,17 @@ func newNode(name string) (*HarnessNode, error) {
 	}
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort = baseP2pPort + nodeNum
-	cfg.RPCPort = baseRpcPort + nodeNum
+	cfg.P2PPort = baseP2PPort + nodeNum
+	cfg.RPCPort = baseRPCPort + nodeNum
 
 	return &HarnessNode{
 		Cfg:  &cfg,
 		Name: name,
-		Id:   nodeNum,
+		ID:   nodeNum,
 	}, nil
 }
 
+// SetLnd sets the lnd configuration for a specified chain.
 func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 	switch chain {
 	case "BTC":
@@ -154,7 +155,7 @@ func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 }
 
 // Start launches a new running process of xud.
-func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
+func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 	hn.quit = make(chan struct{})
 
 	args := hn.Cfg.genArgs()
@@ -181,7 +182,7 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 
 		err := hn.Cmd.Wait()
 		if err != nil {
-			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
+			errorChan <- &XudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
 		}
 
 		// Signal any onlookers that this process has exited.
@@ -282,14 +283,17 @@ func (hn *HarnessNode) cleanup() error {
 	return os.RemoveAll(hn.Cfg.DataDir)
 }
 
+// PubKey returns the pubkey for this node.
 func (hn *HarnessNode) PubKey() string {
 	return hn.pubKey
 }
 
+// SetPubKey sets the pubkey for this node.
 func (hn *HarnessNode) SetPubKey(pubKey string) {
 	hn.pubKey = pubKey
 }
 
+// NodeURI returns the p2p node uri for this node.
 func (hn *HarnessNode) NodeURI() string {
 	return fmt.Sprintf("%v@%v", hn.PubKey(), hn.Cfg.P2PAddr())
 }

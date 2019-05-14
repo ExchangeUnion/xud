@@ -90,7 +90,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 
 				if strings.Contains(xudError.Err.Error(), "signal: killed") {
 					t.Logf("xud process (%v-%v) did not shutdown gracefully. process (%v) killed",
-						xudError.Node.Id, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
+						xudError.Node.ID, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
 
 				} else {
 					t.Logf("xud process finished with error:\n%v", xudError)
@@ -250,7 +250,8 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
 	for i, testCase := range testCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, _ := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+			defer cancel()
 			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudHarness)
 		})
