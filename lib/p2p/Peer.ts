@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import crypto from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import { ReputationEvent, DisconnectionReason, SwapClient } from '../constants/enums';
+import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
@@ -12,7 +12,7 @@ import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
-import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
+import { NodeState, Address, NodeConnectionInfo } from './types';
 import errors, { errorCodes } from './errors';
 import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
@@ -53,7 +53,7 @@ interface Peer {
   emit(event: 'nodeStateUpdate'): boolean;
 }
 
-/** Represents a remote XU peer */
+/** Represents a remote peer and manages a TCP socket and incoming/outgoing communication with that peer. */
 class Peer extends EventEmitter {
   // TODO: properties documentation
   public inbound!: boolean;
@@ -80,16 +80,11 @@ class Peer extends EventEmitter {
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
-  private lastRecv = 0;
-  private lastSend = 0;
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
   private outEncryptionKey?: Buffer;
-  /** A counter for packets sent to be used for assigning unique packet ids. */
-  private packetCount = 0;
   private readonly network: Network;
   private readonly framer: Framer;
-  private readonly deactivatedPairs = new Set<string>();
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -150,7 +145,7 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, private config: PoolConfig, network: Network) {
+  constructor(private logger: Logger, public address: Address, network: Network) {
     super();
     this.network = network;
     this.framer = new Framer(this.network);
@@ -161,8 +156,8 @@ class Peer extends EventEmitter {
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, config: PoolConfig, network: Network): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), config, network);
+  public static fromInbound = (socket: Socket, logger: Logger, network: Network): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), network);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -172,14 +167,14 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getIdentifier(clientType: SwapClient, currency?: string): string | undefined {
+  public getIdentifier(clientType: SwapClientType, currency?: string): string | undefined {
     if (!this.nodeState) {
       return undefined;
     }
-    if (clientType === SwapClient.Lnd && currency) {
+    if (clientType === SwapClientType.Lnd && currency) {
       return this.nodeState.lndPubKeys[currency];
     }
-    if (clientType === SwapClient.Raiden) {
+    if (clientType === SwapClientType.Raiden) {
       return this.nodeState.raidenAddress;
     }
     return;
@@ -321,7 +316,6 @@ class Peer extends EventEmitter {
     this.sendRaw(data);
 
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
-    this.packetCount += 1;
 
     if (packet.direction === PacketDirection.Request) {
       this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
@@ -356,7 +350,6 @@ class Peer extends EventEmitter {
     if (this.socket && !this.socket.destroyed) {
       try {
         this.socket.write(data);
-        this.lastSend = Date.now();
       } catch (err) {
         this.logger.error('failed sending data to peer', err);
       }
@@ -462,7 +455,7 @@ class Peer extends EventEmitter {
    * Waits for a packet to be received from peer.
    * @returns A promise that is resolved once the packet is received or rejects on timeout.
    */
-  private wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
+  public wait = (reqId: string, resType: ResponseType, timeout?: number, cb?: (packet: Packet) => void): Promise<Packet> => {
     const entry = this.getOrAddPendingResponseEntry(reqId, resType);
     return new Promise((resolve, reject) => {
       entry.addJob(resolve, reject);
@@ -633,7 +626,6 @@ class Peer extends EventEmitter {
   }
 
   private handlePacket = async (packet: Packet): Promise<void> => {
-    this.lastRecv = Date.now();
     const sender = this.nodePubKey !== undefined ? this.nodePubKey : addressUtils.toString(this.address);
     this.logger.trace(`Received ${PacketType[packet.type]} packet from ${sender}${JSON.stringify(packet)}`);
 

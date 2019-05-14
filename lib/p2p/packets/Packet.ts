@@ -42,6 +42,12 @@ function isPacketTypeArray(val: any): val is PacketType[] {
   return val !== undefined && val instanceof Array && val.every(v => isPacketType(v));
 }
 
+/**
+ * Represents a packet of data that can be transmitted as part of the p2p xud protocol. Packets
+ * are serialized using protobuf, optionally encrypted, and transmitted to peers. Each packet
+ * represents a discrete chunk of information that either sends data to or requests data from a
+ * peer.
+ */
 abstract class Packet<T = any> implements PacketInterface {
   public abstract get type(): PacketType;
   public abstract get direction(): PacketDirection;

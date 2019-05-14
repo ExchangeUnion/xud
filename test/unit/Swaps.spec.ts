@@ -62,40 +62,52 @@ describe('Swaps', () => {
     pairId: 'LTC/BTC',
   };
 
-  it('should derive currencies for a buy order', () => {
-    const { makerCurrency, takerCurrency } = Swaps['deriveCurrencies'](buyDeal.pairId, buyDeal.isBuy);
-    expect(makerCurrency).to.equal(buyDeal.makerCurrency);
-    expect(takerCurrency).to.equal(buyDeal.takerCurrency);
-  });
-
-  it('should derive currencies for a sell order', () => {
-    const { makerCurrency, takerCurrency } = Swaps['deriveCurrencies'](sellDeal.pairId, sellDeal.isBuy);
-    expect(makerCurrency).to.equal(sellDeal.makerCurrency);
-    expect(takerCurrency).to.equal(sellDeal.takerCurrency);
-  });
-
-  it('should calculate swap amounts for a buy order', () => {
-    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+  it('should calculate swap amounts and currencies for a buy order', () => {
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps['calculateMakerTakerAmounts'](
       buyDeal.quantity!, buyDeal.price, buyDeal.isBuy, buyDeal.pairId,
     );
     expect(makerAmount).to.equal(buyDeal.makerAmount);
     expect(takerAmount).to.equal(buyDeal.takerAmount);
+    expect(makerCurrency).to.equal(buyDeal.makerCurrency);
+    expect(takerCurrency).to.equal(buyDeal.takerCurrency);
   });
 
-  it('should calculate swap amounts for a sell order', () => {
-    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+  it('should calculate swap amounts and currencies for a sell order', () => {
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps['calculateMakerTakerAmounts'](
       sellDeal.quantity!, sellDeal.price, sellDeal.isBuy, sellDeal.pairId,
     );
     expect(makerAmount).to.equal(sellDeal.makerAmount);
     expect(takerAmount).to.equal(sellDeal.takerAmount);
+    expect(makerCurrency).to.equal(sellDeal.makerCurrency);
+    expect(takerCurrency).to.equal(sellDeal.takerCurrency);
   });
 
-  it('should calculate swap amounts for a WETH buy order', () => {
-    const { makerAmount, takerAmount } = Swaps['calculateSwapAmounts'](
+  it('should calculate swap amounts and currencies for a WETH buy order', () => {
+    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps['calculateMakerTakerAmounts'](
       buyDealEth.quantity!, buyDealEth.price, buyDealEth.isBuy, buyDealEth.pairId,
     );
     expect(makerAmount).to.equal(buyDealEth.makerAmount);
     expect(takerAmount).to.equal(buyDealEth.takerAmount);
+    expect(makerCurrency).to.equal(buyDealEth.makerCurrency);
+    expect(takerCurrency).to.equal(buyDealEth.takerCurrency);
+  });
+
+  it('should calculate inbound and outbound amounts and currencies for a buy order', () => {
+    const { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount } =
+      Swaps.calculateInboundOutboundAmounts(quantity, price, true, pairId);
+    expect(inboundCurrency).to.equal('LTC');
+    expect(inboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity);
+    expect(outboundCurrency).to.equal('BTC');
+    expect(outboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity * price);
+  });
+
+  it('should calculate inbound and outbound amounts and currencies for a sell order', () => {
+    const { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount } =
+      Swaps.calculateInboundOutboundAmounts(quantity, price, false, pairId);
+    expect(inboundCurrency).to.equal('BTC');
+    expect(inboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity * price);
+    expect(outboundCurrency).to.equal('LTC');
+    expect(outboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity);
   });
 
   it(`should validate a good swap request`, () => {

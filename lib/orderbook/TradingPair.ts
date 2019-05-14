@@ -5,26 +5,27 @@ import Logger from '../Logger';
 import { isOwnOrder, Order, OwnOrder, PeerOrder, OrderMatch, MatchingResult } from './types';
 import errors from './errors';
 
+/** A map between orders and their order ids. */
 type OrderMap<T extends Order> = Map<string, T>;
 
 type OrderSidesMaps<T extends Order> = {
-  buy: OrderMap<T>,
-  sell: OrderMap<T>,
+  buyMap: OrderMap<T>,
+  sellMap: OrderMap<T>,
 };
 
 type OrderSidesArrays<T extends Order> = {
-  buy: T[],
-  sell: T[],
+  buyArray: T[],
+  sellArray: T[],
 };
 
 type OrderSidesQueues = {
-  buy: FastPriorityQueue<Order>,
-  sell: FastPriorityQueue<Order>,
+  buyQueue: FastPriorityQueue<Order>,
+  sellQueue: FastPriorityQueue<Order>,
 };
 
 /**
- * A class to represent a trading pair.
- * responsible for managing all active orders, and for matching orders according to their price and quantity.
+ * Represents a single trading pair in the order book. Responsible for managing all active orders
+ * and for matching orders according to their price and quantity.
  */
 class TradingPair {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
@@ -37,14 +38,14 @@ class TradingPair {
   constructor(private logger: Logger, public pairId: string, private nomatching = false) {
     if (!nomatching) {
       this.queues = {
-        buy: TradingPair.createPriorityQueue(OrderingDirection.Desc),
-        sell: TradingPair.createPriorityQueue(OrderingDirection.Asc),
+        buyQueue: TradingPair.createPriorityQueue(OrderingDirection.Desc),
+        sellQueue: TradingPair.createPriorityQueue(OrderingDirection.Asc),
       };
     }
 
     this.ownOrders = {
-      buy: new Map<string, OwnOrder>(),
-      sell: new Map<string, OwnOrder>(),
+      buyMap: new Map<string, OwnOrder>(),
+      sellMap: new Map<string, OwnOrder>(),
     };
 
     this.peersOrders = new Map<string, OrderSidesMaps<PeerOrder>>();
@@ -70,7 +71,7 @@ class TradingPair {
   }
 
   /**
-   * Get the matching quantity between two orders.
+   * Gets the quantity that can be matched between two orders.
    * @returns the smaller of the quantity between the two orders if their price matches, 0 otherwise
    */
   private static getMatchingQuantity = (buyOrder: Order, sellOrder: Order): number => {
@@ -96,15 +97,16 @@ class TradingPair {
   }
 
   /**
-   * Adds a peer order.
-   * @returns `false` if it's a duplicated order, otherwise `true`
+   * Adds a peer order for this trading pair.
+   * @returns `true` if the order was added, `false` if it could not be added because there
+   * already exists an order with the same order id
    */
   public addPeerOrder = (order: PeerOrder): boolean => {
     let peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
     if (!peerOrdersMaps) {
       peerOrdersMaps = {
-        buy: new Map<string, PeerOrder>(),
-        sell: new Map<string, PeerOrder>(),
+        buyMap: new Map<string, PeerOrder>(),
+        sellMap: new Map<string, PeerOrder>(),
       };
       this.peersOrders.set(order.peerPubKey, peerOrdersMaps);
     }
@@ -112,12 +114,22 @@ class TradingPair {
     return this.addOrder(order, peerOrdersMaps);
   }
 
+  /**
+   * Adds an own order for this trading pair.
+   * @returns `true` if the order was added, `false` if it could not be added because there
+   * already exists an order with the same order id
+   */
   public addOwnOrder = (order: OwnOrder): boolean => {
     return this.addOrder(order, this.ownOrders);
   }
 
+  /**
+   * Attempts to add an order for this trading pair.
+   * @returns `true` if the order was added, `false` if it could not be added because there
+   * already exists an order with the same order id
+   */
   private addOrder = (order: Order, maps: OrderSidesMaps<Order>): boolean => {
-    const map = order.isBuy ? maps.buy : maps.sell;
+    const map = order.isBuy ? maps.buyMap : maps.sellMap;
     if (map.has(order.id)) {
       return false;
     }
@@ -126,7 +138,7 @@ class TradingPair {
     this.logger.debug(`order added: ${JSON.stringify(order)}`);
 
     if (!this.nomatching) {
-      const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
+      const queue = order.isBuy ? this.queues!.buyQueue : this.queues!.sellQueue;
       queue.add(order);
     }
 
@@ -134,7 +146,7 @@ class TradingPair {
   }
 
   /**
-   * Remove all of a peer's orders.
+   * Removes all of a peer's orders.
    * @param peerPubKey the node pub key of the peer
    */
   public removePeerOrders = (peerPubKey?: string): PeerOrder[] => {
@@ -146,19 +158,19 @@ class TradingPair {
 
     if (!this.nomatching) {
       const callback = (order: Order) => (order as PeerOrder).peerPubKey === peerPubKey;
-      this.queues!.buy.removeMany(callback);
-      this.queues!.sell.removeMany(callback);
+      this.queues!.buyQueue.removeMany(callback);
+      this.queues!.sellQueue.removeMany(callback);
     }
 
     this.peersOrders.delete(peerPubKey);
-    return [...peerOrders.buy.values(), ...peerOrders.sell.values()];
+    return [...peerOrders.buyMap.values(), ...peerOrders.sellMap.values()];
   }
 
   /**
    * Removes all or part of a peer order.
    * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
    * quantity then the entire order is removed
-   * @returns the removed order or order portion, otherwise undefined if the order wasn't found
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
   public removePeerOrder = (orderId: string, peerPubKey?: string, quantityToRemove?: number): { order: PeerOrder, fullyRemoved: boolean} => {
     let peerOrdersMaps: OrderSidesMaps<PeerOrder> | undefined;
@@ -168,7 +180,7 @@ class TradingPair {
     } else {
       // if not given a peerPubKey, we must check all peer order maps for the specified orderId
       for (const orderSidesMaps of this.peersOrders.values()) {
-        if (orderSidesMaps.buy.has(orderId) || orderSidesMaps.sell.has(orderId)) {
+        if (orderSidesMaps.buyMap.has(orderId) || orderSidesMaps.sellMap.has(orderId)) {
           peerOrdersMaps = orderSidesMaps;
           break;
         }
@@ -185,16 +197,22 @@ class TradingPair {
    * Removes all or part of an own order.
    * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
    * quantity then the entire order is removed
-   * @returns true if the entire order was removed, or false if only part of the order was removed
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
    */
   public removeOwnOrder = (orderId: string, quantityToRemove?: number): { order: OwnOrder, fullyRemoved: boolean} => {
     return this.removeOrder(orderId, this.ownOrders, quantityToRemove);
   }
 
+  /**
+   * Removes all or part of an order.
+   * @param quantityToRemove the quantity to remove, if undefined or if greater than or equal to the available
+   * quantity then the entire order is removed
+   * @returns the portion of the order that was removed, and a flag indicating whether the entire order was removed
+   */
   private removeOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<Order>, quantityToRemove?: number):
     { order: T, fullyRemoved: boolean } => {
     assert(quantityToRemove === undefined || quantityToRemove > 0, 'quantityToRemove cannot be 0 or negative');
-    const order = maps.buy.get(orderId) || maps.sell.get(orderId);
+    const order = maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }
@@ -212,11 +230,11 @@ class TradingPair {
       if (isOwnOrder(order)) {
         assert(order.hold === 0, 'cannot remove an order with a hold');
       }
-      const map = order.isBuy ? maps.buy : maps.sell;
+      const map = order.isBuy ? maps.buyMap : maps.sellMap;
       map.delete(order.id);
 
       if (!this.nomatching) {
-        const queue = order.isBuy ? this.queues!.buy : this.queues!.sell;
+        const queue = order.isBuy ? this.queues!.buyQueue : this.queues!.sellQueue;
         queue.remove(order);
       }
 
@@ -227,27 +245,27 @@ class TradingPair {
 
   private getOrderMap = (order: Order): OrderMap<Order> | undefined => {
     if (isOwnOrder(order)) {
-      return order.isBuy ? this.ownOrders.buy : this.ownOrders.sell;
+      return order.isBuy ? this.ownOrders.buyMap : this.ownOrders.sellMap;
     } else {
       const peerOrdersMaps = this.peersOrders.get(order.peerPubKey);
       if (!peerOrdersMaps) return;
-      return order.isBuy ? peerOrdersMaps.buy : peerOrdersMaps.sell;
+      return order.isBuy ? peerOrdersMaps.buyMap : peerOrdersMaps.sellMap;
     }
   }
 
   private getOrders = <T extends Order>(lists: OrderSidesMaps<T>): OrderSidesArrays<T> => {
     return {
-      buy: Array.from(lists.buy.values()),
-      sell: Array.from(lists.sell.values()),
+      buyArray: Array.from(lists.buyMap.values()),
+      sellArray: Array.from(lists.sellMap.values()),
     };
   }
 
   public getPeersOrders = (): OrderSidesArrays<PeerOrder> => {
-    const res: OrderSidesArrays<PeerOrder> = { buy: [], sell: [] };
+    const res: OrderSidesArrays<PeerOrder> = { buyArray: [], sellArray: [] };
     this.peersOrders.forEach((peerOrders) => {
       const peerOrdersArrs = this.getOrders(peerOrders);
-      res.buy = res.buy.concat(peerOrdersArrs.buy);
-      res.sell = res.sell.concat(peerOrdersArrs.sell);
+      res.buyArray = res.buyArray.concat(peerOrdersArrs.buyArray);
+      res.sellArray = res.sellArray.concat(peerOrdersArrs.sellArray);
     });
 
     return res;
@@ -281,7 +299,7 @@ class TradingPair {
   }
 
   private getOrder = <T extends Order>(orderId: string, maps: OrderSidesMaps<T>): T | undefined => {
-    return maps.buy.get(orderId) || maps.sell.get(orderId);
+    return maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
   }
 
   public addOrderHold = (orderId: string, holdAmount: number) => {
@@ -301,7 +319,7 @@ class TradingPair {
   }
 
   /**
-   * Match an order against its opposite queue. Matched maker orders will be removed from the repository
+   * Matches an order against its opposite queue. Matched maker orders are removed immediately.
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order
    */
   public match = (takerOrder: OwnOrder): MatchingResult => {
@@ -311,7 +329,7 @@ class TradingPair {
     /** The unmatched remaining taker order, if there is still leftover quantity after matching is complete it will enter the queue. */
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 
-    const queue = takerOrder.isBuy ? this.queues!.sell : this.queues!.buy;
+    const queue = takerOrder.isBuy ? this.queues!.sellQueue : this.queues!.buyQueue;
     const queueRemovedOrdersWithHold: OwnOrder[] = [];
     const getMatchingQuantity = (remainingOrder: OwnOrder, oppositeOrder: Order) => takerOrder.isBuy
       ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)

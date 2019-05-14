@@ -169,7 +169,10 @@ class Parser extends EventEmitter {
         packetOrPbObj = packetTypes.NodesPacket.deserialize(payload);
         break;
       case PacketType.SanitySwap:
-        packetOrPbObj = packetTypes.SanitySwapPacket.deserialize(payload);
+        packetOrPbObj = packetTypes.SanitySwapInitPacket.deserialize(payload);
+        break;
+      case PacketType.SanitySwapAck:
+        packetOrPbObj = packetTypes.SanitySwapAckPacket.deserialize(payload);
         break;
       case PacketType.SwapRequest:
         packetOrPbObj = packetTypes.SwapRequestPacket.deserialize(payload);

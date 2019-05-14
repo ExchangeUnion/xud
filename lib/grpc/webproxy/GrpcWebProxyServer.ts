@@ -6,7 +6,7 @@ import grpcGateway from '@exchangeunion/grpc-dynamic-gateway';
 import express from 'express';
 import swaggerUi from 'swagger-ui-express';
 import grpc from 'grpc';
-import { readFile } from '../../utils/fsUtils';
+import { promises as fs } from 'fs';
 
 const swaggerDocument = require('../../proto/xudrpc.swagger.json');
 
@@ -31,7 +31,7 @@ class GrpcWebProxyServer {
     const gateway = grpcGateway(
       ['xudrpc.proto'],
       `${grpcHost}:${grpcPort}`,
-      grpc.credentials.createSsl(await readFile(tlsCertPath)),
+      grpc.credentials.createSsl(await fs.readFile(tlsCertPath)),
       protoPath,
     );
     this.app.use('/api/', gateway);

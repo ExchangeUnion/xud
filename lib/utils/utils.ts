@@ -199,3 +199,11 @@ export const generatePreimageAndHash = async () => {
   const rHash = createHash('sha256').update(bytes).digest('hex');
   return { rPreimage, rHash };
 };
+
+export const base64ToHex = (b64: string) => {
+  return Buffer.from(b64, 'base64').toString('hex');
+};
+
+export const hexToUint8Array = (hex: string) => {
+  return Uint8Array.from(Buffer.from(hex, 'hex'));
+};

@@ -11,7 +11,7 @@
   "scripts": {
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "config": "gulp config.create",
-    "compile": "cross-os precompile && tsc && cross-os postcompile",
+    "compile": "tsc && cross-os postcompile",
     "compile:watch": "tsc -w",
     "dev": "npm run compile && npm start",
     "dev:watch": "concurrently --kill-others \"npm run compile:watch\" \"npm run nodemon:watch\"",
@@ -32,7 +32,7 @@
     "test:p2p": "mocha -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha -r ts-node/register test/crypto/*",
-    "test:sim": "(cd test/simulation && GO111MODULE=on go test -v)",
+    "test:sim": "(npm run compile && cd test/simulation && GO111MODULE=on go test -v)",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
     "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
@@ -43,11 +43,6 @@
       "darwin": "rsync -am --include '*/' --include '*.js*' --exclude '*' lib/proto/ dist/proto",
       "win32": "xcopy /s lib\\proto\\*.js* dist\\proto\\* >nul"
     },
-    "precompile": {
-      "linux": "rm -rf ./dist",
-      "darwin": "rm -rf ./dist",
-      "win32": "rd /q /s dist || cd ."
-    },
     "protoFixDeprecation": {
       "linux": "sed -i -- 's/new Buffer(/Buffer.from(/g' lib/proto/*.js",
       "darwin": "sed -i '' 's/new Buffer(/Buffer.from(/g' lib/proto/*.js",
@@ -56,7 +51,7 @@
     "proto": {
       "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
       "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\xudp2p.proto proto\\hash_resolver.proto proto\\lndrpc.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\xudp2p.proto proto\\lndrpc.proto proto\\lndinvoices.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
     },
     "swagger": {
       "linux": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
@@ -175,8 +170,8 @@
     "tslint": "^5.11.0",
     "tslint-config-airbnb": "^5.10.0",
     "tslint-no-circular-imports": "^0.5.0",
-    "typedoc": "^0.13.0",
-    "typescript": "^3.1.6"
+    "typedoc": "^0.14.2",
+    "typescript": "^3.4.5"
   },
   "engines": {
     "node": ">=10.2.0"

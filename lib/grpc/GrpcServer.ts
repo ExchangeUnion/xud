@@ -7,8 +7,7 @@ import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
-import { HashResolverService } from '../proto/lndrpc_grpc_pb';
-import { exists, readFile, writeFile } from '../utils/fsUtils';
+import { promises as fs } from 'fs';
 import serverProxy from './serverProxy';
 
 class GrpcServer {
@@ -45,10 +44,6 @@ class GrpcServer {
       subscribeSwaps: grpcService.subscribeSwaps,
     });
 
-    this.server.addService(HashResolverService, {
-      resolveHash: grpcService.resolveHash,
-    });
-
     this.grpcService = grpcService;
 
     this.server.use((ctx: any, next: any) => {
@@ -67,14 +62,15 @@ class GrpcServer {
     let certificate: Buffer;
     let privateKey: Buffer;
 
-    if (!(await exists(tlsCertPath)) || !(await exists(tlsKeyPath))) {
-      this.logger.debug('Could not find gRPC TLS certificate. Generating new one');
+    try {
+      [certificate, privateKey] = await Promise.all([fs.readFile(tlsCertPath), fs.readFile(tlsKeyPath)]);
+    } catch (err) {
+      this.logger.debug('Could not load gRPC TLS certificate. Generating new one');
       const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
+      this.logger.debug('gRPC TLS certificate created');
 
       certificate = Buffer.from(tlsCert);
       privateKey = Buffer.from(tlsKey);
-    } else {
-      [certificate, privateKey] = await Promise.all([readFile(tlsCertPath), readFile(tlsKeyPath)]);
     }
 
     // tslint:disable-next-line:no-null-keyword
@@ -161,7 +157,7 @@ class GrpcServer {
     const certificate = pki.certificateToPem(cert);
     const privateKey = pki.privateKeyToPem(keys.privateKey);
 
-    await Promise.all([writeFile(tlsCertPath, certificate), writeFile(tlsKeyPath, privateKey)]);
+    await Promise.all([fs.writeFile(tlsCertPath, certificate), fs.writeFile(tlsKeyPath, privateKey)]);
     return {
       tlsCert: certificate,
       tlsKey: privateKey,

@@ -1,7 +1,7 @@
-import Logger from './Logger';
+import Logger from '../Logger';
 import { EventEmitter } from 'events';
-import { SwapDeal, Route } from './swaps/types';
-import { SwapClient } from './constants/enums';
+import { SwapDeal, Route } from './types';
+import { SwapClientType } from '../constants/enums';
 
 enum ClientStatus {
   NotInitialized,
@@ -16,17 +16,19 @@ type ChannelBalance = {
   pendingOpenBalance: number,
 };
 
-interface BaseClient {
+interface SwapClient {
   on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
   emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+  emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
 }
 
 /**
  * A base class to represent an external swap client such as lnd or Raiden.
  */
-abstract class BaseClient extends EventEmitter {
+abstract class SwapClient extends EventEmitter {
   public abstract readonly cltvDelta: number;
-  public abstract readonly type: SwapClient;
+  public abstract readonly type: SwapClientType;
   public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
@@ -56,7 +58,7 @@ abstract class BaseClient extends EventEmitter {
     if (this.status === ClientStatus.ConnectionVerified) {
       if (!this.updateCapacityTimer) {
         await this.updateCapacity();
-        this.updateCapacityTimer = setInterval(this.updateCapacity, BaseClient.CAPACITY_REFRESH_INTERVAL);
+        this.updateCapacityTimer = setInterval(this.updateCapacity, SwapClient.CAPACITY_REFRESH_INTERVAL);
       }
 
       if (this.reconnectionTimer) {
@@ -70,7 +72,7 @@ abstract class BaseClient extends EventEmitter {
       }
       if (this.status !== ClientStatus.Disabled) {
         if (!this.reconnectionTimer) {
-          this.reconnectionTimer = setTimeout(this.verifyConnection, BaseClient.RECONNECT_TIMER);
+          this.reconnectionTimer = setTimeout(this.verifyConnection, SwapClient.RECONNECT_TIMER);
         } else {
           this.reconnectionTimer.refresh();
         }
@@ -114,6 +116,12 @@ abstract class BaseClient extends EventEmitter {
    */
   public abstract async getRoutes(amount: number, destination: string): Promise<Route[]>;
 
+  public abstract async addInvoice(rHash: string, amount: number): Promise<void>;
+
+  public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
+
+  public abstract async removeInvoice(rHash: string): Promise<void>;
+
   /**
    * Gets the block height of the chain backing this swap client.
    */
@@ -142,5 +150,5 @@ abstract class BaseClient extends EventEmitter {
   protected abstract closeSpecific(): void;
 }
 
-export default BaseClient;
+export default SwapClient;
 export { ClientStatus, ChannelBalance };

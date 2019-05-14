@@ -108,8 +108,6 @@ type nodeConfig struct {
 	P2PPort  int
 	RPCPort  int
 	RESTPort int
-
-	resolverCfg *HashResolverConfig
 }
 
 func (cfg nodeConfig) P2PAddr() string {
@@ -126,12 +124,6 @@ func (cfg nodeConfig) RESTAddr() string {
 
 func (cfg nodeConfig) DBPath() string {
 	return filepath.Join(cfg.DataDir, "graph", "simnet/channel.db")
-}
-
-type HashResolverConfig struct {
-	ServerAddr string
-	TLS        bool
-	CaFile     string
 }
 
 // genArgs generates a slice of command line arguments from the lightning node
@@ -172,13 +164,6 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--invoicemacaroonpath=%v", cfg.InvoiceMacPath))
 	args = append(args, fmt.Sprintf("--externalip=%s", cfg.P2PAddr()))
 	args = append(args, fmt.Sprintf("--trickledelay=%v", trickleDelay))
-
-	args = append(args, "--resolver.active")
-	args = append(args, fmt.Sprintf("--resolver.serveraddr=%v", cfg.resolverCfg.ServerAddr))
-	if cfg.resolverCfg.TLS {
-		args = append(args, "--resolver.TLS")
-		args = append(args, fmt.Sprintf("--resolver.cafile=%v", cfg.resolverCfg.CaFile))
-	}
 
 	if !cfg.HasSeed {
 		args = append(args, "--noseedbackup")
@@ -310,8 +295,8 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 						hex.EncodeToString(hn.PubKey[:logPubKeyBytes]))
 					err := os.Rename(fileName, newFileName)
 					if err != nil {
-						fmt.Errorf("could not rename %s to %s: %v",
-							fileName, newFileName, err)
+						fmt.Println(fmt.Errorf("could not rename %s to %s: %v",
+							fileName, newFileName, err))
 					}
 				}
 			}
@@ -487,7 +472,7 @@ func (hn *HarnessNode) writePidFile() error {
 	return nil
 }
 
-// connectRPC uses the TLS certificate and admin macaroon files written by the
+// ConnectRPC uses the TLS certificate and admin macaroon files written by the
 // lnd node to create a gRPC client connection.
 func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 	// Wait until TLS certificate and admin macaroon are created before

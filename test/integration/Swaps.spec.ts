@@ -8,7 +8,7 @@ import Logger, { Level } from '../../lib/Logger';
 import DB from '../../lib/db/DB';
 import { waitForSpy } from '../utils';
 import { SwapFailureReason } from '../../lib/constants/enums';
-import BaseClient from '../../lib/BaseClient';
+import SwapClient from '../../lib/swaps/SwapClient';
 
 chai.use(chaiAsPromised);
 
@@ -89,7 +89,7 @@ describe('Swaps.Integration', () => {
   let db: DB;
   let pool: Pool;
   let swaps: Swaps;
-  const swapClients = new Map<string, BaseClient>();
+  const swapClients = new Map<string, SwapClient>();
   let peer: Peer;
   let sandbox: SinonSandbox;
   let getRoutesResponse;
@@ -120,15 +120,17 @@ describe('Swaps.Integration', () => {
       } as any);
     };
     // lnd btc
-    const btcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    const btcSwapClient = sandbox.createStubInstance(SwapClient) as any;
     btcSwapClient.getRoutes = getRoutesResponse;
     btcSwapClient.isConnected = () => true;
     swapClients.set('BTC', btcSwapClient);
     // lnd ltc
-    const ltcSwapClient = sandbox.createStubInstance(BaseClient) as any;
+    const ltcSwapClient = sandbox.createStubInstance(SwapClient) as any;
     ltcSwapClient.isConnected = () => true;
     ltcSwapClient.getRoutes = getRoutesResponse;
     swapClients.set('LTC', ltcSwapClient);
+    btcSwapClient['removeInvoice'] = async () => {};
+    ltcSwapClient['removeInvoice'] = async () => {};
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClients);
   });
 
