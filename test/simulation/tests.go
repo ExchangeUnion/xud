@@ -29,9 +29,12 @@ func testNetworkInit(net *xudtest.NetworkHarness, ht *harnessTest) {
 		ht.assert.NotNil(res.Lnd["BTC"])
 		ht.assert.NotNil(res.Lnd["LTC"])
 		ht.assert.Len(res.Lnd["BTC"].Chains, 1)
-		ht.assert.Equal(res.Lnd["BTC"].Chains[0], "bitcoin")
+		ht.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
+		ht.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
 		ht.assert.Len(res.Lnd["LTC"].Chains, 1)
-		ht.assert.Equal(res.Lnd["LTC"].Chains[0], "litecoin")
+		ht.assert.Equal(res.Lnd["LTC"].Chains[0].Chain, "litecoin")
+		ht.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
+
 
 		// Set the node public key.
 		node.SetPubKey(res.NodePubKey)
@@ -159,7 +162,7 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 
 	req := &xudrpc.PlaceOrderRequest{
 		Price:    0.02,
-		Quantity: 10000000,
+		Quantity: 1000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,
@@ -181,7 +184,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	req := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    0.02,
-		Quantity: 10000000,
+		Quantity: 1000000,
 		PairId:   "LTC/BTC",
 		Side:     xudrpc.OrderSide_BUY,
 	}

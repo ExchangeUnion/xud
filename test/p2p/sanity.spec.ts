@@ -16,6 +16,7 @@ export const createConfig = (instanceid: number, p2pPort: number, network = XuNe
   loglevel: 'error',
   logpath: '',
   p2p: {
+    listen: [`0.0.0.0:${p2pPort}`],
     nolisten: false,
     port: p2pPort,
     addresses: [`localhost:${p2pPort}`],
@@ -49,8 +50,8 @@ describe('P2P Sanity Tests', () => {
   let unusedPort: number;
 
   before(async () => {
-    nodeOneConfig = createConfig(1, 0);
-    nodeTwoConfig = createConfig(2, 0);
+    nodeOneConfig = createConfig(1, 8855);
+    nodeTwoConfig = createConfig(2, 8856);
 
     nodeOne = new Xud();
     nodeTwo = new Xud();

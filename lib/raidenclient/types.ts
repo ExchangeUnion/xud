@@ -16,7 +16,7 @@ export type RaidenInfo = {
 };
 
 /**
- * The payload for the [[openChannel]] call.
+ * The payload for the openChannel call.
  */
 export type OpenChannelPayload = {
   partner_address: string;
@@ -58,4 +58,25 @@ export type TokenPaymentRequest = {
   amount: number,
   secret_hash: string,
   identifier?: number,
+};
+
+export type RaidenResolveRequest = {
+  /** The token address for the resolve request in hex. */
+  token: string;
+  /** The payment hash in hex. */
+  secret_hash: string;
+  /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
+  amount: number;
+  // unused fields on the raiden request listed below, taken from raiden codebase
+  // 'payment_identifier': secret_request_event.payment_identifier,
+  // 'payment_sender': to_hex(secret_request_event.recipient),
+  // 'expiration': secret_request_event.expiration,
+  // 'payment_recipient': to_hex(raiden.address),
+  // 'reveal_timeout': raiden.config['reveal_timeout'],
+  // 'settle_timeout': raiden.config['settle_timeout'],
+};
+
+export type RaidenResolveResponse = {
+  /** The preimage in hex format. */
+  secret: string,
 };

@@ -304,14 +304,14 @@ describe('Parser', () => {
     testValidPacket(new packets.OrdersPacket([], uuid()));
     testInvalidPacket(new packets.OrdersPacket(ordersPacketBody));
 
-    const sanitySwapPacketBody = {
+    const sanitySwapInitPacketBody = {
       rHash,
       currency: 'BTC',
     };
-    testValidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody));
-    testInvalidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody, uuid()));
-    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, currency: undefined })));
-    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, rHash: undefined })));
+    testValidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody));
+    testInvalidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody, uuid()));
+    testInvalidPacket(new packets.SanitySwapInitPacket(removeUndefinedProps({ ...sanitySwapInitPacketBody, currency: undefined })));
+    testInvalidPacket(new packets.SanitySwapInitPacket(removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined })));
 
     const swapRequestPacketBody = {
       rHash,

@@ -1,7 +1,6 @@
 import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import * as pb from '../../../proto/xudp2p_pb';
-import PingPacket from './PingPacket';
 
 class PongPacket extends Packet<undefined> {
   public get type(): PacketType {

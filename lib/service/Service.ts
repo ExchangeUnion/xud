@@ -1,18 +1,17 @@
-import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import LndClient, { LndInfo } from '../lndclient/LndClient';
-import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
+import RaidenClient from '../raidenclient/RaidenClient';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClient, OrderSide, SwapRole } from '../constants/enums';
+import { SwapClientType, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
-import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
+import { RaidenInfo } from '../raidenclient/types';
 
 /**
  * The components required by the API service layer.
@@ -48,6 +47,8 @@ const argChecks = {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
+  HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
+  POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
   POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
@@ -59,7 +60,7 @@ const argChecks = {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
-    if (!SwapClient[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+    if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
 };
 
@@ -74,7 +75,7 @@ class Service extends EventEmitter {
   private swaps: Swaps;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private logger: Logger, components: ServiceComponents) {
+  constructor(components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
@@ -88,7 +89,7 @@ class Service extends EventEmitter {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClient | number, decimalPlaces: number, tokenAddress?: string}) => {
+  public addCurrency = async (args: { currency: string, swapClient: SwapClientType | number, decimalPlaces: number, tokenAddress?: string}) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
@@ -313,7 +314,6 @@ class Service extends EventEmitter {
    * @returns A list of supported currency ticker symbols
    */
   public listCurrencies = () => {
-    const pairs = new Map<string, Pair>();
     return Array.from(this.orderBook.currencies);
   }
 
@@ -423,10 +423,12 @@ class Service extends EventEmitter {
   }
 
   /**
-   * resolveHash resolve hash to preimage.
+   * Resolves a hash to its preimage.
    */
-  public resolveHash = async (request: lndrpc.ResolveRequest) => {
-    return this.swaps.resolveHash(request);
+  public resolveHash = async (request: ResolveRequest) => {
+    argChecks.HAS_RHASH(request);
+    argChecks.POSITIVE_AMOUNT(request);
+    return this.swaps.handleResolveRequest(request);
   }
 }
 export default Service;

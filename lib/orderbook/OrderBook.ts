@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -85,7 +85,7 @@ class OrderBook extends EventEmitter {
     private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
-    this.repository = new OrderBookRepository(logger, models);
+    this.repository = new OrderBookRepository(models);
 
     this.bindPool();
     this.bindSwaps();
@@ -239,7 +239,7 @@ class OrderBook extends EventEmitter {
     if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
-    if (currency.swapClient === SwapClient.Raiden && !currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Raiden && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });

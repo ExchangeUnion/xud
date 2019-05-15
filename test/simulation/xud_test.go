@@ -24,7 +24,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var testsCases = []*testCase{
+var testCases = []*testCase{
 	{
 		name: "network initialization",
 		test: testNetworkInit,
@@ -90,7 +90,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 
 				if strings.Contains(xudError.Err.Error(), "signal: killed") {
 					t.Logf("xud process (%v-%v) did not shutdown gracefully. process (%v) killed",
-						xudError.Node.Id, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
+						xudError.Node.ID, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
 
 				} else {
 					t.Logf("xud process finished with error:\n%v", xudError)
@@ -101,14 +101,6 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	if err := xudHarness.SetUp(); err != nil {
 		ht.Fatalf("cannot set up xud network: %v", err)
 	}
-
-	// Prepare the hash resolver config from the initialized
-	// XUD nodes, to be passed to LND.
-	resolverConfigs := make(map[string]*lntest.HashResolverConfig)
-	resolverConfigs["Alice"] = getHashResolverConfig(xudHarness.Alice)
-	resolverConfigs["Bob"] = getHashResolverConfig(xudHarness.Bob)
-	resolverConfigs["Carol"] = getHashResolverConfig(xudHarness.Carol)
-	resolverConfigs["Dave"] = getHashResolverConfig(xudHarness.Dave)
 
 	// Create LND-LTC network instance to gain access to the backend
 	// 'OnTxAccepted' call back.
@@ -171,7 +163,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 		}
 	}()
 	t.Logf("lnd-ltc: launching network...")
-	if err = lndLtcNetworkHarness.SetUp(nil, resolverConfigs); err != nil {
+	if err = lndLtcNetworkHarness.SetUp(nil); err != nil {
 		ht.Fatalf("lnd-ltc: unable to set up test network: %v", err)
 	}
 
@@ -239,7 +231,7 @@ func TestExchangeUnionDaemon(t *testing.T) {
 		}
 	}()
 	t.Logf("lnd-btc: launching network...")
-	if err = lndBtcNetworkHarness.SetUp(nil, resolverConfigs); err != nil {
+	if err = lndBtcNetworkHarness.SetUp(nil); err != nil {
 		ht.Fatalf("lnd-btc: unable to set up test network: %v", err)
 	}
 
@@ -253,12 +245,13 @@ func TestExchangeUnionDaemon(t *testing.T) {
 
 	// ------------------------ Run tests ------------------------- //
 
-	t.Logf("Running %v integration tests", len(testsCases))
+	t.Logf("Running %v integration tests", len(testCases))
 
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
-	for i, testCase := range testsCases {
+	for i, testCase := range testCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, _ := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+			defer cancel()
 			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudHarness)
 		})
@@ -298,16 +291,8 @@ func TestExchangeUnionDaemon(t *testing.T) {
 	}
 }
 
-func getHashResolverConfig(node *xudtest.HarnessNode) *lntest.HashResolverConfig {
-	return &lntest.HashResolverConfig{
-		ServerAddr: node.Cfg.RPCAddr(),
-		TLS:        true,
-		CaFile:     node.Cfg.TLSCertPath,
-	}
-}
-
 func installDeps() (string, error) {
-	cmd := exec.Command("sh", "./install.sh")
+	cmd := exec.Command("./install.sh")
 
 	data, err := cmd.Output()
 	if err != nil {
