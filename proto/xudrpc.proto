@@ -259,6 +259,13 @@ message BanRequest {
 }
 message BanResponse {}
 
+message Chain {
+    // The blockchain the swap client is on (eg bitcoin, litecoin)
+    string chain = 1 [json_name = "chain"];
+    // The network the swap client is on (eg regtest, testnet, mainnet)
+    string network = 2 [json_name = "network"];
+}
+
 message ChannelBalance {
   // Sum of channels balances denominated in satoshis or equivalent.
   int64 balance = 1 [json_name = "balance"];
@@ -380,7 +387,7 @@ message LndChannels {
 message LndInfo {
   string error = 1 [json_name = "error"];
   LndChannels channels = 2 [json_name = "channels"];
-  repeated string chains = 3 [json_name = "chains"];
+  repeated Chain chains = 3 [json_name = "chains"];
   int32 blockheight = 4 [json_name = "blockheight"];
   repeated string uris = 5 [json_name = "uris"];
   string version = 6 [json_name = "version"];

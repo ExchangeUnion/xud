@@ -4,7 +4,7 @@ import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
-import BaseClient from './BaseClient';
+import SwapClient from './swaps/SwapClient';
 import LndClient from './lndclient/LndClient';
 import RaidenClient from './raidenclient/RaidenClient';
 import GrpcServer from './grpc/GrpcServer';
@@ -14,6 +14,7 @@ import NodeKey from './nodekey/NodeKey';
 import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
+import HttpServer from './http/HttpServer';
 
 const version: string = require('../package.json').version;
 
@@ -35,6 +36,7 @@ class Xud extends EventEmitter {
   private pool!: Pool;
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
+  private httpServer?: HttpServer;
   private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
@@ -75,7 +77,7 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
-      const swapClients = new Map<string, BaseClient>();
+      const swapClients = new Map<string, SwapClient>();
       // setup LND clients and initialize
       for (const currency in this.config.lnd) {
         const lndConfig = this.config.lnd[currency]!;
@@ -123,7 +125,7 @@ class Xud extends EventEmitter {
         raidenAddress: this.raidenClient.address,
       }, this.nodeKey);
 
-      this.service = new Service(loggers.global, {
+      this.service = new Service({
         version,
         orderBook: this.orderBook,
         lndClients: this.lndClients,
@@ -132,6 +134,11 @@ class Xud extends EventEmitter {
         swaps: this.swaps,
         shutdown: this.beginShutdown,
       });
+
+      if (!this.raidenClient.isDisabled()) {
+        this.httpServer = new HttpServer(loggers.http, this.service);
+        await this.httpServer.listen(this.config.http.port);
+      }
 
       // start rpc server last
       if (!this.config.rpc.disable) {
@@ -203,9 +210,13 @@ class Xud extends EventEmitter {
     if (!this.raidenClient.isDisabled()) {
       this.raidenClient.close();
     }
+
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
+    if (this.httpServer) {
+      closePromises.push(this.httpServer.close());
+    }
     if (this.pool) {
       closePromises.push(this.pool.disconnect());
     }

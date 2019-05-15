@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import CryptoJS from 'crypto-js';
 import secp256k1 from 'secp256k1';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import { expect } from 'chai';

@@ -499,7 +499,7 @@ export namespace NodesPacket {
     }
 }
 
-export class SanitySwapPacket extends jspb.Message { 
+export class SanitySwapInitPacket extends jspb.Message { 
     getId(): string;
     setId(value: string): void;
 
@@ -511,20 +511,45 @@ export class SanitySwapPacket extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SanitySwapPacket.AsObject;
-    static toObject(includeInstance: boolean, msg: SanitySwapPacket): SanitySwapPacket.AsObject;
+    toObject(includeInstance?: boolean): SanitySwapInitPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SanitySwapInitPacket): SanitySwapInitPacket.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SanitySwapPacket, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SanitySwapPacket;
-    static deserializeBinaryFromReader(message: SanitySwapPacket, reader: jspb.BinaryReader): SanitySwapPacket;
+    static serializeBinaryToWriter(message: SanitySwapInitPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SanitySwapInitPacket;
+    static deserializeBinaryFromReader(message: SanitySwapInitPacket, reader: jspb.BinaryReader): SanitySwapInitPacket;
 }
 
-export namespace SanitySwapPacket {
+export namespace SanitySwapInitPacket {
     export type AsObject = {
         id: string,
         currency: string,
         rHash: string,
+    }
+}
+
+export class SanitySwapAckPacket extends jspb.Message { 
+    getId(): string;
+    setId(value: string): void;
+
+    getReqId(): string;
+    setReqId(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SanitySwapAckPacket.AsObject;
+    static toObject(includeInstance: boolean, msg: SanitySwapAckPacket): SanitySwapAckPacket.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SanitySwapAckPacket, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SanitySwapAckPacket;
+    static deserializeBinaryFromReader(message: SanitySwapAckPacket, reader: jspb.BinaryReader): SanitySwapAckPacket;
+}
+
+export namespace SanitySwapAckPacket {
+    export type AsObject = {
+        id: string,
+        reqId: string,
     }
 }
 

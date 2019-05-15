@@ -1,7 +1,7 @@
 import CryptoJS from 'crypto-js';
 import secp256k1 from 'secp256k1';
 import { randomBytes } from '../utils/utils';
-import { exists, readFile, writeFile } from '../utils/fsUtils';
+import { promises as fs } from 'fs';
 
 /**
  * A class representing an ECDSA public/private key pair that identifies an XU node on the network
@@ -41,26 +41,24 @@ class NodeKey {
    * @param password an optional password to decrypt the file
    * @returns a NodeKey if a file containing a valid ECDSA private key exists at the given path
    */
-  private static fromFile = (path: string, password?: string): Promise<NodeKey> => {
-    return new Promise(async (resolve, reject) => {
-      let buf = await readFile(path);
+  private static fromFile = async (path: string, password?: string): Promise<NodeKey> => {
+    let buf = await fs.readFile(path);
 
-      if (password) {
-        const encryptedString = buf.toString('utf8');
-        const decryptedString = CryptoJS.AES.decrypt(encryptedString, password).toString(CryptoJS.enc.Hex);
-        buf = Buffer.from(decryptedString, 'hex');
-      }
+    if (password) {
+      const encryptedString = buf.toString('utf8');
+      const decryptedString = CryptoJS.AES.decrypt(encryptedString, password).toString(CryptoJS.enc.Hex);
+      buf = Buffer.from(decryptedString, 'hex');
+    }
 
-      if (secp256k1.privateKeyVerify(buf)) {
-        resolve(new NodeKey(buf));
-      } else {
-        reject(new Error(`${path} does not contain a valid ECDSA private key`));
-      }
-    });
+    if (secp256k1.privateKeyVerify(buf)) {
+      return new NodeKey(buf);
+    } else {
+      throw new Error(`${path} does not contain a valid ECDSA private key`);
+    }
   }
 
   /**
-   * Loads a node key from a file or create one if none exists. See [[fromFile]] and [[generate]].
+   * Loads a node key from a file or creates one if none exists. See [[fromFile]] and [[generate]].
    */
   public static load = async (xudir: string, instanceId = 0): Promise<NodeKey> => {
     const path: string = instanceId > 0
@@ -68,11 +66,16 @@ class NodeKey {
       : `${xudir}/nodekey.dat`;
 
     let nodeKey: NodeKey;
-    if (await exists(path)) {
+    try {
       nodeKey = await NodeKey.fromFile(path);
-    } else {
-      nodeKey = await NodeKey.generate();
-      await nodeKey.toFile(path);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        // node key file does not exist, so create one
+        nodeKey = await NodeKey.generate();
+        await nodeKey.toFile(path);
+      } else {
+        throw err;
+      }
     }
     return nodeKey;
   }
@@ -99,7 +102,7 @@ class NodeKey {
     } else {
       buf = this.privKey;
     }
-    return writeFile(path, buf);
+    return fs.writeFile(path, buf);
   }
 }
 

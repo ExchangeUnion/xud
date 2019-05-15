@@ -21,9 +21,9 @@ import (
 )
 
 var (
-	numActiveNodes int32 = 0
-	baseP2pPort          = 40000
-	baseRpcPort          = 30000
+	numActiveNodes int32
+	baseP2PPort    = 40000
+	baseRPCPort    = 30000
 )
 
 type nodeConfig struct {
@@ -52,11 +52,13 @@ func (cfg nodeConfig) genArgs() []string {
 
 	args = append(args, "--initdb=false")
 	args = append(args, "--loglevel=debug")
-	args = append(args, "--raiden.disable")
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
-	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))
+
 	args = append(args, fmt.Sprintf("--rpc.port=%v", cfg.RPCPort))
+
+	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))
+	args = append(args, fmt.Sprintf("--p2p.addresses=%v", cfg.P2PAddr()))
 
 	args = append(args, fmt.Sprintf("--lnd.BTC.host=%v", cfg.LndBtcHost))
 	args = append(args, fmt.Sprintf("--lnd.BTC.port=%v", cfg.LndBtcPort))
@@ -67,6 +69,8 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.port=%v", cfg.LndLtcPort))
 	args = append(args, fmt.Sprintf("--lnd.LTC.certpath=%v", cfg.LndLtcCertPath))
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
+
+	args = append(args, "--raiden.disable")
 
 	return args
 }
@@ -79,7 +83,7 @@ type HarnessNode struct {
 	Cmd *exec.Cmd
 
 	Name   string
-	Id     int
+	ID     int
 	pubKey string
 
 	LndBtcNode *lntest.HarnessNode
@@ -103,7 +107,7 @@ func (cfg nodeConfig) P2PAddr() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(cfg.P2PPort))
 }
 
-func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.HarnessNode) (*HarnessNode, error) {
+func newNode(name string) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
 	dataDir, err := filepath.Abs("./xuddatadir-" + name)
@@ -117,33 +121,41 @@ func newNode(name string, lndBtcNode *lntest.HarnessNode, lndLtcNode *lntest.Har
 	}
 
 	cfg := nodeConfig{
-		DataDir:        dataDir,
-		XUDPath:        xudPath,
-		LndBtcHost:     "127.0.0.1",
-		LndBtcPort:     lndBtcNode.Cfg.RPCPort,
-		LndBtcCertPath: lndBtcNode.Cfg.TLSCertPath,
-		LndBtcMacPath:  lndBtcNode.Cfg.AdminMacPath,
-		LndLtcHost:     "127.0.0.1",
-		LndLtcPort:     lndLtcNode.Cfg.RPCPort,
-		LndLtcCertPath: lndLtcNode.Cfg.TLSCertPath,
-		LndLtcMacPath:  lndLtcNode.Cfg.AdminMacPath,
+		DataDir: dataDir,
+		XUDPath: xudPath,
 	}
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort = baseP2pPort + nodeNum
-	cfg.RPCPort = baseRpcPort + nodeNum
+	cfg.P2PPort = baseP2PPort + nodeNum
+	cfg.RPCPort = baseRPCPort + nodeNum
 
 	return &HarnessNode{
-		Cfg:        &cfg,
-		Name:       name,
-		Id:         nodeNum,
-		LndBtcNode: lndBtcNode,
-		LndLtcNode: lndLtcNode,
+		Cfg:  &cfg,
+		Name: name,
+		ID:   nodeNum,
 	}, nil
 }
 
+// SetLnd sets the lnd configuration for a specified chain.
+func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
+	switch chain {
+	case "BTC":
+		hn.Cfg.LndBtcHost = "127.0.0.1"
+		hn.Cfg.LndBtcPort = lndNode.Cfg.RPCPort
+		hn.Cfg.LndBtcCertPath = lndNode.Cfg.TLSCertPath
+		hn.Cfg.LndBtcMacPath = lndNode.Cfg.AdminMacPath
+		hn.LndBtcNode = lndNode
+	case "LTC":
+		hn.Cfg.LndLtcHost = "127.0.0.1"
+		hn.Cfg.LndLtcPort = lndNode.Cfg.RPCPort
+		hn.Cfg.LndLtcCertPath = lndNode.Cfg.TLSCertPath
+		hn.Cfg.LndLtcMacPath = lndNode.Cfg.AdminMacPath
+		hn.LndLtcNode = lndNode
+	}
+}
+
 // Start launches a new running process of xud.
-func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
+func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 	hn.quit = make(chan struct{})
 
 	args := hn.Cfg.genArgs()
@@ -170,7 +182,7 @@ func (hn *HarnessNode) start(errorChan chan<- *xudError) error {
 
 		err := hn.Cmd.Wait()
 		if err != nil {
-			errorChan <- &xudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
+			errorChan <- &XudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
 		}
 
 		// Signal any onlookers that this process has exited.
@@ -200,8 +212,8 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 		select {
 		case <-tlsTimeout:
 			return nil, fmt.Errorf("timeout waiting for TLS cert "+
-				"file to be created after 30 seconds: %v", hn.Cfg.TLSCertPath)
-		case <-time.After(100 * time.Millisecond):
+				"file to be created after 20 seconds: %v", hn.Cfg.TLSCertPath)
+		case <-time.After(1 * time.Second):
 		}
 	}
 
@@ -271,12 +283,19 @@ func (hn *HarnessNode) cleanup() error {
 	return os.RemoveAll(hn.Cfg.DataDir)
 }
 
+// PubKey returns the pubkey for this node.
 func (hn *HarnessNode) PubKey() string {
 	return hn.pubKey
 }
 
+// SetPubKey sets the pubkey for this node.
 func (hn *HarnessNode) SetPubKey(pubKey string) {
 	hn.pubKey = pubKey
+}
+
+// NodeURI returns the p2p node uri for this node.
+func (hn *HarnessNode) NodeURI() string {
+	return fmt.Sprintf("%v@%v", hn.PubKey(), hn.Cfg.P2PAddr())
 }
 
 // fileExists reports whether the named file or directory exists.

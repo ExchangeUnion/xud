@@ -1,4 +1,4 @@
-import { SwapClient } from '../constants/enums';
+import { SwapClientType } from '../constants/enums';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 
 export type OrderMatch = {
@@ -100,7 +100,7 @@ export type Currency = {
   /** The ticker symbol for this currency such as BTC, LTC, ETH, etc... */
   id: string;
   /** The payment channel network client to use for executing swaps. */
-  swapClient: SwapClient;
+  swapClient: SwapClientType;
   /**
    * The number of places to the right of the decimal point of the smallest subunit of the currency, For example, BTC, LTC, and others
    * where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought
