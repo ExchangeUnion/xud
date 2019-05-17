@@ -8,12 +8,12 @@ delete_dir() {
 	return 0
 }
 
-temp_gopath=$PWD/temp/go
-temp_lndpath=${temp_gopath}/src/github.com/lightningnetwork/lnd
+GO_PATH=$PWD/go
+LND_PATH=${GO_PATH}/src/github.com/lightningnetwork/lnd
 LND_TAG="v0.6.1-beta"
-if [ -f ${temp_lndpath}/lnd-debug ]
+if [ -f ${LND_PATH}/lnd-debug ]
 then
-  LND_VERSION=$(${temp_lndpath}/lnd-debug --version)
+  LND_VERSION=$(${LND_PATH}/lnd-debug --version)
 else
   LND_VERSION=""
 fi
@@ -21,21 +21,24 @@ fi
 if [[ $LND_VERSION == *"$LND_TAG" ]]; then
     echo "lnd already installed"
 else
-    echo "deleting temporary gopath directory"
-    delete_dir ${temp_gopath}
+    echo "lnd version $LND_TAG not found"
+    if [ -d "$LND_PATH" ]; then
+      echo "deleting lnd directory"
+      delete_dir ${LND_PATH}
+    fi
 
     echo "getting btcd..."
-    GO111MODULE=off go get -u github.com/btcsuite/btcd
+    GOPATH=${GO_PATH} go get -u github.com/btcsuite/btcd
 
     echo "starting lnd clone..."
-    if ! git clone -b ${LND_TAG} --depth 1 https://github.com/lightningnetwork/lnd ${temp_lndpath} > /dev/null 2>&1; then
+    if ! git clone -b ${LND_TAG} --depth 1 https://github.com/lightningnetwork/lnd ${LND_PATH} > /dev/null 2>&1; then
        echo "unable to git clone lnd"
        exit 1
     fi
     echo "finished lnd clone"
 
     echo "starting lnd make..."
-    if ! (cd ${temp_lndpath} && GO111MODULE=off GOPATH=${temp_gopath} make tags="invoicesrpc"); then
+    if ! (cd ${LND_PATH} && GOPATH=${GO_PATH} make tags="invoicesrpc"); then
         echo "unable to make lnd"
         exit 1
     fi

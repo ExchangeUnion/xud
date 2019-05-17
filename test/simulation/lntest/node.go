@@ -258,7 +258,7 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 
 	args := hn.Cfg.genArgs()
 	args = append(args, fmt.Sprintf("--profile=%d", 9000+hn.NodeID))
-	hn.cmd = exec.Command("./temp/go/src/github.com/lightningnetwork/lnd/lnd-debug", args...)
+	hn.cmd = exec.Command("./go/src/github.com/lightningnetwork/lnd/lnd-debug", args...)
 
 	// Redirect stderr output to buffer
 	var errb bytes.Buffer
