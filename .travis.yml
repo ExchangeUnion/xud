@@ -8,7 +8,7 @@ cache:
     - "node_modules"
     - "test/simulation/go" # lnd, btcd, and dependencies
 
-install:
+before_install:
   - eval "$(GIMME_GO_VERSION=1.12 gimme)"
 
 script:

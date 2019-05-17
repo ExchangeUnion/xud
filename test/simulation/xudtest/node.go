@@ -112,6 +112,7 @@ func (cfg nodeConfig) P2PAddr() string {
 func newNode(name string) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
+	os.Mkdir("./temp", 0755)
 	dataDir, err := filepath.Abs("./temp/xuddatadir-" + name)
 	if err != nil {
 		return nil, err
