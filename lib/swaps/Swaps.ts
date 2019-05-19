@@ -167,7 +167,7 @@ class Swaps extends EventEmitter {
       failureReason,
       errorMessage,
     };
-    this.logger.debug('Sending swap error to peer: ' + JSON.stringify(errorBody));
+    this.logger.debug(`Sending swap error to peer: ${JSON.stringify(errorBody)}`);
     await peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
   }
 
@@ -193,7 +193,7 @@ class Swaps extends EventEmitter {
 
   public addDeal = (deal: SwapDeal) => {
     this.deals.set(deal.rHash, deal);
-    this.logger.debug('New deal: ' + JSON.stringify(deal));
+    this.logger.debug(`New deal: ${JSON.stringify(deal)}`);
   }
 
   public removeDeal = (deal: SwapDeal) => {
@@ -457,13 +457,13 @@ class Swaps extends EventEmitter {
     try {
       height = await takerSwapClient.getHeight();
     } catch (err) {
-      this.failDeal(deal, SwapFailureReason.UnexpectedClientError, 'Unable to fetch block height: ' + err.message);
+      this.failDeal(deal, SwapFailureReason.UnexpectedClientError, `Unable to fetch block height: ${err.message}`);
       await this.sendErrorToPeer(peer, deal.rHash, deal.failureReason!, deal.errorMessage, requestPacket.header.id);
       return false;
     }
 
     if (height) {
-      this.logger.debug('got block height of ' + height);
+      this.logger.debug(`got block height of ${height}`);
 
       const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
 
@@ -564,7 +564,7 @@ class Swaps extends EventEmitter {
       this.setDealPhase(deal, SwapPhase.SwapCompleted);
       const responseBody: packets.SwapCompletePacketBody = { rHash };
 
-      this.logger.debug('Sending swap complete to peer: ' + JSON.stringify(responseBody));
+      this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
       await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
@@ -673,7 +673,7 @@ class Swaps extends EventEmitter {
       // As the maker, we need to forward the payment to the other chain
       assert(htlcCurrency === undefined || htlcCurrency === deal.makerCurrency, 'incoming htlc does not match expected deal currency');
 
-	    this.logger.debug('Executing maker code to resolve hash');
+      this.logger.debug('Executing maker code to resolve hash');
 
       const swapClient = this.swapClients.get(deal.takerCurrency)!;
 
@@ -700,7 +700,7 @@ class Swaps extends EventEmitter {
   public handleResolveRequest = async (resolveRequest: ResolveRequest): Promise<string> => {
     const { amount, rHash } = resolveRequest;
 
-    this.logger.debug('handleResolveRequest starting with hash: ' + rHash);
+    this.logger.debug(`handleResolveRequest starting with hash ${rHash}`);
 
     const deal = this.getDeal(rHash);
 
@@ -729,7 +729,7 @@ class Swaps extends EventEmitter {
     // aggregate all error reasons by concatenation
     if (deal.state === SwapState.Error) {
       if (errorMessage) {
-        deal.errorMessage = deal.errorMessage ? deal.errorMessage + '; ' + errorMessage : errorMessage;
+        deal.errorMessage = deal.errorMessage ? `${deal.errorMessage}; ${errorMessage}` : errorMessage;
       }
       this.logger.debug(`new deal error message for ${deal.rHash}: + ${deal.errorMessage}`);
       return;
@@ -791,7 +791,7 @@ class Swaps extends EventEmitter {
       case SwapPhase.SwapRequested:
         assert(deal.role === SwapRole.Taker, 'SwapRequested can only be set by the taker');
         assert(deal.phase === SwapPhase.SwapCreated, 'SwapRequested can be only be set after SwapCreated');
-        this.logger.debug('Requesting deal: ' + JSON.stringify(deal));
+        this.logger.debug(`Requesting deal: ${JSON.stringify(deal)}`);
         break;
       case SwapPhase.SwapAgreed:
         assert(deal.role === SwapRole.Maker, 'SwapAgreed can only be set by the maker');
@@ -806,13 +806,13 @@ class Swaps extends EventEmitter {
         break;
       case SwapPhase.AmountReceived:
         assert(deal.phase === SwapPhase.SendingAmount, 'AmountReceived can be only be set after SendingAmount');
-        this.logger.debug('Amount received for preImage ' + deal.rPreimage);
+        this.logger.debug(`Amount received for deal with payment hash ${deal.rPreimage}`);
         break;
       case SwapPhase.SwapCompleted:
         assert(deal.phase === SwapPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
-        this.logger.debug('Swap completed. preimage = ' + deal.rPreimage);
+        this.logger.debug(`Swap completed. preimage = ${deal.rPreimage}`);
         break;
       default:
         assert(false, 'unknown deal phase');

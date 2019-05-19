@@ -336,7 +336,7 @@ class RaidenClient extends SwapClient {
       const body = await parseResponseBody<TokenPaymentResponse>(res);
       return body;
     } catch (e) {
-      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      this.logger.error('got exception from RaidenClient.tokenPayment', e);
       throw e;
     }
   }
@@ -355,7 +355,7 @@ class RaidenClient extends SwapClient {
    * Gets the account address for the raiden node.
    */
   private getAddress = async (): Promise<string> => {
-    const endpoint = `address`;
+    const endpoint = 'address';
     const res = await this.sendRequest(endpoint, 'GET');
 
     const body = await parseResponseBody<{ our_address: string }>(res);

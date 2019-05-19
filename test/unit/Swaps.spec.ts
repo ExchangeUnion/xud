@@ -110,16 +110,16 @@ describe('Swaps', () => {
     expect(outboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity);
   });
 
-  it(`should validate a good swap request`, () => {
+  it('should validate a good swap request', () => {
     expect(Swaps.validateSwapRequest(swapRequest)).to.be.true;
   });
 
-  it(`should flag a swap request with a non-positive proposed quantity`, () => {
+  it('should flag a swap request with a non-positive proposed quantity', () => {
     expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: 0 })).to.be.false;
     expect(Swaps.validateSwapRequest({ ...swapRequest, proposedQuantity: -1 })).to.be.false;
   });
 
-  it(`should flag a swap request with an rHash that is not 64 characters`, () => {
+  it('should flag a swap request with an rHash that is not 64 characters', () => {
     expect(Swaps.validateSwapRequest({ ...swapRequest, rHash: 'notavalidhash' })).to.be.false;
   });
 });
