@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
 import Xud from '../../lib/Xud';
-import { getUnusedPort } from '../utils';
+import { getUnusedPort, getTempDir } from '../utils';
 
 describe('WebProxy', async () => {
   let xud: Xud;
@@ -11,6 +11,7 @@ describe('WebProxy', async () => {
 
   before(async () => {
     config = {
+      xudir: getTempDir(true),
       dbpath: ':memory:',
       initdb: false,
       webproxy: {
