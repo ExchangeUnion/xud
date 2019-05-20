@@ -46,6 +46,9 @@ const argChecks = {
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
+  HAS_PEER_PUB_KEY: ({ peerPubKey }: { peerPubKey: string }) => {
+    if (peerPubKey === '') throw errors.INVALID_ARGUMENT('peerPubKey must be specified');
+  },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
@@ -372,6 +375,14 @@ class Service extends EventEmitter {
     const { pairId } = args;
 
     return this.orderBook.removePair(pairId);
+  }
+
+  /** Discover nodes from a specific peer and apply new connections */
+  public discoverNodes = async (args: { peerPubKey: string }) => {
+    argChecks.HAS_PEER_PUB_KEY(args);
+    const { peerPubKey } = args;
+
+    return this.pool.discoverNodes(peerPubKey);
   }
 
   /*

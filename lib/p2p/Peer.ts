@@ -800,9 +800,16 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  public sendGetNodes = async (): Promise<void> => {
+  public sendGetNodes = async (): Promise<packets.GetNodesPacket> => {
     const packet =  new packets.GetNodesPacket();
     await this.sendPacket(packet);
+    return packet;
+  }
+
+  public discoverNodes = async (): Promise<number> => {
+    const packet = await this.sendGetNodes();
+    const res = await this.wait(packet.header.id, packet.responseType);
+    return res.body.length;
   }
 
   private sendPong = async (pingId: string): Promise<void> => {

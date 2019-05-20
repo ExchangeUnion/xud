@@ -569,6 +569,22 @@ class GrpcService {
     }
   }
 
+  /**
+   * See [[Service.discoverNodes]]
+   */
+  public discoverNodes: grpc.handleUnaryCall<xudrpc.DiscoverNodesRequest, xudrpc.DiscoverNodesResponse> = async (call, callback) => {
+    try {
+      const numNodes = await this.service.discoverNodes(call.request.toObject());
+
+      const response = new xudrpc.DiscoverNodesResponse();
+      response.setNumNodes(numNodes);
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
   public shutdown: grpc.handleUnaryCall<xudrpc.ShutdownRequest, xudrpc.ShutdownResponse> = (_, callback) => {
     try {
       this.service.shutdown();
