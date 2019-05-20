@@ -30,6 +30,7 @@ export enum Context {
   Lnd = 'LND',
   Raiden = 'RAIDEN',
   Swaps = 'SWAPS',
+  Http = 'HTTP',
 }
 
 type Loggers = {
@@ -41,6 +42,7 @@ type Loggers = {
   lnd: Logger,
   raiden: Logger,
   swaps: Logger,
+  http: Logger,
 };
 
 class Logger {
@@ -94,6 +96,7 @@ class Logger {
       lnd: new Logger({ ...object, context: Context.Lnd }),
       raiden: new Logger({ ...object, context: Context.Raiden }),
       swaps: new Logger({ ...object, context: Context.Swaps }),
+      http: new Logger({ ...object, context: Context.Http }),
     };
   }
 

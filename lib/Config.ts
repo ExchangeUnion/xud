@@ -2,12 +2,12 @@ import os from 'os';
 import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
-import { exists, mkdir, readFile } from './utils/fsUtils';
+import { promises as fs } from 'fs';
 import { LndClientConfig } from './lndclient/LndClient';
-import { RaidenClientConfig } from './raidenclient/RaidenClient';
 import { Level } from './Logger';
 import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
+import { RaidenClientConfig } from './raidenclient/types';
 
 class Config {
   public p2p: PoolConfig;
@@ -17,6 +17,7 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
+  public http: { port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
@@ -80,6 +81,9 @@ class Config {
       host: 'localhost',
       port: 8886,
     };
+    this.http = {
+      port: 8887,
+    };
     this.webproxy = {
       disable: true,
       port: 8080,
@@ -122,10 +126,9 @@ class Config {
     }
 
     const configPath = path.join(this.xudir, 'xud.conf');
-    if (!(await exists(this.xudir))) {
-      await mkdir(this.xudir);
-    } else if (await exists(configPath)) {
-      const configText = await readFile(configPath, 'utf8');
+    await this.mkDirIfNotExist(this.xudir);
+    try {
+      const configText = await fs.readFile(configPath, 'utf8');
       let props;
       try {
         props = toml.parse(configText);
@@ -151,7 +154,7 @@ class Config {
 
       // merge parsed json properties from config file to the default config
       deepMerge(this, props);
-    }
+    } catch (err) {}
 
     if (args) {
       // override our config file with command line arguments
@@ -162,16 +165,23 @@ class Config {
       this.loglevel = this.getDefaultLogLevel();
     }
 
-    await this.createLogDir(this.logpath);
+    const logDir = path.dirname(this.logpath);
+    await this.mkDirIfNotExist(logDir);
 
     return this;
   }
 
-  private createLogDir = async (logPath: string) => {
-    const dir = path.dirname(logPath);
-
-    if (!(await exists(dir))) {
-      await mkdir(dir);
+  /**
+   * Creates a directory if it does not exist, otherwise does nothing.
+   */
+  private mkDirIfNotExist = async (dirPath: string) => {
+    try {
+      await fs.mkdir(dirPath);
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        // ignore the error if the directory already exists, otherwise throw
+        throw err;
+      }
     }
   }
 

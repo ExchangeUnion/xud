@@ -142,6 +142,31 @@ export namespace BanResponse {
     }
 }
 
+export class Chain extends jspb.Message { 
+    getChain(): string;
+    setChain(value: string): void;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Chain.AsObject;
+    static toObject(includeInstance: boolean, msg: Chain): Chain.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Chain, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Chain;
+    static deserializeBinaryFromReader(message: Chain, reader: jspb.BinaryReader): Chain;
+}
+
+export namespace Chain {
+    export type AsObject = {
+        chain: string,
+        network: string,
+    }
+}
+
 export class ChannelBalance extends jspb.Message { 
     getBalance(): number;
     setBalance(value: number): void;
@@ -653,9 +678,9 @@ export class LndInfo extends jspb.Message {
     setChannels(value?: LndChannels): void;
 
     clearChainsList(): void;
-    getChainsList(): Array<string>;
-    setChainsList(value: Array<string>): void;
-    addChains(value: string, index?: number): string;
+    getChainsList(): Array<Chain>;
+    setChainsList(value: Array<Chain>): void;
+    addChains(value?: Chain, index?: number): Chain;
 
     getBlockheight(): number;
     setBlockheight(value: number): void;
@@ -686,7 +711,7 @@ export namespace LndInfo {
     export type AsObject = {
         error: string,
         channels?: LndChannels.AsObject,
-        chainsList: Array<string>,
+        chainsList: Array<Chain.AsObject>,
         blockheight: number,
         urisList: Array<string>,
         version: string,

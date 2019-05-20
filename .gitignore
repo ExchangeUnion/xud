@@ -41,6 +41,7 @@ typings/
 
 # Typescript compilation output
 dist/
+.tsbuildinfo
 
 # Optional npm cache directory
 .npm
@@ -72,3 +73,4 @@ docker/xud/xud.db
 
 # xud-simulation execution temp directory
 test/simulation/temp
+test/simulation/go

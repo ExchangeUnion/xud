@@ -10,7 +10,7 @@ import Logger from '../Logger';
 import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase, SwapClient } from '../constants/enums';
+import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
@@ -31,6 +31,8 @@ interface OrderBook {
   on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
+  /** Adds a listener to be called when a local order was removed */
+  on(event: 'ownOrder.removed', listener: (order: OrderPortion) => void): this;
 
   /** Notifies listeners that a remote order was added */
   emit(event: 'peerOrder.incoming', order: PeerOrder): boolean;
@@ -44,9 +46,15 @@ interface OrderBook {
   emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
+  /** Notifies listeners that a local order was removed */
+  emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
 }
 
-/** A class representing an orderbook containing all orders for all active trading pairs. */
+/**
+ * Represents an order book containing all orders for all active trading pairs. This encompasses
+ * all orders tracked locally and is the primary interface with which other modules interact with
+ * the order book.
+ */
 class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
@@ -77,7 +85,7 @@ class OrderBook extends EventEmitter {
     private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
-    this.repository = new OrderBookRepository(logger, models);
+    this.repository = new OrderBookRepository(models);
 
     this.bindPool();
     this.bindSwaps();
@@ -124,9 +132,9 @@ class OrderBook extends EventEmitter {
           // we must remove the amount that was put on hold while the swap was pending for the remaining order
           this.removeOrderHold(orderId, pairId, quantity);
 
-          await this.persistTrade(swapSuccess.quantity, this.getOwnOrder(swapSuccess.orderId, swapSuccess.pairId), undefined, swapSuccess.rHash);
-          this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+          const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
           this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
+          await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
         }
       });
       this.swaps.on('swap.failed', (deal) => {
@@ -231,7 +239,7 @@ class OrderBook extends EventEmitter {
     if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
-    if (currency.swapClient === SwapClient.Raiden && !currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Raiden && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
@@ -328,16 +336,15 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    if (!this.nosanitychecks) {
+    if (!this.nosanitychecks && this.swaps) {
       // check if sufficient outbound channel capacity exists
-      const { makerAmount } = Swaps.calculateSwapAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const { makerCurrency } = Swaps.deriveCurrencies(order.pairId, order.isBuy);
-      const swapClient = this.swaps && this.swaps.swapClients.get(makerCurrency);
+      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const swapClient = this.swaps.swapClients.get(outboundCurrency);
       if (!swapClient) {
-        throw errors.SWAP_CLIENT_NOT_FOUND(makerCurrency);
+        throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      if (makerAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(makerCurrency, makerAmount, swapClient.maximumOutboundCapacity);
+      if (outboundAmount > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, swapClient.maximumOutboundCapacity);
       }
     }
 
@@ -618,19 +625,21 @@ class OrderBook extends EventEmitter {
    * Removes all or part of an own order from the order book and broadcasts an order invalidation packet.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the full order is removed
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
+   * @returns the removed portion of the order
    */
   private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string) => {
     const tp = this.getTradingPair(pairId);
     try {
       const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
+      this.emit('ownOrder.removed', removeResult.order);
       if (removeResult.fullyRemoved) {
-        const localId = (removeResult.order).localId;
-        this.localIdMap.delete(localId);
+        this.localIdMap.delete(removeResult.order.localId);
       }
 
       if (this.pool) {
         this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       }
+      return removeResult.order;
     } catch (err) {
       if (quantityToRemove !== undefined) {
         this.logger.error(`error while removing ${quantityToRemove} of order (${orderId})`, err);
@@ -693,33 +702,34 @@ class OrderBook extends EventEmitter {
     const currenciesToVerify = new Set<string>();
     pairIds.forEach((pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
-      currenciesToVerify.add(baseCurrency);
-      currenciesToVerify.add(quoteCurrency);
+      if (!peer.verifiedCurrencies.has(baseCurrency)) {
+        currenciesToVerify.add(baseCurrency);
+      }
+      if (!peer.verifiedCurrencies.has(quoteCurrency)) {
+        currenciesToVerify.add(quoteCurrency);
+      }
     });
 
-    const verifiedCurrencies = new Set<string>();
     const verifiedPairs: string[] = [];
     const sanitySwapPromises: Promise<void>[] = [];
 
-    if (this.swaps) {
-      // Set a time limit for all sanity swaps to complete.
-      const sanitySwapTimeout = setTimeoutPromise(OrderBook.MAX_SANITY_SWAP_TIME, false);
+    // Set a time limit for all sanity swaps to complete.
+    const sanitySwapTimeout = setTimeoutPromise(OrderBook.MAX_SANITY_SWAP_TIME, false);
 
-      currenciesToVerify.forEach((currency) => {
-        if (this.currencyInstances.has(currency)) {
-          // perform sanity swaps for each of the currencies that we support
-          const sanitySwapPromise = new Promise<void>(async (resolve) => {
-            // success resolves to true if the sanity swap succeeds before the timeout
-            const success = await Promise.race([this.swaps!.executeSanitySwap(currency, peer), sanitySwapTimeout]);
-            if (success) {
-              verifiedCurrencies.add(currency);
-            }
-            resolve();
-          });
-          sanitySwapPromises.push(sanitySwapPromise);
-        }
-      });
-    }
+    currenciesToVerify.forEach((currency) => {
+      if (this.currencyInstances.has(currency)) {
+        // perform sanity swaps for each of the currencies that we support
+        const sanitySwapPromise = new Promise<void>(async (resolve) => {
+          // success resolves to true if the sanity swap succeeds before the timeout
+          const success = await Promise.race([this.swaps!.executeSanitySwap(currency, peer), sanitySwapTimeout]);
+          if (success) {
+            peer.verifiedCurrencies.add(currency);
+          }
+          resolve();
+        });
+        sanitySwapPromises.push(sanitySwapPromise);
+      }
+    });
 
     // wait for all sanity swaps to finish or timeout
     await Promise.all(sanitySwapPromises);
@@ -727,7 +737,7 @@ class OrderBook extends EventEmitter {
     // activate pairs that have had both currencies verified
     pairIds.forEach(async (pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
-      if (verifiedCurrencies.has(baseCurrency) && verifiedCurrencies.has(quoteCurrency)) {
+      if (peer.verifiedCurrencies.has(baseCurrency) && peer.verifiedCurrencies.has(quoteCurrency)) {
         peer.activePairs.add(pairId);
         verifiedPairs.push(pairId);
       }
@@ -750,8 +760,8 @@ class OrderBook extends EventEmitter {
       // send only requested pairIds
       if (pairIds.includes(tp.pairId)) {
         const orders = tp.getOwnOrders();
-        orders.buy.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
-        orders.sell.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.buyArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
+        orders.sellArray.forEach(order => outgoingOrders.push(OrderBook.createOutgoingOrder(order)));
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);

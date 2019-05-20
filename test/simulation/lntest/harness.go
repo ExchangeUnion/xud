@@ -3,12 +3,13 @@ package lntest
 import (
 	"errors"
 	"fmt"
-	"github.com/ltcsuite/ltcutil"
 	"io/ioutil"
 	"reflect"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/ltcsuite/ltcutil"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/grpclog"
@@ -40,10 +41,12 @@ type NetworkHarness struct {
 
 	nodesByPub map[string]*HarnessNode
 
-	// Alice and Bob are the initial seeder nodes that are automatically
+	// The initial seeder nodes that are automatically
 	// created to be the initial participants of the test network.
 	Alice *HarnessNode
 	Bob   *HarnessNode
+	Carol *HarnessNode
+	Dave  *HarnessNode
 
 	seenTxns             chan *Hash
 	bitcoinWatchRequests chan *txWatchRequest
@@ -128,7 +131,7 @@ func (f *fakeLogger) Println(args ...interface{})               {}
 // rpc clients capable of communicating with the initial seeder nodes are
 // created. Nodes are initialized with the given extra command line flags, which
 // should be formatted properly - "--arg=value".
-func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCfg *HashResolverConfig) error {
+func (n *NetworkHarness) SetUp(lndArgs []string) error {
 	// Swap out grpc's default logger with out fake logger which drops the
 	// statements on the floor.
 	grpclog.SetLogger(&fakeLogger{})
@@ -136,11 +139,11 @@ func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCf
 	// Start the initial seeder nodes within the test network, then connect
 	// their respective RPC clients.
 	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
-	wg.Add(2)
+	errChan := make(chan error, 4)
+	wg.Add(4)
 	go func() {
 		defer wg.Done()
-		node, err := n.NewNode("Alice", lndArgs, n.chain, aliceResolverCfg)
+		node, err := n.NewNode("Alice", lndArgs, n.chain)
 		if err != nil {
 			errChan <- err
 			return
@@ -149,12 +152,30 @@ func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCf
 	}()
 	go func() {
 		defer wg.Done()
-		node, err := n.NewNode("Bob", lndArgs, n.chain, bobResolverCfg)
+		node, err := n.NewNode("Bob", lndArgs, n.chain)
 		if err != nil {
 			errChan <- err
 			return
 		}
 		n.Bob = node
+	}()
+	go func() {
+		defer wg.Done()
+		node, err := n.NewNode("Carol", lndArgs, n.chain)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		n.Carol = node
+	}()
+	go func() {
+		defer wg.Done()
+		node, err := n.NewNode("Dave", lndArgs, n.chain)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		n.Dave = node
 	}()
 	wg.Wait()
 	select {
@@ -167,7 +188,7 @@ func (n *NetworkHarness) SetUp(lndArgs []string, aliceResolverCfg, bobResolverCf
 	// each.
 	ctxb := context.Background()
 	addrReq := &lnrpc.NewAddressRequest{
-		Type: lnrpc.NewAddressRequest_WITNESS_PUBKEY_HASH,
+		Type: lnrpc.AddressType_WITNESS_PUBKEY_HASH,
 	}
 	clients := []lnrpc.LightningClient{n.Alice, n.Bob}
 	for _, client := range clients {
@@ -266,21 +287,29 @@ out:
 
 	// Open a channel
 	// TODO: code refactoring/cleanup
-	_, err := n.OpenChannel(ctxb, n.Alice, n.Bob, 500000000, 250000000, false)
+	_, err := n.OpenChannel(ctxb, n.Alice, n.Bob, 15000000, 7500000, false)
 	if err != nil {
 		fmt.Printf("err: %v", err)
 		return err
 	}
 
 	if n.BtcMiner != nil {
-		if _, err := n.BtcMiner.Node.Generate(100); err != nil {
+		if _, err := n.BtcMiner.Node.Generate(6); err != nil {
 			return err
 		}
 	}
 	if n.LtcMiner != nil {
-		if _, err := n.LtcMiner.Node.Generate(10); err != nil {
+		if _, err := n.LtcMiner.Node.Generate(6); err != nil {
 			return err
 		}
+	}
+
+	// Wait until srcNode and destNode have blockchain synced
+	if err := n.Alice.WaitForBlockchainSync(ctxb); err != nil {
+		return fmt.Errorf("Unable to sync Alice chain: %v", err)
+	}
+	if err := n.Bob.WaitForBlockchainSync(ctxb); err != nil {
+		return fmt.Errorf("Unable to sync Bob chain: %v", err)
 	}
 
 	//_, err = n.Alice.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
@@ -314,9 +343,8 @@ func (n *NetworkHarness) TearDownAll() error {
 // NewNode fully initializes a returns a new HarnessNode bound to the
 // current instance of the network harness. The created node is running, but
 // not yet connected to other nodes within the network.
-func (n *NetworkHarness) NewNode(name string, extraArgs []string, chain string,
-	resolverCfg *HashResolverConfig) (*HarnessNode, error) {
-	return n.newNode(name, extraArgs, false, chain, resolverCfg)
+func (n *NetworkHarness) NewNode(name string, extraArgs []string, chain string) (*HarnessNode, error) {
+	return n.newNode(name, extraArgs, false, chain)
 }
 
 // newNode initializes a new HarnessNode, supporting the ability to initialize a
@@ -324,14 +352,13 @@ func (n *NetworkHarness) NewNode(name string, extraArgs []string, chain string,
 // can be used immediately. Otherwise, the node will require an additional
 // initialization phase where the wallet is either created or restored.
 func (n *NetworkHarness) newNode(name string, extraArgs []string,
-	hasSeed bool, chain string, resolverCfg *HashResolverConfig) (*HarnessNode, error) {
+	hasSeed bool, chain string) (*HarnessNode, error) {
 	node, err := newNode(nodeConfig{
-		Name:        name,
-		Chain:       chain,
-		HasSeed:     hasSeed,
-		RPCConfig:   &n.rpcConfig,
-		ExtraArgs:   extraArgs,
-		resolverCfg: resolverCfg,
+		Name:      name,
+		Chain:     chain,
+		HasSeed:   hasSeed,
+		RPCConfig: &n.rpcConfig,
+		ExtraArgs: extraArgs,
 	})
 	if err != nil {
 		return nil, err
@@ -1095,7 +1122,7 @@ func (n *NetworkHarness) SendCoins(ctx context.Context, amt btcutil.Amount,
 	target *HarnessNode) error {
 
 	return n.sendCoins(
-		ctx, amt, target, lnrpc.NewAddressRequest_WITNESS_PUBKEY_HASH,
+		ctx, amt, target, lnrpc.AddressType_WITNESS_PUBKEY_HASH,
 	)
 }
 
@@ -1105,7 +1132,7 @@ func (n *NetworkHarness) SendCoinsNP2WKH(ctx context.Context,
 	amt btcutil.Amount, target *HarnessNode) error {
 
 	return n.sendCoins(
-		ctx, amt, target, lnrpc.NewAddressRequest_NESTED_PUBKEY_HASH,
+		ctx, amt, target, lnrpc.AddressType_NESTED_PUBKEY_HASH,
 	)
 }
 
@@ -1113,7 +1140,7 @@ func (n *NetworkHarness) SendCoinsNP2WKH(ctx context.Context,
 // targeted lightning node.
 func (n *NetworkHarness) sendCoins(ctx context.Context, amt btcutil.Amount,
 	target *HarnessNode,
-	addrType lnrpc.NewAddressRequest_AddressType) error {
+	addrType lnrpc.AddressType) error {
 
 	balReq := &lnrpc.WalletBalanceRequest{}
 	initialBalance, err := target.WalletBalance(ctx, balReq)

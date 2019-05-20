@@ -1,5 +1,5 @@
 /** An enumeration of payment channel network clients that support token swaps. */
-export enum SwapClient {
+export enum SwapClientType {
   Lnd,
   Raiden,
 }

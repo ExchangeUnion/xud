@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { parseUri, toUri, UriParts } from '../../lib/utils/uriUtils';
+import { parseUri } from '../../lib/utils/uriUtils';
 
 describe('parseUri', () => {
   it('should parse a valid uri', async () => {

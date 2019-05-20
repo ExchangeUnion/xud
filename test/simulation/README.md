@@ -15,21 +15,21 @@ Requirements:
 Installation & Usage:
 
 ```bash
-$ GO111MODULE=on go test -v
+$ export PATH=$PATH:$PWD/go/bin
+$ GOPATH=$PWD/go GO111MODULE=on go test -v
 ````
 
 ## Network Scenarios Tests
-### Sanity
-- [x] Verify connectivity to swap clients.
-- [x] Initialize nodes with currencies and pairs.
-- [x] Connect between two nodes.
+### Initialization
+- [x] Verify connectivity to swap clients of all nodes.
+- [x] Add currencies and pairs to all nodes.
 
 ### P2P
-- [ ] Discovery: Connect Alice to Bob, Bob to Carol. Alice and Carol should end up connected to Alice as well.
-- [ ] Wrong identity: Alice connects to Bob expecting a random public key. Bob should reject the connection due to auth invalid target.
-- [ ] Banning: If Alice bans Bob, connection attempts from both directions should fail.
-- [ ] Unbanning: If Alice unbanned Bob, connection attempts from both directions should succeed.
-- [ ] Duplicate connection: If Alice and Bob are already connected, connection attempts from both directions should get blocked.
+- [x] Discovery: Connect Alice to Bob, Bob to Carol, Dave to Carol. After a short while, all of them should end up connected.
+- [x] Incorrect public key: Alice connects to Bob expecting an incorrect public key. Bob should reject the connection due to auth invalid target.
+- [x] Banning: If Alice ban Bob, connection attempts from both directions should fail.
+- [x] Unbanning: If Alice unban Bob, connection attempts from both directions should succeed.
+- [x] Duplicate connection: If Alice and Bob are already connected, connection attempts from both directions should fail.
 
 ### Decentralized Order Book
 - [x] Placed order should get broadcasted over the network, and added to connected peers' order books.

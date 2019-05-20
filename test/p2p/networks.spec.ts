@@ -11,8 +11,8 @@ chai.use(chaiAsPromised);
 describe('P2P Networks Tests', () => {
   function testConnectionFailure(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should fail to connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
-      const srcNodeConfig = createConfig(1, 0, srcNodeNetwork);
-      const destNodeConfig = createConfig(2, 0, destNodeNetwork);
+      const srcNodeConfig = createConfig(1, 0, false, srcNodeNetwork);
+      const destNodeConfig = createConfig(2, 0, false, destNodeNetwork);
       const srcNode = new Xud();
       const destNode = new Xud();
       await Promise.all([srcNode.start(srcNodeConfig), destNode.start(destNodeConfig)]);
@@ -33,8 +33,8 @@ describe('P2P Networks Tests', () => {
 
   function testConnectionSuccess(srcNodeNetwork: XuNetwork, destNodeNetwork: XuNetwork) {
     it(`should successfully connect a node from ${srcNodeNetwork} to a node from ${destNodeNetwork}`, async () => {
-      const srcNodeConfig = createConfig(1, 0, srcNodeNetwork);
-      const destNodeConfig = createConfig(2, 0, destNodeNetwork);
+      const srcNodeConfig = createConfig(1, 0, false, srcNodeNetwork);
+      const destNodeConfig = createConfig(2, 0, false, destNodeNetwork);
       const srcNode = new Xud();
       const destNode = new Xud();
       await Promise.all([srcNode.start(srcNodeConfig), destNode.start(destNodeConfig)]);
