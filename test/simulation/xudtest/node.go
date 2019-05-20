@@ -29,6 +29,7 @@ var (
 type nodeConfig struct {
 	DataDir     string
 	XUDPath     string
+	LogPath     string
 	TLSCertPath string
 
 	LndBtcHost     string
@@ -54,6 +55,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--loglevel=debug")
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
+	args = append(args, fmt.Sprintf("--logpath=%v", cfg.LogPath))
 
 	args = append(args, fmt.Sprintf("--rpc.port=%v", cfg.RPCPort))
 
@@ -110,7 +112,8 @@ func (cfg nodeConfig) P2PAddr() string {
 func newNode(name string) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
-	dataDir, err := filepath.Abs("./xuddatadir-" + name)
+	os.Mkdir("./temp", 0755)
+	dataDir, err := filepath.Abs("./temp/xuddatadir-" + name)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +127,8 @@ func newNode(name string) (*HarnessNode, error) {
 		DataDir: dataDir,
 		XUDPath: xudPath,
 	}
+	epoch := time.Now().Unix()
+	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
 	cfg.P2PPort = baseP2PPort + nodeNum
