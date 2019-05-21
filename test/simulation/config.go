@@ -5,7 +5,7 @@ import "time"
 const (
 	defaultXudKill    = true
 	defaultXudCleanup = true
-	defaultTimeout    = int64(5 * time.Second)
+	defaultTimeout    = int64(15 * time.Second)
 )
 
 // config defines the configuration for integration tests.
