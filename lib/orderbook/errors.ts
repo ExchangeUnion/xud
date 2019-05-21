@@ -27,7 +27,7 @@ const errors = {
     code: errorCodes.DUPLICATE_ORDER,
   }),
   ORDER_NOT_FOUND: (orderId: string, peerPubKey?: string) => ({
-    message: `order with id ${orderId}${peerPubKey ? ' for peer ' + peerPubKey : ''} could not be found`,
+    message: `order with id ${orderId}${peerPubKey ? ` for peer ${peerPubKey}` : ''} could not be found`,
     code: errorCodes.ORDER_NOT_FOUND,
   }),
   CURRENCY_DOES_NOT_EXIST: (currency: string) => ({
@@ -51,7 +51,7 @@ const errors = {
     code: errorCodes.PAIR_ALREADY_EXISTS,
   }),
   MARKET_ORDERS_NOT_ALLOWED: () => ({
-    message: `market orders are not allowed on nomatching mode`,
+    message: 'market orders are not allowed on nomatching mode',
     code: errorCodes.MARKET_ORDERS_NOT_ALLOWED,
   }),
   LOCAL_ID_DOES_NOT_EXIST: (localId: string) => ({

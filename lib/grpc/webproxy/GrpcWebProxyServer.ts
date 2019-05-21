@@ -47,7 +47,7 @@ class GrpcWebProxyServer {
         // remove listen error handler and set a general error handler
         this.server!.removeListener('error', listenErrHandler);
         this.server!.on('error', (err) => {
-          this.logger.error('Web proxy server Error: ' + err.message);
+          this.logger.error('Web proxy server error', err);
         });
 
         resolve();
