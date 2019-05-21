@@ -4,6 +4,7 @@ import DB from '../../lib/db/DB';
 import OrderBook from '../../lib/orderbook/OrderBook';
 import Pool from '../../lib/p2p/Pool';
 import Swaps from '../../lib/swaps/Swaps';
+import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import LndClient from '../../lib/lndclient/LndClient';
 import SwapClient from '../../lib/swaps/SwapClient';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
@@ -50,9 +51,17 @@ describe('OrderBook', () => {
     swaps.isPairSupported = () => true;
     const lndBTC = sandbox.createStubInstance(LndClient) as any;
     const lndLTC = sandbox.createStubInstance(LndClient) as any;
-    swaps.swapClients = new Map<string, SwapClient>();
-    swaps.swapClients.set('BTC', lndBTC);
-    swaps.swapClients.set('LTC', lndLTC);
+    swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
+    swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
+    swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
+    swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
+    swaps.swapClientManager.get = (currency) => {
+      const client = swaps.swapClientManager['swapClients'].get(currency);
+      if (!client) {
+        throw new Error('unknown swap client');
+      }
+      return client;
+    };
     orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);
     await orderBook.init();
   });

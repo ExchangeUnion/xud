@@ -4,6 +4,7 @@ import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
 import errors from './errors';
+import { errors as swapsErrors } from '../swaps/errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
@@ -16,6 +17,8 @@ import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
 import { SwapRequestPacket, SwapFailedPacket, GetOrdersPacket } from '../p2p/packets';
 import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
+// We add the Bluebird import to ts-ignore because it's actually being used.
+// @ts-ignore
 import Bluebird from 'bluebird';
 
 interface OrderBook {
@@ -244,9 +247,10 @@ class OrderBook extends EventEmitter {
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
+    this.swaps!.swapClientManager.add(currencyInstance);
   }
 
-  public removeCurrency = (currencyId: string): Bluebird<void> => {
+  public removeCurrency = async (currencyId: string) => {
     const currency = this.currencyInstances.get(currencyId);
     if (currency) {
       for (const pair of this.pairInstances.values()) {
@@ -255,7 +259,8 @@ class OrderBook extends EventEmitter {
         }
       }
       this.currencyInstances.delete(currencyId);
-      return currency.destroy();
+      this.swaps!.swapClientManager.remove(currencyId);
+      await currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
     }
@@ -339,9 +344,9 @@ class OrderBook extends EventEmitter {
     if (!this.nosanitychecks && this.swaps) {
       // check if sufficient outbound channel capacity exists
       const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const swapClient = this.swaps.swapClients.get(outboundCurrency);
+      const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
       if (!swapClient) {
-        throw errors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
       if (outboundAmount > swapClient.maximumOutboundCapacity) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, swapClient.maximumOutboundCapacity);
