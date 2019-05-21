@@ -10,7 +10,7 @@ import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
-import { generatePreimageAndHash } from '../utils/utils';
+import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
 
@@ -45,8 +45,10 @@ class Swaps extends EventEmitter {
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
   private static readonly SWAP_COMPLETE_TIMEOUT = 30000;
-  /** The maximum time in milliseconds we will wait to receive an expected sanity swap packet. */
-  private static readonly SANITY_SWAP_PACKET_TIMEOUT = 3000;
+  /** The maximum time in milliseconds we will wait to receive an expected sanity swap init packet. */
+  private static readonly SANITY_SWAP_INIT_TIMEOUT = 3000;
+  /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
+  private static readonly SANITY_SWAP_COMPLETE_TIMEOUT = 10000;
 
   constructor(private logger: Logger,
     private models: Models,
@@ -115,7 +117,7 @@ class Swaps extends EventEmitter {
   }
 
   private bind() {
-    this.pool.on('packet.sanitySwap', async (packet, peer) => {
+    this.pool.on('packet.sanitySwapInit', async (packet, peer) => {
       const { currency, rHash } = packet.body!;
       const sanitySwap: SanitySwap = {
         currency,
@@ -123,13 +125,21 @@ class Swaps extends EventEmitter {
         peerPubKey: peer.nodePubKey!,
       };
       this.sanitySwaps.set(rHash, sanitySwap);
+      const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await this.swapClientManager.get(currency)!.addInvoice(rHash, 1);
+        await swapClient.addInvoice(rHash, 1);
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
       }
       await peer.sendPacket(new packets.SanitySwapAckPacket(undefined, packet.header.id));
+
+      // set timeout limit for sanity swap to complete, fail it if it stalls
+      await setTimeoutPromise(Swaps.SANITY_SWAP_COMPLETE_TIMEOUT);
+      if (this.sanitySwaps.delete(rHash)) {
+        // if we're here, it means the sanity swap has not completed within the time limit
+        swapClient.removeInvoice(rHash).catch(this.logger.error);
+      }
     });
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
@@ -300,7 +310,7 @@ class Swaps extends EventEmitter {
       await Promise.all([
         swapClient.addInvoice(rHash, 1),
         peer.sendPacket(sanitySwapInitPacket),
-        peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_PACKET_TIMEOUT),
+        peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
     } catch (err) {
       this.logger.warn(`sanity swap could not be initiated for ${currency} using rHash ${rHash}: ${err.message}`);
