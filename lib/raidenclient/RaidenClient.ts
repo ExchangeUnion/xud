@@ -5,8 +5,6 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import OrderBookRepository from '../orderbook/OrderBookRepository';
-import { Models } from '../db/DB';
 import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 /**
@@ -39,20 +37,17 @@ class RaidenClient extends SwapClient {
   private port: number;
   private host: string;
   private disable: boolean;
-  private repository: OrderBookRepository;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger, models: Models) {
+  constructor(config: RaidenClientConfig, logger: Logger) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
     this.disable = disable;
-
-    this.repository = new OrderBookRepository(models);
   }
 
   /**
@@ -63,23 +58,7 @@ class RaidenClient extends SwapClient {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
-    // associate the client with all currencies that have a contract address
-    await this.setCurrencies();
     await this.verifyConnection();
-  }
-
-  private setCurrencies = async () => {
-    try {
-      const currencies = await this.repository.getCurrencies();
-      currencies.filter((currency) => {
-        const tokenAddress = currency.getDataValue('tokenAddress');
-        if (tokenAddress) {
-          this.tokenAddresses.set(currency.getDataValue('id'), tokenAddress);
-        }
-      });
-    } catch (e) {
-      this.logger.error('failed to set tokenAddresses for Raiden', e);
-    }
   }
 
   protected verifyConnection = async () => {
@@ -336,7 +315,7 @@ class RaidenClient extends SwapClient {
       const body = await parseResponseBody<TokenPaymentResponse>(res);
       return body;
     } catch (e) {
-      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      this.logger.error('got exception from RaidenClient.tokenPayment', e);
       throw e;
     }
   }
@@ -355,7 +334,7 @@ class RaidenClient extends SwapClient {
    * Gets the account address for the raiden node.
    */
   private getAddress = async (): Promise<string> => {
-    const endpoint = `address`;
+    const endpoint = 'address';
     const res = await this.sendRequest(endpoint, 'GET');
 
     const body = await parseResponseBody<{ our_address: string }>(res);

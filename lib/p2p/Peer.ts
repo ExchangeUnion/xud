@@ -66,6 +66,8 @@ class Peer extends EventEmitter {
   public discoverTimer?: NodeJS.Timer;
   /** Trading pairs advertised by this peer which we have verified that we can swap. */
   public activePairs = new Set<string>();
+  /** Currencies that we have verified that we can swap with for this peer. */
+  public verifiedCurrencies = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
   private opened = false;
   private opening = false;
@@ -341,6 +343,9 @@ class Peer extends EventEmitter {
       throw new Error('cannot deactivate a trading pair before handshake is complete');
     }
     if (this.activePairs.delete(pairId)) {
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
+      this.verifiedCurrencies.delete(baseCurrency);
+      this.verifiedCurrencies.delete(quoteCurrency);
       this.emit('pairDropped', pairId);
     }
     // TODO: notify peer that we have deactivated this pair?
@@ -795,9 +800,16 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  public sendGetNodes = async (): Promise<void> => {
+  public sendGetNodes = async (): Promise<packets.GetNodesPacket> => {
     const packet =  new packets.GetNodesPacket();
     await this.sendPacket(packet);
+    return packet;
+  }
+
+  public discoverNodes = async (): Promise<number> => {
+    const packet = await this.sendGetNodes();
+    const res = await this.wait(packet.header.id, packet.responseType);
+    return res.body.length;
   }
 
   private sendPong = async (pingId: string): Promise<void> => {

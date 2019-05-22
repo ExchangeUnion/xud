@@ -180,6 +180,14 @@ service Xud {
     };
   }
 
+  /* Discover nodes from a specific peer and apply new connections */
+  rpc DiscoverNodes(DiscoverNodesRequest) returns (DiscoverNodesResponse) {
+      option (google.api.http) = {
+      post: "/v1/discovernodes"
+      body: "*"
+    };
+  }
+
   /* Begin gracefully shutting down xud. */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
@@ -540,6 +548,14 @@ message RemovePairRequest {
   string pair_id = 1 [json_name = "pair_id"];
 }
 message RemovePairResponse {}
+
+message DiscoverNodesRequest {
+    // The node pub key of the peer to discover nodes from.
+    string peer_pub_key = 1 [json_name = "peer_pub_key"];
+}
+message DiscoverNodesResponse {
+    int32 num_nodes = 1 [json_name = "num_nodes"];
+}
 
 message ShutdownRequest {}
 message ShutdownResponse {}
