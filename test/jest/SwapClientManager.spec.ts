@@ -5,7 +5,17 @@ import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 
-jest.mock('../../lib/db/DB');
+jest.mock('../../lib/db/DB', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      models: {
+        Currency: {
+          findAll: () => { return [{ id: 'WETH', tokenAddress: '0x1234' }]; },
+        },
+      },
+    };
+  });
+});
 jest.mock('../../lib/Config');
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/p2p/Pool');
@@ -30,7 +40,6 @@ const mockRaidenAddress = 1234567890;
 jest.mock('../../lib/raidenclient/RaidenClient', () => {
   return jest.fn().mockImplementation(() => {
     const tokenAddresses = new Map<string, string>();
-    tokenAddresses.set('WETH', '0x1234');
     return {
       tokenAddresses,
       on: onListenerMock,
@@ -99,12 +108,14 @@ describe('Swaps.SwapClientManager', () => {
 
   test('it initializes lnd-ltc, lnd-btc and raiden', async () => {
     swapClientManager = new SwapClientManager(config, loggers, pool);
-    await swapClientManager.init();
+    await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);
     expect(onListenerMock).toHaveBeenCalledTimes(3);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
     expect(swapClientManager.get('WETH')).not.toBeUndefined();
+    expect(swapClientManager.raidenClient.tokenAddresses.size).toEqual(1);
+    expect(swapClientManager.raidenClient.tokenAddresses.get('WETH')).not.toBeUndefined();
     swapClientManager.remove('WETH');
     expect(swapClientManager['swapClients'].size).toEqual(2);
     expect(swapClientManager.getLndPubKeys()).toEqual(
@@ -120,7 +131,7 @@ describe('Swaps.SwapClientManager', () => {
   test('it initializes lnd-ltc and lnd-btc', async () => {
     config.raiden.disable = true;
     swapClientManager = new SwapClientManager(config, loggers, pool);
-    await swapClientManager.init();
+    await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(2);
     expect(onListenerMock).toHaveBeenCalledTimes(2);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
@@ -133,7 +144,7 @@ describe('Swaps.SwapClientManager', () => {
     config.lnd.LTC!.disable = true;
     config.raiden.disable = true;
     swapClientManager = new SwapClientManager(config, loggers, pool);
-    await swapClientManager.init();
+    await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(1);
     expect(onListenerMock).toHaveBeenCalledTimes(1);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
@@ -146,7 +157,7 @@ describe('Swaps.SwapClientManager', () => {
     config.lnd.LTC!.disable = true;
     config.raiden.disable = true;
     swapClientManager = new SwapClientManager(config, loggers, pool);
-    await swapClientManager.init();
+    await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(0);
     expect(onListenerMock).toHaveBeenCalledTimes(0);
     expect(swapClientManager.get('BTC')).toBeUndefined();
@@ -157,7 +168,7 @@ describe('Swaps.SwapClientManager', () => {
 
   it('closes lnd-btc, lnd-ltc and raiden', async () => {
     swapClientManager = new SwapClientManager(config, loggers, pool);
-    await swapClientManager.init();
+    await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);
     swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(3);
