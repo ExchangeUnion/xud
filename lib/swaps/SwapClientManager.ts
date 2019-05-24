@@ -58,19 +58,16 @@ class SwapClientManager {
         initPromises.push(lndClient.init());
       }
     }
-    // setup raiden client and connect if configured
-    const raidenEnabled = !this.config.raiden.disable;
-    if (raidenEnabled) {
-      initPromises.push(this.raidenClient.init());
-    }
-    // bind event listeners
-    this.bind();
+    // setup Raiden
+    initPromises.push(this.raidenClient.init());
     // TODO: it might make sense to remove swap clients that turned out
     // to be disabled after the initPromises resolve, since we
     // currently treat disabled clients as if they don't exist.
     await Promise.all(initPromises);
+    // bind event listeners after all swap clients have initialized
+    this.bind();
     // associate swap clients with currencies managed by raiden client
-    if (raidenEnabled) {
+    if (!this.raidenClient.isDisabled()) {
       const currencyInstances = await models.Currency.findAll();
       currencyInstances.forEach((currency) => {
         if (currency.tokenAddress) {
@@ -177,7 +174,7 @@ class SwapClientManager {
     }
     // we make sure to close raiden client because it
     // might not be associated with any currency
-    if (!this.config.raiden.disable && !raidenClosed) {
+    if (!this.raidenClient.isDisabled() && !raidenClosed) {
       this.raidenClient.close();
     }
   }
@@ -195,7 +192,7 @@ class SwapClientManager {
     // we handle raiden separately because we don't want to attach
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
-    if (!this.config.raiden.disable) {
+    if (!this.raidenClient.isDisabled()) {
       this.raidenClient.on('connectionVerified', (newAddress) => {
         if (newAddress) {
           this.pool.updateRaidenAddress(newAddress);
