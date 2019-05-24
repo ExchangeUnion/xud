@@ -85,7 +85,7 @@ class OrderBook extends EventEmitter {
   }
 
   constructor(private logger: Logger, models: Models, public nomatching = false,
-    private pool?: Pool, private swaps?: Swaps, private nosanitychecks = false) {
+    private pool: Pool, private swaps?: Swaps, private nosanitychecks = false) {
     super();
 
     this.repository = new OrderBookRepository(models);
@@ -100,30 +100,28 @@ class OrderBook extends EventEmitter {
   }
 
   private bindPool = () => {
-    if (this.pool) {
-      this.pool.on('packet.order', this.addPeerOrder);
-      this.pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
-      this.pool.on('packet.getOrders', this.sendOrders);
-      this.pool.on('packet.swapRequest', this.handleSwapRequest);
-      this.pool.on('peer.close', this.removePeerOrders);
-      this.pool.on('peer.pairDropped', this.removePeerPair);
-      this.pool.on('peer.pairsAdvertised', this.verifyPeerPairs);
-      this.pool.on('peer.nodeStateUpdate', (peer) => {
-        // remove any trading pairs for which we no longer have both swap client identifiers
-        peer.forEachActivePair((activePairId) => {
-          const [baseCurrency, quoteCurrency] = activePairId.split('/');
-          const isCurrencySupported = (currency: string) => {
-            const currencyAttributes = this.getCurrencyAttributes(currency);
-            return currencyAttributes && peer.getIdentifier(currencyAttributes.swapClient, currency);
-          };
+    this.pool.on('packet.order', this.addPeerOrder);
+    this.pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
+    this.pool.on('packet.getOrders', this.sendOrders);
+    this.pool.on('packet.swapRequest', this.handleSwapRequest);
+    this.pool.on('peer.close', this.removePeerOrders);
+    this.pool.on('peer.pairDropped', this.removePeerPair);
+    this.pool.on('peer.pairsAdvertised', this.verifyPeerPairs);
+    this.pool.on('peer.nodeStateUpdate', (peer) => {
+      // remove any trading pairs for which we no longer have both swap client identifiers
+      peer.forEachActivePair((activePairId) => {
+        const [baseCurrency, quoteCurrency] = activePairId.split('/');
+        const isCurrencySupported = (currency: string) => {
+          const currencyAttributes = this.getCurrencyAttributes(currency);
+          return currencyAttributes && peer.getIdentifier(currencyAttributes.swapClient, currency);
+        };
 
-          if (!isCurrencySupported(baseCurrency) || !isCurrencySupported(quoteCurrency)) {
-            // this peer's node state no longer supports at least one of the currencies for this trading pair
-            peer.deactivatePair(activePairId);
-          }
-        });
+        if (!isCurrencySupported(baseCurrency) || !isCurrencySupported(quoteCurrency)) {
+          // this peer's node state no longer supports at least one of the currencies for this trading pair
+          peer.deactivatePair(activePairId);
+        }
       });
-    }
+    });
   }
 
   private bindSwaps = () => {
@@ -232,9 +230,7 @@ class OrderBook extends EventEmitter {
     this.pairInstances.set(pairInstance.id, pairInstance);
     this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
 
-    if (this.pool) {
-      this.pool.updatePairs(this.pairIds);
-    }
+    this.pool.updatePairs(this.pairIds);
     return pairInstance;
   }
 
@@ -275,9 +271,7 @@ class OrderBook extends EventEmitter {
     this.pairInstances.delete(pairId);
     this.tradingPairs.delete(pairId);
 
-    if (this.pool) {
-      this.pool.updatePairs(this.pairIds);
-    }
+    this.pool.updatePairs(this.pairIds);
     return pair.destroy();
   }
 
@@ -641,9 +635,7 @@ class OrderBook extends EventEmitter {
         this.localIdMap.delete(removeResult.order.localId);
       }
 
-      if (this.pool) {
-        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
-      }
+      this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
       return removeResult.order;
     } catch (err) {
       if (quantityToRemove !== undefined) {
@@ -771,11 +763,9 @@ class OrderBook extends EventEmitter {
    * Create an outgoing order and broadcast it to all peers.
    */
   private broadcastOrder = (order: OwnOrder) => {
-    if (this.pool) {
-      if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
-        const outgoingOrder = OrderBook.createOutgoingOrder(order);
-        this.pool.broadcastOrder(outgoingOrder);
-      }
+    if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
+      const outgoingOrder = OrderBook.createOutgoingOrder(order);
+      this.pool.broadcastOrder(outgoingOrder);
     }
   }
 

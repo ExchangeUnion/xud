@@ -12,7 +12,7 @@ import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
 import { SwapClientType } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
-import sinon, { SinonSandbox }  from 'sinon';
+import sinon  from 'sinon';
 
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
@@ -30,12 +30,16 @@ const initValues = async (db: DB) => {
   ]);
 };
 
+const sandbox = sinon.createSandbox();
+const pool = sandbox.createStubInstance(Pool) as any;
+pool.broadcastOrder = () => {};
+pool.broadcastOrderInvalidation = () => {};
+pool.updatePairs = () => {};
+
 describe('OrderBook', () => {
   let db: DB;
-  let pool: Pool;
   let swaps: Swaps;
   let orderBook: OrderBook;
-  let sandbox: SinonSandbox;
 
   before(async () => {
     db = new DB(loggers.db);
@@ -43,11 +47,7 @@ describe('OrderBook', () => {
 
     await initValues(db);
 
-    sandbox = sinon.createSandbox();
-    pool = sandbox.createStubInstance(Pool) as any;
-    pool.broadcastOrder = () => {};
-    pool.broadcastOrderInvalidation = () => {};
-    swaps = sandbox.createStubInstance(Swaps) as any;
+    swaps = sandbox.createStubInstance(Swaps) as any;;
     swaps.isPairSupported = () => true;
     const lndBTC = sandbox.createStubInstance(LndClient) as any;
     const lndLTC = sandbox.createStubInstance(LndClient) as any;
@@ -162,7 +162,7 @@ describe('nomatching OrderBook', () => {
   });
 
   beforeEach(async () => {
-    orderBook = new OrderBook(loggers.orderbook, db.models, true);
+    orderBook = new OrderBook(loggers.orderbook, db.models, true, pool);
     await orderBook.init();
   });
 
