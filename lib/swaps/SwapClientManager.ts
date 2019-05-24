@@ -8,6 +8,7 @@ import Pool from '../p2p/Pool';
 import { errors } from './errors';
 import { Currency } from '../orderbook/types';
 import { isLndClient, isRaidenClient } from './types';
+import { Models } from '../db/DB';
 
 class SwapClientManager {
   /** A map between currencies and all swap clients */
@@ -42,7 +43,7 @@ class SwapClientManager {
    * and waits for the swap clients to initialize.
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
    */
-  public init = async (): Promise<void> => {
+  public init = async (models: Models): Promise<void> => {
     const initPromises = [];
     // setup LND clients and initialize
     for (const currency in this.config.lnd) {
@@ -70,9 +71,13 @@ class SwapClientManager {
     await Promise.all(initPromises);
     // associate swap clients with currencies managed by raiden client
     if (raidenEnabled) {
-      for (const currency of this.raidenClient.tokenAddresses.keys()) {
-        this.swapClients.set(currency, this.raidenClient);
-      }
+      const currencyInstances = await models.Currency.findAll();
+      currencyInstances.forEach((currency) => {
+        if (currency.tokenAddress) {
+          this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
+          this.swapClients.set(currency.id, this.raidenClient);
+        }
+      });
     }
   }
 
