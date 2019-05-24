@@ -3,7 +3,6 @@ import {
   SwapPhase,
   SwapState,
   SwapFailureReason,
-  SwapClientType,
 } from '../constants/enums';
 
 export type SwapDeal = {
@@ -97,11 +96,3 @@ export type ResolveRequest = {
   amount: number,
   rHash: string,
 };
-
-export function isLndClient(swapClientType: SwapClientType): boolean {
-  return (swapClientType === SwapClientType.Lnd);
-}
-
-export function isRaidenClient(swapClientType: SwapClientType): boolean {
-  return (swapClientType === SwapClientType.Raiden);
-}

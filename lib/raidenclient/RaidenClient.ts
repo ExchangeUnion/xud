@@ -80,6 +80,7 @@ class RaidenClient extends SwapClient {
     } catch (err) {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
+        err,
       );
       await this.setStatus(ClientStatus.Disconnected);
     }

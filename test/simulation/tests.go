@@ -34,8 +34,6 @@ func testNetworkInit(net *xudtest.NetworkHarness, ht *harnessTest) {
 				ht.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
 				// Set the node public key.
 				node.SetPubKey(res.NodePubKey)
-				// Set the node public key.
-				node.SetPubKey(res.NodePubKey)
 				// Add pair to the node.
 				ht.act.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
 				break

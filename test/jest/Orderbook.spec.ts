@@ -46,7 +46,14 @@ jest.mock('../../lib/p2p/Peer', () => {
     };
   });
 });
-jest.mock('../../lib/p2p/Pool');
+jest.mock('../../lib/p2p/Pool', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      updatePairs: jest.fn(),
+      on: jest.fn(),
+    };
+  });
+});
 jest.mock('../../lib/Config');
 jest.mock('../../lib/swaps/Swaps');
 jest.mock('../../lib/swaps/SwapClientManager');
@@ -83,7 +90,7 @@ describe('OrderBook', () => {
       port: 9735,
     }, network);
     db = new DB(loggers.db, config.dbpath);
-    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models, '1.0.0');
     swapClientManager = new SwapClientManager(config, loggers, pool);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
     swaps.swapClientManager = swapClientManager;

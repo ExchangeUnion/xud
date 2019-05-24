@@ -7,8 +7,16 @@ import Logger, { Loggers } from '../Logger';
 import Pool from '../p2p/Pool';
 import { errors } from './errors';
 import { Currency } from '../orderbook/types';
-import { isLndClient, isRaidenClient } from './types';
 import { Models } from '../db/DB';
+import { SwapClientType } from '../constants/enums';
+
+function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
+  return (swapClient.type === SwapClientType.Raiden);
+}
+
+function isLndClient(swapClient: SwapClient): swapClient is LndClient {
+  return (swapClient.type === SwapClientType.Lnd);
+}
 
 class SwapClientManager {
   /** A map between currencies and all swap clients */
@@ -60,12 +68,19 @@ class SwapClientManager {
     }
     // setup Raiden
     initPromises.push(this.raidenClient.init());
-    // TODO: it might make sense to remove swap clients that turned out
-    // to be disabled after the initPromises resolve, since we
-    // currently treat disabled clients as if they don't exist.
-    await Promise.all(initPromises);
-    // bind event listeners after all swap clients have initialized
+
+    // bind event listeners before all swap clients have initialized
     this.bind();
+
+    await Promise.all(initPromises);
+
+    // delete any swap clients that were disabled during initialization
+    this.swapClients.forEach((swapClient, currency) => {
+      if (swapClient.isDisabled()) {
+        this.swapClients.delete(currency);
+      }
+    });
+
     // associate swap clients with currencies managed by raiden client
     if (!this.raidenClient.isDisabled()) {
       const currencyInstances = await models.Currency.findAll();
@@ -93,10 +108,10 @@ class SwapClientManager {
    * @returns Nothing upon success, throws otherwise.
    */
   public add = (currency: Currency): void => {
-    if (isRaidenClient(currency.swapClient) && currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress) {
       this.swapClients.set(currency.id, this.raidenClient);
       this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
-    } else if (isLndClient(currency.swapClient)) {
+    } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
       // for the specified currency
       let hasCurrency = false;
@@ -120,7 +135,7 @@ class SwapClientManager {
   public remove = (currency: string): void => {
     const swapClient = this.get(currency);
     this.swapClients.delete(currency);
-    if (swapClient && isRaidenClient(swapClient.type)) {
+    if (swapClient && isRaidenClient(swapClient)) {
       this.raidenClient.tokenAddresses.delete(currency);
     }
   }
@@ -132,8 +147,8 @@ class SwapClientManager {
   public getLndPubKeys = (): LndPubKeys => {
     const lndPubKeys: LndPubKeys = {};
     for (const [currency, swapClient] of this.swapClients.entries()) {
-      if (isLndClient(swapClient.type)) {
-        lndPubKeys[currency] = (swapClient as LndClient).pubKey;
+      if (isLndClient(swapClient)) {
+        lndPubKeys[currency] = swapClient.pubKey;
       }
     }
     return lndPubKeys;
@@ -151,10 +166,10 @@ class SwapClientManager {
     // rather than determining it dynamically when needed. The benefits
     // would be slightly improved performance.
     for (const [currency, swapClient] of this.swapClients.entries()) {
-      if (isLndClient(swapClient.type)) {
+      if (isLndClient(swapClient)) {
         lndInfos[currency] = swapClient.isDisabled()
           ? undefined
-          : await (swapClient as LndClient).getLndInfo();
+          : await swapClient.getLndInfo();
       }
     }
     return lndInfos;
@@ -168,7 +183,7 @@ class SwapClientManager {
     let raidenClosed = false;
     for (const swapClient of this.swapClients.values()) {
       swapClient.close();
-      if (isRaidenClient(swapClient.type)) {
+      if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
     }
@@ -181,7 +196,7 @@ class SwapClientManager {
 
   private bind = () => {
     for (const [currency, swapClient] of this.swapClients.entries()) {
-      if (isLndClient(swapClient.type)) {
+      if (isLndClient(swapClient)) {
         swapClient.on('connectionVerified', (newPubKey) => {
           if (newPubKey) {
             this.pool.updateLndPubKey(currency, newPubKey);

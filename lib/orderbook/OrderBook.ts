@@ -160,6 +160,8 @@ class OrderBook extends EventEmitter {
       this.pairInstances.set(pair.id, pair);
       this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
     });
+
+    this.pool.updatePairs(this.pairIds);
   }
 
   public getCurrencyAttributes(symbol: string) {
