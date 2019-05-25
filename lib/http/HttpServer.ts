@@ -58,7 +58,6 @@ class HttpServer {
       switch (req.url) {
         case '/resolveraiden':
           resJson = await this.httpService.resolveHashRaiden(reqJson);
-          this.logger.debug(`http server response json: ${JSON.stringify(resJson)}`);
           break;
         default:
           res.writeHead(404);
