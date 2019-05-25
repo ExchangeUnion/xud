@@ -210,7 +210,6 @@ class RaidenClient extends SwapClient {
             reject(errors.TIMEOUT);
             break;
           case 409:
-            this.logger.debug(`raiden response status code 409: ${JSON.stringify(res)}`);
             reject(errors.INVALID);
             break;
           case 500:
