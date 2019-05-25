@@ -37,6 +37,7 @@ jest.mock('../../lib/lndclient/LndClient', () => {
   });
 });
 const mockRaidenAddress = 1234567890;
+let mockRaidenClientIsDisabled = false;
 jest.mock('../../lib/raidenclient/RaidenClient', () => {
   return jest.fn().mockImplementation(() => {
     const tokenAddresses = new Map<string, string>();
@@ -46,7 +47,7 @@ jest.mock('../../lib/raidenclient/RaidenClient', () => {
       init: () => Promise.resolve(),
       type: SwapClientType.Raiden,
       address: mockRaidenAddress,
-      isDisabled: () => false,
+      isDisabled: () => mockRaidenClientIsDisabled,
       close: closeMock,
     };
   });
@@ -130,6 +131,7 @@ describe('Swaps.SwapClientManager', () => {
 
   test('it initializes lnd-ltc and lnd-btc', async () => {
     config.raiden.disable = true;
+    mockRaidenClientIsDisabled = true;
     swapClientManager = new SwapClientManager(config, loggers, pool);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(2);
@@ -143,6 +145,7 @@ describe('Swaps.SwapClientManager', () => {
   test('it initializes lnd-btc', async () => {
     config.lnd.LTC!.disable = true;
     config.raiden.disable = true;
+    mockRaidenClientIsDisabled = true;
     swapClientManager = new SwapClientManager(config, loggers, pool);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(1);
@@ -167,6 +170,8 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   it('closes lnd-btc, lnd-ltc and raiden', async () => {
+    config.raiden.disable = false;
+    mockRaidenClientIsDisabled = false;
     swapClientManager = new SwapClientManager(config, loggers, pool);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);

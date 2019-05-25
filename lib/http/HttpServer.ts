@@ -39,12 +39,14 @@ class HttpServer {
   private requestListener: http.RequestListener = async (req, res) => {
     if (!req.headers['content-length']) {
       res.writeHead(411);
+      res.end();
       return;
     }
 
     let reqJson: any;
     try {
       reqJson = await reqToJson(req);
+      this.logger.debug(`http server request json: ${JSON.stringify(reqJson)}`);
     } catch (err) {
       res.writeHead(400);
       res.end(err);
