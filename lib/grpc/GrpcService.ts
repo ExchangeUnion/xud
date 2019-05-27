@@ -10,8 +10,8 @@ import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
-import { SwapFailureReason, OrderStatus } from '../constants/enums';
-import { SwapDealInstance } from 'lib/db/types';
+import { SwapFailureReason } from '../constants/enums';
+import { SwapDealInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
