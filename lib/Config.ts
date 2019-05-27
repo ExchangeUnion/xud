@@ -3,8 +3,8 @@ import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
 import { promises as fs } from 'fs';
-import { LndClientConfig } from './lndclient/LndClient';
-import { RaidenClientConfig } from './raidenclient/RaidenClient';
+import { LndClientConfig } from './lndclient/types';
+import { RaidenClientConfig } from './raidenclient/types';
 import { Level } from './Logger';
 import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
@@ -17,6 +17,7 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
+  public http: { port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public webproxy: { port: number, disable: boolean };
@@ -79,6 +80,9 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 8886,
+    };
+    this.http = {
+      port: 8887,
     };
     this.webproxy = {
       disable: true,

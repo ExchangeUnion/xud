@@ -7,7 +7,6 @@ import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
 import { XudService } from '../proto/xudrpc_grpc_pb';
-import { HashResolverService } from '../proto/lndrpc_grpc_pb';
 import { promises as fs } from 'fs';
 import serverProxy from './serverProxy';
 
@@ -39,14 +38,11 @@ class GrpcServer {
       placeOrderSync: grpcService.placeOrderSync,
       removeCurrency: grpcService.removeCurrency,
       removePair: grpcService.removePair,
+      discoverNodes: grpcService.discoverNodes,
       shutdown: grpcService.shutdown,
       subscribeOrders: grpcService.subscribeOrders,
       subscribeSwapFailures: grpcService.subscribeSwapFailures,
       subscribeSwaps: grpcService.subscribeSwaps,
-    });
-
-    this.server.addService(HashResolverService, {
-      resolveHash: grpcService.resolveHash,
     });
 
     this.grpcService = grpcService;

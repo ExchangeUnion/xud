@@ -1,18 +1,18 @@
-import Logger from '../Logger';
 import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
-import LndClient, { LndInfo } from '../lndclient/LndClient';
-import RaidenClient, { RaidenInfo } from '../raidenclient/RaidenClient';
+import { LndInfo } from '../lndclient/types';
+import { RaidenInfo } from '../raidenclient/types';
 import { EventEmitter } from 'events';
 import errors from './errors';
-import { SwapClient, OrderSide, SwapRole, OrderStatus } from '../constants/enums';
+import { SwapClientType, OrderSide, SwapRole, OrderStatus } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
-import * as lndrpc from '../proto/lndrpc_pb';
-import { Pair, Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
 import Swaps from '../swaps/Swaps';
+import SwapClientManager from '../swaps/SwapClientManager';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
+import { errors as swapsErrors } from '../swaps/errors';
 import { TradeInstance, SwapDealInstance } from 'lib/db/types';
 
 /**
@@ -20,8 +20,7 @@ import { TradeInstance, SwapDealInstance } from 'lib/db/types';
  */
 type ServiceComponents = {
   orderBook: OrderBook;
-  lndClients: { [currency: string]: LndClient | undefined };
-  raidenClient: RaidenClient;
+  swapClientManager: SwapClientManager;
   pool: Pool;
   /** The version of the local xud instance. */
   version: string;
@@ -48,7 +47,12 @@ const argChecks = {
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
+  HAS_PEER_PUB_KEY: ({ peerPubKey }: { peerPubKey: string }) => {
+    if (peerPubKey === '') throw errors.INVALID_ARGUMENT('peerPubKey must be specified');
+  },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
+  HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
+  POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
   POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
@@ -60,7 +64,7 @@ const argChecks = {
     if (port < 1024 || port > 65535 || !Number.isInteger(port)) throw errors.INVALID_ARGUMENT('port must be an integer between 1024 and 65535');
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
-    if (!SwapClient[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+    if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
 };
 
@@ -68,20 +72,18 @@ const argChecks = {
 class Service extends EventEmitter {
   public shutdown: () => void;
   private orderBook: OrderBook;
-  private lndClients: { [currency: string]: LndClient | undefined };
-  private raidenClient: RaidenClient;
+  private swapClientManager: SwapClientManager;
   private pool: Pool;
   private version: string;
   private swaps: Swaps;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private logger: Logger, components: ServiceComponents) {
+  constructor(components: ServiceComponents) {
     super();
 
     this.shutdown = components.shutdown;
     this.orderBook = components.orderBook;
-    this.lndClients = components.lndClients;
-    this.raidenClient = components.raidenClient;
+    this.swapClientManager = components.swapClientManager;
     this.pool = components.pool;
     this.swaps = components.swaps;
 
@@ -89,7 +91,7 @@ class Service extends EventEmitter {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClient | number, decimalPlaces: number, tokenAddress?: string}) => {
+  public addCurrency = async (args: { currency: string, swapClient: SwapClientType | number, decimalPlaces: number, tokenAddress?: string}) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
@@ -122,17 +124,13 @@ class Service extends EventEmitter {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
     const getBalance = async (currency: string) => {
-      const client = this.lndClients[currency.toUpperCase()]
-        // TODO: support all registered tokens for Raiden
-        || (currency.toUpperCase() === 'WETH' && this.raidenClient);
-
-      if (!client) {
-        // TODO: throw an error here indicating that lnd is disabled for this currency
-        return { balance: 0, pendingOpenBalance: 0 };
+      const swapClient = this.swapClientManager.get(currency.toUpperCase());
+      if (swapClient) {
+        const channelBalance = await swapClient.channelBalance();
+        return channelBalance;
+      } else {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
-
-      const channelBalance = await client.channelBalance();
-      return channelBalance;
     };
 
     if (currency) {
@@ -239,13 +237,8 @@ class Service extends EventEmitter {
       numPairs += 1;
     }
 
-    const lnd: { [currency: string]: LndInfo | undefined } = {};
-    for (const currency in this.lndClients) {
-      const lndClient = this.lndClients[currency]!;
-      lnd[currency] = lndClient.isDisabled() ? undefined : await lndClient.getLndInfo();
-    }
-
-    const raiden = this.raidenClient.isDisabled() ? undefined : await this.raidenClient.getRaidenInfo();
+    const lnd = await this.swapClientManager.getLndClientsInfo();
+    const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
 
     return {
       lnd,
@@ -314,7 +307,6 @@ class Service extends EventEmitter {
    * @returns A list of supported currency ticker symbols
    */
   public listCurrencies = () => {
-    const pairs = new Map<string, Pair>();
     return Array.from(this.orderBook.currencies);
   }
 
@@ -413,6 +405,14 @@ class Service extends EventEmitter {
     return this.orderBook.removePair(pairId);
   }
 
+  /** Discover nodes from a specific peer and apply new connections */
+  public discoverNodes = async (args: { peerPubKey: string }) => {
+    argChecks.HAS_PEER_PUB_KEY(args);
+    const { peerPubKey } = args;
+
+    return this.pool.discoverNodes(peerPubKey);
+  }
+
   /*
    * Subscribe to orders being added to the order book.
    */
@@ -462,10 +462,12 @@ class Service extends EventEmitter {
   }
 
   /**
-   * resolveHash resolve hash to preimage.
+   * Resolves a hash to its preimage.
    */
-  public resolveHash = async (request: lndrpc.ResolveRequest) => {
-    return this.swaps.resolveHash(request);
+  public resolveHash = async (request: ResolveRequest) => {
+    argChecks.HAS_RHASH(request);
+    argChecks.POSITIVE_AMOUNT(request);
+    return this.swaps.handleResolveRequest(request);
   }
 }
 export default Service;

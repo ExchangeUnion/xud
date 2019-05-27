@@ -1,12 +1,10 @@
 import http from 'http';
 import Logger from '../Logger';
-import BaseClient, { ClientStatus, ChannelBalance } from '../BaseClient';
+import SwapClient, { ClientStatus, ChannelBalance } from '../swaps/SwapClient';
 import errors from './errors';
 import { SwapDeal } from '../swaps/types';
-import { SwapClient, SwapState, SwapRole } from '../constants/enums';
+import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import OrderBookRepository from '../orderbook/OrderBookRepository';
-import { Models } from '../db/DB';
 import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 /**
@@ -31,28 +29,25 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 /**
  * A class representing a client to interact with raiden.
  */
-class RaidenClient extends BaseClient {
-  public readonly type = SwapClient.Raiden;
+class RaidenClient extends SwapClient {
+  public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
   public address = '';
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
   private disable: boolean;
-  private repository: OrderBookRepository;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger, models: Models) {
+  constructor(config: RaidenClientConfig, logger: Logger) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
     this.disable = disable;
-
-    this.repository = new OrderBookRepository(logger, models);
   }
 
   /**
@@ -63,23 +58,7 @@ class RaidenClient extends BaseClient {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
-    // associate the client with all currencies that have a contract address
-    await this.setCurrencies();
     await this.verifyConnection();
-  }
-
-  private setCurrencies = async () => {
-    try {
-      const currencies = await this.repository.getCurrencies();
-      const raidenCurrencies = currencies.filter((currency) => {
-        const tokenAddress = currency.getDataValue('tokenAddress');
-        if (tokenAddress) {
-          this.tokenAddresses.set(currency.getDataValue('id'), tokenAddress);
-        }
-      });
-    } catch (e) {
-      this.logger.error('failed to set tokenAddresses for Raiden', e);
-    }
   }
 
   protected verifyConnection = async () => {
@@ -143,7 +122,18 @@ class RaidenClient extends BaseClient {
       secret_hash: deal.rHash,
     });
     return tokenPaymentResponse.secret;
+  }
 
+  public addInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public settleInvoice = async () => {
+    // not implemented, raiden does not use invoices
+  }
+
+  public removeInvoice = async () => {
+    // not implemented, raiden does not use invoices
   }
 
   public getRoutes =  async (_amount: number, _destination: string) => {
@@ -248,7 +238,7 @@ class RaidenClient extends BaseClient {
   /**
    * Queries for events tied to a specific channel.
    */
-  private getChannelEvents = async (channel_address: string) => {
+  public getChannelEvents = async (channel_address: string) => {
     // TODO: specify a "from_block"  query argument to only get events since a specific block.
     const endpoint = `events/channels/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
@@ -304,7 +294,7 @@ class RaidenClient extends BaseClient {
    */
   public closeChannel = async (channel_address: string): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
+    await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
   }
 
   /**
@@ -325,7 +315,7 @@ class RaidenClient extends BaseClient {
       const body = await parseResponseBody<TokenPaymentResponse>(res);
       return body;
     } catch (e) {
-      this.logger.error(`got exception from RaidenClient.tokenPayment:`, e);
+      this.logger.error('got exception from RaidenClient.tokenPayment', e);
       throw e;
     }
   }
@@ -337,14 +327,14 @@ class RaidenClient extends BaseClient {
    */
   public depositToChannel = async (channel_address: string, balance: number): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'PATCH', { balance });
+    await this.sendRequest(endpoint, 'PATCH', { balance });
   }
 
   /**
    * Gets the account address for the raiden node.
    */
   private getAddress = async (): Promise<string> => {
-    const endpoint = `address`;
+    const endpoint = 'address';
     const res = await this.sendRequest(endpoint, 'GET');
 
     const body = await parseResponseBody<{ our_address: string }>(res);
@@ -356,4 +346,3 @@ class RaidenClient extends BaseClient {
 }
 
 export default RaidenClient;
-export { RaidenClientConfig, RaidenInfo, OpenChannelPayload };

@@ -304,14 +304,14 @@ describe('Parser', () => {
     testValidPacket(new packets.OrdersPacket([], uuid()));
     testInvalidPacket(new packets.OrdersPacket(ordersPacketBody));
 
-    const sanitySwapPacketBody = {
+    const sanitySwapInitPacketBody = {
       rHash,
       currency: 'BTC',
     };
-    testValidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody));
-    testInvalidPacket(new packets.SanitySwapPacket(sanitySwapPacketBody, uuid()));
-    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, currency: undefined })));
-    testInvalidPacket(new packets.SanitySwapPacket(removeUndefinedProps({ ...sanitySwapPacketBody, rHash: undefined })));
+    testValidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody));
+    testInvalidPacket(new packets.SanitySwapInitPacket(sanitySwapInitPacketBody, uuid()));
+    testInvalidPacket(new packets.SanitySwapInitPacket(removeUndefinedProps({ ...sanitySwapInitPacketBody, currency: undefined })));
+    testInvalidPacket(new packets.SanitySwapInitPacket(removeUndefinedProps({ ...sanitySwapInitPacketBody, rHash: undefined })));
 
     const swapRequestPacketBody = {
       rHash,
@@ -374,12 +374,12 @@ describe('Parser', () => {
   });
 
   describe('test more edge-cases', () => {
-    it(`should not try to parse an empty buffer`, async () => {
+    it('should not try to parse an empty buffer', async () => {
       await expect(wait()).to.be.rejectedWith(timeoutError);
       parser.feed(Buffer.alloc(0));
     });
 
-    it(`should not try parse just the header as a packet`, (done) => {
+    it('should not try parse just the header as a packet', (done) => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
@@ -397,7 +397,7 @@ describe('Parser', () => {
       });
     });
 
-    it(`should buffer a max buffer length`, (done) => {
+    it('should buffer a max buffer length', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()
@@ -413,7 +413,7 @@ describe('Parser', () => {
       parser.feed(Buffer.allocUnsafe(10));
     });
 
-    it(`should not buffer when max buffer size exceeds`,  (done) => {
+    it('should not buffer when max buffer size exceeds',  (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()

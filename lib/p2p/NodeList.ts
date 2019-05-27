@@ -4,7 +4,6 @@ import { NodeInstance, NodeFactory, ReputationEventInstance } from '../db/types'
 import { Address } from './types';
 import addressUtils from '../utils/addressUtils';
 import { ReputationEvent } from '../constants/enums';
-import Network from './Network';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -37,7 +36,7 @@ class NodeList extends EventEmitter {
     return this.nodes.size;
   }
 
-  constructor(private repository: P2PRepository, private network: Network) {
+  constructor(private repository: P2PRepository) {
     super();
   }
 

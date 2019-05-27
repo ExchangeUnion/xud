@@ -10,7 +10,7 @@ import { Packet, PacketType } from './packets';
 import { OutgoingOrder, OrderPortion, IncomingOrder } from '../orderbook/types';
 import { Models } from '../db/DB';
 import Logger from '../Logger';
-import { NodeState, Address, NodeConnectionInfo, NodeStateUpdate, PoolConfig } from './types';
+import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
@@ -36,7 +36,7 @@ interface Pool {
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
-  on(event: 'packet.sanitySwap', listener: (packet: packets.SanitySwapPacket, peer: Peer) => void): this;
+  on(event: 'packet.sanitySwapInit', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
@@ -50,7 +50,7 @@ interface Pool {
   /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'peer.nodeStateUpdate', peer: Peer): boolean;
-  emit(event: 'packet.sanitySwap', packet: packets.SanitySwapPacket, peer: Peer): boolean;
+  emit(event: 'packet.sanitySwapInit', packet: packets.SanitySwapInitPacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
@@ -61,8 +61,6 @@ interface Pool {
 interface NodeConnectionIterator {
   forEach: (callback: (node: NodeConnectionInfo) => void) => void;
 }
-
-/** Represents a pool of peers that handles all  network activity. */
 
 /**
  * Represents a pool of peers that handles all p2p network activity. This tracks all active and
@@ -98,7 +96,7 @@ class Pool extends EventEmitter {
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
-    this.nodes = new NodeList(this.repository, this.network);
+    this.nodes = new NodeList(this.repository);
 
     if (config.listen) {
       this.listenPort = config.port;
@@ -232,7 +230,7 @@ class Pool extends EventEmitter {
       const externalAddress = addressUtils.toString(address);
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
-        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.config, this.network);
+        const peer = new Peer(Logger.DISABLED_LOGGER, address, this.network);
         await peer.beginOpen(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
         await peer.close();
         assert.fail();
@@ -367,7 +365,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    const peer = new Peer(this.logger, address, this.config, this.network);
+    const peer = new Peer(this.logger, address, this.network);
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -508,6 +506,15 @@ class Pool extends EventEmitter {
     }
   }
 
+  public discoverNodes = async (peerPubKey: string): Promise<number> => {
+    const peer = this.peers.get(peerPubKey);
+    if (!peer) {
+      throw errors.NOT_CONNECTED(peerPubKey);
+    }
+
+    return peer.discoverNodes();
+  }
+
   // A wrapper for [[NodeList.addReputationEvent]].
   public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
     return this.nodes.addReputationEvent(nodePubKey, event);
@@ -558,7 +565,7 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
-    const peer = Peer.fromInbound(socket, this.logger, this.config, this.network);
+    const peer = Peer.fromInbound(socket, this.logger, this.network);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
@@ -636,7 +643,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.SanitySwap: {
         this.logger.debug(`received sanitySwap from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.sanitySwap', packet, peer);
+        this.emit('packet.sanitySwapInit', packet, peer);
         break;
       }
       case PacketType.SwapRequest: {
@@ -824,7 +831,7 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Start listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
+   * Starts listening for incoming p2p connections on the configured host and port. If `this.listenPort` is 0 or undefined,
    * a random available port is used and will be assigned to `this.listenPort`.
    * @return a promise that resolves once the server is listening, or rejects if it fails to listen
    */
@@ -850,7 +857,7 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Stop listening for incoming p2p connections.
+   * Stops listening for incoming p2p connections.
    * @return a promise that resolves once the server is no longer listening
    */
   private unlisten = () => {

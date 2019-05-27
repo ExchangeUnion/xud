@@ -1,56 +1,38 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import BaseClient, { ClientStatus } from '../BaseClient';
+import SwapClient, { ClientStatus } from '../swaps/SwapClient';
 import errors from './errors';
 import { LightningClient } from '../proto/lndrpc_grpc_pb';
+import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
+import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs } from 'fs';
-import { SwapState, SwapRole, SwapClient } from '../constants/enums';
+import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
-
-/** The configurable options for the lnd client. */
-type LndClientConfig = {
-  disable: boolean;
-  certpath: string;
-  macaroonpath: string;
-  host: string;
-  port: number;
-  cltvdelta: number;
-  nomacaroons: boolean;
-};
-
-/** General information about the state of this lnd client. */
-type LndInfo = {
-  error?: string;
-  channels?: ChannelCount;
-  chains?: string[];
-  blockheight?: number;
-  uris?: string[];
-  version?: string;
-  alias?: string;
-};
-
-type ChannelCount = {
-  active: number,
-  inactive?: number,
-  pending: number,
-};
+import { base64ToHex, hexToUint8Array } from '../utils/utils';
+import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
 
 interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
 }
 
+interface InvoicesMethodIndex extends InvoicesClient {
+  [methodName: string]: Function;
+}
+
 /** A class representing a client to interact with lnd. */
-class LndClient extends BaseClient {
-  public readonly type = SwapClient.Lnd;
+class LndClient extends SwapClient {
+  public readonly type = SwapClientType.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
+  private invoices!: InvoicesClient | InvoicesMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
   private identityPubKey?: string;
-  private invoiceSubscription?: ClientReadableStream<lndrpc.InvoiceSubscription>;
+  private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
+  private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
 
   /**
    * Creates an lnd client.
@@ -58,13 +40,12 @@ class LndClient extends BaseClient {
    */
   constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
     super(logger);
-
     this.cltvDelta = config.cltvdelta || 0;
   }
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
+    assert(this.cltvDelta > 0, `lnd-${this.currency}: cltvdelta must be a positive number`);
 
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
@@ -92,7 +73,7 @@ class LndClient extends BaseClient {
         return;
       }
     } else {
-      this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
+      this.logger.info('macaroons are disabled for lnd');
     }
 
     this.uri = `${host}:${port}`;
@@ -119,9 +100,25 @@ class LndClient extends BaseClient {
     });
   }
 
+  private unaryInvoiceCall = <T, U>(methodName: string, params: T): Promise<U> => {
+    return new Promise((resolve, reject) => {
+      if (this.isDisabled()) {
+        reject(errors.LND_IS_DISABLED);
+        return;
+      }
+      (this.invoices as InvoicesMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  }
+
   public getLndInfo = async (): Promise<LndInfo> => {
     let channels: ChannelCount | undefined;
-    let chains: string[] | undefined;
+    let chains: Chain[] | undefined;
     let blockheight: number | undefined;
     let uris: string[] | undefined;
     let version: string | undefined;
@@ -138,7 +135,7 @@ class LndClient extends BaseClient {
           active: lnd.getNumActiveChannels(),
           pending: lnd.getNumPendingChannels(),
         };
-        chains = lnd.getChainsList(),
+        chains = lnd.getChainsList().map(value => value.toObject());
         blockheight = lnd.getBlockHeight(),
         uris = lnd.getUrisList(),
         version = lnd.getVersion();
@@ -165,8 +162,9 @@ class LndClient extends BaseClient {
       throw(errors.LND_IS_DISABLED);
     }
     if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd for ${this.currency} at ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
+      this.invoices = new InvoicesClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
@@ -181,13 +179,13 @@ class LndClient extends BaseClient {
             this.identityPubKey = newPubKey;
           }
           this.emit('connectionVerified', newPubKey);
-          this.subscribeInvoices();
+          this.subscribeChannels();
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
-          this.logger.warn(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
         }
       } catch (err) {
-        this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
+        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
         await this.setStatus(ClientStatus.Disconnected);
       }
@@ -202,30 +200,24 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
-  /**
-   * Gets the preimage in hex format from an lnd SendResponse message.
-   */
-  private getPreimageFromSendResponse = (response: lndrpc.SendResponse) => {
-    return Buffer.from(response.getPaymentPreimage_asB64(), 'base64').toString('hex');
-  }
-
   public sendSmallestAmount = async (rHash: string, destination: string) => {
     const sendRequest = new lndrpc.SendRequest();
     sendRequest.setAmt(1);
     sendRequest.setDestString(destination);
     sendRequest.setPaymentHashString(rHash);
+    sendRequest.setFinalCltvDelta(this.cltvDelta);
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(sendRequest);
     } catch (err) {
-      this.logger.error(`got exception from sendPaymentSync`, err.message);
+      this.logger.error('got exception from sendPaymentSync', err.message);
       throw err;
     }
     const paymentError = sendPaymentResponse.getPaymentError();
     if (paymentError) {
       throw new Error(paymentError);
     }
-    return this.getPreimageFromSendResponse(sendPaymentResponse);
+    return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
@@ -244,7 +236,7 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return this.getPreimageFromSendResponse(sendToRouteResponse);
+        return base64ToHex(sendToRouteResponse.getPaymentPreimage_asB64());
       } catch (err) {
         this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
@@ -272,7 +264,7 @@ class LndClient extends BaseClient {
           throw new Error(sendPaymentError);
         }
 
-        return this.getPreimageFromSendResponse(sendPaymentResponse);
+        return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
       } catch (err) {
         this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
         throw err;
@@ -293,7 +285,7 @@ class LndClient extends BaseClient {
   /**
    * Gets a new address for the internal lnd wallet.
    */
-  public newAddress = (addressType: lndrpc.NewAddressRequest.AddressType): Promise<lndrpc.NewAddressResponse> => {
+  public newAddress = (addressType: lndrpc.AddressType): Promise<lndrpc.NewAddressResponse> => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
     return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
@@ -367,7 +359,7 @@ class LndClient extends BaseClient {
       )) {
         return [];
       } else {
-        this.logger.error(`error calling queryRoutes for ${this.currency} to ${destination}: ${JSON.stringify(err)}`);
+        this.logger.error(`error calling queryRoutes to ${destination}: ${JSON.stringify(err)}`);
         throw err;
       }
     }
@@ -387,18 +379,81 @@ class LndClient extends BaseClient {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
+  public addInvoice = async (rHash: string, amount: number) => {
+    const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
+    addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
+    addHoldInvoiceRequest.setValue(amount);
+    addHoldInvoiceRequest.setCltvExpiry(this.cltvDelta); // TODO: use peer's cltv delta
+    await this.addHoldInvoice(addHoldInvoiceRequest);
+    this.logger.debug(`added invoice of ${amount} for ${rHash}`);
+    this.subscribeSingleInvoice(rHash);
+  }
+
+  public settleInvoice = async (rHash: string, rPreimage: string) => {
+    const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
+    if (invoiceSubscription) {
+      const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
+      settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
+      await this.settleInvoiceLnd(settleInvoiceRequest);
+      this.logger.debug(`settled invoice for ${rHash}`);
+      invoiceSubscription.cancel();
+    }
+  }
+
+  public removeInvoice = async (rHash: string) => {
+    const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
+    if (invoiceSubscription) {
+      const cancelInvoiceRequest = new lndinvoices.CancelInvoiceMsg();
+      cancelInvoiceRequest.setPaymentHash(hexToUint8Array(rHash));
+      await this.cancelInvoice(cancelInvoiceRequest);
+      this.logger.debug(`canceled invoice for ${rHash}`);
+      invoiceSubscription.cancel();
+    }
+  }
+
+  private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {
+    return this.unaryInvoiceCall<lndinvoices.AddHoldInvoiceRequest, lndinvoices.AddHoldInvoiceResp>('addHoldInvoice', request);
+  }
+
+  private cancelInvoice = (request: lndinvoices.CancelInvoiceMsg): Promise<lndinvoices.CancelInvoiceResp> => {
+    return this.unaryInvoiceCall<lndinvoices.CancelInvoiceMsg, lndinvoices.CancelInvoiceResp>('cancelInvoice', request);
+  }
+
+  private settleInvoiceLnd = (request: lndinvoices.SettleInvoiceMsg): Promise<lndinvoices.SettleInvoiceResp> => {
+    return this.unaryInvoiceCall<lndinvoices.SettleInvoiceMsg, lndinvoices.SettleInvoiceResp>('settleInvoice', request);
+  }
+
+  private subscribeSingleInvoice = (rHash: string) => {
+    const paymentHash = new lndrpc.PaymentHash();
+    // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
+    paymentHash.setRHash(hexToUint8Array(rHash));
+    const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
+    const deleteInvoiceSubscription = () => {
+      invoiceSubscription.removeAllListeners();
+      this.invoiceSubscriptions.delete(rHash);
+      this.logger.debug(`deleted invoice subscription for ${rHash}`);
+    };
+    invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
+      if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
+        // we have accepted an htlc for this invoice
+        this.emit('htlcAccepted', rHash, invoice.getValue());
+      }
+    }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
+    this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+  }
+
   /**
-   * Subscribes to invoices.
+   * Subscribes to channel events.
    */
-  private subscribeInvoices = (): void => {
-    if (this.invoiceSubscription) {
-      this.invoiceSubscription.cancel();
+  private subscribeChannels = (): void => {
+    if (this.channelSubscription) {
+      this.channelSubscription.cancel();
     }
 
-    this.invoiceSubscription = this.lightning.subscribeInvoices(new lndrpc.InvoiceSubscription(), this.meta)
+    this.channelSubscription = this.lightning.subscribeChannelEvents(new lndrpc.ChannelEventSubscription(), this.meta)
     .on('error', async (error) => {
-      this.invoiceSubscription = undefined;
-      this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
+      this.channelSubscription = undefined;
+      this.logger.error(`lnd has been disconnected, error: ${error}`);
       await this.setStatus(ClientStatus.Disconnected);
     });
   }
@@ -437,11 +492,10 @@ class LndClient extends BaseClient {
 
   /** Lnd client specific cleanup. */
   protected closeSpecific = () => {
-    if (this.invoiceSubscription) {
-      this.invoiceSubscription.cancel();
+    if (this.channelSubscription) {
+      this.channelSubscription.cancel();
     }
   }
 }
 
 export default LndClient;
-export { LndClientConfig, LndInfo };

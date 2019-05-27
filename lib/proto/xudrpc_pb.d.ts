@@ -142,6 +142,31 @@ export namespace BanResponse {
     }
 }
 
+export class Chain extends jspb.Message { 
+    getChain(): string;
+    setChain(value: string): void;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): Chain.AsObject;
+    static toObject(includeInstance: boolean, msg: Chain): Chain.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: Chain, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Chain;
+    static deserializeBinaryFromReader(message: Chain, reader: jspb.BinaryReader): Chain;
+}
+
+export namespace Chain {
+    export type AsObject = {
+        chain: string,
+        network: string,
+    }
+}
+
 export class ChannelBalance extends jspb.Message { 
     getBalance(): number;
     setBalance(value: number): void;
@@ -748,9 +773,9 @@ export class LndInfo extends jspb.Message {
     setChannels(value?: LndChannels): void;
 
     clearChainsList(): void;
-    getChainsList(): Array<string>;
-    setChainsList(value: Array<string>): void;
-    addChains(value: string, index?: number): string;
+    getChainsList(): Array<Chain>;
+    setChainsList(value: Array<Chain>): void;
+    addChains(value?: Chain, index?: number): Chain;
 
     getBlockheight(): number;
     setBlockheight(value: number): void;
@@ -781,7 +806,7 @@ export namespace LndInfo {
     export type AsObject = {
         error: string,
         channels?: LndChannels.AsObject,
-        chainsList: Array<string>,
+        chainsList: Array<Chain.AsObject>,
         blockheight: number,
         urisList: Array<string>,
         version: string,
@@ -1343,6 +1368,48 @@ export class RemovePairResponse extends jspb.Message {
 
 export namespace RemovePairResponse {
     export type AsObject = {
+    }
+}
+
+export class DiscoverNodesRequest extends jspb.Message { 
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DiscoverNodesRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: DiscoverNodesRequest): DiscoverNodesRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DiscoverNodesRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DiscoverNodesRequest;
+    static deserializeBinaryFromReader(message: DiscoverNodesRequest, reader: jspb.BinaryReader): DiscoverNodesRequest;
+}
+
+export namespace DiscoverNodesRequest {
+    export type AsObject = {
+        peerPubKey: string,
+    }
+}
+
+export class DiscoverNodesResponse extends jspb.Message { 
+    getNumNodes(): number;
+    setNumNodes(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DiscoverNodesResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: DiscoverNodesResponse): DiscoverNodesResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DiscoverNodesResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DiscoverNodesResponse;
+    static deserializeBinaryFromReader(message: DiscoverNodesResponse, reader: jspb.BinaryReader): DiscoverNodesResponse;
+}
+
+export namespace DiscoverNodesResponse {
+    export type AsObject = {
+        numNodes: number,
     }
 }
 

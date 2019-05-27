@@ -21,23 +21,29 @@ import (
 // by their preceding ones.
 func testNetworkInit(net *xudtest.NetworkHarness, ht *harnessTest) {
 	for _, node := range net.ActiveNodes {
-
 		// Verify connectivity.
-		req := &xudrpc.GetInfoRequest{}
-		res, err := node.Client.GetInfo(ht.ctx, req)
-		ht.assert.NoError(err)
-		ht.assert.NotNil(res.Lnd["BTC"])
-		ht.assert.NotNil(res.Lnd["LTC"])
-		ht.assert.Len(res.Lnd["BTC"].Chains, 1)
-		ht.assert.Equal(res.Lnd["BTC"].Chains[0], "bitcoin")
-		ht.assert.Len(res.Lnd["LTC"].Chains, 1)
-		ht.assert.Equal(res.Lnd["LTC"].Chains[0], "litecoin")
-
-		// Set the node public key.
-		node.SetPubKey(res.NodePubKey)
-
-		// Add pair to the node.
-		ht.act.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
+		timeout := time.Now().Add(10 * time.Second)
+		for {
+			req := &xudrpc.GetInfoRequest{}
+			res, err := node.Client.GetInfo(ht.ctx, req)
+			ht.assert.NoError(err)
+			if len(res.Lnd["BTC"].Chains) == 1 && len(res.Lnd["LTC"].Chains) == 1 {
+				ht.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
+				ht.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
+				ht.assert.Equal(res.Lnd["LTC"].Chains[0].Chain, "litecoin")
+				ht.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
+				// Set the node public key.
+				node.SetPubKey(res.NodePubKey)
+				// Set the node public key.
+				node.SetPubKey(res.NodePubKey)
+				// Add pair to the node.
+				ht.act.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
+				break
+			}
+			ht.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
+			// retry interval
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
@@ -159,7 +165,7 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 
 	req := &xudrpc.PlaceOrderRequest{
 		Price:    0.02,
-		Quantity: 10000000,
+		Quantity: 1000000,
 		PairId:   "LTC/BTC",
 		OrderId:  "random_order_id",
 		Side:     xudrpc.OrderSide_BUY,
@@ -181,7 +187,7 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	req := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    0.02,
-		Quantity: 10000000,
+		Quantity: 1000000,
 		PairId:   "LTC/BTC",
 		Side:     xudrpc.OrderSide_BUY,
 	}

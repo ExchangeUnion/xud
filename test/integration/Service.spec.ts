@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClient, OrderSide } from '../../lib/constants/enums';
+import { SwapClientType, OrderSide } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -35,10 +35,10 @@ describe('API Service', () => {
       },
       lnd: {
         LTC: {
-          disable: true,
+          disable: false,
         },
         BTC: {
-          disable: true,
+          disable: false,
         },
       },
       raiden: {
@@ -52,8 +52,8 @@ describe('API Service', () => {
   });
 
   it('should add two currencies', async () => {
-    const addCurrencyPromises = [service.addCurrency({ currency: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 }),
-      service.addCurrency({ currency: 'BTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 })];
+    const addCurrencyPromises = [service.addCurrency({ currency: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 0 }),
+      service.addCurrency({ currency: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 0 })];
     await expect(Promise.all(addCurrencyPromises)).to.be.fulfilled;
   });
 
@@ -110,12 +110,12 @@ describe('API Service', () => {
   });
 
   it('should fail adding a currency with a ticker that is not 2 to 5 characters long', async () => {
-    const tooLongAddCurrencyPromise = service.addCurrency({ currency: 'BITCOIN', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
+    const tooLongAddCurrencyPromise = service.addCurrency({ currency: 'BITCOIN', swapClient: SwapClientType.Lnd, decimalPlaces: 0 });
     await expect(tooLongAddCurrencyPromise).to.be.rejectedWith('currency must consist of 2 to 5 upper case English letters or numbers');
   });
 
   it('should fail adding a currency with an invalid letter in its ticker', async () => {
-    const invalidLetterAddCurrencyPromise = service.addCurrency({ currency: 'ÑEO', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
+    const invalidLetterAddCurrencyPromise = service.addCurrency({ currency: 'ÑEO', swapClient: SwapClientType.Lnd, decimalPlaces: 0 });
     await expect(invalidLetterAddCurrencyPromise).to.be.rejectedWith('currency must consist of 2 to 5 upper case English letters or numbers');
   });
 
@@ -125,7 +125,7 @@ describe('API Service', () => {
   });
 
   it('should fail adding a currency that already exists', async () => {
-    const addCurrencyPromise = service.addCurrency({ currency: 'LTC', swapClient: SwapClient.Lnd, decimalPlaces: 0 });
+    const addCurrencyPromise = service.addCurrency({ currency: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 0 });
     await expect(addCurrencyPromise).to.be.rejectedWith('currency LTC already exists');
   });
 
