@@ -33,6 +33,7 @@
     "test:p2p:watch": "mocha -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha -r ts-node/register test/crypto/*",
     "test:sim": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -v)",
+    "test:jest": "jest",
     "test:jest:watch": "jest --watch",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
