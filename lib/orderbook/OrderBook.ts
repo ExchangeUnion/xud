@@ -303,7 +303,7 @@ class OrderBook extends EventEmitter {
       throw errors.MARKET_ORDERS_NOT_ALLOWED();
     }
 
-    const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.MAX_VALUE : 0 });
+    const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.POSITIVE_INFINITY : 0 });
     const addResult = await this.placeOrder(stampedOrder, true, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
     delete addResult.remainingOrder;
     return addResult;

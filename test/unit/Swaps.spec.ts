@@ -110,6 +110,20 @@ describe('Swaps', () => {
     expect(outboundAmount).to.equal(Swaps['UNITS_PER_CURRENCY']['LTC'] * quantity);
   });
 
+  it('should calculate 0 outbound amount for a market buy order', () => {
+    const { outboundCurrency, outboundAmount } =
+      Swaps.calculateInboundOutboundAmounts(quantity, 0, true, pairId);
+    expect(outboundCurrency).to.equal('BTC');
+    expect(outboundAmount).to.equal(0);
+  });
+
+  it('should calculate 0 inbound amount for a market sell order', () => {
+    const { inboundCurrency, inboundAmount } =
+      Swaps.calculateInboundOutboundAmounts(quantity, Number.POSITIVE_INFINITY, false, pairId);
+    expect(inboundCurrency).to.equal('BTC');
+    expect(inboundAmount).to.equal(0);
+  });
+
   it('should validate a good swap request', () => {
     expect(Swaps.validateSwapRequest(swapRequest)).to.be.true;
   });

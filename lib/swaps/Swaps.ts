@@ -94,12 +94,15 @@ class Swaps extends EventEmitter {
    * @param quantity The quantity of the order
    * @param price The price of the order
    * @param isBuy Whether the order is a buy
-   * @returns An object with the calculated incoming and outgoing values.
+   * @returns An object with the calculated incoming and outgoing values. The quote currency
+   * amount is returned as zero if the price is 0 or infinity, indicating a market order.
    */
   public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
-    const quoteCurrencyAmount = Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
+    const quoteCurrencyAmount = price > 0 && price < Number.POSITIVE_INFINITY ?
+      Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]) :
+      0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
 
     const inboundCurrency = isBuy ? baseCurrency : quoteCurrency;
     const inboundAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
