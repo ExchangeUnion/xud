@@ -700,6 +700,8 @@ class OrderBook extends EventEmitter {
     if (this.nosanitychecks) {
       // we have disabled sanity checks, so assume all pairs should be activated
       pairIds.forEach(pair => peer.activePairs.add(pair));
+      // request peer's orders
+      await peer.sendPacket(new GetOrdersPacket({ pairIds }));
       return;
     }
 
