@@ -9,6 +9,7 @@ const errorCodes = {
   SERVER_ERROR: codesPrefix.concat('.5'),
   UNEXPECTED: codesPrefix.concat('.6'),
   TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
+  INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.8'),
 };
 
 const errors = {
@@ -39,6 +40,10 @@ const errors = {
   TOKEN_ADDRESS_NOT_FOUND: {
     message: 'raiden token address not found',
     code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
+  },
+  INVALID_TOKEN_PAYMENT_RESPONSE: {
+    message: 'raiden TokenPaymentResponse is invalid',
+    code: errorCodes.INVALID_TOKEN_PAYMENT_RESPONSE,
   },
 };
 

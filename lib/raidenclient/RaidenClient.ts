@@ -95,7 +95,7 @@ class RaidenClient extends SwapClient {
       amount: 1,
       secret_hash: rHash,
     });
-    return tokenPaymentResponse.secret;
+    return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
@@ -121,7 +121,16 @@ class RaidenClient extends SwapClient {
       target_address: deal.destination!,
       secret_hash: deal.rHash,
     });
-    return tokenPaymentResponse.secret;
+    return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
+  }
+
+  private sanitizeTokenPaymentResponse = (response: TokenPaymentResponse) => {
+    if (response.secret) {
+      // remove '0x'
+      return response.secret.slice(2);
+    } else {
+      throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
+    }
   }
 
   public addInvoice = async () => {
