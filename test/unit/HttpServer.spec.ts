@@ -7,6 +7,7 @@ import chaiAsPromised = require('chai-as-promised');
 import sinon from 'sinon';
 import Service from '../../lib/service/Service';
 import { ResolveRequest } from '../../lib/swaps/types';
+import { errors } from '../../lib/swaps/errors';
 
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);
@@ -25,8 +26,9 @@ describe('HttpServer', () => {
   const preimage = 'rpreimage';
 
   service.resolveHash = (resolveRequest: ResolveRequest) => {
-    expect(resolveRequest.amount).to.equal(amount);
-    expect(resolveRequest.rHash).to.equal(secret_hash);
+    if (resolveRequest.rHash === 'wronghash') {
+      throw errors.PAYMENT_HASH_NOT_FOUND(resolveRequest.rHash);
+    }
     return preimage;
   };
 
@@ -49,10 +51,22 @@ describe('HttpServer', () => {
       });
   });
 
+  it('should return not found 404 when wrong secret hash provided', (done) => {
+    chai.request(`http://localhost:${port}`)
+      .post('/resolveraiden')
+      .send({ amount, token, secret_hash: '0xwronghash' })
+      .then((res: ChaiHttp.Response) => {
+        expect(res.status).to.equal(404);
+        done();
+      }).catch((reason) => {
+        done(reason);
+      });
+  });
+
   it('should return an internal error if an exception is thrown internally', (done) => {
     chai.request(`http://localhost:${port}`)
       .post('/resolveraiden')
-      .send({ amount, token, secret_hash: 'wrongrhash' }) // wrong hash will fail the expect statement
+      .send({ amount, token, secret_hash: 1 }) // expecting a string
       .then((res: ChaiHttp.Response) => {
         expect(res.status).to.equal(500);
         done();

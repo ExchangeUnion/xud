@@ -6,8 +6,8 @@ class HttpService {
 
   public resolveHashRaiden = async (resolveRequest: RaidenResolveRequest): Promise<RaidenResolveResponse> => {
     const secret = await this.service.resolveHash({
+      rHash: resolveRequest.secret_hash.slice(2),
       amount: resolveRequest.amount,
-      rHash: resolveRequest.secret_hash,
     });
     return { secret };
   }
