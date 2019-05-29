@@ -1,6 +1,7 @@
 import Pool from '../../lib/p2p/Pool';
 import Peer from '../../lib/p2p/Peer';
 import Orderbook from '../../lib/orderbook/OrderBook';
+import { OwnOrder } from '../../lib/orderbook/types';
 import Logger from '../../lib/Logger';
 import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
@@ -14,7 +15,16 @@ jest.mock('../../lib/db/DB', () => {
     return {
       models: {
         Pair: {
-          findAll: () => { return ['LTC/BTC']; },
+          findAll: () => {
+            return [
+              {
+                id: 'LTC/BTC',
+                baseCurrency: 'LTC',
+                quoteCurrency: 'BTC',
+              },
+            ];
+
+          },
         },
         Currency: {
           findAll: () => {
@@ -80,6 +90,7 @@ describe('OrderBook', () => {
     pool = new Pool(config.p2p, config.network, loggers.p2p, db.models);
     swapClientManager = new SwapClientManager(config, loggers, pool);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
+    swaps.swapClientManager = swapClientManager;
   });
 
   afterEach(() => {
@@ -94,6 +105,37 @@ describe('OrderBook', () => {
     await orderbook['verifyPeerPairs'](peer, pairIds);
     expect(mockAddPair).toHaveBeenCalledTimes(2);
     expect(mockSendPacket).toHaveBeenCalledTimes(1);
+  });
+
+  test('placeOrder insufficient outbound balance does throw when nosanitychecks disabled', async () => {
+    config.nosanitychecks = false;
+    orderbook = new Orderbook(loggers.orderbook, db.models, config.nomatching, pool, swaps, config.nosanitychecks);
+    await orderbook.init();
+    const quantity = 500000000000;
+    const order: OwnOrder = {
+      quantity,
+      initialQuantity: quantity,
+      pairId: 'LTC/BTC',
+      price: 0.1,
+      isBuy: false,
+      localId: '97945230-8144-11e9-beb7-49ba94e5bd74',
+      hold: 0,
+      id: '97945230-8144-11e9-beb7-49ba94e5bd74',
+      createdAt: 1559046721235,
+    };
+    Swaps['calculateInboundOutboundAmounts'] = () => {
+      return {
+        inboundCurrency: 'BTC',
+        inboundAmount: 50000000000,
+        outboundCurrency: 'LTC',
+        outboundAmount: quantity,
+      };
+    };
+    swaps.swapClientManager.get = jest.fn().mockReturnValue({
+      maximumOutboundCapacity: 1,
+    });
+    await expect(orderbook.placeLimitOrder(order))
+      .rejects.toMatchSnapshot();
   });
 
 });
