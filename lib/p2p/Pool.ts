@@ -543,7 +543,7 @@ class Pool extends EventEmitter {
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(async (peer) => {
-      if (peer.activePairs.has(order.pairId)) {
+      if (peer.isPairActive(order.pairId)) {
         await peer.sendPacket(orderPacket);
       }
     });
@@ -594,7 +594,7 @@ class Pool extends EventEmitter {
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
 
-        if (peer.activePairs.has(incomingOrder.pairId)) {
+        if (peer.isPairActive(incomingOrder.pairId)) {
           this.emit('packet.order', incomingOrder);
         } else {
           this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
@@ -617,7 +617,7 @@ class Pool extends EventEmitter {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
         receivedOrders.forEach((order) => {
-          if (peer.activePairs.has(order.pairId)) {
+          if (peer.isPairActive(order.pairId)) {
             this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
           } else {
             this.logger.debug(`received order ${order.id} for deactivated trading pair`);

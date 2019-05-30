@@ -38,15 +38,11 @@ jest.mock('../../lib/db/DB', () => {
     };
   });
 });
-const mockSendPacket = jest.fn();
-const mockAddPair = jest.fn();
+const mockActivatePair = jest.fn();
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
     return {
-      activePairs: {
-        add: mockAddPair,
-      },
-      sendPacket: mockSendPacket,
+      activatePair: mockActivatePair,
     };
   });
 });
@@ -103,8 +99,7 @@ describe('OrderBook', () => {
     await orderbook.init();
     const pairIds = ['LTC/BTC', 'WETH/BTC'];
     await orderbook['verifyPeerPairs'](peer, pairIds);
-    expect(mockAddPair).toHaveBeenCalledTimes(2);
-    expect(mockSendPacket).toHaveBeenCalledTimes(1);
+    expect(mockActivatePair).toHaveBeenCalledTimes(2);
   });
 
   test('placeOrder insufficient outbound balance does throw when nosanitychecks disabled', async () => {

@@ -64,10 +64,10 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
-  /** Trading pairs advertised by this peer which we have verified that we can swap. */
-  public activePairs = new Set<string>();
   /** Currencies that we have verified that we can swap with for this peer. */
   public verifiedCurrencies = new Set<string>();
+  /** Trading pairs advertised by this peer which we have verified that we can swap. */
+  private activePairs = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
   private opened = false;
   private opening = false;
@@ -336,7 +336,7 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Manually deactivates a trading pair with this peer.
+   * Deactivates a trading pair with this peer.
    */
   public deactivatePair = (pairId: string) => {
     if (!this.nodeState) {
@@ -350,6 +350,23 @@ class Peer extends EventEmitter {
     }
     // TODO: notify peer that we have deactivated this pair?
   }
+
+  /**
+   * Activates a trading pair with this peer.
+   */
+  public activatePair = async (pairId: string) => {
+    if (!this.nodeState) {
+      throw new Error('cannot activate a trading pair before handshake is complete');
+    }
+    this.activePairs.add(pairId);
+    // request peer's orders
+    await this.sendPacket(new packets.GetOrdersPacket({ pairIds: [pairId] }));
+  }
+
+  public isPairActive = (pairId: string) => this.activePairs.has(pairId);
+
+// tslint:disable-next-line: member-ordering
+  public forEachActivePair = this.activePairs.forEach.bind(this.activePairs);
 
   private sendRaw = (data: Buffer) => {
     if (this.socket && !this.socket.destroyed) {
