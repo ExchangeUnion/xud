@@ -15,7 +15,7 @@ import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../const
 import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
 import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
   PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder } from './types';
-import { SwapRequestPacket, SwapFailedPacket, GetOrdersPacket } from '../p2p/packets';
+import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
 import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
 // We add the Bluebird import to ts-ignore because it's actually being used.
 // @ts-ignore
@@ -110,7 +110,7 @@ class OrderBook extends EventEmitter {
       this.pool.on('peer.pairsAdvertised', this.verifyPeerPairs);
       this.pool.on('peer.nodeStateUpdate', (peer) => {
         // remove any trading pairs for which we no longer have both swap client identifiers
-        peer.activePairs.forEach((activePairId) => {
+        peer.forEachActivePair((activePairId) => {
           const [baseCurrency, quoteCurrency] = activePairId.split('/');
           const isCurrencySupported = (currency: string) => {
             const currencyAttributes = this.getCurrencyAttributes(currency);
@@ -699,9 +699,7 @@ class OrderBook extends EventEmitter {
 
     if (this.nosanitychecks) {
       // we have disabled sanity checks, so assume all pairs should be activated
-      pairIds.forEach(pair => peer.activePairs.add(pair));
-      // request peer's orders
-      await peer.sendPacket(new GetOrdersPacket({ pairIds }));
+      pairIds.forEach(peer.activatePair);
       return;
     }
 
@@ -717,7 +715,6 @@ class OrderBook extends EventEmitter {
       }
     });
 
-    const verifiedPairs: string[] = [];
     const sanitySwapPromises: Promise<void>[] = [];
 
     // Set a time limit for all sanity swaps to complete.
@@ -742,18 +739,14 @@ class OrderBook extends EventEmitter {
     await Promise.all(sanitySwapPromises);
 
     // activate pairs that have had both currencies verified
+    const activationPromises: Promise<void>[] = [];
     pairIds.forEach(async (pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
       if (peer.verifiedCurrencies.has(baseCurrency) && peer.verifiedCurrencies.has(quoteCurrency)) {
-        peer.activePairs.add(pairId);
-        verifiedPairs.push(pairId);
+        activationPromises.push(peer.activatePair(pairId));
       }
     });
-
-    if (verifiedPairs.length) {
-      // request peer's orders for newly activated trading pairs
-      await peer.sendPacket(new GetOrdersPacket({ pairIds: verifiedPairs }));
-    }
+    await Promise.all(activationPromises);
   }
 
   /**
