@@ -7,6 +7,8 @@ import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
 import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
+type RaidenErrorResponse = { errors: string };
+
 /**
  * A utility function to parse the payload from an http response.
  */
@@ -196,7 +198,7 @@ class RaidenClient extends SwapClient {
         };
       }
 
-      const req = http.request(options, (res) => {
+      const req = http.request(options, async (res) => {
         switch (res.statusCode) {
           case 200:
           case 201:
@@ -210,7 +212,8 @@ class RaidenClient extends SwapClient {
             reject(errors.TIMEOUT);
             break;
           case 409:
-            reject(errors.INVALID);
+            const body = await parseResponseBody<RaidenErrorResponse>(res);
+            reject(errors.INVALID(body.errors));
             break;
           case 500:
             this.logger.error(`raiden server error ${res.statusCode}: ${res.statusMessage}`);
@@ -310,14 +313,10 @@ class RaidenClient extends SwapClient {
     if (payload.secret_hash) {
       payload.secret_hash = `0x${payload.secret_hash}`;
     }
-    try {
-      const res = await this.sendRequest(endpoint, 'POST', payload);
-      const body = await parseResponseBody<TokenPaymentResponse>(res);
-      return body;
-    } catch (e) {
-      this.logger.error('got exception from RaidenClient.tokenPayment', e);
-      throw e;
-    }
+
+    const res = await this.sendRequest(endpoint, 'POST', payload);
+    const body = await parseResponseBody<TokenPaymentResponse>(res);
+    return body;
   }
 
   /**
