@@ -26,6 +26,25 @@ const getMockPool = (sandbox: sinon.SinonSandbox) => {
   return pool;
 };
 
+const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
+  const swaps = sandbox.createStubInstance(Swaps) as any;
+  swaps.isPairSupported = () => true;
+  const lndBTC = sandbox.createStubInstance(LndClient) as any;
+  const lndLTC = sandbox.createStubInstance(LndClient) as any;
+  swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
+  swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
+  swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
+  swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
+  swaps.swapClientManager.get = (currency: any) => {
+    const client = swaps.swapClientManager['swapClients'].get(currency);
+    if (!client) {
+      throw new Error('unknown swap client');
+    }
+    return client;
+  };
+  return swaps;
+};
+
 const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(db.models);
 
@@ -53,21 +72,7 @@ describe('OrderBook', () => {
     const pool = getMockPool(sandbox);
     await initValues(db);
 
-    swaps = sandbox.createStubInstance(Swaps) as any;
-    swaps.isPairSupported = () => true;
-    const lndBTC = sandbox.createStubInstance(LndClient) as any;
-    const lndLTC = sandbox.createStubInstance(LndClient) as any;
-    swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
-    swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
-    swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
-    swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
-    swaps.swapClientManager.get = (currency) => {
-      const client = swaps.swapClientManager['swapClients'].get(currency);
-      if (!client) {
-        throw new Error('unknown swap client');
-      }
-      return client;
-    };
+    swaps = getMockSwaps(sandbox);
     orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);
     await orderBook.init();
   });
@@ -158,18 +163,20 @@ describe('nomatching OrderBook', () => {
   let db: DB;
   let sandbox: sinon.SinonSandbox;
   let pool: Pool;
+  let swaps: Swaps;
   let orderBook: OrderBook;
 
   before(async () => {
     db = new DB(loggers.db);
     await db.init();
     sandbox = sinon.createSandbox();
+    swaps = getMockSwaps(sandbox);
     pool = getMockPool(sandbox);
     await initValues(db);
   });
 
   beforeEach(async () => {
-    orderBook = new OrderBook(loggers.orderbook, db.models, true, pool);
+    orderBook = new OrderBook(loggers.orderbook, db.models, true, pool, swaps);
     await orderBook.init();
   });
 
