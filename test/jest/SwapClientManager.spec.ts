@@ -100,7 +100,7 @@ describe('Swaps.SwapClientManager', () => {
       port: 1234,
     };
     db = new DB(loggers.db, config.dbpath);
-    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models, '1.0.0');
   });
 
   afterEach(() => {

@@ -449,7 +449,6 @@ class Swaps extends EventEmitter {
       localId: orderToAccept.localId,
       phase: SwapPhase.SwapCreated,
       state: SwapState.Active,
-      rHash: requestBody.rHash,
       role: SwapRole.Maker,
       createTime: Date.now(),
     };

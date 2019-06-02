@@ -69,7 +69,7 @@ interface NodeConnectionIterator {
  */
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
-  public nodeState!: NodeState;
+  public nodeState: NodeState;
   /** The local node key. */
   private nodeKey!: NodeKey;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
@@ -84,26 +84,33 @@ class Pool extends EventEmitter {
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
-  /** This node's listening external socket addresses to advertise to peers. */
-  private addresses: Address[] = [];
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
   private network: Network;
 
-  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models, version: string) {
     super();
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
 
+    this.nodeState = {
+      version,
+      nodePubKey: '',
+      addresses: [],
+      pairs: [],
+      raidenAddress: '',
+      lndPubKeys: {},
+    };
+
     if (config.listen) {
       this.listenPort = config.port;
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
-        this.addresses.push(address);
+        this.nodeState.addresses.push(address);
       });
     }
   }
@@ -115,7 +122,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (ownNodeState: Pick<NodeState, Exclude<keyof NodeState, 'addresses'>>, nodeKey: NodeKey): Promise<void> => {
+  public init = async (nodeKey: NodeKey): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -130,7 +137,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    this.nodeState = { ...ownNodeState, addresses: this.addresses };
+    this.nodeState.nodePubKey = nodeKey.nodePubKey;
     this.nodeKey = nodeKey;
 
     this.bindNodeList();
@@ -158,9 +165,9 @@ class Pool extends EventEmitter {
       externalIp = await getExternalIp();
       this.logger.info(`retrieved external IP: ${externalIp}`);
 
-      const externalIpExists = this.addresses.some((address) =>  { return address.host === externalIp; });
+      const externalIpExists = this.nodeState.addresses.some((address) =>  { return address.host === externalIp; });
       if (!externalIpExists) {
-        this.addresses.push({
+        this.nodeState.addresses.push({
           host: externalIp,
           port: this.listenPort!,
         });
@@ -174,8 +181,8 @@ class Pool extends EventEmitter {
    * Updates our active trading pairs and sends a node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updatePairs = (pairs: string[]) => {
-    this.nodeState.pairs = pairs;
+  public updatePairs = (pairIds: string[]) => {
+    this.nodeState.pairs = pairIds;
     this.sendNodeStateUpdate();
   }
 
@@ -194,6 +201,7 @@ class Pool extends EventEmitter {
    */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    this.logger.info(`${currency} ${pubKey} ${JSON.stringify(this.nodeState.lndPubKeys)}`);
     this.sendNodeStateUpdate();
   }
 

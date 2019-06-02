@@ -44,6 +44,7 @@ describe('P2P Pool Tests', async () => {
 
   before(async () => {
     nodeKeyOne = await NodeKey['generate']();
+    const nodeKeyTwo = await NodeKey['generate']();
 
     const config = new Config();
     config.p2p.listen = false;
@@ -51,15 +52,9 @@ describe('P2P Pool Tests', async () => {
     db = new DB(loggers.db);
     await db.init();
 
-    pool = new Pool(config.p2p, XuNetwork.SimNet, loggers.p2p, db.models);
+    pool = new Pool(config.p2p, XuNetwork.SimNet, loggers.p2p, db.models, '1.0.0');
 
-    await pool.init({
-      nodePubKey: 'test',
-      version: 'test',
-      pairs: [],
-      lndPubKeys: {},
-      raidenAddress: '',
-    }, nodeKeyOne);
+    await pool.init(nodeKeyTwo);
   });
 
   it('should open a connection with a peer', async () => {
