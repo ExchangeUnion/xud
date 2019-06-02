@@ -52,9 +52,16 @@ describe('P2P Pool Tests', async () => {
     db = new DB(loggers.db);
     await db.init();
 
-    pool = new Pool(config.p2p, XuNetwork.SimNet, loggers.p2p, db.models, '1.0.0');
+    pool = new Pool({
+      config: config.p2p,
+      xuNetwork: XuNetwork.SimNet,
+      logger: loggers.p2p,
+      models: db.models,
+      nodeKey: nodeKeyTwo,
+      version: '1.0.0',
+    });
 
-    await pool.init(nodeKeyTwo);
+    await pool.init();
   });
 
   it('should open a connection with a peer', async () => {

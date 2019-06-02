@@ -4,6 +4,7 @@ import DB from '../../lib/db/DB';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -19,6 +20,7 @@ jest.mock('../../lib/db/DB', () => {
 jest.mock('../../lib/Config');
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/p2p/Pool');
+jest.mock('../../lib/nodekey/NodeKey');
 const mockLndPubKey = 1;
 const lndInfoMock = jest.fn(() => Promise.resolve());
 const onListenerMock = jest.fn();
@@ -72,7 +74,7 @@ describe('Swaps.SwapClientManager', () => {
   let pool: Pool;
   let swapClientManager: SwapClientManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     config = new Config();
     config.lnd = {
       BTC: {
@@ -100,7 +102,15 @@ describe('Swaps.SwapClientManager', () => {
       port: 1234,
     };
     db = new DB(loggers.db, config.dbpath);
-    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models, '1.0.0');
+    const nodeKey = await NodeKey['generate']();
+    pool = new Pool({
+      nodeKey,
+      config: config.p2p,
+      xuNetwork: config.network,
+      logger: loggers.p2p,
+      models: db.models,
+      version: '1.0.0',
+    });
   });
 
   afterEach(() => {
