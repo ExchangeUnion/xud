@@ -73,7 +73,12 @@ describe('OrderBook', () => {
     await initValues(db);
 
     swaps = getMockSwaps(sandbox);
-    orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);
+    orderBook = new OrderBook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+    });
     await orderBook.init();
   });
 
@@ -176,7 +181,13 @@ describe('nomatching OrderBook', () => {
   });
 
   beforeEach(async () => {
-    orderBook = new OrderBook(loggers.orderbook, db.models, true, pool, swaps);
+    orderBook = new OrderBook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+      nomatching: true,
+    });
     await orderBook.init();
   });
 
