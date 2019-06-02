@@ -85,7 +85,7 @@ class OrderBook extends EventEmitter {
   }
 
   constructor(private logger: Logger, models: Models, public nomatching = false,
-    private pool: Pool, private swaps?: Swaps, private nosanitychecks = false) {
+    private pool: Pool, private swaps: Swaps, private nosanitychecks = false) {
     super();
 
     this.repository = new OrderBookRepository(models);
@@ -125,27 +125,25 @@ class OrderBook extends EventEmitter {
   }
 
   private bindSwaps = () => {
-    if (this.swaps) {
-      this.swaps.on('swap.paid', async (swapSuccess) => {
-        if (swapSuccess.role === SwapRole.Maker) {
-          const { orderId, pairId, quantity, peerPubKey } = swapSuccess;
+    this.swaps.on('swap.paid', async (swapSuccess) => {
+      if (swapSuccess.role === SwapRole.Maker) {
+        const { orderId, pairId, quantity, peerPubKey } = swapSuccess;
 
-          // we must remove the amount that was put on hold while the swap was pending for the remaining order
-          this.removeOrderHold(orderId, pairId, quantity);
+        // we must remove the amount that was put on hold while the swap was pending for the remaining order
+        this.removeOrderHold(orderId, pairId, quantity);
 
-          const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
-          this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
-          await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
-        }
-      });
-      this.swaps.on('swap.failed', (deal) => {
-        if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
-          // if our order is the maker and the swap failed after it was agreed to but before it was executed
-          // we must release the hold on the order that we set when we agreed to the deal
-          this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
-        }
-      });
-    }
+        const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+        this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
+        await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
+      }
+    });
+    this.swaps.on('swap.failed', (deal) => {
+      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
+        // if our order is the maker and the swap failed after it was agreed to but before it was executed
+        // we must release the hold on the order that we set when we agreed to the deal
+        this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
+      }
+    });
   }
 
   /** Loads the supported pairs and currencies from the database. */
@@ -245,7 +243,7 @@ class OrderBook extends EventEmitter {
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
-    this.swaps!.swapClientManager.add(currencyInstance);
+    this.swaps.swapClientManager.add(currencyInstance);
   }
 
   public removeCurrency = async (currencyId: string) => {
@@ -257,7 +255,7 @@ class OrderBook extends EventEmitter {
         }
       }
       this.currencyInstances.delete(currencyId);
-      this.swaps!.swapClientManager.remove(currencyId);
+      this.swaps.swapClientManager.remove(currencyId);
       await currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
@@ -337,7 +335,7 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    if (!this.nosanitychecks && this.swaps) {
+    if (!this.nosanitychecks) {
       // check if sufficient outbound channel capacity exists
       const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
@@ -401,13 +399,6 @@ class OrderBook extends EventEmitter {
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
-        if (!this.swaps) {
-          // the swaps module should only be undefined during integration testing of the order book
-          // in this case we treat the swap as if it failed, but without retrying the failed portion
-          this.emit('peerOrder.invalidation', portion);
-          return;
-        }
-
         this.logger.debug(`matched with peer ${maker.peerPubKey}, executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         try {
           const swapResult = await this.executeSwap(maker, taker);
@@ -480,7 +471,7 @@ class OrderBook extends EventEmitter {
     // make sure the order is in the database before we begin the swap
     await this.repository.addOrderIfNotExists(maker);
     try {
-      const swapResult = await this.swaps!.executeSwap(maker, taker);
+      const swapResult = await this.swaps.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
       await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
       return swapResult;
@@ -600,13 +591,13 @@ class OrderBook extends EventEmitter {
         this.logger.debug(`removed hold of ${quantity} on local order ${localId}, ${remainingQuantityToRemove} remaining`);
         if (remainingQuantityToRemove === 0) {
           // we can stop listening for swaps once all holds are cleared
-          this.swaps!.removeListener('swap.failed', failedHandler);
-          this.swaps!.removeListener('swap.paid', paidHandler);
+          this.swaps.removeListener('swap.failed', failedHandler);
+          this.swaps.removeListener('swap.paid', paidHandler);
         }
       };
 
-      this.swaps!.on('swap.failed', failedHandler);
-      this.swaps!.on('swap.paid', paidHandler);
+      this.swaps.on('swap.failed', failedHandler);
+      this.swaps.on('swap.paid', paidHandler);
     }
 
     return remainingQuantityToRemove;
@@ -687,10 +678,6 @@ class OrderBook extends EventEmitter {
    * @param pairIds the list of trading pair ids to verify
    */
   private verifyPeerPairs = async (peer: Peer, pairIds: string[]) => {
-    if (!this.swaps) {
-      return;
-    }
-
     if (this.nosanitychecks) {
       // we have disabled sanity checks, so assume all pairs should be activated
       pairIds.forEach(peer.activatePair);
@@ -719,7 +706,7 @@ class OrderBook extends EventEmitter {
         // perform sanity swaps for each of the currencies that we support
         const sanitySwapPromise = new Promise<void>(async (resolve) => {
           // success resolves to true if the sanity swap succeeds before the timeout
-          const success = await Promise.race([this.swaps!.executeSanitySwap(currency, peer), sanitySwapTimeout]);
+          const success = await Promise.race([this.swaps.executeSanitySwap(currency, peer), sanitySwapTimeout]);
           if (success) {
             peer.verifiedCurrencies.add(currency);
           }
@@ -835,7 +822,7 @@ class OrderBook extends EventEmitter {
         price: order.price,
         isBuy: order.isBuy,
       };
-      const dealAccepted = await this.swaps!.acceptDeal(orderToAccept, requestPacket, peer);
+      const dealAccepted = await this.swaps.acceptDeal(orderToAccept, requestPacket, peer);
       if (dealAccepted) {
         await this.repository.addOrderIfNotExists(order);
       } else {
