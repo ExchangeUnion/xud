@@ -198,6 +198,7 @@ class Pool extends EventEmitter {
    */
   public updateRaidenAddress = (raidenAddress: string) => {
     this.nodeState.raidenAddress = raidenAddress;
+    this.logger.debug(`raiden new address for nodestate is ${raidenAddress}`);
     this.sendNodeStateUpdate();
   }
 
@@ -207,7 +208,7 @@ class Pool extends EventEmitter {
    */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.logger.info(`${currency} ${pubKey} ${JSON.stringify(this.nodeState.lndPubKeys)}`);
+    this.logger.debug(`lnd ${currency} new pubkey for nodestate is ${pubKey}`);
     this.sendNodeStateUpdate();
   }
 

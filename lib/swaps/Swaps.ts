@@ -57,6 +57,7 @@ class Swaps extends EventEmitter {
     public swapClientManager: SwapClientManager,
   ) {
     super();
+
     this.repository = new SwapRepository(this.models);
     this.bind();
   }
@@ -113,6 +114,14 @@ class Swaps extends EventEmitter {
   }
 
   public init = async () => {
+    // update pool with lnd pubkeys and raiden address
+    this.swapClientManager.getLndPubKeysMap().forEach((pubKey, currency) => {
+      this.pool.updateLndPubKey(currency, pubKey);
+    });
+    if (this.swapClientManager.raidenClient.address) {
+      this.pool.updateRaidenAddress(this.swapClientManager.raidenClient.address);
+    }
+
     // Load Swaps from database
     const result = await this.repository.getSwapDeals();
     result.forEach((deal: SwapDealInstance) => {
@@ -148,16 +157,17 @@ class Swaps extends EventEmitter {
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapFailed', this.handleSwapFailed);
-    this.swapClientManager.swapClients.forEach((swapClient, currency) => {
-      swapClient.on('htlcAccepted', async (rHash, amount) => {
-        try {
-          const rPreimage = await this.resolveHash(rHash, amount, currency);
-          await swapClient.settleInvoice(rHash, rPreimage);
-        } catch (err) {
-          this.logger.error('could not settle invoice', err);
-        }
-      });
+
+    this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
+      try {
+        const rPreimage = await this.resolveHash(rHash, amount, currency);
+        await swapClient.settleInvoice(rHash, rPreimage);
+      } catch (err) {
+        this.logger.error('could not settle invoice', err);
+      }
     });
+    this.swapClientManager.on('lndUpdate', this.pool.updateLndPubKey);
+    this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenAddress);
   }
 
   /**
@@ -459,7 +469,7 @@ class Swaps extends EventEmitter {
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
 
-    // Make sure we are connected to lnd for both currencies
+    // Make sure we are connected to swap clients for both currencies
     if (!this.isPairSupported(deal.pairId)) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup);
       await this.sendErrorToPeer({

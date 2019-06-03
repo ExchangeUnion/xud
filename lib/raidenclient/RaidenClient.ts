@@ -34,7 +34,7 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
-  public address = '';
+  public address?: string;
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;

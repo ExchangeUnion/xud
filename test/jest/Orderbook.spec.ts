@@ -101,7 +101,7 @@ describe('OrderBook', () => {
       version: '1.0.0',
       nodeKey: new mockedNodeKey(),
     });
-    swapClientManager = new SwapClientManager(config, loggers, pool);
+    swapClientManager = new SwapClientManager(config, loggers);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
     swaps.swapClientManager = swapClientManager;
   });

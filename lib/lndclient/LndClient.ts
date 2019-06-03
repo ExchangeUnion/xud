@@ -21,6 +21,13 @@ interface InvoicesMethodIndex extends InvoicesClient {
   [methodName: string]: Function;
 }
 
+interface LndClient {
+  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
+  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+  emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
+}
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
@@ -279,6 +286,7 @@ class LndClient extends SwapClient {
    * Sends a payment through the Lightning Network.
    */
   private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+    this.logger.trace(`sending payment of ${request.getAmt()} for ${request.getPaymentHashString()}`);
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 

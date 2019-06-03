@@ -1,14 +1,14 @@
 import Config from '../Config';
 import SwapClient from './SwapClient';
 import LndClient from '../lndclient/LndClient';
-import { LndLogger, LndPubKeys, LndInfos } from '../lndclient/types';
+import { LndLogger, LndInfos } from '../lndclient/types';
 import RaidenClient from '../raidenclient/RaidenClient';
 import Logger, { Loggers } from '../Logger';
-import Pool from '../p2p/Pool';
 import { errors } from './errors';
 import { Currency } from '../orderbook/types';
 import { Models } from '../db/DB';
 import { SwapClientType } from '../constants/enums';
+import { EventEmitter } from 'events';
 
 function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -18,7 +18,16 @@ function isLndClient(swapClient: SwapClient): swapClient is LndClient {
   return (swapClient.type === SwapClientType.Lnd);
 }
 
-class SwapClientManager {
+interface SwapClientManager {
+  on(event: 'lndUpdate', listener: (currency: string, newPubKey: string) => void): this;
+  on(event: 'raidenUpdate', listener: (newAddress: string) => void): this;
+  on(event: 'htlcAccepted', listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void): this;
+  emit(event: 'lndUpdate', currency: string, newPubKey: string): boolean;
+  emit(event: 'raidenUpdate', newAddress: string): boolean;
+  emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
+}
+
+class SwapClientManager extends EventEmitter {
   /** A map between currencies and all swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
@@ -26,8 +35,9 @@ class SwapClientManager {
   constructor(
     private config: Config,
     private loggers: Loggers,
-    private pool: Pool,
   ) {
+    super();
+
     this.raidenClient = new RaidenClient(config.raiden, loggers.raiden);
   }
 
@@ -144,11 +154,11 @@ class SwapClientManager {
    * Gets all lnd clients' pubKeys.
    * @returns An object containing lnd public keys.
    */
-  public getLndPubKeys = (): LndPubKeys => {
-    const lndPubKeys: LndPubKeys = {};
+  public getLndPubKeysMap = () => {
+    const lndPubKeys = new Map<string, string>();
     for (const [currency, swapClient] of this.swapClients.entries()) {
-      if (isLndClient(swapClient)) {
-        lndPubKeys[currency] = swapClient.pubKey;
+      if (isLndClient(swapClient) && swapClient.pubKey) {
+        lndPubKeys.set(currency, swapClient.pubKey);
       }
     }
     return lndPubKeys;
@@ -199,8 +209,12 @@ class SwapClientManager {
       if (isLndClient(swapClient)) {
         swapClient.on('connectionVerified', (newPubKey) => {
           if (newPubKey) {
-            this.pool.updateLndPubKey(currency, newPubKey);
+            this.emit('lndUpdate', currency, newPubKey);
           }
+        });
+        // lnd clients emit htlcAccepted evented we must handle
+        swapClient.on('htlcAccepted', (rHash, amount) => {
+          this.emit('htlcAccepted', swapClient, rHash, amount, currency);
         });
       }
     }
@@ -210,7 +224,7 @@ class SwapClientManager {
     if (!this.raidenClient.isDisabled()) {
       this.raidenClient.on('connectionVerified', (newAddress) => {
         if (newAddress) {
-          this.pool.updateRaidenAddress(newAddress);
+          this.emit('raidenUpdate', newAddress);
         }
       });
     }

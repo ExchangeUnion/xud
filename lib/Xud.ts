@@ -62,14 +62,12 @@ class Xud extends EventEmitter {
     this.logger.info('config loaded');
 
     try {
+      this.db = new DB(loggers.db, this.config.dbpath);
+      await this.db.init(this.config.network, this.config.initdb);
+
       const nodeKey = await NodeKey.load(this.config.xudir, this.config.instanceid);
       this.logger.info(`Local nodePubKey is ${nodeKey.nodePubKey}`);
 
-      const initPromises: Promise<any>[] = [];
-      // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-
-      this.db = new DB(loggers.db, this.config.dbpath);
-      await this.db.init(this.config.network, this.config.initdb);
       this.pool = new Pool({
         nodeKey,
         version,
@@ -78,8 +76,11 @@ class Xud extends EventEmitter {
         logger: loggers.p2p,
         models: this.db.models,
       });
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.pool);
-      await this.swapClientManager.init(this.db.models);
+
+      const initPromises: Promise<any>[] = [];
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers);
+      initPromises.push(this.swapClientManager.init(this.db.models));
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
