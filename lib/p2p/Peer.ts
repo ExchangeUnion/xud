@@ -1,7 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import crypto from 'crypto';
+import { createHash, createECDH } from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
@@ -720,7 +720,7 @@ class Peer extends EventEmitter {
 
     // verify that the msg was signed by the peer
     const msg = stringify(bodyWithoutSign);
-    const msgHash = crypto.createHash('sha256').update(msg).digest();
+    const msgHash = createHash('sha256').update(msg).digest();
     const verified = secp256k1.verify(
       msgHash,
       Buffer.from(sign, 'hex'),
@@ -741,7 +741,7 @@ class Peer extends EventEmitter {
    * Sends a [[SessionInitPacket]] and waits for a [[SessionAckPacket]].
    */
   private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<void> => {
-    const ECDH = crypto.createECDH('secp256k1');
+    const ECDH = createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
     const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
     await this.sendPacket(packet);
@@ -758,7 +758,7 @@ class Peer extends EventEmitter {
    * Sends a [[SessionAckPacket]] in response to a given [[SessionInitPacket]].
    */
   private ackSession = async (sessionInit: packets.SessionInitPacket): Promise<void> => {
-    const ECDH = crypto.createECDH('secp256k1');
+    const ECDH = createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
 
     await this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey }, sessionInit.header.id));
@@ -851,7 +851,7 @@ class Peer extends EventEmitter {
     };
 
     const msg = stringify(body);
-    const msgHash = crypto.createHash('sha256').update(msg).digest();
+    const msgHash = createHash('sha256').update(msg).digest();
     const { signature } = secp256k1.sign(msgHash, nodeKey.nodePrivKey);
 
     body = { ...body, sign: signature.toString('hex') };

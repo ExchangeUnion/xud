@@ -1,14 +1,14 @@
-import crypto from 'crypto';
-import secp256k1 from 'secp256k1';
-import NodeKey from '../../lib/nodekey/NodeKey';
 import { expect } from 'chai';
+import secp256k1 from 'secp256k1';
+import { createECDH, randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 describe('key exchange and symmetric encryption', () => {
   let secretKey: Buffer;
 
   it('alice and bob should successfully exchange shared secret key', async () => {
-    const alice = crypto.createECDH('secp256k1');
-    const bob = crypto.createECDH('secp256k1');
+    const alice = createECDH('secp256k1');
+    const bob = createECDH('secp256k1');
 
     // alice and bob create an ephemeral key pair for the key exchange
     const aliceEphemeralPubKey = alice.generateKeys();
@@ -25,13 +25,13 @@ describe('key exchange and symmetric encryption', () => {
   });
 
   it('alice should encrypt messages that bob can decrypt', async () => {
-    const msg = crypto.randomBytes(100);
+    const msg = randomBytes(100);
 
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv('aes-256-cbc', secretKey, iv);
+    const iv = randomBytes(16);
+    const cipher = createCipheriv('aes-256-cbc', secretKey, iv);
     const encrypted = Buffer.concat([iv, cipher.update(msg), cipher.final()]);
 
-    const decipher = crypto.createDecipheriv('aes-256-cbc', secretKey, encrypted.slice(0, 16));
+    const decipher = createDecipheriv('aes-256-cbc', secretKey, encrypted.slice(0, 16));
     const decrypted = Buffer.concat([decipher.update(encrypted.slice(16)), decipher.final()]);
 
     expect(msg.toString('hex')).to.be.equal(decrypted.toString('hex'));
@@ -44,7 +44,7 @@ describe('authentication', () => {
     const aliceNodePubKey = aliceNodeKey.nodePubKey;
     const aliceNodePrivKey = aliceNodeKey['privKey'];
 
-    const alice = crypto.createECDH('secp256k1');
+    const alice = createECDH('secp256k1');
     const aliceEphemeralPubKey = alice.generateKeys();
 
     const msg = {
@@ -52,8 +52,7 @@ describe('authentication', () => {
       ephemeralPubKey: aliceEphemeralPubKey,
     };
 
-    const msgHash = crypto
-      .createHash('sha256')
+    const msgHash = createHash('sha256')
       .update(JSON.stringify(msg))
       .digest();
 
