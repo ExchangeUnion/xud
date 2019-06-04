@@ -61,6 +61,8 @@ interface OrderBook {
 class OrderBook extends EventEmitter {
   /** A map between active trading pair ids and trading pair instances. */
   public tradingPairs = new Map<string, TradingPair>();
+  public nomatching: boolean;
+
   /** A map between own orders local id and their global id. */
   private localIdMap = new Map<string, OrderIdentifier>();
 
@@ -69,6 +71,10 @@ class OrderBook extends EventEmitter {
   /** A map of supported trading pair tickers and pair database instances. */
   private pairInstances = new Map<string, PairInstance>();
   private repository: OrderBookRepository;
+  private logger: Logger;
+  private nosanitychecks: boolean;
+  private pool: Pool;
+  private swaps: Swaps;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
   private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 10000; // 10 sec
@@ -84,9 +90,22 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances.keys();
   }
 
-  constructor(private logger: Logger, models: Models, public nomatching = false,
-    private pool: Pool, private swaps: Swaps, private nosanitychecks = false) {
+  constructor({ logger, models, pool, swaps, nomatching = false, nosanitychecks = false }:
+  {
+    logger: Logger,
+    models: Models,
+    pool: Pool,
+    swaps: Swaps,
+    nomatching?: boolean,
+    nosanitychecks?: boolean,
+  }) {
     super();
+
+    this.logger = logger;
+    this.pool = pool;
+    this.swaps = swaps;
+    this.nomatching = nomatching;
+    this.nosanitychecks = nosanitychecks;
 
     this.repository = new OrderBookRepository(models);
 

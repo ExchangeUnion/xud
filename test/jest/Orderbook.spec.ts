@@ -102,7 +102,14 @@ describe('OrderBook', () => {
 
   test('nosanitychecks enabled adds pairs and requests orders', async () => {
     config.nosanitychecks = true;
-    orderbook = new Orderbook(loggers.orderbook, db.models, config.nomatching, pool, swaps, config.nosanitychecks);
+    orderbook = new Orderbook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+      nomatching: config.nomatching,
+      nosanitychecks: config.nosanitychecks,
+    });
     await orderbook.init();
     const pairIds = ['LTC/BTC', 'WETH/BTC'];
     await orderbook['verifyPeerPairs'](peer, pairIds);
@@ -111,7 +118,14 @@ describe('OrderBook', () => {
 
   test('placeOrder insufficient outbound balance does throw when nosanitychecks disabled', async () => {
     config.nosanitychecks = false;
-    orderbook = new Orderbook(loggers.orderbook, db.models, config.nomatching, pool, swaps, config.nosanitychecks);
+    orderbook = new Orderbook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+      nomatching: config.nomatching,
+      nosanitychecks: config.nosanitychecks,
+    });
     await orderbook.init();
     const quantity = 500000000000;
     const order: OwnOrder = {
