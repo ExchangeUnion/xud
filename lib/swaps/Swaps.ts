@@ -13,6 +13,7 @@ import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
+import { errors } from './errors';
 
 type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -707,7 +708,7 @@ class Swaps extends EventEmitter {
         }
       }
     } else {
-      throw new Error('unknown payment hash');
+      throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
   }
 
@@ -726,7 +727,7 @@ class Swaps extends EventEmitter {
         // if we don't have a deal for this hash, but its amount is exactly 1 satoshi, try to resolve it as a sanity swap
         return this.resolveSanitySwap(rHash, amount, htlcCurrency);
       } else {
-        throw new Error(`Something went wrong. Can't find deal: ${rHash}`);
+        throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
       }
     }
 
