@@ -24,6 +24,7 @@ var (
 	numActiveNodes int32
 	baseP2PPort    = 40000
 	baseRPCPort    = 30000
+	baseHTTPPort   = 35000
 )
 
 type nodeConfig struct {
@@ -42,8 +43,9 @@ type nodeConfig struct {
 	LndLtcCertPath string
 	LndLtcMacPath  string
 
-	P2PPort int
-	RPCPort int
+	P2PPort  int
+	RPCPort  int
+	HTTPPort int
 }
 
 // genArgs generates a slice of command line arguments from the xud node
@@ -58,6 +60,8 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--logpath=%v", cfg.LogPath))
 
 	args = append(args, fmt.Sprintf("--rpc.port=%v", cfg.RPCPort))
+
+	args = append(args, fmt.Sprintf("--http.port=%v", cfg.HTTPPort))
 
 	args = append(args, fmt.Sprintf("--p2p.port=%v", cfg.P2PPort))
 	args = append(args, fmt.Sprintf("--p2p.addresses=%v", cfg.P2PAddr()))
@@ -133,6 +137,7 @@ func newNode(name string) (*HarnessNode, error) {
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
 	cfg.P2PPort = baseP2PPort + nodeNum
 	cfg.RPCPort = baseRPCPort + nodeNum
+	cfg.HTTPPort = baseHTTPPort + nodeNum
 
 	return &HarnessNode{
 		Cfg:  &cfg,
