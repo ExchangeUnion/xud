@@ -104,6 +104,63 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
+   * Generates a cryptographically random 24 word seed mnemonic from an lnd client.
+   */
+  public genSeed = async () => {
+    // loop through swap clients until we find a connected lnd client
+    for (const swapClient of this.swapClients.values()) {
+      if (isLndClient(swapClient) && swapClient.isConnected()) {
+        try {
+          return swapClient.genSeed();
+        } catch (err) {
+          swapClient.logger.debug('could not generate seed');
+        }
+      }
+    }
+
+    // TODO: use seedutil tool to generate a seed
+    return undefined;
+  }
+
+  /**
+   * Initializes wallets with seed and password.
+   */
+  public initWallets = async (walletPassword: string, seedMnemonic: string[]) => {
+    // loop through swap clients to find locked lnd clients
+    const initWalletPromises: Promise<any>[] = [];
+    for (const swapClient of this.swapClients.values()) {
+      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
+        initWalletPromises.push(swapClient.initWallet(walletPassword, seedMnemonic));
+      }
+    }
+
+    await Promise.all(initWalletPromises).catch((err) => {
+      this.loggers.lnd.debug(`could not initialize one or more wallets: ${JSON.stringify(err)}`);
+    });
+
+    // TODO: create raiden address
+  }
+
+  /**
+   * Initializes wallets with seed and password.
+   */
+  public unlockWallets = async (walletPassword: string) => {
+    // loop through swap clients to find locked lnd clients
+    const unlockWalletPromises: Promise<any>[] = [];
+    for (const swapClient of this.swapClients.values()) {
+      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
+        unlockWalletPromises.push(swapClient.unlockWallet(walletPassword));
+      }
+    }
+
+    await Promise.all(unlockWalletPromises).catch((err) => {
+      this.loggers.lnd.debug(`could not unlock one or more wallets: ${JSON.stringify(err)}`);
+    });
+
+    // TODO: unlock raiden
+  }
+
+  /**
    * Gets a swap client instance.
    * @param currency a currency that the swap client is linked to.
    * @returns swap client instance upon success, undefined otherwise.
