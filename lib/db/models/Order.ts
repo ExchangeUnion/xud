@@ -12,7 +12,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
       type: DataTypes.DOUBLE,
       allowNull: true,
       set(this: db.OrderInstance, value: number) {
-        if (value === 0 || value === Number.MAX_VALUE) {
+        if (value === 0 || value === Number.POSITIVE_INFINITY) {
           this.setDataValue('price', undefined);
         } else {
           this.setDataValue('price', value);

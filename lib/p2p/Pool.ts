@@ -36,7 +36,7 @@ interface Pool {
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
-  on(event: 'packet.sanitySwap', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
+  on(event: 'packet.sanitySwapInit', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
   on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
@@ -50,7 +50,7 @@ interface Pool {
   /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'peer.nodeStateUpdate', peer: Peer): boolean;
-  emit(event: 'packet.sanitySwap', packet: packets.SanitySwapInitPacket, peer: Peer): boolean;
+  emit(event: 'packet.sanitySwapInit', packet: packets.SanitySwapInitPacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
   emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
@@ -61,8 +61,6 @@ interface Pool {
 interface NodeConnectionIterator {
   forEach: (callback: (node: NodeConnectionInfo) => void) => void;
 }
-
-/** Represents a pool of peers that handles all  network activity. */
 
 /**
  * Represents a pool of peers that handles all p2p network activity. This tracks all active and
@@ -87,14 +85,12 @@ class Pool extends EventEmitter {
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
   private interfaces: Address[] = [];
-  /** This node's listening external socket addresses to advertise to peers. */
-  private addresses: Address[] = [];
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
   private network: Network;
 
-  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models) {
+  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models, version: string) {
     super();
     this.config = config;
     this.network = new Network(xuNetwork);
@@ -109,10 +105,23 @@ class Pool extends EventEmitter {
         this.interfaces.push(addressUtils.fromString(uri));
       });
 
+      this.nodeState = {
+        version,
+        nodePubKey: '',
+        addresses: [],
+        pairs: [],
+        raidenAddress: '',
+        lndPubKeys: {},
+      };
+
+      if (config.listen) {
+        this.listenPort = config.port;
+      }
+
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
-        this.addresses.push(address);
+        this.nodeState.addresses.push(address);
       });
     }
   }
@@ -124,7 +133,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (ownNodeState: Pick<NodeState, Exclude<keyof NodeState, 'addresses'>>, nodeKey: NodeKey): Promise<void> => {
+  public init = async (nodeKey: NodeKey): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -139,7 +148,7 @@ class Pool extends EventEmitter {
       }
     }
 
-    this.nodeState = { ...ownNodeState, addresses: this.addresses };
+    this.nodeState.nodePubKey = nodeKey.nodePubKey;
     this.nodeKey = nodeKey;
 
     this.bindNodeList();
@@ -167,9 +176,9 @@ class Pool extends EventEmitter {
       externalIp = await getExternalIp();
       this.logger.info(`retrieved external IP: ${externalIp}`);
 
-      const externalIpExists = this.addresses.some((address) =>  { return address.host === externalIp; });
+      const externalIpExists = this.nodeState.addresses.some((address) =>  { return address.host === externalIp; });
       if (!externalIpExists) {
-        this.addresses.push({
+        this.nodeState.addresses.push({
           host: externalIp,
           port: this.listenPort!,
         });
@@ -183,8 +192,8 @@ class Pool extends EventEmitter {
    * Updates our active trading pairs and sends a node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updatePairs = (pairs: string[]) => {
-    this.nodeState.pairs = pairs;
+  public updatePairs = (pairIds: string[]) => {
+    this.nodeState.pairs = pairIds;
     this.sendNodeStateUpdate();
   }
 
@@ -203,6 +212,7 @@ class Pool extends EventEmitter {
    */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    this.logger.info(`${currency} ${pubKey} ${JSON.stringify(this.nodeState.lndPubKeys)}`);
     this.sendNodeStateUpdate();
   }
 
@@ -515,6 +525,15 @@ class Pool extends EventEmitter {
     }
   }
 
+  public discoverNodes = async (peerPubKey: string): Promise<number> => {
+    const peer = this.peers.get(peerPubKey);
+    if (!peer) {
+      throw errors.NOT_CONNECTED(peerPubKey);
+    }
+
+    return peer.discoverNodes();
+  }
+
   // A wrapper for [[NodeList.addReputationEvent]].
   public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
     return this.nodes.addReputationEvent(nodePubKey, event);
@@ -543,7 +562,7 @@ class Pool extends EventEmitter {
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(async (peer) => {
-      if (peer.activePairs.has(order.pairId)) {
+      if (peer.isPairActive(order.pairId)) {
         await peer.sendPacket(orderPacket);
       }
     });
@@ -594,7 +613,7 @@ class Pool extends EventEmitter {
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
 
-        if (peer.activePairs.has(incomingOrder.pairId)) {
+        if (peer.isPairActive(incomingOrder.pairId)) {
           this.emit('packet.order', incomingOrder);
         } else {
           this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
@@ -617,7 +636,7 @@ class Pool extends EventEmitter {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
         receivedOrders.forEach((order) => {
-          if (peer.activePairs.has(order.pairId)) {
+          if (peer.isPairActive(order.pairId)) {
             this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
           } else {
             this.logger.debug(`received order ${order.id} for deactivated trading pair`);
@@ -643,7 +662,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.SanitySwap: {
         this.logger.debug(`received sanitySwap from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.sanitySwap', packet, peer);
+        this.emit('packet.sanitySwapInit', packet, peer);
         break;
       }
       case PacketType.SwapRequest: {

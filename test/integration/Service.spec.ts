@@ -35,10 +35,10 @@ describe('API Service', () => {
       },
       lnd: {
         LTC: {
-          disable: true,
+          disable: false,
         },
         BTC: {
-          disable: true,
+          disable: false,
         },
       },
       raiden: {

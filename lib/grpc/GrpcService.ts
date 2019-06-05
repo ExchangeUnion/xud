@@ -8,7 +8,7 @@ import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
-import { LndInfo } from '../lndclient/LndClient';
+import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
 
@@ -562,6 +562,22 @@ class GrpcService {
     try {
       await this.service.removePair(call.request.toObject());
       const response = new xudrpc.RemovePairResponse();
+
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.discoverNodes]]
+   */
+  public discoverNodes: grpc.handleUnaryCall<xudrpc.DiscoverNodesRequest, xudrpc.DiscoverNodesResponse> = async (call, callback) => {
+    try {
+      const numNodes = await this.service.discoverNodes(call.request.toObject());
+
+      const response = new xudrpc.DiscoverNodesResponse();
+      response.setNumNodes(numNodes);
 
       callback(null, response);
     } catch (err) {

@@ -3,11 +3,11 @@ import path from 'path';
 import toml from 'toml';
 import { deepMerge } from './utils/utils';
 import { promises as fs } from 'fs';
-import { LndClientConfig } from './lndclient/LndClient';
+import { LndClientConfig } from './lndclient/types';
+import { RaidenClientConfig } from './raidenclient/types';
 import { Level } from './Logger';
 import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
-import { RaidenClientConfig } from './raidenclient/types';
 
 class Config {
   public p2p: PoolConfig;

@@ -5,4 +5,5 @@ export default {
   LND: '4',
   RAIDEN: '5',
   SERVICE: '6',
+  SWAPS: '7',
 };

@@ -15,6 +15,7 @@ export type NodeConnectionInfo = {
 export type NodeState = {
   version: string;
   nodePubKey: string;
+  /** This node's listening external socket addresses to advertise to peers. */
   addresses: Address[];
   pairs: string[];
   raidenAddress: string;

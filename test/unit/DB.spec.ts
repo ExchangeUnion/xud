@@ -129,7 +129,7 @@ describe('Database', () => {
   });
 
   it('should add market orders and have their price in db be null', async () => {
-    const buyMarketOrder = createOwnOrder(Number.MAX_VALUE, quantity, true);
+    const buyMarketOrder = createOwnOrder(Number.POSITIVE_INFINITY, quantity, true);
     const sellMarketOrder = createOwnOrder(0, quantity, true);
     await orderBookRepo.addOrderIfNotExists(buyMarketOrder);
     await orderBookRepo.addOrderIfNotExists(sellMarketOrder);

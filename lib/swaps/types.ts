@@ -1,4 +1,9 @@
-import { SwapRole, SwapPhase, SwapState, SwapFailureReason } from '../constants/enums';
+import {
+  SwapRole,
+  SwapPhase,
+  SwapState,
+  SwapFailureReason,
+} from '../constants/enums';
 
 export type SwapDeal = {
   /** Our role in the swap. */

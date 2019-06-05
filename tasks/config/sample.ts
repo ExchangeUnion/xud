@@ -1,3 +1,5 @@
+// tslint:disable: prefer-template
+
 import Config from '../../lib/Config';
 import { isPlainObject } from '../../lib/utils/utils';
 import fs from 'fs';
