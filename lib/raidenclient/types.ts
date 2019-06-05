@@ -45,8 +45,8 @@ export type ChannelEvent = {
 /**
  * The response for tokenPayment call.
  */
-export type TokenPaymentResponse = {
-  secret: string;
+export type TokenPaymentResponse = TokenPaymentRequest & {
+  secret?: string;
 };
 
 /**

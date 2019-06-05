@@ -1,7 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import crypto from 'crypto';
+import { createHash, createECDH } from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
@@ -64,10 +64,10 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
-  /** Trading pairs advertised by this peer which we have verified that we can swap. */
-  public activePairs = new Set<string>();
   /** Currencies that we have verified that we can swap with for this peer. */
   public verifiedCurrencies = new Set<string>();
+  /** Trading pairs advertised by this peer which we have verified that we can swap. */
+  private activePairs = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
   private opened = false;
   private opening = false;
@@ -336,7 +336,7 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Manually deactivates a trading pair with this peer.
+   * Deactivates a trading pair with this peer.
    */
   public deactivatePair = (pairId: string) => {
     if (!this.nodeState) {
@@ -350,6 +350,23 @@ class Peer extends EventEmitter {
     }
     // TODO: notify peer that we have deactivated this pair?
   }
+
+  /**
+   * Activates a trading pair with this peer.
+   */
+  public activatePair = async (pairId: string) => {
+    if (!this.nodeState) {
+      throw new Error('cannot activate a trading pair before handshake is complete');
+    }
+    this.activePairs.add(pairId);
+    // request peer's orders
+    await this.sendPacket(new packets.GetOrdersPacket({ pairIds: [pairId] }));
+  }
+
+  public isPairActive = (pairId: string) => this.activePairs.has(pairId);
+
+// tslint:disable-next-line: member-ordering
+  public forEachActivePair = this.activePairs.forEach.bind(this.activePairs);
 
   private sendRaw = (data: Buffer) => {
     if (this.socket && !this.socket.destroyed) {
@@ -703,7 +720,7 @@ class Peer extends EventEmitter {
 
     // verify that the msg was signed by the peer
     const msg = stringify(bodyWithoutSign);
-    const msgHash = crypto.createHash('sha256').update(msg).digest();
+    const msgHash = createHash('sha256').update(msg).digest();
     const verified = secp256k1.verify(
       msgHash,
       Buffer.from(sign, 'hex'),
@@ -724,7 +741,7 @@ class Peer extends EventEmitter {
    * Sends a [[SessionInitPacket]] and waits for a [[SessionAckPacket]].
    */
   private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<void> => {
-    const ECDH = crypto.createECDH('secp256k1');
+    const ECDH = createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
     const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
     await this.sendPacket(packet);
@@ -741,7 +758,7 @@ class Peer extends EventEmitter {
    * Sends a [[SessionAckPacket]] in response to a given [[SessionInitPacket]].
    */
   private ackSession = async (sessionInit: packets.SessionInitPacket): Promise<void> => {
-    const ECDH = crypto.createECDH('secp256k1');
+    const ECDH = createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
 
     await this.sendPacket(new packets.SessionAckPacket({ ephemeralPubKey }, sessionInit.header.id));
@@ -800,9 +817,16 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  public sendGetNodes = async (): Promise<void> => {
+  public sendGetNodes = async (): Promise<packets.GetNodesPacket> => {
     const packet =  new packets.GetNodesPacket();
     await this.sendPacket(packet);
+    return packet;
+  }
+
+  public discoverNodes = async (): Promise<number> => {
+    const packet = await this.sendGetNodes();
+    const res = await this.wait(packet.header.id, packet.responseType);
+    return res.body.length;
   }
 
   private sendPong = async (pingId: string): Promise<void> => {
@@ -827,7 +851,7 @@ class Peer extends EventEmitter {
     };
 
     const msg = stringify(body);
-    const msgHash = crypto.createHash('sha256').update(msg).digest();
+    const msgHash = createHash('sha256').update(msg).digest();
     const { signature } = secp256k1.sign(msgHash, nodeKey.nodePrivKey);
 
     body = { ...body, sign: signature.toString('hex') };

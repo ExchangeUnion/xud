@@ -13,8 +13,7 @@ const errorCodes = {
   LOCAL_ID_DOES_NOT_EXIST: codesPrefix.concat('.9'),
   QUANTITY_DOES_NOT_MATCH: codesPrefix.concat('.10'),
   CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
-  SWAP_CLIENT_NOT_FOUND: codesPrefix.concat('.12'),
-  INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.13'),
+  INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
 };
 
 const errors = {
@@ -27,7 +26,7 @@ const errors = {
     code: errorCodes.DUPLICATE_ORDER,
   }),
   ORDER_NOT_FOUND: (orderId: string, peerPubKey?: string) => ({
-    message: `order with id ${orderId}${peerPubKey ? ' for peer ' + peerPubKey : ''} could not be found`,
+    message: `order with id ${orderId}${peerPubKey ? ` for peer ${peerPubKey}` : ''} could not be found`,
     code: errorCodes.ORDER_NOT_FOUND,
   }),
   CURRENCY_DOES_NOT_EXIST: (currency: string) => ({
@@ -51,7 +50,7 @@ const errors = {
     code: errorCodes.PAIR_ALREADY_EXISTS,
   }),
   MARKET_ORDERS_NOT_ALLOWED: () => ({
-    message: `market orders are not allowed on nomatching mode`,
+    message: 'market orders are not allowed on nomatching mode',
     code: errorCodes.MARKET_ORDERS_NOT_ALLOWED,
   }),
   LOCAL_ID_DOES_NOT_EXIST: (localId: string) => ({
@@ -61,10 +60,6 @@ const errors = {
   QUANTITY_DOES_NOT_MATCH: (requestedQuantity: number, orderQuantity: number) => ({
     message: `requestedQuantity: ${requestedQuantity} is higher than order quantity: ${orderQuantity}`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
-  }),
-  SWAP_CLIENT_NOT_FOUND: (currency: string) => ({
-    message: `unable to find swap client for currency ${currency}`,
-    code: errorCodes.SWAP_CLIENT_NOT_FOUND,
   }),
   INSUFFICIENT_OUTBOUND_BALANCE: (currency: string, amount: number, availableAmount: number) => ({
     message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,

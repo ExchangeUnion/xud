@@ -34,12 +34,12 @@ export const loadXudClient = (argv: Arguments) => {
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };
 
-interface grpcResponse {
+interface GrpcResponse {
   toObject: Function;
 }
 
 export const callback = (argv: Arguments, formatOutput?: Function) => {
-  return (error: Error | null, response: grpcResponse) => {
+  return (error: Error | null, response: GrpcResponse) => {
     if (error) {
       console.error(`${error.name}: ${error.message}`);
     } else {

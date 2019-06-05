@@ -148,7 +148,7 @@ describe('P2P Sanity Tests', () => {
       done();
     });
 
-    expect(connectPromise).to.be.rejectedWith(`Connection retry attempts to peer were revoked`);
+    expect(connectPromise).to.be.rejectedWith('Connection retry attempts to peer were revoked');
   });
 
   it('should fail when connecting to a node that has banned us', async () => {

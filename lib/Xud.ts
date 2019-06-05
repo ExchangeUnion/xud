@@ -4,9 +4,6 @@ import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
 import OrderBook from './orderbook/OrderBook';
-import SwapClient from './swaps/SwapClient';
-import LndClient from './lndclient/LndClient';
-import RaidenClient from './raidenclient/RaidenClient';
 import GrpcServer from './grpc/GrpcServer';
 import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
 import Pool from './p2p/Pool';
@@ -15,6 +12,7 @@ import Service from './service/Service';
 import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
 import HttpServer from './http/HttpServer';
+import SwapClientManager from './swaps/SwapClientManager';
 
 const version: string = require('../package.json').version;
 
@@ -31,8 +29,6 @@ class Xud extends EventEmitter {
   private logger!: Logger;
   private config: Config;
   private db!: DB;
-  private lndClients: { [currency: string]: LndClient | undefined } = {};
-  private raidenClient!: RaidenClient;
   private pool!: Pool;
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
@@ -41,6 +37,7 @@ class Xud extends EventEmitter {
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
   private shuttingDown = false;
+  private swapClientManager!: SwapClientManager;
 
   public get nodePubKey() {
     return this.nodeKey.nodePubKey;
@@ -76,34 +73,21 @@ class Xud extends EventEmitter {
 
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
+      this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models, version);
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.pool);
+      await this.swapClientManager.init(this.db.models);
 
-      const swapClients = new Map<string, SwapClient>();
-      // setup LND clients and initialize
-      for (const currency in this.config.lnd) {
-        const lndConfig = this.config.lnd[currency]!;
-        if (!lndConfig.disable) {
-          const lndClient = new LndClient(lndConfig, currency, loggers.lnd);
-          this.lndClients[currency] = lndClient;
-          swapClients.set(currency, lndClient);
-          initPromises.push(lndClient.init());
-        }
-      }
-
-      // setup raiden client and connect if configured
-      this.raidenClient = new RaidenClient(this.config.raiden, loggers.raiden, this.db.models);
-      await this.raidenClient.init();
-      if (!this.raidenClient.isDisabled()) {
-        for (const currency of this.raidenClient.tokenAddresses.keys()) {
-          swapClients.set(currency, this.raidenClient);
-        }
-      }
-
-      this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models);
-
-      this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, swapClients);
+      this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
 
-      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps, this.config.nosanitychecks);
+      this.orderBook = new OrderBook({
+        logger: loggers.orderbook,
+        models: this.db.models,
+        nomatching: this.config.nomatching,
+        pool: this.pool,
+        swaps: this.swaps,
+        nosanitychecks: this.config.nosanitychecks,
+      });
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
@@ -112,30 +96,18 @@ class Xud extends EventEmitter {
       this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
 
       // initialize pool and start listening/connecting only once other components are initialized
-      const lndPubKeys: { [currency: string]: string | undefined } = {};
-      for (const currency in this.lndClients) {
-        lndPubKeys[currency] = this.lndClients[currency]!.pubKey;
-      }
-
-      await this.pool.init({
-        version,
-        lndPubKeys,
-        pairs: this.orderBook.pairIds,
-        nodePubKey: this.nodeKey.nodePubKey,
-        raidenAddress: this.raidenClient.address,
-      }, this.nodeKey);
+      await this.pool.init(this.nodeKey);
 
       this.service = new Service({
         version,
         orderBook: this.orderBook,
-        lndClients: this.lndClients,
-        raidenClient: this.raidenClient,
+        swapClientManager: this.swapClientManager,
         pool: this.pool,
         swaps: this.swaps,
         shutdown: this.beginShutdown,
       });
 
-      if (!this.raidenClient.isDisabled()) {
+      if (!this.swapClientManager.raidenClient.isDisabled()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(this.config.http.port);
       }
@@ -173,27 +145,9 @@ class Xud extends EventEmitter {
       } else {
         this.logger.warn('RPC server is disabled.');
       }
-
-      this.bind();
     } catch (err) {
       this.logger.error(err);
     }
-  }
-
-  private bind = () => {
-    for (const currency in this.lndClients) {
-      const lndClient = this.lndClients[currency]!;
-      lndClient.on('connectionVerified', (newPubKey) => {
-        if (newPubKey) {
-          this.pool.updateLndPubKey(currency, newPubKey);
-        }
-      });
-    }
-    this.raidenClient.on('connectionVerified', (newAddress) => {
-      if (newAddress) {
-        this.pool.updateRaidenAddress(newAddress);
-      }
-    });
   }
 
   private shutdown = async () => {
@@ -204,13 +158,7 @@ class Xud extends EventEmitter {
     this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
-    for (const currency in this.lndClients) {
-      this.lndClients[currency]!.close();
-    }
-    if (!this.raidenClient.isDisabled()) {
-      this.raidenClient.close();
-    }
-
+    this.swapClientManager.close();
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
