@@ -4,7 +4,7 @@ import { ListPairsRequest, ListPairsResponse } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 
-const HEADERS = [colors.blue('PairId')];
+const HEADERS = [colors.blue('Trading pair')];
 
 const formatPairs = (pairs: ListPairsResponse.AsObject): string[][] => {
   const formatted: string[][] = [];
