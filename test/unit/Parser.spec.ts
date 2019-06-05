@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
 import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
@@ -20,7 +20,7 @@ describe('Parser', () => {
   const timeoutError = 'timeout';
   const network = new Network(XuNetwork.SimNet);
   const framer = new Framer(network);
-  const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
+  const encryptionKey = randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
   const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
   let parser: Parser;
 
