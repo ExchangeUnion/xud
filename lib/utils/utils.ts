@@ -116,18 +116,6 @@ export const derivePairId = (pair: Pair) => {
 };
 
 /**
- * Convert ticker symbole into pair.
- * @param { string } pair - example: btc/ltc
- */
-export const getPairCurrencies = (pair: string): Pair => {
-  const split = pair.split('/');
-  return {
-    baseCurrency: split[0],
-    quoteCurrency: split[1],
-  };
-};
-
-/**
  * A simplified copy of lodash's isPlainObject;
  *
  * A plain object is;

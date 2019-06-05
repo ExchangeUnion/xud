@@ -8,7 +8,7 @@ import { errors as swapsErrors } from '../swaps/errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
-import { ms, derivePairId, setTimeoutPromise, getPairCurrencies } from '../utils/utils';
+import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
@@ -706,7 +706,7 @@ class OrderBook extends EventEmitter {
     // identify the unique currencies we need to verify for specified trading pairs
     const currenciesToVerify = new Set<string>();
     pairIds.forEach((pairId) => {
-      const { baseCurrency, quoteCurrency } = getPairCurrencies(pairId);
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
 
       if (!peer.verifiedCurrencies.has(baseCurrency)) {
         currenciesToVerify.add(baseCurrency);
@@ -742,7 +742,7 @@ class OrderBook extends EventEmitter {
     // activate pairs that have had both currencies verified
     const activationPromises: Promise<void>[] = [];
     pairIds.forEach(async (pairId) => {
-      const { baseCurrency, quoteCurrency } = getPairCurrencies(pairId);
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
       if (peer.verifiedCurrencies.has(baseCurrency) && peer.verifiedCurrencies.has(quoteCurrency)) {
         activationPromises.push(peer.activatePair(pairId));
       }
