@@ -3,6 +3,7 @@ import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
 import { SwapClientType, OrderSide } from '../../lib/constants/enums';
+import { getTempDir } from '../utils';
 
 chai.use(chaiAsPromised);
 
@@ -27,8 +28,12 @@ describe('API Service', () => {
       dbpath: ':memory:',
       loglevel: 'warn',
       logpath: '',
+      xudir: getTempDir(true),
       p2p: {
         listen: false,
+      },
+      http: {
+        disable: true,
       },
       rpc: {
         disable: true,

@@ -9,6 +9,7 @@ import Swaps from '../../lib/swaps/Swaps';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Network from '../../lib/p2p/Network';
 import { XuNetwork } from '../../lib/constants/enums';
+import NodeKey from '../../lib/nodekey/NodeKey';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -58,6 +59,8 @@ jest.mock('../../lib/Config');
 jest.mock('../../lib/swaps/Swaps');
 jest.mock('../../lib/swaps/SwapClientManager');
 jest.mock('../../lib/Logger');
+jest.mock('../../lib/nodekey/NodeKey');
+const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
 
 const logger = new Logger({});
 const loggers = {
@@ -90,8 +93,15 @@ describe('OrderBook', () => {
       port: 9735,
     }, network);
     db = new DB(loggers.db, config.dbpath);
-    pool = new Pool(config.p2p, config.network, loggers.p2p, db.models, '1.0.0');
-    swapClientManager = new SwapClientManager(config, loggers, pool);
+    pool = new Pool({
+      config: config.p2p,
+      xuNetwork: config.network,
+      logger: loggers.p2p,
+      models: db.models,
+      version: '1.0.0',
+      nodeKey: new mockedNodeKey(),
+    });
+    swapClientManager = new SwapClientManager(config, loggers);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
     swaps.swapClientManager = swapClientManager;
   });

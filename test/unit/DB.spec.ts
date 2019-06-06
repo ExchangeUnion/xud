@@ -6,7 +6,7 @@ import { SwapClientType, SwapRole, SwapState, SwapPhase } from '../../lib/consta
 import SwapRepository from '../../lib/swaps/SwapRepository';
 import { SwapDeal } from '../../lib/swaps/types';
 import P2PRepository from '../../lib/p2p/P2PRepository';
-import { createOwnOrder } from '../utils';
+import { createOwnOrder, getTempDir } from '../utils';
 import { TradeFactory } from '../../lib/db/types';
 import chaiAsPromised = require('chai-as-promised');
 
@@ -152,5 +152,21 @@ describe('Database', () => {
 
   after(async () => {
     await db.close();
+  });
+});
+
+describe('isNewDb', () => {
+  it('should return true for a database in memory', async () => {
+    const dbInMemory = new DB(loggers.db);
+    expect(dbInMemory['isNewDb']()).to.eventually.be.true;
+    await dbInMemory.init();
+    expect(dbInMemory['isNewDb']()).to.eventually.be.true;
+  });
+
+  it('should return true before a database on disk is created, false afterwards', async () => {
+    const dbInMemory = new DB(loggers.db, `${getTempDir(true)}/xud.db`);
+    expect(dbInMemory['isNewDb']()).to.eventually.be.true;
+    await dbInMemory.init();
+    expect(dbInMemory['isNewDb']()).to.eventually.be.false;
   });
 });

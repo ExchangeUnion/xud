@@ -70,8 +70,6 @@ interface NodeConnectionIterator {
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
   public nodeState: NodeState;
-  /** The local node key. */
-  private nodeKey!: NodeKey;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutboundPeers = new Map<string, Peer>();
   /** A set of peers for which we have pending incoming connections. */
@@ -88,9 +86,20 @@ class Pool extends EventEmitter {
   private config: PoolConfig;
   private repository: P2PRepository;
   private network: Network;
+  private logger: Logger;
+  private nodeKey: NodeKey;
 
-  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models, version: string) {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version }: {
+    config: PoolConfig,
+    xuNetwork: XuNetwork,
+    logger: Logger,
+    models: Models,
+    nodeKey: NodeKey,
+    version: string,
+  }) {
     super();
+    this.logger = logger;
+    this.nodeKey = nodeKey;
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
@@ -98,7 +107,7 @@ class Pool extends EventEmitter {
 
     this.nodeState = {
       version,
-      nodePubKey: '',
+      nodePubKey: nodeKey.nodePubKey,
       addresses: [],
       pairs: [],
       raidenAddress: '',
@@ -122,7 +131,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (nodeKey: NodeKey): Promise<void> => {
+  public init = async (): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -136,9 +145,6 @@ class Pool extends EventEmitter {
         await this.detectExternalIpAddress();
       }
     }
-
-    this.nodeState.nodePubKey = nodeKey.nodePubKey;
-    this.nodeKey = nodeKey;
 
     this.bindNodeList();
 
@@ -192,6 +198,7 @@ class Pool extends EventEmitter {
    */
   public updateRaidenAddress = (raidenAddress: string) => {
     this.nodeState.raidenAddress = raidenAddress;
+    this.logger.debug(`raiden new address for nodestate is ${raidenAddress}`);
     this.sendNodeStateUpdate();
   }
 
@@ -201,7 +208,7 @@ class Pool extends EventEmitter {
    */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.logger.info(`${currency} ${pubKey} ${JSON.stringify(this.nodeState.lndPubKeys)}`);
+    this.logger.debug(`lnd ${currency} new pubkey for nodestate is ${pubKey}`);
     this.sendNodeStateUpdate();
   }
 

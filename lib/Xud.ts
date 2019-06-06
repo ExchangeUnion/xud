@@ -33,15 +33,10 @@ class Xud extends EventEmitter {
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
   private httpServer?: HttpServer;
-  private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
   private shuttingDown = false;
   private swapClientManager!: SwapClientManager;
-
-  public get nodePubKey() {
-    return this.nodeKey.nodePubKey;
-  }
 
   /**
    * Create an Exchange Union daemon.
@@ -67,15 +62,25 @@ class Xud extends EventEmitter {
     this.logger.info('config loaded');
 
     try {
-      const initPromises: Promise<any>[] = [];
-      // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      initPromises.push(NodeKey.load(this.config.xudir, this.config.instanceid));
-
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
-      this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models, version);
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.pool);
-      await this.swapClientManager.init(this.db.models);
+
+      const nodeKey = await NodeKey.load(this.config.xudir, this.config.instanceid);
+      this.logger.info(`Local nodePubKey is ${nodeKey.nodePubKey}`);
+
+      this.pool = new Pool({
+        nodeKey,
+        version,
+        config: this.config.p2p,
+        xuNetwork: this.config.network,
+        logger: loggers.p2p,
+        models: this.db.models,
+      });
+
+      const initPromises: Promise<any>[] = [];
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers);
+      initPromises.push(this.swapClientManager.init(this.db.models));
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
@@ -91,12 +96,10 @@ class Xud extends EventEmitter {
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
-      const initPromisesResults = await Promise.all(initPromises);
-      this.nodeKey = initPromisesResults[0]; // the first init promise in the array was NodeKey.load
-      this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
+      await Promise.all(initPromises);
 
       // initialize pool and start listening/connecting only once other components are initialized
-      await this.pool.init(this.nodeKey);
+      await this.pool.init();
 
       this.service = new Service({
         version,
