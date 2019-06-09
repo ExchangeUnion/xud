@@ -51,7 +51,7 @@ const errors = {
     code: errorCodes.PAIR_ALREADY_EXISTS,
   }),
   MARKET_ORDERS_NOT_ALLOWED: () => ({
-    message: `market orders are not allowed on nomatching mode`,
+    message: 'market orders are not allowed on nomatching mode',
     code: errorCodes.MARKET_ORDERS_NOT_ALLOWED,
   }),
   LOCAL_ID_DOES_NOT_EXIST: (localId: string) => ({

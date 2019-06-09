@@ -62,11 +62,11 @@ const errors = {
     code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
   }),
   CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: {
-    message: `Connection retry attempts to peer exceeded maximum time allotment`,
+    message: 'Connection retry attempts to peer exceeded maximum time allotment',
     code: errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED,
   },
   CONNECTION_RETRIES_REVOKED: {
-    message: `Connection retry attempts to peer were revoked`,
+    message: 'Connection retry attempts to peer were revoked',
     code: errorCodes.CONNECTION_RETRIES_REVOKED,
   },
   COULD_NOT_CONNECT: (address: Address, err: Error) => ({
@@ -122,11 +122,11 @@ const errors = {
     code: errorCodes.PARSER_MAX_BUFFER_SIZE_EXCEEDED,
   }),
   FRAMER_MSG_NOT_ENCRYPTED: {
-    message: `framer: msg is not encrypted`,
+    message: 'framer: msg is not encrypted',
     code: errorCodes.FRAMER_MSG_NOT_ENCRYPTED,
   },
   FRAMER_INVALID_NETWORK_MAGIC_VALUE: {
-    message: `framer: msg has an invalid network magic value (might be encrypted)`,
+    message: 'framer: msg has an invalid network magic value (might be encrypted)',
     code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   },
   FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (expected: XuNetwork, found: XuNetwork) => ({
@@ -138,7 +138,7 @@ const errors = {
     code: errorCodes.FRAMER_INVALID_MSG_LENGTH,
   }),
   POOL_CLOSED: {
-    message: `p2p pool is closed and not accepting new peers`,
+    message: 'p2p pool is closed and not accepting new peers',
     code: errorCodes.POOL_CLOSED,
   },
 };

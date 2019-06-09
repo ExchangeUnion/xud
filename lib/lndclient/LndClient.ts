@@ -222,7 +222,7 @@ class LndClient extends SwapClient {
     try {
       sendPaymentResponse = await this.sendPaymentSync(sendRequest);
     } catch (err) {
-      this.logger.error(`got exception from sendPaymentSync`, err.message);
+      this.logger.error('got exception from sendPaymentSync', err.message);
       throw err;
     }
     const paymentError = sendPaymentResponse.getPaymentError();
