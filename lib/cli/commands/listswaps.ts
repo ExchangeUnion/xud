@@ -1,6 +1,6 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
-import { ListSwapsRequest, ListSwapsResponse, SwapSuccess } from '../../proto/xudrpc_pb';
+import { ListSwapsRequest, ListSwapsResponse } from '../../proto/xudrpc_pb';
 import Table , { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 
