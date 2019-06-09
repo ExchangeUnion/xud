@@ -2,16 +2,17 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import { toUri } from '../../lib/utils/uriUtils';
-import { getUnusedPort } from '../utils';
+import { getUnusedPort, getTempDir } from '../utils';
 import { DisconnectionReason, XuNetwork } from '../../lib/constants/enums';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
 chai.use(chaiAsPromised);
 
-export const createConfig = (instanceid: number, p2pPort: number, network = XuNetwork.SimNet) => ({
+export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = true, network = XuNetwork.SimNet) => ({
   instanceid,
   network,
   initdb: false,
+  xudir: getTempDir(uniqueXudir),
   dbpath: ':memory:',
   loglevel: 'error',
   logpath: '',
@@ -42,9 +43,11 @@ describe('P2P Sanity Tests', () => {
   let nodeOneConfig: any;
   let nodeOne: Xud;
   let nodeOneUri: string;
+  let nodeOnePubKey: string;
   let nodeTwoConfig: any;
   let nodeTwo: Xud;
   let nodeTwoUri: string;
+  let nodeTwoPubKey: string;
   let nodeTwoPort: number;
   let unusedPort: number;
 
@@ -57,9 +60,12 @@ describe('P2P Sanity Tests', () => {
 
     await Promise.all([nodeOne.start(nodeOneConfig), nodeTwo.start(nodeTwoConfig)]);
 
+    nodeOnePubKey = nodeOne['pool'].nodeState.nodePubKey;
+    nodeTwoPubKey = nodeTwo['pool'].nodeState.nodePubKey;
+
     nodeTwoPort = nodeTwo['pool']['listenPort']!;
-    nodeOneUri = toUri({ nodePubKey: nodeOne.nodePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
-    nodeTwoUri = toUri({ nodePubKey: nodeTwo.nodePubKey, host: 'localhost', port: nodeTwoPort });
+    nodeOneUri = toUri({ nodePubKey: nodeOnePubKey, host: 'localhost', port: nodeOne['pool']['listenPort']! });
+    nodeTwoUri = toUri({ nodePubKey: nodeTwoPubKey, host: 'localhost', port: nodeTwoPort });
 
     unusedPort = await getUnusedPort();
   });
@@ -70,12 +76,12 @@ describe('P2P Sanity Tests', () => {
 
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult.length).to.equal(1);
-    expect(listPeersResult[0].nodePubKey).to.equal(nodeTwo.nodePubKey);
+    expect(listPeersResult[0].nodePubKey).to.equal(nodeTwoPubKey);
   });
 
   it('should update the node state', (done) => {
     const raidenAddress = '0xbb9bc244d798123fde783fcc1c72d3bb8c189413';
-    const nodeTwoPeer = nodeOne['pool'].getPeer(nodeTwo.nodePubKey);
+    const nodeTwoPeer = nodeOne['pool'].getPeer(nodeTwoPubKey);
     nodeTwoPeer.on('nodeStateUpdate', () => {
       expect(nodeTwoPeer['nodeState']!.raidenAddress).to.equal(raidenAddress);
       done();
@@ -90,7 +96,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should disconnect successfully', async () => {
-    await nodeOne['pool']['closePeer'](nodeTwo.nodePubKey, DisconnectionReason.NotAcceptingConnections);
+    await nodeOne['pool']['closePeer'](nodeTwoPubKey, DisconnectionReason.NotAcceptingConnections);
 
     const listPeersResult = nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
@@ -147,11 +153,11 @@ describe('P2P Sanity Tests', () => {
       done();
     });
 
-    expect(connectPromise).to.be.rejectedWith(`Connection retry attempts to peer were revoked`);
+    expect(connectPromise).to.be.rejectedWith('Connection retry attempts to peer were revoked');
   });
 
   it('should fail when connecting to a node that has banned us', async () => {
-    await nodeTwo.service.ban({ nodePubKey: nodeOne.nodePubKey });
+    await nodeTwo.service.ban({ nodePubKey: nodeOnePubKey });
     await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
       .to.be.rejectedWith(`Peer (localhost:${nodeTwoPort}) disconnected from us due to Banned`);
   });

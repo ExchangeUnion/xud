@@ -1,8 +1,11 @@
 import net from 'net';
 import { SinonSpy } from 'sinon';
+import uuidv1 from 'uuid';
+import os from 'os';
+import path from 'path';
+import fs from 'fs';
 import { ms } from '../lib/utils/utils';
 import { PeerOrder, OwnOrder } from '../lib/orderbook/types';
-import uuidv1 from 'uuid';
 
 /**
  * Discovers and returns a dynamically assigned, unused port available for testing.
@@ -39,6 +42,22 @@ export const waitForSpy = (spy: SinonSpy, property = 'called') => {
       reject(e);
     }
   });
+};
+
+/**
+ * Creates and returns an os-specific directory for temp files.
+ */
+export const getTempDir = (unique: boolean) => {
+  let dir = path.join(os.tmpdir(), 'xud-test');
+  if (unique) {
+    dir = path.join(dir, uuidv1());
+  }
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  return dir;
 };
 
 export const createOwnOrder = (price: number, quantity: number, isBuy: boolean, createdAt = ms(), pairId = 'LTC/BTC'): OwnOrder => ({

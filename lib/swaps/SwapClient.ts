@@ -18,9 +18,7 @@ type ChannelBalance = {
 
 interface SwapClient {
   on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
   emit(event: 'connectionVerified', newIdentifier?: string): boolean;
-  emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
 }
 
 /**

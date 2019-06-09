@@ -10,19 +10,8 @@ import assert from 'assert';
 import { promises as fs } from 'fs';
 import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
-import { LndInfo, ChannelCount, Chain } from './types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
-
-/** The configurable options for the lnd client. */
-type LndClientConfig = {
-  disable: boolean;
-  certpath: string;
-  macaroonpath: string;
-  host: string;
-  port: number;
-  cltvdelta: number;
-  nomacaroons: boolean;
-};
+import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
 
 interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
@@ -30,6 +19,13 @@ interface LightningMethodIndex extends LightningClient {
 
 interface InvoicesMethodIndex extends InvoicesClient {
   [methodName: string]: Function;
+}
+
+interface LndClient {
+  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
+  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+  emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
 }
 
 /** A class representing a client to interact with lnd. */
@@ -51,13 +47,12 @@ class LndClient extends SwapClient {
    */
   constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
     super(logger);
-
     this.cltvDelta = config.cltvdelta || 0;
   }
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    assert(this.cltvDelta > 0, 'cltvdelta must be a positive number');
+    assert(this.cltvDelta > 0, `lnd-${this.currency}: cltvdelta must be a positive number`);
 
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
@@ -85,7 +80,7 @@ class LndClient extends SwapClient {
         return;
       }
     } else {
-      this.logger.info(`macaroons are disabled for lnd for ${this.currency}`);
+      this.logger.info('macaroons are disabled for lnd');
     }
 
     this.uri = `${host}:${port}`;
@@ -174,7 +169,7 @@ class LndClient extends SwapClient {
       throw(errors.LND_IS_DISABLED);
     }
     if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd for ${this.currency} at ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
       this.invoices = new InvoicesClient(this.uri, this.credentials);
 
@@ -194,10 +189,10 @@ class LndClient extends SwapClient {
           this.subscribeChannels();
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
-          this.logger.warn(`lnd for ${this.currency} is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
         }
       } catch (err) {
-        this.logger.error(`could not verify connection to lnd for ${this.currency} at ${this.uri}, error: ${JSON.stringify(err)},
+        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
           retrying in ${LndClient.RECONNECT_TIMER} ms`);
         await this.setStatus(ClientStatus.Disconnected);
       }
@@ -291,6 +286,7 @@ class LndClient extends SwapClient {
    * Sends a payment through the Lightning Network.
    */
   private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+    this.logger.trace(`sending payment of ${request.getAmt()} for ${request.getPaymentHashString()}`);
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
@@ -371,7 +367,7 @@ class LndClient extends SwapClient {
       )) {
         return [];
       } else {
-        this.logger.error(`error calling queryRoutes for ${this.currency} to ${destination}: ${JSON.stringify(err)}`);
+        this.logger.error(`error calling queryRoutes to ${destination}: ${JSON.stringify(err)}`);
         throw err;
       }
     }
@@ -465,7 +461,7 @@ class LndClient extends SwapClient {
     this.channelSubscription = this.lightning.subscribeChannelEvents(new lndrpc.ChannelEventSubscription(), this.meta)
     .on('error', async (error) => {
       this.channelSubscription = undefined;
-      this.logger.error(`lnd for ${this.currency} has been disconnected, error: ${error}`);
+      this.logger.error(`lnd has been disconnected, error: ${error}`);
       await this.setStatus(ClientStatus.Disconnected);
     });
   }
@@ -511,4 +507,3 @@ class LndClient extends SwapClient {
 }
 
 export default LndClient;
-export { LndClientConfig, LndInfo };

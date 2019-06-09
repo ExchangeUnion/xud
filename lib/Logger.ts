@@ -175,4 +175,4 @@ class Logger {
 }
 
 export default Logger;
-export { Level };
+export { Level, Loggers };

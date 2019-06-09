@@ -1,6 +1,6 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import crypto from 'crypto';
+import { randomBytes } from 'crypto';
 import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
@@ -20,7 +20,7 @@ describe('Parser', () => {
   const timeoutError = 'timeout';
   const network = new Network(XuNetwork.SimNet);
   const framer = new Framer(network);
-  const encryptionKey = crypto.randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
+  const encryptionKey = randomBytes(Framer.ENCRYPTION_KEY_LENGTH);
   const rHash = '62c8bbef4587cff4286246e63044dc3e454b5693fb5ebd0171b7e58644bfafe2';
   let parser: Parser;
 
@@ -374,12 +374,12 @@ describe('Parser', () => {
   });
 
   describe('test more edge-cases', () => {
-    it(`should not try to parse an empty buffer`, async () => {
+    it('should not try to parse an empty buffer', async () => {
       await expect(wait()).to.be.rejectedWith(timeoutError);
       parser.feed(Buffer.alloc(0));
     });
 
-    it(`should not try parse just the header as a packet`, (done) => {
+    it('should not try parse just the header as a packet', (done) => {
       wait()
         .then(() => done('err: packet should not be parsed'))
         .catch((err) => {
@@ -397,7 +397,7 @@ describe('Parser', () => {
       });
     });
 
-    it(`should buffer a max buffer length`, (done) => {
+    it('should buffer a max buffer length', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()
@@ -413,7 +413,7 @@ describe('Parser', () => {
       parser.feed(Buffer.allocUnsafe(10));
     });
 
-    it(`should not buffer when max buffer size exceeds`,  (done) => {
+    it('should not buffer when max buffer size exceeds',  (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()
