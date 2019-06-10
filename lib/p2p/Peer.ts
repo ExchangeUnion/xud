@@ -420,6 +420,17 @@ class Peer extends EventEmitter {
 
   public isPairActive = (pairId: string) => this.activePairs.has(pairId);
 
+  /**
+   * Gets lnd client's listening uris for the provided currency.
+   * @param currency
+   */
+  public getLndUris(currency: string): string[] | undefined {
+    if (this.nodeState && this.nodeState.lndUris) {
+      return this.nodeState.lndUris[currency];
+    }
+    return;
+  }
+
   private sendRaw = (data: Buffer) => {
     if (this.socket && !this.socket.destroyed) {
       try {

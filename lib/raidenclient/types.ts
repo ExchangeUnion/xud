@@ -22,7 +22,7 @@ export type OpenChannelPayload = {
   partner_address: string;
   token_address: string;
   total_deposit: number;
-  settle_timeout: 100;
+  settle_timeout: number;
 };
 
 /**

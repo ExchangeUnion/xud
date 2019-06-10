@@ -20,12 +20,17 @@ message Node {
     repeated Address addresses = 2;
 }
 
+message LndUris {
+    repeated string lnd_uri = 1;
+}
+
 message NodeState {
     repeated Address addresses = 3;
     repeated string pairs = 4;
     string raiden_address = 5;
     map<string, string> lnd_pub_keys = 6;
     map<string, string> token_identifiers = 7;
+    map<string, LndUris> lnd_uris = 8;
 }
 
 message PingPacket {

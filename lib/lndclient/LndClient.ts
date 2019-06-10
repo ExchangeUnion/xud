@@ -1,6 +1,6 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import SwapClient, { ClientStatus } from '../swaps/SwapClient';
+import SwapClient, { ClientStatus, SwapClientInfo } from '../swaps/SwapClient';
 import errors from './errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
@@ -26,9 +26,9 @@ interface InvoicesMethodIndex extends InvoicesClient {
 }
 
 interface LndClient {
-  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
+  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
-  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+  emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
 }
 
@@ -44,6 +44,8 @@ class LndClient extends SwapClient {
   private credentials!: ChannelCredentials;
   /** The identity pub key for this lnd instance. */
   private identityPubKey?: string;
+  /** List of client's public listening uris that are advertised to the network */
+  private urisList?: string[];
   /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
   private chainIdentifier?: string;
   private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
@@ -97,6 +99,10 @@ class LndClient extends SwapClient {
 
   public get pubKey() {
     return this.identityPubKey;
+  }
+
+  public get uris() {
+    return this.urisList;
   }
 
   public get chain() {
@@ -209,10 +215,14 @@ class LndClient extends SwapClient {
 
           /** The new lnd pub key value if different from the one we had previously. */
           let newPubKey: string | undefined;
+          let newUris: string[] = [];
           if (this.identityPubKey !== getInfoResponse.getIdentityPubkey()) {
             newPubKey = getInfoResponse.getIdentityPubkey();
             this.logger.debug(`pubkey is ${newPubKey}`);
             this.identityPubKey = newPubKey;
+            newUris = getInfoResponse.getUrisList();
+            this.logger.debug(`uris are ${newUris}`);
+            this.urisList = newUris;
           }
           const chain = getInfoResponse.getChainsList()[0];
           const chainIdentifier = `${chain.getChain()}-${chain.getNetwork()}`;
@@ -224,7 +234,10 @@ class LndClient extends SwapClient {
             this.logger.error(`chain switched from ${this.chainIdentifier} to ${chainIdentifier}`);
             await this.setStatus(ClientStatus.Disabled);
           }
-          this.emit('connectionVerified', newPubKey);
+          this.emit('connectionVerified', {
+            newUris,
+            newIdentifier: newPubKey,
+          });
 
           this.invoices = new InvoicesClient(this.uri, this.credentials);
 
@@ -382,19 +395,72 @@ class LndClient extends SwapClient {
   /**
    * Connects to another lnd node.
    */
-  public connectPeer = (pubkey: string, host: string, port: number): Promise<lndrpc.ConnectPeerResponse> => {
+  public connectPeer = (pubkey: string, address: string): Promise<lndrpc.ConnectPeerResponse> => {
     const request = new lndrpc.ConnectPeerRequest();
-    const address = new lndrpc.LightningAddress();
-    address.setHost(`${host}:${port}`);
-    address.setPubkey(pubkey);
-    request.setAddr(address);
+    const lightningAddress = new lndrpc.LightningAddress();
+    lightningAddress.setHost(address);
+    lightningAddress.setPubkey(pubkey);
+    request.setAddr(lightningAddress);
     return this.unaryCall<lndrpc.ConnectPeerRequest, lndrpc.ConnectPeerResponse>('connectPeer', request);
+  }
+
+  /**
+   * Opens a channel given peerPubKey and amount.
+   */
+  public openChannel = async (
+    { peerIdentifier: peerPubKey, units, lndUris }:
+    { peerIdentifier: string, units: number, lndUris: string[] },
+  ): Promise<void> => {
+    const connectionEstablished = await this.connectPeerAddreses(lndUris);
+    if (connectionEstablished) {
+      await this.openChannelSync(peerPubKey, units);
+    } else {
+      throw new Error('connectPeerAddreses failed');
+    }
+  }
+
+  /**
+   * Tries to connect to a given list of peer's node addresses
+   * in a sequential order.
+   * Returns true when successful, otherwise false.
+   */
+  private connectPeerAddreses = async (
+    peerListeningUris: string[],
+  ): Promise<boolean> => {
+    const splitListeningUris = peerListeningUris
+      .map((uri) => {
+        const splitUri = uri.split('@');
+        return {
+          peerPubKey: splitUri[0],
+          address: splitUri[1],
+        };
+      });
+    const CONNECT_TIMEOUT = 4000;
+    for (const uri of splitListeningUris) {
+      const { peerPubKey, address } = uri;
+      let timeout;
+      try {
+        timeout = setTimeout(() => {
+          throw new Error('connectPeer has timed out');
+        }, CONNECT_TIMEOUT);
+        await this.connectPeer(peerPubKey, address);
+        return true;
+      } catch (e) {
+        if (e.message && e.message.includes('already connected')) {
+          return true;
+        }
+        this.logger.trace(`connectPeer failed: ${e}`);
+      } finally {
+        timeout && clearTimeout(timeout);
+      }
+    }
+    return false;
   }
 
   /**
    * Opens a channel with a connected lnd node.
    */
-  public openChannel = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
+  private openChannelSync = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
     request.setNodePubkeyString(node_pubkey_string);
     request.setLocalFundingAmount(local_funding_amount);

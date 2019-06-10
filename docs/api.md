@@ -38,6 +38,8 @@
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
+    - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
+    - [OpenChannelResponse](#xudrpc.OpenChannelResponse)
     - [Order](#xudrpc.Order)
     - [OrderRemoval](#xudrpc.OrderRemoval)
     - [OrderUpdate](#xudrpc.OrderUpdate)
@@ -586,6 +588,33 @@
 
 
 
+<a name="xudrpc.OpenChannelRequest"></a>
+
+### OpenChannelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_pub_key | [string](#string) |  | The node pub key of the peer with which to open channel with. |
+| currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
+| amount | [int64](#int64) |  | The amount of the channel denominated in satoshis. |
+
+
+
+
+
+
+<a name="xudrpc.OpenChannelResponse"></a>
+
+### OpenChannelResponse
+
+
+
+
+
+
+
 <a name="xudrpc.Order"></a>
 
 ### Order
@@ -1069,6 +1098,7 @@
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. |
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. |
 | ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Gets the total balance available across all payment channels for one or all currencies. |
+| OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer with the given node pub key for the specified amount and currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. |

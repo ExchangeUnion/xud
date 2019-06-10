@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`UnitConverter amountToUnits throws error upon unknown currency 1`] = `[Error: cannot convert ABC amount of 123 to units because units per currency was not found in the database]`;
+
+exports[`UnitConverter unitsToAmount throws error upon unknown currency 1`] = `[Error: cannot convert ABC units of 123 to amount because units per currency was not found in the database]`;
