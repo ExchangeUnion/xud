@@ -35,7 +35,7 @@ type XudInfo = {
   numPeers: number;
   numPairs: number;
   orders: { peer: number, own: number};
-  lnd: { [currency: string]: LndInfo | undefined };
+  lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
 };
 
