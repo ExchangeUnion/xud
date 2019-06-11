@@ -1,7 +1,7 @@
 import Config from '../Config';
 import SwapClient from './SwapClient';
 import LndClient from '../lndclient/LndClient';
-import { LndLogger, LndInfos } from '../lndclient/types';
+import { LndLogger, LndInfo } from '../lndclient/types';
 import RaidenClient from '../raidenclient/RaidenClient';
 import Logger, { Loggers } from '../Logger';
 import { errors } from './errors';
@@ -169,19 +169,21 @@ class SwapClientManager extends EventEmitter {
    * @returns A promise that resolves to an object containing lnd
    * clients' info, throws otherwise.
    */
-  public getLndClientsInfo = async (): Promise<LndInfos> => {
-    const lndInfos: LndInfos = {};
+  public getLndClientsInfo = async () => {
+    const lndInfos = new Map<string, LndInfo>();
     // TODO: consider maintaining this list of pubkeys
     // (similar to how we're maintaining the list of raiden currencies)
     // rather than determining it dynamically when needed. The benefits
     // would be slightly improved performance.
+    const getInfoPromises: Promise<void>[] = [];
     for (const [currency, swapClient] of this.swapClients.entries()) {
-      if (isLndClient(swapClient)) {
-        lndInfos[currency] = swapClient.isDisabled()
-          ? undefined
-          : await swapClient.getLndInfo();
+      if (isLndClient(swapClient) && !swapClient.isDisabled()) {
+        getInfoPromises.push(swapClient.getLndInfo().then((lndInfo) => {
+          lndInfos.set(currency, lndInfo);
+        }));
       }
     }
+    await Promise.all(getInfoPromises);
     return lndInfos;
   }
 
