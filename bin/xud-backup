@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+
+const Backup = require('../dist/backup/Backup').default;
+
+const { argv } = require('yargs')
+  .options({
+    backupdir: {
+      describe: 'Data directory for backups',
+      type: 'string',
+      alias: 'b',
+    },
+    xudir: {
+      describe: 'Data directory for xud',
+      type: 'string',
+      alias: 'x',
+    },
+    dbpath: {
+      describe: 'Path to the XUD database',
+      type: 'string',
+      alias: 'd',
+    },
+    loglevel: {
+      describe: 'Verbosity of the logger',
+      type: 'string',
+      alias: 'l',
+    },
+    logpath: {
+      describe: 'Path to the log file',
+      type: 'string',
+    },
+    logdateformat: {
+      describe: 'Format of the logger date',
+      type: 'string',
+    },
+    'lnd.[currency].certpath': {
+      describe: 'Path to the SSL certificate for lnd',
+      type: 'string',
+    },
+    'lnd.[currency].cltvdelta': {
+      describe: 'CLTV delta for the final timelock',
+      type: 'number',
+    },
+    'lnd.[currency].disable': {
+      describe: 'Disable lnd integration',
+      type: 'boolean',
+      default: undefined,
+    },
+    'lnd.[currency].host': {
+      describe: 'Host of the lnd gRPC interface',
+      type: 'string',
+    },
+    'lnd.[currency].macaroonpath': {
+      describe: 'Path of the admin macaroon for lnd',
+      type: 'string',
+    },
+    'lnd.[currency].nomacaroons': {
+      describe: 'Whether to disable macaroons for lnd',
+      type: 'boolean',
+      default: undefined,
+    },
+    'lnd.[currency].port': {
+      describe: 'Port for the lnd gRPC interface',
+      type: 'number',
+    },
+    'raiden.dbpath': {
+      describe: 'Path to the database of Raiden',
+      type: 'string',
+    },
+  });
+
+// delete non-config keys from argv
+delete argv._;
+delete argv.version;
+delete argv.help;
+delete argv.$0;
+
+const backup = new Backup();
+
+backup.start(argv);
