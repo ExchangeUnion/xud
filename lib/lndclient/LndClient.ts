@@ -393,8 +393,8 @@ class LndClient extends SwapClient {
     addHoldInvoiceRequest.setValue(amount);
     addHoldInvoiceRequest.setCltvExpiry(this.cltvDelta); // TODO: use peer's cltv delta
     await this.addHoldInvoice(addHoldInvoiceRequest);
+    await this.subscribeSingleInvoice(rHash);
     this.logger.debug(`added invoice of ${amount} for ${rHash}`);
-    this.subscribeSingleInvoice(rHash);
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
@@ -432,22 +432,32 @@ class LndClient extends SwapClient {
   }
 
   private subscribeSingleInvoice = (rHash: string) => {
-    const paymentHash = new lndrpc.PaymentHash();
-    // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
-    paymentHash.setRHash(hexToUint8Array(rHash));
-    const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
-    const deleteInvoiceSubscription = () => {
-      invoiceSubscription.removeAllListeners();
-      this.invoiceSubscriptions.delete(rHash);
-      this.logger.debug(`deleted invoice subscription for ${rHash}`);
-    };
-    invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
-      if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
-        // we have accepted an htlc for this invoice
-        this.emit('htlcAccepted', rHash, invoice.getValue());
-      }
-    }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
-    this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+    return new Promise((resolve, reject) => {
+      const SUBSCRIBE_INVOICE_TIMEOUT = 5000;
+      // ensure subscribing to invoice does not take more than 5 seconds
+      setTimeout(reject, SUBSCRIBE_INVOICE_TIMEOUT);
+      const paymentHash = new lndrpc.PaymentHash();
+      // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
+      paymentHash.setRHash(hexToUint8Array(rHash));
+      const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
+      const deleteInvoiceSubscription = () => {
+        invoiceSubscription.removeAllListeners();
+        this.invoiceSubscriptions.delete(rHash);
+        this.logger.debug(`deleted invoice subscription for ${rHash}`);
+      };
+      invoiceSubscription.on('data', async (invoice: lndrpc.Invoice) => {
+        if (invoice.getState() === lndrpc.Invoice.InvoiceState.OPEN) {
+          this.logger.trace(`hold invoice for ${rHash} is now open and waiting amount of ${invoice.getValue()}`);
+          resolve();
+        }
+        if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
+          // we have accepted an htlc for this invoice
+          this.logger.trace(`emttting htlcAccepted with rHash ${rHash} and amount ${invoice.getValue()}`);
+          this.emit('htlcAccepted', rHash, invoice.getValue());
+        }
+      }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
+      this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+    });
   }
 
   /**
