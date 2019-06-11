@@ -47,7 +47,7 @@ class LndClient extends SwapClient {
    */
   constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
     super(logger);
-    this.cltvDelta = config.cltvdelta || 0;
+    this.cltvDelta = config.cltvdelta || 576;
   }
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
