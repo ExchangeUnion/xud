@@ -207,15 +207,77 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
-  public sendSmallestAmount = async (rHash: string, destination: string) => {
-    const sendRequest = new lndrpc.SendRequest();
-    sendRequest.setAmt(1);
-    sendRequest.setDestString(destination);
-    sendRequest.setPaymentHashString(rHash);
-    sendRequest.setFinalCltvDelta(this.cltvDelta);
+  public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {
+    const request = this.buildSendRequest({
+      rHash,
+      destination,
+      amount: 1,
+      cltvDelta: this.cltvDelta, // TODO: check cltvDelta
+    });
+    const preImage = await this.executeSendRequest(request);
+    return preImage;
+  }
+
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+    let request: lndrpc.SendRequest;
+    if (deal.role === SwapRole.Taker) {
+      // we are the taker paying the maker
+      if (!deal.destination) {
+        assert.fail('swap deal as taker must have a destination');
+      }
+      if (!deal.makerCltvDelta) {
+        assert.fail('swap deal as taker must have a makerCltvDelta');
+      }
+      request = this.buildSendRequest({
+        rHash: deal.rHash,
+        destination: deal.destination!,
+        amount: deal.makerAmount,
+        cltvDelta: deal.makerCltvDelta!, // TODO: check cltvDelta
+      });
+    } else {
+      // we are the maker paying the taker
+      if (!deal.takerPubKey) {
+        assert.fail('swap deal as maker must have a takerPubKey');
+      }
+      if (!deal.takerCltvDelta) {
+        assert.fail('swap deal as maker must have a takerCltvDelta');
+      }
+      request = this.buildSendRequest({
+        rHash: deal.rHash,
+        destination: deal.takerPubKey!,
+        amount: deal.takerAmount,
+        cltvDelta: deal.takerCltvDelta, // TODO: check cltvDelta
+      });
+    }
+    const preImage = await this.executeSendRequest(request);
+    return preImage;
+  }
+
+  /**
+   * Builds a lndrpc.SendRequest
+   */
+  private buildSendRequest = (
+    { rHash, destination, amount, cltvDelta }:
+    { rHash: string, destination: string, amount: number, cltvDelta: number },
+  ): lndrpc.SendRequest => {
+    const request = new lndrpc.SendRequest();
+    request.setPaymentHashString(rHash);
+    request.setDestString(destination);
+    request.setAmt(amount);
+    request.setFinalCltvDelta(cltvDelta);
+    return request;
+  }
+
+  /**
+   * Executes the provided lndrpc.SendRequest
+   */
+  private executeSendRequest = async (
+    request: lndrpc.SendRequest,
+  ): Promise<string> => {
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
-      sendPaymentResponse = await this.sendPaymentSync(sendRequest);
+      sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
       this.logger.error('got exception from sendPaymentSync', err.message);
       throw err;
@@ -225,61 +287,6 @@ class LndClient extends SwapClient {
       throw new Error(paymentError);
     }
     return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
-  }
-
-  public sendPayment = async (deal: SwapDeal): Promise<string> => {
-    assert(deal.state === SwapState.Active);
-
-    if (deal.makerToTakerRoutes && deal.role === SwapRole.Maker) {
-      const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes as lndrpc.Route[]);
-      request.setPaymentHashString(deal.rHash);
-
-      try {
-        const sendToRouteResponse = await this.sendToRouteSync(request);
-        const sendPaymentError = sendToRouteResponse.getPaymentError();
-        if (sendPaymentError) {
-          this.logger.error(`sendToRouteSync failed with payment error: ${sendPaymentError}`);
-          throw new Error(sendPaymentError);
-        }
-
-        return base64ToHex(sendToRouteResponse.getPaymentPreimage_asB64());
-      } catch (err) {
-        this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
-        throw err;
-      }
-    } else if (deal.destination) {
-      const request = new lndrpc.SendRequest();
-      request.setDestString(deal.destination);
-      request.setPaymentHashString(deal.rHash);
-
-      if (deal.role === SwapRole.Taker) {
-        // we are the taker paying the maker
-        request.setFinalCltvDelta(deal.makerCltvDelta!);
-        request.setAmt(deal.makerAmount);
-      } else {
-        // we are the maker paying the taker
-        request.setFinalCltvDelta(deal.takerCltvDelta);
-        request.setAmt(deal.takerAmount);
-      }
-
-      try {
-        const sendPaymentResponse = await this.sendPaymentSync(request);
-        const sendPaymentError = sendPaymentResponse.getPaymentError();
-        if (sendPaymentError) {
-          this.logger.error(`sendPaymentSync failed with payment error: ${sendPaymentError}`);
-          throw new Error(sendPaymentError);
-        }
-
-        return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
-      } catch (err) {
-        this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
-        throw err;
-      }
-    } else {
-      assert.fail('swap deal must have a route or destination to send payment');
-      return '';
-    }
   }
 
   /**
@@ -380,13 +387,6 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
-  /**
-   * Sends amount to destination using pre-defined routes.
-   */
-  private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
-    return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
-  }
-
   public addInvoice = async (rHash: string, amount: number) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
@@ -447,7 +447,7 @@ class LndClient extends SwapClient {
       };
       invoiceSubscription.on('data', async (invoice: lndrpc.Invoice) => {
         if (invoice.getState() === lndrpc.Invoice.InvoiceState.OPEN) {
-          this.logger.trace(`hold invoice for ${rHash} is now open and waiting amount of ${invoice.getValue()}`);
+          this.logger.trace(`hold invoice for ${rHash} is now open and waiting for amount of ${invoice.getValue()}`);
           resolve();
         }
         if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {

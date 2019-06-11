@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LndClient sendPayment error 1`] = `[Error: error!]`;
+
+exports[`LndClient sendPayment maker success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
+
+exports[`LndClient sendPayment taker success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
+
+exports[`LndClient sendSmallestAmount success 1`] = `"20300a5ebc7875aca7d07fe00b1375da33cadbf2dc8703d9a29e33202c38de38"`;
