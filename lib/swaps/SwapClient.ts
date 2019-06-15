@@ -113,9 +113,9 @@ abstract class SwapClient extends EventEmitter {
    * @param destination target node for the route
    * @returns routes
    */
-  public abstract async getRoutes(amount: number, destination: string): Promise<Route[]>;
+  public abstract async getRoutes(amount: number, destination: string, finalCltvDelta?: number): Promise<Route[]>;
 
-  public abstract async addInvoice(rHash: string, amount: number): Promise<void>;
+  public abstract async addInvoice(rHash: string, amount: number, cltvExpiry: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
