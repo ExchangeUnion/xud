@@ -63,8 +63,8 @@ export type TokenPaymentRequest = {
 export type RaidenResolveRequest = {
   /** The token address for the resolve request in hex. */
   token: string;
-  /** The payment hash in hex. */
-  secret_hash: string;
+  /** The payment hash in hex with 0x prefix. */
+  secrethash: string;
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number;
   // unused fields on the raiden request listed below, taken from raiden codebase
