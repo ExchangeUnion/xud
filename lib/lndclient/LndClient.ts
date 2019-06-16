@@ -393,7 +393,7 @@ class LndClient extends SwapClient {
     addHoldInvoiceRequest.setValue(amount);
     addHoldInvoiceRequest.setCltvExpiry(this.cltvDelta); // TODO: use peer's cltv delta
     await this.addHoldInvoice(addHoldInvoiceRequest);
-    this.logger.debug(`added invoice of ${amount} for ${rHash}`);
+    this.logger.debug(`added invoice of ${amount} for ${rHash} with CltvExpiry ${this.cltvDelta}`);
     this.subscribeSingleInvoice(rHash);
   }
 
