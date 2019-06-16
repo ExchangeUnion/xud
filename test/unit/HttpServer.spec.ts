@@ -21,7 +21,7 @@ describe('HttpServer', () => {
   let port: number;
 
   const amount = 10;
-  const secret_hash = 'rhash';
+  const secrethash = 'rhash';
   const token = 'contractaddress';
   const preimage = 'rpreimage';
 
@@ -40,7 +40,7 @@ describe('HttpServer', () => {
   it('should receive and parse a raiden resolve request', (done) => {
     chai.request(`http://localhost:${port}`)
       .post('/resolveraiden')
-      .send({ amount, secret_hash, token })
+      .send({ amount, secrethash, token })
       .then((res: ChaiHttp.Response) => {
         expect(res.status).to.equal(200);
         expect(res).to.be.json;
@@ -54,7 +54,7 @@ describe('HttpServer', () => {
   it('should return not found 404 when wrong secret hash provided', (done) => {
     chai.request(`http://localhost:${port}`)
       .post('/resolveraiden')
-      .send({ amount, token, secret_hash: '0xwronghash' })
+      .send({ amount, token, secrethash: '0xwronghash' })
       .then((res: ChaiHttp.Response) => {
         expect(res.status).to.equal(404);
         done();
@@ -90,7 +90,7 @@ describe('HttpServer', () => {
   it('should 404 if a bad path is used', (done) => {
     chai.request(`http://localhost:${port}`)
       .post('/badendpoint')
-      .send({ amount, secret_hash, token })
+      .send({ amount, secrethash, token })
       .then((res: ChaiHttp.Response) => {
         expect(res.status).to.equal(404);
         done();
