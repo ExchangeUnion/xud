@@ -264,6 +264,8 @@ class LndClient extends SwapClient {
       }
 
       try {
+        this.logger.debug(`executing sendPaymentSync -
+          destination: ${deal.destination}, rHash: ${deal.rHash}, amount: ${request.getAmt()}, FinalCltvDelta: ${request.getFinalCltvDelta()}`);
         const sendPaymentResponse = await this.sendPaymentSync(request);
         const sendPaymentError = sendPaymentResponse.getPaymentError();
         if (sendPaymentError) {
@@ -358,7 +360,7 @@ class LndClient extends SwapClient {
     request.setPubKey(destination);
     try {
       const routes = (await this.queryRoutes(request)).getRoutesList();
-      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}`);
+      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}, FinalCltvDelta: ${this.cltvDelta}`);
       return routes;
     } catch (err) {
       if (typeof err.message === 'string' && (
@@ -367,7 +369,7 @@ class LndClient extends SwapClient {
       )) {
         return [];
       } else {
-        this.logger.error(`error calling queryRoutes to ${destination}: ${JSON.stringify(err)}`);
+        this.logger.error(`error calling queryRoutes to ${destination}, amount ${amount} FinalCltvDelta ${this.cltvDelta}: ${JSON.stringify(err)}`);
         throw err;
       }
     }
