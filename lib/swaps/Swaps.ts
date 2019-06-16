@@ -484,7 +484,8 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      this.logger.debug(`trying to query routes from maker to taker with ${takerPubKey} and amount of ${takerAmount}`);
+      this.logger.debug(`trying to query routes from maker to taker with ${takerPubKey}
+        and amount of ${takerAmount} and FinalCltvDelta ${takerSwapClient.cltvDelta}`);
       deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerAmount, takerPubKey);
       this.logger.debug(`queried routes total of ${deal.makerToTakerRoutes.length} available routes from maker to taker`);
       deal.makerToTakerRoutes.forEach((availableRoute) => {
