@@ -1,9 +1,9 @@
 ---
 name: Bug Bounty Bug Report
-about: Bug Report Template for $20,000 Bug Bounty
+about: Template for Exchange Union $20,000 Bug Bounty
 title: "[BUG BOUNTY] TITLE"
 labels: ''
-assignees: kilrau
+assignees: erkarl, sangaman, offerm, moshababo, kilrau
 
 ---
 
