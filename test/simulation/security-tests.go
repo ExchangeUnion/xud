@@ -192,10 +192,10 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1000)
 	ht.assert.NoError(err)
 
-	err = net.Alice.LndBtcNode.WaitForBlockchainSync(ht.ctx)
+	err = net.Alice.LndLtcNode.WaitForBlockchainSync(ht.ctx)
 	ht.assert.NoError(err)
 
-	err = net.Bob.LndBtcNode.WaitForBlockchainSync(ht.ctx)
+	err = net.Bob.LndLtcNode.WaitForBlockchainSync(ht.ctx)
 	ht.assert.NoError(err)
 
 	time.Sleep(2 * time.Second)
