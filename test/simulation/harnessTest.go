@@ -10,8 +10,9 @@ import (
 )
 
 type testCase struct {
-	name string
-	test func(net *xudtest.NetworkHarness, t *harnessTest)
+	name            string
+	test            func(net *xudtest.NetworkHarness, t *harnessTest)
+	balanceMutating bool
 }
 
 // harnessTest wraps a regular testing.T providing enhanced error detection

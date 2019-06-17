@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
+	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/stretchr/testify/require"
 	"time"
 )
@@ -21,27 +22,7 @@ import (
 // by their preceding ones.
 func testNetworkInit(net *xudtest.NetworkHarness, ht *harnessTest) {
 	for _, node := range net.ActiveNodes {
-		// Verify connectivity.
-		timeout := time.Now().Add(10 * time.Second)
-		for {
-			req := &xudrpc.GetInfoRequest{}
-			res, err := node.Client.GetInfo(ht.ctx, req)
-			ht.assert.NoError(err)
-			if len(res.Lnd["BTC"].Chains) == 1 && len(res.Lnd["LTC"].Chains) == 1 {
-				ht.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
-				ht.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
-				ht.assert.Equal(res.Lnd["LTC"].Chains[0].Chain, "litecoin")
-				ht.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
-				// Set the node public key.
-				node.SetPubKey(res.NodePubKey)
-				// Add pair to the node.
-				ht.act.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
-				break
-			}
-			ht.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
-			// retry interval
-			time.Sleep(100 * time.Millisecond)
-		}
+		ht.act.init(node)
 	}
 }
 
@@ -213,6 +194,32 @@ type actions struct {
 
 	// ctx is the context for the test scenario.
 	ctx context.Context
+}
+
+func (a *actions) init(node *xudtest.HarnessNode) {
+	// Verify connectivity.
+	timeout := time.Now().Add(10 * time.Second)
+	for {
+		req := &xudrpc.GetInfoRequest{}
+		res, err := node.Client.GetInfo(a.ctx, req)
+		a.assert.NoError(err)
+		if len(res.Lnd["BTC"].Chains) == 1 && len(res.Lnd["LTC"].Chains) == 1 {
+			a.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
+			a.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
+			a.assert.Equal(res.Lnd["LTC"].Chains[0].Chain, "litecoin")
+			a.assert.Equal(res.Lnd["LTC"].Chains[0].Network, "simnet")
+
+			// Set the node public key.
+			node.SetPubKey(res.NodePubKey)
+
+			// Add pair to the node.
+			a.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
+			break
+		}
+		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
+		// retry interval
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteCurrency string,
@@ -503,6 +510,44 @@ func subscribeSwaps(ctx context.Context, node *xudtest.HarnessNode, includeTaker
 	return out
 }
 
+type subscribeSwapFailuresEvent struct {
+	swapFailure *xudrpc.SwapFailure
+	err         error
+}
+
+func subscribeSwapFailures(ctx context.Context, node *xudtest.HarnessNode, includeTaker bool) <-chan *subscribeSwapFailuresEvent {
+	out := make(chan *subscribeSwapFailuresEvent, 1)
+
+	// Subscribe before starting a non-blocking routine.
+	req := xudrpc.SubscribeSwapsRequest{IncludeTaker: includeTaker}
+	stream, err := node.Client.SubscribeSwapFailures(ctx, &req)
+	if err != nil {
+		out <- &subscribeSwapFailuresEvent{nil, err}
+		return out
+	}
+
+	go func() {
+		go func() {
+			for {
+				swapFailure, err := stream.Recv()
+				out <- &subscribeSwapFailuresEvent{swapFailure, err}
+				if err != nil {
+					break
+				}
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			if e := ctx.Err(); e != context.Canceled {
+				out <- &subscribeSwapFailuresEvent{nil, errors.New("timeout reached before event was received")}
+			}
+		}
+	}()
+
+	return out
+}
+
 func getOrdersCount(ctx context.Context, n1, n2 *xudtest.HarnessNode) (*xudrpc.OrdersCount, *xudrpc.OrdersCount, error) {
 	n1i, err := getInfo(ctx, n1)
 	if err != nil {
@@ -524,4 +569,41 @@ func getInfo(ctx context.Context, n *xudtest.HarnessNode) (*xudrpc.GetInfoRespon
 	}
 
 	return info, nil
+}
+
+type balance struct {
+	channel *lnrpc.ChannelBalanceResponse
+	wallet  *lnrpc.WalletBalanceResponse
+}
+
+type balances struct {
+	btc balance
+	ltc balance
+}
+
+func getBalances(ctx context.Context, node *xudtest.HarnessNode) (*balances, error) {
+	var b balances
+	var err error
+
+	b.ltc.channel, err = node.LndLtcNode.ChannelBalance(ctx, &lnrpc.ChannelBalanceRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	b.ltc.wallet, err = node.LndLtcNode.WalletBalance(ctx, &lnrpc.WalletBalanceRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	b.btc.channel, err = node.LndBtcNode.ChannelBalance(ctx, &lnrpc.ChannelBalanceRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	b.btc.wallet, err = node.LndBtcNode.WalletBalance(ctx, &lnrpc.WalletBalanceRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &b, nil
 }

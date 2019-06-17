@@ -2,6 +2,7 @@ module github.com/ExchangeUnion/xud-simulation
 
 require (
 	github.com/Roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141 // indirect
+	github.com/btcsuite/btcd v0.0.0-20190426011420-63f50db2f70a
 	github.com/frankban/quicktest v1.2.2 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/golang/protobuf v1.3.1
