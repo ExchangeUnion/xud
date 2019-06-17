@@ -65,14 +65,14 @@ var securityTestCases = []*testCase{
 		name: "network initialization", // must be the first test case to be run
 		test: testNetworkInit,
 	},
-	//{
-	//	name: "taker stalling on swapAccepted",
-	//	test: testTakerStallingOnSwapAccepted,
-	//},
-	//{
-	//	name: "maker stalling after 1st htlc",
-	//	test: testMakerStallingAfter1stHTLC,
-	//},
+	{
+		name: "taker stalling on swapAccepted",
+		test: testTakerStallingOnSwapAccepted,
+	},
+	{
+		name: "maker stalling after 1st htlc",
+		test: testMakerStallingAfter1stHTLC,
+	},
 	{ // FAILING
 		name: "maker shutdown after 1st htlc",
 		test: testMakerShutdownAfter1stHTLC,
