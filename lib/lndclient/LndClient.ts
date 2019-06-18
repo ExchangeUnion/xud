@@ -2,7 +2,7 @@ import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import SwapClient, { ClientStatus } from '../swaps/SwapClient';
 import errors from './errors';
-import { LightningClient } from '../proto/lndrpc_grpc_pb';
+import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
@@ -14,6 +14,10 @@ import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
 
 interface LightningMethodIndex extends LightningClient {
+  [methodName: string]: Function;
+}
+
+interface WalletUnlockerMethodIndex extends WalletUnlockerClient {
   [methodName: string]: Function;
 }
 
@@ -33,6 +37,7 @@ class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
   public readonly cltvDelta: number;
   private lightning!: LightningClient | LightningMethodIndex;
+  private walletUnlocker!: WalletUnlockerClient | InvoicesMethodIndex;
   private invoices!: InvoicesClient | InvoicesMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
@@ -123,6 +128,22 @@ class LndClient extends SwapClient {
     });
   }
 
+  private unaryWalletUnlockerCall = <T, U>(methodName: string, params: T): Promise<U> => {
+    return new Promise((resolve, reject) => {
+      if (this.isDisabled()) {
+        reject(errors.LND_IS_DISABLED);
+        return;
+      }
+      (this.walletUnlocker as WalletUnlockerMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(response);
+        }
+      });
+    });
+  }
+
   public getLndInfo = async (): Promise<LndInfo> => {
     let channels: ChannelCount | undefined;
     let chains: Chain[] | undefined;
@@ -172,6 +193,7 @@ class LndClient extends SwapClient {
       this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
       this.invoices = new InvoicesClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
@@ -192,9 +214,14 @@ class LndClient extends SwapClient {
           this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
         }
       } catch (err) {
-        this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
-          retrying in ${LndClient.RECONNECT_TIMER} ms`);
-        await this.setStatus(ClientStatus.Disconnected);
+        if (err.code === grpc.status.UNIMPLEMENTED) {
+          // if GetInfo is unimplemented, it means this lnd instance is online but locked
+          await this.setStatus(ClientStatus.WaitingUnlock);
+        } else {
+          this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
+            retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          await this.setStatus(ClientStatus.Disconnected);
+        }
       }
     }
   }
@@ -387,6 +414,34 @@ class LndClient extends SwapClient {
    */
   private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
     return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
+  }
+
+  public genSeed = async (): Promise<lndrpc.GenSeedResponse.AsObject> => {
+    const genSeedResponse = await this.unaryWalletUnlockerCall<lndrpc.GenSeedRequest, lndrpc.GenSeedResponse>(
+      'genSeed', new lndrpc.GenSeedRequest(),
+    );
+    return genSeedResponse.toObject();
+  }
+
+  public initWallet = async (walletPassword: string, seedMnemonic: string[]): Promise<lndrpc.InitWalletResponse.AsObject> => {
+    const request = new lndrpc.InitWalletRequest();
+    request.setCipherSeedMnemonicList(seedMnemonic);
+    request.setWalletPassword(walletPassword);
+    const initWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>(
+      'initWallet', new lndrpc.InitWalletRequest(),
+    );
+    this.logger.info('wallet initialized');
+    return initWalletResponse.toObject();
+  }
+
+  public unlockWallet = async (walletPassword: string): Promise<lndrpc.UnlockWalletResponse.AsObject> => {
+    const request = new lndrpc.UnlockWalletRequest();
+    request.setWalletPassword(walletPassword);
+    const unlockWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
+      'unlockWallet', new lndrpc.UnlockWalletRequest(),
+    );
+    this.logger.info('wallet unlocked');
+    return unlockWalletResponse.toObject();
   }
 
   public addInvoice = async (rHash: string, amount: number) => {

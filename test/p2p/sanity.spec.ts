@@ -103,7 +103,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an unexpected node pub key', async () => {
-    const randomPubKey =  (await NodeKey['generate']()).nodePubKey;
+    const randomPubKey =  (await NodeKey['generate']()).pubKey;
     const host = 'localhost';
     const port = nodeTwoPort;
     const nodeUri = toUri({ host, port, nodePubKey: randomPubKey });

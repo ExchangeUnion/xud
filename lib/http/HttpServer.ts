@@ -82,7 +82,6 @@ class HttpServer {
 
   /**
    * Starts the server and begins listening on the provided port.
-   * @returns true if the server started listening successfully, false otherwise
    */
   public listen = async (port: number) => {
     return new Promise<void>((resolve, reject) => {

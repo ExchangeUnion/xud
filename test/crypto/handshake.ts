@@ -41,8 +41,8 @@ describe('key exchange and symmetric encryption', () => {
 describe('authentication', () => {
   it('alice should sign its session init data and bob should be able to verify it', async () => {
     const aliceNodeKey = await NodeKey['generate']();
-    const aliceNodePubKey = aliceNodeKey.nodePubKey;
-    const aliceNodePrivKey = aliceNodeKey['privKey'];
+    const aliceNodePubKey = aliceNodeKey.pubKey;
+    const aliceNodePrivKey = aliceNodeKey.privKey;
 
     const alice = createECDH('secp256k1');
     const aliceEphemeralPubKey = alice.generateKeys();

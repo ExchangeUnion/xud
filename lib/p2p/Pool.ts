@@ -107,7 +107,7 @@ class Pool extends EventEmitter {
 
     this.nodeState = {
       version,
-      nodePubKey: nodeKey.nodePubKey,
+      nodePubKey: nodeKey.pubKey,
       addresses: [],
       pairs: [],
       raidenAddress: '',
