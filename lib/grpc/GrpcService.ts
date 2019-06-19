@@ -382,9 +382,9 @@ class GrpcService {
         return lnd;
       });
       const lndMap = response.getLndMap();
-      for (const currency in getInfoResponse.lnd) {
-        lndMap.set(currency, getLndInfo(getInfoResponse.lnd[currency]!));
-      }
+      getInfoResponse.lnd.forEach((lndInfo, currency) => {
+        lndMap.set(currency, getLndInfo(lndInfo));
+      });
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();

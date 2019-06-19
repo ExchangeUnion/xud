@@ -34,7 +34,7 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
-  public address = '';
+  public address?: string;
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
@@ -82,7 +82,7 @@ class RaidenClient extends SwapClient {
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
         err,
       );
-      await this.setStatus(ClientStatus.Disconnected);
+      await this.disconnect();
     }
   }
 
@@ -351,7 +351,9 @@ class RaidenClient extends SwapClient {
   }
 
   /** Raiden client specific cleanup. */
-  protected closeSpecific() {}
+  protected disconnect = async () => {
+    await this.setStatus(ClientStatus.Disconnected);
+  }
 }
 
 export default RaidenClient;

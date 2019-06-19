@@ -39,6 +39,3 @@ export type LndLogger = {
   debug: Function,
   trace: Function,
 };
-
-export type LndPubKeys = { [currency: string]: string | undefined };
-export type LndInfos = { [currency: string]: LndInfo | undefined };

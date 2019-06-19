@@ -3,7 +3,7 @@ import { callback, loadXudClient } from '../command';
 import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { SATOSHIS_PER_COIN } from '../utils';
+import { satsToCoinsStr } from '../utils';
 
 type FormattedTradingPairOrders = {
   pairId: string,
@@ -30,7 +30,7 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
   if (order) {
     const isOwn = order.isOwnOrder ? 'X' : '';
     return [
-      (order.quantity / SATOSHIS_PER_COIN).toFixed(8),
+      satsToCoinsStr(order.quantity),
       order.price.toString(),
       isOwn,
     ].map(i => order.isOwnOrder ? colors.cyan(i) : i);

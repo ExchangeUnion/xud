@@ -6,45 +6,18 @@ import Logger from '../Logger';
 import GrpcService from './GrpcService';
 import Service from '../service/Service';
 import errors from './errors';
-import { XudService } from '../proto/xudrpc_grpc_pb';
+import { XudService, XudInitService } from '../proto/xudrpc_grpc_pb';
 import { promises as fs } from 'fs';
 import serverProxy from './serverProxy';
+import InitService from 'lib/service/InitService';
+import GrpcInitService from './GrpcInitService';
 
 class GrpcServer {
   private server: any;
-  private grpcService: GrpcService;
+  private grpcService?: GrpcService;
 
-  constructor(private logger: Logger, service: Service) {
+  constructor(private logger: Logger) {
     this.server = serverProxy(new grpc.Server());
-
-    const grpcService = new GrpcService(logger, service);
-    this.server.addService(XudService, {
-      addCurrency: grpcService.addCurrency,
-      addPair: grpcService.addPair,
-      removeOrder: grpcService.removeOrder,
-      channelBalance: grpcService.channelBalance,
-      connect: grpcService.connect,
-      ban: grpcService.ban,
-      unban: grpcService.unban,
-      executeSwap: grpcService.executeSwap,
-      getInfo: grpcService.getInfo,
-      getNodeInfo: grpcService.getNodeInfo,
-      listOrders: grpcService.listOrders,
-      listCurrencies: grpcService.listCurrencies,
-      listPairs: grpcService.listPairs,
-      listPeers: grpcService.listPeers,
-      placeOrder: grpcService.placeOrder,
-      placeOrderSync: grpcService.placeOrderSync,
-      removeCurrency: grpcService.removeCurrency,
-      removePair: grpcService.removePair,
-      discoverNodes: grpcService.discoverNodes,
-      shutdown: grpcService.shutdown,
-      subscribeOrders: grpcService.subscribeOrders,
-      subscribeSwapFailures: grpcService.subscribeSwapFailures,
-      subscribeSwaps: grpcService.subscribeSwaps,
-    });
-
-    this.grpcService = grpcService;
 
     this.server.use((ctx: any, next: any) => {
       logger.debug(`received call ${ctx.service.path}`);
@@ -52,11 +25,21 @@ class GrpcServer {
     });
   }
 
+  public addXudInitService = (initService: InitService) => {
+    const grpcInitService = new GrpcInitService(initService);
+    this.server.addService(XudInitService, grpcInitService);
+  }
+
+  public addXudService = (service: Service) => {
+    this.grpcService = new GrpcService(this.logger, service);
+    this.server.addService(XudService, this.grpcService);
+  }
+
   /**
    * Start the server and begin listening on the provided port
    * @returns true if the server started listening successfully, false otherwise
    */
-  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string): Promise<boolean> => {
+  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string): Promise<void> => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     let certificate: Buffer;
@@ -84,19 +67,20 @@ class GrpcServer {
     if (bindCode !== port) {
       const error = errors.COULD_NOT_BIND(port.toString());
       this.logger.error(error.message);
-      return false;
+      throw error;
     }
 
     this.server.start();
     this.logger.info(`gRPC server listening on ${host}:${port}`);
-    return true;
   }
 
   /**
    * Stop listening for requests
    */
   public close = (): Promise<void> => {
-    this.grpcService.closeStreams();
+    if (this.grpcService) {
+      this.grpcService.closeStreams();
+    }
     return new Promise((resolve) => {
       this.server.tryShutdown(() => {
         this.logger.info('GRPC server completed shutdown');

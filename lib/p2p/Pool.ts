@@ -69,15 +69,14 @@ interface NodeConnectionIterator {
  */
 class Pool extends EventEmitter {
   /** The local handshake data to be sent to newly connected peers. */
-  public nodeState!: NodeState;
-  /** The local node key. */
-  private nodeKey!: NodeKey;
+  public nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutboundPeers = new Map<string, Peer>();
   /** A set of peers for which we have pending incoming connections. */
   private pendingInboundPeers = new Set<Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
+  private nodeKey: NodeKey;
   /** A collection of opened, active peers. */
   private peers = new Map<string, Peer>();
   private server?: Server;
@@ -89,35 +88,35 @@ class Pool extends EventEmitter {
   private config: PoolConfig;
   private repository: P2PRepository;
   private network: Network;
+  private logger: Logger;
 
-  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models, version: string) {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version }: {
+    config: PoolConfig,
+    xuNetwork: XuNetwork,
+    logger: Logger,
+    models: Models,
+    nodeKey: NodeKey,
+    version: string,
+  }) {
     super();
+    this.logger = logger;
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
+    this.nodeKey = nodeKey;
 
-    if (!config.nolisten) {
-      this.listenPort = config.port || 0;
+    this.nodeState = {
+      version,
+      nodePubKey: nodeKey.pubKey,
+      addresses: [],
+      pairs: [],
+      raidenAddress: '',
+      lndPubKeys: {},
+    };
 
-      /** Makes sure all uris are properly formatted  */
-      config.listen.forEach((uri) => {
-        this.interfaces.push(addressUtils.fromString(uri));
-      });
-
-      this.nodeState = {
-        version,
-        nodePubKey: '',
-        addresses: [],
-        pairs: [],
-        raidenAddress: '',
-        lndPubKeys: {},
-      };
-
-      if (config.listen) {
-        this.listenPort = config.port;
-      }
-
+    if (config.listen) {
+      this.listenPort = config.port;
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
@@ -133,7 +132,7 @@ class Pool extends EventEmitter {
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (nodeKey: NodeKey): Promise<void> => {
+  public init = async (): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -147,9 +146,6 @@ class Pool extends EventEmitter {
         await this.detectExternalIpAddress();
       }
     }
-
-    this.nodeState.nodePubKey = nodeKey.nodePubKey;
-    this.nodeKey = nodeKey;
 
     this.bindNodeList();
 
@@ -203,6 +199,7 @@ class Pool extends EventEmitter {
    */
   public updateRaidenAddress = (raidenAddress: string) => {
     this.nodeState.raidenAddress = raidenAddress;
+    this.logger.debug(`raiden new address for nodestate is ${raidenAddress}`);
     this.sendNodeStateUpdate();
   }
 
@@ -212,7 +209,7 @@ class Pool extends EventEmitter {
    */
   public updateLndPubKey = (currency: string, pubKey: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
-    this.logger.info(`${currency} ${pubKey} ${JSON.stringify(this.nodeState.lndPubKeys)}`);
+    this.logger.debug(`lnd ${currency} new pubkey for nodestate is ${pubKey}`);
     this.sendNodeStateUpdate();
   }
 
@@ -250,7 +247,7 @@ class Pool extends EventEmitter {
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
         const peer = new Peer(Logger.DISABLED_LOGGER, address, this.network);
-        await peer.beginOpen(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
+        await peer.beginOpen(this.nodeState, this.nodeKey);
         await peer.close();
         assert.fail();
       } catch (err) {

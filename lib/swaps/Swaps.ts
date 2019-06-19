@@ -57,6 +57,7 @@ class Swaps extends EventEmitter {
     public swapClientManager: SwapClientManager,
   ) {
     super();
+
     this.repository = new SwapRepository(this.models);
     this.bind();
   }
@@ -113,6 +114,14 @@ class Swaps extends EventEmitter {
   }
 
   public init = async () => {
+    // update pool with lnd pubkeys and raiden address
+    this.swapClientManager.getLndPubKeysMap().forEach((pubKey, currency) => {
+      this.pool.updateLndPubKey(currency, pubKey);
+    });
+    if (this.swapClientManager.raidenClient.address) {
+      this.pool.updateRaidenAddress(this.swapClientManager.raidenClient.address);
+    }
+
     // Load Swaps from database
     const result = await this.repository.getSwapDeals();
     result.forEach((deal: SwapDealInstance) => {
@@ -148,16 +157,17 @@ class Swaps extends EventEmitter {
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapFailed', this.handleSwapFailed);
-    this.swapClientManager.swapClients.forEach((swapClient, currency) => {
-      swapClient.on('htlcAccepted', async (rHash, amount) => {
-        try {
-          const rPreimage = await this.resolveHash(rHash, amount, currency);
-          await swapClient.settleInvoice(rHash, rPreimage);
-        } catch (err) {
-          this.logger.error('could not settle invoice', err);
-        }
-      });
+
+    this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
+      try {
+        const rPreimage = await this.resolveHash(rHash, amount, currency);
+        await swapClient.settleInvoice(rHash, rPreimage);
+      } catch (err) {
+        this.logger.error('could not settle invoice', err);
+      }
     });
+    this.swapClientManager.on('lndUpdate', this.pool.updateLndPubKey);
+    this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenAddress);
   }
 
   /**
@@ -404,6 +414,7 @@ class Swaps extends EventEmitter {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
     // TODO: multi route support (currently only 1)
+    this.logger.debug(`trying to accept deal: ${JSON.stringify(orderToAccept)} from xudPubKey: ${peer.nodePubKey}`);
 
     const rHash = requestPacket.body!.rHash;
     if (this.usedHashes.has(rHash)) {
@@ -459,7 +470,7 @@ class Swaps extends EventEmitter {
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
 
-    // Make sure we are connected to lnd for both currencies
+    // Make sure we are connected to swap clients for both currencies
     if (!this.isPairSupported(deal.pairId)) {
       this.failDeal(deal, SwapFailureReason.SwapClientNotSetup);
       await this.sendErrorToPeer({
@@ -473,7 +484,14 @@ class Swaps extends EventEmitter {
     }
 
     try {
+      this.logger.debug(`trying to query routes from maker to taker with ${takerPubKey}
+        and amount of ${takerAmount} and FinalCltvDelta ${takerSwapClient.cltvDelta}`);
       deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerAmount, takerPubKey);
+      this.logger.debug(`queried routes total of ${deal.makerToTakerRoutes.length} available routes from maker to taker`);
+      deal.makerToTakerRoutes.forEach((availableRoute) => {
+
+        this.logger.debug(`available route from maker to taker with total time lock: ${availableRoute.getTotalTimeLock()}`);
+      });
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -516,17 +534,22 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got block height of ${height}`);
 
-      const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
+      const routeTotalTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
+      this.logger.debug(`choosing a route with total time lock of ${routeTotalTimeLock}`);
+      const routeCltvDelta = routeTotalTimeLock - height;
+      this.logger.debug(`route CLTV delta: ${routeCltvDelta}`);
 
       const makerClientCltvDelta = this.swapClientManager.get(makerCurrency)!.cltvDelta;
+      this.logger.debug(`maker client CLTV delta: ${makerClientCltvDelta}`);
       const takerClientCltvDelta = this.swapClientManager.get(takerCurrency)!.cltvDelta;
+      this.logger.debug(`taker client CLTV delta: ${takerClientCltvDelta}`);
 
       // cltvDelta can't be zero for swap clients (checked in constructor)
       const cltvDeltaFactor = makerClientCltvDelta / takerClientCltvDelta;
+      this.logger.debug(`CLTV delta factor: ${cltvDeltaFactor}`);
 
       deal.makerCltvDelta = makerClientCltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
-
-      this.logger.debug(`total timelock of route = ${routeCltvDelta} makerCltvDelta = ${deal.makerCltvDelta}`);
+      this.logger.debug(`makerCltvDelta: ${deal.makerCltvDelta}`);
     }
 
     const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
@@ -543,6 +566,7 @@ class Swaps extends EventEmitter {
       quantity: requestBody.proposedQuantity,
     };
 
+    this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
     await peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapPhase.SwapAgreed);
     return true;
