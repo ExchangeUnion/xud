@@ -422,6 +422,7 @@ class Swaps extends EventEmitter {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
     // TODO: multi route support (currently only 1)
+    this.logger.debug(`trying to accept deal: ${JSON.stringify(orderToAccept)} from xudPubKey: ${peer.nodePubKey}`);
 
     const rHash = requestPacket.body!.rHash;
     if (this.usedHashes.has(rHash)) {
@@ -491,7 +492,14 @@ class Swaps extends EventEmitter {
     }
 
     try {
+      this.logger.debug(`trying to query routes from maker to taker with ${takerPubKey}
+        and amount of ${takerAmount} and FinalCltvDelta ${takerSwapClient.cltvDelta}`);
       deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerAmount, takerPubKey);
+      this.logger.debug(`queried routes total of ${deal.makerToTakerRoutes.length} available routes from maker to taker`);
+      deal.makerToTakerRoutes.forEach((availableRoute) => {
+
+        this.logger.debug(`available route from maker to taker with total time lock: ${availableRoute.getTotalTimeLock()}`);
+      });
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -534,17 +542,22 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got block height of ${height}`);
 
-      const routeCltvDelta = deal.makerToTakerRoutes[0].getTotalTimeLock() - height;
+      const routeTotalTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
+      this.logger.debug(`choosing a route with total time lock of ${routeTotalTimeLock}`);
+      const routeCltvDelta = routeTotalTimeLock - height;
+      this.logger.debug(`route CLTV delta: ${routeCltvDelta}`);
 
       const makerClientCltvDelta = this.swapClientManager.get(makerCurrency)!.cltvDelta;
+      this.logger.debug(`maker client CLTV delta: ${makerClientCltvDelta}`);
       const takerClientCltvDelta = this.swapClientManager.get(takerCurrency)!.cltvDelta;
+      this.logger.debug(`taker client CLTV delta: ${takerClientCltvDelta}`);
 
       // cltvDelta can't be zero for swap clients (checked in constructor)
       const cltvDeltaFactor = makerClientCltvDelta / takerClientCltvDelta;
+      this.logger.debug(`CLTV delta factor: ${cltvDeltaFactor}`);
 
       deal.makerCltvDelta = makerClientCltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
-
-      this.logger.debug(`total timelock of route = ${routeCltvDelta} makerCltvDelta = ${deal.makerCltvDelta}`);
+      this.logger.debug(`makerCltvDelta: ${deal.makerCltvDelta}`);
     }
 
     const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
@@ -561,6 +574,7 @@ class Swaps extends EventEmitter {
       quantity: requestBody.proposedQuantity,
     };
 
+    this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
     await peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
     this.setDealPhase(deal, SwapPhase.SwapAgreed);
     return true;

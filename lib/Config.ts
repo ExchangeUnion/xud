@@ -23,16 +23,19 @@ class Config {
   public webproxy: { port: number, disable: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
-  public initdb: boolean;
+  public initdb = true;
   /** The file path for the database, or ':memory:' if the database should be kept in memory. */
   public dbpath: string;
   /** Whether matching will be disabled */
-  public nomatching: boolean;
+  public nomatching = false;
+  /** Whether a password should not be used to encrypt the xud key and underlying wallets. */
+  public noencrypt = true; // TODO: enable encryption by default
+
   /**
    * Whether to disable sanity checks that verify that the orders can possibly be swapped
    * before adding them to the order book, can be enabled for testing & debugging purposes.
    */
-  public nosanitychecks: boolean;
+  public nosanitychecks = false;
 
   constructor() {
     const platform = os.platform();
@@ -59,14 +62,11 @@ class Config {
     }
 
     // default configuration
-    this.initdb = true;
-    this.nomatching = false;
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = this.getDefaultNetwork();
     this.dbpath = this.getDefaultDbPath();
-    this.nosanitychecks = false;
 
     this.p2p = {
       listen: true,

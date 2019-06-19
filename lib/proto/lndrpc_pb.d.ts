@@ -1127,8 +1127,8 @@ export class Channel extends jspb.Message {
     getChannelPoint(): string;
     setChannelPoint(value: string): void;
 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
     getCapacity(): number;
     setCapacity(value: number): void;
@@ -1193,7 +1193,7 @@ export namespace Channel {
         active: boolean,
         remotePubkey: string,
         channelPoint: string,
-        chanId: number,
+        chanId: string,
         capacity: number,
         localBalance: number,
         remoteBalance: number,
@@ -1272,8 +1272,8 @@ export class ChannelCloseSummary extends jspb.Message {
     getChannelPoint(): string;
     setChannelPoint(value: string): void;
 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
     getChainHash(): string;
     setChainHash(value: string): void;
@@ -1313,7 +1313,7 @@ export class ChannelCloseSummary extends jspb.Message {
 export namespace ChannelCloseSummary {
     export type AsObject = {
         channelPoint: string,
-        chanId: number,
+        chanId: string,
         chainHash: string,
         closingTxHash: string,
         remotePubkey: string,
@@ -2485,8 +2485,8 @@ export namespace QueryRoutesResponse {
 }
 
 export class Hop extends jspb.Message { 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
     getChanCapacity(): number;
     setChanCapacity(value: number): void;
@@ -2522,7 +2522,7 @@ export class Hop extends jspb.Message {
 
 export namespace Hop {
     export type AsObject = {
-        chanId: number,
+        chanId: string,
         chanCapacity: number,
         amtToForward: number,
         fee: number,
@@ -2840,8 +2840,8 @@ export namespace ChannelGraph {
 }
 
 export class ChanInfoRequest extends jspb.Message { 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -2856,7 +2856,7 @@ export class ChanInfoRequest extends jspb.Message {
 
 export namespace ChanInfoRequest {
     export type AsObject = {
-        chanId: number,
+        chanId: string,
     }
 }
 
@@ -3058,8 +3058,8 @@ export namespace NodeUpdate {
 }
 
 export class ChannelEdgeUpdate extends jspb.Message { 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
 
     hasChanPoint(): boolean;
@@ -3095,7 +3095,7 @@ export class ChannelEdgeUpdate extends jspb.Message {
 
 export namespace ChannelEdgeUpdate {
     export type AsObject = {
-        chanId: number,
+        chanId: string,
         chanPoint?: ChannelPoint.AsObject,
         capacity: number,
         routingPolicy?: RoutingPolicy.AsObject,
@@ -3105,8 +3105,8 @@ export namespace ChannelEdgeUpdate {
 }
 
 export class ClosedChannelUpdate extends jspb.Message { 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
     getCapacity(): number;
     setCapacity(value: number): void;
@@ -3133,7 +3133,7 @@ export class ClosedChannelUpdate extends jspb.Message {
 
 export namespace ClosedChannelUpdate {
     export type AsObject = {
-        chanId: number,
+        chanId: string,
         capacity: number,
         closedHeight: number,
         chanPoint?: ChannelPoint.AsObject,
@@ -3144,8 +3144,8 @@ export class HopHint extends jspb.Message {
     getNodeId(): string;
     setNodeId(value: string): void;
 
-    getChanId(): number;
-    setChanId(value: number): void;
+    getChanId(): string;
+    setChanId(value: string): void;
 
     getFeeBaseMsat(): number;
     setFeeBaseMsat(value: number): void;
@@ -3170,7 +3170,7 @@ export class HopHint extends jspb.Message {
 export namespace HopHint {
     export type AsObject = {
         nodeId: string,
-        chanId: number,
+        chanId: string,
         feeBaseMsat: number,
         feeProportionalMillionths: number,
         cltvExpiryDelta: number,

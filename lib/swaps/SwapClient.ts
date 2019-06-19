@@ -9,6 +9,7 @@ enum ClientStatus {
   Disconnected,
   ConnectionVerified,
   OutOfSync,
+  WaitingUnlock,
 }
 
 type ChannelBalance = {
@@ -37,7 +38,7 @@ abstract class SwapClient extends EventEmitter {
   /** Time in milliseconds between updating the maximum outbound capacity */
   private static CAPACITY_REFRESH_INTERVAL = 60000;
 
-  constructor(protected logger: Logger) {
+  constructor(public logger: Logger) {
     super();
   }
 
@@ -134,18 +135,24 @@ abstract class SwapClient extends EventEmitter {
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
   }
+  public isWaitingUnlock(): boolean {
+    return this.status === ClientStatus.WaitingUnlock;
+  }
+  public isNotInitialized(): boolean {
+    return this.status === ClientStatus.NotInitialized;
+  }
   /** Ends all connections, subscriptions, and timers for for this client. */
-  public close() {
+  public async close() {
+    await this.disconnect();
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
     }
     if (this.updateCapacityTimer) {
       clearInterval(this.updateCapacityTimer);
     }
-    this.closeSpecific();
     this.removeAllListeners();
   }
-  protected abstract closeSpecific(): void;
+  protected abstract async disconnect(): Promise<void>;
 }
 
 export default SwapClient;

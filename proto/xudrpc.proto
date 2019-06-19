@@ -24,6 +24,28 @@ import "annotations.proto";
 
 package xudrpc;
 
+service XudInit {
+  rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
+
+  rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
+}
+
+message CreateNodeRequest {
+  // The password in utf-8 with which to encrypt the new xud node key as well
+  // as underlying client wallets such as lnd.
+  string password = 1;
+}
+message CreateNodeResponse {
+  repeated string seed_mnemonic = 1;
+}
+
+message UnlockNodeRequest {
+  // The password in utf-8 with which to unlock an existing xud node key as
+  // well as underlying client wallets such as lnd.
+  string password = 1;
+}
+message UnlockNodeResponse { }
+
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
    * new trading pairs. */

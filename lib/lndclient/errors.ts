@@ -1,4 +1,5 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
+import { ClientStatus } from '../swaps/SwapClient';
 
 const codesPrefix = errorCodesPrefix.LND;
 const errorCodes = {
@@ -11,10 +12,10 @@ const errors = {
     message: 'lnd is disabled',
     code: errorCodes.LND_IS_DISABLED,
   },
-  LND_IS_UNAVAILABLE: {
-    message: 'lnd is not available',
+  LND_IS_UNAVAILABLE: (status: ClientStatus) => ({
+    message: `lnd is ${ClientStatus[status]}`,
     code: errorCodes.LND_IS_UNAVAILABLE,
-  },
+  }),
 };
 
 export { errorCodes };
