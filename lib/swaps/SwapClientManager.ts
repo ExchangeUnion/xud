@@ -1,9 +1,9 @@
 import Config from '../Config';
 import SwapClient from './SwapClient';
 import LndClient from '../lndclient/LndClient';
-import { LndLogger, LndInfo } from '../lndclient/types';
+import { LndInfo } from '../lndclient/types';
 import RaidenClient from '../raidenclient/RaidenClient';
-import Logger, { Loggers } from '../Logger';
+import { Loggers } from '../Logger';
 import { errors } from './errors';
 import { Currency } from '../orderbook/types';
 import { Models } from '../db/DB';
@@ -42,21 +42,6 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
-   * Wraps each lnd logger call with currency.
-   * @returns A wrapped lnd logger object.
-   */
-  private static wrapLndLogger = (logger: Logger, currency: string): LndLogger => {
-    return {
-      error: (msg: string) => logger.error(`${currency}: ${msg}`),
-      warn: (msg: string) => logger.warn(`${currency}: ${msg}`),
-      info: (msg: string) => logger.info(`${currency}: ${msg}`),
-      verbose: (msg: string) => logger.verbose(`${currency}: ${msg}`),
-      debug: (msg: string) => logger.debug(`${currency}: ${msg}`),
-      trace: (msg: string) => logger.trace(`${currency}: ${msg}`),
-    };
-  }
-
-  /**
    * Starts all swap clients, binds event listeners
    * and waits for the swap clients to initialize.
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
@@ -70,7 +55,7 @@ class SwapClientManager extends EventEmitter {
         const lndClient = new LndClient(
           lndConfig,
           currency,
-          (SwapClientManager.wrapLndLogger(this.loggers.lnd, currency) as Logger),
+          this.loggers.lnd.createSubLogger(currency),
         );
         this.swapClients.set(currency, lndClient);
         initPromises.push(lndClient.init());
