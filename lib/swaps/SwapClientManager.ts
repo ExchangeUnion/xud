@@ -113,7 +113,7 @@ class SwapClientManager extends EventEmitter {
         try {
           return swapClient.genSeed();
         } catch (err) {
-          swapClient.logger.debug('could not generate seed');
+          swapClient.logger.error('could not generate seed', err);
         }
       }
     }
@@ -248,10 +248,11 @@ class SwapClientManager extends EventEmitter {
    * Closes all swap client instances gracefully.
    * @returns Nothing upon success, throws otherwise.
    */
-  public close = (): void => {
+  public close = async (): Promise<void> => {
+    const closePromises: Promise<void>[] = [];
     let raidenClosed = false;
     for (const swapClient of this.swapClients.values()) {
-      swapClient.close();
+      closePromises.push(swapClient.close());
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
@@ -259,8 +260,9 @@ class SwapClientManager extends EventEmitter {
     // we make sure to close raiden client because it
     // might not be associated with any currency
     if (!this.raidenClient.isDisabled() && !raidenClosed) {
-      this.raidenClient.close();
+      closePromises.push(this.raidenClient.close());
     }
+    await Promise.all(closePromises);
   }
 
   private bind = () => {

@@ -138,18 +138,21 @@ abstract class SwapClient extends EventEmitter {
   public isWaitingUnlock(): boolean {
     return this.status === ClientStatus.WaitingUnlock;
   }
+  public isNotInitialized(): boolean {
+    return this.status === ClientStatus.NotInitialized;
+  }
   /** Ends all connections, subscriptions, and timers for for this client. */
-  public close() {
+  public async close() {
+    await this.disconnect();
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
     }
     if (this.updateCapacityTimer) {
       clearInterval(this.updateCapacityTimer);
     }
-    this.closeSpecific();
     this.removeAllListeners();
   }
-  protected abstract closeSpecific(): void;
+  protected abstract async disconnect(): Promise<void>;
 }
 
 export default SwapClient;
