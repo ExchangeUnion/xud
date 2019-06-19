@@ -38,7 +38,7 @@ class Xud extends EventEmitter {
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
   private shuttingDown = false;
-  private swapClientManager!: SwapClientManager;
+  private swapClientManager?: SwapClientManager;
 
   /**
    * Create an Exchange Union daemon.
@@ -184,10 +184,12 @@ class Xud extends EventEmitter {
     this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
-    this.swapClientManager.close();
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
+    if (this.swapClientManager) {
+      closePromises.push(this.swapClientManager.close());
+    }
     if (this.httpServer) {
       closePromises.push(this.httpServer.close());
     }

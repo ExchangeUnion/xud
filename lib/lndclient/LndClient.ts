@@ -36,9 +36,9 @@ interface LndClient {
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
   public readonly cltvDelta: number;
-  private lightning!: LightningClient | LightningMethodIndex;
-  private walletUnlocker!: WalletUnlockerClient | InvoicesMethodIndex;
-  private invoices!: InvoicesClient | InvoicesMethodIndex;
+  private lightning?: LightningClient | LightningMethodIndex;
+  private walletUnlocker?: WalletUnlockerClient | InvoicesMethodIndex;
+  private invoices?: InvoicesClient | InvoicesMethodIndex;
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
@@ -155,7 +155,7 @@ class LndClient extends SwapClient {
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
-      error = errors.LND_IS_UNAVAILABLE.message;
+      error = errors.LND_IS_UNAVAILABLE(this.status).message;
     } else {
       try {
         const lnd = await this.getInfo();
@@ -189,11 +189,10 @@ class LndClient extends SwapClient {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
+
     if (!this.isConnected()) {
       this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
       this.lightning = new LightningClient(this.uri, this.credentials);
-      this.invoices = new InvoicesClient(this.uri, this.credentials);
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
 
       try {
         const getInfoResponse = await this.getInfo();
@@ -208,6 +207,15 @@ class LndClient extends SwapClient {
             this.identityPubKey = newPubKey;
           }
           this.emit('connectionVerified', newPubKey);
+
+          this.invoices = new InvoicesClient(this.uri, this.credentials);
+
+          if (this.walletUnlocker) {
+            // WalletUnlocker service is disabled when the main Lightning service is available
+            this.walletUnlocker.close();
+            this.walletUnlocker = undefined;
+          }
+
           this.subscribeChannels();
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
@@ -216,11 +224,14 @@ class LndClient extends SwapClient {
       } catch (err) {
         if (err.code === grpc.status.UNIMPLEMENTED) {
           // if GetInfo is unimplemented, it means this lnd instance is online but locked
+          this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+          this.lightning.close();
+          this.lightning = undefined;
           await this.setStatus(ClientStatus.WaitingUnlock);
         } else {
           this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
             retrying in ${LndClient.RECONNECT_TIMER} ms`);
-          await this.setStatus(ClientStatus.Disconnected);
+          await this.disconnect();
         }
       }
     }
@@ -489,6 +500,9 @@ class LndClient extends SwapClient {
   }
 
   private subscribeSingleInvoice = (rHash: string) => {
+    if (!this.invoices) {
+      throw errors.LND_IS_UNAVAILABLE(this.status);
+    }
     const paymentHash = new lndrpc.PaymentHash();
     // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
     paymentHash.setRHash(hexToUint8Array(rHash));
@@ -511,6 +525,9 @@ class LndClient extends SwapClient {
    * Subscribes to channel events.
    */
   private subscribeChannels = (): void => {
+    if (!this.lightning) {
+      throw errors.LND_IS_UNAVAILABLE(this.status);
+    }
     if (this.channelSubscription) {
       this.channelSubscription.cancel();
     }
@@ -519,7 +536,7 @@ class LndClient extends SwapClient {
     .on('error', async (error) => {
       this.channelSubscription = undefined;
       this.logger.error(`lnd has been disconnected, error: ${error}`);
-      await this.setStatus(ClientStatus.Disconnected);
+      await this.disconnect();
     });
   }
 
@@ -527,11 +544,8 @@ class LndClient extends SwapClient {
    * Attempts to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
-    if (this.isDisabled()) {
-      throw(errors.LND_IS_DISABLED);
-    }
-    if (this.isDisconnected()) {
-      throw(errors.LND_IS_UNAVAILABLE);
+    if (!this.lightning) {
+      throw(errors.LND_IS_UNAVAILABLE(this.status));
     }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();
@@ -555,11 +569,21 @@ class LndClient extends SwapClient {
       });
   }
 
-  /** Lnd client specific cleanup. */
-  protected closeSpecific = () => {
+  /** Lnd specific procedure to disconnect from the server. */
+  protected disconnect = async () => {
     if (this.channelSubscription) {
       this.channelSubscription.cancel();
+      this.channelSubscription = undefined;
     }
+    if (this.lightning) {
+      this.lightning.close();
+      this.lightning = undefined;
+    }
+    if (this.invoices) {
+      this.invoices.close();
+      this.invoices = undefined;
+    }
+    await this.setStatus(ClientStatus.Disconnected);
   }
 }
 
