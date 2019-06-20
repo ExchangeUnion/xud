@@ -267,7 +267,7 @@ func launchNetwork(noSanityChecks bool) (*xudtest.NetworkHarness, func()) {
 					log.Printf("xud process (%v-%v) did not shutdown gracefully. process (%v) killed",
 						xudError.Node.ID, xudError.Node.Name, xudError.Node.Cmd.Process.Pid)
 				}
-				log.Printf("xud process finished with error:\n%v", xudError)
+				//log.Printf("xud process finished with error:\n%v", xudError)
 			}
 		}
 	}()
