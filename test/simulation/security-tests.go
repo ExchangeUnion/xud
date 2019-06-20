@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
-	"time"
 )
 
 func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -100,6 +99,7 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 		PairId:   aliceOrderReq.PairId,
 		Side:     xudrpc.OrderSide_SELL,
 	}
+
 	res, err := net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
 	ht.assert.NoError(err)
 	ht.assert.Len(res.InternalMatches, 0)
@@ -131,8 +131,8 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	ht.act.disconnect(net.Alice, net.Bob)
 
-	//_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(1)
-	//ht.assert.NoError(err)
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(6)
+	ht.assert.NoError(err)
 }
 
 func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -166,6 +166,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 		PairId:   aliceOrderReq.PairId,
 		Side:     xudrpc.OrderSide_SELL,
 	}
+
 	res, err := net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
 	ht.assert.NoError(err)
 	ht.assert.Len(res.InternalMatches, 0)
@@ -180,25 +181,14 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	e := <-aliceSwapFailuresChan
 	ht.assert.EqualError(e.err, "rpc error: code = Unavailable desc = transport is closing")
 
+	<-net.Alice.ProcessExit
+
 	// Cleanup.
 
 	removalRes, err := net.Bob.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: bobOrderReq.OrderId})
 	ht.assert.NoError(err)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
-
-	time.Sleep(2 * time.Second)
-
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1000)
-	ht.assert.NoError(err)
-
-	err = net.Alice.LndLtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
-
-	err = net.Bob.LndLtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
-
-	time.Sleep(2 * time.Second)
 }
 
 func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -313,19 +303,6 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NoError(err)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
-
-	time.Sleep(5 * time.Second)
-
-	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(1)
-	ht.assert.NoError(err)
-
-	err = net.Alice.LndBtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
-
-	err = net.Bob.LndBtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
-
-	time.Sleep(5 * time.Second)
 }
 
 func testTakerStallingAfterSwapSucceeded(net *xudtest.NetworkHarness, ht *harnessTest) {

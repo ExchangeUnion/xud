@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"log"
 	"os"
 	"os/exec"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
-	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	ltcchaincfg "github.com/ltcsuite/ltcd/chaincfg"
 	ltcchainhash "github.com/ltcsuite/ltcd/chaincfg/chainhash"
@@ -113,10 +113,34 @@ func TestAdversarialXUD(t *testing.T) {
 	ht := newHarnessTest(context.Background(), t)
 	t.Logf("Running %v security tests", len(securityTestCases))
 
-	var aliceLatestBalance, bobLatestBalance *balances
-	for i, testCase := range securityTestCases {
+	// For each test: open channels, save the balance, execute the test,
+	// compare the balance and close the channels cooperatively.
+	//
+	// This won't support tests with unsettled balance (due to a pending HTLC),
+	// which would require force closing the channel on-chain. For these tests,
+	// we can do the following: save the balance (wallet), open channels,
+	// execute the test, close channels, compare balance (wallet). In this case
+	// the balance (wallet) would be a bit lower due to the on-chain closure of the channel,
+	// so strict comparison of the balance won't work well.
+	for _, testCase := range securityTestCases {
+		// Open channels from both directions on each chain.
+		aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+		ht.assert.NoError(err)
+		aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+		ht.assert.NoError(err)
+		bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
+		ht.assert.NoError(err)
+		bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
+		ht.assert.NoError(err)
+
+		// Save the initial balance.
+		alicePrevBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
+		ht.assert.NoError(err)
+		bobPrevBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
+		ht.assert.NoError(err)
+
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Minute))
 			defer cancel()
 			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudNetwork)
@@ -128,33 +152,47 @@ func TestAdversarialXUD(t *testing.T) {
 			break
 		}
 
-		// Save the Alice and Bob balances after the initialization test or balance mutating tests (successful swaps).
-		// On all other tests, verify that it hasn't changed.
-		if i == 0 || testCase.balanceMutating {
-			var err error
-			aliceLatestBalance, err = getBalances(ht.ctx, xudNetwork.Alice)
+		if !testCase.balanceMutating {
+			// Verify that balance remain unchanged.
+			aliceBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
 			ht.assert.NoError(err)
+			ht.assert.Equal(alicePrevBalance, aliceBalance, "alice balance mismatch")
 
-			bobLatestBalance, err = getBalances(ht.ctx, xudNetwork.Bob)
+			bobBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
 			ht.assert.NoError(err)
-		} else {
-			aliceBalance, err := getBalances(ht.ctx, xudNetwork.Alice)
-			ht.assert.NoError(err)
-			ht.assert.Equal(aliceLatestBalance, aliceBalance, "alice balance mismatch")
-
-			bobBalance, err := getBalances(ht.ctx, xudNetwork.Bob)
-			ht.assert.NoError(err)
-			ht.assert.Equal(bobLatestBalance, bobBalance, "bob balance mismatch")
+			ht.assert.Equal(bobPrevBalance, bobBalance, "bob balance mismatch")
 		}
+
+		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
+		ht.assert.NoError(err)
 	}
 }
 
 func TestXUD(t *testing.T) {
-	xudNetwork, teardown := launchNetwork(false)
+	// Disabling sanity checks because we're now opening the channels post xud launch,
+	// and so the capacity checks would only trigger after 60 sec.
+	// We can solve this by making the capacity checks interval configurable.
+	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 
 	ht := newHarnessTest(context.Background(), t)
 	t.Logf("Running %v integration tests", len(testCases))
+
+	// Open channels from both directions on each chain.
+	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+	ht.assert.NoError(err)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+	ht.assert.NoError(err)
+	bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
+	ht.assert.NoError(err)
+	bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
+	ht.assert.NoError(err)
 
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
 	for i, testCase := range testCases {
@@ -198,6 +236,16 @@ func TestXUD(t *testing.T) {
 			}
 		}
 	}
+
+	// Close all channels, mostly in order to verify there are no pending HTLCs (which would require force close).
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
+	ht.assert.NoError(err)
 }
 
 func launchNetwork(noSanityChecks bool) (*xudtest.NetworkHarness, func()) {

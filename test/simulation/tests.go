@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -571,6 +572,66 @@ func getInfo(ctx context.Context, n *xudtest.HarnessNode) (*xudrpc.GetInfoRespon
 	return info, nil
 }
 
+func openBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 0, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := ln.BtcMiner.Node.Generate(6); err != nil {
+		return nil, err
+	}
+
+	return ln.WaitForChannelOpen(ctx, openChanStream)
+}
+
+func closeBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntest.HarnessNode, cp *lnrpc.ChannelPoint, force bool) error {
+	closeChanStream, _, err := ln.CloseChannel(ctx, node, cp, force)
+	if err != nil {
+		return err
+	}
+
+	if _, err := ln.BtcMiner.Node.Generate(6); err != nil {
+		return err
+	}
+
+	if _, err := ln.WaitForChannelClose(ctx, closeChanStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func openLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 0, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := ln.LtcMiner.Node.Generate(6); err != nil {
+		return nil, err
+	}
+
+	return ln.WaitForChannelOpen(ctx, openChanStream)
+}
+
+func closeLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntest.HarnessNode, cp *lnrpc.ChannelPoint, force bool) error {
+	closeChanStream, _, err := ln.CloseChannel(ctx, node, cp, force)
+	if err != nil {
+		return err
+	}
+
+	if _, err := ln.LtcMiner.Node.Generate(6); err != nil {
+		return err
+	}
+
+	if _, err := ln.WaitForChannelClose(ctx, closeChanStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type balance struct {
 	channel *lnrpc.ChannelBalanceResponse
 	wallet  *lnrpc.WalletBalanceResponse
@@ -581,7 +642,7 @@ type balances struct {
 	ltc balance
 }
 
-func getBalances(ctx context.Context, node *xudtest.HarnessNode) (*balances, error) {
+func getBalance(ctx context.Context, node *xudtest.HarnessNode) (*balances, error) {
 	var b balances
 	var err error
 
