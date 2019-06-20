@@ -219,16 +219,4 @@ describe('Swaps.Integration', () => {
 
   });
 
-  describe.skip('acceptDeal', () => {
-
-    it('should reject unsupported currency', async () => {
-      expect(true).to.equal(false);
-    });
-
-    it('should reject already used hash', async () => {
-      expect(true).to.equal(false);
-    });
-
-  });
-
 });

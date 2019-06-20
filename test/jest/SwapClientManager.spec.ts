@@ -133,7 +133,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(onListenerMock).toHaveBeenCalledTimes(4);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
-    swapClientManager.close();
+    await swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(2);
   });
 
@@ -146,7 +146,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(swapClientManager['swapClients'].size).toEqual(1);
     expect(onListenerMock).toHaveBeenCalledTimes(2);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
-    swapClientManager.close();
+    await swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(1);
   });
 
@@ -160,7 +160,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(onListenerMock).toHaveBeenCalledTimes(0);
     expect(swapClientManager.get('BTC')).toBeUndefined();
     expect(swapClientManager.get('WETH')).toBeUndefined();
-    swapClientManager.close();
+    await swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(0);
   });
 
@@ -170,7 +170,7 @@ describe('Swaps.SwapClientManager', () => {
     swapClientManager = new SwapClientManager(config, loggers);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);
-    swapClientManager.close();
+    await swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(3);
   });
 

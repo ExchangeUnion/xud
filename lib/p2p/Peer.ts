@@ -781,11 +781,11 @@ class Peer extends EventEmitter {
       assert(this.expectedNodePubKey);
       await this.initSession(ownNodeState, nodeKey, this.expectedNodePubKey!);
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, nodeKey.nodePubKey, this.expectedNodePubKey);
+      await this.authenticateSessionInit(sessionInit, nodeKey.pubKey, this.expectedNodePubKey);
     } else {
       // inbound handshake
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, nodeKey.nodePubKey);
+      await this.authenticateSessionInit(sessionInit, nodeKey.pubKey);
     }
     return sessionInit;
   }
@@ -852,7 +852,7 @@ class Peer extends EventEmitter {
 
     const msg = stringify(body);
     const msgHash = createHash('sha256').update(msg).digest();
-    const { signature } = secp256k1.sign(msgHash, nodeKey.nodePrivKey);
+    const { signature } = secp256k1.sign(msgHash, nodeKey.privKey);
 
     body = { ...body, sign: signature.toString('hex') };
 

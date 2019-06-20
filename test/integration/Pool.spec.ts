@@ -68,19 +68,19 @@ describe('P2P Pool Tests', async () => {
     const currentNodeCount = pool['nodes'].count;
 
     const addresses = [{ host: '123.123.123.123', port: 8885 }];
-    const peer = createPeer(nodeKeyOne.nodePubKey, addresses);
+    const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
-    const openPromise = pool['openPeer'](peer, nodeKeyOne.nodePubKey);
+    const openPromise = pool['openPeer'](peer, nodeKeyOne.pubKey);
     expect(openPromise).to.be.fulfilled;
     await openPromise;
     expect(pool['nodes'].count).to.equal(currentNodeCount + 1);
-    expect(pool['nodes'].has(nodeKeyOne.nodePubKey)).to.be.true;
+    expect(pool['nodes'].has(nodeKeyOne.pubKey)).to.be.true;
 
-    expect(pool['peers'].has(nodeKeyOne.nodePubKey)).to.be.true;
+    expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.true;
 
     const nodeInstance = await db.models.Node.find({
       where: {
-        nodePubKey: nodeKeyOne.nodePubKey,
+        nodePubKey: nodeKeyOne.pubKey,
       },
     });
     expect(nodeInstance).to.not.be.undefined;
@@ -89,43 +89,43 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should close a peer', () => {
-    pool.closePeer(nodeKeyOne.nodePubKey, DisconnectionReason.NotAcceptingConnections);
-    expect(pool['peers'].has(nodeKeyOne.nodePubKey)).to.be.false;
+    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+    expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.false;
     expect(pool['peers'].size).to.equal(0);
   });
 
   it('should ban a peer', async () => {
-    const banPromise = pool.banNode(nodeKeyOne.nodePubKey);
+    const banPromise = pool.banNode(nodeKeyOne.pubKey);
     expect(banPromise).to.be.fulfilled;
     await banPromise;
-    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.nodePubKey);
+    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.pubKey);
     expect(nodeReputationPromise.banned).to.be.true;
   });
 
   it('should unban a peer', async () => {
-    const unbanPromise = pool.unbanNode(nodeKeyOne.nodePubKey, false);
+    const unbanPromise = pool.unbanNode(nodeKeyOne.pubKey, false);
     expect(unbanPromise).to.be.fulfilled;
     await unbanPromise;
-    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.nodePubKey);
+    const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.pubKey);
     expect(nodeReputationPromise.banned).to.be.false;
   });
 
   it('should update a node on new handshake', async () => {
     const addresses = [{ host: '86.75.30.9', port: 8885 }];
-    const peer = createPeer(nodeKeyOne.nodePubKey, addresses);
+    const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
-    await pool['openPeer'](peer, nodeKeyOne.nodePubKey);
+    await pool['openPeer'](peer, nodeKeyOne.pubKey);
 
     const nodeInstance = await db.models.Node.find({
       where: {
-        nodePubKey: nodeKeyOne.nodePubKey,
+        nodePubKey: nodeKeyOne.pubKey,
       },
     });
     expect(nodeInstance).to.not.be.undefined;
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
 
-    pool.closePeer(nodeKeyOne.nodePubKey, DisconnectionReason.NotAcceptingConnections);
+    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
   });
 
   describe('reconnect logic', () => {
@@ -133,10 +133,10 @@ describe('P2P Pool Tests', async () => {
     let tryConnectNodeStub: any;
     beforeEach(async () => {
       const addresses = [{ host: '321.321.321.321', port: 1337 }];
-      dcPeer = createPeer(nodeKeyOne.nodePubKey, addresses);
+      dcPeer = createPeer(nodeKeyOne.pubKey, addresses);
       tryConnectNodeStub = sinon.stub();
       pool['tryConnectNode'] = tryConnectNodeStub;
-      const openPromise = pool['openPeer'](dcPeer, nodeKeyOne.nodePubKey);
+      const openPromise = pool['openPeer'](dcPeer, nodeKeyOne.pubKey);
       expect(openPromise).to.be.fulfilled;
       await openPromise;
     });

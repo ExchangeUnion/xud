@@ -2,7 +2,17 @@ import { Arguments, Argv } from 'yargs';
 import { callback, loadXudClient } from './command';
 import { PlaceOrderRequest, PlaceOrderEvent, OrderSide, PlaceOrderResponse, Order, SwapSuccess, SwapFailure } from '../proto/xudrpc_pb';
 
-export const SATOSHIS_PER_COIN = 10 ** 8;
+const SATOSHIS_PER_COIN = 10 ** 8;
+
+/** Returns a number of coins as an integer number of satoshis. */
+export const coinsToSats = (coinsQuantity: number) => {
+  return Math.round(coinsQuantity * SATOSHIS_PER_COIN);
+};
+
+/** Returns a number of satoshis as a string representation of coins with up to 8 decimal places. */
+export const satsToCoinsStr = (satsQuantity: number) => {
+  return (satsQuantity / SATOSHIS_PER_COIN).toFixed(8).replace(/\.?0+$/, '');
+};
 
 export const orderBuilder = (argv: Argv, command: string) => argv
   .option('quantity', {
@@ -35,7 +45,7 @@ export const orderHandler = (argv: Arguments, isSell = false) => {
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
 
-  request.setQuantity(argv.quantity * SATOSHIS_PER_COIN);
+  request.setQuantity(coinsToSats(argv.quantity));
   request.setSide(isSell ? OrderSide.SELL : OrderSide.BUY);
   request.setPairId(argv.pair_id.toUpperCase());
 
@@ -97,22 +107,22 @@ const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
 
 const formatInternalMatch = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(`matched ${order.quantity / SATOSHIS_PER_COIN} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
+  console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
 };
 
 const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
   const baseCurrency = getBaseCurrency(swapSuccess.pairId);
-  console.log(`swapped ${swapSuccess.quantity / SATOSHIS_PER_COIN} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
+  console.log(`swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
 };
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
   const baseCurrency = getBaseCurrency(swapFailure.pairId);
-  console.log(`failed to swap ${swapFailure.quantity / SATOSHIS_PER_COIN} ${baseCurrency} with peer order ${swapFailure.orderId}`);
+  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} with peer order ${swapFailure.orderId}`);
 };
 
 const formatRemainingOrder = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(`remaining ${order.quantity / SATOSHIS_PER_COIN} ${baseCurrency} entered the order book as ${order.id}`);
+  console.log(`remaining ${satsToCoinsStr(order.quantity)} ${baseCurrency} entered the order book as ${order.id}`);
 };
 
 const getBaseCurrency = (pairId: string) => pairId.substring(0, pairId.indexOf('/'));

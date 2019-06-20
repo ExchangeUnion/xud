@@ -204,6 +204,8 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 		req := &xudrpc.GetInfoRequest{}
 		res, err := node.Client.GetInfo(a.ctx, req)
 		a.assert.NoError(err)
+		a.assert.NotNil(res.Lnd["BTC"])
+		a.assert.NotNil(res.Lnd["LTC"])
 		if len(res.Lnd["BTC"].Chains) == 1 && len(res.Lnd["LTC"].Chains) == 1 {
 			a.assert.Equal(res.Lnd["BTC"].Chains[0].Chain, "bitcoin")
 			a.assert.Equal(res.Lnd["BTC"].Chains[0].Network, "simnet")
