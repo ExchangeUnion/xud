@@ -121,6 +121,26 @@ class OrderBook extends EventEmitter {
     return outgoingOrder ;
   }
 
+  /**
+   * Checks that a currency advertised by a peer are known to us, have a swap client identifier,
+   * and that their token identifier matches ours.
+   */
+  private isPeerCurrencySupported = (peer: Peer, currency: string) => {
+    const currencyAttributes = this.getCurrencyAttributes(currency);
+    if (!currencyAttributes) {
+      return false; // we don't know about this currency
+    }
+
+    if (!peer.getIdentifier(currencyAttributes.swapClient, currency)) {
+      return false; // peer did not provide a swap client identifier for this currency
+    }
+
+    // ensure that our token identifiers match
+    const ourTokenIdentifier = this.pool.getTokenIdentifier(currency);
+    const peerTokenIdentifier = peer.getTokenIdentifier(currency);
+    return ourTokenIdentifier === peerTokenIdentifier;
+  }
+
   private bindPool = () => {
     this.pool.on('packet.order', this.addPeerOrder);
     this.pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
@@ -128,19 +148,15 @@ class OrderBook extends EventEmitter {
     this.pool.on('packet.swapRequest', this.handleSwapRequest);
     this.pool.on('peer.close', this.removePeerOrders);
     this.pool.on('peer.pairDropped', this.removePeerPair);
-    this.pool.on('peer.pairsAdvertised', this.verifyPeerPairs);
+    this.pool.on('peer.verifyPairs', this.verifyPeerPairs);
     this.pool.on('peer.nodeStateUpdate', (peer) => {
-      // remove any trading pairs for which we no longer have both swap client identifiers
-      peer.forEachActivePair((activePairId) => {
-        const [baseCurrency, quoteCurrency] = activePairId.split('/');
-        const isCurrencySupported = (currency: string) => {
-          const currencyAttributes = this.getCurrencyAttributes(currency);
-          return currencyAttributes && peer.getIdentifier(currencyAttributes.swapClient, currency);
-        };
+      const advertisedCurrencies = peer.getAdvertisedCurrencies();
 
-        if (!isCurrencySupported(baseCurrency) || !isCurrencySupported(quoteCurrency)) {
-          // this peer's node state no longer supports at least one of the currencies for this trading pair
-          peer.deactivatePair(activePairId);
+      advertisedCurrencies.forEach((advertisedCurrency) => {
+        if (!this.isPeerCurrencySupported(peer, advertisedCurrency)) {
+          peer.disableCurrency(advertisedCurrency);
+        } else {
+          peer.enableCurrency(advertisedCurrency);
         }
       });
     });
@@ -170,10 +186,7 @@ class OrderBook extends EventEmitter {
 
   /** Loads the supported pairs and currencies from the database. */
   public init = async () => {
-    const promises: PromiseLike<any>[] = [this.repository.getPairs(), this.repository.getCurrencies()];
-    const results = await Promise.all(promises);
-    const pairs = results[0] as PairInstance[];
-    const currencies = results[1] as CurrencyInstance[];
+    const [pairs, currencies] = await Promise.all([this.repository.getPairs(), this.repository.getCurrencies()]);
 
     currencies.forEach(currency => this.currencyInstances.set(currency.id, currency));
     pairs.forEach((pair) => {
@@ -184,8 +197,8 @@ class OrderBook extends EventEmitter {
     this.pool.updatePairs(this.pairIds);
   }
 
-  public getCurrencyAttributes(symbol: string) {
-    const currencyInstance = this.currencyInstances.get(symbol);
+  public getCurrencyAttributes(currency: string) {
+    const currencyInstance = this.currencyInstances.get(currency);
     return currencyInstance ? currencyInstance.toJSON() : undefined;
   }
 
@@ -693,22 +706,31 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Verifies a list of trading pair tickers for a peer. Checks that the peer has advertised
+   * Verifies the advertised trading pairs of a peer. Checks that the peer has advertised
    * lnd pub keys for both the base and quote currencies for each pair, and also attempts a
    * "sanity swap" for each currency which is a 1 satoshi for 1 satoshi swap of a given currency
    * that demonstrates that we can both accept and receive payments for this peer.
    * @param pairIds the list of trading pair ids to verify
    */
-  private verifyPeerPairs = async (peer: Peer, pairIds: string[]) => {
+  private verifyPeerPairs = async (peer: Peer) => {
+    /** An array of inactive trading pair ids that don't involve a disabled currency for this peer. */
+    const pairIdsToVerify = peer.advertisedPairs.filter((pairId) => {
+      if (peer.isPairActive(pairId)) {
+        return false; // don't verify a pair that is already active
+      }
+      const [baseCurrency, quoteCurrency] = pairId.split('/');
+      return !peer.disabledCurrencies.has(baseCurrency) && !peer.disabledCurrencies.has(quoteCurrency);
+    });
+
     if (this.nosanityswaps) {
-      // we have disabled sanity swaps, so assume all pairs should be activated
-      pairIds.forEach(peer.activatePair);
+      // we have disabled sanity checks, so assume all pairs should be activated
+      pairIdsToVerify.forEach(peer.activatePair);
       return;
     }
 
     // identify the unique currencies we need to verify for specified trading pairs
     const currenciesToVerify = new Set<string>();
-    pairIds.forEach((pairId) => {
+    pairIdsToVerify.forEach((pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
       if (!peer.verifiedCurrencies.has(baseCurrency)) {
         currenciesToVerify.add(baseCurrency);
@@ -743,7 +765,7 @@ class OrderBook extends EventEmitter {
 
     // activate pairs that have had both currencies verified
     const activationPromises: Promise<void>[] = [];
-    pairIds.forEach(async (pairId) => {
+    pairIdsToVerify.forEach(async (pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
       if (peer.verifiedCurrencies.has(baseCurrency) && peer.verifiedCurrencies.has(quoteCurrency)) {
         activationPromises.push(peer.activatePair(pairId));

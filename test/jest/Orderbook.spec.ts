@@ -8,7 +8,7 @@ import DB from '../../lib/db/DB';
 import Swaps from '../../lib/swaps/Swaps';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Network from '../../lib/p2p/Network';
-import { XuNetwork } from '../../lib/constants/enums';
+import { XuNetwork, SwapClientType } from '../../lib/constants/enums';
 import NodeKey from '../../lib/nodekey/NodeKey';
 
 jest.mock('../../lib/db/DB', () => {
@@ -29,9 +29,11 @@ jest.mock('../../lib/db/DB', () => {
         },
         Currency: {
           findAll: () => {
+            const ltc = { id: 'LTC', swapClient: SwapClientType.Lnd };
+            const btc = { id: 'BTC', swapClient: SwapClientType.Lnd };
             return [
-              { id: 'LTC' },
-              { id: 'BTC' },
+              { ...ltc, toJSON: () => ltc },
+              { ...btc, toJSON: () => btc },
             ];
           },
         },
@@ -39,11 +41,23 @@ jest.mock('../../lib/db/DB', () => {
     };
   });
 });
+const advertisedPairs = ['LTC/BTC', 'WETH/BTC'];
 const mockActivatePair = jest.fn();
+const mockGetIdentifier = jest.fn(() => 'pubkeyoraddress');
+const tokenIdentifiers: any = {
+  BTC: 'bitcoin-regtest',
+  LTC: 'litecoin-regtest',
+};
+const mockPeerGetTokenIdentifer = jest.fn((currency: string) => tokenIdentifiers[currency]);
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
     return {
+      advertisedPairs,
       activatePair: mockActivatePair,
+      disabledCurrencies: new Map(),
+      isPairActive: () => false,
+      getTokenIdentifier: mockPeerGetTokenIdentifer,
+      getIdentifier: mockGetIdentifier,
     };
   });
 });
@@ -52,6 +66,7 @@ jest.mock('../../lib/p2p/Pool', () => {
     return {
       updatePairs: jest.fn(),
       on: jest.fn(),
+      getTokenIdentifier: (currency: string) => tokenIdentifiers[currency] as string,
     };
   });
 });
@@ -85,13 +100,14 @@ describe('OrderBook', () => {
   let swapClientManager: SwapClientManager;
   let network: Network;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     config = new Config();
     network = new Network(XuNetwork.TestNet);
     peer = new Peer(loggers.p2p, {
       host: 'localhost',
       port: 9735,
     }, network);
+    peer['nodeState'] = {} as any;
     db = new DB(loggers.db, config.dbpath);
     pool = new Pool({
       config: config.p2p,
@@ -104,15 +120,6 @@ describe('OrderBook', () => {
     swapClientManager = new SwapClientManager(config, loggers);
     swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
     swaps.swapClientManager = swapClientManager;
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  test('nosanityswaps enabled adds pairs and requests orders', async () => {
-    config.nosanityswaps = true;
-    config.nobalancechecks = false;
     orderbook = new Orderbook({
       pool,
       swaps,
@@ -123,23 +130,43 @@ describe('OrderBook', () => {
       nobalancechecks: config.nobalancechecks,
     });
     await orderbook.init();
-    const pairIds = ['LTC/BTC', 'WETH/BTC'];
-    await orderbook['verifyPeerPairs'](peer, pairIds);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('nosanityswaps enabled adds pairs and requests orders', async () => {
+    orderbook['nosanityswaps'] = true;
+    await orderbook['verifyPeerPairs'](peer);
     expect(mockActivatePair).toHaveBeenCalledTimes(2);
+    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[0], expect.any(Number), expect.anything());
+    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[1], expect.any(Number), expect.anything());
+  });
+
+  test('isPeerCurrencySupported returns true for a known currency with matching identifiers', async () => {
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(true);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(true);
+  });
+
+  test('isPeerCurrencySupported returns false for an unknown currency', async () => {
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BCH')).toStrictEqual(false);
+  });
+
+  test('isPeerCurrencySupported returns false for a known currency with a mismatching identifier', async () => {
+    mockPeerGetTokenIdentifer.mockReturnValue('fakecoin-fakenet');
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
+  });
+
+  test('isPeerCurrencySupported returns false for a known currency without a swap client identifier for the peer', async () => {
+    mockGetIdentifier.mockReturnValue('');
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
   });
 
   test('placeOrder insufficient outbound balance does throw when balancechecks disabled', async () => {
-    config.nosanityswaps = true;
-    config.nobalancechecks = false;
-    orderbook = new Orderbook({
-      pool,
-      swaps,
-      logger: loggers.orderbook,
-      models: db.models,
-      nomatching: config.nomatching,
-      nosanityswaps: config.nosanityswaps,
-      nobalancechecks: config.nobalancechecks,
-    });
+    orderbook['nobalancechecks'] = false;
     await orderbook.init();
     const quantity = 500000000000;
     const order: OwnOrder = {
@@ -167,5 +194,4 @@ describe('OrderBook', () => {
     await expect(orderbook.placeLimitOrder(order))
       .rejects.toMatchSnapshot();
   });
-
 });

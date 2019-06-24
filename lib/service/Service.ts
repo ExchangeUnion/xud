@@ -211,7 +211,7 @@ class Service {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool.nodeState;
+    const { nodePubKey, addresses } = this.pool;
 
     const uris: string[] = [];
 

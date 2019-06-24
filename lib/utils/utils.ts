@@ -149,7 +149,8 @@ export const setTimeoutPromise = promisify(setTimeout);
 /** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
 export const randomBytes = promisify(cryptoRandomBytes);
 
-export const removeUndefinedProps = (obj: any) => {
+export const removeUndefinedProps = <T>(typedObj: T): T => {
+  const obj = typedObj as any;
   Object.keys(obj).forEach((key) => {
     if (obj[key] === undefined) {
       delete obj[key];
