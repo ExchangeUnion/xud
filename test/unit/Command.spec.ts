@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { formatOrders } from '../../lib/cli/commands/listorders';
 import { ListOrdersResponse } from '../../lib/proto/xudrpc_pb';
+import { satsToCoinsStr, coinsToSats } from '../../lib/cli/utils';
 
 describe('Command.listorders.formatOrders', () => {
   it('should flatten and format orders', () => {
@@ -105,5 +106,23 @@ describe('Command.listorders.formatOrders', () => {
     expect(output.length).to.equal(1);
     expect(output[0].pairId).to.equal('LTC/BTC');
     expect(output[0].orders.length).to.equal(5);
+  });
+});
+
+describe('Satoshi/Coin conversion', () => {
+  it('should convert satoshis to coins as strings with up to 8 decimal places', () => {
+    expect(satsToCoinsStr(123456789)).to.deep.equal('1.23456789');
+    expect(satsToCoinsStr(1234567890000)).to.deep.equal('12345.6789');
+    expect(satsToCoinsStr(123456789.1234)).to.deep.equal('1.23456789');
+    expect(satsToCoinsStr(123450000)).to.deep.equal('1.2345');
+    expect(satsToCoinsStr(100000000)).to.deep.equal('1');
+  });
+
+  it('should convert coins to satoshis as integers', () => {
+    expect(coinsToSats(1.23456789)).to.deep.equal(123456789);
+    expect(coinsToSats(12345.6789)).to.deep.equal(1234567890000);
+    expect(coinsToSats(1.234567891234)).to.deep.equal(123456789);
+    expect(coinsToSats(1.2345)).to.deep.equal(123450000);
+    expect(coinsToSats(1)).to.deep.equal(100000000);
   });
 });

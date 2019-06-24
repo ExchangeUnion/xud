@@ -6,6 +6,88 @@
 import * as jspb from "google-protobuf";
 import * as annotations_pb from "./annotations_pb";
 
+export class CreateNodeRequest extends jspb.Message { 
+    getPassword(): string;
+    setPassword(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CreateNodeRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: CreateNodeRequest): CreateNodeRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CreateNodeRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CreateNodeRequest;
+    static deserializeBinaryFromReader(message: CreateNodeRequest, reader: jspb.BinaryReader): CreateNodeRequest;
+}
+
+export namespace CreateNodeRequest {
+    export type AsObject = {
+        password: string,
+    }
+}
+
+export class CreateNodeResponse extends jspb.Message { 
+    clearSeedMnemonicList(): void;
+    getSeedMnemonicList(): Array<string>;
+    setSeedMnemonicList(value: Array<string>): void;
+    addSeedMnemonic(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CreateNodeResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: CreateNodeResponse): CreateNodeResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CreateNodeResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CreateNodeResponse;
+    static deserializeBinaryFromReader(message: CreateNodeResponse, reader: jspb.BinaryReader): CreateNodeResponse;
+}
+
+export namespace CreateNodeResponse {
+    export type AsObject = {
+        seedMnemonicList: Array<string>,
+    }
+}
+
+export class UnlockNodeRequest extends jspb.Message { 
+    getPassword(): string;
+    setPassword(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): UnlockNodeRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: UnlockNodeRequest): UnlockNodeRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: UnlockNodeRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnlockNodeRequest;
+    static deserializeBinaryFromReader(message: UnlockNodeRequest, reader: jspb.BinaryReader): UnlockNodeRequest;
+}
+
+export namespace UnlockNodeRequest {
+    export type AsObject = {
+        password: string,
+    }
+}
+
+export class UnlockNodeResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): UnlockNodeResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: UnlockNodeResponse): UnlockNodeResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: UnlockNodeResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): UnlockNodeResponse;
+    static deserializeBinaryFromReader(message: UnlockNodeResponse, reader: jspb.BinaryReader): UnlockNodeResponse;
+}
+
+export namespace UnlockNodeResponse {
+    export type AsObject = {
+    }
+}
+
 export class AddCurrencyRequest extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;

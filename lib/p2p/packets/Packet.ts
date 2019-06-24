@@ -1,5 +1,5 @@
 import PacketType from './PacketType';
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 import uuidv1 from 'uuid/v1';
 import stringify from 'json-stable-stringify';
 
@@ -107,8 +107,7 @@ abstract class Packet<T = any> implements PacketInterface {
    * Calculating the packet checksum using its JSON representation hash first 4 bytes.
    */
   public checksum = (): number => {
-    return crypto
-      .createHash('sha256')
+    return createHash('sha256')
       .update(this.toJSON())
       .digest()
       .readUInt32LE(0, true);

@@ -2,7 +2,8 @@ import http from 'http';
 import Service from '../service/Service';
 import HttpService from './HttpService';
 import Logger from '../Logger';
-import errors from '../service/errors';
+import errorCodes from '../service/errors';
+import { errorCodes as swapErrorCodes } from '../swaps/errors';
 
 const reqToJson = (req: http.IncomingMessage) => {
   return new Promise<object>((resolve, reject) => {
@@ -66,8 +67,11 @@ class HttpServer {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(resJson));
     } catch (err) {
-      if (err.code === errors.INVALID_ARGUMENT) {
+      if (err.code === errorCodes.INVALID_ARGUMENT) {
         res.writeHead(400);
+        res.end(err.message);
+      } else if (err.code === swapErrorCodes.PAYMENT_HASH_NOT_FOUND) {
+        res.writeHead(404);
         res.end(err.message);
       } else {
         res.writeHead(500);
@@ -78,7 +82,6 @@ class HttpServer {
 
   /**
    * Starts the server and begins listening on the provided port.
-   * @returns true if the server started listening successfully, false otherwise
    */
   public listen = async (port: number) => {
     return new Promise<void>((resolve, reject) => {

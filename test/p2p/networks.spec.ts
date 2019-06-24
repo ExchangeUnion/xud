@@ -19,7 +19,7 @@ describe('P2P Networks Tests', () => {
 
       const host = 'localhost';
       const port = destNode['pool']['listenPort']!;
-      const nodeTwoUri = toUri({ host, port, nodePubKey: destNode.nodePubKey });
+      const nodeTwoUri = toUri({ host, port, nodePubKey: destNode['pool'].nodeState.nodePubKey });
 
       const rejectionMsg = `Peer (${host}:${port}) closed due to WireProtocolErr framer: incompatible msg origin network (expected: ${srcNodeNetwork}, found: ${destNodeNetwork})`;
       await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.rejectedWith(rejectionMsg);
@@ -38,22 +38,24 @@ describe('P2P Networks Tests', () => {
       const srcNode = new Xud();
       const destNode = new Xud();
       await Promise.all([srcNode.start(srcNodeConfig), destNode.start(destNodeConfig)]);
+      const srcNodePubKey = srcNode['pool'].nodeState.nodePubKey;
+      const destNodePubKey = destNode['pool'].nodeState.nodePubKey;
 
       const host = 'localhost';
       const port = destNode['pool']['listenPort']!;
-      const nodeTwoUri = toUri({ host, port, nodePubKey: destNode.nodePubKey });
+      const nodeTwoUri = toUri({ host, port, nodePubKey: destNodePubKey });
 
       await expect(srcNode.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false })).to.be.fulfilled;
 
       const peers = srcNode.service.listPeers();
       expect(peers.length).to.equal(1);
-      expect(peers[0].nodePubKey).to.equal(destNode.nodePubKey);
+      expect(peers[0].nodePubKey).to.equal(destNodePubKey);
 
       const verifyDestNodePeers = () => new Promise((resolve) => {
         setTimeout(() => {
           const peers = destNode.service.listPeers();
           expect(peers.length).to.equal(1);
-          expect(peers[0].nodePubKey).to.equal(srcNode.nodePubKey);
+          expect(peers[0].nodePubKey).to.equal(srcNodePubKey);
           resolve();
         }, 100);
       });

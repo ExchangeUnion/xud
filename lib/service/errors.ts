@@ -4,7 +4,8 @@ const codesPrefix = errorCodesPrefix.SERVICE;
 const errorCodes = {
   INVALID_ARGUMENT: codesPrefix.concat('.1'),
   NOMATCHING_MODE_IS_REQUIRED: codesPrefix.concat('.2'),
-  PAIRID_NON_EXISTENT: codesPrefix.concat('.3'),
+  UNIMPLEMENTED: codesPrefix.concat('.3'),
+  PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
 };
 
 const errors = {
@@ -16,10 +17,14 @@ const errors = {
     message: 'nomatching mode is required',
     code: errorCodes.NOMATCHING_MODE_IS_REQUIRED,
   }),
-  PAIRID_NON_EXISTENT: () => ({
-    message: 'pairId provided dosent exsist',
-    code: errorCodes.PAIRID_NON_EXISTENT,
-  }),
+  UNIMPLEMENTED: {
+    message: 'call is not supported by the current state of xud',
+    code: errorCodes.UNIMPLEMENTED,
+  },
+  PENDING_CALL_CONFLICT: {
+    message: 'a pending call is ongoing that conflicts with this call',
+    code: errorCodes.PENDING_CALL_CONFLICT,
+  },
 };
 
 export { errorCodes };

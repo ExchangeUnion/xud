@@ -1,7 +1,7 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { RemoveOrderRequest } from '../../proto/xudrpc_pb';
-import { SATOSHIS_PER_COIN } from '../utils';
+import { coinsToSats } from '../utils';
 
 export const command = 'removeorder <order_id> [quantity]';
 
@@ -21,7 +21,7 @@ export const handler = (argv: Arguments) => {
   const request = new RemoveOrderRequest();
   request.setOrderId(argv.order_id);
   if (argv.quantity) {
-    request.setQuantity(argv.quantity * SATOSHIS_PER_COIN);
+    request.setQuantity(coinsToSats(argv.quantity));
   }
   loadXudClient(argv).removeOrder(request, callback(argv));
 };

@@ -12,11 +12,38 @@ import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
 import { SwapClientType } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
-import sinon, { SinonSandbox }  from 'sinon';
+import sinon  from 'sinon';
 
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);
+
+const getMockPool = (sandbox: sinon.SinonSandbox) => {
+  const pool = sandbox.createStubInstance(Pool) as any;
+  pool.broadcastOrder = () => {};
+  pool.broadcastOrderInvalidation = () => {};
+  pool.updatePairs = () => {};
+  return pool;
+};
+
+const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
+  const swaps = sandbox.createStubInstance(Swaps) as any;
+  swaps.isPairSupported = () => true;
+  const lndBTC = sandbox.createStubInstance(LndClient) as any;
+  const lndLTC = sandbox.createStubInstance(LndClient) as any;
+  swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
+  swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
+  swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
+  swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
+  swaps.swapClientManager.get = (currency: any) => {
+    const client = swaps.swapClientManager['swapClients'].get(currency);
+    if (!client) {
+      throw new Error('unknown swap client');
+    }
+    return client;
+  };
+  return swaps;
+};
 
 const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(db.models);
@@ -31,43 +58,28 @@ const initValues = async (db: DB) => {
 };
 
 describe('OrderBook', () => {
+  let sandbox: sinon.SinonSandbox;
   let db: DB;
-  let pool: Pool;
   let swaps: Swaps;
   let orderBook: OrderBook;
-  let sandbox: SinonSandbox;
 
   before(async () => {
+    sandbox = sinon.createSandbox();
     db = new DB(loggers.db);
     await db.init();
 
+    sandbox = sinon.createSandbox();
+    const pool = getMockPool(sandbox);
     await initValues(db);
 
-    sandbox = sinon.createSandbox();
-    pool = sandbox.createStubInstance(Pool) as any;
-    pool.broadcastOrder = () => {};
-    pool.broadcastOrderInvalidation = () => {};
-    swaps = sandbox.createStubInstance(Swaps) as any;
-    swaps.isPairSupported = () => true;
-    const lndBTC = sandbox.createStubInstance(LndClient) as any;
-    const lndLTC = sandbox.createStubInstance(LndClient) as any;
-    swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
-    swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
-    swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
-    swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
-    swaps.swapClientManager.get = (currency) => {
-      const client = swaps.swapClientManager['swapClients'].get(currency);
-      if (!client) {
-        throw new Error('unknown swap client');
-      }
-      return client;
-    };
-    orderBook = new OrderBook(loggers.orderbook, db.models, false, pool, swaps);
+    swaps = getMockSwaps(sandbox);
+    orderBook = new OrderBook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+    });
     await orderBook.init();
-  });
-
-  after(async () => {
-    sandbox.restore();
   });
 
   const getOwnOrder = (order: orders.OwnOrder): orders.OwnOrder | undefined => {
@@ -148,21 +160,34 @@ describe('OrderBook', () => {
 
   after(async () => {
     await db.close();
+    sandbox.restore();
   });
 });
 
 describe('nomatching OrderBook', () => {
   let db: DB;
+  let sandbox: sinon.SinonSandbox;
+  let pool: Pool;
+  let swaps: Swaps;
   let orderBook: OrderBook;
 
   before(async () => {
     db = new DB(loggers.db);
     await db.init();
+    sandbox = sinon.createSandbox();
+    swaps = getMockSwaps(sandbox);
+    pool = getMockPool(sandbox);
     await initValues(db);
   });
 
   beforeEach(async () => {
-    orderBook = new OrderBook(loggers.orderbook, db.models, true);
+    orderBook = new OrderBook({
+      pool,
+      swaps,
+      logger: loggers.orderbook,
+      models: db.models,
+      nomatching: true,
+    });
     await orderBook.init();
   });
 
@@ -255,10 +280,10 @@ describe('nomatching OrderBook', () => {
       expect(() => orderBook['stampOwnOrder'](ownOrderWithLocalId))
         .to.throw(`order with local id ${ownOrderWithLocalId.localId} already exists`);
     });
-
   });
 
   after(async () => {
     await db.close();
+    sandbox.restore();
   });
 });
