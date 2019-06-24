@@ -6,6 +6,7 @@ const errorCodes = {
   NOMATCHING_MODE_IS_REQUIRED: codesPrefix.concat('.2'),
   UNIMPLEMENTED: codesPrefix.concat('.3'),
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
+  PAIRID_NON_EXISTENT: codesPrefix.concat('.5'),
 };
 
 const errors = {
@@ -25,6 +26,10 @@ const errors = {
     message: 'a pending call is ongoing that conflicts with this call',
     code: errorCodes.PENDING_CALL_CONFLICT,
   },
+  PAIRID_NON_EXISTENT: () => ({
+    message: 'pairId provided dosent exsist',
+    code: errorCodes.PAIRID_NON_EXISTENT,
+  }),
 };
 
 export { errorCodes };
