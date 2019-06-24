@@ -16,7 +16,13 @@ jest.mock('../../lib/db/DB', () => {
   });
 });
 jest.mock('../../lib/Config');
-jest.mock('../../lib/Logger');
+jest.mock('../../lib/Logger', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      createSubLogger: () => {},
+    };
+  });
+});
 jest.mock('../../lib/nodekey/NodeKey');
 const mockLndPubKey = 1;
 const lndInfoMock = jest.fn(() => Promise.resolve());
