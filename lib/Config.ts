@@ -23,6 +23,7 @@ class Config {
   public raiden: RaidenClientConfig;
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
+  public debug: { raidenDirectChannelChecks: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -95,6 +96,9 @@ class Config {
     this.webproxy = {
       disable: true,
       port: 8080,
+    };
+    this.debug = {
+      raidenDirectChannelChecks: true,
     };
     // TODO: add dynamic max/min price limits
     this.orderthresholds = {

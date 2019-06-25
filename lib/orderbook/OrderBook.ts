@@ -129,7 +129,7 @@ class OrderBook extends EventEmitter {
     return order.quantity >= minQuantity;
   }
   /**
-   * Checks that a currency advertised by a peer are known to us, have a swap client identifier,
+   * Checks that a currency advertised by a peer is known to us, has a swap client identifier,
    * and that their token identifier matches ours.
    */
   private isPeerCurrencySupported = (peer: Peer, currency: string) => {

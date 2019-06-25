@@ -13,7 +13,9 @@ enum ClientStatus {
 }
 
 type ChannelBalance = {
+  /** The cumulative balance of open channels denominated in satoshis. */
   balance: number,
+  /** The cumulative balance of pending channels denominated in satoshis. */
   pendingOpenBalance: number,
 };
 
@@ -107,12 +109,12 @@ abstract class SwapClient extends EventEmitter {
   public abstract async sendSmallestAmount(rHash: string, destination: string, currency: string): Promise<string>;
 
   /**
-   * Gets routes for the given currency, amount and peerPubKey.
-   * @param amount the capacity of the route
-   * @param destination target node for the route
+   * Gets routes for the given currency, amount, and swap identifier.
+   * @param amount the capacity the route must support denominated in the smallest units supported by its currency
+   * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoutes(amount: number, destination: string, finalCltvDelta?: number): Promise<Route[]>;
+  public abstract async getRoutes(amount: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
 
   public abstract async addInvoice(rHash: string, amount: number, cltvExpiry: number): Promise<void>;
 

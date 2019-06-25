@@ -112,6 +112,9 @@ describe('Swaps.SwapClientManager', () => {
       host: 'localhost',
       port: 1234,
     };
+    config.debug = {
+      raidenDirectChannelChecks: true,
+    };
     db = new DB(loggers.db, config.dbpath);
     unitConverter = new UnitConverter();
     unitConverter.init();

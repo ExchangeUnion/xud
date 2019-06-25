@@ -32,6 +32,7 @@ export type Channel = OpenChannelPayload & {
   channel_address: string;
   token_network_identifier: string;
   channel_identifier: number;
+  /** The balance of the channel denominated in the smallest units supported by the token. */
   balance: number
   state: string;
 };
@@ -49,6 +50,7 @@ export type TokenPaymentResponse = TokenPaymentRequest & {
 export type TokenPaymentRequest = {
   token_address: string,
   target_address: string,
+  /** The amount of the payment request denominated in the smallest units supported by the token. */
   amount: number,
   secret_hash: string,
   identifier?: number,
