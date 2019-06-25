@@ -57,8 +57,13 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
-    nosanitychecks: {
-      describe: 'Whether to disable order sanity checks',
+    nosanityswaps: {
+      describe: 'Whether to disable sanity swaps',
+      type: 'boolean',
+      default: undefined,
+    },
+    nobalancechecks: {
+      describe: 'Whether to disable balance checks',
       type: 'boolean',
       default: undefined,
     },
