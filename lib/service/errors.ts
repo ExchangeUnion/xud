@@ -27,7 +27,7 @@ const errors = {
     code: errorCodes.PENDING_CALL_CONFLICT,
   },
   PAIRID_NON_EXISTENT: () => ({
-    message: 'pairId provided dosent exsist',
+    message: "pairId provided doesn't exist",
     code: errorCodes.PAIRID_NON_EXISTENT,
   }),
 };

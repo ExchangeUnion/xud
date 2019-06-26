@@ -424,7 +424,7 @@ message ListOrderHistoryResponse {
 
   enum OrderStatus {
     FILLED  = 0;
-    PARTIALLYFILLED = 1;
+    PARTIALLY_FILLED = 1;
     OPEN = 2;
     CANCELLED = 3;
   };
@@ -435,6 +435,7 @@ message Trade {
   string taker_order_id = 2 [json_name = "taker_order_id"];
   string r_hash = 3 [json_name = "r_hash"];
   uint64 quantity = 4 [json_name = "quantity"];
+  double price = 5 [json_name = "price"];
 }
 
 message LndChannels {

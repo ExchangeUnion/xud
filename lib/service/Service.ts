@@ -351,7 +351,7 @@ class Service {
     } else if (isInOrderBook && trades.length === 0) {
       status = OrderStatus.OPEN;
     } else if (isInOrderBook && quantity < order.initialQuantity) {
-      status = OrderStatus.PARTIALLYFILLED;
+      status = OrderStatus.PARTIALLY_FILLED;
     }
 
     return {

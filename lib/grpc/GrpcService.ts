@@ -542,7 +542,7 @@ class GrpcService {
       const trades: xudrpc.Trade[] = [];
       const swapDeals: xudrpc.SwapSuccess[] = [];
 
-      orderHistory.trades.forEach((trade) => {
+      orderHistory.trades.forEach(async (trade) => {
         const tradeRpc = new xudrpc.Trade();
         tradeRpc.setMakerOrderId(trade.makerOrderId);
         tradeRpc.setTakerOrderId(trade.takerOrderId ? trade.takerOrderId  : '');

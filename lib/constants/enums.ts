@@ -16,7 +16,7 @@ export enum OrderSide {
 
 export enum OrderStatus {
   FILLED  = 0,
-  PARTIALLYFILLED = 1,
+  PARTIALLY_FILLED = 1,
   OPEN = 2,
   CANCELLED = 3,
 }

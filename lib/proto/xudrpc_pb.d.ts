@@ -775,7 +775,7 @@ export namespace ListOrderHistoryResponse {
 
     export enum OrderStatus {
     FILLED = 0,
-    PARTIALLYFILLED = 1,
+    PARTIALLY_FILLED = 1,
     OPEN = 2,
     CANCELLED = 3,
     }
@@ -795,6 +795,9 @@ export class Trade extends jspb.Message {
     getQuantity(): number;
     setQuantity(value: number): void;
 
+    getPrice(): number;
+    setPrice(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Trade.AsObject;
@@ -812,6 +815,7 @@ export namespace Trade {
         takerOrderId: string,
         rHash: string,
         quantity: number,
+        price: number,
     }
 }
 

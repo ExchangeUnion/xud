@@ -1013,6 +1013,7 @@
 | taker_order_id | [string](#string) |  |  |
 | r_hash | [string](#string) |  |  |
 | quantity | [uint64](#uint64) |  |  |
+| price | [double](#double) |  |  |
 
 
 
@@ -1092,7 +1093,7 @@
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | FILLED | 0 |  |
-| PARTIALLYFILLED | 1 |  |
+| PARTIALLY_FILLED | 1 |  |
 | OPEN | 2 |  |
 | CANCELLED | 3 |  |
 
