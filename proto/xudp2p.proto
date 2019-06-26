@@ -116,7 +116,7 @@ message SwapRequestPacket {
     string pair_id = 3;
     string order_id = 4;
     string r_hash = 5;
-    int32 taker_cltv_delta = 6;
+    uint32 taker_cltv_delta = 6;
 }
 
 message SwapAcceptedPacket {
@@ -124,7 +124,7 @@ message SwapAcceptedPacket {
     string req_id = 2;
     string r_hash = 3;
     double quantity = 4;
-    int32 maker_cltv_delta = 5;
+    uint32 maker_cltv_delta = 5;
 }
 
 message SwapCompletePacket {
