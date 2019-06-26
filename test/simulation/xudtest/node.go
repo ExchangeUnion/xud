@@ -77,6 +77,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
 
 	args = append(args, "--raiden.disable")
+	args = append(args, "--nosanityswaps=false")
 
 	return args
 }

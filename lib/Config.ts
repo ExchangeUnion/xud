@@ -32,10 +32,15 @@ class Config {
   public noencrypt = true; // TODO: enable encryption by default
 
   /**
-   * Whether to disable sanity checks that verify that the orders can possibly be swapped
-   * before adding them to the order book, can be enabled for testing & debugging purposes.
+   * Whether to disable sanity swaps that verify that the orders can possibly be swapped
+   * before adding trading pairs as active.
    */
-  public nosanitychecks = false;
+  public nosanityswaps = true;
+  /**
+   * Whether to disable balance checks that verify that the orders can possibly be swapped
+   * before adding them to the order book.
+   */
+  public nobalancechecks = false;
 
   constructor() {
     const platform = os.platform();
