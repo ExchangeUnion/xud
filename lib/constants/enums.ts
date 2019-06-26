@@ -66,9 +66,9 @@ export enum SwapPhase {
    * could still fail due to no route with sufficient capacity, lack of cooperation from the
    * receiver or any intermediary node along the route, or an unexpected error from swap client.
    */
-  SendingAmount = 3,
+  SendingPayment = 3,
   /** We have received the agreed amount of the swap, and the preimage is now known to both sides. */
-  AmountReceived = 4,
+  PaymentReceived = 4,
   /** The swap has been formally completed and both sides have confirmed they've received payment. */
   SwapCompleted = 5,
 }

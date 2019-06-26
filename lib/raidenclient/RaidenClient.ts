@@ -110,11 +110,11 @@ class RaidenClient extends SwapClient {
     let tokenAddress;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
-      amount = deal.takerAmount;
+      amount = deal.takerUnits;
       tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
     } else {
       // we are the taker paying the maker
-      amount = deal.makerAmount;
+      amount = deal.makerUnits;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
     }
     if (!tokenAddress) {

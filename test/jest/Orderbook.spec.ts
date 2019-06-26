@@ -184,8 +184,10 @@ describe('OrderBook', () => {
       return {
         inboundCurrency: 'BTC',
         inboundAmount: 50000000000,
+        inboundUnits: 50000000000,
         outboundCurrency: 'LTC',
         outboundAmount: quantity,
+        outboundUnits: quantity,
       };
     };
     swaps.swapClientManager.get = jest.fn().mockReturnValue({

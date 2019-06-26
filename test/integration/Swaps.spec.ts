@@ -69,6 +69,8 @@ const validSwapDeal = () => {
     makerCurrency: 'LTC',
     takerAmount: 8,
     makerAmount: 1000,
+    takerUnits: 8,
+    makerUnits: 1000,
     peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
     localId: '20b63440-e689-11e8-aa83-51505ebd3ca7',
     price: 0.008,

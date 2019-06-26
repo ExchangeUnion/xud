@@ -1321,13 +1321,13 @@
         },
         "amount_received": {
           "type": "string",
-          "format": "int64",
-          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) received."
+          "format": "uint64",
+          "description": "The amount received denominated in satoshis."
         },
         "amount_sent": {
           "type": "string",
-          "format": "int64",
-          "description": "The amount of the smallest base unit of the currency (like satoshis or wei) sent."
+          "format": "uint64",
+          "description": "The amount sent denominated in satoshis."
         },
         "peer_pub_key": {
           "type": "string",
