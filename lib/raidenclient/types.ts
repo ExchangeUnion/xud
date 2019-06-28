@@ -21,7 +21,7 @@ export type RaidenInfo = {
 export type OpenChannelPayload = {
   partner_address: string;
   token_address: string;
-  balance: number;
+  total_deposit: number;
   settle_timeout: 100;
 };
 
@@ -30,16 +30,10 @@ export type OpenChannelPayload = {
  */
 export type Channel = OpenChannelPayload & {
   channel_address: string;
+  token_network_identifier: string;
+  channel_identifier: number;
+  balance: number
   state: string;
-};
-
-/**
- * A raiden channel event.
- */
-export type ChannelEvent = {
-  event_type: string;
-  identifier?: number;
-  amount?: number;
 };
 
 /**

@@ -5,7 +5,7 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -35,6 +35,7 @@ class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
   public address?: string;
+  /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
@@ -249,30 +250,22 @@ class RaidenClient extends SwapClient {
   }
 
   /**
-   * Queries for events tied to a specific channel.
-   */
-  public getChannelEvents = async (channel_address: string) => {
-    // TODO: specify a "from_block"  query argument to only get events since a specific block.
-    const endpoint = `events/channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<ChannelEvent[]>(res);
-  }
-
-  /**
    * Gets info about a given raiden payment channel.
+   * @param token_address the token address for the network to which the channel belongs
    * @param channel_address the address of the channel to query
    */
-  public getChannel = async (channel_address: string): Promise<Channel> => {
-    const endpoint = `channels/${channel_address}`;
+  public getChannel = async (token_address: string, channel_address: string): Promise<Channel> => {
+    const endpoint = `channels/${token_address}/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<Channel>(res);
   }
 
   /**
    * Gets info about all non-settled channels.
+   * @param token_address an optional parameter to specify channels belonging to the specified token network
    */
-  public getChannels = async (): Promise<[Channel]> => {
-    const endpoint = 'channels';
+  public getChannels = async (token_address?: string): Promise<Channel[]> => {
+    const endpoint = token_address ? `channels/${token_address}` : 'channels';
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<[Channel]>(res);
   }
