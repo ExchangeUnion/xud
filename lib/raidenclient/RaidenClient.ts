@@ -33,7 +33,7 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly cltvDelta: number = 1;
+  public readonly cltvDelta: number = 5760;
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
@@ -151,8 +151,9 @@ class RaidenClient extends SwapClient {
 
   public getRoutes =  async (_amount: number, _destination: string) => {
     // stub placeholder, query routes not currently implemented in raiden
+    // assume a fixed lock time of 100 Raiden's blocks
     return [{
-      getTotalTimeLock: () => 1,
+      getTotalTimeLock: () => 101,
     }];
   }
 
