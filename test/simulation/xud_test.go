@@ -29,69 +29,6 @@ var (
 	cfg *config
 )
 
-var testCases = []*testCase{
-	{
-		name: "network initialization", // must be the first test case to be run
-		test: testNetworkInit,
-	},
-	{
-		name: "p2p discovery",
-		test: testP2PDiscovery,
-	},
-	{
-		name: "p2p incorrect public key",
-		test: testP2PIncorrectPubKey,
-	},
-	{
-		name: "p2p ban unban",
-		test: testP2PBanUnban,
-	},
-	{
-		name: "p2p already connected",
-		test: testP2PAlreadyConnected,
-	},
-	{
-		name: "order broadcast and invalidation",
-		test: testOrderBroadcastAndInvalidation,
-	},
-	{
-		name: "order matching and swap",
-		test: testOrderMatchingAndSwap,
-	},
-}
-
-var securityTestCases = []*testCase{
-	{
-		name: "network initialization", // must be the first test case to be run
-		test: testNetworkInit,
-	},
-	{
-		name: "taker stalling on swapAccepted",
-		test: testTakerStallingOnSwapAccepted,
-	},
-	{
-		name: "maker stalling after 1st htlc",
-		test: testMakerStallingAfter1stHTLC,
-	},
-	{ // FAILING
-		name: "maker shutdown after 1st htlc",
-		test: testMakerShutdownAfter1stHTLC,
-	},
-	{
-		name: "taker stalling after 2nd htlc",
-		test: testTakerStallingAfter2ndHTLC,
-	},
-	{ // FAILING
-		name: "taker shutdown after 2nd htlc",
-		test: testTakerShutdownAfter2ndHTLC,
-	},
-	{
-		name:            "taker stalling after swap succeeded",
-		test:            testTakerStallingAfterSwapSucceeded,
-		balanceMutating: true,
-	},
-}
-
 func TestMain(m *testing.M) {
 	log.Println("installing dependencies...")
 	output, err := installDeps()
@@ -106,83 +43,15 @@ func TestMain(m *testing.M) {
 	os.Exit(res)
 }
 
-func TestAdversarialXUD(t *testing.T) {
-	xudNetwork, teardown := launchNetwork(true)
-	defer teardown()
-
-	ht := newHarnessTest(context.Background(), t)
-	t.Logf("Running %v security tests", len(securityTestCases))
-
-	// For each test: open channels, save the balance, execute the test,
-	// compare the balance and close the channels cooperatively.
-	//
-	// This won't support tests with unsettled balance (due to a pending HTLC),
-	// which would require force closing the channel on-chain. For these tests,
-	// we can do the following: save the balance (wallet), open channels,
-	// execute the test, close channels, compare balance (wallet). In this case
-	// the balance (wallet) would be a bit lower due to the on-chain closure of the channel,
-	// so strict comparison of the balance won't work well.
-	for _, testCase := range securityTestCases {
-		// Open channels from both directions on each chain.
-		aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
-		ht.assert.NoError(err)
-		aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
-		ht.assert.NoError(err)
-		bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
-		ht.assert.NoError(err)
-		bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
-		ht.assert.NoError(err)
-
-		// Save the initial balance.
-		alicePrevBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
-		ht.assert.NoError(err)
-		bobPrevBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
-		ht.assert.NoError(err)
-
-		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Minute))
-			defer cancel()
-			ht := newHarnessTest(ctx, t1)
-			ht.RunTestCase(testCase, xudNetwork)
-		})
-
-		// Stop at the first failure. Mimic behavior of original test
-		// framework.
-		if !success {
-			break
-		}
-
-		if !testCase.balanceMutating {
-			// Verify that balance remain unchanged.
-			aliceBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
-			ht.assert.NoError(err)
-			ht.assert.Equal(alicePrevBalance, aliceBalance, "alice balance mismatch")
-
-			bobBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
-			ht.assert.NoError(err)
-			ht.assert.Equal(bobPrevBalance, bobBalance, "bob balance mismatch")
-		}
-
-		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
-		ht.assert.NoError(err)
-	}
-}
-
-func TestXUD(t *testing.T) {
-	// Disabling sanity checks because we're now opening the channels post xud launch,
+func TestIntegration(t *testing.T) {
+	// Disabling sanity checks because we're now opening the payment channels after xud launch,
 	// and so the capacity checks would only trigger after 60 sec.
 	// We can solve this by making the capacity checks interval configurable.
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 
 	ht := newHarnessTest(context.Background(), t)
-	t.Logf("Running %v integration tests", len(testCases))
+	t.Logf("Running %v integration tests", len(integrationTestCases))
 
 	// Open channels from both directions on each chain.
 	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
@@ -195,7 +64,7 @@ func TestXUD(t *testing.T) {
 	ht.assert.NoError(err)
 
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
-	for i, testCase := range testCases {
+	for i, testCase := range integrationTestCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
 			defer cancel()
@@ -237,7 +106,7 @@ func TestXUD(t *testing.T) {
 		}
 	}
 
-	// Close all channels, mostly in order to verify there are no pending HTLCs (which would require force close).
+	// Close all channels, mostly in order to verify there are no pending HTLCs (which would require force-close).
 	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
 	ht.assert.NoError(err)
 	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
@@ -246,6 +115,86 @@ func TestXUD(t *testing.T) {
 	ht.assert.NoError(err)
 	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
 	ht.assert.NoError(err)
+}
+
+func TestSecurity(t *testing.T) {
+	xudNetwork, teardown := launchNetwork(true)
+	defer teardown()
+
+	ht := newHarnessTest(context.Background(), t)
+	t.Logf("Running %v security tests", len(securityTestCases))
+
+	// For each test: open channels, save the balance, execute the test,
+	// compare the balance and close the channels cooperatively.
+	for _, testCase := range securityTestCases {
+		// Open channels from both directions on each chain.
+		aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+		ht.assert.NoError(err)
+		aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+		ht.assert.NoError(err)
+		bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
+		ht.assert.NoError(err)
+		bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
+		ht.assert.NoError(err)
+
+		// Save the initial balance.
+		alicePrevBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
+		ht.assert.NoError(err)
+		bobPrevBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
+		ht.assert.NoError(err)
+
+		success := t.Run(testCase.name, func(t1 *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			ht := newHarnessTest(ctx, t1)
+			ht.RunTestCase(testCase, xudNetwork)
+		})
+
+		if !success {
+			break
+		}
+
+		if !testCase.balanceMutating {
+			// Verify that balance remain unchanged.
+			aliceBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
+			ht.assert.NoError(err)
+			ht.assert.Equal(alicePrevBalance, aliceBalance, "alice balance mismatch")
+
+			bobBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
+			ht.assert.NoError(err)
+			ht.assert.Equal(bobPrevBalance, bobBalance, "bob balance mismatch")
+		}
+
+		// Close all channels before next iteration.
+		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
+		ht.assert.NoError(err)
+		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
+		ht.assert.NoError(err)
+	}
+}
+
+func TestSecurityStandAlone(t *testing.T) {
+	xudNetwork, teardown := launchNetwork(true)
+	defer teardown()
+
+	t.Logf("Running %v stand-alone security tests", len(standAloneSecurityTests))
+
+	for _, testCase := range standAloneSecurityTests {
+		success := t.Run(testCase.name, func(t1 *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Minute))
+			defer cancel()
+			ht := newHarnessTest(ctx, t1)
+			ht.RunTestCase(testCase, xudNetwork)
+		})
+
+		if !success {
+			break
+		}
+	}
 }
 
 func launchNetwork(noSanityChecks bool) (*xudtest.NetworkHarness, func()) {
