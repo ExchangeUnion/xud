@@ -6,7 +6,7 @@ import (
 	"github.com/lightningnetwork/lnd/lnrpc"
 )
 
-// securityTestCases are test cases which tried to break the protocol via
+// securityTestCases are test cases which tries to break the protocol via
 // an adversarial custom xud client. They are relying on payment channels
 // to be open before running them, and balance checks to occur after.
 var securityTestCases = []*testCase{
