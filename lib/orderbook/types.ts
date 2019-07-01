@@ -56,7 +56,7 @@ export type OrderIdentifier = Pick<MarketOrder, 'pairId'> & {
 type Local = {
   /** A local identifier for the order. */
   localId: string;
-  /** The amount of an order that is on hold pending swap exectuion. */
+  /** The amount of an order that is on hold pending swap execution. */
   hold: number;
 };
 
