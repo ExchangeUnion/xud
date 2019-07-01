@@ -149,17 +149,7 @@ class OrderBook extends EventEmitter {
     this.pool.on('peer.close', this.removePeerOrders);
     this.pool.on('peer.pairDropped', this.removePeerPair);
     this.pool.on('peer.verifyPairs', this.verifyPeerPairs);
-    this.pool.on('peer.nodeStateUpdate', (peer) => {
-      const advertisedCurrencies = peer.getAdvertisedCurrencies();
-
-      advertisedCurrencies.forEach((advertisedCurrency) => {
-        if (!this.isPeerCurrencySupported(peer, advertisedCurrency)) {
-          peer.disableCurrency(advertisedCurrency);
-        } else {
-          peer.enableCurrency(advertisedCurrency);
-        }
-      });
-    });
+    this.pool.on('peer.nodeStateUpdate', this.checkPeerCurrencies);
   }
 
   private bindSwaps = () => {
@@ -702,6 +692,18 @@ class OrderBook extends EventEmitter {
     const orders = tp.removePeerOrders(peerPubKey);
     orders.forEach((order) => {
       this.emit('peerOrder.invalidation', order);
+    });
+  }
+
+  private checkPeerCurrencies = (peer: Peer) => {
+    const advertisedCurrencies = peer.getAdvertisedCurrencies();
+
+    advertisedCurrencies.forEach((advertisedCurrency) => {
+      if (!this.isPeerCurrencySupported(peer, advertisedCurrency)) {
+        peer.disableCurrency(advertisedCurrency);
+      } else {
+        peer.enableCurrency(advertisedCurrency);
+      }
     });
   }
 
