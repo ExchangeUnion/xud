@@ -122,10 +122,10 @@ describe('Swaps.SwapClientManager', () => {
     expect(swapClientManager.raidenClient.tokenAddresses.get('WETH')).not.toBeUndefined();
     swapClientManager.remove('WETH');
     expect(swapClientManager['swapClients'].size).toEqual(2);
-    const lndPubKeysMap = swapClientManager.getLndPubKeysMap();
-    expect(lndPubKeysMap.size).toEqual(2);
-    expect(lndPubKeysMap.get('BTC')).toEqual(1);
-    expect(lndPubKeysMap.get('LTC')).toEqual(1);
+    const lndClients = swapClientManager.getLndClientsMap();
+    expect(lndClients.size).toEqual(2);
+    expect(lndClients.get('BTC')!.pubKey).toEqual(1);
+    expect(lndClients.get('LTC')!.pubKey).toEqual(1);
     await swapClientManager.getLndClientsInfo();
     expect(lndInfoMock).toHaveBeenCalledTimes(2);
   });

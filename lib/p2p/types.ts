@@ -13,16 +13,15 @@ export type NodeConnectionInfo = {
 };
 
 export type NodeState = {
-  version: string;
-  nodePubKey: string;
   /** This node's listening external socket addresses to advertise to peers. */
   addresses: Address[];
   pairs: string[];
   raidenAddress: string;
+  /** An object mapping currency symbols to lnd pub keys. */
   lndPubKeys: { [currency: string]: string | undefined };
+  /** An object mapping currency symbols to token identifiers such as lnd chains or raiden token contract addresses. */
+  tokenIdentifiers: { [currency: string]: string | undefined };
 };
-
-export type NodeStateUpdate = Pick<NodeState, Exclude<keyof NodeState, 'version' | 'nodePubKey'>>;
 
 export type PoolConfig = {
   /** Whether or not to automatically detect and share current external ip address on startup. */
