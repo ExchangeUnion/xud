@@ -1,18 +1,20 @@
 # Exchange Union Daemon
 
-[![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-rose.svg)](https://gitter.im/exchangeunion/Lobby)
+[![Discord](https://img.shields.io/discord/547402601885466658.svg)](https://gitter.im/exchangeunion/Lobby)
 [![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 
-The Exchange Union Daemon (`xud`) powers [Exchange Union](https://www.exchangeunion.com/), a decentralized exchange built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable instant and trustless cryptocurrency swaps and order fulfillment between cryptocurrency exchanges. Exchanges participating in the network aggregate their liquidity and can provide deeper order books and new trading pairs to their users. `xud` encompasses the following components:
+The Exchange Union Daemon (`xud`) powers [Exchange Union](https://www.exchangeunion.com/), a decentralized exchange (DEX) built on the [Lightning](http://lightning.network/) and [Raiden](https://raiden.network/) networks to enable instant and trustless cryptocurrency swaps. The vision is to bring individuals and existing, centralized exchanges onto the same network. This gives users a choice to either trade directly on the DEX, managing privacy and software stack *or* to conveniently trade via a trusted exchange. Exchanges participating in the network aggregate their liquidity and can provide deeper order books and new trading pairs to their users. `xud` encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
 * Decentralized order book to locally aggregate orders from the known network.
-* Matching engine to match new local orders with existing local and remote orders and initiate atomic swaps.
-* Peer-to-peer networking with other XU nodes.
+* Matching engine to match new local orders with existing local and remote orders and initiate atomic swaps with remote peers.
+* Peer-to-peer networking with and discovery of other nodes.
 * gRPC API with web proxy to serve other applications, also accessible via the command-line interface `xucli`.
 
 ## Install
+
+This section contains instructions for installing `xud` natively, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined setup via [docker](https://github.com/ExchangeUnion/xud/wiki/Docker).
 
 If you already have [Node.js](https://nodejs.org/en/download/) (min 10.15.3) installed, you can install `xud` via npm by running
 
@@ -35,7 +37,7 @@ $ ./xud
 2018-9-11 01:11:59 [RPC] info: gRPC server listening on localhost:8886
 ```
 
-Issue commands to `xud` with the `xucli` command line tool. To see a list of available commands:
+Issue commands to `xud` with the `xucli` command line tool. To see a list of available commands, run the following in a second terminal:
 
 ```
 ./xucli --help
@@ -55,4 +57,4 @@ All files in this repository are licensed under the [GNU Affero General Public L
 
 ## Development & Testing Discussion
 
-Comments, questions, and any development-related discussions are welcome in our [Gitter chat](https://gitter.im/exchangeunion/Lobby)
+Comments, questions, and any development-related discussions are welcome in our [Discord chat](https://discord.gg/YgDhMSn)
