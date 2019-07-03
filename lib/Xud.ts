@@ -108,9 +108,6 @@ class Xud extends EventEmitter {
 
       const initPromises: Promise<any>[] = [];
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers);
-      initPromises.push(this.swapClientManager.init(this.db.models));
-
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
 
