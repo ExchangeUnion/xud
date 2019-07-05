@@ -37,6 +37,7 @@ type XudInfo = {
   orders: { peer: number, own: number};
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
+  pendingSwapHashes: string[];
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -276,6 +277,7 @@ class Service {
         peer: peerOrdersCount,
         own: ownOrdersCount,
       },
+      pendingSwapHashes: this.swaps.getPendingSwapHashes(),
     };
   }
 
@@ -469,4 +471,4 @@ class Service {
   }
 }
 export default Service;
-export { ServiceComponents };
+export { ServiceComponents, XudInfo };

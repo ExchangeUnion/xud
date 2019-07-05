@@ -222,7 +222,9 @@ class Xud extends EventEmitter {
     }
     if (this.grpcAPIProxy) {
       closePromises.push(this.grpcAPIProxy.close());
-      await this.grpcAPIProxy.close();
+    }
+    if (this.swaps) {
+      this.swaps.close();
     }
     await Promise.all(closePromises);
 

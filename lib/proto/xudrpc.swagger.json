@@ -879,6 +879,12 @@
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
+        },
+        "pending_swap_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },

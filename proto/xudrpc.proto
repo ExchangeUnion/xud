@@ -400,6 +400,7 @@ message GetInfoResponse {
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
   RaidenInfo raiden = 8 [json_name = "raiden"];
+  repeated string pending_swap_hashes = 9 [json_name = "pending_swap_hashes"];
 }
 
 message GetNodeInfoRequest {

@@ -379,6 +379,7 @@
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+| pending_swap_hashes | [string](#string) | repeated |  |
 
 
 

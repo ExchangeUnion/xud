@@ -1,6 +1,6 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import SwapClient, { ClientStatus, SwapClientInfo } from '../swaps/SwapClient';
+import SwapClient, { ClientStatus, SwapClientInfo, PaymentState } from '../swaps/SwapClient';
 import errors from './errors';
 import { errors as swapErrors } from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
@@ -703,11 +703,12 @@ class LndClient extends SwapClient {
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
+    const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
+    settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
+    await this.settleInvoiceLnd(settleInvoiceRequest);
+
     const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
     if (invoiceSubscription) {
-      const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
-      settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
-      await this.settleInvoiceLnd(settleInvoiceRequest);
       this.logger.debug(`settled invoice for ${rHash}`);
       invoiceSubscription.cancel();
     }
@@ -718,10 +719,52 @@ class LndClient extends SwapClient {
     if (invoiceSubscription) {
       const cancelInvoiceRequest = new lndinvoices.CancelInvoiceMsg();
       cancelInvoiceRequest.setPaymentHash(hexToUint8Array(rHash));
-      await this.cancelInvoice(cancelInvoiceRequest);
-      this.logger.debug(`canceled invoice for ${rHash}`);
+      try {
+        await this.cancelInvoice(cancelInvoiceRequest);
+        this.logger.debug(`canceled invoice for ${rHash}`);
+      } catch (err) {
+        // handle errors due to attempting to remove an invoice that doesn't exist
+        if (err.message === 'unable to locate invoice') {
+          this.logger.debug(`attempted to cancel non-existent invoice for ${rHash}`);
+        } else if (err.message === 'invoice already canceled') {
+          this.logger.debug(`attempted to cancel already canceled invoice for ${rHash}`);
+        } else {
+          throw err;
+        }
+      }
       invoiceSubscription.cancel();
     }
+  }
+
+  public lookupPayment = async (rHash: string) => {
+    const payments = await this.listPayments(true);
+    for (const payment of payments.getPaymentsList()) {
+      if (payment.getPaymentHash() === rHash) {
+        switch (payment.getStatus()) {
+          case lndrpc.Payment.PaymentStatus.SUCCEEDED:
+            const preimage = payment.getPaymentPreimage();
+            return { preimage, state: PaymentState.Succeeded };
+          case lndrpc.Payment.PaymentStatus.IN_FLIGHT:
+            return { state: PaymentState.Pending };
+          default:
+            this.logger.warn(`unexpected payment state for payment with hash ${rHash}`);
+            /* falls through */
+          case lndrpc.Payment.PaymentStatus.FAILED:
+            return { state: PaymentState.Failed };
+        }
+      }
+    }
+
+    // if no payment is found, we assume that the payment was never attempted by lnd
+    return { state: PaymentState.Failed };
+  }
+
+  private listPayments = (includeIncomplete?: boolean): Promise<lndrpc.ListPaymentsResponse> => {
+    const request = new lndrpc.ListPaymentsRequest();
+    if (includeIncomplete) {
+      request.setIncludeIncomplete(includeIncomplete);
+    }
+    return this.unaryCall<lndrpc.ListPaymentsRequest, lndrpc.ListPaymentsResponse>('listPayments', request);
   }
 
   private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {

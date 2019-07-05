@@ -24,6 +24,17 @@ export type SwapClientInfo = {
   newUris?: string[];
 };
 
+export enum PaymentState {
+  Succeeded,
+  Failed,
+  Pending,
+}
+
+export type PaymentStatus = {
+  state: PaymentState,
+  preimage?: string,
+};
+
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -155,6 +166,12 @@ abstract class SwapClient extends EventEmitter {
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
   public abstract async removeInvoice(rHash: string): Promise<void>;
+
+  /**
+   * Checks to see whether we've made a payment using a given rHash.
+   * @returns the preimage for the payment, or `undefined` if no payment was made
+   */
+  public abstract async lookupPayment(rHash: string, currency?: string, destination?: string): Promise<PaymentStatus>;
 
   /**
    * Gets the block height of the chain backing this swap client.

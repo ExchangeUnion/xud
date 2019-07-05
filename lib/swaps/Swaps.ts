@@ -14,6 +14,7 @@ import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
 import { errors, errorCodes } from './errors';
+import SwapRecovery from './SwapRecovery';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -31,6 +32,7 @@ class Swaps extends EventEmitter {
   public sanitySwaps = new Map<string, SanitySwap>();
   /** A map between payment hashes and swap deals. */
   private deals = new Map<string, SwapDeal>();
+  private swapRecovery: SwapRecovery;
   /** A map between payment hashes and timeouts for swaps. */
   private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
@@ -59,6 +61,7 @@ class Swaps extends EventEmitter {
   ) {
     super();
 
+    this.swapRecovery = new SwapRecovery(swapClientManager, logger);
     this.repository = new SwapRepository(this.models);
     this.bind();
   }
@@ -136,10 +139,14 @@ class Swaps extends EventEmitter {
       this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
     }
 
-    // Load Swaps from database
-    const result = await this.repository.getSwapDeals();
-    result.forEach((deal: SwapDealInstance) => {
+    this.swapRecovery.beginTimer();
+    const swapDealInstances = await this.repository.getSwapDeals();
+    swapDealInstances.forEach((deal: SwapDealInstance) => {
       this.usedHashes.add(deal.rHash);
+
+      if (deal.state === SwapState.Active) {
+        this.swapRecovery.recoverDeal(deal).catch(this.logger.error);
+      }
     });
   }
 
@@ -226,6 +233,10 @@ class Swaps extends EventEmitter {
     if (deal.state !== SwapState.Active) {
       this.removeDeal(deal);
     }
+  }
+
+  public getPendingSwapHashes = () => {
+    return Array.from(this.swapRecovery.pendingSwaps).map(pendingSwap => pendingSwap.rHash);
   }
 
   /**
@@ -896,10 +907,18 @@ class Swaps extends EventEmitter {
     }
   }
 
-  private handleSwapTimeout = (rHash: string, reason: SwapFailureReason) => {
+  private handleSwapTimeout = async (rHash: string, reason: SwapFailureReason) => {
     const deal = this.getDeal(rHash)!;
     this.timeouts.delete(rHash);
     this.failDeal(deal, reason);
+
+    if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
+      // if the swap times out while we are in the middle of sending payment as the maker
+      // we need to make sure that the taker doesn't claim our payment without us having a chance
+      // to claim ours. we will send this swap to recovery to monitor its outcome
+      const swapDealInstance = await this.repository.getSwapDeal(rHash);
+      this.swapRecovery.pendingSwaps.add(swapDealInstance!);
+    }
   }
 
   private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
@@ -1075,6 +1094,10 @@ class Swaps extends EventEmitter {
     }
 
     this.failDeal(deal, failureReason, errorMessage);
+  }
+
+  public close = () => {
+    this.swapRecovery.stopTimer();
   }
 }
 
