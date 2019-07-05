@@ -114,6 +114,7 @@ class Xud extends EventEmitter {
       this.orderBook = new OrderBook({
         logger: loggers.orderbook,
         models: this.db.models,
+        thresholds: this.config.orderthresholds,
         nomatching: this.config.nomatching,
         pool: this.pool,
         swaps: this.swaps,

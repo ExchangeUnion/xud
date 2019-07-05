@@ -1,6 +1,10 @@
 import { SwapClientType } from '../constants/enums';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 
+export type OrderBookThresholds = {
+  minQuantity: number;
+};
+
 export type OrderMatch = {
   maker: Order;
   taker: OwnOrder;
