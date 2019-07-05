@@ -173,7 +173,7 @@ class OrderBook extends EventEmitter {
       }
     });
     this.swaps.on('swap.failed', (deal) => {
-      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingPayment)) {
+      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAccepted || deal.phase === SwapPhase.SendingPayment)) {
         // if our order is the maker and the swap failed after it was agreed to but before it was executed
         // we must release the hold on the order that we set when we agreed to the deal
         this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -882,6 +882,7 @@ class OrderBook extends EventEmitter {
       const quantity = Math.min(proposedQuantity, availableQuantity);
 
       this.addOrderHold(order.id, pairId, quantity);
+      await this.repository.addOrderIfNotExists(order);
 
       // try to accept the deal
       const orderToAccept = {
@@ -891,9 +892,7 @@ class OrderBook extends EventEmitter {
         isBuy: order.isBuy,
       };
       const dealAccepted = await this.swaps.acceptDeal(orderToAccept, requestPacket, peer);
-      if (dealAccepted) {
-        await this.repository.addOrderIfNotExists(order);
-      } else {
+      if (!dealAccepted) {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {
