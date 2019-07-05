@@ -70,7 +70,6 @@ jest.mock('../../lib/p2p/Pool', () => {
     };
   });
 });
-jest.mock('../../lib/Config');
 jest.mock('../../lib/swaps/Swaps');
 jest.mock('../../lib/swaps/SwapClientManager');
 jest.mock('../../lib/Logger');
@@ -123,6 +122,7 @@ describe('OrderBook', () => {
     orderbook = new Orderbook({
       pool,
       swaps,
+      thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,
       nomatching: config.nomatching,
