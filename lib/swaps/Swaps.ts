@@ -116,11 +116,13 @@ class Swaps extends EventEmitter {
 
   public init = async () => {
     // update pool with lnd pubkeys and raiden address
-    this.swapClientManager.getLndPubKeysMap().forEach((pubKey, currency) => {
-      this.pool.updateLndPubKey(currency, pubKey);
+    this.swapClientManager.getLndClientsMap().forEach((lndClient) => {
+      if (lndClient.pubKey && lndClient.chain) {
+        this.pool.updateLndState(lndClient.currency, lndClient.pubKey, lndClient.chain);
+      }
     });
     if (this.swapClientManager.raidenClient.address) {
-      this.pool.updateRaidenAddress(this.swapClientManager.raidenClient.address);
+      this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
     }
 
     // Load Swaps from database
@@ -167,8 +169,8 @@ class Swaps extends EventEmitter {
         this.logger.error('could not settle invoice', err);
       }
     });
-    this.swapClientManager.on('lndUpdate', this.pool.updateLndPubKey);
-    this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenAddress);
+    this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
+    this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
   }
 
   /**
@@ -855,6 +857,7 @@ class Swaps extends EventEmitter {
       case SwapFailureReason.SwapClientNotSetup:
         // something is wrong with swaps for this trading pair and peer, drop this pair
         try {
+          // TODO: disable the currency that caused this error
           this.pool.getPeer(deal.peerPubKey).deactivatePair(deal.pairId);
         } catch (err) {
           this.logger.debug(`could not drop trading pair ${deal.pairId} for peer ${deal.peerPubKey}`);

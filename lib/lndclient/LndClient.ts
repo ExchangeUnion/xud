@@ -42,7 +42,10 @@ class LndClient extends SwapClient {
   private meta!: grpc.Metadata;
   private uri!: string;
   private credentials!: ChannelCredentials;
+  /** The identity pub key for this lnd instance. */
   private identityPubKey?: string;
+  /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
+  private chainIdentifier?: string;
   private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
 
@@ -94,6 +97,10 @@ class LndClient extends SwapClient {
 
   public get pubKey() {
     return this.identityPubKey;
+  }
+
+  public get chain() {
+    return this.chainIdentifier;
   }
 
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
@@ -204,7 +211,18 @@ class LndClient extends SwapClient {
           let newPubKey: string | undefined;
           if (this.identityPubKey !== getInfoResponse.getIdentityPubkey()) {
             newPubKey = getInfoResponse.getIdentityPubkey();
+            this.logger.debug(`pubkey is ${newPubKey}`);
             this.identityPubKey = newPubKey;
+          }
+          const chain = getInfoResponse.getChainsList()[0];
+          const chainIdentifier = `${chain.getChain()}-${chain.getNetwork()}`;
+          if (!this.chainIdentifier) {
+            this.chainIdentifier = chainIdentifier;
+            this.logger.debug(`chain is ${chainIdentifier}`);
+          } else if (this.chainIdentifier !== chainIdentifier) {
+            // we switched chains for this lnd client while xud was running which is not supported
+            this.logger.error(`chain switched from ${this.chainIdentifier} to ${chainIdentifier}`);
+            await this.setStatus(ClientStatus.Disabled);
           }
           this.emit('connectionVerified', newPubKey);
 
