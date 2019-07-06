@@ -47,13 +47,23 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    noencrypt: {
+      describe: 'Whether to disable nodekey encryption',
+      type: 'boolean',
+      default: undefined,
+    },
     nomatching: {
       describe: 'Whether to disable matching within xud',
       type: 'boolean',
       default: undefined,
     },
-    nosanitychecks: {
-      describe: 'Whether to disable order sanity checks',
+    nosanityswaps: {
+      describe: 'Whether to disable sanity swaps',
+      type: 'boolean',
+      default: undefined,
+    },
+    nobalancechecks: {
+      describe: 'Whether to disable balance checks',
       type: 'boolean',
       default: undefined,
     },

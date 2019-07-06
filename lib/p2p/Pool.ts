@@ -31,8 +31,8 @@ interface Pool {
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
-  /** Adds a listener to be called when a peer has newly advertised pairs. */
-  on(event: 'peer.pairsAdvertised', listener: (peer: Peer, pairIds: string[]) => void): this;
+  /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
+  on(event: 'peer.verifyPairs', listener: (peer: Peer) => void): this;
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'peer.pairDropped', listener: (peerPubKey: string, pairId: string) => void): this;
   on(event: 'peer.nodeStateUpdate', listener: (peer: Peer) => void): this;
@@ -45,8 +45,8 @@ interface Pool {
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
-  /** Notifies listeners that a peer has newly activated pairs. */
-  emit(event: 'peer.pairsAdvertised', peer: Peer, pairIds: string[]): boolean;
+  /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
+  emit(event: 'peer.verifyPairs', peer: Peer): boolean;
   /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'peer.pairDropped', peerPubKey: string, pairId: string): boolean;
   emit(event: 'peer.nodeStateUpdate', peer: Peer): boolean;
@@ -68,10 +68,12 @@ interface NodeConnectionIterator {
  * interface for other modules to interact with the p2p layer.
  */
 class Pool extends EventEmitter {
+  /** The version of xud we are using. */
+  public version: string;
+  /** Our node pub key. */
+  public nodePubKey: string;
   /** The local handshake data to be sent to newly connected peers. */
-  public nodeState!: NodeState;
-  /** The local node key. */
-  private nodeKey!: NodeKey;
+  private nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
   private pendingOutboundPeers = new Map<string, Peer>();
   /** A set of peers for which we have pending incoming connections. */
@@ -84,26 +86,46 @@ class Pool extends EventEmitter {
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
-  /** This node's listening external socket addresses to advertise to peers. */
-  private addresses: Address[] = [];
   /** Points to config comes during construction. */
   private config: PoolConfig;
   private repository: P2PRepository;
   private network: Network;
+  private logger: Logger;
+  private nodeKey: NodeKey;
 
-  constructor(config: PoolConfig, xuNetwork: XuNetwork, private logger: Logger, models: Models) {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version }: {
+    config: PoolConfig,
+    xuNetwork: XuNetwork,
+    logger: Logger,
+    models: Models,
+    nodeKey: NodeKey,
+    version: string,
+  }) {
     super();
+
+    this.logger = logger;
+    this.nodeKey = nodeKey;
+    this.nodePubKey = nodeKey.pubKey;
+    this.version = version;
     this.config = config;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
+
+    this.nodeState = {
+      addresses: [],
+      pairs: [],
+      raidenAddress: '',
+      lndPubKeys: {},
+      tokenIdentifiers: {},
+    };
 
     if (config.listen) {
       this.listenPort = config.port;
       this.server = net.createServer();
       config.addresses.forEach((addressString) => {
         const address = addressUtils.fromString(addressString, config.port);
-        this.addresses.push(address);
+        this.nodeState.addresses.push(address);
       });
     }
   }
@@ -112,10 +134,18 @@ class Pool extends EventEmitter {
     return this.peers.size;
   }
 
+  public get addresses() {
+    return this.nodeState.addresses;
+  }
+
+  public getTokenIdentifier(currency: string) {
+    return this.nodeState.tokenIdentifiers[currency];
+  }
+
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */
-  public init = async (ownNodeState: Pick<NodeState, Exclude<keyof NodeState, 'addresses'>>, nodeKey: NodeKey): Promise<void> => {
+  public init = async (): Promise<void> => {
     if (this.connected) {
       return;
     }
@@ -129,9 +159,6 @@ class Pool extends EventEmitter {
         await this.detectExternalIpAddress();
       }
     }
-
-    this.nodeState = { ...ownNodeState, addresses: this.addresses };
-    this.nodeKey = nodeKey;
 
     this.bindNodeList();
 
@@ -158,9 +185,9 @@ class Pool extends EventEmitter {
       externalIp = await getExternalIp();
       this.logger.info(`retrieved external IP: ${externalIp}`);
 
-      const externalIpExists = this.addresses.some((address) =>  { return address.host === externalIp; });
+      const externalIpExists = this.nodeState.addresses.some((address) =>  { return address.host === externalIp; });
       if (!externalIpExists) {
-        this.addresses.push({
+        this.nodeState.addresses.push({
           host: externalIp,
           port: this.listenPort!,
         });
@@ -174,26 +201,30 @@ class Pool extends EventEmitter {
    * Updates our active trading pairs and sends a node state update packet to currently connected
    * peers to notify them of the change.
    */
-  public updatePairs = (pairs: string[]) => {
-    this.nodeState.pairs = pairs;
+  public updatePairs = (pairIds: string[]) => {
+    this.nodeState.pairs = pairIds;
     this.sendNodeStateUpdate();
   }
 
   /**
-   * Updates our raiden address and sends a node state update packet to currently connected
-   * peers to notify them of the change.
+   * Updates our raiden address and supported token addresses, then sends a node state update
+   * packet to currently connected peers to notify them of the change.
    */
-  public updateRaidenAddress = (raidenAddress: string) => {
-    this.nodeState.raidenAddress = raidenAddress;
+  public updateRaidenState = (tokenAddresses: Map<string, string>, raidenAddress?: string) => {
+    this.nodeState.raidenAddress = raidenAddress || '';
+    tokenAddresses.forEach((tokenAddress, currency) => {
+      this.nodeState.tokenIdentifiers[currency] = tokenAddress;
+    });
     this.sendNodeStateUpdate();
   }
 
   /**
-   * Updates our lnd pub key for a given currency and sends a node state update packet to currently
-   * connected peers to notify them of the change.
+   * Updates our lnd pub key and chain identifier for a given currency and sends a node state
+   * update packet to currently connected peers to notify them of the change.
    */
-  public updateLndPubKey = (currency: string, pubKey: string) => {
+  public updateLndState = (currency: string, pubKey: string, chain?: string) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    this.nodeState.tokenIdentifiers[currency] = chain;
     this.sendNodeStateUpdate();
   }
 
@@ -231,7 +262,12 @@ class Pool extends EventEmitter {
       this.logger.debug(`Verifying reachability of advertised address: ${externalAddress}`);
       try {
         const peer = new Peer(Logger.DISABLED_LOGGER, address, this.network);
-        await peer.beginOpen(this.nodeState, this.nodeKey, this.nodeState.nodePubKey);
+        await peer.beginOpen({
+          ownNodeState: this.nodeState,
+          ownNodeKey: this.nodeKey,
+          ownVersion: this.version,
+          expectedNodePubKey: this.nodePubKey,
+        });
         await peer.close();
         assert.fail();
       } catch (err) {
@@ -257,7 +293,7 @@ class Pool extends EventEmitter {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
-      const isNotUs = node.nodePubKey !== this.nodeState.nodePubKey;
+      const isNotUs = node.nodePubKey !== this.nodePubKey;
 
       // check that it has listening addresses,
       const hasAddresses = node.lastAddress || node.addresses.length;
@@ -342,7 +378,7 @@ class Pool extends EventEmitter {
    * @returns a promise that resolves to the connected and opened peer
    */
   public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
-    if (nodePubKey === this.nodeState.nodePubKey) {
+    if (nodePubKey === this.nodePubKey) {
       const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
       this.logger.warn(err.message);
       throw err;
@@ -397,11 +433,17 @@ class Pool extends EventEmitter {
     this.bindPeer(peer);
 
     try {
-      const sessionInit = await peer.beginOpen(this.nodeState, this.nodeKey, expectedNodePubKey, retryConnecting);
+      const sessionInit = await peer.beginOpen({
+        expectedNodePubKey,
+        retryConnecting,
+        ownNodeState: this.nodeState,
+        ownNodeKey: this.nodeKey,
+        ownVersion: this.version,
+      });
 
       await this.validatePeer(peer);
 
-      await peer.completeOpen(this.nodeState, this.nodeKey, sessionInit);
+      await peer.completeOpen(this.nodeState, this.nodeKey, this.version, sessionInit);
     } catch (err) {
       // we don't have nodePubKey for inbound connections, which might fail on handshake
       if (typeof err === 'string') {
@@ -423,7 +465,7 @@ class Pool extends EventEmitter {
     this.peers.set(peerPubKey, peer);
     peer.active = true;
 
-    this.emit('peer.pairsAdvertised', peer, peer.advertisedPairs);
+    this.emit('peer.verifyPairs', peer);
 
     // request peer's known nodes only if p2p.discover option is true
     if (this.config.discover) {
@@ -543,7 +585,7 @@ class Pool extends EventEmitter {
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(async (peer) => {
-      if (peer.activePairs.has(order.pairId)) {
+      if (peer.isPairActive(order.pairId)) {
         await peer.sendPacket(orderPacket);
       }
     });
@@ -594,7 +636,7 @@ class Pool extends EventEmitter {
         this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
 
-        if (peer.activePairs.has(incomingOrder.pairId)) {
+        if (peer.isPairActive(incomingOrder.pairId)) {
           this.emit('packet.order', incomingOrder);
         } else {
           this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
@@ -617,7 +659,7 @@ class Pool extends EventEmitter {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
         this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
         receivedOrders.forEach((order) => {
-          if (peer.activePairs.has(order.pairId)) {
+          if (peer.isPairActive(order.pairId)) {
             this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
           } else {
             this.logger.debug(`received order ${order.id} for deactivated trading pair`);
@@ -674,7 +716,7 @@ class Pool extends EventEmitter {
     assert(peer.nodePubKey);
     const peerPubKey = peer.nodePubKey!;
 
-    if (peerPubKey === this.nodeState.nodePubKey) {
+    if (peerPubKey === this.nodePubKey) {
       await peer.close(DisconnectionReason.ConnectedToSelf);
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
@@ -753,9 +795,9 @@ class Pool extends EventEmitter {
       this.emit('peer.pairDropped', peer.nodePubKey!, pairId);
     });
 
-    peer.on('pairsAdvertised', (pairIds) => {
+    peer.on('verifyPairs', () => {
       // drop all orders for trading pairs that are no longer supported
-      this.emit('peer.pairsAdvertised', peer, pairIds);
+      this.emit('peer.verifyPairs', peer);
     });
 
     peer.on('nodeStateUpdate', () => {
@@ -765,7 +807,7 @@ class Pool extends EventEmitter {
     peer.on('error', (err) => {
       // The only situation in which the node should be connected to itself is the
       // reachability check of the advertised addresses and we don't have to log that
-      if (peer.nodePubKey !== this.nodeState.nodePubKey) {
+      if (peer.nodePubKey !== this.nodePubKey) {
         this.logger.error(`Peer (${peer.label}): error: ${err.message}`);
       }
     });

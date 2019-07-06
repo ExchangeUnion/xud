@@ -131,6 +131,7 @@ class GrpcService {
       case serviceErrorCodes.INVALID_ARGUMENT:
       case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
       case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
+      case orderErrorCodes.MIN_QUANTITY_VIOLATED:
       case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
         code = status.INVALID_ARGUMENT;
         break;
@@ -381,9 +382,9 @@ class GrpcService {
         return lnd;
       });
       const lndMap = response.getLndMap();
-      for (const currency in getInfoResponse.lnd) {
-        lndMap.set(currency, getLndInfo(getInfoResponse.lnd[currency]!));
-      }
+      getInfoResponse.lnd.forEach((lndInfo, currency) => {
+        lndMap.set(currency, getLndInfo(lndInfo));
+      });
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();

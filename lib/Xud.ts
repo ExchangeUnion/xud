@@ -13,6 +13,8 @@ import { EventEmitter } from 'events';
 import Swaps from './swaps/Swaps';
 import HttpServer from './http/HttpServer';
 import SwapClientManager from './swaps/SwapClientManager';
+import InitService from './service/InitService';
+import { promises as fs } from 'fs';
 
 const version: string = require('../package.json').version;
 
@@ -33,15 +35,10 @@ class Xud extends EventEmitter {
   private orderBook!: OrderBook;
   private rpcServer?: GrpcServer;
   private httpServer?: HttpServer;
-  private nodeKey!: NodeKey;
   private grpcAPIProxy?: GrpcWebProxyServer;
   private swaps!: Swaps;
   private shuttingDown = false;
-  private swapClientManager!: SwapClientManager;
-
-  public get nodePubKey() {
-    return this.nodeKey.nodePubKey;
-  }
+  private swapClientManager?: SwapClientManager;
 
   /**
    * Create an Exchange Union daemon.
@@ -67,35 +64,70 @@ class Xud extends EventEmitter {
     this.logger.info('config loaded');
 
     try {
-      const initPromises: Promise<any>[] = [];
-      // TODO: wait for decryption of existing key or encryption of new key, config option to disable encryption
-      initPromises.push(NodeKey.load(this.config.xudir, this.config.instanceid));
-
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
-      this.pool = new Pool(this.config.p2p, this.config.network, loggers.p2p, this.db.models);
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.pool);
-      await this.swapClientManager.init();
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers);
+      await this.swapClientManager.init(this.db.models);
+
+      const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
+      let nodeKey: NodeKey;
+      if (this.config.noencrypt) {
+        nodeKey = await NodeKey.load(nodeKeyPath);
+      } else {
+        const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
+
+        const initRpcServer = new GrpcServer(loggers.rpc);
+        initRpcServer.addXudInitService(initService);
+        await initRpcServer.listen(
+          this.config.rpc.port,
+          this.config.rpc.host,
+          path.join(this.config.xudir, 'tls.cert'),
+          path.join(this.config.xudir, 'tls.key'),
+        );
+
+        this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
+        " 'xucli create' if this is the first time starting xud");
+        nodeKey = await new Promise<NodeKey>((resolve) => {
+          initService.once('nodekey', resolve);
+        });
+        await initRpcServer.close();
+      }
+
+      this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
+
+      this.pool = new Pool({
+        nodeKey,
+        version,
+        config: this.config.p2p,
+        xuNetwork: this.config.network,
+        logger: loggers.p2p,
+        models: this.db.models,
+      });
+
+      const initPromises: Promise<any>[] = [];
 
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
 
-      this.orderBook = new OrderBook(loggers.orderbook, this.db.models, this.config.nomatching, this.pool, this.swaps, this.config.nosanitychecks);
+      this.orderBook = new OrderBook({
+        logger: loggers.orderbook,
+        models: this.db.models,
+        thresholds: this.config.orderthresholds,
+        nomatching: this.config.nomatching,
+        pool: this.pool,
+        swaps: this.swaps,
+        nosanityswaps: this.config.nosanityswaps,
+        nobalancechecks: this.config.nobalancechecks,
+      });
       initPromises.push(this.orderBook.init());
 
       // wait for components to initialize in parallel
-      const initPromisesResults = await Promise.all(initPromises);
-      this.nodeKey = initPromisesResults[0]; // the first init promise in the array was NodeKey.load
-      this.logger.info(`Local nodePubKey is ${this.nodeKey.nodePubKey}`);
+      await Promise.all(initPromises);
 
       // initialize pool and start listening/connecting only once other components are initialized
-      await this.pool.init({
-        version,
-        lndPubKeys: this.swapClientManager.getLndPubKeys(),
-        pairs: this.orderBook.pairIds,
-        nodePubKey: this.nodeKey.nodePubKey,
-        raidenAddress: this.swapClientManager.raidenClient.address,
-      }, this.nodeKey);
+      await this.pool.init();
 
       this.service = new Service({
         version,
@@ -108,24 +140,19 @@ class Xud extends EventEmitter {
 
       if (!this.swapClientManager.raidenClient.isDisabled()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
+        await this.httpServer.listen(this.config.http.port);
       }
 
       // start rpc server last
       if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(loggers.rpc, this.service);
-        const listening = await this.rpcServer.listen(
+        this.rpcServer = new GrpcServer(loggers.rpc);
+        this.rpcServer.addXudService(this.service);
+        await this.rpcServer.listen(
           this.config.rpc.port,
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
           path.join(this.config.xudir, 'tls.key'),
         );
-
-        if (!listening) {
-          // if rpc should be enabled but fails to start, treat it as a fatal error
-          this.logger.error('Could not start gRPC server, exiting...');
-          await this.shutdown();
-          return;
-        }
 
         if (!this.config.webproxy.disable) {
           this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
@@ -144,7 +171,7 @@ class Xud extends EventEmitter {
         this.logger.warn('RPC server is disabled.');
       }
     } catch (err) {
-      this.logger.error(err);
+      this.logger.error('Unexpected error during initialization', err);
     }
   }
 
@@ -156,10 +183,12 @@ class Xud extends EventEmitter {
     this.shuttingDown = true;
     this.logger.info('XUD is shutting down');
 
-    this.swapClientManager.close();
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
 
+    if (this.swapClientManager) {
+      closePromises.push(this.swapClientManager.close());
+    }
     if (this.httpServer) {
       closePromises.push(this.httpServer.close());
     }

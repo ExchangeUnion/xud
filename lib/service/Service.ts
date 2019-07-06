@@ -2,7 +2,6 @@ import Pool from '../p2p/Pool';
 import OrderBook from '../orderbook/OrderBook';
 import { LndInfo } from '../lndclient/types';
 import { RaidenInfo } from '../raidenclient/types';
-import { EventEmitter } from 'events';
 import errors from './errors';
 import { SwapClientType, OrderSide, SwapRole } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
@@ -35,7 +34,7 @@ type XudInfo = {
   numPeers: number;
   numPairs: number;
   orders: { peer: number, own: number};
-  lnd: { [currency: string]: LndInfo | undefined };
+  lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
 };
 
@@ -68,7 +67,7 @@ const argChecks = {
 };
 
 /** Class containing the available RPC methods for XUD */
-class Service extends EventEmitter {
+class Service {
   public shutdown: () => void;
   private orderBook: OrderBook;
   private swapClientManager: SwapClientManager;
@@ -78,8 +77,6 @@ class Service extends EventEmitter {
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
-    super();
-
     this.shutdown = components.shutdown;
     this.orderBook = components.orderBook;
     this.swapClientManager = components.swapClientManager;
@@ -214,7 +211,7 @@ class Service extends EventEmitter {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool.nodeState;
+    const { nodePubKey, addresses } = this.pool;
 
     const uris: string[] = [];
 

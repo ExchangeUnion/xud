@@ -1,5 +1,5 @@
 import assert from 'assert';
-import crypto from 'crypto';
+import { createCipheriv, createDecipheriv } from 'crypto';
 import Network from './Network';
 import Packet from './packets/Packet';
 import errors from './errors';
@@ -172,7 +172,7 @@ class Framer {
 
   public encrypt = async (plaintext: Buffer, key: Buffer): Promise<Buffer> => {
     const iv = await randomBytes(Framer.ENCRYPTION_IV_LENGTH);
-    const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+    const cipher = createCipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
   }
@@ -180,7 +180,7 @@ class Framer {
   public decrypt = (ciphertext: Buffer, key: Buffer): Buffer => {
     const iv = ciphertext.slice(0, Framer.ENCRYPTION_IV_LENGTH);
     const encrypted = ciphertext.slice(Framer.ENCRYPTION_IV_LENGTH);
-    const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
   }

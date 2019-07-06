@@ -30,15 +30,3 @@ export type Chain = {
   network: string,
   chain: string,
 };
-
-export type LndLogger = {
-  error: Function,
-  warn: Function,
-  info: Function,
-  verbose: Function,
-  debug: Function,
-  trace: Function,
-};
-
-export type LndPubKeys = { [currency: string]: string | undefined };
-export type LndInfos = { [currency: string]: LndInfo | undefined };

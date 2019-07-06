@@ -1118,7 +1118,7 @@ message Channel {
     height, the next 3 the index within the block, and the last 2 bytes are the
     output index for the channel.
     */
-    uint64 chan_id = 4 [json_name = "chan_id"];
+    uint64 chan_id = 4 [json_name = "chan_id", jstype = JS_STRING];
 
     /// The total amount of funds held in this channel
     int64 capacity = 5 [json_name = "capacity"];
@@ -1203,7 +1203,7 @@ message ChannelCloseSummary {
     string channel_point = 1 [json_name = "channel_point"];
 
     ///  The unique channel ID for the channel. 
-    uint64 chan_id = 2 [json_name = "chan_id"];
+    uint64 chan_id = 2 [json_name = "chan_id", jstype = JS_STRING];
 
     /// The hash of the genesis block that this channel resides within.
     string chain_hash = 3 [json_name = "chain_hash"];
@@ -1683,7 +1683,7 @@ message Hop {
     height, the next 3 the index within the block, and the last 2 bytes are the
     output index for the channel.
     */
-    uint64 chan_id = 1 [json_name = "chan_id"];
+    uint64 chan_id = 1 [json_name = "chan_id", jstype = JS_STRING];
     int64 chan_capacity = 2 [json_name = "chan_capacity"];
     int64 amt_to_forward = 3 [json_name = "amt_to_forward", deprecated = true];
     int64 fee = 4 [json_name = "fee", deprecated = true];
@@ -1846,7 +1846,7 @@ message ChanInfoRequest {
     height, the next 3 the index within the block, and the last 2 bytes are the
     output index for the channel.
     */
-    uint64 chan_id = 1;
+    uint64 chan_id = 1 [jstype = JS_STRING];
 }
 
 message NetworkInfoRequest {
@@ -1891,7 +1891,7 @@ message ChannelEdgeUpdate {
     height, the next 3 the index within the block, and the last 2 bytes are the
     output index for the channel.
     */
-    uint64 chan_id = 1;
+    uint64 chan_id = 1 [jstype = JS_STRING];
 
     ChannelPoint chan_point = 2;
 
@@ -1908,7 +1908,7 @@ message ClosedChannelUpdate {
     height, the next 3 the index within the block, and the last 2 bytes are the
     output index for the channel.
     */
-    uint64 chan_id = 1;
+    uint64 chan_id = 1 [jstype = JS_STRING];
     int64 capacity = 2;
     uint32 closed_height = 3;
     ChannelPoint chan_point = 4;
@@ -1919,7 +1919,7 @@ message HopHint {
     string node_id = 1 [json_name = "node_id"];
 
     /// The unique identifier of the channel.
-    uint64 chan_id = 2 [json_name = "chan_id"];
+    uint64 chan_id = 2 [json_name = "chan_id", jstype = JS_STRING];
 
     /// The base fee of the channel denominated in millisatoshis.
     uint32 fee_base_msat = 3 [json_name = "fee_base_msat"];

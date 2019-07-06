@@ -5,7 +5,9 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, TokenPaymentRequest, TokenPaymentResponse } from './types';
+
+type RaidenErrorResponse = { errors: string };
 
 /**
  * A utility function to parse the payload from an http response.
@@ -32,7 +34,8 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
   public readonly cltvDelta: number = 1;
-  public address = '';
+  public address?: string;
+  /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
@@ -69,6 +72,7 @@ class RaidenClient extends SwapClient {
       /** The new raiden address value if different from the one we had previously. */
       let newAddress: string | undefined;
       if (this.address !== address) {
+        this.logger.debug(`address is ${newAddress}`);
         newAddress = address;
         this.address = newAddress;
       }
@@ -78,8 +82,9 @@ class RaidenClient extends SwapClient {
     } catch (err) {
       this.logger.error(
         `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIMER} ms`,
+        err,
       );
-      await this.setStatus(ClientStatus.Disconnected);
+      await this.disconnect();
     }
   }
 
@@ -95,7 +100,7 @@ class RaidenClient extends SwapClient {
       amount: 1,
       secret_hash: rHash,
     });
-    return tokenPaymentResponse.secret;
+    return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
@@ -121,7 +126,16 @@ class RaidenClient extends SwapClient {
       target_address: deal.destination!,
       secret_hash: deal.rHash,
     });
-    return tokenPaymentResponse.secret;
+    return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
+  }
+
+  private sanitizeTokenPaymentResponse = (response: TokenPaymentResponse) => {
+    if (response.secret) {
+      // remove '0x'
+      return response.secret.slice(2);
+    } else {
+      throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
+    }
   }
 
   public addInvoice = async () => {
@@ -196,7 +210,7 @@ class RaidenClient extends SwapClient {
         };
       }
 
-      const req = http.request(options, (res) => {
+      const req = http.request(options, async (res) => {
         switch (res.statusCode) {
           case 200:
           case 201:
@@ -210,7 +224,8 @@ class RaidenClient extends SwapClient {
             reject(errors.TIMEOUT);
             break;
           case 409:
-            reject(errors.INVALID);
+            const body = await parseResponseBody<RaidenErrorResponse>(res);
+            reject(errors.INVALID(body.errors));
             break;
           case 500:
             this.logger.error(`raiden server error ${res.statusCode}: ${res.statusMessage}`);
@@ -236,30 +251,22 @@ class RaidenClient extends SwapClient {
   }
 
   /**
-   * Queries for events tied to a specific channel.
-   */
-  public getChannelEvents = async (channel_address: string) => {
-    // TODO: specify a "from_block"  query argument to only get events since a specific block.
-    const endpoint = `events/channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<ChannelEvent[]>(res);
-  }
-
-  /**
    * Gets info about a given raiden payment channel.
+   * @param token_address the token address for the network to which the channel belongs
    * @param channel_address the address of the channel to query
    */
-  public getChannel = async (channel_address: string): Promise<Channel> => {
-    const endpoint = `channels/${channel_address}`;
+  public getChannel = async (token_address: string, channel_address: string): Promise<Channel> => {
+    const endpoint = `channels/${token_address}/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<Channel>(res);
   }
 
   /**
    * Gets info about all non-settled channels.
+   * @param token_address an optional parameter to specify channels belonging to the specified token network
    */
-  public getChannels = async (): Promise<[Channel]> => {
-    const endpoint = 'channels';
+  public getChannels = async (token_address?: string): Promise<Channel[]> => {
+    const endpoint = token_address ? `channels/${token_address}` : 'channels';
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<[Channel]>(res);
   }
@@ -310,14 +317,10 @@ class RaidenClient extends SwapClient {
     if (payload.secret_hash) {
       payload.secret_hash = `0x${payload.secret_hash}`;
     }
-    try {
-      const res = await this.sendRequest(endpoint, 'POST', payload);
-      const body = await parseResponseBody<TokenPaymentResponse>(res);
-      return body;
-    } catch (e) {
-      this.logger.error('got exception from RaidenClient.tokenPayment', e);
-      throw e;
-    }
+
+    const res = await this.sendRequest(endpoint, 'POST', payload);
+    const body = await parseResponseBody<TokenPaymentResponse>(res);
+    return body;
   }
 
   /**
@@ -342,7 +345,9 @@ class RaidenClient extends SwapClient {
   }
 
   /** Raiden client specific cleanup. */
-  protected closeSpecific() {}
+  protected disconnect = async () => {
+    await this.setStatus(ClientStatus.Disconnected);
+  }
 }
 
 export default RaidenClient;

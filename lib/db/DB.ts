@@ -40,17 +40,7 @@ class DB {
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
     this.models = await this.loadModels();
-    let newDb = !this.storage;
-    if (this.storage) {
-      // check if database file exists
-      try {
-        await fs.access(this.storage);
-      } catch (err) {
-        if (err.code === 'ENOENT') {
-          newDb = true;
-        }
-      }
-    }
+    const shouldInitDb = initDb && await this.isNewDb();
 
     try {
       await this.sequelize.authenticate();
@@ -79,7 +69,7 @@ class DB {
       SwapDeal.sync(),
     ]);
 
-    if (initDb && newDb) {
+    if (shouldInitDb) {
       // initialize database with the seed nodes for the configured network
       const nodes = seeds.get(network);
       if (nodes) {
@@ -96,6 +86,26 @@ class DB {
         { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
       ]);
     }
+  }
+
+  /**
+   * Checks whether the database is new, in other words whether we are not
+   * loading a preexisting database from disk.
+   */
+  private isNewDb = async () => {
+    if (this.storage && this.storage !== ':memory:') {
+      // check if database file exists
+      try {
+        await fs.access(this.storage);
+        return false;
+      } catch (err) {
+        if (err.code !== 'ENOENT') {
+          // we ignore errors due to file not existing, otherwise throw
+          throw err;
+        }
+      }
+    }
+    return true;
   }
 
   public close = (): Bluebird<void> => {

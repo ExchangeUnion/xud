@@ -1,11 +1,13 @@
 language: node_js
 
 node_js:
+  - "node"
   - "lts/*"
 
 cache:
   directories:
     - "node_modules"
+    - "seedutil/go" # go modules used for xudseed
     - "test/simulation/go" # lnd, btcd, and dependencies
 
 before_install:
@@ -13,5 +15,6 @@ before_install:
 
 script:
   - npm run lintNoFix
+  - npm run compile:seedutil
   - npm run test
   - npm run test:sim

@@ -21,7 +21,7 @@ export type RaidenInfo = {
 export type OpenChannelPayload = {
   partner_address: string;
   token_address: string;
-  balance: number;
+  total_deposit: number;
   settle_timeout: 100;
 };
 
@@ -30,23 +30,17 @@ export type OpenChannelPayload = {
  */
 export type Channel = OpenChannelPayload & {
   channel_address: string;
+  token_network_identifier: string;
+  channel_identifier: number;
+  balance: number
   state: string;
-};
-
-/**
- * A raiden channel event.
- */
-export type ChannelEvent = {
-  event_type: string;
-  identifier?: number;
-  amount?: number;
 };
 
 /**
  * The response for tokenPayment call.
  */
-export type TokenPaymentResponse = {
-  secret: string;
+export type TokenPaymentResponse = TokenPaymentRequest & {
+  secret?: string;
 };
 
 /**
@@ -63,8 +57,8 @@ export type TokenPaymentRequest = {
 export type RaidenResolveRequest = {
   /** The token address for the resolve request in hex. */
   token: string;
-  /** The payment hash in hex. */
-  secret_hash: string;
+  /** The payment hash in hex with 0x prefix. */
+  secrethash: string;
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number;
   // unused fields on the raiden request listed below, taken from raiden codebase

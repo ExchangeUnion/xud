@@ -17,6 +17,8 @@
     - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
+    - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
+    - [CreateNodeResponse](#xudrpc.CreateNodeResponse)
     - [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest)
     - [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse)
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
@@ -61,6 +63,8 @@
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
+    - [UnlockNodeRequest](#xudrpc.UnlockNodeRequest)
+    - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
@@ -68,6 +72,7 @@
   
   
     - [Xud](#xudrpc.Xud)
+    - [XudInit](#xudrpc.XudInit)
   
 
 - [Scalar Value Types](#scalar-value-types)
@@ -184,8 +189,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| balance | [int64](#int64) |  | Sum of channels balances denominated in satoshis or equivalent. |
-| pending_open_balance | [int64](#int64) |  | Sum of channels pending balances denominated in satoshis or equivalent. |
+| balance | [uint64](#uint64) |  | Sum of channel balances denominated in satoshis. |
+| pending_open_balance | [uint64](#uint64) |  | Sum of pending channel balances denominated in satoshis. |
 
 
 
@@ -263,6 +268,36 @@
 
 
 
+<a name="xudrpc.CreateNodeRequest"></a>
+
+### CreateNodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| password | [string](#string) |  | The password in utf-8 with which to encrypt the new xud node key as well as underlying client wallets such as lnd. |
+
+
+
+
+
+
+<a name="xudrpc.CreateNodeResponse"></a>
+
+### CreateNodeResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seed_mnemonic | [string](#string) | repeated |  |
+
+
+
+
+
+
 <a name="xudrpc.DiscoverNodesRequest"></a>
 
 ### DiscoverNodesRequest
@@ -286,7 +321,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| num_nodes | [int32](#int32) |  |  |
+| num_nodes | [uint32](#uint32) |  |  |
 
 
 
@@ -304,7 +339,7 @@
 | order_id | [string](#string) |  | The order id of the maker order. |
 | pair_id | [string](#string) |  | The trading pair of the swap orders. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
-| quantity | [uint64](#uint64) |  | The quantity to swap. The whole order will be swapped if unspecified. |
+| quantity | [uint64](#uint64) |  | The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified. |
 
 
 
@@ -332,8 +367,8 @@
 | version | [string](#string) |  | The version of this instance of xud. |
 | node_pub_key | [string](#string) |  | The node pub key of this node. |
 | uris | [string](#string) | repeated | A list of uris that can be used to connect to this node. These are shared with peers. |
-| num_peers | [int32](#int32) |  | The number of currently connected peers. |
-| num_pairs | [int32](#int32) |  | The number of supported trading pairs. |
+| num_peers | [uint32](#uint32) |  | The number of currently connected peers. |
+| num_pairs | [uint32](#uint32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
@@ -382,7 +417,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| reputationScore | [int32](#int32) |  | The node&#39;s reputation score. Points are subtracted for unexpected or potentially malicious behavior. Points are added when swaps are successfully executed. |
+| reputationScore | [sint32](#sint32) |  | The node&#39;s reputation score. Points are subtracted for unexpected or potentially malicious behavior. Points are added when swaps are successfully executed. |
 | banned | [bool](#bool) |  | Whether the node is currently banned. |
 
 
@@ -425,7 +460,7 @@
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
 | include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
-| limit | [int32](#int32) |  | The maximum number of orders to return from each side of the order book. |
+| limit | [uint32](#uint32) |  | The maximum number of orders to return from each side of the order book. |
 
 
 
@@ -521,9 +556,9 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| active | [int32](#int32) |  | The number of active/online channels for this lnd instance that can be used for swaps. |
-| inactive | [int32](#int32) |  | The number of inactive/offline channels for this lnd instance. |
-| pending | [int32](#int32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
+| active | [uint32](#uint32) |  | The number of active/online channels for this lnd instance that can be used for swaps. |
+| inactive | [uint32](#uint32) |  | The number of inactive/offline channels for this lnd instance. |
+| pending | [uint32](#uint32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
 
 
 
@@ -541,7 +576,7 @@
 | error | [string](#string) |  |  |
 | channels | [LndChannels](#xudrpc.LndChannels) |  |  |
 | chains | [Chain](#xudrpc.Chain) | repeated |  |
-| blockheight | [int32](#int32) |  |  |
+| blockheight | [uint32](#uint32) |  |  |
 | uris | [string](#string) | repeated |  |
 | version | [string](#string) |  |  |
 | alias | [string](#string) |  |  |
@@ -565,10 +600,10 @@
 | id | [string](#string) |  | A UUID for this order. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order. |
 | local_id | [string](#string) |  | The local id for this order. |
-| created_at | [int64](#int64) |  | The epoch time when this order was created. |
+| created_at | [uint64](#uint64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
-| hold | [uint64](#uint64) |  | The quantity on hold pending swap exectuion. |
+| hold | [uint64](#uint64) |  | The quantity on hold pending swap execution. |
 
 
 
@@ -583,7 +618,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| quantity | [uint64](#uint64) |  | The quantity of the order being removed. |
+| quantity | [uint64](#uint64) |  | The quantity removed from the order. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The global UUID for the order. |
 | local_id | [string](#string) |  | The local id for the order, if applicable. |
@@ -634,8 +669,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| peer | [int32](#int32) |  | The number of orders belonging to remote xud nodes. |
-| own | [int32](#int32) |  | The number of orders belonging to our local xud node. |
+| peer | [uint32](#uint32) |  | The number of orders belonging to remote xud nodes. |
+| own | [uint32](#uint32) |  | The number of orders belonging to our local xud node. |
 
 
 
@@ -656,7 +691,7 @@
 | inbound | [bool](#bool) |  | Indicates whether this peer was connected inbound. |
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
-| seconds_connected | [int32](#int32) |  | The time in seconds that we have been connected to this peer. |
+| seconds_connected | [uint32](#uint32) |  | The time in seconds that we have been connected to this peer. |
 | raiden_address | [string](#string) |  | The raiden address for this peer |
 
 
@@ -707,10 +742,10 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | price | [double](#double) |  | The price of the order. |
-| quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
+| quantity | [uint64](#uint64) |  | The quantity of the order denominated in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
-| side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a Buy or Sell. |
+| side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a buy or sell. |
 
 
 
@@ -745,7 +780,7 @@
 | ----- | ---- | ----- | ----------- |
 | error | [string](#string) |  |  |
 | address | [string](#string) |  |  |
-| channels | [int32](#int32) |  |  |
+| channels | [uint32](#uint32) |  |  |
 | version | [string](#string) |  |  |
 
 
@@ -787,7 +822,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | order_id | [string](#string) |  | The local id of the order to remove. |
-| quantity | [uint64](#uint64) |  | The quantity to remove from the order. If zero or unspecified then entire order is removed. |
+| quantity | [uint64](#uint64) |  | The quantity to remove from the order denominated in satoshis. If zero or unspecified then the entire order is removed. |
 
 
 
@@ -914,7 +949,7 @@
 | order_id | [string](#string) |  | The global UUID for the order that was swapped. |
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [uint64](#uint64) |  | The order quantity that was swapped. |
-| r_hash | [string](#string) |  | The hex-encoded payment hash for the swaps. |
+| r_hash | [string](#string) |  | The hex-encoded payment hash for the swap. |
 | amount_received | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) received. |
 | amount_sent | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) sent. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
@@ -948,6 +983,31 @@
 <a name="xudrpc.UnbanResponse"></a>
 
 ### UnbanResponse
+
+
+
+
+
+
+
+<a name="xudrpc.UnlockNodeRequest"></a>
+
+### UnlockNodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| password | [string](#string) |  | The password in utf-8 with which to unlock an existing xud node key as well as underlying client wallets such as lnd. |
+
+
+
+
+
+
+<a name="xudrpc.UnlockNodeResponse"></a>
+
+### UnlockNodeResponse
 
 
 
@@ -1022,11 +1082,22 @@
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Execute a swap on a maker peer order |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
-| DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer. Apply new connection and return the list. |
+| DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
+
+
+<a name="xudrpc.XudInit"></a>
+
+### XudInit
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) |  |
+| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) |  |
 
  
 
