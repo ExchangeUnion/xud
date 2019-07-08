@@ -10,11 +10,11 @@ import { Models } from '../db/DB';
 import { SwapClientType } from '../constants/enums';
 import { EventEmitter } from 'events';
 
-function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
+export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
 }
 
-function isLndClient(swapClient: SwapClient): swapClient is LndClient {
+export function isLndClient(swapClient: SwapClient): swapClient is LndClient {
   return (swapClient.type === SwapClientType.Lnd);
 }
 

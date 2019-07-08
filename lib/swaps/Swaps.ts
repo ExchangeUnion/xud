@@ -12,7 +12,7 @@ import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
-import SwapClientManager from './SwapClientManager';
+import SwapClientManager, { isRaidenClient } from './SwapClientManager';
 import { errors } from './errors';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
@@ -444,6 +444,29 @@ class Swaps extends EventEmitter {
     const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
       Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, requestBody.pairId);
 
+    const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
+    if (!makerSwapClient) {
+      await this.sendErrorToPeer({
+        peer,
+        rHash,
+        failureReason: SwapFailureReason.SwapClientNotSetup,
+        errorMessage: 'Unsupported maker currency',
+        reqId: requestPacket.header.id,
+      });
+      return false;
+    }
+
+    if (isRaidenClient(makerSwapClient)) {
+      await this.sendErrorToPeer({
+        peer,
+        rHash,
+        failureReason: SwapFailureReason.InvalidSwapRequest,
+        errorMessage: 'Raiden based tokens can not be first leg',
+        reqId: requestPacket.header.id,
+      });
+      return false;
+    }
+
     const takerSwapClient = this.swapClientManager.get(takerCurrency);
     if (!takerSwapClient) {
       await this.sendErrorToPeer({
@@ -571,7 +594,6 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
     try {
       await makerSwapClient.addInvoice(deal.rHash, deal.makerUnits, deal.makerCltvDelta);
     } catch (err) {
@@ -694,12 +716,16 @@ class Swaps extends EventEmitter {
     let expectedAmount: number;
     let source: string;
     let destination: string;
-
+    // TODO: check cltv value
     switch (deal.role) {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         source = 'Taker';
         destination = 'Maker';
+        if (deal.makerCltvDelta! > 50 * 2) {
+          this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Wrong CLTV received on first leg');
+          return false;
+        }
         break;
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
