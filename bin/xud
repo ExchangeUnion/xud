@@ -143,6 +143,11 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'p',
     },
+    'raiden.cltvdelta': {
+      describe: 'CLTV delta for the final timelock',
+      type: 'boolean',
+      default: undefined,
+    },
     'raiden.disable': {
       describe: 'Disable raiden integration',
       type: 'boolean',

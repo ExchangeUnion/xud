@@ -48,6 +48,8 @@ abstract class SwapClient extends EventEmitter {
     super();
   }
 
+  public abstract get minutesPerBlock(): number;
+
   /**
    * Returns the total balance available across all channels.
    * @param currency the currency whose balance to query for, otherwise all/any

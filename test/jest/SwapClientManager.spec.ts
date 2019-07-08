@@ -111,6 +111,7 @@ describe('Swaps.SwapClientManager', () => {
       disable: false,
       host: 'localhost',
       port: 1234,
+      cltvdelta: 5760,
     };
     config.debug = {
       raidenDirectChannelChecks: true,

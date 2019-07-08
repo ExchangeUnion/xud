@@ -75,6 +75,7 @@ describe('RaidenClient', () => {
       disable: false,
       host: '127.0.0.1',
       port: 1234,
+      cltvdelta: 5760,
     };
     raidenLogger = new Logger({});
     raidenLogger.info = jest.fn();

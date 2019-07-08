@@ -241,6 +241,12 @@ describe('Swaps', () => {
         { getTotalTimeLock: () => 1543845 },
       ]);
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
+      Object.defineProperty(lndBtc, 'minutesPerBlock', {
+        get: () => { return 10; },
+      });
+      Object.defineProperty(lndLtc, 'minutesPerBlock', {
+        get: () => { return 2.5; },
+      });
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
           return lndBtc;

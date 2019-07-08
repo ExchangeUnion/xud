@@ -102,4 +102,7 @@ export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number,
   rHash: string,
+  tokenAddress: string,
+  /** The number of blocks before the HTLC expires. */
+  cltvDelta: number,
 };

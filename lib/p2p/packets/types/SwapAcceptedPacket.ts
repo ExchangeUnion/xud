@@ -7,6 +7,7 @@ export type SwapAcceptedPacketBody = {
   rHash: string;
   /** Specifies the accepted quantity (which may be less than the proposed quantity). */
   quantity: number;
+  /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
   makerCltvDelta: number;
 };
 

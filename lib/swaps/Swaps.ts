@@ -12,7 +12,7 @@ import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
-import SwapClientManager, { isRaidenClient } from './SwapClientManager';
+import SwapClientManager from './SwapClientManager';
 import { errors } from './errors';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
@@ -466,17 +466,6 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (isRaidenClient(makerSwapClient)) {
-      await this.sendErrorToPeer({
-        peer,
-        rHash,
-        failureReason: SwapFailureReason.InvalidSwapRequest,
-        errorMessage: 'Raiden based tokens can not be first leg',
-        reqId: requestPacket.header.id,
-      });
-      return false;
-    }
-
     const takerSwapClient = this.swapClientManager.get(takerCurrency);
     if (!takerSwapClient) {
       await this.sendErrorToPeer({
@@ -572,7 +561,7 @@ class Swaps extends EventEmitter {
     }
 
     if (height) {
-      this.logger.debug(`got block height of ${height}`);
+      this.logger.debug(`got block height of ${height} for ${takerCurrency}`);
 
       const routeTotalTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
       this.logger.debug(`choosing a route with total time lock of ${routeTotalTimeLock}`);
@@ -581,13 +570,15 @@ class Swaps extends EventEmitter {
 
       const makerClientCltvDelta = this.swapClientManager.get(makerCurrency)!.cltvDelta;
       this.logger.debug(`maker client CLTV delta: ${makerClientCltvDelta}`);
-      const takerClientCltvDelta = this.swapClientManager.get(takerCurrency)!.cltvDelta;
-      this.logger.debug(`taker client CLTV delta: ${takerClientCltvDelta}`);
 
-      // cltvDelta can't be zero for swap clients (checked in constructor)
-      const cltvDeltaFactor = makerClientCltvDelta / takerClientCltvDelta;
+      /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
+      const cltvDeltaFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
       this.logger.debug(`CLTV delta factor: ${cltvDeltaFactor}`);
 
+      // Here we calculate the minimum CLTV delay the maker will expect on the final hop to him on
+      // the first leg of the swap. This is equal to the maker's configurable cltvDelta plus the
+      // total delay of the taker route times a factor to convert taker blocks to maker blocks.
+      // This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
       deal.makerCltvDelta = makerClientCltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
       this.logger.debug(`makerCltvDelta: ${deal.makerCltvDelta}`);
     }
@@ -656,7 +647,7 @@ class Swaps extends EventEmitter {
     clearTimeout(this.timeouts.get(rHash));
     this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
 
-    // update deal with taker's makerCltvDelta
+    // update deal with maker's cltv delta
     deal.makerCltvDelta = makerCltvDelta;
 
     if (quantity) {
@@ -725,23 +716,30 @@ class Swaps extends EventEmitter {
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
-    const { amount } = resolveRequest;
+    const { amount, tokenAddress, cltvDelta } = resolveRequest;
     let expectedAmount: number;
+    let expectedTokenAddress: string | undefined;
     let source: string;
     let destination: string;
     // TODO: check cltv value
     switch (deal.role) {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
+        expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
-        if (deal.makerCltvDelta! > 50 * 2) {
-          this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Wrong CLTV received on first leg');
-          return false;
+        if (deal.makerCltvDelta! > expiration) {
+          // temporary code to relax the lock time check for raiden
+          this.logger.warn(`lock expiration of ${expiration} does not meet ${deal.makerCltvDelta} minimum for ${deal.rHash}`);
+          // end temp code
+          // this.logger.error(`cltvDelta of ${expiration} does not meet ${deal.makerCltvDelta!} minimum`);
+          // this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
+          // return false;
         }
         break;
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
+        expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.takerCurrency);
         source = 'Maker';
         destination = 'Taker';
         break;
@@ -749,6 +747,12 @@ class Swaps extends EventEmitter {
         // this case should never happen, something is very wrong if so.
         this.failDeal(deal, SwapFailureReason.UnknownError, 'Unknown role detected for swap deal');
         return false;
+    }
+
+    if (!expectedTokenAddress || tokenAddress.toLowerCase() !== expectedTokenAddress.toLowerCase()) {
+      this.logger.error(`received token address ${tokenAddress}, expected ${expectedTokenAddress}`);
+      this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, `Token address ${tokenAddress} did not match ${expectedTokenAddress}`);
+      return false;
     }
 
     if (amount < expectedAmount) {
@@ -867,6 +871,7 @@ class Swaps extends EventEmitter {
       // we treat responding to a resolve request as having received payment and persist the state
       await this.setDealPhase(deal, SwapPhase.PaymentReceived);
 
+      this.logger.debug(`handleResolveRequest returning preimage ${preimage} for hash ${rHash}`);
       return preimage;
     } catch (err) {
       this.logger.error(err.message);

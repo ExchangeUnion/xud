@@ -127,6 +127,7 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 5001,
+      cltvdelta: 5760,
     };
   }
 
