@@ -32,16 +32,20 @@ export type SwapDeal = {
   quantity?: number;
   /** The trading pair for the swap. The pairId together with the orderId are needed to find the maker order in the order book. */
   pairId: string;
-  /** The number of satoshis (or equivalent) the taker is expecting to receive. */
+  /** The amount the taker is expecting to receive denominated in satoshis. */
   takerAmount: number;
+  /** The number of the smallest base units of the currency (like satoshis or wei) the maker is expecting to receive. */
+  takerUnits: number;
   /** The currency the taker is expecting to receive. */
   takerCurrency: string;
   /** Taker's lnd pubkey on the taker currency's network. */
   takerPubKey?: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to taker. */
   takerCltvDelta: number;
-  /** The number of satoshis (or equivalent) the maker is expecting to receive. */
+  /** The amount the maker is expecting to receive denominated in satoshis. */
   makerAmount: number;
+  /** The number of the smallest base units of the currency (like satoshis or wei) the maker is expecting to receive. */
+  makerUnits: number;
   /** The currency the maker is expecting to receive. */
   makerCurrency: string;
   /** The CLTV delta from the current height that should be used to set the timelock for the final hop when sending to maker. */
@@ -63,9 +67,9 @@ export type SwapDeal = {
 
 /** The result of a successful swap. */
 export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'> & {
-  /** The amount of satoshis (or equivalent) received. */
+  /** The amount received denominated in satoshis. */
   amountReceived: number;
-  /** The amount of satoshis (or equivalent) sent. */
+  /** The amount sent denominated in satoshis. */
   amountSent: number;
   /** The ticker symbol of the currency received. */
   currencyReceived: string;

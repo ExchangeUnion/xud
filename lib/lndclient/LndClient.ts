@@ -312,11 +312,11 @@ class LndClient extends SwapClient {
       if (deal.role === SwapRole.Taker) {
         // we are the taker paying the maker
         request.setFinalCltvDelta(deal.makerCltvDelta!);
-        request.setAmt(deal.makerAmount);
+        request.setAmt(deal.makerUnits);
       } else {
         // we are the maker paying the taker
         request.setFinalCltvDelta(deal.takerCltvDelta);
-        request.setAmt(deal.takerAmount);
+        request.setAmt(deal.takerUnits);
       }
 
       try {

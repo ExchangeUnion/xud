@@ -173,7 +173,7 @@ class OrderBook extends EventEmitter {
       }
     });
     this.swaps.on('swap.failed', (deal) => {
-      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingAmount)) {
+      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingPayment)) {
         // if our order is the maker and the swap failed after it was agreed to but before it was executed
         // we must release the hold on the order that we set when we agreed to the deal
         this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -376,13 +376,13 @@ class OrderBook extends EventEmitter {
 
     if (!this.nobalancechecks) {
       // check if sufficient outbound channel capacity exists
-      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const { outboundCurrency, outboundUnits } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
       const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
       if (!swapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      if (outboundAmount > swapClient.maximumOutboundCapacity) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, swapClient.maximumOutboundCapacity);
+      if (outboundUnits > swapClient.maximumOutboundCapacity) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundUnits, swapClient.maximumOutboundCapacity);
       }
     }
 

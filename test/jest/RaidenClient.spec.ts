@@ -29,6 +29,8 @@ const getValidDeal = () => {
     quantity: 10000,
     makerAmount: 10000,
     takerAmount: 1000,
+    makerUnits: 10000,
+    takerUnits: 1000,
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
     destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
