@@ -8,7 +8,7 @@ class SwapRepository {
 
   public getSwapDeals = (order = false): Bluebird<db.SwapDealInstance[]> => {
     if (order) {
-      return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order], order: [['createdAt', 'DESC']] });
+      return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order], order: [['createTime', 'DESC']] });
     } else {
       return this.models.SwapDeal.findAll({ include: [this.models.Node, this.models.Order] });
     }

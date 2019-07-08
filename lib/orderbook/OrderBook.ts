@@ -199,7 +199,13 @@ class OrderBook extends EventEmitter {
    * @param { string } orderId  - order id
    */
   public getOrder = async (orderId: string) => {
-    return this.repository.getOrder(orderId);
+    let order: Order | undefined;
+
+    this.tradingPairs.forEach((tp) => {
+      order = order || tp.getOwnOrder(orderId);
+    });
+
+    return order || this.repository.getOrder(orderId);
   }
 
   /**

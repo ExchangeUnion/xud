@@ -105,6 +105,31 @@ describe('API Service', () => {
     expect(order.id).to.equal(orderId);
   });
 
+  it('should list order history with a trade', async () => {
+    const { status, trades, swapDeals } = await service.listOrderHistory({ orderId: orderId! });
+
+    expect(status).to.equal(2);
+    expect(trades).to.eql([]);
+    expect(swapDeals).to.eql([]);
+  });
+
+  it('should list order history with a trade', async () => {
+    await service.placeOrder({
+      pairId,
+      orderId: '2',
+      price: 100,
+      quantity: 0.1,
+      side: OrderSide.Sell,
+    });
+
+    const { status, trades, swapDeals } = await service.listOrderHistory({ orderId: orderId! });
+
+    expect(status).to.equal(1);
+    expect(swapDeals).to.eql([]);
+    expect(trades.length).to.equal(1);
+    expect(trades[0].quantity).to.equal(0.1);
+  });
+
   it('should remove an order', () => {
     const tp = xud['orderBook'].tradingPairs.get('LTC/BTC')!;
     expect(tp.ownOrders.buyMap.has(orderId!)).to.be.true;
