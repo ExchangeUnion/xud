@@ -44,8 +44,10 @@ abstract class SwapClient extends EventEmitter {
 
   /**
    * Returns the total balance available across all channels.
+   * @param currency the currency whose balance to query for, otherwise all/any
+   * currencies supported by this client are included in the balance.
    */
-  public abstract channelBalance(): Promise<ChannelBalance>;
+  public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);

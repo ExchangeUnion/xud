@@ -16,6 +16,45 @@ const getValidTokenPaymentResponse = () => {
   };
 };
 
+const channelBalance1 = 25000000;
+const channelBalance2 = 5000000;
+const channelBalanceTokenAddress = '0xEA674fdDe714fd979de3EdF0F56AA9716B898ec8';
+const getChannelsResponse = [
+  {
+    token_network_identifier: '0xE5637F0103794C7e05469A9964E4563089a5E6f2',
+    channel_identifier: 1,
+    partner_address: '0x61C808D82A3Ac53231750daDc13c777b59310bD9',
+    token_address: channelBalanceTokenAddress,
+    balance: channelBalance1,
+    total_deposit: 35000000,
+    state: 'opened',
+    settle_timeout: 100,
+    reveal_timeout: 30,
+  },
+  {
+    token_network_identifier: '0xE5637F0103794C7e05469A9964E4563089a5E6f2',
+    channel_identifier: 2,
+    partner_address: '0x2A4722462bb06511b036F00C7EbF938B2377F446',
+    token_address: channelBalanceTokenAddress,
+    balance: channelBalance2,
+    total_deposit: 35000000,
+    state: 'opened',
+    settle_timeout: 100,
+    reveal_timeout: 30,
+  },
+  {
+    token_network_identifier: '0xE5637F0103794C7e05469A9964E4563089a5E6f2',
+    channel_identifier: 3,
+    partner_address: '0x3b1c3C1568C848b3C12c88e2aF5E5CAa0b62071A',
+    token_address: channelBalanceTokenAddress,
+    balance: 1000000,
+    total_deposit: 35000000,
+    state: 'closed',
+    settle_timeout: 100,
+    reveal_timeout: 30,
+  },
+];
+
 const getValidDeal = () => {
   return {
     proposedQuantity: 10000,
@@ -29,6 +68,8 @@ const getValidDeal = () => {
     quantity: 10000,
     makerAmount: 10000,
     takerAmount: 1000,
+    makerUnits: 10000,
+    takerUnits: 1000,
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
     destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
@@ -91,4 +132,12 @@ describe('RaidenClient', () => {
       .rejects.toMatchSnapshot();
   });
 
+  test('channelBalance calculates the total balance of open channels for a currency', async () => {
+    raiden = new RaidenClient(config, raidenLogger);
+    await raiden.init();
+    raiden.tokenAddresses.get = jest.fn().mockReturnValue(channelBalanceTokenAddress);
+    raiden['getChannels'] = jest.fn()
+        .mockReturnValue(Promise.resolve(getChannelsResponse));
+    await expect(raiden.channelBalance('ABC')).resolves.toHaveProperty('balance', channelBalance1 + channelBalance2);
+  });
 });

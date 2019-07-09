@@ -603,10 +603,10 @@ message SwapSuccess {
   uint64 quantity = 4 [json_name = "quantity"];
   // The hex-encoded payment hash for the swap.
   string r_hash = 5 [json_name = "r_hash"];
-  // The amount of the smallest base unit of the currency (like satoshis or wei) received.
-  int64 amount_received = 8 [json_name = "amount_received"];
-  // The amount of the smallest base unit of the currency (like satoshis or wei) sent.
-  int64 amount_sent = 9 [json_name = "amount_sent"];
+  // The amount received denominated in satoshis.
+  uint64 amount_received = 8 [json_name = "amount_received"];
+  // The amount sent denominated in satoshis.
+  uint64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
   string peer_pub_key = 10 [json_name = "peer_pub_key"];
   enum Role {

@@ -950,8 +950,8 @@
 | pair_id | [string](#string) |  | The trading pair that the swap is for. |
 | quantity | [uint64](#uint64) |  | The order quantity that was swapped. |
 | r_hash | [string](#string) |  | The hex-encoded payment hash for the swap. |
-| amount_received | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) received. |
-| amount_sent | [int64](#int64) |  | The amount of the smallest base unit of the currency (like satoshis or wei) sent. |
+| amount_received | [uint64](#uint64) |  | The amount received denominated in satoshis. |
+| amount_sent | [uint64](#uint64) |  | The amount sent denominated in satoshis. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
 | role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
