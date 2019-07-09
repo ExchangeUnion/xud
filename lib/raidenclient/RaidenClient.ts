@@ -14,6 +14,7 @@ import {
   TokenPaymentResponse,
 } from './types';
 import { UnitConverter } from '../utils/UnitConverter';
+import { CurrencyInstance } from '../db/types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -49,6 +50,7 @@ class RaidenClient extends SwapClient {
   private host: string;
   private disable: boolean;
   private unitConverter: UnitConverter;
+  private maximumOutboundAmounts = new Map<string, number>();
 
   /**
    * Creates a raiden client.
@@ -69,12 +71,48 @@ class RaidenClient extends SwapClient {
   /**
    * Checks for connectivity and gets our Raiden account address
    */
-  public init = async () => {
+  public init = async (currencyInstances: CurrencyInstance[]) => {
     if (this.disable) {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
+    this.setTokenAddresses(currencyInstances);
     await this.verifyConnection();
+  }
+
+  /**
+   * Associate raiden with currencies that have a token address
+   */
+  private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
+    currencyInstances.forEach((currency) => {
+      if (currency.tokenAddress) {
+        this.tokenAddresses.set(currency.id, currency.tokenAddress);
+      }
+    });
+  }
+
+  public maximumOutboundCapacity = (currency: string): number => {
+    return this.maximumOutboundAmounts.get(currency) || 0;
+  }
+
+  protected updateCapacity = async () => {
+    try {
+      const channelBalancePromises = [];
+      for (const [currency] of this.tokenAddresses) {
+        const channelBalancePromise = this.channelBalance(currency)
+          .then((balance) => {
+            return { ...balance, currency };
+          });
+        channelBalancePromises.push(channelBalancePromise);
+      }
+      const channelBalances = await Promise.all(channelBalancePromises);
+      channelBalances.forEach(({ currency, balance }) => {
+        this.maximumOutboundAmounts.set(currency, balance);
+      });
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalances: ${e}`);
+    }
   }
 
   protected verifyConnection = async () => {

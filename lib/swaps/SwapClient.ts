@@ -33,7 +33,6 @@ interface SwapClient {
 abstract class SwapClient extends EventEmitter {
   public abstract readonly cltvDelta: number;
   public abstract readonly type: SwapClientType;
-  public maximumOutboundCapacity = 0;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
@@ -53,6 +52,8 @@ abstract class SwapClient extends EventEmitter {
    * currencies supported by this client are included in the balance.
    */
   public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
+  public abstract maximumOutboundCapacity(currency?: string): number;
+  protected abstract updateCapacity(): Promise<void>;
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
@@ -83,15 +84,6 @@ abstract class SwapClient extends EventEmitter {
           this.reconnectionTimer.refresh();
         }
       }
-    }
-  }
-
-  private updateCapacity = async () => {
-    try {
-      this.maximumOutboundCapacity = (await this.channelBalance()).balance;
-    } catch (e) {
-      // TODO: Mark client as disconnected
-      this.logger.error(`failed to fetch channelbalance from client: ${e}`);
     }
   }
 

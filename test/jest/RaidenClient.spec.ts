@@ -3,6 +3,7 @@ import { RaidenClientConfig, TokenPaymentResponse } from '../../lib/raidenclient
 import Logger from '../../lib/Logger';
 import { SwapDeal } from '../../lib/swaps/types';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
+import { CurrencyInstance } from '../../lib/db/types';
 
 const getValidTokenPaymentResponse = () => {
   return {
@@ -84,6 +85,11 @@ const getValidDeal = () => {
   };
 };
 
+const wethTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
+const currencyInstances = [
+  { id: 'WETH', tokenAddress: wethTokenAddress },
+];
+
 jest.mock('../../lib/Logger');
 describe('RaidenClient', () => {
   let raiden: RaidenClient;
@@ -112,7 +118,7 @@ describe('RaidenClient', () => {
   describe('sendPayment', () => {
     test('it removes 0x from secret', async () => {
       raiden = new RaidenClient({ unitConverter, config, logger: raidenLogger });
-      await raiden.init();
+      await raiden.init(currencyInstances as CurrencyInstance[]);
       const validTokenPaymentResponse: TokenPaymentResponse = getValidTokenPaymentResponse();
       raiden['tokenPayment'] = jest.fn()
           .mockReturnValue(Promise.resolve(validTokenPaymentResponse));
@@ -124,7 +130,7 @@ describe('RaidenClient', () => {
 
     test('it rejects in case of empty secret response', async () => {
       raiden = new RaidenClient({ unitConverter, config, logger: raidenLogger });
-      await raiden.init();
+      await raiden.init(currencyInstances as CurrencyInstance[]);
       const invalidTokenPaymentResponse: TokenPaymentResponse = {
         ...getValidTokenPaymentResponse(),
         secret: '',
@@ -152,7 +158,7 @@ describe('RaidenClient', () => {
     test('it fails when tokenAddress for currency not found', async () => {
       expect.assertions(1);
       raiden = new RaidenClient({ unitConverter, config, logger: raidenLogger });
-      await raiden.init();
+      await raiden.init([] as CurrencyInstance[]);
       try {
         await raiden.openChannel({
           units,
@@ -170,13 +176,12 @@ describe('RaidenClient', () => {
       const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
       const currency = 'WETH';
       const mockTokenAddresses = new Map<string, string>();
-      const wethTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
       mockTokenAddresses.set('WETH', wethTokenAddress);
       raiden.tokenAddresses = mockTokenAddresses;
       raiden['openChannelRequest'] = jest.fn().mockImplementation(() => {
         throw new Error('openChannelRequest error');
       });
-      await raiden.init();
+      await raiden.init(currencyInstances as CurrencyInstance[]);
       try {
         await raiden.openChannel({
           units,
@@ -194,11 +199,10 @@ describe('RaidenClient', () => {
       const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
       const currency = 'WETH';
       const mockTokenAddresses = new Map<string, string>();
-      const wethTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
       mockTokenAddresses.set('WETH', wethTokenAddress);
       raiden.tokenAddresses = mockTokenAddresses;
       raiden['openChannelRequest'] = jest.fn().mockReturnValue(Promise.resolve());
-      await raiden.init();
+      await raiden.init(currencyInstances as CurrencyInstance[]);
       await raiden.openChannel({
         units,
         currency,
@@ -216,7 +220,7 @@ describe('RaidenClient', () => {
 
   test('channelBalance calculates the total balance of open channels for a currency', async () => {
     raiden = new RaidenClient({ unitConverter, config, logger: raidenLogger });
-    await raiden.init();
+    await raiden.init(currencyInstances as CurrencyInstance[]);
     raiden.tokenAddresses.get = jest.fn().mockReturnValue(channelBalanceTokenAddress);
     raiden['getChannels'] = jest.fn()
         .mockReturnValue(Promise.resolve(getChannelsResponse));

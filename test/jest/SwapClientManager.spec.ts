@@ -129,8 +129,6 @@ describe('Swaps.SwapClientManager', () => {
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
     expect(swapClientManager.get('WETH')).not.toBeUndefined();
-    expect(swapClientManager.raidenClient.tokenAddresses.size).toEqual(1);
-    expect(swapClientManager.raidenClient.tokenAddresses.get('WETH')).not.toBeUndefined();
     swapClientManager.remove('WETH');
     expect(swapClientManager['swapClients'].size).toEqual(2);
     const lndClients = swapClientManager.getLndClientsMap();
