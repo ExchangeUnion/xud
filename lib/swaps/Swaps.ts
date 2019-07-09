@@ -961,7 +961,7 @@ class Swaps extends EventEmitter {
       const wasMaker = deal.role === SwapRole.Maker;
       const swapSuccess = {
         orderId: deal.orderId,
-        localId: deal.localId,
+        localId: wasMaker ? deal.localId : '',
         pairId: deal.pairId,
         quantity: deal.quantity!,
         amountReceived: wasMaker ? deal.makerAmount : deal.takerAmount,
