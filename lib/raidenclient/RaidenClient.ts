@@ -41,6 +41,12 @@ class RaidenClient extends SwapClient {
   private host: string;
   private disable: boolean;
 
+  // TODO: Populate the mapping from the database (Currency.decimalPlaces).
+  private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
+    WETH: 10 ** 10,
+    DAI: 10 ** 10,
+  };
+
   /**
    * Creates a raiden client.
    */
@@ -273,14 +279,18 @@ class RaidenClient extends SwapClient {
   }
 
   /**
-   * Returns the total balance available across all channels.
+   * Returns the total balance available across all channels for a specified currency.
    */
-  public channelBalance = async (): Promise<ChannelBalance> => {
-    // TODO: refine logic to determine balance per token rather than all combined
-    const channels = await this.getChannels();
+  public channelBalance = async (currency?: string): Promise<ChannelBalance> => {
+    if (!currency) {
+      return { balance: 0, pendingOpenBalance: 0 };
+    }
+
+    const channels = await this.getChannels(this.tokenAddresses.get(currency));
     const balance = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
-      .reduce((acc, sum) => sum + acc, 0);
+      .reduce((sum, acc) => sum + acc, 0)
+      / (RaidenClient.UNITS_PER_CURRENCY[currency] || 1);
     return { balance, pendingOpenBalance: 0 };
   }
 

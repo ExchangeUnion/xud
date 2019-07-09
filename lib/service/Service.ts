@@ -119,23 +119,27 @@ class Service {
   public channelBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
-    const getBalance = async (currency: string) => {
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const channelBalance = await swapClient.channelBalance();
-        return channelBalance;
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
-    };
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
-      balances.set(currency, await getBalance(currency));
-    } else {
-      for (const currency of this.orderBook.currencies) {
-        balances.set(currency, await getBalance(currency));
+
+      const swapClient = this.swapClientManager.get(currency.toUpperCase());
+      if (swapClient) {
+        const channelBalance = await swapClient.channelBalance(currency);
+        balances.set(currency, channelBalance);
+      } else {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
+    } else {
+      const balancePromises: Promise<any>[] = [];
+      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+        if (swapClient.isConnected()) {
+          balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
+            balances.set(currency, channelBalance);
+          }));
+        }
+      });
+      await Promise.all(balancePromises);
     }
 
     return balances;
