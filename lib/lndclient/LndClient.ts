@@ -32,6 +32,7 @@ interface LndClient {
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
 }
 
+const MAXFEE = 0.03;
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
@@ -319,7 +320,7 @@ class LndClient extends SwapClient {
         request.setAmt(deal.takerUnits);
       }
       const fee = new lndrpc.FeeLimit();
-      fee.setFixed(Math.round(0.001 * request.getAmt()));
+      fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
       request.setFeeLimit(fee);
 
       try {
@@ -418,7 +419,7 @@ class LndClient extends SwapClient {
     request.setNumRoutes(1);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
-    fee.setFixed(Math.round(0.001 * request.getAmt()));
+    fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
     request.setFeeLimit(fee);
 
     try {
