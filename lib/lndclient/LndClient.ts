@@ -318,6 +318,9 @@ class LndClient extends SwapClient {
         request.setFinalCltvDelta(deal.takerCltvDelta);
         request.setAmt(deal.takerUnits);
       }
+      const fee = new lndrpc.FeeLimit();
+      fee.setFixed(Math.round(0.001 * request.getAmt()));
+      request.setFeeLimit(fee);
 
       try {
         this.logger.debug(`executing sendPaymentSync -
@@ -414,6 +417,10 @@ class LndClient extends SwapClient {
     request.setFinalCltvDelta(finalCltvDelta);
     request.setNumRoutes(1);
     request.setPubKey(destination);
+    const fee = new lndrpc.FeeLimit();
+    fee.setFixed(Math.round(0.001 * request.getAmt()));
+    request.setFeeLimit(fee);
+
     try {
       const routes = (await this.queryRoutes(request)).getRoutesList();
       this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}, finalCltvDelta: ${finalCltvDelta}`);
