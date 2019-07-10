@@ -263,6 +263,23 @@
         ]
       }
     },
+    "/v1/openchannel": {
+      "post": {
+        "summary": "Opens a payment channel to a peer with the given node pub key for the specified amount and currency.",
+        "operationId": "OpenChannel",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcOpenChannelResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/orders": {
       "get": {
         "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
@@ -941,6 +958,9 @@
           "type": "string"
         }
       }
+    },
+    "xudrpcOpenChannelResponse": {
+      "type": "object"
     },
     "xudrpcOrder": {
       "type": "object",

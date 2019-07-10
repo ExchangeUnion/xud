@@ -194,6 +194,7 @@ describe('Parser', () => {
     pairs: [uuid()],
     raidenAddress: uuid(),
     lndPubKeys: { BTC: uuid(), LTC: uuid() },
+    lndUris: { BTC: [''], LTC: [''] },
     tokenIdentifiers: { BTC: 'bitcoin-testnet', LTC: 'litecoin-testnet' },
   };
 

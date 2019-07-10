@@ -259,6 +259,19 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.openChannel]]
+   */
+  public openChannel: grpc.handleUnaryCall<xudrpc.OpenChannelRequest, xudrpc.OpenChannelResponse> = async (call, callback) => {
+    try {
+      await this.service.openChannel(call.request.toObject());
+      const response = new xudrpc.OpenChannelResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.connect]]
    */
   public connect: grpc.handleUnaryCall<xudrpc.ConnectRequest, xudrpc.ConnectResponse> = async (call, callback) => {

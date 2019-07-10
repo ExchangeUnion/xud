@@ -94,6 +94,29 @@ export namespace Node {
     }
 }
 
+export class LndUris extends jspb.Message { 
+    clearLndUriList(): void;
+    getLndUriList(): Array<string>;
+    setLndUriList(value: Array<string>): void;
+    addLndUri(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): LndUris.AsObject;
+    static toObject(includeInstance: boolean, msg: LndUris): LndUris.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: LndUris, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): LndUris;
+    static deserializeBinaryFromReader(message: LndUris, reader: jspb.BinaryReader): LndUris;
+}
+
+export namespace LndUris {
+    export type AsObject = {
+        lndUriList: Array<string>,
+    }
+}
+
 export class NodeState extends jspb.Message { 
     clearAddressesList(): void;
     getAddressesList(): Array<Address>;
@@ -117,6 +140,10 @@ export class NodeState extends jspb.Message {
     clearTokenIdentifiersMap(): void;
 
 
+    getLndUrisMap(): jspb.Map<string, LndUris>;
+    clearLndUrisMap(): void;
+
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): NodeState.AsObject;
     static toObject(includeInstance: boolean, msg: NodeState): NodeState.AsObject;
@@ -136,6 +163,8 @@ export namespace NodeState {
         lndPubKeysMap: Array<[string, string]>,
 
         tokenIdentifiersMap: Array<[string, string]>,
+
+        lndUrisMap: Array<[string, LndUris.AsObject]>,
     }
 }
 

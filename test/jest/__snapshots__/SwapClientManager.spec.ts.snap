@@ -1,0 +1,12 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Swaps.SwapClientManager openChannel it fails lnd without lndUris 1`] = `[Error: unable to get lnd listening uris]`;
+
+exports[`Swaps.SwapClientManager openChannel it fails without peerSwapClientPubKey 1`] = `[Error: unable to get swap client pubKey for peer]`;
+
+exports[`Swaps.SwapClientManager openChannel it fails without swap client 1`] = `
+Object {
+  "code": "7.1",
+  "message": "swapClient for currency BTC not found",
+}
+`;

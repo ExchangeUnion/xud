@@ -9,6 +9,8 @@ import { Currency } from '../orderbook/types';
 import { Models } from '../db/DB';
 import { SwapClientType } from '../constants/enums';
 import { EventEmitter } from 'events';
+import Peer from '../p2p/Peer';
+import { UnitConverter } from '../utils/UnitConverter';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -18,11 +20,18 @@ export function isLndClient(swapClient: SwapClient): swapClient is LndClient {
   return (swapClient.type === SwapClientType.Lnd);
 }
 
+type LndUpdate = {
+  currency: string,
+  pubKey: string,
+  chain?: string,
+  uris?: string[],
+};
+
 interface SwapClientManager {
-  on(event: 'lndUpdate', listener: (currency: string, pubKey: string, chain?: string) => void): this;
+  on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
   on(event: 'raidenUpdate', listener: (tokenAddresses: Map<string, string>, address?: string) => void): this;
   on(event: 'htlcAccepted', listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void): this;
-  emit(event: 'lndUpdate', currency: string, pubKey: string, chain?: string): boolean;
+  emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
   emit(event: 'raidenUpdate', tokenAddresses: Map<string, string>, address?: string): boolean;
   emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
 }
@@ -35,10 +44,15 @@ class SwapClientManager extends EventEmitter {
   constructor(
     private config: Config,
     private loggers: Loggers,
+    private unitConverter: UnitConverter,
   ) {
     super();
 
-    this.raidenClient = new RaidenClient(config.raiden, loggers.raiden);
+    this.raidenClient = new RaidenClient({
+      unitConverter,
+      config: config.raiden,
+      logger: loggers.raiden,
+    });
   }
 
   /**
@@ -252,12 +266,52 @@ class SwapClientManager extends EventEmitter {
     await Promise.all(closePromises);
   }
 
+  /**
+   * Opens a payment channel.
+   * @param peer a peer to open the payment channel with.
+   * @param currency a currency for the payment channel.
+   * @param amount the size of the payment channel local balance
+   * @returns Nothing upon success, throws otherwise.
+   */
+  public openChannel = async (
+    { peer, amount, currency }:
+    { peer: Peer, amount: number, currency: string },
+  ): Promise<void> => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
+    if (!peerIdentifier) {
+      throw new Error('unable to get swap client pubKey for peer');
+    }
+    const units = this.unitConverter.amountToUnits({
+      amount,
+      currency,
+    });
+    if (isLndClient(swapClient)) {
+      const lndUris = peer.getLndUris(currency);
+      if (!lndUris) {
+        throw new Error('unable to get lnd listening uris');
+      }
+      await swapClient.openChannel({ peerIdentifier, units, lndUris });
+      return;
+    }
+    // fallback to raiden for all non-lnd currencies
+    await swapClient.openChannel({ peerIdentifier, units, currency });
+  }
+
   private bind = () => {
     for (const [currency, swapClient] of this.swapClients.entries()) {
       if (isLndClient(swapClient)) {
-        swapClient.on('connectionVerified', (newPubKey) => {
-          if (newPubKey) {
-            this.emit('lndUpdate', currency, newPubKey, swapClient.chain);
+        swapClient.on('connectionVerified', ({ newIdentifier, newUris }) => {
+          if (newIdentifier) {
+            this.emit('lndUpdate', {
+              currency,
+              uris: newUris,
+              pubKey: newIdentifier,
+              chain: swapClient.chain,
+            });
           }
         });
         // lnd clients emit htlcAccepted evented we must handle
@@ -270,9 +324,10 @@ class SwapClientManager extends EventEmitter {
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
     if (!this.raidenClient.isDisabled()) {
-      this.raidenClient.on('connectionVerified', (newAddress) => {
-        if (newAddress) {
-          this.emit('raidenUpdate', this.raidenClient.tokenAddresses, newAddress);
+      this.raidenClient.on('connectionVerified', (swapClientInfo) => {
+        const { newIdentifier } = swapClientInfo;
+        if (newIdentifier) {
+          this.emit('raidenUpdate', this.raidenClient.tokenAddresses, newIdentifier);
         }
       });
     }

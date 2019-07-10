@@ -117,6 +117,7 @@ class Pool extends EventEmitter {
       pairs: [],
       raidenAddress: '',
       lndPubKeys: {},
+      lndUris: {},
       tokenIdentifiers: {},
     };
 
@@ -222,8 +223,14 @@ class Pool extends EventEmitter {
    * Updates our lnd pub key and chain identifier for a given currency and sends a node state
    * update packet to currently connected peers to notify them of the change.
    */
-  public updateLndState = (currency: string, pubKey: string, chain?: string) => {
+  public updateLndState = (
+    { currency, pubKey, chain, uris }:
+    { currency: string, pubKey: string, chain?: string, uris?: string[] },
+  ) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    if (uris) {
+      this.nodeState.lndUris[currency] = uris;
+    }
     this.nodeState.tokenIdentifiers[currency] = chain;
     this.sendNodeStateUpdate();
   }

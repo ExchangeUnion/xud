@@ -5,7 +5,15 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import {
+  RaidenClientConfig,
+  RaidenInfo,
+  OpenChannelPayload,
+  Channel,
+  TokenPaymentRequest,
+  TokenPaymentResponse,
+} from './types';
+import { UnitConverter } from '../utils/UnitConverter';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -40,23 +48,22 @@ class RaidenClient extends SwapClient {
   private port: number;
   private host: string;
   private disable: boolean;
-
-  // TODO: Populate the mapping from the database (Currency.decimalPlaces).
-  private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
-    WETH: 10 ** 10,
-    DAI: 10 ** 10,
-  };
+  private unitConverter: UnitConverter;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger) {
+  constructor(
+    { config, logger, unitConverter }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter },
+  ) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
     this.disable = disable;
+    this.unitConverter = unitConverter;
   }
 
   /**
@@ -83,7 +90,7 @@ class RaidenClient extends SwapClient {
         this.address = newAddress;
       }
 
-      this.emit('connectionVerified', newAddress);
+      this.emit('connectionVerified', { newIdentifier: newAddress });
       await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -287,18 +294,41 @@ class RaidenClient extends SwapClient {
     }
 
     const channels = await this.getChannels(this.tokenAddresses.get(currency));
-    const balance = channels.filter(channel => channel.state === 'opened')
+    const units = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
-      .reduce((sum, acc) => sum + acc, 0)
-      / (RaidenClient.UNITS_PER_CURRENCY[currency] || 1);
+      .reduce((sum, acc) => sum + acc, 0);
+    const balance = this.unitConverter.unitsToAmount({
+      currency,
+      units,
+    });
     return { balance, pendingOpenBalance: 0 };
   }
 
   /**
    * Creates a payment channel.
+   */
+  public openChannel = async (
+    { peerIdentifier: peerAddress, units, currency }:
+    { peerIdentifier: string, units: number, currency: string },
+  ): Promise<void> => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+    await this.openChannelRequest({
+      partner_address: peerAddress,
+      token_address: tokenAddress,
+      total_deposit: units,
+      // TODO: The amount of blocks that the settle timeout should have
+      settle_timeout: 500,
+    });
+  }
+
+  /**
+   * Creates a payment channel request.
    * @returns The channel_address for the newly created channel.
    */
-  public openChannel = async (payload: OpenChannelPayload): Promise<string> => {
+  private openChannelRequest = async (payload: OpenChannelPayload): Promise<string> => {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'PUT', payload);
 

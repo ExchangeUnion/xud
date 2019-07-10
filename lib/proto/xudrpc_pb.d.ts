@@ -318,6 +318,52 @@ export namespace ChannelBalanceResponse {
     }
 }
 
+export class OpenChannelRequest extends jspb.Message { 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+    getAmount(): number;
+    setAmount(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OpenChannelRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: OpenChannelRequest): OpenChannelRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OpenChannelRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OpenChannelRequest;
+    static deserializeBinaryFromReader(message: OpenChannelRequest, reader: jspb.BinaryReader): OpenChannelRequest;
+}
+
+export namespace OpenChannelRequest {
+    export type AsObject = {
+        nodePubKey: string,
+        currency: string,
+        amount: number,
+    }
+}
+
+export class OpenChannelResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): OpenChannelResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: OpenChannelResponse): OpenChannelResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: OpenChannelResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): OpenChannelResponse;
+    static deserializeBinaryFromReader(message: OpenChannelResponse, reader: jspb.BinaryReader): OpenChannelResponse;
+}
+
+export namespace OpenChannelResponse {
+    export type AsObject = {
+    }
+}
+
 export class ConnectRequest extends jspb.Message { 
     getNodeUri(): string;
     setNodeUri(value: string): void;

@@ -19,6 +19,8 @@ export type NodeState = {
   raidenAddress: string;
   /** An object mapping currency symbols to lnd pub keys. */
   lndPubKeys: { [currency: string]: string | undefined };
+  /** An object mapping currency symbols to lnd listening uris */
+  lndUris: { [currency: string]: string[] | undefined };
   /** An object mapping currency symbols to token identifiers such as lnd chains or raiden token contract addresses. */
   tokenIdentifiers: { [currency: string]: string | undefined };
 };
