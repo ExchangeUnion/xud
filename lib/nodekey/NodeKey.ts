@@ -104,7 +104,7 @@ class NodeKey {
    * @param password an optional password parameter for encrypting the private key
    */
   public toFile = async (path: string, password?: string): Promise<void> => {
-    let buf: Buffer | CryptoJS.WordArray;
+    let buf: Buffer;
     if (password) {
       const iv = await randomBytes(NodeKey.ENCRYPTION_IV_LENGTH);
       const key = NodeKey.getCipherKey(password);
