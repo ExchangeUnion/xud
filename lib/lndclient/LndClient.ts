@@ -51,6 +51,7 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private maximumOutboundAmount = 0;
 
   /**
    * Creates an lnd client.
@@ -108,6 +109,19 @@ class LndClient extends SwapClient {
 
   public get chain() {
     return this.chainIdentifier;
+  }
+
+  public maximumOutboundCapacity = () => {
+    return this.maximumOutboundAmount;
+  }
+
+  protected updateCapacity = async () => {
+    try {
+      this.maximumOutboundAmount = (await this.channelBalance()).balance;
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalance: ${e}`);
+    }
   }
 
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
