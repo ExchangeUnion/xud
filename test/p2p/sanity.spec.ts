@@ -53,8 +53,8 @@ describe('P2P Sanity Tests', () => {
   let unusedPort: number;
 
   before(async () => {
-    nodeOneConfig = createConfig(1, 8855);
-    nodeTwoConfig = createConfig(2, 8856);
+    nodeOneConfig = createConfig(1, 0);
+    nodeTwoConfig = createConfig(2, 0);
 
     nodeOne = new Xud();
     nodeTwo = new Xud();

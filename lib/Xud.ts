@@ -64,6 +64,7 @@ class Xud extends EventEmitter {
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
     this.logger = loggers.global;
     this.logger.info('config loaded');
+
     try {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
