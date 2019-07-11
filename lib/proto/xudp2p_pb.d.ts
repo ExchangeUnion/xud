@@ -94,13 +94,30 @@ export namespace Node {
     }
 }
 
+export class LndUris extends jspb.Message { 
+    clearLndUriList(): void;
+    getLndUriList(): Array<string>;
+    setLndUriList(value: Array<string>): void;
+    addLndUri(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): LndUris.AsObject;
+    static toObject(includeInstance: boolean, msg: LndUris): LndUris.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: LndUris, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): LndUris;
+    static deserializeBinaryFromReader(message: LndUris, reader: jspb.BinaryReader): LndUris;
+}
+
+export namespace LndUris {
+    export type AsObject = {
+        lndUriList: Array<string>,
+    }
+}
+
 export class NodeState extends jspb.Message { 
-    getVersion(): string;
-    setVersion(value: string): void;
-
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
-
     clearAddressesList(): void;
     getAddressesList(): Array<Address>;
     setAddressesList(value: Array<Address>): void;
@@ -119,6 +136,14 @@ export class NodeState extends jspb.Message {
     clearLndPubKeysMap(): void;
 
 
+    getTokenIdentifiersMap(): jspb.Map<string, string>;
+    clearTokenIdentifiersMap(): void;
+
+
+    getLndUrisMap(): jspb.Map<string, LndUris>;
+    clearLndUrisMap(): void;
+
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): NodeState.AsObject;
     static toObject(includeInstance: boolean, msg: NodeState): NodeState.AsObject;
@@ -131,13 +156,15 @@ export class NodeState extends jspb.Message {
 
 export namespace NodeState {
     export type AsObject = {
-        version: string,
-        nodePubKey: string,
         addressesList: Array<Address.AsObject>,
         pairsList: Array<string>,
         raidenAddress: string,
 
         lndPubKeysMap: Array<[string, string]>,
+
+        tokenIdentifiersMap: Array<[string, string]>,
+
+        lndUrisMap: Array<[string, LndUris.AsObject]>,
     }
 }
 
@@ -310,22 +337,11 @@ export class NodeStateUpdatePacket extends jspb.Message {
     getId(): string;
     setId(value: string): void;
 
-    clearAddressesList(): void;
-    getAddressesList(): Array<Address>;
-    setAddressesList(value: Array<Address>): void;
-    addAddresses(value?: Address, index?: number): Address;
 
-    clearPairsList(): void;
-    getPairsList(): Array<string>;
-    setPairsList(value: Array<string>): void;
-    addPairs(value: string, index?: number): string;
-
-    getRaidenAddress(): string;
-    setRaidenAddress(value: string): void;
-
-
-    getLndPubKeysMap(): jspb.Map<string, string>;
-    clearLndPubKeysMap(): void;
+    hasNodeState(): boolean;
+    clearNodeState(): void;
+    getNodeState(): NodeState | undefined;
+    setNodeState(value?: NodeState): void;
 
 
     serializeBinary(): Uint8Array;
@@ -341,11 +357,7 @@ export class NodeStateUpdatePacket extends jspb.Message {
 export namespace NodeStateUpdatePacket {
     export type AsObject = {
         id: string,
-        addressesList: Array<Address.AsObject>,
-        pairsList: Array<string>,
-        raidenAddress: string,
-
-        lndPubKeysMap: Array<[string, string]>,
+        nodeState?: NodeState.AsObject,
     }
 }
 
@@ -368,6 +380,12 @@ export class SessionInitPacket extends jspb.Message {
     getNodeState(): NodeState | undefined;
     setNodeState(value?: NodeState): void;
 
+    getVersion(): string;
+    setVersion(value: string): void;
+
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): SessionInitPacket.AsObject;
@@ -386,6 +404,8 @@ export namespace SessionInitPacket {
         peerPubKey: string,
         ephemeralPubKey: string,
         nodeState?: NodeState.AsObject,
+        version: string,
+        nodePubKey: string,
     }
 }
 

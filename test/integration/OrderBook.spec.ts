@@ -13,6 +13,7 @@ import * as orders from '../../lib/orderbook/types';
 import { SwapClientType } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
 import sinon  from 'sinon';
+import Config from '../../lib/Config';
 
 const PAIR_ID = 'LTC/BTC';
 const currencies = PAIR_ID.split('/');
@@ -62,8 +63,10 @@ describe('OrderBook', () => {
   let db: DB;
   let swaps: Swaps;
   let orderBook: OrderBook;
+  let config: Config;
 
   before(async () => {
+    config = new Config();
     sandbox = sinon.createSandbox();
     db = new DB(loggers.db);
     await db.init();
@@ -76,8 +79,11 @@ describe('OrderBook', () => {
     orderBook = new OrderBook({
       pool,
       swaps,
+      thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,
+      nosanityswaps: true,
+      nobalancechecks: true,
     });
     await orderBook.init();
   });
@@ -158,6 +164,19 @@ describe('OrderBook', () => {
     await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
+  it('should place order with quantity higher than min quantity', async () => {
+    orderBook['thresholds'] = { minQuantity : 10000 };
+    const order: orders.OwnOrder = createOwnOrder(100, 1000000, false);
+
+    await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
+  });
+
+  it('should throw error if the order quantity exceeds min quantity', async () => {
+    const order: orders.OwnOrder = createOwnOrder(100, 100, false);
+
+    await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
+  });
+
   after(async () => {
     await db.close();
     sandbox.restore();
@@ -170,8 +189,10 @@ describe('nomatching OrderBook', () => {
   let pool: Pool;
   let swaps: Swaps;
   let orderBook: OrderBook;
+  let config: Config;
 
   before(async () => {
+    config = new Config();
     db = new DB(loggers.db);
     await db.init();
     sandbox = sinon.createSandbox();
@@ -184,9 +205,12 @@ describe('nomatching OrderBook', () => {
     orderBook = new OrderBook({
       pool,
       swaps,
+      thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,
       nomatching: true,
+      nosanityswaps: true,
+      nobalancechecks: true,
     });
     await orderBook.init();
   });

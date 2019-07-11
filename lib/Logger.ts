@@ -50,15 +50,34 @@ class Logger {
 
   private level: string;
   private context: Context;
+  private subcontext?: string;
   private logger?: winston.Logger;
+  private filename?: string;
   private instanceId: number;
+  private dateFormat?: string;
 
-  constructor({ level, filename, context, instanceId, disabled, dateFormat }:
-    {instanceId?: number, level?: string, filename?: string, context?: Context, disabled?: boolean, dateFormat?: string}) {
-
-    this.level = level || Level.Trace;
-    this.context = context || Context.Global;
-    this.instanceId = instanceId || 0;
+  constructor({
+    level = Level.Trace,
+    filename,
+    context = Context.Global,
+    subcontext,
+    instanceId = 0,
+    disabled,
+    dateFormat,
+  }: {
+    instanceId?: number,
+    level?: string,
+    filename?: string,
+    context?: Context,
+    subcontext?: string,
+    disabled?: boolean,
+    dateFormat?: string,
+  }) {
+    this.level = level;
+    this.context = context;
+    this.subcontext = subcontext;
+    this.instanceId = instanceId;
+    this.dateFormat = dateFormat;
 
     if (disabled) {
       return;
@@ -71,7 +90,8 @@ class Logger {
       }),
     ];
 
-    if (filename !== '') {
+    if (filename) {
+      this.filename = filename;
       transports.push(new winston.transports.File({
         filename,
         level: this.level,
@@ -100,14 +120,27 @@ class Logger {
     };
   }
 
+  public createSubLogger = (subcontext: string) => {
+    return new Logger({
+      subcontext,
+      instanceId: this.instanceId,
+      level: this.level,
+      filename: this.filename,
+      context: this.context,
+      disabled: this.logger === undefined,
+      dateFormat: this.dateFormat,
+    });
+  }
+
   private getLogFormat = (colorize: boolean, dateFormat?: string) => {
     const { format } = winston;
 
+    const context = this.subcontext ? `${this.context}-${this.subcontext}` : this.context;
     if (this.instanceId > 0) {
-      return format.printf(info => `${getTsString(dateFormat)} [${this.context}][${this.instanceId}] ` +
+      return format.printf(info => `${getTsString(dateFormat)} [${context}][${this.instanceId}] ` +
         `${this.getLevel(info.level, colorize)}: ${info.message}`);
     } else {
-      return format.printf(info => `${getTsString(dateFormat)} [${this.context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
+      return format.printf(info => `${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
     }
   }
 

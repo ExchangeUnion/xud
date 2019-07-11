@@ -1,10 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`RaidenClient sendPayment rejects in case of empty secret response 1`] = `
+exports[`RaidenClient openChannel it fails when tokenAddress for currency not found 1`] = `
+Object {
+  "code": "5.7",
+  "message": "raiden token address not found",
+}
+`;
+
+exports[`RaidenClient openChannel it throws when openChannel fails 1`] = `[Error: openChannelRequest error]`;
+
+exports[`RaidenClient sendPayment it rejects in case of empty secret response 1`] = `
 Object {
   "code": "5.8",
   "message": "raiden TokenPaymentResponse is invalid",
 }
 `;
 
-exports[`RaidenClient sendPayment removes 0x from secret 1`] = `"9f345e3751d8b7f38d34b7a3dd636a9d7a0c2f36d991615e6653501f30c6ec56"`;
+exports[`RaidenClient sendPayment it removes 0x from secret 1`] = `"9f345e3751d8b7f38d34b7a3dd636a9d7a0c2f36d991615e6653501f30c6ec56"`;

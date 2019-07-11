@@ -5,7 +5,15 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, ChannelEvent, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import {
+  RaidenClientConfig,
+  RaidenInfo,
+  OpenChannelPayload,
+  Channel,
+  TokenPaymentRequest,
+  TokenPaymentResponse,
+} from './types';
+import { UnitConverter } from '../utils/UnitConverter';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -33,23 +41,29 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly cltvDelta: number = 1;
+  public readonly cltvDelta: number = 5760;
   public address?: string;
+  /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
   private disable: boolean;
+  private unitConverter: UnitConverter;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger) {
+  constructor(
+    { config, logger, unitConverter }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter },
+  ) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
     this.disable = disable;
+    this.unitConverter = unitConverter;
   }
 
   /**
@@ -71,11 +85,12 @@ class RaidenClient extends SwapClient {
       /** The new raiden address value if different from the one we had previously. */
       let newAddress: string | undefined;
       if (this.address !== address) {
+        this.logger.debug(`address is ${newAddress}`);
         newAddress = address;
         this.address = newAddress;
       }
 
-      this.emit('connectionVerified', newAddress);
+      this.emit('connectionVerified', { newIdentifier: newAddress });
       await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -108,11 +123,11 @@ class RaidenClient extends SwapClient {
     let tokenAddress;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
-      amount = deal.takerAmount;
+      amount = deal.takerUnits;
       tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
     } else {
       // we are the taker paying the maker
-      amount = deal.makerAmount;
+      amount = deal.makerUnits;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
     }
     if (!tokenAddress) {
@@ -150,8 +165,9 @@ class RaidenClient extends SwapClient {
 
   public getRoutes =  async (_amount: number, _destination: string) => {
     // stub placeholder, query routes not currently implemented in raiden
+    // assume a fixed lock time of 100 Raiden's blocks
     return [{
-      getTotalTimeLock: () => 1,
+      getTotalTimeLock: () => 101,
     }];
   }
 
@@ -249,51 +265,70 @@ class RaidenClient extends SwapClient {
   }
 
   /**
-   * Queries for events tied to a specific channel.
-   */
-  public getChannelEvents = async (channel_address: string) => {
-    // TODO: specify a "from_block"  query argument to only get events since a specific block.
-    const endpoint = `events/channels/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<ChannelEvent[]>(res);
-  }
-
-  /**
    * Gets info about a given raiden payment channel.
+   * @param token_address the token address for the network to which the channel belongs
    * @param channel_address the address of the channel to query
    */
-  public getChannel = async (channel_address: string): Promise<Channel> => {
-    const endpoint = `channels/${channel_address}`;
+  public getChannel = async (token_address: string, channel_address: string): Promise<Channel> => {
+    const endpoint = `channels/${token_address}/${channel_address}`;
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<Channel>(res);
   }
 
   /**
    * Gets info about all non-settled channels.
+   * @param token_address an optional parameter to specify channels belonging to the specified token network
    */
-  public getChannels = async (): Promise<[Channel]> => {
-    const endpoint = 'channels';
+  public getChannels = async (token_address?: string): Promise<Channel[]> => {
+    const endpoint = token_address ? `channels/${token_address}` : 'channels';
     const res = await this.sendRequest(endpoint, 'GET');
     return parseResponseBody<[Channel]>(res);
   }
 
   /**
-   * Returns the total balance available across all channels.
+   * Returns the total balance available across all channels for a specified currency.
    */
-  public channelBalance = async (): Promise<ChannelBalance> => {
-    // TODO: refine logic to determine balance per token rather than all combined
-    const channels = await this.getChannels();
-    const balance = channels.filter(channel => channel.state === 'opened')
+  public channelBalance = async (currency?: string): Promise<ChannelBalance> => {
+    if (!currency) {
+      return { balance: 0, pendingOpenBalance: 0 };
+    }
+
+    const channels = await this.getChannels(this.tokenAddresses.get(currency));
+    const units = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
-      .reduce((acc, sum) => sum + acc, 0);
+      .reduce((sum, acc) => sum + acc, 0);
+    const balance = this.unitConverter.unitsToAmount({
+      currency,
+      units,
+    });
     return { balance, pendingOpenBalance: 0 };
   }
 
   /**
    * Creates a payment channel.
+   */
+  public openChannel = async (
+    { peerIdentifier: peerAddress, units, currency }:
+    { peerIdentifier: string, units: number, currency: string },
+  ): Promise<void> => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+    await this.openChannelRequest({
+      partner_address: peerAddress,
+      token_address: tokenAddress,
+      total_deposit: units,
+      // TODO: The amount of blocks that the settle timeout should have
+      settle_timeout: 500,
+    });
+  }
+
+  /**
+   * Creates a payment channel request.
    * @returns The channel_address for the newly created channel.
    */
-  public openChannel = async (payload: OpenChannelPayload): Promise<string> => {
+  private openChannelRequest = async (payload: OpenChannelPayload): Promise<string> => {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'PUT', payload);
 

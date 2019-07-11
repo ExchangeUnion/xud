@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto';
 import Parser from '../../lib/p2p/Parser';
 import { Packet, PacketType } from '../../lib/p2p/packets';
 import * as packets from '../../lib/p2p/packets/types';
-import { removeUndefinedProps } from '../../lib/utils/utils';
+import { removeUndefinedProps as removeUndefinedPropsTyped } from '../../lib/utils/utils';
 import { DisconnectionReason, SwapFailureReason, XuNetwork } from '../../lib/constants/enums';
 import uuid = require('uuid');
 import { Address, NodeState } from '../../lib/p2p/types';
@@ -13,6 +13,8 @@ import Network from '../../lib/p2p/Network';
 import Framer from '../../lib/p2p/Framer';
 import { errorCodes } from '../../lib/p2p/errors';
 import stringify = require('json-stable-stringify');
+
+const removeUndefinedProps = (obj: any): any => { return removeUndefinedPropsTyped(obj); };
 
 chai.use(chaiAsPromised);
 
@@ -188,16 +190,18 @@ describe('Parser', () => {
   }
 
   const nodeState: NodeState = {
-    version: '1.0.0',
-    nodePubKey: uuid(),
     addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
     pairs: [uuid()],
     raidenAddress: uuid(),
     lndPubKeys: { BTC: uuid(), LTC: uuid() },
+    lndUris: { BTC: [''], LTC: [''] },
+    tokenIdentifiers: { BTC: 'bitcoin-testnet', LTC: 'litecoin-testnet' },
   };
 
   const sessionInitPacketBody: SessionInitPacketBody = {
     nodeState,
+    version: '1.0.0',
+    nodePubKey: uuid(),
     sign: uuid(),
     peerPubKey: uuid(),
     ephemeralPubKey: uuid(),
@@ -217,12 +221,11 @@ describe('Parser', () => {
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, addresses: [] } }));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, BTC: undefined } }) }));
     testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, LTC: undefined } }) }));
+    testValidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, tokenIdentifiers: { ...nodeState.tokenIdentifiers, BTC: undefined } }) }));
     testInvalidPacket(new packets.SessionInitPacket(sessionInitPacketBody, uuid()));
     testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, sign: undefined })));
     testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, ephemeralPubKey: undefined })));
     testInvalidPacket(new packets.SessionInitPacket(removeUndefinedProps({ ...sessionInitPacketBody, peerPubKey: undefined })));
-    testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, nodePubKey: undefined }) }));
-    testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: removeUndefinedProps({ ...nodeState, version: undefined }) }));
     testInvalidPacket(new packets.SessionInitPacket({ ...sessionInitPacketBody, nodeState: { ...nodeState, addresses: [{} as Address] } }));
 
     const sessionAckPacketBody = { ephemeralPubKey: sessionInitPacketBody.ephemeralPubKey };
@@ -230,14 +233,14 @@ describe('Parser', () => {
     testInvalidPacket(new packets.SessionAckPacket(sessionAckPacketBody));
     testInvalidPacket(new packets.SessionAckPacket(removeUndefinedProps({ ...sessionAckPacketBody, ephemeralPubKey: undefined }), uuid()));
 
-    const { version, nodePubKey, ...nodeStateUpdate } = nodeState;
-    testValidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate));
-    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, pairs: [] }));
-    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [] }));
-    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndPubKeys: { ...nodeStateUpdate.lndPubKeys, BTC: undefined } })));
-    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeStateUpdate, lndPubKeys: { ...nodeStateUpdate.lndPubKeys, LTC: undefined } })));
-    testInvalidPacket(new packets.NodeStateUpdatePacket(nodeStateUpdate, uuid()));
-    testInvalidPacket(new packets.NodeStateUpdatePacket({ ...nodeStateUpdate, addresses: [{} as Address] }));
+    testValidPacket(new packets.NodeStateUpdatePacket(nodeState));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeState, pairs: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket({ ...nodeState, addresses: [] }));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, BTC: undefined } })));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeState, lndPubKeys: { ...nodeState.lndPubKeys, LTC: undefined } })));
+    testValidPacket(new packets.NodeStateUpdatePacket(removeUndefinedProps({ ...nodeState, tokenIdentifiers: { ...nodeState.tokenIdentifiers, LTC: undefined } })));
+    testInvalidPacket(new packets.NodeStateUpdatePacket(nodeState, uuid()));
+    testInvalidPacket(new packets.NodeStateUpdatePacket({ ...nodeState, addresses: [{} as Address] }));
 
     const disconnectingPacketBody = {
       reason: DisconnectionReason.IncompatibleProtocolVersion,
@@ -294,8 +297,8 @@ describe('Parser', () => {
     };
     testValidPacket(new packets.GetOrdersPacket(getOrdersPacketBody));
     testInvalidPacket(new packets.GetOrdersPacket(getOrdersPacketBody, uuid()));
-    testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined })));
-    testInvalidPacket(new packets.OrderInvalidationPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })));
+    testInvalidPacket(new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: undefined })));
+    testInvalidPacket(new packets.GetOrdersPacket(removeUndefinedProps({ ...getOrdersPacketBody, pairIds: [] })));
 
     const ordersPacketBody = [
       orderPacketBody,
