@@ -12,7 +12,6 @@ import { Models } from '../db/DB';
 import Logger from '../Logger';
 import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
@@ -155,10 +154,6 @@ class Pool extends EventEmitter {
     if (this.server) {
       await this.listen();
       this.bindServer();
-
-      if (this.config.detectexternalip) {
-        await this.detectExternalIpAddress();
-      }
     }
 
     this.bindNodeList();
@@ -178,24 +173,6 @@ class Pool extends EventEmitter {
 
     this.verifyReachability();
     this.connected = true;
-  }
-
-  private detectExternalIpAddress = async () => {
-    let externalIp: string | undefined;
-    try {
-      externalIp = await getExternalIp();
-      this.logger.info(`retrieved external IP: ${externalIp}`);
-
-      const externalIpExists = this.nodeState.addresses.some((address) =>  { return address.host === externalIp; });
-      if (!externalIpExists) {
-        this.nodeState.addresses.push({
-          host: externalIp,
-          port: this.listenPort!,
-        });
-      }
-    } catch (error) {
-      this.logger.error(`error while retrieving external IP: ${error.message}`);
-    }
   }
 
   /**

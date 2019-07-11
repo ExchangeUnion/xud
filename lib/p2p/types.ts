@@ -26,9 +26,6 @@ export type NodeState = {
 };
 
 export type PoolConfig = {
-  /** Whether or not to automatically detect and share current external ip address on startup. */
-  detectexternalip: boolean;
-
   /** Whether to send a GetNodes packet to discover new nodes upon connecting to peers, defaults to true. */
   discover: boolean;
 

@@ -79,7 +79,6 @@ class Config {
       listen: true,
       discover: true,
       discoverminutes: 60 * 12, // 12 hours
-      detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
     };

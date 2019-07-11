@@ -124,11 +124,6 @@ const { argv } = require('yargs')
       describe: 'Interval minutes for discover option',
       type: 'number',
     },
-    'p2p.detectexternalip': {
-      describe: 'Detect & advertise external ip address',
-      type: 'boolean',
-      default: undefined,
-    },
     'p2p.port': {
       describe: 'Port to listen for incoming peers',
       type: 'number',

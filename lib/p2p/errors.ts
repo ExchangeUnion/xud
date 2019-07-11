@@ -9,9 +9,8 @@ const errorCodes = {
   NOT_CONNECTED: codesPrefix.concat('.2'),
   UNEXPECTED_NODE_PUB_KEY: codesPrefix.concat('.3'),
   ATTEMPTED_CONNECTION_TO_SELF: codesPrefix.concat('.4'),
-  EXTERNAL_IP_UNRETRIEVABLE: codesPrefix.concat('.5'),
-  CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
-  CONNECTION_RETRIES_REVOKED: codesPrefix.concat('.7'),
+  CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.5'),
+  CONNECTION_RETRIES_REVOKED: codesPrefix.concat('.6'),
   COULD_NOT_CONNECT: codesPrefix.concat('.7'),
   NODE_UNKNOWN: codesPrefix.concat('.8'),
   NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
@@ -57,10 +56,6 @@ const errors = {
     message: 'cannot attempt connection to self',
     code: errorCodes.ATTEMPTED_CONNECTION_TO_SELF,
   },
-  EXTERNAL_IP_UNRETRIEVABLE: (err: Error) => ({
-    message: `could not retrieve external IP: ${err.message}`,
-    code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
-  }),
   CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: {
     message: 'Connection retry attempts to peer exceeded maximum time allotment',
     code: errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED,
