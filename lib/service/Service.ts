@@ -119,23 +119,27 @@ class Service {
   public channelBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
-    const getBalance = async (currency: string) => {
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const channelBalance = await swapClient.channelBalance();
-        return channelBalance;
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
-    };
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
-      balances.set(currency, await getBalance(currency));
-    } else {
-      for (const currency of this.orderBook.currencies) {
-        balances.set(currency, await getBalance(currency));
+
+      const swapClient = this.swapClientManager.get(currency.toUpperCase());
+      if (swapClient) {
+        const channelBalance = await swapClient.channelBalance(currency);
+        balances.set(currency, channelBalance);
+      } else {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
+    } else {
+      const balancePromises: Promise<any>[] = [];
+      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+        if (swapClient.isConnected()) {
+          balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
+            balances.set(currency, channelBalance);
+          }));
+        }
+      });
+      await Promise.all(balancePromises);
     }
 
     return balances;
@@ -159,6 +163,29 @@ class Service {
     argChecks.VALID_PORT({ port });
 
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
+  }
+
+  /*
+   * Opens a payment channel to a specified node, currency and amount.
+   */
+  public openChannel = async (
+    args: { nodePubKey: string, amount: number, currency: string },
+  ) => {
+    const { nodePubKey, amount, currency } = args;
+    argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
+    argChecks.POSITIVE_AMOUNT({ amount });
+    argChecks.VALID_CURRENCY({ currency });
+    try {
+      const peer = this.pool.getPeer(nodePubKey);
+      await this.swapClientManager.openChannel({
+        peer,
+        amount,
+        currency,
+      });
+    } catch (e) {
+      const errorMessage = e.message || 'unknown';
+      throw errors.OPEN_CHANNEL_FAILURE(currency, nodePubKey, amount, errorMessage);
+    }
   }
 
   /*
@@ -211,7 +238,7 @@ class Service {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool.nodeState;
+    const { nodePubKey, addresses } = this.pool;
 
     const uris: string[] = [];
 

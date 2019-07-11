@@ -15,6 +15,7 @@ import HttpServer from './http/HttpServer';
 import SwapClientManager from './swaps/SwapClientManager';
 import InitService from './service/InitService';
 import { promises as fs } from 'fs';
+import { UnitConverter } from './utils/UnitConverter';
 
 const version: string = require('../package.json').version;
 
@@ -39,6 +40,7 @@ class Xud extends EventEmitter {
   private swaps!: Swaps;
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
+  private unitConverter?: UnitConverter;
 
   /**
    * Create an Exchange Union daemon.
@@ -66,7 +68,10 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers);
+      this.unitConverter = new UnitConverter();
+      this.unitConverter.init();
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
       await this.swapClientManager.init(this.db.models);
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
@@ -107,19 +112,18 @@ class Xud extends EventEmitter {
 
       const initPromises: Promise<any>[] = [];
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers);
-      initPromises.push(this.swapClientManager.init(this.db.models));
-
       this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
       initPromises.push(this.swaps.init());
 
       this.orderBook = new OrderBook({
         logger: loggers.orderbook,
         models: this.db.models,
+        thresholds: this.config.orderthresholds,
         nomatching: this.config.nomatching,
         pool: this.pool,
         swaps: this.swaps,
-        nosanitychecks: this.config.nosanitychecks,
+        nosanityswaps: this.config.nosanityswaps,
+        nobalancechecks: this.config.nobalancechecks,
       });
       initPromises.push(this.orderBook.init());
 

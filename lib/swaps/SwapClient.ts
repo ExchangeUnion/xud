@@ -17,9 +17,14 @@ type ChannelBalance = {
   pendingOpenBalance: number,
 };
 
+export type SwapClientInfo = {
+  newIdentifier?: string;
+  newUris?: string[];
+};
+
 interface SwapClient {
-  on(event: 'connectionVerified', listener: (newIdentifier?: string) => void): this;
-  emit(event: 'connectionVerified', newIdentifier?: string): boolean;
+  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
 }
 
 /**
@@ -44,8 +49,10 @@ abstract class SwapClient extends EventEmitter {
 
   /**
    * Returns the total balance available across all channels.
+   * @param currency the currency whose balance to query for, otherwise all/any
+   * currencies supported by this client are included in the balance.
    */
-  public abstract channelBalance(): Promise<ChannelBalance>;
+  public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
@@ -113,9 +120,9 @@ abstract class SwapClient extends EventEmitter {
    * @param destination target node for the route
    * @returns routes
    */
-  public abstract async getRoutes(amount: number, destination: string): Promise<Route[]>;
+  public abstract async getRoutes(amount: number, destination: string, finalCltvDelta?: number): Promise<Route[]>;
 
-  public abstract async addInvoice(rHash: string, amount: number): Promise<void>;
+  public abstract async addInvoice(rHash: string, amount: number, cltvExpiry: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
@@ -125,6 +132,20 @@ abstract class SwapClient extends EventEmitter {
    * Gets the block height of the chain backing this swap client.
    */
   public abstract async getHeight(): Promise<number>;
+
+  /**
+   * Opens a payment channel given peerIdentifier, amount
+   * optional currency and optional lndUris.
+   */
+  public abstract async openChannel(
+    { peerIdentifier, units, currency, lndUris }:
+    {
+      peerIdentifier: string,
+      units: number,
+      currency?: string,
+      lndUris?: string[],
+    },
+  ): Promise<void>;
 
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;

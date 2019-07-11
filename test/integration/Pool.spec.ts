@@ -24,10 +24,10 @@ describe('P2P Pool Tests', async () => {
     peer.beginOpen = () => {
       peer.nodeState = {
         addresses,
-        nodePubKey,
-        version: '100.0.0',
         pairs: ['LTC/BTC'],
       };
+      peer['_nodePubKey'] = nodePubKey;
+      peer['_version'] = '100.0.0';
       peer.address = addresses[0];
     };
     peer.completeOpen = () => {};

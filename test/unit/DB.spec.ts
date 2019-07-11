@@ -40,6 +40,8 @@ const deal: SwapDeal = {
   makerCurrency: 'LTC',
   takerAmount: 5000,
   makerAmount: 1000000,
+  takerUnits: 5000,
+  makerUnits: 1000000,
   takerCltvDelta: 144,
   makerCltvDelta: 144,
   rPreimage: '60743C0B6BFA885E30F101705764F43F8EF7E613DD0F07AD5178C7D9B1682B9E',

@@ -20,13 +20,17 @@ message Node {
     repeated Address addresses = 2;
 }
 
+message LndUris {
+    repeated string lnd_uri = 1;
+}
+
 message NodeState {
-    string version = 1;
-    string node_pub_key = 2;
     repeated Address addresses = 3;
     repeated string pairs = 4;
     string raiden_address = 5;
     map<string, string> lnd_pub_keys = 6;
+    map<string, string> token_identifiers = 7;
+    map<string, LndUris> lnd_uris = 8;
 }
 
 message PingPacket {
@@ -63,18 +67,20 @@ message OrdersPacket {
 
 message NodeStateUpdatePacket {
     string id = 1;
-    repeated Address addresses = 2;
-    repeated string pairs = 3;
-    string raiden_address = 4;
-    map<string, string> lnd_pub_keys = 6;
+    NodeState node_state = 5;
 }
 
 message SessionInitPacket {
     string id = 1;
     string sign = 2;
+    // The node pub key of the peer we are connecting to.
     string peer_pub_key = 3;
     string ephemeral_pub_key = 4;
     NodeState node_state = 5;
+    // The version of xud we are running.
+    string version = 6;
+    // Our local node pub key.
+    string node_pub_key = 7;
 }
 
 message SessionAckPacket {
@@ -116,7 +122,7 @@ message SwapRequestPacket {
     string pair_id = 3;
     string order_id = 4;
     string r_hash = 5;
-    int32 taker_cltv_delta = 6;
+    uint32 taker_cltv_delta = 6;
 }
 
 message SwapAcceptedPacket {
@@ -124,7 +130,7 @@ message SwapAcceptedPacket {
     string req_id = 2;
     string r_hash = 3;
     double quantity = 4;
-    int32 maker_cltv_delta = 5;
+    uint32 maker_cltv_delta = 5;
 }
 
 message SwapCompletePacket {

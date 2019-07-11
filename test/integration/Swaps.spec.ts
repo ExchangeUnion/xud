@@ -69,6 +69,8 @@ const validSwapDeal = () => {
     makerCurrency: 'LTC',
     takerAmount: 8,
     makerAmount: 1000,
+    takerUnits: 8,
+    makerUnits: 1000,
     peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
     localId: '20b63440-e689-11e8-aa83-51505ebd3ca7',
     price: 0.008,
@@ -215,18 +217,6 @@ describe('Swaps.Integration', () => {
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
       await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
-    });
-
-  });
-
-  describe.skip('acceptDeal', () => {
-
-    it('should reject unsupported currency', async () => {
-      expect(true).to.equal(false);
-    });
-
-    it('should reject already used hash', async () => {
-      expect(true).to.equal(false);
     });
 
   });
