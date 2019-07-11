@@ -1,6 +1,6 @@
 ---
 name: Bug Bounty Bug Report
-about: Template for Exchange UnionBug Bounty
+about: Template for Exchange Union Bug Bounty (only)
 title: "[BUG BOUNTY] TITLE"
 labels: ''
 assignees: erkarl, kilrau, moshababo, offerm, sangaman
