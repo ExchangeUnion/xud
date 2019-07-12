@@ -236,7 +236,11 @@ class LndClient extends SwapClient {
             this.logger.debug(`pubkey is ${newPubKey}`);
             this.identityPubKey = newPubKey;
             newUris = getInfoResponse.getUrisList();
-            this.logger.debug(`uris are ${newUris}`);
+            if (newUris.length) {
+              this.logger.debug(`uris are ${newUris}`);
+            } else {
+              this.logger.debug('no uris advertised');
+            }
             this.urisList = newUris;
           }
           const chain = getInfoResponse.getChainsList()[0];
