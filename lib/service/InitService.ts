@@ -28,6 +28,7 @@ class InitService extends EventEmitter {
 
     this.pendingCall = true;
     const seed = await this.swapClientManager.genSeed();
+    let initializedLndWallets: string[] | undefined;
     let nodeKey: NodeKey;
 
     if (seed) {
@@ -43,7 +44,7 @@ class InitService extends EventEmitter {
       nodeKey = new NodeKey(privKey);
 
       // use this seed to init any lnd wallets that are uninitialized
-      await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
+      initializedLndWallets = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
     } else {
       // we couldn't generate a seed externally, so we must create one locally
       nodeKey = await NodeKey.generate();
@@ -51,7 +52,10 @@ class InitService extends EventEmitter {
 
     await nodeKey.toFile(this.nodeKeyPath, password);
     this.emit('nodekey', nodeKey);
-    return seed ? seed.cipherSeedMnemonicList : undefined;
+    return {
+      initializedLndWallets,
+      mnemonic: seed ? seed.cipherSeedMnemonicList : undefined,
+    };
   }
 
   public unlockNode = async (args: { password: string }) => {
@@ -68,7 +72,7 @@ class InitService extends EventEmitter {
     const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
     this.emit('nodekey', nodeKey);
 
-    await this.swapClientManager.unlockWallets(password);
+    return this.swapClientManager.unlockWallets(password);
   }
 }
 
