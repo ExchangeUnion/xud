@@ -52,6 +52,7 @@ class SwapClientManager extends EventEmitter {
       unitConverter,
       config: config.raiden,
       logger: loggers.raiden,
+      directChannelChecks: config.debug.raidenDirectChannelChecks,
     });
   }
 
