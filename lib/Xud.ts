@@ -145,7 +145,10 @@ class Xud extends EventEmitter {
 
       if (!this.swapClientManager.raidenClient.isDisabled()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
-        await this.httpServer.listen(this.config.http.port);
+        await this.httpServer.listen(
+          this.config.http.port,
+          this.config.http.host,
+        );
       }
 
       // start rpc server last
