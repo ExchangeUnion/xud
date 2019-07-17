@@ -18,7 +18,7 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
-  public http: { port: number };
+  public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public orderthresholds: OrderBookThresholds;
@@ -89,6 +89,7 @@ class Config {
       port: 8886,
     };
     this.http = {
+      host: 'localhost',
       port: 8887,
     };
     this.webproxy = {

@@ -76,6 +76,10 @@ const { argv } = require('yargs')
       describe: 'Port to listen for http requests',
       type: 'number',
     },
+    'http.host': {
+      describe: 'Host of the http server',
+      type: 'string',
+    },
     'lnd.[currency].certpath': {
       describe: 'Path to the SSL certificate for lnd',
       type: 'string',
