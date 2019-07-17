@@ -219,10 +219,23 @@ class LndClient extends SwapClient {
     }
 
     if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-      this.lightning = new LightningClient(this.uri, this.credentials);
+      this.logger.debug(`trying to verify connection to lnd at ${this.uri}`);
+      const lightningClient = new LightningClient(this.uri, this.credentials);
+      const clientReadyPromise = new Promise((resolve, reject) => {
+        // if we're not initialized, don't wait for lnd to come online and mark client as disconnected immediately
+        const deadline = this.isNotInitialized() ? 0 : Number.POSITIVE_INFINITY;
+        lightningClient.waitForReady(deadline, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
+      this.lightning = lightningClient;
       try {
+        await clientReadyPromise;
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
