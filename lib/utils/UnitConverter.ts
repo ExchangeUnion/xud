@@ -30,7 +30,7 @@ class UnitConverter {
     if (!unitsPerCurrency) {
       throw new Error(`cannot convert ${currency} units of ${units} to amount because units per currency was not found in the database`);
     }
-    return units / unitsPerCurrency;
+    return Math.floor(units / unitsPerCurrency);
   }
 }
 
