@@ -203,7 +203,7 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes = async (units: number, destination: string, currency: string) => {
+  public getRoutes = async (amount: number, destination: string, currency: string) => {
     // a query routes call is not currently provided by raiden
 
     /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
@@ -212,11 +212,6 @@ class RaidenClient extends SwapClient {
     };
 
     if (this.directChannelChecks) {
-      // convert received units to amount
-      const amount = this.unitConverter.unitsToAmount({
-        currency,
-        units,
-      });
       // temporary check for a direct channel in raiden
       const tokenAddress = this.tokenAddresses.get(currency);
       const channels = await this.getChannels(tokenAddress);
