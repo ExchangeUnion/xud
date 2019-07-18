@@ -524,9 +524,9 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoutes =  async (amount: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer): Promise<lndrpc.Route[]> => {
+  public getRoutes = async (units: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer) => {
     const request = new lndrpc.QueryRoutesRequest();
-    request.setAmt(amount);
+    request.setAmt(units);
     request.setFinalCltvDelta(finalCltvDelta);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
@@ -544,7 +544,7 @@ class LndClient extends SwapClient {
       )) {
         return [];
       } else {
-        this.logger.error(`error calling queryRoutes to ${destination}, amount ${amount} finalCltvDelta ${finalCltvDelta}: ${JSON.stringify(err)}`);
+        this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalCltvDelta}`, err);
         throw err;
       }
     }
@@ -585,13 +585,13 @@ class LndClient extends SwapClient {
     return unlockWalletResponse.toObject();
   }
 
-  public addInvoice = async (rHash: string, amount: number, cltvExpiry: number) => {
+  public addInvoice = async (rHash: string, units: number, cltvExpiry: number) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
-    addHoldInvoiceRequest.setValue(amount);
+    addHoldInvoiceRequest.setValue(units);
     addHoldInvoiceRequest.setCltvExpiry(cltvExpiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
-    this.logger.debug(`added invoice of ${amount} for ${rHash} with cltvExpiry ${cltvExpiry}`);
+    this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${cltvExpiry}`);
     this.subscribeSingleInvoice(rHash);
   }
 

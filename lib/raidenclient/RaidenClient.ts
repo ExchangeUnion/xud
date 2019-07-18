@@ -210,7 +210,7 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes = async (amount: number, destination: string, currency: string) => {
+  public getRoutes = async (units: number, destination: string, currency: string) => {
     // a query routes call is not currently provided by raiden
 
     /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
@@ -225,11 +225,11 @@ class RaidenClient extends SwapClient {
       for (const channel of channels) {
         if (channel.partner_address && channel.partner_address === destination) {
           const balance = channel.balance;
-          if (balance >= amount) {
+          if (balance >= units) {
             this.logger.debug(`found a direct channel for ${currency} to ${destination} with ${balance} balance`);
             return [placeholderRoute];
           } else {
-            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${amount})`);
+            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${units})`);
             return []; // we have a direct channel but it doesn't have enough balance, return no routes
           }
         }
