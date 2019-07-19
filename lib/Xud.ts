@@ -164,22 +164,19 @@ class Xud extends EventEmitter {
 
         if (!this.config.webproxy.disable) {
           this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
-          try {
-            await this.grpcAPIProxy.listen(
-              this.config.webproxy.port,
-              this.config.rpc.port,
-              this.config.rpc.host,
-              path.join(this.config.xudir, 'tls.cert'),
-            );
-          } catch (err) {
-            this.logger.error('Could not start gRPC web proxy server', err);
-          }
+          await this.grpcAPIProxy.listen(
+            this.config.webproxy.port,
+            this.config.rpc.port,
+            this.config.rpc.host,
+            path.join(this.config.xudir, 'tls.cert'),
+          );
         }
       } else {
-        this.logger.warn('RPC server is disabled.');
+        this.logger.info('RPC server is disabled.');
       }
     } catch (err) {
-      this.logger.error('Unexpected error during initialization', err);
+      this.logger.error('Unexpected error during initialization, shutting down...', err);
+      await this.shutdown();
     }
   }
 
