@@ -64,10 +64,10 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
-  /** Currencies that we have verified that we can swap for this peer. */
+  /** Currencies that we have verified we can swap with this peer. */
   public verifiedCurrencies = new Set<string>();
   /**
-   * Currencies that we cannot swap because we are missing a swap client identifier or because our
+   * Currencies that we cannot swap because we are missing a swap client identifier or because the
    * peer's token identifier for this currency does not match ours - for example this may happen
    * because a peer is using a different raiden token contract address for a currency than we are.
    */
@@ -128,6 +128,10 @@ class Peer extends EventEmitter {
 
   public get addresses(): Address[] | undefined {
     return this.nodeState ? this.nodeState.addresses : undefined;
+  }
+
+  public get raidenAddress(): string | undefined {
+    return this.nodeState ? this.nodeState.raidenAddress : undefined;
   }
 
   /** Returns a list of trading pairs advertised by this peer. */
@@ -419,6 +423,17 @@ class Peer extends EventEmitter {
   }
 
   public isPairActive = (pairId: string) => this.activePairs.has(pairId);
+
+  /**
+   * Gets lnd client's listening uris for the provided currency.
+   * @param currency
+   */
+  public getLndUris(currency: string): string[] | undefined {
+    if (this.nodeState && this.nodeState.lndUris) {
+      return this.nodeState.lndUris[currency];
+    }
+    return;
+  }
 
   private sendRaw = (data: Buffer) => {
     if (this.socket && !this.socket.destroyed) {

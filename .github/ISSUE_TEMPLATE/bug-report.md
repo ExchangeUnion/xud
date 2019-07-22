@@ -1,9 +1,9 @@
 ---
-name: Bug Bounty Bug Report
-about: Template for Exchange Union Bug Bounty (only)
-title: "[BUG BOUNTY] TITLE"
-labels: ''
-assignees: erkarl, kilrau, moshababo, offerm, sangaman
+name: Bug Report
+about: Create a report to help us improve
+title: ''
+labels: bug
+assignees: kilrau
 
 ---
 
@@ -13,9 +13,9 @@ Describe your issue here.
 
 ### Your environment
 
-* version of `xud` (if customized, link to fork):
+* version of `xud`:
 * which operating system (`uname -a` on *Nix):
-* version of `btcd`, `bitcoind`, `ltcd`, `litecoind`, `geth`, `raiden`, `lnd` or other backend (if customized, link to fork):
+* version of `btcd`, `bitcoind`, `ltcd`, `litecoind`, `geth`, `parity`, `raiden`, `lnd` or other chain backend:
 * any other relevant environment details:
 
 ### Steps to reproduce

@@ -49,7 +49,7 @@ describe('P2P Pool', () => {
   test('updateLndState sets lnd pub key and token identifier', async () => {
     const lndPubKey = 'lndPubKey';
     const chain = 'bitcoin-regtest';
-    pool.updateLndState('BTC', lndPubKey, chain);
+    pool.updateLndState({ chain, pubKey: lndPubKey, currency: 'BTC' });
     expect(pool.getTokenIdentifier('BTC')).toEqual(chain);
     expect(pool['nodeState'].lndPubKeys['BTC']).toEqual(lndPubKey);
   });

@@ -5,7 +5,16 @@ import errors from './errors';
 import { SwapDeal } from '../swaps/types';
 import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import { RaidenClientConfig, RaidenInfo, OpenChannelPayload, Channel, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import {
+  RaidenClientConfig,
+  RaidenInfo,
+  OpenChannelPayload,
+  Channel,
+  TokenPaymentRequest,
+  TokenPaymentResponse,
+} from './types';
+import { UnitConverter } from '../utils/UnitConverter';
+import { CurrencyInstance } from '../db/types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -33,35 +42,79 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly cltvDelta: number = 1;
+  public readonly cltvDelta: number = 5760;
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
   private disable: boolean;
+  private unitConverter: UnitConverter;
+  private maximumOutboundAmounts = new Map<string, number>();
+  private directChannelChecks: boolean;
 
   /**
    * Creates a raiden client.
    */
-  constructor(config: RaidenClientConfig, logger: Logger) {
+  constructor(
+    { config, logger, unitConverter, directChannelChecks = false }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
+  ) {
     super(logger);
     const { disable, host, port } = config;
 
     this.port = port;
     this.host = host;
     this.disable = disable;
+    this.unitConverter = unitConverter;
+    this.directChannelChecks = directChannelChecks;
   }
 
   /**
    * Checks for connectivity and gets our Raiden account address
    */
-  public init = async () => {
+  public init = async (currencyInstances: CurrencyInstance[]) => {
     if (this.disable) {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
+    this.setTokenAddresses(currencyInstances);
     await this.verifyConnection();
+  }
+
+  /**
+   * Associate raiden with currencies that have a token address
+   */
+  private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
+    currencyInstances.forEach((currency) => {
+      if (currency.tokenAddress) {
+        this.tokenAddresses.set(currency.id, currency.tokenAddress);
+      }
+    });
+  }
+
+  public maximumOutboundCapacity = (currency: string): number => {
+    return this.maximumOutboundAmounts.get(currency) || 0;
+  }
+
+  protected updateCapacity = async () => {
+    try {
+      const channelBalancePromises = [];
+      for (const [currency] of this.tokenAddresses) {
+        const channelBalancePromise = this.channelBalance(currency)
+          .then((balance) => {
+            return { ...balance, currency };
+          });
+        channelBalancePromises.push(channelBalancePromise);
+      }
+      const channelBalances = await Promise.all(channelBalancePromises);
+      channelBalances.forEach(({ currency, balance }) => {
+        this.maximumOutboundAmounts.set(currency, balance);
+      });
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalances: ${e}`);
+    }
   }
 
   protected verifyConnection = async () => {
@@ -77,7 +130,7 @@ class RaidenClient extends SwapClient {
         this.address = newAddress;
       }
 
-      this.emit('connectionVerified', newAddress);
+      this.emit('connectionVerified', { newIdentifier: newAddress });
       await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -110,11 +163,11 @@ class RaidenClient extends SwapClient {
     let tokenAddress;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
-      amount = deal.takerAmount;
+      amount = deal.takerUnits;
       tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
     } else {
       // we are the taker paying the maker
-      amount = deal.makerAmount;
+      amount = deal.makerUnits;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
     }
     if (!tokenAddress) {
@@ -150,11 +203,35 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes =  async (_amount: number, _destination: string) => {
-    // stub placeholder, query routes not currently implemented in raiden
-    return [{
-      getTotalTimeLock: () => 1,
-    }];
+  public getRoutes = async (amount: number, destination: string, currency: string) => {
+    // a query routes call is not currently provided by raiden
+
+    /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
+    const placeholderRoute = {
+      getTotalTimeLock: () => 101,
+    };
+
+    if (this.directChannelChecks) {
+      // temporary check for a direct channel in raiden
+      const tokenAddress = this.tokenAddresses.get(currency);
+      const channels = await this.getChannels(tokenAddress);
+      for (const channel of channels) {
+        if (channel.partner_address && channel.partner_address === destination) {
+          const balance = channel.balance;
+          if (balance >= amount) {
+            this.logger.debug(`found a direct channel for ${currency} to ${destination} with ${balance} balance`);
+            return [placeholderRoute];
+          } else {
+            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${amount})`);
+            return []; // we have a direct channel but it doesn't have enough balance, return no routes
+          }
+        }
+      }
+      this.logger.warn(`no direct channel found for ${currency} to ${destination}`);
+      return []; // no direct channels, return no routes
+    } else {
+      return [placeholderRoute];
+    }
   }
 
   public getHeight = async () => {
@@ -272,22 +349,49 @@ class RaidenClient extends SwapClient {
   }
 
   /**
-   * Returns the total balance available across all channels.
+   * Returns the total balance available across all channels for a specified currency.
    */
-  public channelBalance = async (): Promise<ChannelBalance> => {
-    // TODO: refine logic to determine balance per token rather than all combined
-    const channels = await this.getChannels();
-    const balance = channels.filter(channel => channel.state === 'opened')
+  public channelBalance = async (currency?: string): Promise<ChannelBalance> => {
+    if (!currency) {
+      return { balance: 0, pendingOpenBalance: 0 };
+    }
+
+    const channels = await this.getChannels(this.tokenAddresses.get(currency));
+    const units = channels.filter(channel => channel.state === 'opened')
       .map(channel => channel.balance)
-      .reduce((acc, sum) => sum + acc, 0);
+      .reduce((sum, acc) => sum + acc, 0);
+    const balance = this.unitConverter.unitsToAmount({
+      currency,
+      units,
+    });
     return { balance, pendingOpenBalance: 0 };
   }
 
   /**
    * Creates a payment channel.
+   */
+  public openChannel = async (
+    { peerIdentifier: peerAddress, units, currency }:
+    { peerIdentifier: string, units: number, currency: string },
+  ): Promise<void> => {
+    const tokenAddress = this.tokenAddresses.get(currency);
+    if (!tokenAddress) {
+      throw(errors.TOKEN_ADDRESS_NOT_FOUND);
+    }
+    await this.openChannelRequest({
+      partner_address: peerAddress,
+      token_address: tokenAddress,
+      total_deposit: units,
+      // TODO: The amount of blocks that the settle timeout should have
+      settle_timeout: 500,
+    });
+  }
+
+  /**
+   * Creates a payment channel request.
    * @returns The channel_address for the newly created channel.
    */
-  public openChannel = async (payload: OpenChannelPayload): Promise<string> => {
+  private openChannelRequest = async (payload: OpenChannelPayload): Promise<string> => {
     const endpoint = 'channels';
     const res = await this.sendRequest(endpoint, 'PUT', payload);
 

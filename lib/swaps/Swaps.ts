@@ -12,7 +12,7 @@ import { SwapDealInstance } from '../db/types';
 import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
-import SwapClientManager from './SwapClientManager';
+import SwapClientManager, { isRaidenClient } from './SwapClientManager';
 import { errors } from './errors';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
@@ -36,7 +36,7 @@ class Swaps extends EventEmitter {
   private usedHashes = new Set<string>();
   private repository: SwapRepository;
   /** Number of smallest units per currency. */
-  // TODO: Populate the mapping from the database (Currency.decimalPlaces).
+  // TODO: Use UnitConverter class instead
   private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
     BTC: 1,
     LTC: 1,
@@ -82,13 +82,15 @@ class Swaps extends EventEmitter {
    * @returns An object with the calculated maker and taker values.
    */
   private static calculateMakerTakerAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
-    const { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount } =
+    const { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits } =
       Swaps.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
     return {
       makerCurrency: inboundCurrency,
       makerAmount: inboundAmount,
+      makerUnits: inboundUnits,
       takerCurrency: outboundCurrency,
       takerAmount: outboundAmount,
+      takerUnits: outboundUnits,
     };
   }
 
@@ -102,23 +104,32 @@ class Swaps extends EventEmitter {
    */
   public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
-    const baseCurrencyAmount = Math.round(quantity * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
+    const baseCurrencyAmount = quantity;
     const quoteCurrencyAmount = price > 0 && price < Number.POSITIVE_INFINITY ?
-      Math.round(quantity * price * Swaps.UNITS_PER_CURRENCY[quoteCurrency]) :
+      Math.round(quantity * price) :
       0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
+    const baseCurrencyUnits = Math.floor(baseCurrencyAmount * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
+    const quoteCurrencyUnits = Math.floor(quoteCurrencyAmount * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
 
     const inboundCurrency = isBuy ? baseCurrency : quoteCurrency;
     const inboundAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
+    const inboundUnits = isBuy ? baseCurrencyUnits : quoteCurrencyUnits;
     const outboundCurrency = isBuy ? quoteCurrency : baseCurrency;
     const outboundAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
-    return { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount };
+    const outboundUnits = isBuy ? quoteCurrencyUnits : baseCurrencyUnits;
+    return { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits };
   }
 
   public init = async () => {
     // update pool with lnd pubkeys and raiden address
-    this.swapClientManager.getLndClientsMap().forEach((lndClient) => {
-      if (lndClient.pubKey && lndClient.chain) {
-        this.pool.updateLndState(lndClient.currency, lndClient.pubKey, lndClient.chain);
+    this.swapClientManager.getLndClientsMap().forEach(({ pubKey, chain, currency, uris }) => {
+      if (pubKey && chain) {
+        this.pool.updateLndState({
+          currency,
+          pubKey,
+          chain,
+          uris,
+        });
       }
     });
     if (this.swapClientManager.raidenClient.address) {
@@ -248,7 +259,7 @@ class Swaps extends EventEmitter {
       throw SwapFailureReason.SwapClientNotSetup;
     }
 
-    const { makerCurrency, makerAmount } = Swaps.calculateMakerTakerAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
+    const { makerCurrency, makerUnits } = Swaps.calculateMakerTakerAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
 
     const swapClient = this.swapClientManager.get(makerCurrency)!;
 
@@ -260,7 +271,7 @@ class Swaps extends EventEmitter {
 
     let routes;
     try {
-      routes = await swapClient.getRoutes(makerAmount, destination);
+      routes = await swapClient.getRoutes(makerUnits, destination, makerCurrency);
     } catch (err) {
       throw SwapFailureReason.UnexpectedClientError;
     }
@@ -365,7 +376,7 @@ class Swaps extends EventEmitter {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const quantity = Math.min(maker.quantity, taker.quantity);
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount } =
+    const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
       Swaps.calculateMakerTakerAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
     const clientType = this.swapClientManager.get(makerCurrency)!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
@@ -388,6 +399,8 @@ class Swaps extends EventEmitter {
       makerCurrency,
       takerAmount,
       makerAmount,
+      takerUnits,
+      makerUnits,
       destination,
       peerPubKey: peer.nodePubKey!,
       localId: taker.localId,
@@ -439,7 +452,31 @@ class Swaps extends EventEmitter {
 
     const { quantity, price, isBuy } = orderToAccept;
 
-    const { makerCurrency, makerAmount, takerCurrency, takerAmount } = Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, requestBody.pairId);
+    const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
+      Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, requestBody.pairId);
+
+    const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
+    if (!makerSwapClient) {
+      await this.sendErrorToPeer({
+        peer,
+        rHash,
+        failureReason: SwapFailureReason.SwapClientNotSetup,
+        errorMessage: 'Unsupported maker currency',
+        reqId: requestPacket.header.id,
+      });
+      return false;
+    }
+
+    if (isRaidenClient(makerSwapClient)) {
+      await this.sendErrorToPeer({
+        peer,
+        rHash,
+        failureReason: SwapFailureReason.InvalidSwapRequest,
+        errorMessage: 'Raiden based tokens can not be first leg',
+        reqId: requestPacket.header.id,
+      });
+      return false;
+    }
 
     const takerSwapClient = this.swapClientManager.get(takerCurrency);
     if (!takerSwapClient) {
@@ -453,11 +490,10 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    const takerPubKey = peer.getIdentifier(takerSwapClient.type, takerCurrency)!;
+    const takerIdentifier = peer.getIdentifier(takerSwapClient.type, takerCurrency)!;
 
     const deal: SwapDeal = {
       ...requestBody,
-      takerPubKey,
       price,
       isBuy,
       quantity,
@@ -465,7 +501,10 @@ class Swaps extends EventEmitter {
       takerAmount,
       makerCurrency,
       takerCurrency,
-      destination: takerPubKey,
+      makerUnits,
+      takerUnits,
+      takerPubKey: takerIdentifier,
+      destination: takerIdentifier,
       peerPubKey: peer.nodePubKey!,
       localId: orderToAccept.localId,
       phase: SwapPhase.SwapCreated,
@@ -493,7 +532,7 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerAmount, takerPubKey, deal.takerCltvDelta);
+      deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -566,9 +605,8 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
     try {
-      await makerSwapClient.addInvoice(deal.rHash, deal.makerAmount, deal.makerCltvDelta);
+      await makerSwapClient.addInvoice(deal.rHash, deal.makerUnits, deal.makerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, `could not add invoice for while accepting deal: ${err.message}`);
       await this.sendErrorToPeer({
@@ -645,7 +683,7 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await takerSwapClient.addInvoice(deal.rHash, deal.takerAmount, takerSwapClient.cltvDelta);
+      await takerSwapClient.addInvoice(deal.rHash, deal.takerUnits, takerSwapClient.cltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -658,7 +696,7 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      this.setDealPhase(deal, SwapPhase.SendingAmount);
+      this.setDealPhase(deal, SwapPhase.SendingPayment);
       await makerSwapClient.sendPayment(deal);
       // TODO: check preimage from payment response vs deal.preImage
 
@@ -689,15 +727,19 @@ class Swaps extends EventEmitter {
     let expectedAmount: number;
     let source: string;
     let destination: string;
-
+    // TODO: check cltv value
     switch (deal.role) {
       case SwapRole.Maker:
-        expectedAmount = deal.makerAmount;
+        expectedAmount = deal.makerUnits;
         source = 'Taker';
         destination = 'Maker';
+        if (deal.makerCltvDelta! > 50 * 2) {
+          this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Wrong CLTV received on first leg');
+          return false;
+        }
         break;
       case SwapRole.Taker:
-        expectedAmount = deal.takerAmount;
+        expectedAmount = deal.takerUnits;
         source = 'Maker';
         destination = 'Taker';
         break;
@@ -706,8 +748,6 @@ class Swaps extends EventEmitter {
         this.failDeal(deal, SwapFailureReason.UnknownError, 'Unknown role detected for swap deal');
         return false;
     }
-
-    // TODO: convert amount to satoshis 1E-8
 
     if (amount < expectedAmount) {
       this.logger.error(`received ${amount}, expected ${expectedAmount}`);
@@ -785,9 +825,9 @@ class Swaps extends EventEmitter {
       const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
 
       try {
-        this.setDealPhase(deal, SwapPhase.SendingAmount);
+        this.setDealPhase(deal, SwapPhase.SendingPayment);
         deal.rPreimage = await swapClient.sendPayment(deal);
-        this.setDealPhase(deal, SwapPhase.AmountReceived);
+        this.setDealPhase(deal, SwapPhase.PaymentReceived);
         return deal.rPreimage;
       } catch (err) {
         this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
@@ -799,7 +839,7 @@ class Swaps extends EventEmitter {
       assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
       this.logger.debug('Executing taker code to resolve hash');
 
-      this.setDealPhase(deal, SwapPhase.AmountReceived);
+      this.setDealPhase(deal, SwapPhase.PaymentReceived);
       return deal.rPreimage!;
     }
   }
@@ -906,18 +946,18 @@ class Swaps extends EventEmitter {
         assert(deal.phase === SwapPhase.SwapCreated, 'SwapAgreed can be only be set after SwapCreated');
         this.logger.debug('Sending swap response to peer ');
         break;
-      case SwapPhase.SendingAmount:
+      case SwapPhase.SendingPayment:
         assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||
           deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAgreed,
-            'SendingAmount can only be set after SwapRequested (taker) or SwapAgreed (maker)');
+            'SendingPayment can only be set after SwapRequested (taker) or SwapAgreed (maker)');
         deal.executeTime = Date.now();
         break;
-      case SwapPhase.AmountReceived:
-        assert(deal.phase === SwapPhase.SendingAmount, 'AmountReceived can be only be set after SendingAmount');
-        this.logger.debug(`Amount received for deal with payment hash ${deal.rPreimage}`);
+      case SwapPhase.PaymentReceived:
+        assert(deal.phase === SwapPhase.SendingPayment, 'PaymentReceived can be only be set after SendingPayment');
+        this.logger.debug(`Payment received for deal with payment hash ${deal.rPreimage}`);
         break;
       case SwapPhase.SwapCompleted:
-        assert(deal.phase === SwapPhase.AmountReceived, 'SwapCompleted can be only be set after AmountReceived');
+        assert(deal.phase === SwapPhase.PaymentReceived, 'SwapCompleted can be only be set after PaymentReceived');
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
         this.logger.debug(`Swap completed. preimage = ${deal.rPreimage}`);
@@ -928,7 +968,7 @@ class Swaps extends EventEmitter {
 
     deal.phase = newPhase;
 
-    if (deal.phase === SwapPhase.AmountReceived) {
+    if (deal.phase === SwapPhase.PaymentReceived) {
       const wasMaker = deal.role === SwapRole.Maker;
       const swapSuccess = {
         orderId: deal.orderId,

@@ -72,9 +72,18 @@ const { argv } = require('yargs')
       type: 'string',
       alias: 'x',
     },
+    'debug.raidenDirectChannelChecks': {
+      describe: 'Whether to require direct channels for raiden payments',
+      type: 'boolean',
+      default: undefined,
+    },
     'http.port': {
       describe: 'Port to listen for http requests',
       type: 'number',
+    },
+    'http.host': {
+      describe: 'Host of the http server',
+      type: 'string',
     },
     'lnd.[currency].certpath': {
       describe: 'Path to the SSL certificate for lnd',

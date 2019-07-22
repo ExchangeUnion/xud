@@ -15,6 +15,7 @@ import HttpServer from './http/HttpServer';
 import SwapClientManager from './swaps/SwapClientManager';
 import InitService from './service/InitService';
 import { promises as fs } from 'fs';
+import { UnitConverter } from './utils/UnitConverter';
 
 const version: string = require('../package.json').version;
 
@@ -39,6 +40,7 @@ class Xud extends EventEmitter {
   private swaps!: Swaps;
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
+  private unitConverter?: UnitConverter;
 
   /**
    * Create an Exchange Union daemon.
@@ -67,7 +69,10 @@ class Xud extends EventEmitter {
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers);
+      this.unitConverter = new UnitConverter();
+      this.unitConverter.init();
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
       await this.swapClientManager.init(this.db.models);
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
@@ -140,7 +145,10 @@ class Xud extends EventEmitter {
 
       if (!this.swapClientManager.raidenClient.isDisabled()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
-        await this.httpServer.listen(this.config.http.port);
+        await this.httpServer.listen(
+          this.config.http.port,
+          this.config.http.host,
+        );
       }
 
       // start rpc server last
@@ -156,22 +164,19 @@ class Xud extends EventEmitter {
 
         if (!this.config.webproxy.disable) {
           this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
-          try {
-            await this.grpcAPIProxy.listen(
-              this.config.webproxy.port,
-              this.config.rpc.port,
-              this.config.rpc.host,
-              path.join(this.config.xudir, 'tls.cert'),
-            );
-          } catch (err) {
-            this.logger.error('Could not start gRPC web proxy server', err);
-          }
+          await this.grpcAPIProxy.listen(
+            this.config.webproxy.port,
+            this.config.rpc.port,
+            this.config.rpc.host,
+            path.join(this.config.xudir, 'tls.cert'),
+          );
         }
       } else {
-        this.logger.warn('RPC server is disabled.');
+        this.logger.info('RPC server is disabled.');
       }
     } catch (err) {
-      this.logger.error('Unexpected error during initialization', err);
+      this.logger.error('Unexpected error during initialization, shutting down...', err);
+      await this.shutdown();
     }
   }
 
