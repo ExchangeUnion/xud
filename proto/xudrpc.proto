@@ -83,6 +83,13 @@ service Xud {
     };
   }
 
+  /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency. */
+  rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
+    option (google.api.http) = {
+      post: "/v1/openchannel"
+    };
+  }
+
   /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
    * becomes available for swaps and trading. A handshake exchanges information about the peer's
    * supported trading and swap clients. Orders will be shared with the peer upon connection and
@@ -312,6 +319,17 @@ message ChannelBalanceResponse {
   // A map between currency ticker symbols and their channel balances.
   map<string, ChannelBalance> balances = 1 [json_name = "orders"];
 }
+
+message OpenChannelRequest {
+  // The node pub key of the peer with which to open channel with.
+  string node_pub_key = 1 [json_name = "peer_pub_key"];
+  // The ticker symbol of the currency to open the channel for.
+  string currency = 2 [json_name = "currency"];
+  // The amount of the channel denominated in satoshis.
+  int64 amount = 3 [json_name = "amount"];
+}
+
+message OpenChannelResponse {}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.

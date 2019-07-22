@@ -34,7 +34,7 @@ describe('HttpServer', () => {
 
   before(async () => {
     port = await getUnusedPort();
-    await httpServer.listen(port);
+    await httpServer.listen(port, 'localhost');
   });
 
   it('should receive and parse a raiden resolve request', (done) => {

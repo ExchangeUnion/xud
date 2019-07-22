@@ -166,6 +166,29 @@ class Service {
   }
 
   /*
+   * Opens a payment channel to a specified node, currency and amount.
+   */
+  public openChannel = async (
+    args: { nodePubKey: string, amount: number, currency: string },
+  ) => {
+    const { nodePubKey, amount, currency } = args;
+    argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
+    argChecks.POSITIVE_AMOUNT({ amount });
+    argChecks.VALID_CURRENCY({ currency });
+    try {
+      const peer = this.pool.getPeer(nodePubKey);
+      await this.swapClientManager.openChannel({
+        peer,
+        amount,
+        currency,
+      });
+    } catch (e) {
+      const errorMessage = e.message || 'unknown';
+      throw errors.OPEN_CHANNEL_FAILURE(currency, nodePubKey, amount, errorMessage);
+    }
+  }
+
+  /*
    * Ban a XU node manually and disconnect from it.
    */
   public ban = async (args: { nodePubKey: string}) => {

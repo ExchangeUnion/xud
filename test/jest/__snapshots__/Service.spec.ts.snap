@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Service openChannel throws when failure from swapClientManager 1`] = `
+Object {
+  "code": "6.5",
+  "message": "failed to open channel with nodePubKey: 02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a, currency: BTC, amount: 16000000, message: swapClientManager openChannel failure",
+}
+`;
+
+exports[`Service openChannel throws when peer not found 1`] = `
+Object {
+  "code": "6.5",
+  "message": "failed to open channel with nodePubKey: 02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a, currency: BTC, amount: 16000000, message: peer not found",
+}
+`;

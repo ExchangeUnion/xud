@@ -260,6 +260,7 @@ describe('Swaps', () => {
       expect(lndBtc.getRoutes).toHaveBeenCalledWith(
         1000,
         peerLndBtcPubKey,
+        takerCurrency,
         swapRequestBody.takerCltvDelta,
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);

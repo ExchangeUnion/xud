@@ -80,9 +80,11 @@ class Pool extends EventEmitter {
   private pendingInboundPeers = new Set<Peer>();
   /** A collection of known nodes on the XU network. */
   private nodes: NodeList;
+  private loadingNodesPromise?: Promise<void>;
   /** A collection of opened, active peers. */
   private peers = new Map<string, Peer>();
   private server?: Server;
+  private disconnecting = false;
   private connected = false;
   /** The port on which to listen for peer connections, undefined if this node is not listening. */
   private listenPort?: number;
@@ -117,6 +119,7 @@ class Pool extends EventEmitter {
       pairs: [],
       raidenAddress: '',
       lndPubKeys: {},
+      lndUris: {},
       tokenIdentifiers: {},
     };
 
@@ -162,17 +165,17 @@ class Pool extends EventEmitter {
 
     this.bindNodeList();
 
-    this.nodes.load().then(() => {
-      if (this.nodes.count > 0) {
+    this.loadingNodesPromise = this.nodes.load();
+    this.loadingNodesPromise.then(async () => {
+      if (this.nodes.count > 0 && !this.disconnecting) {
         this.logger.info('Connecting to known / previously connected peers');
-      }
-      return this.connectNodes(this.nodes, true, true);
-    }).then(() => {
-      if (this.nodes.count > 0) {
+        await this.connectNodes(this.nodes, true, true);
         this.logger.info('Completed start-up connections to known peers');
       }
+      this.loadingNodesPromise = undefined;
     }).catch((reason) => {
       this.logger.error('Unexpected error connecting to known peers on startup', reason);
+      this.loadingNodesPromise = undefined;
     });
 
     this.verifyReachability();
@@ -222,8 +225,14 @@ class Pool extends EventEmitter {
    * Updates our lnd pub key and chain identifier for a given currency and sends a node state
    * update packet to currently connected peers to notify them of the change.
    */
-  public updateLndState = (currency: string, pubKey: string, chain?: string) => {
+  public updateLndState = (
+    { currency, pubKey, chain, uris }:
+    { currency: string, pubKey: string, chain?: string, uris?: string[] },
+  ) => {
     this.nodeState.lndPubKeys[currency] = pubKey;
+    if (uris) {
+      this.nodeState.lndUris[currency] = uris;
+    }
     this.nodeState.tokenIdentifiers[currency] = chain;
     this.sendNodeStateUpdate();
   }
@@ -239,8 +248,14 @@ class Pool extends EventEmitter {
     if (!this.connected) {
       return;
     }
+
+    this.disconnecting = true;
+    if (this.loadingNodesPromise) {
+      await this.loadingNodesPromise;
+    }
     await Promise.all([this.unlisten(), this.closePendingConnections(), this.closePeers()]);
     this.connected = false;
+    this.disconnecting = false;
   }
 
   private bindNodeList = () => {

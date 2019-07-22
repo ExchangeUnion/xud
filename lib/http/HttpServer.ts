@@ -83,14 +83,14 @@ class HttpServer {
   /**
    * Starts the server and begins listening on the provided port.
    */
-  public listen = async (port: number) => {
+  public listen = async (port: number, host: string) => {
     return new Promise<void>((resolve, reject) => {
       const listenErrHandler = (err: Error) => {
         reject(err);
       };
 
-      this.server.listen(port, '127.0.0.1').once('listening', () => {
-        this.logger.info(`http server listening on 127.0.0.1:${port}`);
+      this.server.listen(port, host).once('listening', () => {
+        this.logger.info(`http server listening on ${host}:${port}`);
         this.server.removeListener('error', listenErrHandler);
         resolve();
       }).on('error', listenErrHandler);
