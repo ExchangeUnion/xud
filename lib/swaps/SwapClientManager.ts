@@ -52,6 +52,7 @@ class SwapClientManager extends EventEmitter {
       unitConverter,
       config: config.raiden,
       logger: loggers.raiden,
+      directChannelChecks: config.debug.raidenDirectChannelChecks,
     });
   }
 
@@ -76,7 +77,8 @@ class SwapClientManager extends EventEmitter {
       }
     }
     // setup Raiden
-    initPromises.push(this.raidenClient.init());
+    const currencyInstances = await models.Currency.findAll();
+    initPromises.push(this.raidenClient.init(currencyInstances));
 
     // bind event listeners before all swap clients have initialized
     this.bind();
@@ -95,7 +97,6 @@ class SwapClientManager extends EventEmitter {
       const currencyInstances = await models.Currency.findAll();
       currencyInstances.forEach((currency) => {
         if (currency.tokenAddress) {
-          this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
           this.swapClients.set(currency.id, this.raidenClient);
         }
       });

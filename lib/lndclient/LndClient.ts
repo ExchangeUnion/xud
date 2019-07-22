@@ -51,6 +51,7 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private maximumOutboundAmount = 0;
 
   /**
    * Creates an lnd client.
@@ -108,6 +109,19 @@ class LndClient extends SwapClient {
 
   public get chain() {
     return this.chainIdentifier;
+  }
+
+  public maximumOutboundCapacity = () => {
+    return this.maximumOutboundAmount;
+  }
+
+  protected updateCapacity = async () => {
+    try {
+      this.maximumOutboundAmount = (await this.channelBalance()).balance;
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalance: ${e}`);
+    }
   }
 
   private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
@@ -222,7 +236,11 @@ class LndClient extends SwapClient {
             this.logger.debug(`pubkey is ${newPubKey}`);
             this.identityPubKey = newPubKey;
             newUris = getInfoResponse.getUrisList();
-            this.logger.debug(`uris are ${newUris}`);
+            if (newUris.length) {
+              this.logger.debug(`uris are ${newUris}`);
+            } else {
+              this.logger.debug('no uris advertised');
+            }
             this.urisList = newUris;
           }
           const chain = getInfoResponse.getChainsList()[0];
@@ -478,7 +496,7 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoutes =  async (amount: number, destination: string, finalCltvDelta = this.cltvDelta): Promise<lndrpc.Route[]> => {
+  public getRoutes =  async (amount: number, destination: string, _currency: string, finalCltvDelta = this.cltvDelta): Promise<lndrpc.Route[]> => {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(amount);
     request.setFinalCltvDelta(finalCltvDelta);

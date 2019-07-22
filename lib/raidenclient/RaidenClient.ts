@@ -14,6 +14,7 @@ import {
   TokenPaymentResponse,
 } from './types';
 import { UnitConverter } from '../utils/UnitConverter';
+import { CurrencyInstance } from '../db/types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -49,13 +50,15 @@ class RaidenClient extends SwapClient {
   private host: string;
   private disable: boolean;
   private unitConverter: UnitConverter;
+  private maximumOutboundAmounts = new Map<string, number>();
+  private directChannelChecks: boolean;
 
   /**
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter },
+    { config, logger, unitConverter, directChannelChecks = false }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
   ) {
     super(logger);
     const { disable, host, port } = config;
@@ -64,17 +67,54 @@ class RaidenClient extends SwapClient {
     this.host = host;
     this.disable = disable;
     this.unitConverter = unitConverter;
+    this.directChannelChecks = directChannelChecks;
   }
 
   /**
    * Checks for connectivity and gets our Raiden account address
    */
-  public init = async () => {
+  public init = async (currencyInstances: CurrencyInstance[]) => {
     if (this.disable) {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
+    this.setTokenAddresses(currencyInstances);
     await this.verifyConnection();
+  }
+
+  /**
+   * Associate raiden with currencies that have a token address
+   */
+  private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
+    currencyInstances.forEach((currency) => {
+      if (currency.tokenAddress) {
+        this.tokenAddresses.set(currency.id, currency.tokenAddress);
+      }
+    });
+  }
+
+  public maximumOutboundCapacity = (currency: string): number => {
+    return this.maximumOutboundAmounts.get(currency) || 0;
+  }
+
+  protected updateCapacity = async () => {
+    try {
+      const channelBalancePromises = [];
+      for (const [currency] of this.tokenAddresses) {
+        const channelBalancePromise = this.channelBalance(currency)
+          .then((balance) => {
+            return { ...balance, currency };
+          });
+        channelBalancePromises.push(channelBalancePromise);
+      }
+      const channelBalances = await Promise.all(channelBalancePromises);
+      channelBalances.forEach(({ currency, balance }) => {
+        this.maximumOutboundAmounts.set(currency, balance);
+      });
+    } catch (e) {
+      // TODO: Mark client as disconnected
+      this.logger.error(`failed to fetch channelbalances: ${e}`);
+    }
   }
 
   protected verifyConnection = async () => {
@@ -163,12 +203,35 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes =  async (_amount: number, _destination: string) => {
-    // stub placeholder, query routes not currently implemented in raiden
-    // assume a fixed lock time of 100 Raiden's blocks
-    return [{
+  public getRoutes = async (amount: number, destination: string, currency: string) => {
+    // a query routes call is not currently provided by raiden
+
+    /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
+    const placeholderRoute = {
       getTotalTimeLock: () => 101,
-    }];
+    };
+
+    if (this.directChannelChecks) {
+      // temporary check for a direct channel in raiden
+      const tokenAddress = this.tokenAddresses.get(currency);
+      const channels = await this.getChannels(tokenAddress);
+      for (const channel of channels) {
+        if (channel.partner_address && channel.partner_address === destination) {
+          const balance = channel.balance;
+          if (balance >= amount) {
+            this.logger.debug(`found a direct channel for ${currency} to ${destination} with ${balance} balance`);
+            return [placeholderRoute];
+          } else {
+            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${amount})`);
+            return []; // we have a direct channel but it doesn't have enough balance, return no routes
+          }
+        }
+      }
+      this.logger.warn(`no direct channel found for ${currency} to ${destination}`);
+      return []; // no direct channels, return no routes
+    } else {
+      return [placeholderRoute];
+    }
   }
 
   public getHeight = async () => {

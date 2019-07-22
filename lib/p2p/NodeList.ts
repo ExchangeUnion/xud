@@ -77,17 +77,21 @@ class NodeList extends EventEmitter {
   public load = async (): Promise<void> => {
     const nodes = await this.repository.getNodes();
 
-    nodes.forEach(async (node) => {
+    const reputationLoadPromises: Promise<void>[] = [];
+    nodes.forEach((node) => {
       if (node.banned) {
         this.bannedNodes.set(node.nodePubKey, node);
       } else {
         this.nodes.set(node.nodePubKey, node);
-        const events = await this.repository.getReputationEvents(node);
-        events.forEach(({ event }) => {
-          this.updateReputationScore(node, event);
+        const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
+          events.forEach(({ event }) => {
+            this.updateReputationScore(node, event);
+          });
         });
+        reputationLoadPromises.push(reputationLoadPromise);
       }
     });
+    await Promise.all(reputationLoadPromises);
   }
 
   /**

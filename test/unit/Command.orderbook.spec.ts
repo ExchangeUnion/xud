@@ -55,14 +55,14 @@ describe('Command.orderbook.createOrderbookSide', () => {
       .concat(createOrders(80, 0.011131, 100000))
       .concat(createOrders(100, 0.011111, 100000));
     expect(createOrderbookSide(orders)).to.deep.equal([
-      { price: 0.01216, depth: 121600 },
-      { price: 0.01119, depth: 123090 },
-      { price: 0.01118, depth: 33540 },
-      { price: 0.01117, depth: 44680 },
-      { price: 0.01116, depth: 55800 },
-      { price: 0.01115, depth: 66900 },
-      { price: 0.01114, depth: 77980 },
-      { price: 0.01113, depth: 200140 },
+      { price: 0.01216, quantity: 10000000 },
+      { price: 0.01119, quantity: 11000000 },
+      { price: 0.01118, quantity: 3000000 },
+      { price: 0.01117, quantity: 4000000 },
+      { price: 0.01116, quantity: 5000000 },
+      { price: 0.01115, quantity: 6000000 },
+      { price: 0.01114, quantity: 7000000 },
+      { price: 0.01113, quantity: 18000000 },
     ]);
   });
 
@@ -73,8 +73,8 @@ describe('Command.orderbook.createOrderbookSide', () => {
       .concat(createOrders(30, 0.011181, 100000))
       .concat(createOrders(40, 0.011171, 100000));
     expect(createOrderbookSide(orders, 3)).to.deep.equal([
-      { price: 0.012, depth: 120000 },
-      { price: 0.011, depth: 198000 },
+      { price: 0.012, quantity: 10000000 },
+      { price: 0.011, quantity: 18000000 },
     ]);
   });
 });

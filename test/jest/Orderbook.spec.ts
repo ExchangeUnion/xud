@@ -195,7 +195,7 @@ describe('OrderBook', () => {
       };
     };
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
-      maximumOutboundCapacity: 1,
+      maximumOutboundCapacity: () => 1,
     });
     await expect(orderbook.placeLimitOrder(order))
       .rejects.toMatchSnapshot();

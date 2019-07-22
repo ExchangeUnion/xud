@@ -38,6 +38,7 @@ class GrpcWebProxyServer {
     return new Promise<void>((resolve, reject) => {
       /** A handler to handle an error while trying to begin listening. */
       const listenErrHandler = (err: Error) => {
+        this.logger.error('Error on web proxy beginning to listen', err);
         reject(err);
       };
 

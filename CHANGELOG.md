@@ -1,3 +1,95 @@
+# [1.0.0-testnet.1](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.11...v1.0.0-testnet.1) (2019-07-18)
+
+
+### Bug Fixes
+
+* **cli:** quantity rounding ([7e5daec](https://github.com/ExchangeUnion/xud/commit/7e5daec)), closes [#1015](https://github.com/ExchangeUnion/xud/issues/1015)
+* **lnd:** add jstype to channel ids ([d0a2106](https://github.com/ExchangeUnion/xud/commit/d0a2106))
+* **lndclient:** set status disabled when disabled ([2cff6f0](https://github.com/ExchangeUnion/xud/commit/2cff6f0))
+* **lndclient:** unknown service lnrpc.Lightning ([9cb0d55](https://github.com/ExchangeUnion/xud/commit/9cb0d55)), closes [#1039](https://github.com/ExchangeUnion/xud/issues/1039)
+* **orderbook:** nosanitycheck enabled order exchange ([7a46df8](https://github.com/ExchangeUnion/xud/commit/7a46df8))
+* **orderbook:** rename SwapClients to SwapClient ([a01a261](https://github.com/ExchangeUnion/xud/commit/a01a261))
+* **orderbook:** show aggregated quantity ([55538ce](https://github.com/ExchangeUnion/xud/commit/55538ce))
+* **p2p:** NodeStateUpdatePacket process crash ([3c462ba](https://github.com/ExchangeUnion/xud/commit/3c462ba))
+* **p2p:** prevent writing to closed socket ([9c0eed3](https://github.com/ExchangeUnion/xud/commit/9c0eed3))
+* blockheight prop of `undefined` in GetInfo ([eedb4c2](https://github.com/ExchangeUnion/xud/commit/eedb4c2)), closes [#1011](https://github.com/ExchangeUnion/xud/issues/1011)
+* calculate swap amount for market orders ([2399549](https://github.com/ExchangeUnion/xud/commit/2399549)), closes [#978](https://github.com/ExchangeUnion/xud/issues/978)
+* clean shutdown ([28dfae9](https://github.com/ExchangeUnion/xud/commit/28dfae9))
+* deprecation warnings from crypto dependency ([c28454e](https://github.com/ExchangeUnion/xud/commit/c28454e))
+* load raiden token addresses from db ([d011c80](https://github.com/ExchangeUnion/xud/commit/d011c80))
+* re-add http resolver listen ([af2bdae](https://github.com/ExchangeUnion/xud/commit/af2bdae))
+* **tests:** make testNetworkInit wait for synced chains ([b5c5c5c](https://github.com/ExchangeUnion/xud/commit/b5c5c5c))
+* round unitsToAmount conversion result ([8025e27](https://github.com/ExchangeUnion/xud/commit/8025e27)), closes [#1097](https://github.com/ExchangeUnion/xud/issues/1097)
+* **p2p:** use forEach instead of an iterator with pb kvpArray ([9edb320](https://github.com/ExchangeUnion/xud/commit/9edb320))
+* **p2p:** various reconnection issues ([3805b4e](https://github.com/ExchangeUnion/xud/commit/3805b4e))
+* **raiden:** add getRoutes and getHeight compatibility ([39d1eb2](https://github.com/ExchangeUnion/xud/commit/39d1eb2))
+* **raiden:** cleanup reconnectTimer on shutdown ([830efcc](https://github.com/ExchangeUnion/xud/commit/830efcc))
+* **raiden:** getRoutes amount comparison ([eb25249](https://github.com/ExchangeUnion/xud/commit/eb25249))
+* **raiden:** isDisabled mechanics ([7be460b](https://github.com/ExchangeUnion/xud/commit/7be460b))
+* **raiden:** outbound capacity check ([eadc411](https://github.com/ExchangeUnion/xud/commit/eadc411))
+* **raiden:** sendPayment secret response ([d01d0a4](https://github.com/ExchangeUnion/xud/commit/d01d0a4))
+* **swapclients:** check capacity up front ([1fed617](https://github.com/ExchangeUnion/xud/commit/1fed617)), closes [#900](https://github.com/ExchangeUnion/xud/issues/900)
+* **swaps:** add hardcoded support for DAI ([b68d88c](https://github.com/ExchangeUnion/xud/commit/b68d88c))
+* **swaps:** don't retry verified currency sanity ([b8bb45a](https://github.com/ExchangeUnion/xud/commit/b8bb45a)), closes [#946](https://github.com/ExchangeUnion/xud/issues/946)
+* **swaps:** ensure correct takerCltvDelta and makerCltvDelta usage ([5dc728b](https://github.com/ExchangeUnion/xud/commit/5dc728b))
+* swap client initialization ([30907b0](https://github.com/ExchangeUnion/xud/commit/30907b0))
+* **swaps:** prepend 0x to Raiden's sanity swap rHash ([a2de310](https://github.com/ExchangeUnion/xud/commit/a2de310))
+* **swaps:** prevent SwapFailurePacket crash ([cbc1a48](https://github.com/ExchangeUnion/xud/commit/cbc1a48))
+* **swaps:** remove stalled sanity swap invoice ([ca82c15](https://github.com/ExchangeUnion/xud/commit/ca82c15)), closes [#964](https://github.com/ExchangeUnion/xud/issues/964)
+* swap sent/received amounts in satoshis ([2aa4ede](https://github.com/ExchangeUnion/xud/commit/2aa4ede)), closes [#1063](https://github.com/ExchangeUnion/xud/issues/1063)
+* switch swap capacity check currency ([ea47b91](https://github.com/ExchangeUnion/xud/commit/ea47b91)), closes [#932](https://github.com/ExchangeUnion/xud/issues/932)
+* testnet seed node pubkey update ([2e6c674](https://github.com/ExchangeUnion/xud/commit/2e6c674))
+* use integer satoshi quantities ([3d12ada](https://github.com/ExchangeUnion/xud/commit/3d12ada)), closes [#740](https://github.com/ExchangeUnion/xud/issues/740)
+
+
+### Features
+
+* **cli:** add orderbook command ([e13aec3](https://github.com/ExchangeUnion/xud/commit/e13aec3))
+* **cli:** enhance output of listpairs ([#925](https://github.com/ExchangeUnion/xud/issues/925)) ([6852ea2](https://github.com/ExchangeUnion/xud/commit/6852ea2))
+* **cli:** formatted channelbalance output ([7618b4c](https://github.com/ExchangeUnion/xud/commit/7618b4c))
+* discover nodes from a specific peer ([#920](https://github.com/ExchangeUnion/xud/issues/920)) ([1caa2a7](https://github.com/ExchangeUnion/xud/commit/1caa2a7))
+* **client:** add maximum outbound capacity checks to baseclient ([0c698a1](https://github.com/ExchangeUnion/xud/commit/0c698a1))
+* **lnd:** use lnd 0.6.1 w/ hold invoices ([35ae4f6](https://github.com/ExchangeUnion/xud/commit/35ae4f6)), closes [#798](https://github.com/ExchangeUnion/xud/issues/798)
+* **logger:** add more detailed swaps logging ([4846d4b](https://github.com/ExchangeUnion/xud/commit/4846d4b))
+* **logger:** optional subcontext ([f894a7c](https://github.com/ExchangeUnion/xud/commit/f894a7c))
+* **orderbook:** add sanity checks to placeOrder ([315023c](https://github.com/ExchangeUnion/xud/commit/315023c))
+* **orderbook:** order quantity threshold ([0464b3c](https://github.com/ExchangeUnion/xud/commit/0464b3c))
+* **orderbook:** require token address for Raiden currencies ([033331c](https://github.com/ExchangeUnion/xud/commit/033331c))
+* **raiden:** add sendPayment support ([e07f606](https://github.com/ExchangeUnion/xud/commit/e07f606))
+* **raiden:** channel balance by currency ([a488fa7](https://github.com/ExchangeUnion/xud/commit/a488fa7)), closes [#1051](https://github.com/ExchangeUnion/xud/issues/1051)
+* **raiden:** check direct channel before swap ([a87e903](https://github.com/ExchangeUnion/xud/commit/a87e903)), closes [#1027](https://github.com/ExchangeUnion/xud/issues/1027)
+* **raiden:** detect raiden address change ([3db6ec2](https://github.com/ExchangeUnion/xud/commit/3db6ec2))
+* **raiden:** log error message for 409 responses ([c8be4d0](https://github.com/ExchangeUnion/xud/commit/c8be4d0)), closes [#957](https://github.com/ExchangeUnion/xud/issues/957)
+* **raiden:** pass secret hash to raiden ([963abcc](https://github.com/ExchangeUnion/xud/commit/963abcc))
+* **raiden:** remove 0x from RaidenResolveRequest ([0529516](https://github.com/ExchangeUnion/xud/commit/0529516))
+* **raiden-resolver:** add configuration option for listening interface ([46b1048](https://github.com/ExchangeUnion/xud/commit/46b1048))
+* **rpc:** add limit to ListOrders call ([#820](https://github.com/ExchangeUnion/xud/issues/820)) ([1b78331](https://github.com/ExchangeUnion/xud/commit/1b78331)), closes [#748](https://github.com/ExchangeUnion/xud/issues/748)
+* **rpc:** add raidenAddress to ListPeers response ([e6f6f6d](https://github.com/ExchangeUnion/xud/commit/e6f6f6d))
+* **rpc:** add SubscribeSwapFailures rpc call ([722b420](https://github.com/ExchangeUnion/xud/commit/722b420)), closes [#817](https://github.com/ExchangeUnion/xud/issues/817)
+* **rpc:** removed own orders in SubscribeOrders ([ce68965](https://github.com/ExchangeUnion/xud/commit/ce68965))
+* http endpoint for raiden hash resolver ([3d1f4de](https://github.com/ExchangeUnion/xud/commit/3d1f4de)), closes [#931](https://github.com/ExchangeUnion/xud/issues/931)
+* **seedutil:** generate eth keystore from aezeed mnemonic ([cdca98a](https://github.com/ExchangeUnion/xud/commit/cdca98a))
+* add sanity swap checks after handshake ([b138afe](https://github.com/ExchangeUnion/xud/commit/b138afe)), closes [#676](https://github.com/ExchangeUnion/xud/issues/676)
+* add testnet seed node ([#1085](https://github.com/ExchangeUnion/xud/issues/1085)) ([beb238d](https://github.com/ExchangeUnion/xud/commit/beb238d)), closes [#1061](https://github.com/ExchangeUnion/xud/issues/1061)
+* **service:** add open channel support ([dab84af](https://github.com/ExchangeUnion/xud/commit/dab84af))
+* **swaps:** get peer identifier for swaps ([fd8c17f](https://github.com/ExchangeUnion/xud/commit/fd8c17f))
+* **swaps:** prevent raiden from being first leg ([7c76a3d](https://github.com/ExchangeUnion/xud/commit/7c76a3d))
+* **swaps:** use configurable amount of subunits per currency ([ed79480](https://github.com/ExchangeUnion/xud/commit/ed79480))
+* token identifiers for currencies ([98be295](https://github.com/ExchangeUnion/xud/commit/98be295)), closes [#910](https://github.com/ExchangeUnion/xud/issues/910)
+* XU networks support ([#827](https://github.com/ExchangeUnion/xud/issues/827)) ([a5a06e1](https://github.com/ExchangeUnion/xud/commit/a5a06e1)), closes [#781](https://github.com/ExchangeUnion/xud/issues/781)
+* xud master password ([6bfad02](https://github.com/ExchangeUnion/xud/commit/6bfad02)), closes [#912](https://github.com/ExchangeUnion/xud/issues/912)
+
+
+### BREAKING CHANGES
+
+* Changed p2p messaging structure for `SessionInit`
+and `NodeStateUpdate` packets.
+* New SanitySwapPacket.
+* Database and p2p field type changes
+* nodes database table & separate databases by network
+
+
+
 # [1.0.0-alpha.11](https://github.com/ExchangeUnion/xud/compare/v1.0.0-alpha.10...v1.0.0-alpha.11) (2019-03-21)
 
 

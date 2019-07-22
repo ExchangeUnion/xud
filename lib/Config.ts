@@ -18,11 +18,12 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
-  public http: { port: number };
+  public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
+  public debug: { raidenDirectChannelChecks: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -89,11 +90,15 @@ class Config {
       port: 8886,
     };
     this.http = {
+      host: 'localhost',
       port: 8887,
     };
     this.webproxy = {
       disable: true,
       port: 8080,
+    };
+    this.debug = {
+      raidenDirectChannelChecks: true,
     };
     // TODO: add dynamic max/min price limits
     this.orderthresholds = {
