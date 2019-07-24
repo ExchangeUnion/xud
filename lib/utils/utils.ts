@@ -146,6 +146,17 @@ export const isPlainObject = (obj: any) => {
 /** A promisified wrapper for the NodeJS `setTimeout` method. */
 export const setTimeoutPromise = promisify(setTimeout);
 
+export const setTimeoutPromiseReject = (
+  { timeout, message }:
+  { timeout: number, message: string },
+) => {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(message);
+    }, timeout);
+  });
+};
+
 /** A promisified wrapper for the NodeJS `crypto.randomBytes` method. */
 export const randomBytes = promisify(cryptoRandomBytes);
 

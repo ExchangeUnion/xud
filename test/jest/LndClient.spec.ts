@@ -2,6 +2,10 @@ import LndClient from '../../lib/lndclient/LndClient';
 import { LndClientConfig } from '../../lib/lndclient/types';
 import Logger from '../../lib/Logger';
 
+const timeOut = () => {
+  jest.runAllTimers();
+  return new Promise(() => {});
+};
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
 describe('LndClient', () => {
@@ -25,6 +29,7 @@ describe('LndClient', () => {
     logger.error = jest.fn();
     logger.info = jest.fn();
     logger.trace = jest.fn();
+    logger.debug = jest.fn();
   });
 
   afterEach(async () => {
@@ -113,10 +118,6 @@ describe('LndClient', () => {
       jest.useFakeTimers();
       lnd = new LndClient(config, currency, logger);
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
-      const timeOut = () => {
-        jest.runAllTimers();
-        return new Promise(() => {});
-      };
       lnd['connectPeer'] = jest.fn()
         .mockImplementation(timeOut);
       try {
@@ -172,6 +173,47 @@ describe('LndClient', () => {
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
     });
 
+  });
+
+  describe('addInvoice', () => {
+    const rHash = 'd94c22a73d2741ed5cdcf3714f9ab3c8664793b03a54c74a08877726007d67c2';
+    const amount = 4000000;
+    const cltvExpiry = 144;
+
+    test('it adds an invoice', async () => {
+      lnd = new LndClient(config, currency, logger);
+      lnd['addHoldInvoice'] = jest.fn()
+        .mockReturnValue(Promise.resolve());
+      lnd['subscribeSingleInvoice'] = jest.fn()
+        .mockReturnValue(Promise.resolve());
+      await lnd.addInvoice(rHash, amount, cltvExpiry);
+      expect(lnd['addHoldInvoice']).toHaveBeenCalledTimes(1);
+      expect(lnd['subscribeSingleInvoice']).toHaveBeenCalledTimes(1);
+      expect(lnd['subscribeSingleInvoice']).toHaveBeenCalledWith(rHash);
+    });
+
+    test('it rejects when adding hold invoice fails', async () => {
+      lnd = new LndClient(config, currency, logger);
+      lnd['addHoldInvoice'] = jest.fn()
+        .mockReturnValue(Promise.reject('failed to add hold invoice'));
+      await expect(lnd.addInvoice(rHash, amount, cltvExpiry))
+        .rejects.toMatchSnapshot();
+      expect(lnd['addHoldInvoice']).toHaveBeenCalledTimes(1);
+    });
+
+    test('it rejects when subscribing to invoice timeouts', async () => {
+      expect.assertions(3);
+      jest.useFakeTimers();
+      lnd = new LndClient(config, currency, logger);
+      lnd['addHoldInvoice'] = jest.fn()
+        .mockReturnValue(Promise.resolve());
+      lnd['subscribeSingleInvoice'] = jest.fn()
+        .mockImplementation(timeOut);
+      await expect(lnd.addInvoice(rHash, amount, cltvExpiry))
+        .rejects.toMatchSnapshot();
+      expect(lnd['addHoldInvoice']).toHaveBeenCalledTimes(1);
+      expect(lnd['subscribeSingleInvoice']).toHaveBeenCalledTimes(1);
+    });
   });
 
 });

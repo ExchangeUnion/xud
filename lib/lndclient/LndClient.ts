@@ -10,7 +10,11 @@ import assert from 'assert';
 import { promises as fs } from 'fs';
 import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
-import { base64ToHex, hexToUint8Array } from '../utils/utils';
+import {
+  base64ToHex,
+  hexToUint8Array,
+  setTimeoutPromiseReject,
+} from '../utils/utils';
 import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
 
 interface LightningMethodIndex extends LightningClient {
@@ -572,7 +576,16 @@ class LndClient extends SwapClient {
     addHoldInvoiceRequest.setCltvExpiry(cltvExpiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
     this.logger.debug(`added invoice of ${amount} for ${rHash} with cltvExpiry ${cltvExpiry}`);
-    this.subscribeSingleInvoice(rHash);
+    const SUBSCRIBE_INVOICE_TIMEOUT = 5000;
+    await Promise.race([
+      // ensure subscribing to invoice does
+      // not take more than 5 seconds
+      setTimeoutPromiseReject({
+        message: 'subscribing to single invoice has timed out',
+        timeout: SUBSCRIBE_INVOICE_TIMEOUT,
+      }),
+      this.subscribeSingleInvoice(rHash),
+    ]);
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
@@ -610,25 +623,31 @@ class LndClient extends SwapClient {
   }
 
   private subscribeSingleInvoice = (rHash: string) => {
-    if (!this.invoices) {
-      throw errors.LND_IS_UNAVAILABLE(this.status);
-    }
-    const paymentHash = new lndrpc.PaymentHash();
-    // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
-    paymentHash.setRHash(hexToUint8Array(rHash));
-    const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
-    const deleteInvoiceSubscription = () => {
-      invoiceSubscription.removeAllListeners();
-      this.invoiceSubscriptions.delete(rHash);
-      this.logger.debug(`deleted invoice subscription for ${rHash}`);
-    };
-    invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
-      if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
-        // we have accepted an htlc for this invoice
-        this.emit('htlcAccepted', rHash, invoice.getValue());
+    return new Promise((resolve) => {
+      if (!this.invoices) {
+        throw errors.LND_IS_UNAVAILABLE(this.status);
       }
-    }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
-    this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+      const paymentHash = new lndrpc.PaymentHash();
+      // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
+      paymentHash.setRHash(hexToUint8Array(rHash));
+      const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
+      const deleteInvoiceSubscription = () => {
+        invoiceSubscription.removeAllListeners();
+        this.invoiceSubscriptions.delete(rHash);
+        this.logger.debug(`deleted invoice subscription for ${rHash}`);
+      };
+      invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
+        if (invoice.getState() === lndrpc.Invoice.InvoiceState.OPEN) {
+          this.logger.trace(`hold invoice for ${rHash} is now open and waiting for ${invoice.getValue()} units`);
+          resolve();
+        }
+        if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
+          // we have accepted an htlc for this invoice
+          this.emit('htlcAccepted', rHash, invoice.getValue());
+        }
+      }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
+      this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+    });
   }
 
   /**

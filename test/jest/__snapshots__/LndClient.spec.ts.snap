@@ -1,5 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`LndClient addInvoice it rejects when adding hold invoice fails 1`] = `"failed to add hold invoice"`;
+
+exports[`LndClient addInvoice it rejects when subscribing to invoice timeouts 1`] = `"subscribing to single invoice has timed out"`;
+
 exports[`LndClient openChannel it throws when connectPeer fails 1`] = `[Error: connectPeerAddreses failed]`;
 
 exports[`LndClient openChannel it throws when openchannel fails 1`] = `[Error: openChannelSync error]`;
