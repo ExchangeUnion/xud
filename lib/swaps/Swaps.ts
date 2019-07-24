@@ -435,7 +435,6 @@ class Swaps extends EventEmitter {
   public acceptDeal = async (orderToAccept: OrderToAccept, requestPacket: packets.SwapRequestPacket, peer: Peer): Promise<boolean> => {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
-    // TODO: multi route support (currently only 1)
     this.logger.debug(`trying to accept deal: ${JSON.stringify(orderToAccept)} from xudPubKey: ${peer.nodePubKey}`);
 
     const rHash = requestPacket.body!.rHash;
@@ -702,7 +701,6 @@ class Swaps extends EventEmitter {
 
     try {
       await makerSwapClient.sendPayment(deal);
-      // TODO: check preimage from payment response vs deal.preImage
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
       await this.sendErrorToPeer({

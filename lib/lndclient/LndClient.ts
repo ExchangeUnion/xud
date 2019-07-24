@@ -295,15 +295,95 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
   }
 
-  public sendSmallestAmount = async (rHash: string, destination: string) => {
-    const sendRequest = new lndrpc.SendRequest();
-    sendRequest.setAmt(1);
-    sendRequest.setDestString(destination);
-    sendRequest.setPaymentHashString(rHash);
-    sendRequest.setFinalCltvDelta(this.cltvDelta);
+  public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {
+    const request = this.buildSendRequest({
+      rHash,
+      destination,
+      amount: 1,
+      // In case of sanity swaps we don't know the
+      // takerCltvDelta or the makerCltvDelta. Using our
+      // client's default.
+      finalCltvDelta: this.cltvDelta,
+    });
+    const preimage = await this.executeSendRequest(request);
+    return preimage;
+  }
+
+  public sendPayment = async (deal: SwapDeal): Promise<string> => {
+    assert(deal.state === SwapState.Active);
+    let request: lndrpc.SendRequest;
+    assert(deal.makerCltvDelta, 'swap deal must have a makerCltvDelta');
+    if (deal.role === SwapRole.Taker) {
+      // we are the taker paying the maker
+      assert(deal.destination, 'swap deal as taker must have a destination');
+      request = this.buildSendRequest({
+        rHash: deal.rHash,
+        destination: deal.destination!,
+        amount: deal.makerAmount,
+        // Using the agreed upon makerCltvDelta. Maker won't accept
+        // our payment if we provide a smaller value.
+        finalCltvDelta: deal.makerCltvDelta!,
+      });
+    } else {
+      // we are the maker paying the taker
+      assert(deal.takerPubKey, 'swap deal as maker must have a takerPubKey');
+      assert(deal.takerCltvDelta, 'swap deal as maker must have a takerCltvDelta');
+      request = this.buildSendRequest({
+        rHash: deal.rHash,
+        destination: deal.takerPubKey!,
+        amount: deal.takerAmount,
+        // Using the agreed upon takerCltvDelta. Taker won't accept
+        // our payment if we provide a smaller value.
+        finalCltvDelta: deal.takerCltvDelta,
+        // Enforcing the maximum duration/length of the payment by
+        // specifying the cltvLimit.
+        cltvLimit: deal.makerCltvDelta,
+      });
+    }
+    const preimage = await this.executeSendRequest(request);
+    return preimage;
+  }
+
+  /**
+   * Sends a payment through the Lightning Network.
+   */
+  private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
+    this.logger.trace(`sending payment of ${request.getAmt()} for ${request.getPaymentHashString()}`);
+    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
+  }
+
+  /**
+   * Builds a lndrpc.SendRequest
+   */
+  private buildSendRequest = (
+    { rHash, destination, amount, finalCltvDelta, cltvLimit }:
+    { rHash: string, destination: string, amount: number, finalCltvDelta: number, cltvLimit?: number },
+  ): lndrpc.SendRequest => {
+    const request = new lndrpc.SendRequest();
+    request.setPaymentHashString(rHash);
+    request.setDestString(destination);
+    request.setAmt(amount);
+    request.setFinalCltvDelta(finalCltvDelta);
+    const fee = new lndrpc.FeeLimit();
+    fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
+    request.setFeeLimit(fee);
+    if (cltvLimit) {
+      // cltvLimit is used to enforce the maximum
+      // duration/length of the payment.
+      request.setCltvLimit(cltvLimit);
+    }
+    return request;
+  }
+
+  /**
+   * Executes the provided lndrpc.SendRequest
+   */
+  private executeSendRequest = async (
+    request: lndrpc.SendRequest,
+  ): Promise<string> => {
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
-      sendPaymentResponse = await this.sendPaymentSync(sendRequest);
+      sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
       this.logger.error('got exception from sendPaymentSync', err.message);
       throw err;
@@ -313,74 +393,6 @@ class LndClient extends SwapClient {
       throw new Error(paymentError);
     }
     return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
-  }
-
-  public sendPayment = async (deal: SwapDeal): Promise<string> => {
-    assert(deal.state === SwapState.Active);
-
-    if (deal.makerToTakerRoutes && deal.role === SwapRole.Maker) {
-      const request = new lndrpc.SendToRouteRequest();
-      request.setRoutesList(deal.makerToTakerRoutes as lndrpc.Route[]);
-      request.setPaymentHashString(deal.rHash);
-
-      try {
-        const sendToRouteResponse = await this.sendToRouteSync(request);
-        const sendPaymentError = sendToRouteResponse.getPaymentError();
-        if (sendPaymentError) {
-          this.logger.error(`sendToRouteSync failed with payment error: ${sendPaymentError}`);
-          throw new Error(sendPaymentError);
-        }
-
-        return base64ToHex(sendToRouteResponse.getPaymentPreimage_asB64());
-      } catch (err) {
-        this.logger.error(`got exception from sendToRouteSync: ${JSON.stringify(request.toObject())}`, err);
-        throw err;
-      }
-    } else if (deal.destination) {
-      const request = new lndrpc.SendRequest();
-      request.setDestString(deal.destination);
-      request.setPaymentHashString(deal.rHash);
-
-      if (deal.role === SwapRole.Taker) {
-        // we are the taker paying the maker
-        request.setFinalCltvDelta(deal.makerCltvDelta!);
-        request.setAmt(deal.makerUnits);
-      } else {
-        // we are the maker paying the taker
-        request.setFinalCltvDelta(deal.takerCltvDelta);
-        request.setAmt(deal.takerUnits);
-      }
-      const fee = new lndrpc.FeeLimit();
-      fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
-      request.setFeeLimit(fee);
-
-      try {
-        this.logger.debug(`executing sendPaymentSync -
-          destination: ${deal.destination}, rHash: ${deal.rHash}, amount: ${request.getAmt()}, FinalCltvDelta: ${request.getFinalCltvDelta()}`);
-        const sendPaymentResponse = await this.sendPaymentSync(request);
-        const sendPaymentError = sendPaymentResponse.getPaymentError();
-        if (sendPaymentError) {
-          this.logger.error(`sendPaymentSync failed with payment error: ${sendPaymentError}`);
-          throw new Error(sendPaymentError);
-        }
-
-        return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
-      } catch (err) {
-        this.logger.error(`got exception from sendPaymentSync: ${JSON.stringify(request.toObject())}`, err);
-        throw err;
-      }
-    } else {
-      assert.fail('swap deal must have a route or destination to send payment');
-      return '';
-    }
-  }
-
-  /**
-   * Sends a payment through the Lightning Network.
-   */
-  private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
-    this.logger.trace(`sending payment of ${request.getAmt()} for ${request.getPaymentHashString()}`);
-    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
   /**
@@ -528,13 +540,6 @@ class LndClient extends SwapClient {
    */
   private queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
-  }
-
-  /**
-   * Sends amount to destination using pre-defined routes.
-   */
-  private sendToRouteSync = (request: lndrpc.SendToRouteRequest): Promise<lndrpc.SendResponse> => {
-    return this.unaryCall<lndrpc.SendToRouteRequest, lndrpc.SendResponse>('sendToRouteSync', request);
   }
 
   public genSeed = async (): Promise<lndrpc.GenSeedResponse.AsObject> => {
