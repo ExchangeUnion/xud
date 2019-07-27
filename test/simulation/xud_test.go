@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestIntegration(t *testing.T) {
-	// Disabling sanity checks because we're now opening the payment channels after xud launch,
+	// Disabling balance checks because we're now opening the payment channels after xud launch,
 	// and so the capacity checks would only trigger after 60 sec.
 	// We can solve this by making the capacity checks interval configurable.
 	xudNetwork, teardown := launchNetwork(true)
@@ -197,7 +197,7 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 	}
 }
 
-func launchNetwork(noSanityChecks bool) (*xudtest.NetworkHarness, func()) {
+func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	// Create XUD network instance without launching it.
 	log.Printf("xud: creating network")
 	xudHarness, err := xudtest.NewNetworkHarness()
@@ -220,7 +220,7 @@ func launchNetwork(noSanityChecks bool) (*xudtest.NetworkHarness, func()) {
 			}
 		}
 	}()
-	if err := xudHarness.SetUp(noSanityChecks); err != nil {
+	if err := xudHarness.SetUp(noBalanceChecks); err != nil {
 		log.Fatalf("cannot set up xud network: %v", err)
 	}
 

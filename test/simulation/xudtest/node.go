@@ -47,7 +47,7 @@ type nodeConfig struct {
 	RPCPort  int
 	HTTPPort int
 
-	NoSanityChecks bool
+	NoBalanceChecks bool
 }
 
 // genArgs generates a slice of command line arguments from the xud node
@@ -58,8 +58,8 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--initdb=false")
 	args = append(args, "--loglevel=debug")
 
-	if cfg.NoSanityChecks {
-		args = append(args, "--nosanitychecks=true")
+	if cfg.NoBalanceChecks {
+		args = append(args, "--nobalancechecks=true")
 	}
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
@@ -83,7 +83,6 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
 
 	args = append(args, "--raiden.disable")
-	args = append(args, "--nosanityswaps=false")
 
 	return args
 }
@@ -121,7 +120,7 @@ func (cfg nodeConfig) P2PAddr() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(cfg.P2PPort))
 }
 
-func newNode(name string, xudPath string, noSanityChecks bool) (*HarnessNode, error) {
+func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
 	_ = os.Mkdir("./temp", 0755)
@@ -131,9 +130,9 @@ func newNode(name string, xudPath string, noSanityChecks bool) (*HarnessNode, er
 	}
 
 	cfg := nodeConfig{
-		DataDir:        dataDir,
-		XUDPath:        xudPath,
-		NoSanityChecks: noSanityChecks,
+		DataDir:         dataDir,
+		XUDPath:         xudPath,
+		NoBalanceChecks: noBalanceChecks,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)

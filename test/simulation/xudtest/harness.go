@@ -107,8 +107,8 @@ func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars 
 	return customNode, nil
 }
 
-func (n *NetworkHarness) newNode(name string, xudPath string, noSanityChecks bool) (*HarnessNode, error) {
-	node, err := newNode(name, xudPath, noSanityChecks)
+func (n *NetworkHarness) newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, error) {
+	node, err := newNode(name, xudPath, noBalanceChecks)
 	if err != nil {
 		return nil, err
 	}
@@ -150,27 +150,27 @@ func (n *NetworkHarness) Start() error {
 }
 
 // SetUp creates the xud nodes to be used for this harness.
-func (n *NetworkHarness) SetUp(noSanityChecks bool) error {
+func (n *NetworkHarness) SetUp(noBalanceChecks bool) error {
 	xudPath, err := filepath.Abs("../../")
 	if err != nil {
 		return err
 	}
 
-	n.Alice, err = n.newNode("Alice", xudPath, noSanityChecks)
+	n.Alice, err = n.newNode("Alice", xudPath, noBalanceChecks)
 	if err != nil {
 		return err
 	}
-	n.Bob, err = n.newNode("Bob", xudPath, noSanityChecks)
-	if err != nil {
-		return err
-	}
-
-	n.Carol, err = n.newNode("Carol", xudPath, noSanityChecks)
+	n.Bob, err = n.newNode("Bob", xudPath, noBalanceChecks)
 	if err != nil {
 		return err
 	}
 
-	n.Dave, err = n.newNode("Dave", xudPath, noSanityChecks)
+	n.Carol, err = n.newNode("Carol", xudPath, noBalanceChecks)
+	if err != nil {
+		return err
+	}
+
+	n.Dave, err = n.newNode("Dave", xudPath, noBalanceChecks)
 	if err != nil {
 		return err
 	}
