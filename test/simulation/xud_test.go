@@ -154,7 +154,7 @@ func TestSecurity(t *testing.T) {
 			break
 		}
 
-		if !testCase.balanceMutating {
+		if !testCase.balanceMayChange {
 			// Verify that balance remain unchanged.
 			aliceBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
 			ht.assert.NoError(err)

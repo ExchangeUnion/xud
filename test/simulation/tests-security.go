@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// securityTestCases are test cases which tries to break the protocol via
+// securityTestCases are test cases which try to break the protocol via
 // an adversarial custom xud client. They are relying on payment channels
 // to be open before running them, and balance checks to occur after.
 var securityTestCases = []*testCase{
@@ -28,13 +28,13 @@ var securityTestCases = []*testCase{
 		test: testTakerStallingAfter2ndHTLC,
 	},
 	{
-		name:            "taker stalling after swap succeeded",
-		test:            testTakerStallingAfterSwapSucceeded,
-		balanceMutating: true,
+		name:             "taker stalling after swap succeeded",
+		test:             testTakerStallingAfterSwapSucceeded,
+		balanceMayChange: true,
 	},
 }
 
-// unsettledChannelsSecurityTests are test cases which tries to break the protocol via
+// unsettledChannelsSecurityTests are test cases which try to break the protocol via
 // an adversarial custom xud client. Payment channels opening/closing and balance checks
 // are done within the tests. This is because they simulate more complicated scenarios,
 // wheres the channels are left in unsettled state due to pending HTLCs.
