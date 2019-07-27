@@ -4,6 +4,7 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
+	"time"
 )
 
 // securityTestCases are test cases which tries to break the protocol via
@@ -33,16 +34,20 @@ var securityTestCases = []*testCase{
 	},
 }
 
-var standAloneSecurityTests = []*testCase{
+// unsettledChannelsSecurityTests are test cases which tries to break the protocol via
+// an adversarial custom xud client. Payment channels opening/closing and balance checks
+// are done within the tests. This is because they simulate more complicated scenarios,
+// wheres the channels are left in unsettled state due to pending HTLCs.
+var unsettledChannelsSecurityTests = []*testCase{
 	{
 		name: "network initialization", // must be the first test case to be run
 		test: testNetworkInit,
 	},
-	{ // FAILING
+	{
 		name: "maker shutdown after 1st htlc",
 		test: testMakerShutdownAfter1stHTLC,
 	},
-	{ // FAILING
+	{
 		name: "taker shutdown after 2nd htlc",
 		test: testTakerShutdownAfter2ndHTLC,
 	},
@@ -191,7 +196,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Alice.LndBtcNode, net.Bob.LndBtcNode)
 	ht.assert.NoError(err)
-	bobLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, net.Alice.LndLtcNode)
+	_, err = openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, net.Alice.LndLtcNode)
 	ht.assert.NoError(err)
 
 	// Connect Alice to Bob.
@@ -243,13 +248,12 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
 
-	onchainFeesThreshold := int64(20000)
-
 	// Closing maker BTC channel and checking balance.
 
 	err = closeBtcChannel(ht.ctx, net.LndBtcNetwork, net.Alice.LndBtcNode, aliceBtcChanPoint, false)
 	ht.assert.NoError(err)
 
+	onchainFeesThreshold := int64(20000)
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
 	walletDiff := alicePrevBalance.btc.wallet.TotalBalance - aliceBalance.btc.wallet.TotalBalance
@@ -257,7 +261,6 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 		"alice btc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.btc.wallet.TotalBalance, aliceBalance.btc.wallet.TotalBalance)
 
 	// Closing taker LTC channel and checking balance.
-	//
 	// First, find the pending HTLC expiration height.
 
 	bobLtcChanList, err := net.Bob.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
@@ -268,37 +271,39 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.Equal(len(bobChan.PendingHtlcs), 1)
 	expirationHeight := bobChan.PendingHtlcs[0].ExpirationHeight
 
-	// Try to expire the HTLC.
+	// Expire the HTLC.
 
 	ltcInfo, err := net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.NoError(err)
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(expirationHeight - uint32(ltcInfo.Blocks) + 100)
+	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(expirationHeight - uint32(ltcInfo.Blocks))
 	ht.assert.NoError(err)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
-	ht.assert.True(ltcInfo.Blocks > int32(expirationHeight))
+	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	err = net.Bob.LndLtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
-	err = net.Alice.LndLtcNode.WaitForBlockchainSync(ht.ctx)
-	ht.assert.NoError(err)
+	time.Sleep(25 * time.Second)
 
-	// Attempt to close the channel cooperatively.
+	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, bobLtcChanPoint, false)
-	ht.assert.EqualError(err, "rpc error: code = Unknown desc = cannot co-op close channel with active htlcs")
+	bobLtcChanList, err = net.Bob.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(bobLtcChanList.Channels), 0)
 
-	// Close the channel uncooperatively.
+	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
 
-	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, bobLtcChanPoint, true)
+	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1)
 	ht.assert.NoError(err)
 
-	//_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1100)
-	//ht.assert.NoError(err)
-	//err = net.Bob.LndLtcNode.WaitForBlockchainSync(ht.ctx)
-	//ht.assert.NoError(err)
-	//
-	//time.Sleep(5 * time.Second)
+	time.Sleep(5 * time.Second)
 
+	// Wait for HTLC output to be spentfully confirmed.
+
+	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(6)
+	ht.assert.NoError(err)
+
+	time.Sleep(35 * time.Second)
+
+	// Check balance.
+
+	onchainFeesThreshold = int64(200000)
 	bobBalance, err := getBalance(ht.ctx, net.Bob)
 	ht.assert.NoError(err)
 	walletDiff = bobPrevBalance.ltc.wallet.TotalBalance - bobBalance.ltc.wallet.TotalBalance
@@ -375,6 +380,16 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
+	alicePrevBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	bobPrevBalance, err := getBalance(ht.ctx, net.Bob)
+	ht.assert.NoError(err)
+
+	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode)
+	ht.assert.NoError(err)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode)
+	ht.assert.NoError(err)
+
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
@@ -418,6 +433,69 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NoError(err)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
+
+	// Closing maker BTC channel and checking balance.
+	// First, find the pending HTLC expiration height.
+
+	bobBtcChanList, err := net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(bobBtcChanList.Channels), 1)
+	bobChan := bobBtcChanList.Channels[0]
+	ht.assert.True(bobChan.RemoteBalance == 0)
+	ht.assert.True(bobChan.LocalBalance > 0)
+	ht.assert.Equal(len(bobChan.PendingHtlcs), 1)
+	expirationHeight := bobChan.PendingHtlcs[0].ExpirationHeight
+
+	// Expire the HTLC.
+
+	btcInfo, err := net.LndBtcNetwork.BtcMiner.Node.GetInfo()
+	ht.assert.NoError(err)
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(expirationHeight - uint32(btcInfo.Blocks))
+	ht.assert.NoError(err)
+	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
+	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
+
+	time.Sleep(25 * time.Second)
+
+	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
+
+	bobBtcChanList, err = net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(bobBtcChanList.Channels), 0)
+
+	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
+
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(1)
+	ht.assert.NoError(err)
+
+	time.Sleep(5 * time.Second)
+
+	// Wait for HTLC output to be spentfully confirmed.
+
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(6)
+	ht.assert.NoError(err)
+
+	time.Sleep(35 * time.Second)
+
+	// Check balance.
+
+	onchainFeesThreshold := int64(200000)
+	bobBalance, err := getBalance(ht.ctx, net.Bob)
+	ht.assert.NoError(err)
+	walletDiff := bobPrevBalance.btc.wallet.TotalBalance - bobBalance.btc.wallet.TotalBalance
+	ht.assert.True(walletDiff < onchainFeesThreshold,
+		"bob Btc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.btc.wallet.TotalBalance, bobBalance.btc.wallet.TotalBalance)
+
+	// Closing taker LTC channel and checking balance.
+	// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
+
+	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
+	ht.assert.NoError(err)
+
+	onchainFeesThreshold = int64(200000)
+	aliceBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance
+	ht.assert.True(walletDiff < onchainFeesThreshold,
+		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
 }
 
 func testTakerStallingAfterSwapSucceeded(net *xudtest.NetworkHarness, ht *harnessTest) {

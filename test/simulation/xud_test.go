@@ -177,15 +177,15 @@ func TestSecurity(t *testing.T) {
 	}
 }
 
-func TestSecurityStandAlone(t *testing.T) {
+func TestSecurityUnsettledChannels(t *testing.T) {
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 
-	t.Logf("Running %v stand-alone security tests", len(standAloneSecurityTests))
+	t.Logf("Running %v unsettled-channels security tests", len(unsettledChannelsSecurityTests))
 
-	for _, testCase := range standAloneSecurityTests {
+	for _, testCase := range unsettledChannelsSecurityTests {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(2*time.Minute))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(20*time.Minute))
 			defer cancel()
 			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudNetwork)
