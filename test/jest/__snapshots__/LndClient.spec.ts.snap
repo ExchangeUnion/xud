@@ -1,0 +1,7 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LndClient openChannel it throws when connectPeer fails 1`] = `[Error: connectPeerAddreses failed]`;
+
+exports[`LndClient openChannel it throws when openchannel fails 1`] = `[Error: openChannelSync error]`;
+
+exports[`LndClient openChannel it throws when timeout reached 1`] = `[Error: connectPeerAddreses failed]`;

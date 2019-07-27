@@ -1,6 +1,10 @@
 import { SwapClientType } from '../constants/enums';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 
+export type OrderBookThresholds = {
+  minQuantity: number;
+};
+
 export type OrderMatch = {
   maker: Order;
   taker: OwnOrder;
@@ -56,7 +60,7 @@ export type OrderIdentifier = Pick<MarketOrder, 'pairId'> & {
 type Local = {
   /** A local identifier for the order. */
   localId: string;
-  /** The amount of an order that is on hold pending swap exectuion. */
+  /** The amount of an order that is on hold pending swap execution. */
   hold: number;
 };
 

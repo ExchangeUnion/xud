@@ -8,6 +8,7 @@ import { RaidenClientConfig } from './raidenclient/types';
 import { Level } from './Logger';
 import { XuNetwork } from './constants/enums';
 import { PoolConfig } from './p2p/types';
+import { OrderBookThresholds } from './orderbook/types';
 
 class Config {
   public p2p: PoolConfig;
@@ -17,10 +18,12 @@ class Config {
   public logdateformat: string;
   public network: XuNetwork;
   public rpc: { disable: boolean, host: string, port: number };
-  public http: { port: number };
+  public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
+  public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
+  public debug: { raidenDirectChannelChecks: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -32,10 +35,15 @@ class Config {
   public noencrypt = true; // TODO: enable encryption by default
 
   /**
-   * Whether to disable sanity checks that verify that the orders can possibly be swapped
-   * before adding them to the order book, can be enabled for testing & debugging purposes.
+   * Whether to disable sanity swaps that verify that the orders can possibly be swapped
+   * before adding trading pairs as active.
    */
-  public nosanitychecks = false;
+  public nosanityswaps = true;
+  /**
+   * Whether to disable balance checks that verify that the orders can possibly be swapped
+   * before adding them to the order book.
+   */
+  public nobalancechecks = false;
 
   constructor() {
     const platform = os.platform();
@@ -82,11 +90,19 @@ class Config {
       port: 8886,
     };
     this.http = {
+      host: 'localhost',
       port: 8887,
     };
     this.webproxy = {
       disable: true,
       port: 8080,
+    };
+    this.debug = {
+      raidenDirectChannelChecks: true,
+    };
+    // TODO: add dynamic max/min price limits
+    this.orderthresholds = {
+      minQuantity: 0, // 0 = disabled
     };
     this.lnd.BTC = {
       disable: false,
@@ -152,6 +168,12 @@ class Config {
         this.updateMacaroonPaths();
       }
 
+      if (props.thresholds) {
+        this.orderthresholds = {
+          ...this.orderthresholds,
+          ...props.thresholds,
+        };
+      }
       // merge parsed json properties from config file to the default config
       deepMerge(this, props);
     } catch (err) {}

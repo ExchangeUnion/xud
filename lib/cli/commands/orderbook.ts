@@ -10,15 +10,15 @@ type FormattedOrderbook = {
   rows: string[][],
 };
 
-type BucketDepth = {
+type Bucket = {
   price: number,
-  depth: number;
+  quantity: number;
 };
 
 type OrderbookJson = {
   pairId: string,
-  sell: BucketDepth[],
-  buy: BucketDepth[],
+  sell: Bucket[],
+  buy: Bucket[],
 };
 
 const COLUMNS = [19, 19, 19, 19];
@@ -28,19 +28,26 @@ const HEADER = [
   { content: colors.red('Sell'), colSpan: 2 },
 ];
 const SECONDARY_HEADER = [
+  colors.green('Quantity'),
   colors.green('Price'),
-  colors.green('Depth'),
   colors.red('Price'),
-  colors.red('Depth'),
+  colors.red('Quantity'),
 ];
 
-const addSide = (buckets: BucketDepth[]): string[] => {
+const addSide = (buckets: Bucket[], isBuy = false): string[] => {
   const bucket = buckets.pop();
   if (bucket) {
-    return [
-      bucket.price.toString(),
-      satsToCoinsStr(bucket.depth),
-    ];
+    if (isBuy) {
+      return [
+        satsToCoinsStr(bucket.quantity),
+        bucket.price.toString(),
+      ];
+    } else {
+      return [
+        bucket.price.toString(),
+        satsToCoinsStr(bucket.quantity),
+      ];
+    }
   } else {
     return Array.from(Array(COLUMNS_IN_ORDER_SIDE)).map(() => '');
   }
@@ -55,7 +62,7 @@ export const createOrderbook = (orders: ListOrdersResponse.AsObject, precision: 
       ? sell.length : buy.length;
     const orderbookRows = Array.from(Array(totalRows))
       .map(() => {
-        return addSide(buy).concat(addSide(sell));
+        return addSide(buy, true).concat(addSide(sell));
       });
     formattedOrderbooks.push({
       pairId: tradingPair[0],
@@ -94,11 +101,11 @@ const getPriceBuckets = (orders: Order.AsObject[], count = 8): number[] => {
   return uniquePrices.splice(0, count);
 };
 
-const getDepthForBuckets = (
+const getQuantityForBuckets = (
   orders: Order.AsObject[],
   priceBuckets: number[],
-  filledBuckets: BucketDepth[] = [],
-): BucketDepth[] => {
+  filledBuckets: Bucket[] = [],
+): Bucket[] => {
   // go through all the available price buckets
   const price = priceBuckets.shift();
   if (!price) {
@@ -111,15 +118,15 @@ const getDepthForBuckets = (
     filteredOrders = orders
       .filter(order => order.price === price);
   }
-  // calculate depth of the bucket
-  const depth = filteredOrders
+  // calculate quantity of the bucket
+  const quantity = filteredOrders
     .reduce((total, order) => {
-      return total + order.price * order.quantity;
+      return total + order.quantity;
     }, 0);
-  filledBuckets.push({ price, depth });
+  filledBuckets.push({ price, quantity });
   // filter orders for the next cycle
   const restOfOrders = orders.filter(order => order.price !== price);
-  return getDepthForBuckets(restOfOrders, priceBuckets, filledBuckets);
+  return getQuantityForBuckets(restOfOrders, priceBuckets, filledBuckets);
 };
 
 export const createOrderbookSide = (orders: Order.AsObject[], precision = 5) => {
@@ -130,12 +137,12 @@ export const createOrderbookSide = (orders: Order.AsObject[], precision = 5) => 
   // get price buckets in which to divide orders to
   const priceBuckets = getPriceBuckets(orders);
   // divide prices into buckets
-  return getDepthForBuckets(orders, priceBuckets);
+  return getQuantityForBuckets(orders, priceBuckets);
 };
 
 export const command = 'orderbook [pair_id] [precision]';
 
-export const describe = 'list the order book';
+export const describe = 'display the order book, with orders aggregated per price point';
 
 export const builder = {
   pair_id: {
@@ -151,16 +158,16 @@ export const builder = {
 
 const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments) => {
   const jsonOrderbooks: OrderbookJson[] = [];
-  const depthInSatoshisPerCoin = (bucket: BucketDepth) => {
-    bucket.depth = parseFloat(
-      satsToCoinsStr(bucket.depth),
+  const quantityInSatoshisPerCoin = (bucket: Bucket) => {
+    bucket.quantity = parseFloat(
+      satsToCoinsStr(bucket.quantity),
     );
   };
   orders.ordersMap.forEach((tradingPair) => {
     const buy = createOrderbookSide(tradingPair[1].buyOrdersList, argv.precision);
-    buy.forEach(depthInSatoshisPerCoin);
+    buy.forEach(quantityInSatoshisPerCoin);
     const sell = createOrderbookSide(tradingPair[1].sellOrdersList, argv.precision);
-    sell.forEach(depthInSatoshisPerCoin);
+    sell.forEach(quantityInSatoshisPerCoin);
     jsonOrderbooks.push({
       sell,
       buy,

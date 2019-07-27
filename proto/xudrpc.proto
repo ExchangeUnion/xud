@@ -83,6 +83,13 @@ service Xud {
     };
   }
 
+  /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency. */
+  rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
+    option (google.api.http) = {
+      post: "/v1/openchannel"
+    };
+  }
+
   /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
    * becomes available for swaps and trading. A handshake exchanges information about the peer's
    * supported trading and swap clients. Orders will be shared with the peer upon connection and
@@ -290,17 +297,17 @@ message BanRequest {
 message BanResponse {}
 
 message Chain {
-    // The blockchain the swap client is on (eg bitcoin, litecoin)
-    string chain = 1 [json_name = "chain"];
-    // The network the swap client is on (eg regtest, testnet, mainnet)
-    string network = 2 [json_name = "network"];
+  // The blockchain the swap client is on (eg bitcoin, litecoin)
+  string chain = 1 [json_name = "chain"];
+  // The network the swap client is on (eg regtest, testnet, mainnet)
+  string network = 2 [json_name = "network"];
 }
 
 message ChannelBalance {
-  // Sum of channels balances denominated in satoshis or equivalent.
-  int64 balance = 1 [json_name = "balance"];
-  // Sum of channels pending balances denominated in satoshis or equivalent.
-  int64 pending_open_balance = 2 [json_name = "pending_open_balance"];
+  // Sum of channel balances denominated in satoshis.
+  uint64 balance = 1 [json_name = "balance"];
+  // Sum of pending channel balances denominated in satoshis.
+  uint64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
 message ChannelBalanceRequest {
@@ -312,6 +319,17 @@ message ChannelBalanceResponse {
   // A map between currency ticker symbols and their channel balances.
   map<string, ChannelBalance> balances = 1 [json_name = "orders"];
 }
+
+message OpenChannelRequest {
+  // The node pub key of the peer with which to open channel with.
+  string node_pub_key = 1 [json_name = "peer_pub_key"];
+  // The ticker symbol of the currency to open the channel for.
+  string currency = 2 [json_name = "currency"];
+  // The amount of the channel denominated in satoshis.
+  int64 amount = 3 [json_name = "amount"];
+}
+
+message OpenChannelResponse {}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
@@ -327,7 +345,7 @@ message ExecuteSwapRequest {
   string pair_id = 2 [json_name = "pair_id"];
   // The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly.
   string peer_pub_key = 3 [json_name = "peer_pub_key"];
-  // The quantity to swap. The whole order will be swapped if unspecified.
+  // The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified.
   uint64 quantity = 4 [json_name = "quantity"];
 }
 
@@ -353,9 +371,9 @@ message GetInfoResponse {
   // A list of uris that can be used to connect to this node. These are shared with peers.
   repeated string uris = 3 [json_name = "uris"];
   // The number of currently connected peers.
-  int32 num_peers = 4 [json_name = "num_peers"];
+  uint32 num_peers = 4 [json_name = "num_peers"];
   // The number of supported trading pairs.
-  int32 num_pairs = 5 [json_name = "num_pairs"];
+  uint32 num_pairs = 5 [json_name = "num_pairs"];
   // The number of active, standing orders in the order book.
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
@@ -369,7 +387,7 @@ message GetNodeInfoRequest {
 message GetNodeInfoResponse {
   // The node's reputation score. Points are subtracted for unexpected or potentially malicious
   // behavior. Points are added when swaps are successfully executed.
-  int32 reputationScore = 1 [json_name = "reputation"];
+  sint32 reputationScore = 1 [json_name = "reputation"];
   // Whether the node is currently banned.
   bool banned = 2 [json_name = "banned"];
 }
@@ -380,7 +398,7 @@ message ListOrdersRequest {
   // Whether own orders should be included in result or not.
   bool include_own_orders = 2 [json_name = "include_own_orders"];
   // The maximum number of orders to return from each side of the order book.
-  int32 limit = 3 [json_name = "limit"];
+  uint32 limit = 3 [json_name = "limit"];
 }
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
@@ -407,18 +425,18 @@ message ListPeersResponse {
 
 message LndChannels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
-  int32 active = 1 [json_name = "active"];
+  uint32 active = 1 [json_name = "active"];
   // The number of inactive/offline channels for this lnd instance.
-  int32 inactive = 2 [json_name = "inactive"];
+  uint32 inactive = 2 [json_name = "inactive"];
   // The number of channels that are pending on-chain confirmation before they can be used.
-  int32 pending = 3 [json_name = "pending"];
+  uint32 pending = 3 [json_name = "pending"];
 }
 
 message LndInfo {
   string error = 1 [json_name = "error"];
   LndChannels channels = 2 [json_name = "channels"];
   repeated Chain chains = 3 [json_name = "chains"];
-  int32 blockheight = 4 [json_name = "blockheight"];
+  uint32 blockheight = 4 [json_name = "blockheight"];
   repeated string uris = 5 [json_name = "uris"];
   string version = 6 [json_name = "version"];
   string alias = 7 [json_name = "alias"];
@@ -440,12 +458,12 @@ message Order {
     string local_id = 6 [json_name = "local_id"];
   }
   // The epoch time when this order was created.
-  int64 created_at = 7 [json_name = "created_at"];
+  uint64 created_at = 7 [json_name = "created_at"];
   // Whether this order is a buy or sell
   OrderSide side = 8 [json_name = "side"];
   // Whether this order is a local own order or a remote peer order.
   bool is_own_order = 9 [json_name = "is_own_order"];
-  // The quantity on hold pending swap exectuion.
+  // The quantity on hold pending swap execution.
   uint64 hold = 10 [json_name = "hold"];
 }
 
@@ -459,7 +477,7 @@ message OrderUpdate {
 }
 
 message OrderRemoval {
-  // The quantity of the order being removed.
+  // The quantity removed from the order.
   uint64 quantity = 1 [json_name = "quantity"];
   // The trading pair that the order is for.
   string pair_id = 2 [json_name = "pair_id"];
@@ -480,9 +498,9 @@ message Orders {
 
 message OrdersCount {
   // The number of orders belonging to remote xud nodes.
-  int32 peer = 1 [json_name = "peer"];
+  uint32 peer = 1 [json_name = "peer"];
   // The number of orders belonging to our local xud node.
-  int32 own = 2 [json_name = "own"];
+  uint32 own = 2 [json_name = "own"];
 }
 
 message Peer {
@@ -499,7 +517,7 @@ message Peer {
   // The version of xud being used by the peer.
   string xud_version = 6 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
-  int32 seconds_connected = 7 [json_name = "seconds_connected"];
+  uint32 seconds_connected = 7 [json_name = "seconds_connected"];
   // The raiden address for this peer
   string raiden_address = 8 [json_name = "raiden_address"];
 }
@@ -507,13 +525,13 @@ message Peer {
 message PlaceOrderRequest {
   // The price of the order.
   double price = 1 [json_name = "price"];
-  // The quantity of the order in satoshis.
+  // The quantity of the order denominated in satoshis.
   uint64 quantity = 2 [json_name = "quantity"];
   // The trading pair that the order is for.
   string pair_id = 3 [json_name = "pair_id"];
   // The local id to assign to the order.
   string order_id = 4 [json_name = "order_id"];
-  // Whether the order is a Buy or Sell.
+  // Whether the order is a buy or sell.
   OrderSide side = 5 [json_name = "side"];
 }
 message PlaceOrderResponse {
@@ -543,7 +561,7 @@ message PlaceOrderEvent {
 message RaidenInfo {
   string error = 1 [json_name = "error"];
   string address = 2 [json_name = "address"];
-  int32 channels = 3 [json_name = "channels"];
+  uint32 channels = 3 [json_name = "channels"];
   string version = 4 [json_name = "version"];
 }
 
@@ -556,7 +574,8 @@ message RemoveCurrencyResponse {}
 message RemoveOrderRequest {
   // The local id of the order to remove.
   string order_id = 1 [json_name = "order_id"];
-  // The quantity to remove from the order. If zero or unspecified then entire order is removed.
+  // The quantity to remove from the order denominated in satoshis.
+  // If zero or unspecified then the entire order is removed.
   uint64 quantity = 2 [json_name = "quantity"];
 }
 message RemoveOrderResponse {
@@ -572,11 +591,11 @@ message RemovePairRequest {
 message RemovePairResponse {}
 
 message DiscoverNodesRequest {
-    // The node pub key of the peer to discover nodes from.
-    string peer_pub_key = 1 [json_name = "peer_pub_key"];
+  // The node pub key of the peer to discover nodes from.
+  string peer_pub_key = 1 [json_name = "peer_pub_key"];
 }
 message DiscoverNodesResponse {
-    int32 num_nodes = 1 [json_name = "num_nodes"];
+  uint32 num_nodes = 1 [json_name = "num_nodes"];
 }
 
 message ShutdownRequest {}
@@ -602,12 +621,12 @@ message SwapSuccess {
   string pair_id = 3 [json_name = "pair_id"];
   // The order quantity that was swapped.
   uint64 quantity = 4 [json_name = "quantity"];
-  // The hex-encoded payment hash for the swaps.
+  // The hex-encoded payment hash for the swap.
   string r_hash = 5 [json_name = "r_hash"];
-  // The amount of the smallest base unit of the currency (like satoshis or wei) received.
-  int64 amount_received = 8 [json_name = "amount_received"];
-  // The amount of the smallest base unit of the currency (like satoshis or wei) sent.
-  int64 amount_sent = 9 [json_name = "amount_sent"];
+  // The amount received denominated in satoshis.
+  uint64 amount_received = 8 [json_name = "amount_received"];
+  // The amount sent denominated in satoshis.
+  uint64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
   string peer_pub_key = 10 [json_name = "peer_pub_key"];
   enum Role {

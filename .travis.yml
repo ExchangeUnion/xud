@@ -1,12 +1,13 @@
 language: node_js
 
 node_js:
+  - "node"
   - "lts/*"
 
 cache:
   directories:
     - "node_modules"
-    - "seed/go" # go modules used for xudseed
+    - "seedutil/go" # go modules used for xudseed
     - "test/simulation/go" # lnd, btcd, and dependencies
 
 before_install:

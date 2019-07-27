@@ -35,8 +35,8 @@ interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
-  /** Adds a listener to be called when the peer has newly advertised pairs. */
-  on(event: 'pairsAdvertised', listener: (pairIds: string[]) => void): this;
+  /** Adds a listener to be called when the peer's advertised but inactive pairs should be verified. */
+  on(event: 'verifyPairs', listener: () => void): this;
   /** Adds a listener to be called when a previously active pair is dropped by the peer or deactivated. */
   on(event: 'pairDropped', listener: (pairId: string) => void): this;
   on(event: 'nodeStateUpdate', listener: () => void): this;
@@ -46,8 +46,8 @@ interface Peer {
   emit(event: 'close'): boolean;
   emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
-  /** Notifies listeners that the peer has advertised pairs to verify. */
-  emit(event: 'pairsAdvertised', pairIds: string[]): boolean;
+  /** Notifies listeners that the peer's advertised but inactive pairs should be verified. */
+  emit(event: 'verifyPairs'): boolean;
   /** Notifies listeners that a previously active pair was dropped by the peer or deactivated. */
   emit(event: 'pairDropped', pairId: string): boolean;
   emit(event: 'nodeStateUpdate'): boolean;
@@ -64,8 +64,14 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
-  /** Currencies that we have verified that we can swap with for this peer. */
+  /** Currencies that we have verified we can swap with this peer. */
   public verifiedCurrencies = new Set<string>();
+  /**
+   * Currencies that we cannot swap because we are missing a swap client identifier or because the
+   * peer's token identifier for this currency does not match ours - for example this may happen
+   * because a peer is using a different raiden token contract address for a currency than we are.
+   */
+  public disabledCurrencies = new Set<string>();
   /** Trading pairs advertised by this peer which we have verified that we can swap. */
   private activePairs = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
@@ -82,6 +88,10 @@ class Peer extends EventEmitter {
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
   private connectionRetriesRevoked = false;
+  /** The version of xud this peer is using. */
+  private _version?: string;
+  /** The node pub key of this peer. */
+  private _nodePubKey?: string;
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
   private outEncryptionKey?: Buffer;
@@ -102,13 +112,14 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
 
-  public get version(): string {
-    return this.nodeState ? this.nodeState.version : '';
+  /** The version of xud this peer is using, or an empty string if it is still not known. */
+  public get version() {
+    return this._version || '';
   }
 
   /** The hex-encoded node public key for this peer, or undefined if it is still not known. */
   public get nodePubKey(): string | undefined {
-    return this.nodeState ? this.nodeState.nodePubKey : undefined;
+    return this._nodePubKey;
   }
 
   public get label(): string {
@@ -117,6 +128,10 @@ class Peer extends EventEmitter {
 
   public get addresses(): Address[] | undefined {
     return this.nodeState ? this.nodeState.addresses : undefined;
+  }
+
+  public get raidenAddress(): string | undefined {
+    return this.nodeState ? this.nodeState.raidenAddress : undefined;
   }
 
   /** Returns a list of trading pairs advertised by this peer. */
@@ -134,10 +149,10 @@ class Peer extends EventEmitter {
   public get info(): PeerInfo {
     return {
       address: addressUtils.toString(this.address),
-      nodePubKey: this.nodeState ? this.nodeState.nodePubKey : undefined,
+      nodePubKey: this.nodePubKey,
       inbound: this.inbound,
       pairs: Array.from(this.activePairs),
-      xudVersion: this.nodeState ? this.nodeState.version : undefined,
+      xudVersion: this.version,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
       raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
@@ -169,7 +184,17 @@ class Peer extends EventEmitter {
     return peer;
   }
 
-  public getIdentifier(clientType: SwapClientType, currency?: string): string | undefined {
+  public getAdvertisedCurrencies = (): Set<string> => {
+    const advertisedCurrencies: Set<string> = new Set();
+    this.advertisedPairs.forEach((advertisedPair) => {
+      const [baseCurrency, quoteCurrency] = advertisedPair.split('/');
+      advertisedCurrencies.add(baseCurrency);
+      advertisedCurrencies.add(quoteCurrency);
+    });
+    return advertisedCurrencies;
+  }
+
+  public getIdentifier = (clientType: SwapClientType, currency?: string): string | undefined => {
     if (!this.nodeState) {
       return undefined;
     }
@@ -180,6 +205,14 @@ class Peer extends EventEmitter {
       return this.nodeState.raidenAddress;
     }
     return;
+  }
+
+  public getTokenIdentifier = (currency: string): string | undefined => {
+    if (!this.nodeState) {
+      return undefined;
+    }
+
+    return this.nodeState.tokenIdentifiers[currency];
   }
 
   public getStatus = (): string => {
@@ -196,13 +229,21 @@ class Peer extends EventEmitter {
 
   /**
    * Prepares a peer for use by establishing a socket connection and beginning the handshake.
-   * @param ownNodeState our node state data to send to the peer
-   * @param nodeKey our identity node key
-   * @param expectedNodePubKey the expected nodePubKey of the node we are opening a connection with
-   * @param retryConnecting whether to retry to connect upon failure
    * @returns the session init packet from beginning the handshake
    */
-  public beginOpen = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey?: string, retryConnecting = false):
+  public beginOpen = async ({ ownNodeState, ownNodeKey, ownVersion, expectedNodePubKey, retryConnecting = false }:
+    {
+      /** Our node state data to send to the peer. */
+      ownNodeState: NodeState,
+      /** Our identity node key. */
+      ownNodeKey: NodeKey,
+      /** The version of xud we are running. */
+      ownVersion: string
+      /** The expected nodePubKey of the node we are opening a connection with. */
+      expectedNodePubKey?: string,
+      /** Whether to retry to connect upon failure. */
+      retryConnecting?: boolean,
+    }):
     Promise<packets.SessionInitPacket> => {
     assert(!this.opening);
     assert(!this.opened);
@@ -216,17 +257,18 @@ class Peer extends EventEmitter {
     await this.initConnection(retryConnecting);
     this.initStall();
 
-    return this.beginHandshake(ownNodeState, nodeKey);
+    return this.beginHandshake(ownNodeState, ownNodeKey, ownVersion);
   }
 
   /**
    * Finishes opening a peer for use by marking the peer as opened, completing the handshake,
    * and setting up the ping packet timer.
    * @param ownNodeState our node state data to send to the peer
-   * @param nodeKey our identity node key
+   * @param ownNodeKey our identity node key
+   * @param ownVersion the version of xud we are running
    * @param sessionInit the session init packet we received when beginning the handshake
    */
-  public completeOpen = async (ownNodeState: NodeState, nodeKey: NodeKey, sessionInit: packets.SessionInitPacket) => {
+  public completeOpen = async (ownNodeState: NodeState, ownNodeKey: NodeKey, ownVersion: string, sessionInit: packets.SessionInitPacket) => {
     assert(this.opening);
     assert(!this.opened);
     assert(!this.closed);
@@ -234,13 +276,13 @@ class Peer extends EventEmitter {
     this.opening = false;
     this.opened = true;
 
-    await this.completeHandshake(ownNodeState, nodeKey, sessionInit);
+    await this.completeHandshake(ownNodeState, ownNodeKey, ownVersion, sessionInit);
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // Setup a timer to periodicially check if we can swap inactive pairs
-    this.checkPairsTimer = setInterval(this.checkPairs, Peer.CHECK_PAIRS_INTERVAL);
+    this.checkPairsTimer = setInterval(() => this.emit('verifyPairs'), Peer.CHECK_PAIRS_INTERVAL);
   }
 
   /**
@@ -335,6 +377,26 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
+  public disableCurrency = (currency: string) => {
+    if (!this.disabledCurrencies.has(currency)) {
+      this.disabledCurrencies.add(currency);
+      this.verifiedCurrencies.delete(currency);
+      this.activePairs.forEach((activePairId) => {
+        const [baseCurrency, quoteCurrency] = activePairId.split('/');
+        if (baseCurrency === currency || quoteCurrency === currency) {
+          this.deactivatePair(activePairId);
+        }
+      });
+      this.logger.debug(`disabled ${currency} for peer ${this.label}`);
+    }
+  }
+
+  public enableCurrency = (currency: string) => {
+    if (this.disabledCurrencies.delete(currency)) {
+      this.logger.debug(`enabled ${currency} for peer ${this.label}`);
+    }
+  }
+
   /**
    * Deactivates a trading pair with this peer.
    */
@@ -343,9 +405,6 @@ class Peer extends EventEmitter {
       throw new Error('cannot deactivate a trading pair before handshake is complete');
     }
     if (this.activePairs.delete(pairId)) {
-      const [baseCurrency, quoteCurrency] = pairId.split('/');
-      this.verifiedCurrencies.delete(baseCurrency);
-      this.verifiedCurrencies.delete(quoteCurrency);
       this.emit('pairDropped', pairId);
     }
     // TODO: notify peer that we have deactivated this pair?
@@ -365,8 +424,16 @@ class Peer extends EventEmitter {
 
   public isPairActive = (pairId: string) => this.activePairs.has(pairId);
 
-// tslint:disable-next-line: member-ordering
-  public forEachActivePair = this.activePairs.forEach.bind(this.activePairs);
+  /**
+   * Gets lnd client's listening uris for the provided currency.
+   * @param currency
+   */
+  public getLndUris(currency: string): string[] | undefined {
+    if (this.nodeState && this.nodeState.lndUris) {
+      return this.nodeState.lndUris[currency];
+    }
+    return;
+  }
 
   private sendRaw = (data: Buffer) => {
     if (this.socket && !this.socket.destroyed) {
@@ -701,7 +768,7 @@ class Peer extends EventEmitter {
     const body = packet.body!;
     const { sign, ...bodyWithoutSign } = body;
     /** The pub key of the node that sent the init packet. */
-    const sourceNodePubKey = body.nodeState.nodePubKey;
+    const sourceNodePubKey = body.nodePubKey;
     /** The pub key of the node that the init packet is intended for. */
     const targetNodePubKey = body.peerPubKey;
 
@@ -735,15 +802,23 @@ class Peer extends EventEmitter {
 
     // finally set this peer's node state to the node state in the init packet body
     this.nodeState = body.nodeState;
+    this._nodePubKey = body.nodePubKey;
+    this._version = body.version;
   }
 
   /**
    * Sends a [[SessionInitPacket]] and waits for a [[SessionAckPacket]].
    */
-  private initSession = async (ownNodeState: NodeState, nodeKey: NodeKey, expectedNodePubKey: string): Promise<void> => {
+  private initSession = async (ownNodeState: NodeState, ownNodeKey: NodeKey, ownVersion: string, expectedNodePubKey: string): Promise<void> => {
     const ECDH = createECDH('secp256k1');
     const ephemeralPubKey = ECDH.generateKeys().toString('hex');
-    const packet = this.createSessionInitPacket(ephemeralPubKey, ownNodeState, expectedNodePubKey, nodeKey);
+    const packet = this.createSessionInitPacket({
+      ephemeralPubKey,
+      ownNodeState,
+      ownNodeKey,
+      ownVersion,
+      expectedNodePubKey,
+    });
     await this.sendPacket(packet);
     await this.wait(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT, (packet: Packet) => {
       // enabling in-encryption synchronously,
@@ -774,18 +849,18 @@ class Peer extends EventEmitter {
    * [[SessionInitPacket]] first if we are the outbound peer.
    * @returns the session init packet we receive
    */
-  private beginHandshake = async (ownNodeState: NodeState, nodeKey: NodeKey) => {
+  private beginHandshake = async (ownNodeState: NodeState, ownNodeKey: NodeKey, ownVersion: string) => {
     let sessionInit: packets.SessionInitPacket;
     if (!this.inbound) {
       // outbound handshake
       assert(this.expectedNodePubKey);
-      await this.initSession(ownNodeState, nodeKey, this.expectedNodePubKey!);
+      await this.initSession(ownNodeState, ownNodeKey, ownVersion, this.expectedNodePubKey!);
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, nodeKey.pubKey, this.expectedNodePubKey);
+      await this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey, this.expectedNodePubKey);
     } else {
       // inbound handshake
       sessionInit = await this.waitSessionInit();
-      await this.authenticateSessionInit(sessionInit, nodeKey.pubKey);
+      await this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey);
     }
     return sessionInit;
   }
@@ -794,21 +869,14 @@ class Peer extends EventEmitter {
    * Completes the handshake by sending the [[SessionAckPacket]] and our [[SessionInitPacket]] if it
    * has not been sent already, as is the case with inbound peers.
    */
-  private completeHandshake = async (ownNodeState: NodeState, nodeKey: NodeKey, sessionInit: packets.SessionInitPacket) => {
+  private completeHandshake = async (ownNodeState: NodeState, ownNodeKey: NodeKey, ownVersion: string, sessionInit: packets.SessionInitPacket) => {
     if (!this.inbound) {
       // outbound handshake
       await this.ackSession(sessionInit);
     } else {
       // inbound handshake
       await this.ackSession(sessionInit);
-      await this.initSession(ownNodeState, nodeKey, sessionInit.body!.nodeState.nodePubKey);
-    }
-  }
-
-  private checkPairs = () => {
-    const inactivePairs = this.advertisedPairs.filter(pair => !this.activePairs.has(pair));
-    if (inactivePairs.length) {
-      this.emit('pairsAdvertised', inactivePairs);
+      await this.initSession(ownNodeState, ownNodeKey, ownVersion, sessionInit.body!.nodePubKey);
     }
   }
 
@@ -838,21 +906,24 @@ class Peer extends EventEmitter {
     await this.sendPong(packet.header.id);
   }
 
-  private createSessionInitPacket = (
+  private createSessionInitPacket = ({ ephemeralPubKey, ownNodeState, ownNodeKey, ownVersion, expectedNodePubKey }: {
     ephemeralPubKey: string,
     ownNodeState: NodeState,
+    ownNodeKey: NodeKey,
+    ownVersion: string,
     expectedNodePubKey: string,
-    nodeKey: NodeKey,
-  ): packets.SessionInitPacket => {
+  }): packets.SessionInitPacket => {
     let body: any = {
       ephemeralPubKey,
+      version: ownVersion,
       peerPubKey: expectedNodePubKey,
+      nodePubKey: ownNodeKey.pubKey,
       nodeState: ownNodeState,
     };
 
     const msg = stringify(body);
     const msgHash = createHash('sha256').update(msg).digest();
-    const { signature } = secp256k1.sign(msgHash, nodeKey.privKey);
+    const { signature } = secp256k1.sign(msgHash, ownNodeKey.privKey);
 
     body = { ...body, sign: signature.toString('hex') };
 
@@ -883,28 +954,16 @@ class Peer extends EventEmitter {
     const nodeStateUpdate = packet.body!;
     this.logger.verbose(`received node state update packet from ${this.label}: ${JSON.stringify(nodeStateUpdate)}`);
 
-    const prevNodeState = this.nodeState!;
-    /** A list of trading pairs that are advertised in this node state update that weren't advertised before. */
-    const addedPairs: string[] = [];
-
     this.activePairs.forEach((pairId) => {
       if (!nodeStateUpdate.pairs.includes(pairId)) {
         // a trading pair was previously active but is not in the updated node state
-        this.activePairs.delete(pairId);
-        this.emit('pairDropped', pairId);
+        this.deactivatePair(pairId);
       }
     });
 
-    nodeStateUpdate.pairs.forEach((pairId) => {
-      if (!prevNodeState.pairs.includes(pairId)) {
-        // a trading pair in the updated node state was not in the old one
-        addedPairs.push(pairId);
-      }
-    });
-
-    this.nodeState = { ...nodeStateUpdate, nodePubKey: prevNodeState.nodePubKey, version: prevNodeState.version };
-    this.emit('pairsAdvertised', addedPairs);
+    this.nodeState = nodeStateUpdate;
     this.emit('nodeStateUpdate');
+    this.emit('verifyPairs');
   }
 
   private setOutEncryption = (key: Buffer) => {
