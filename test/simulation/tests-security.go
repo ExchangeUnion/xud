@@ -294,7 +294,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	time.Sleep(5 * time.Second)
 
-	// Wait for HTLC output to be spentfully confirmed.
+	// Wait for HTLC output to be fully confirmed.
 
 	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(6)
 	ht.assert.NoError(err)
@@ -468,7 +468,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	time.Sleep(5 * time.Second)
 
-	// Wait for HTLC output to be spentfully confirmed.
+	// Wait for HTLC output to be fully confirmed.
 
 	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(6)
 	ht.assert.NoError(err)
