@@ -19,14 +19,18 @@ class SwapRepository {
     });
   }
 
-  public addSwapDeal = async (swapDeal: db.SwapDealFactory): Promise<db.SwapDealInstance> => {
+  public saveSwapDeal = async (swapDeal: db.SwapDealFactory, swapOrder?: db.OrderFactory) => {
+    if (swapOrder) {
+      await this.models.Order.upsert(swapOrder);
+    }
+
     const node = await this.models.Node.findOne({
       where: {
         nodePubKey: swapDeal.peerPubKey,
       },
     });
     const attributes = { ...swapDeal, nodeId: node!.id } as db.SwapDealAttributes;
-    return this.models.SwapDeal.create(attributes);
+    await this.models.SwapDeal.upsert(attributes);
   }
 }
 export default SwapRepository;

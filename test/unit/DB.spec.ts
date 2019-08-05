@@ -108,7 +108,7 @@ describe('Database', () => {
     const { rHash } = deal;
     const trade: TradeFactory = { rHash, quantity: deal.quantity!, makerOrderId: order.id };
     await orderBookRepo.addTrade(trade);
-    await swapRepo.addSwapDeal(deal);
+    await swapRepo.saveSwapDeal(deal);
 
     const swapInstance = await db.models.SwapDeal.findOne({ where: { rHash } });
     expect(swapInstance!.orderId).to.equal(order.id);

@@ -20,6 +20,13 @@ jest.mock('../../../lib/p2p/Peer');
 const mockedPeer = <jest.Mock<Peer>><any>Peer;
 jest.mock('../../../lib/lndclient/LndClient');
 const mockedLnd = <jest.Mock<LndClient>><any>LndClient;
+jest.mock('../../../lib/swaps/SwapRepository', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      saveSwapDeal: jest.fn(),
+    };
+  });
+});
 const getMockedLnd = (cltvDelta: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
