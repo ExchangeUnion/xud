@@ -5,7 +5,6 @@ export type RaidenClientConfig = {
   disable: boolean;
   host: string;
   port: number;
-  cltvdelta: number;
 };
 
 /** General information about the state of this raiden client. */

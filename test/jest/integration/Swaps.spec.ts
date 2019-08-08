@@ -27,10 +27,10 @@ jest.mock('../../../lib/swaps/SwapRepository', () => {
     };
   });
 });
-const getMockedLnd = (cltvDelta: number) => {
+const getMockedLnd = (lockBuffer: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
-  lnd.cltvDelta = cltvDelta;
+  lnd.lockBuffer = lockBuffer;
   // @ts-ignore
   lnd.type = SwapClientType.Lnd;
   lnd.isConnected = jest.fn().mockReturnValue(true);

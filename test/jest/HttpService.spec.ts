@@ -34,10 +34,10 @@ describe('HttpService', () => {
     await httpService.resolveHashRaiden(resolveRequest);
     expect(service.resolveHash)
       .toHaveBeenCalledWith({
+        expiration,
         amount: resolveRequest.amount,
         rHash: secretHash,
         tokenAddress: token,
-        cltvDelta: expiration,
       });
   });
 

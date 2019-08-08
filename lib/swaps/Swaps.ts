@@ -154,7 +154,7 @@ class Swaps extends EventEmitter {
       this.sanitySwaps.set(rHash, sanitySwap);
       const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await swapClient.addInvoice(rHash, 1, swapClient.cltvDelta);
+        await swapClient.addInvoice(rHash, 1, swapClient.lockBuffer);
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
@@ -345,7 +345,7 @@ class Swaps extends EventEmitter {
 
     try {
       await Promise.all([
-        swapClient.addInvoice(rHash, 1, swapClient.cltvDelta),
+        swapClient.addInvoice(rHash, 1, swapClient.lockBuffer),
         peer.sendPacket(sanitySwapInitPacket),
         peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
@@ -381,7 +381,7 @@ class Swaps extends EventEmitter {
     const clientType = this.swapClientManager.get(makerCurrency)!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
-    const takerCltvDelta = this.swapClientManager.get(takerCurrency)!.cltvDelta;
+    const takerCltvDelta = this.swapClientManager.get(takerCurrency)!.finalLock;
 
     const { rPreimage, rHash } = await generatePreimageAndHash();
     const swapRequestBody: packets.SwapRequestPacketBody = {
@@ -563,23 +563,23 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got block height of ${height} for ${takerCurrency}`);
 
-      const routeTotalTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
-      this.logger.debug(`choosing a route with total time lock of ${routeTotalTimeLock}`);
-      const routeCltvDelta = routeTotalTimeLock - height;
-      this.logger.debug(`route CLTV delta: ${routeCltvDelta}`);
+      const routeAbsoluteTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
+      this.logger.debug(`choosing a route with total time lock of ${routeAbsoluteTimeLock}`);
+      const routeTimeLock = routeAbsoluteTimeLock - height;
+      this.logger.debug(`route time lock: ${routeTimeLock}`);
 
-      const makerClientCltvDelta = this.swapClientManager.get(makerCurrency)!.cltvDelta;
-      this.logger.debug(`maker client CLTV delta: ${makerClientCltvDelta}`);
+      const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
+      this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer}`);
 
       /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
-      const cltvDeltaFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
-      this.logger.debug(`CLTV delta factor: ${cltvDeltaFactor}`);
+      const blockTimeFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
+      this.logger.debug(`CLTV delta factor: ${blockTimeFactor}`);
 
       // Here we calculate the minimum CLTV delay the maker will expect on the final hop to him on
       // the first leg of the swap. This is equal to the maker's configurable cltvDelta plus the
       // total delay of the taker route times a factor to convert taker blocks to maker blocks.
       // This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
-      deal.makerCltvDelta = makerClientCltvDelta + Math.ceil(routeCltvDelta * cltvDeltaFactor);
+      deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeTimeLock * blockTimeFactor);
       this.logger.debug(`makerCltvDelta: ${deal.makerCltvDelta}`);
     }
 
@@ -675,7 +675,7 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await takerSwapClient.addInvoice(deal.rHash, deal.takerUnits, takerSwapClient.cltvDelta);
+      await takerSwapClient.addInvoice(deal.rHash, deal.takerUnits, deal.takerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -716,7 +716,7 @@ class Swaps extends EventEmitter {
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
-    const { amount, tokenAddress, cltvDelta } = resolveRequest;
+    const { amount, tokenAddress, expiration } = resolveRequest;
     let expectedAmount: number;
     let expectedTokenAddress: string | undefined;
     let source: string;

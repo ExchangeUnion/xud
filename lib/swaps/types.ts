@@ -103,6 +103,6 @@ export type ResolveRequest = {
   amount: number,
   rHash: string,
   tokenAddress: string,
-  /** The number of blocks before the HTLC expires. */
-  cltvDelta: number,
+  /** The number of blocks before the incoming payment expires. */
+  expiration: number,
 };

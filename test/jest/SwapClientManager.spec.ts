@@ -93,7 +93,6 @@ describe('Swaps.SwapClientManager', () => {
         certpath: 'tls.cert',
         host: 'localhost',
         port: 10009,
-        cltvdelta: 144,
         nomacaroons: true,
         macaroonpath: '',
       },
@@ -102,7 +101,6 @@ describe('Swaps.SwapClientManager', () => {
         certpath: 'tls.cert',
         host: 'localhost',
         port: 10009,
-        cltvdelta: 144,
         nomacaroons: true,
         macaroonpath: '',
       },
@@ -111,7 +109,6 @@ describe('Swaps.SwapClientManager', () => {
       disable: false,
       host: 'localhost',
       port: 1234,
-      cltvdelta: 5760,
     };
     config.debug = {
       raidenDirectChannelChecks: true,
