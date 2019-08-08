@@ -4,6 +4,7 @@ import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import { XuNetwork } from '../../lib/constants/enums';
 import NodeKey from '../../lib/nodekey/NodeKey';
+import errors from '../../lib/p2p/errors';
 
 jest.mock('../../lib/db/DB', () => {
   return jest.fn().mockImplementation(() => {
@@ -21,6 +22,8 @@ describe('P2P Pool', () => {
   let db: DB;
   let pool: Pool;
   const logger = Logger.createLoggers(Level.Warn).p2p;
+
+  const listenPort = 8885;
 
   beforeAll(async () => {
     const nodeKeyTwo = await NodeKey['generate']();
@@ -40,6 +43,8 @@ describe('P2P Pool', () => {
     });
 
     await pool.init();
+
+    pool['listenPort'] = listenPort;
   });
 
   afterEach(() => {
@@ -65,5 +70,21 @@ describe('P2P Pool', () => {
     expect(pool.getTokenIdentifier('WETH')).toEqual(wethTokenAddress);
     expect(pool.getTokenIdentifier('DAI')).toEqual(daiTokenAddress);
     expect(pool['nodeState'].raidenAddress).toEqual(raidenAddress);
+  });
+
+  test('should reject connecting to its own addresses', async () => {
+    const selfAddresses = [
+      '::1',
+      '0.0.0.0',
+      '127.0.0.1',
+      'localhost',
+    ];
+
+    for (const address of selfAddresses) {
+      await expect(pool.addOutbound({
+        host: address,
+        port: listenPort,
+      }, '', false, false)).rejects.toEqual(errors.ATTEMPTED_CONNECTION_TO_SELF);
+    }
   });
 });
