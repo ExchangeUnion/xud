@@ -125,9 +125,9 @@ class RaidenClient extends SwapClient {
       /** The new raiden address value if different from the one we had previously. */
       let newAddress: string | undefined;
       if (this.address !== address) {
-        this.logger.debug(`address is ${newAddress}`);
         newAddress = address;
         this.address = newAddress;
+        this.logger.debug(`address is ${newAddress}`);
       }
 
       this.emit('connectionVerified', { newIdentifier: newAddress });
