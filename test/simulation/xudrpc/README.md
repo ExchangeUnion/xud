@@ -23,7 +23,7 @@ git reset --hard 40b7550fd0ba4b8f7e9d70ed40fcd4f3375db1de
 git clone https://github.com/grpc-ecosystem/grpc-gateway $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
 cd $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
 git reset --hard f2862b476edcef83412c7af8687c9cd8e4097c0f
-go install ./protoc-gen-grpc-gateway ./protoc-gen-swagger
+go install ./protoc-gen-grpc-gateway
 ```
 
 1. Run [`gen_protos.sh`](https://github.com/ExchangeUnion/xud/blob/master/test/simulation/xudrpc/gen_protos.sh) to generate new protobuf definitions
