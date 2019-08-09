@@ -33,6 +33,7 @@ A git commit template is provided to assist with crafting proper commit messsage
 git config commit.template .git-commit-template.txt
 ```
 
+
 ### Linting & Testing
 
 New test cases are appreciated for any pull requests that changes or adds new functionality. Although the current test suites are in early stages, thorough testing and code coverage is an important long term goal.
