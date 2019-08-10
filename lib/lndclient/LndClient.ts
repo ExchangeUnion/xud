@@ -114,7 +114,7 @@ class LndClient extends SwapClient {
     }
 
     this.uri = `${host}:${port}`;
-    await this.verifyConnection();
+    await this.verifyConnectionWithTimeout();
   }
 
   public get pubKey() {

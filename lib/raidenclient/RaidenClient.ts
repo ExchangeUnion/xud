@@ -85,7 +85,7 @@ class RaidenClient extends SwapClient {
       return;
     }
     this.setTokenAddresses(currencyInstances);
-    await this.verifyConnection();
+    await this.verifyConnectionWithTimeout();
   }
 
   /**
