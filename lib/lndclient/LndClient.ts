@@ -36,7 +36,10 @@ const MAXFEE = 0.03;
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
-  public readonly cltvDelta: number;
+  public readonly lockBuffer: number;
+  public readonly finalLock: number;
+  public config: LndClientConfig;
+  public currency: string;
   private lightning?: LightningClient | LightningMethodIndex;
   private walletUnlocker?: WalletUnlockerClient | InvoicesMethodIndex;
   private invoices?: InvoicesClient | InvoicesMethodIndex;
@@ -53,18 +56,33 @@ class LndClient extends SwapClient {
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
 
+  private static MINUTES_PER_BLOCK_BY_CURRENCY: { [key: string]: number } = {
+    BTC: 10,
+    LTC: 2.5,
+  };
+
   /**
    * Creates an lnd client.
-   * @param config the lnd configuration
    */
-  constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
+  constructor(
+    { config, logger, currency, lockBufferHours }:
+    { config: LndClientConfig, logger: Logger, currency: string, lockBufferHours: number },
+  ) {
     super(logger);
-    this.cltvDelta = config.cltvdelta || 0;
+    this.config = config;
+    this.currency = currency;
+    this.lockBuffer = Math.round(lockBufferHours * 60 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
+     // we set the expected final lock to 400 minutes which is the default for bitcoin on lnd 0.7.1
+    this.finalLock = Math.round(400 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
+  }
+
+  public get minutesPerBlock() {
+    return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
   }
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    assert(this.cltvDelta > 0, `lnd-${this.currency}: cltvdelta must be a positive number`);
+    assert(this.lockBuffer > 0, `lnd-${this.currency}: lock buffer must be a positive number`);
 
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
@@ -303,7 +321,7 @@ class LndClient extends SwapClient {
       // In case of sanity swaps we don't know the
       // takerCltvDelta or the makerCltvDelta. Using our
       // client's default.
-      finalCltvDelta: this.cltvDelta,
+      finalCltvDelta: this.lockBuffer,
     });
     const preimage = await this.executeSendRequest(request);
     return preimage;
@@ -332,11 +350,9 @@ class LndClient extends SwapClient {
         rHash: deal.rHash,
         destination: deal.takerPubKey!,
         amount: deal.takerAmount,
-        // Using the agreed upon takerCltvDelta. Taker won't accept
-        // our payment if we provide a smaller value.
-        finalCltvDelta: deal.takerCltvDelta,
         // Enforcing the maximum duration/length of the payment by
         // specifying the cltvLimit.
+        finalCltvDelta: deal.takerCltvDelta,
         cltvLimit: deal.makerCltvDelta,
       });
     }
@@ -508,7 +524,7 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoutes =  async (amount: number, destination: string, _currency: string, finalCltvDelta = this.cltvDelta): Promise<lndrpc.Route[]> => {
+  public getRoutes =  async (amount: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer): Promise<lndrpc.Route[]> => {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(amount);
     request.setFinalCltvDelta(finalCltvDelta);

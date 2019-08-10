@@ -42,7 +42,8 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly cltvDelta: number = 5760;
+  public readonly lockBuffer: number;
+  public readonly finalLock = 100;
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
@@ -57,17 +58,22 @@ class RaidenClient extends SwapClient {
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter, directChannelChecks = false }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
+    { config, logger, unitConverter, directChannelChecks = false, lockBufferHours }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean, lockBufferHours: number },
   ) {
     super(logger);
     const { disable, host, port } = config;
 
+    this.lockBuffer = Math.round(lockBufferHours * 60 / this.minutesPerBlock);
     this.port = port;
     this.host = host;
     this.disable = disable;
     this.unitConverter = unitConverter;
     this.directChannelChecks = directChannelChecks;
+  }
+
+  public get minutesPerBlock() {
+    return 0.25; // 15 seconds per block target
   }
 
   /**
@@ -178,6 +184,7 @@ class RaidenClient extends SwapClient {
       token_address: tokenAddress,
       target_address: deal.destination!,
       secret_hash: deal.rHash,
+      lock_timeout: deal.makerCltvDelta,
     });
     return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
   }
@@ -287,6 +294,7 @@ class RaidenClient extends SwapClient {
         };
       }
 
+      this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
       const req = http.request(options, async (res) => {
         switch (res.statusCode) {
           case 200:
