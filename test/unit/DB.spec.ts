@@ -90,6 +90,7 @@ describe('Database', () => {
     await p2pRepo.addNode({
       nodePubKey: peerPubKey,
       addresses: [],
+      inbound: false,
     });
   });
 

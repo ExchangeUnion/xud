@@ -34,6 +34,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
       },
     },
     banned: { type: DataTypes.BOOLEAN, allowNull: true },
+    inbound: { type: DataTypes.BOOLEAN, allowNull: true },
   };
 
   const indexes: Sequelize.DefineIndexesOptions[] = [{

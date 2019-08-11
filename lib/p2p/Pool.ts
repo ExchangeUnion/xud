@@ -328,6 +328,9 @@ class Pool extends EventEmitter {
    * Attempt to create an outbound connection to a node using its known listening addresses.
    */
   private tryConnectNode = async (node: NodeConnectionInfo, retryConnecting = false) => {
+    if (node.inbound) {
+      return;
+    }
     if (!await this.tryConnectWithLastAddress(node)) {
       if (!await this.tryConnectWithAdvertisedAddresses(node) && retryConnecting) {
         await this.tryConnectWithLastAddress(node, true);
@@ -521,6 +524,7 @@ class Pool extends EventEmitter {
         addresses,
         nodePubKey: peerPubKey,
         lastAddress: peer.inbound ? undefined : peer.address,
+        inbound: peer.inbound,
       });
     } else {
       // the node is known, update its listening addresses
@@ -563,6 +567,7 @@ class Pool extends EventEmitter {
           nodePubKey,
           addresses: node.addresses,
           lastAddress: node.lastAddress,
+          inbound: node.inbound,
         };
 
         this.logger.info(`node ${nodePubKey} was unbanned`);
@@ -796,6 +801,7 @@ class Pool extends EventEmitter {
         connectedNodesInfo.push({
           nodePubKey: connectedPeer.nodePubKey!,
           addresses: connectedPeer.addresses,
+          inbound: connectedPeer.inbound,
         });
       }
     });
@@ -875,7 +881,7 @@ class Pool extends EventEmitter {
 
     if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
-      const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
+      const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey, inbound: peer.inbound };
       await this.tryConnectNode(node, true);
     }
   }

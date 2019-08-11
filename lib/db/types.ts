@@ -84,6 +84,7 @@ export type NodeAttributes = NodeFactory & {
   addressesText: string;
   lastAddressText: string;
   lastAddress: Address;
+  inbound: boolean;
 };
 
 export type NodeInstance = NodeAttributes & Sequelize.Instance<NodeAttributes> & {

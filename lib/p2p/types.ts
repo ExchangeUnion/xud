@@ -10,6 +10,7 @@ export type NodeConnectionInfo = {
   nodePubKey: string;
   addresses: Address[];
   lastAddress?: Address;
+  inbound?: boolean;
 };
 
 export type NodeState = {
