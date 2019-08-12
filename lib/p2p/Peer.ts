@@ -512,7 +512,7 @@ class Peer extends EventEmitter {
         }
 
         this.logger.debug(
-          `Connection attempt #${retries + 1} to peer (${addressUtils.toString(this.address)}) ` +
+          `Connection attempt #${retries + 1} to peer ${this.expectedNodePubKey}@${addressUtils.toString(this.address)} ` +
           `failed: ${err.message}. retrying in ${retryDelay / 1000} sec...`,
         );
 
