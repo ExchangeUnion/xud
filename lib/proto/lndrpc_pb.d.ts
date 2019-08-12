@@ -295,6 +295,9 @@ export class Transaction extends jspb.Message {
     setDestAddressesList(value: Array<string>): void;
     addDestAddresses(value: string, index?: number): string;
 
+    getRawTxHex(): string;
+    setRawTxHex(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Transaction.AsObject;
@@ -316,6 +319,7 @@ export namespace Transaction {
         timeStamp: number,
         totalFees: number,
         destAddressesList: Array<string>,
+        rawTxHex: string,
     }
 }
 
@@ -515,11 +519,6 @@ export class SendToRouteRequest extends jspb.Message {
     getPaymentHashString(): string;
     setPaymentHashString(value: string): void;
 
-    clearRoutesList(): void;
-    getRoutesList(): Array<Route>;
-    setRoutesList(value: Array<Route>): void;
-    addRoutes(value?: Route, index?: number): Route;
-
 
     hasRoute(): boolean;
     clearRoute(): void;
@@ -541,7 +540,6 @@ export namespace SendToRouteRequest {
     export type AsObject = {
         paymentHash: Uint8Array | string,
         paymentHashString: string,
-        routesList: Array<Route.AsObject>,
         route?: Route.AsObject,
     }
 }
@@ -1177,6 +1175,12 @@ export class Channel extends jspb.Message {
     getChanStatusFlags(): string;
     setChanStatusFlags(value: string): void;
 
+    getLocalChanReserveSat(): number;
+    setLocalChanReserveSat(value: number): void;
+
+    getRemoteChanReserveSat(): number;
+    setRemoteChanReserveSat(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Channel.AsObject;
@@ -1209,6 +1213,8 @@ export namespace Channel {
         pb_private: boolean,
         initiator: boolean,
         chanStatusFlags: string,
+        localChanReserveSat: number,
+        remoteChanReserveSat: number,
     }
 }
 
@@ -1563,6 +1569,9 @@ export class GetInfoResponse extends jspb.Message {
     setChainsList(value: Array<Chain>): void;
     addChains(value?: Chain, index?: number): Chain;
 
+    getColor(): string;
+    setColor(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GetInfoResponse.AsObject;
@@ -1590,6 +1599,7 @@ export namespace GetInfoResponse {
         version: string,
         numInactiveChannels: number,
         chainsList: Array<Chain.AsObject>,
+        color: string,
     }
 }
 
@@ -2031,6 +2041,12 @@ export namespace PendingChannelsResponse {
         getRemoteBalance(): number;
         setRemoteBalance(value: number): void;
 
+        getLocalChanReserveSat(): number;
+        setLocalChanReserveSat(value: number): void;
+
+        getRemoteChanReserveSat(): number;
+        setRemoteChanReserveSat(value: number): void;
+
 
         serializeBinary(): Uint8Array;
         toObject(includeInstance?: boolean): PendingChannel.AsObject;
@@ -2049,6 +2065,8 @@ export namespace PendingChannelsResponse {
             capacity: number,
             localBalance: number,
             remoteBalance: number,
+            localChanReserveSat: number,
+            remoteChanReserveSat: number,
         }
     }
 
@@ -2385,9 +2403,6 @@ export class QueryRoutesRequest extends jspb.Message {
     getAmt(): number;
     setAmt(value: number): void;
 
-    getNumRoutes(): number;
-    setNumRoutes(value: number): void;
-
     getFinalCltvDelta(): number;
     setFinalCltvDelta(value: number): void;
 
@@ -2412,6 +2427,9 @@ export class QueryRoutesRequest extends jspb.Message {
     getSourcePubKey(): string;
     setSourcePubKey(value: string): void;
 
+    getUseMissionControl(): boolean;
+    setUseMissionControl(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): QueryRoutesRequest.AsObject;
@@ -2427,12 +2445,12 @@ export namespace QueryRoutesRequest {
     export type AsObject = {
         pubKey: string,
         amt: number,
-        numRoutes: number,
         finalCltvDelta: number,
         feeLimit?: FeeLimit.AsObject,
         ignoredNodesList: Array<Uint8Array | string>,
         ignoredEdgesList: Array<EdgeLocator.AsObject>,
         sourcePubKey: string,
+        useMissionControl: boolean,
     }
 }
 
@@ -2580,6 +2598,9 @@ export class NodeInfoRequest extends jspb.Message {
     getPubKey(): string;
     setPubKey(value: string): void;
 
+    getIncludeChannels(): boolean;
+    setIncludeChannels(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): NodeInfoRequest.AsObject;
@@ -2594,6 +2615,7 @@ export class NodeInfoRequest extends jspb.Message {
 export namespace NodeInfoRequest {
     export type AsObject = {
         pubKey: string,
+        includeChannels: boolean,
     }
 }
 
@@ -2609,6 +2631,11 @@ export class NodeInfo extends jspb.Message {
 
     getTotalCapacity(): number;
     setTotalCapacity(value: number): void;
+
+    clearChannelsList(): void;
+    getChannelsList(): Array<ChannelEdge>;
+    setChannelsList(value: Array<ChannelEdge>): void;
+    addChannels(value?: ChannelEdge, index?: number): ChannelEdge;
 
 
     serializeBinary(): Uint8Array;
@@ -2626,6 +2653,7 @@ export namespace NodeInfo {
         node?: LightningNode.AsObject,
         numChannels: number,
         totalCapacity: number,
+        channelsList: Array<ChannelEdge.AsObject>,
     }
 }
 
@@ -2712,6 +2740,9 @@ export class RoutingPolicy extends jspb.Message {
     getMaxHtlcMsat(): number;
     setMaxHtlcMsat(value: number): void;
 
+    getLastUpdate(): number;
+    setLastUpdate(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RoutingPolicy.AsObject;
@@ -2731,6 +2762,7 @@ export namespace RoutingPolicy {
         feeRateMilliMsat: number,
         disabled: boolean,
         maxHtlcMsat: number,
+        lastUpdate: number,
     }
 }
 
@@ -2908,6 +2940,9 @@ export class NetworkInfo extends jspb.Message {
     getMedianChannelSizeSat(): number;
     setMedianChannelSizeSat(value: number): void;
 
+    getNumZombieChans(): number;
+    setNumZombieChans(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): NetworkInfo.AsObject;
@@ -2931,6 +2966,7 @@ export namespace NetworkInfo {
         minChannelSize: number,
         maxChannelSize: number,
         medianChannelSizeSat: number,
+        numZombieChans: number,
     }
 }
 
@@ -3037,6 +3073,9 @@ export class NodeUpdate extends jspb.Message {
     getAlias(): string;
     setAlias(value: string): void;
 
+    getColor(): string;
+    setColor(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): NodeUpdate.AsObject;
@@ -3054,6 +3093,7 @@ export namespace NodeUpdate {
         identityKey: string,
         globalFeatures: Uint8Array | string,
         alias: string,
+        color: string,
     }
 }
 
@@ -3493,6 +3533,18 @@ export class Payment extends jspb.Message {
     getValueMsat(): number;
     setValueMsat(value: number): void;
 
+    getPaymentRequest(): string;
+    setPaymentRequest(value: string): void;
+
+    getStatus(): Payment.PaymentStatus;
+    setStatus(value: Payment.PaymentStatus): void;
+
+    getFeeSat(): number;
+    setFeeSat(value: number): void;
+
+    getFeeMsat(): number;
+    setFeeMsat(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Payment.AsObject;
@@ -3514,10 +3566,25 @@ export namespace Payment {
         paymentPreimage: string,
         valueSat: number,
         valueMsat: number,
+        paymentRequest: string,
+        status: Payment.PaymentStatus,
+        feeSat: number,
+        feeMsat: number,
     }
+
+    export enum PaymentStatus {
+    UNKNOWN = 0,
+    IN_FLIGHT = 1,
+    SUCCEEDED = 2,
+    FAILED = 3,
+    }
+
 }
 
 export class ListPaymentsRequest extends jspb.Message { 
+    getIncludeIncomplete(): boolean;
+    setIncludeIncomplete(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListPaymentsRequest.AsObject;
@@ -3531,6 +3598,7 @@ export class ListPaymentsRequest extends jspb.Message {
 
 export namespace ListPaymentsRequest {
     export type AsObject = {
+        includeIncomplete: boolean,
     }
 }
 

@@ -528,7 +528,6 @@ class LndClient extends SwapClient {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(amount);
     request.setFinalCltvDelta(finalCltvDelta);
-    request.setNumRoutes(1);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
     fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
@@ -634,10 +633,9 @@ class LndClient extends SwapClient {
     if (!this.invoices) {
       throw errors.LND_IS_UNAVAILABLE(this.status);
     }
-    const paymentHash = new lndrpc.PaymentHash();
-    // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
-    paymentHash.setRHash(hexToUint8Array(rHash));
-    const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
+    const request = new lndinvoices.SubscribeSingleInvoiceRequest();
+    request.setRHash(hexToUint8Array(rHash));
+    const invoiceSubscription = this.invoices.subscribeSingleInvoice(request, this.meta);
     const deleteInvoiceSubscription = () => {
       invoiceSubscription.removeAllListeners();
       this.invoiceSubscriptions.delete(rHash);

@@ -10,7 +10,7 @@ delete_dir() {
 
 GO_PATH=$PWD/go
 LND_PATH=${GO_PATH}/src/github.com/lightningnetwork/lnd
-LND_TAG="v0.6.1-beta"
+LND_TAG="v0.7.1-beta"
 if [ -f ${LND_PATH}/lnd-debug ]
 then
   LND_VERSION=$(${LND_PATH}/lnd-debug --version)
