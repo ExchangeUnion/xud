@@ -21,7 +21,7 @@ const currencies = [
     id: 'DAI',
     swapClient: SwapClientType.Raiden,
     decimalPlaces: 18,
-    tokenAddress: '0x6d56f1c68356a147897d4f9a3dc63b97a275b8fa',
+    tokenAddress: '0xad6d458402f60fd3bd25163575031acdce07538d',
   },
 ] as db.CurrencyAttributes[];
 
