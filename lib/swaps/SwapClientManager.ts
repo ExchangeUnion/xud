@@ -286,7 +286,7 @@ class SwapClientManager extends EventEmitter {
     }
     const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
     if (!peerIdentifier) {
-      throw new Error('unable to get swap client pubKey for peer');
+      throw new Error('peer not connected to swap client');
     }
     const units = this.unitConverter.amountToUnits({
       amount,
