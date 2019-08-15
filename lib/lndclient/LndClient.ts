@@ -237,12 +237,10 @@ class LndClient extends SwapClient {
     }
 
     if (!this.isConnected()) {
-      this.logger.debug(`trying to verify connection to lnd at ${this.uri}`);
+      this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
       const lightningClient = new LightningClient(this.uri, this.credentials);
       const clientReadyPromise = new Promise((resolve, reject) => {
-        // if we're not initialized, don't wait for lnd to come online and mark client as disconnected immediately
-        const deadline = this.isNotInitialized() ? 0 : Number.POSITIVE_INFINITY;
-        lightningClient.waitForReady(deadline, (err) => {
+        lightningClient.waitForReady(Number.POSITIVE_INFINITY, (err) => {
           if (err) {
             reject(err);
           } else {
@@ -310,8 +308,8 @@ class LndClient extends SwapClient {
           this.lightning = undefined;
           await this.setStatus(ClientStatus.WaitingUnlock);
         } else {
-          this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
-            retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIMER} ms`);
           await this.disconnect();
         }
       }
