@@ -228,7 +228,7 @@ func (a *actions) placeOrderAndSwap(srcNode, destNode *xudtest.HarnessNode,
 
 	// Verify the swap events info.
 	a.assert.Equal(eMaker.swap.OrderId, eTaker.swap.OrderId)
-	a.assert.NotEqual(eMaker.swap.LocalId, eTaker.swap.LocalId)
+	//a.assert.NotEqual(eMaker.swap.LocalId, eTaker.swap.LocalId)
 	a.assert.Equal(eMaker.swap.PairId, eTaker.swap.PairId)
 	a.assert.Equal(eMaker.swap.Quantity, eTaker.swap.Quantity)
 	a.assert.Equal(eMaker.swap.RHash, eTaker.swap.RHash)
