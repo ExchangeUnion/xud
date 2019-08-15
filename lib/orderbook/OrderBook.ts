@@ -376,12 +376,21 @@ class OrderBook extends EventEmitter {
 
     if (!this.nobalancechecks) {
       // check if sufficient outbound channel capacity exists
-      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      if (!swapClient) {
+      const { outboundCurrency, inboundCurrency, outboundAmount } =
+          Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+
+        // check if clients exists
+      if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      const maximumOutboundAmount = swapClient.maximumOutboundCapacity(outboundCurrency);
+
+      if (!inboundSwapClient) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
+      }
+
+      const maximumOutboundAmount = outboundSwapClient.maximumOutboundCapacity(outboundCurrency);
       if (outboundAmount > maximumOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, maximumOutboundAmount);
       }
