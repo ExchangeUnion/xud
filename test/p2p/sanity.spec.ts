@@ -109,7 +109,7 @@ describe('P2P Sanity Tests', () => {
     const nodeUri = toUri({ host, port, nodePubKey: randomPubKey });
 
     const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: false });
-    await expect(connectPromise).to.be.rejectedWith(`Peer (${host}:${port}) disconnected from us due to AuthFailureInvalidTarget`);
+    await expect(connectPromise).to.be.rejectedWith(`Peer ${randomPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`);
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
@@ -121,7 +121,7 @@ describe('P2P Sanity Tests', () => {
     const nodeUri = toUri({ host, port, nodePubKey: invalidPubKey });
 
     const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: false });
-    await expect(connectPromise).to.be.rejectedWith(`Peer (${host}:${port}) disconnected from us due to AuthFailureInvalidTarget`);
+    await expect(connectPromise).to.be.rejectedWith(`Peer ${invalidPubKey}@${host}:${port} disconnected from us due to AuthFailureInvalidTarget`);
     const listPeersResult = await nodeOne.service.listPeers();
     expect(listPeersResult).to.be.empty;
   });
@@ -159,7 +159,7 @@ describe('P2P Sanity Tests', () => {
   it('should fail when connecting to a node that has banned us', async () => {
     await nodeTwo.service.ban({ nodePubKey: nodeOnePubKey });
     await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
-      .to.be.rejectedWith(`Peer (localhost:${nodeTwoPort}) disconnected from us due to Banned`);
+      .to.be.rejectedWith(`Peer ${nodeTwoPubKey}@localhost:${nodeTwoPort} disconnected from us due to Banned`);
   });
 
   after(async () => {

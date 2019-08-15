@@ -102,7 +102,8 @@ func testP2PIncorrectPubKey(net *xudtest.NetworkHarness, ht *harnessTest) {
 	_, err := net.Alice.Client.Connect(ht.ctx, reqConn)
 	ht.assert.Error(err)
 	ht.assert.Contains(err.Error(), fmt.Sprintf(
-		"Peer (%v) disconnected from us due to AuthFailureInvalidTarget", net.Bob.Cfg.P2PAddr()))
+		"Peer %v disconnected from us due to AuthFailureInvalidTarget",
+		incorrectPubKey + "@" + net.Bob.Cfg.P2PAddr()))
 }
 
 // testP2PBanUnban implements:
@@ -124,7 +125,8 @@ func testP2PBanUnban(net *xudtest.NetworkHarness, ht *harnessTest) {
 	_, err = net.Bob.Client.Connect(ht.ctx, reqConn)
 	ht.assert.Error(err)
 	ht.assert.Contains(err.Error(), fmt.Sprintf(
-		" Peer (%v) disconnected from us due to Banned", net.Alice.Cfg.P2PAddr()))
+		" Peer %v disconnected from us due to Banned",
+		net.Alice.PubKey() + "@" + net.Alice.Cfg.P2PAddr()))
 
 	// After Alice unban Bob, connection attempts from both directions should succeed.
 	ht.act.unban(net.Alice, net.Bob)
