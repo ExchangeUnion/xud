@@ -52,6 +52,8 @@ abstract class SwapClient extends EventEmitter {
   protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;
+  /** The maximum amount of time we will wait for the connection to be verified during initialization. */
+  private static INITIALIZATION_TIME_LIMIT = 5000;
   /** Time in milliseconds between updating the maximum outbound capacity */
   private static CAPACITY_REFRESH_INTERVAL = 60000;
 
@@ -69,6 +71,21 @@ abstract class SwapClient extends EventEmitter {
   public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
   public abstract maximumOutboundCapacity(currency?: string): number;
   protected abstract updateCapacity(): Promise<void>;
+
+  public verifyConnectionWithTimeout = () => {
+    // don't wait longer than the allotted time for the connection to
+    // be verified to prevent initialization from hanging
+    return new Promise<void>((resolve, reject) => {
+      const verifyTimeout = setTimeout(() => {
+        // we could not verify the connection within the allotted time
+        resolve();
+      }, SwapClient.INITIALIZATION_TIME_LIMIT);
+      this.verifyConnection().then(() => {
+        clearTimeout(verifyTimeout);
+        resolve();
+      }).catch(reject);
+    });
+  }
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
