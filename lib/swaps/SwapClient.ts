@@ -123,13 +123,16 @@ abstract class SwapClient extends EventEmitter {
 
   /**
    * Gets routes for the given currency, amount, and swap identifier.
-   * @param amount the capacity the route must support denominated in the smallest units supported by its currency
+   * @param units the capacity the route must support denominated in the smallest units supported by its currency
    * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoutes(amount: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
+  public abstract async getRoutes(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
 
-  public abstract async addInvoice(rHash: string, amount: number, cltvExpiry: number): Promise<void>;
+  /**
+   * @param units the amount of the invoice denominated in the smallest units supported by its currency
+   */
+  public abstract async addInvoice(rHash: string, units: number, cltvExpiry: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
