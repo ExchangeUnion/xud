@@ -46,6 +46,8 @@ type nodeConfig struct {
 	P2PPort  int
 	RPCPort  int
 	HTTPPort int
+
+	NoBalanceChecks bool
 }
 
 // genArgs generates a slice of command line arguments from the xud node
@@ -55,6 +57,10 @@ func (cfg nodeConfig) genArgs() []string {
 
 	args = append(args, "--initdb=false")
 	args = append(args, "--loglevel=debug")
+
+	if cfg.NoBalanceChecks {
+		args = append(args, "--nobalancechecks=true")
+	}
 
 	args = append(args, fmt.Sprintf("--xudir=%v", cfg.DataDir))
 	args = append(args, fmt.Sprintf("--logpath=%v", cfg.LogPath))
@@ -77,7 +83,6 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
 
 	args = append(args, "--raiden.disable")
-	args = append(args, "--nosanityswaps=false")
 
 	return args
 }
@@ -86,8 +91,9 @@ func (cfg nodeConfig) genArgs() []string {
 // harness. Each HarnessNode instance also fully embeds an RPC Client in
 // order to pragmatically drive the node.
 type HarnessNode struct {
-	Cfg *nodeConfig
-	Cmd *exec.Cmd
+	Cfg     *nodeConfig
+	Cmd     *exec.Cmd
+	EnvVars []string
 
 	Name   string
 	ID     int
@@ -98,7 +104,7 @@ type HarnessNode struct {
 
 	// processExit is a channel that's closed once it's detected that the
 	// process this instance of HarnessNode is bound to has exited.
-	processExit chan struct{}
+	ProcessExit chan struct{}
 
 	quit chan struct{}
 	wg   sync.WaitGroup
@@ -114,23 +120,19 @@ func (cfg nodeConfig) P2PAddr() string {
 	return net.JoinHostPort("127.0.0.1", strconv.Itoa(cfg.P2PPort))
 }
 
-func newNode(name string) (*HarnessNode, error) {
+func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, error) {
 	nodeNum := int(atomic.AddInt32(&numActiveNodes, 1))
 
-	os.Mkdir("./temp", 0755)
+	_ = os.Mkdir("./temp", 0755)
 	dataDir, err := filepath.Abs("./temp/xuddatadir-" + name)
 	if err != nil {
 		return nil, err
 	}
 
-	xudPath, err := filepath.Abs("../../")
-	if err != nil {
-		return nil, err
-	}
-
 	cfg := nodeConfig{
-		DataDir: dataDir,
-		XUDPath: xudPath,
+		DataDir:         dataDir,
+		XUDPath:         xudPath,
+		NoBalanceChecks: noBalanceChecks,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
@@ -165,12 +167,23 @@ func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 	}
 }
 
+func (hn *HarnessNode) SetEnvVars(envVars []string) {
+	hn.EnvVars = envVars
+}
+
 // Start launches a new running process of xud.
 func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 	hn.quit = make(chan struct{})
 
 	args := hn.Cfg.genArgs()
-	hn.Cmd = exec.Command(filepath.Join(hn.Cfg.XUDPath, "bin/xud"), args...)
+	cmd := exec.Command(filepath.Join(hn.Cfg.XUDPath, "bin/xud"), args...)
+	if hn.EnvVars != nil && len(hn.EnvVars) > 0 {
+		cmd.Env = os.Environ()
+		for _, kv := range hn.EnvVars {
+			cmd.Env = append(cmd.Env, kv)
+		}
+	}
+	hn.Cmd = cmd
 
 	// Redirect stderr output to buffer
 	var errb bytes.Buffer
@@ -186,7 +199,7 @@ func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 
 	// Launch a new goroutine which that bubbles up any potential fatal
 	// process errors to the goroutine running the tests.
-	hn.processExit = make(chan struct{})
+	hn.ProcessExit = make(chan struct{})
 	hn.wg.Add(1)
 	go func() {
 		defer hn.wg.Done()
@@ -197,7 +210,8 @@ func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 		}
 
 		// Signal any onlookers that this process has exited.
-		close(hn.processExit)
+		close(hn.ProcessExit)
+		hn.Client = nil
 	}()
 
 	// Since Stop uses the XudClient to stop the node, if we fail to get a
@@ -257,7 +271,7 @@ func (hn *HarnessNode) shutdown(kill bool, cleanup bool) error {
 
 func (hn *HarnessNode) stop(kill bool) error {
 	// Do nothing if the process is not running.
-	if hn.processExit == nil {
+	if hn.ProcessExit == nil {
 		return nil
 	}
 
@@ -271,7 +285,7 @@ func (hn *HarnessNode) stop(kill bool) error {
 
 	// Wait for xud process and other goroutines to exit.
 	select {
-	case <-hn.processExit:
+	case <-hn.ProcessExit:
 	case <-time.After(10 * time.Second):
 		if !kill {
 			return fmt.Errorf("process did not exit")
@@ -285,7 +299,7 @@ func (hn *HarnessNode) stop(kill bool) error {
 	hn.wg.Wait()
 
 	hn.quit = nil
-	hn.processExit = nil
+	hn.ProcessExit = nil
 	hn.Client = nil
 	return nil
 }

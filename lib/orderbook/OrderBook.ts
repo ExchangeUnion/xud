@@ -173,7 +173,7 @@ class OrderBook extends EventEmitter {
       }
     });
     this.swaps.on('swap.failed', (deal) => {
-      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingPayment)) {
+      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAccepted || deal.phase === SwapPhase.SendingPayment)) {
         // if our order is the maker and the swap failed after it was agreed to but before it was executed
         // we must release the hold on the order that we set when we agreed to the deal
         this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -376,12 +376,21 @@ class OrderBook extends EventEmitter {
 
     if (!this.nobalancechecks) {
       // check if sufficient outbound channel capacity exists
-      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      if (!swapClient) {
+      const { outboundCurrency, inboundCurrency, outboundAmount } =
+          Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+
+        // check if clients exists
+      if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      const maximumOutboundAmount = swapClient.maximumOutboundCapacity(outboundCurrency);
+
+      if (!inboundSwapClient) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
+      }
+
+      const maximumOutboundAmount = outboundSwapClient.maximumOutboundCapacity(outboundCurrency);
       if (outboundAmount > maximumOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, maximumOutboundAmount);
       }
@@ -883,6 +892,7 @@ class OrderBook extends EventEmitter {
       const quantity = Math.min(proposedQuantity, availableQuantity);
 
       this.addOrderHold(order.id, pairId, quantity);
+      await this.repository.addOrderIfNotExists(order);
 
       // try to accept the deal
       const orderToAccept = {
@@ -892,9 +902,7 @@ class OrderBook extends EventEmitter {
         isBuy: order.isBuy,
       };
       const dealAccepted = await this.swaps.acceptDeal(orderToAccept, requestPacket, peer);
-      if (dealAccepted) {
-        await this.repository.addOrderIfNotExists(order);
-      } else {
+      if (!dealAccepted) {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {

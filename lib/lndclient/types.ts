@@ -5,7 +5,6 @@ export type LndClientConfig = {
   macaroonpath: string;
   host: string;
   port: number;
-  cltvdelta: number;
   nomacaroons: boolean;
 };
 

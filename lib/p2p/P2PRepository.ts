@@ -1,6 +1,6 @@
+import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
 import { NodeInstance, ReputationEventInstance, ReputationEventFactory, NodeFactory, ReputationEventAttributes, NodeAttributes } from '../db/types';
-import Bluebird from 'bluebird';
 
 class P2PRepository {
 

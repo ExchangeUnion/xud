@@ -33,9 +33,9 @@ describe('P2P Pool Tests', async () => {
     peer.completeOpen = () => {};
     peer.socket = {};
     peer.sendPacket = () => {};
-    peer.close = () => {
+    peer.close = async () => {
       peer.sentDisconnectionReason = DisconnectionReason.NotAcceptingConnections;
-      pool['handlePeerClose'](peer);
+      await pool['handlePeerClose'](peer);
     };
     pool['bindPeer'](peer);
 
@@ -88,8 +88,8 @@ describe('P2P Pool Tests', async () => {
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
   });
 
-  it('should close a peer', () => {
-    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+  it('should close a peer', async () => {
+    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
     expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.false;
     expect(pool['peers'].size).to.equal(0);
   });
@@ -125,7 +125,7 @@ describe('P2P Pool Tests', async () => {
     expect(nodeInstance!.addresses!).to.have.length(1);
     expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
 
-    pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
+    await pool.closePeer(nodeKeyOne.pubKey, DisconnectionReason.NotAcceptingConnections);
   });
 
   describe('reconnect logic', () => {
@@ -141,22 +141,22 @@ describe('P2P Pool Tests', async () => {
       await openPromise;
     });
 
-    it('should not reconnect upon shutdown inbound', () => {
+    it('should not reconnect upon shutdown inbound', async () => {
       dcPeer.inbound = true;
       dcPeer.recvDisconnectionReason = DisconnectionReason.Shutdown;
-      pool['handlePeerClose'](dcPeer);
+      await pool['handlePeerClose'](dcPeer);
       expect(tryConnectNodeStub.calledOnce).to.be.equal(false);
     });
 
-    it('should reconnect upon shutdown outbound', () => {
+    it('should reconnect upon shutdown outbound', async () => {
       dcPeer.recvDisconnectionReason = DisconnectionReason.Shutdown;
-      pool['handlePeerClose'](dcPeer);
+      await pool['handlePeerClose'](dcPeer);
       expect(tryConnectNodeStub.calledOnce).to.be.equal(true);
     });
 
-    it('should reconnect upon already connected', () => {
+    it('should reconnect upon already connected', async () => {
       dcPeer.recvDisconnectionReason = DisconnectionReason.AlreadyConnected;
-      pool['handlePeerClose'](dcPeer);
+      await pool['handlePeerClose'](dcPeer);
       expect(tryConnectNodeStub.calledOnce).to.be.equal(true);
     });
 
@@ -165,6 +165,7 @@ describe('P2P Pool Tests', async () => {
   after(async () => {
     await db.close();
     await pool.disconnect();
-    await sandbox.restore();
+
+    sandbox.restore();
   });
 });

@@ -3,9 +3,13 @@ import Sequelize from 'sequelize';
 import Bluebird from 'bluebird';
 import Logger from '../Logger';
 import * as db from './types';
-import { SwapClientType, XuNetwork } from '../constants/enums';
+import { XuNetwork } from '../constants/enums';
 import { promises as fs } from 'fs';
-import seeds from '../p2p/seeds';
+import {
+  defaultNodes,
+  defaultCurrencies,
+  defaultPairs,
+} from '../db/seeds';
 
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
@@ -71,20 +75,22 @@ class DB {
 
     if (shouldInitDb) {
       // initialize database with the seed nodes for the configured network
-      const nodes = seeds.get(network);
+      const nodes = defaultNodes(network);
       if (nodes) {
         await Node.bulkCreate(nodes);
       }
 
-      // initialize new databases with default data.
-      await Currency.bulkCreate(<db.CurrencyAttributes[]>[
-        { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
-        { id: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
-      ]);
+      // initialize database with the default currencies for the configured network
+      const currencies = defaultCurrencies(network);
+      if (currencies) {
+        await Currency.bulkCreate(currencies);
+      }
 
-      await Pair.bulkCreate(<db.PairAttributes[]>[
-        { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-      ]);
+      // initialize database with the default trading pairs for the configured network
+      const pairs = defaultPairs(network);
+      if (pairs) {
+        await Pair.bulkCreate(pairs);
+      }
     }
   }
 

@@ -285,43 +285,6 @@ out:
 		}
 	}
 
-	// Open a channel
-	// TODO: code refactoring/cleanup
-	_, err := n.OpenChannel(ctxb, n.Alice, n.Bob, 15000000, 7500000, false)
-	if err != nil {
-		fmt.Printf("err: %v", err)
-		return err
-	}
-
-	if n.BtcMiner != nil {
-		if _, err := n.BtcMiner.Node.Generate(6); err != nil {
-			return err
-		}
-	}
-	if n.LtcMiner != nil {
-		if _, err := n.LtcMiner.Node.Generate(6); err != nil {
-			return err
-		}
-	}
-
-	// Wait until srcNode and destNode have blockchain synced
-	if err := n.Alice.WaitForBlockchainSync(ctxb); err != nil {
-		return fmt.Errorf("Unable to sync Alice chain: %v", err)
-	}
-	if err := n.Bob.WaitForBlockchainSync(ctxb); err != nil {
-		return fmt.Errorf("Unable to sync Bob chain: %v", err)
-	}
-
-	//_, err = n.Alice.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//_, err = n.Bob.ListChannels(context.Background(), &lnrpc.ListChannelsRequest{})
-	//if err != nil {
-	//	return err
-	//}
-
 	return nil
 }
 
