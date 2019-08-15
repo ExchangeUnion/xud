@@ -67,6 +67,7 @@ jest.mock('../../lib/p2p/Pool', () => {
     return {
       updatePairs: jest.fn(),
       on: jest.fn(),
+      getNetwork: () => XuNetwork.MainNet,
       getTokenIdentifier: (currency: string) => tokenIdentifiers[currency] as string,
     };
   });

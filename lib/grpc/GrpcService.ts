@@ -135,6 +135,7 @@ class GrpcService {
       case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
       case orderErrorCodes.MIN_QUANTITY_VIOLATED:
       case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
+      case orderErrorCodes.EXCEEDING_LIMIT:
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
