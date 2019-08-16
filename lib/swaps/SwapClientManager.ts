@@ -130,36 +130,50 @@ class SwapClientManager extends EventEmitter {
   public initWallets = async (walletPassword: string, seedMnemonic: string[]) => {
     // loop through swap clients to find locked lnd clients
     const initWalletPromises: Promise<any>[] = [];
+    const createdLndWallets: string[] = [];
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
-        initWalletPromises.push(swapClient.initWallet(walletPassword, seedMnemonic));
+        const initWalletPromise = swapClient.initWallet(walletPassword, seedMnemonic).then(() => {
+          createdLndWallets.push(swapClient.currency);
+        }).catch(() => {
+          this.loggers.lnd.debug(`could not initialize ${swapClient.currency} client`);
+        });
+        initWalletPromises.push(initWalletPromise);
       }
     }
 
-    await Promise.all(initWalletPromises).catch((err) => {
-      this.loggers.lnd.debug(`could not initialize one or more wallets: ${JSON.stringify(err)}`);
-    });
+    await Promise.all(initWalletPromises);
 
     // TODO: create raiden address
+
+    return createdLndWallets;
   }
 
   /**
-   * Initializes wallets with seed and password.
+   * Unlocks wallets with a password.
+   * @returns an array of currencies for each lnd client that was unlocked
    */
   public unlockWallets = async (walletPassword: string) => {
     // loop through swap clients to find locked lnd clients
     const unlockWalletPromises: Promise<any>[] = [];
+    const unlockedLndClients: string[] = [];
+
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
-        unlockWalletPromises.push(swapClient.unlockWallet(walletPassword));
+        const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
+          unlockedLndClients.push(swapClient.currency);
+        }).catch(() => {
+          this.loggers.lnd.debug(`could not unlock ${swapClient.currency} client`);
+        });
+        unlockWalletPromises.push(unlockWalletPromise);
       }
     }
 
-    await Promise.all(unlockWalletPromises).catch((err) => {
-      this.loggers.lnd.debug(`could not unlock one or more wallets: ${JSON.stringify(err)}`);
-    });
+    await Promise.all(unlockWalletPromises);
 
     // TODO: unlock raiden
+
+    return unlockedLndClients;
   }
 
   /**

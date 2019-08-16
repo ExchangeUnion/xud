@@ -34,10 +34,13 @@ class GrpcInitService {
    */
   public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (call, callback) => {
     try {
-      const mnemonic = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets } = await this.initService.createNode(call.request.toObject());
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
+      }
+      if (initializedLndWallets) {
+        response.setInitializedLndsList(initializedLndWallets);
       }
 
       callback(null, response);
@@ -52,8 +55,9 @@ class GrpcInitService {
    */
   public unlockNode: grpc.handleUnaryCall<xudrpc.UnlockNodeRequest, xudrpc.UnlockNodeResponse> = async (call, callback) => {
     try {
-      await this.initService.unlockNode(call.request.toObject());
+      const unlockedLndClients = await this.initService.unlockNode(call.request.toObject());
       const response = new xudrpc.UnlockNodeResponse();
+      response.setUnlockedLndsList(unlockedLndClients);
 
       callback(null, response);
     } catch (err) {
