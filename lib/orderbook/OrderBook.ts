@@ -8,15 +8,16 @@ import { errors as swapsErrors } from '../swaps/errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
-import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
+import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
-import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
-import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
-  PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder, OrderBookThresholds } from './types';
-import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
+import limits from '../constants/limits';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
+import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
+import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
+  OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from './types';
+import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
+import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 // We add the Bluebird import to ts-ignore because it's actually being used.
 // @ts-ignore
 import Bluebird from 'bluebird';
@@ -374,25 +375,37 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    if (!this.nobalancechecks) {
-      // check if sufficient outbound channel capacity exists
-      const { outboundCurrency, inboundCurrency, outboundAmount } =
-          Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+    const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+    const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+    const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
 
-        // check if clients exists
+    if (!this.nobalancechecks) {
+      // check if clients exists
       if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-
       if (!inboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
       }
 
+      // check if sufficient outbound channel capacity exists
       const maximumOutboundAmount = outboundSwapClient.maximumOutboundCapacity(outboundCurrency);
       if (outboundAmount > maximumOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, maximumOutboundAmount);
+      }
+    }
+
+    if (this.pool.getNetwork() === XuNetwork.MainNet) {
+      // check if order abides by limits
+      const outboundCurrencyLimit = limits[outboundCurrency];
+      if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
+        throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
+      }
+
+      const inboundCurrencyLimit = limits[inboundCurrency];
+      if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
+        throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
       }
     }
 

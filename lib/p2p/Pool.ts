@@ -367,6 +367,15 @@ class Pool extends EventEmitter {
   }
 
   /**
+   * Gets the active XU network as specified by the configuration.
+   *
+   * @returns the active XU network
+   */
+  public getNetwork = () => {
+    return this.network.xuNetwork;
+  }
+
+  /**
    * Gets a node's reputation score and whether it is banned
    * @param nodePubKey The node pub key of the node for which to get reputation information
    * @return true if the specified node exists and the event was added, false otherwise
