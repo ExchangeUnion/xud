@@ -700,6 +700,7 @@ class Swaps extends EventEmitter {
         failureReason: SwapFailureReason.SendPaymentFailure,
         errorMessage: err.message,
       });
+      return;
     }
 
     // swap succeeded!
