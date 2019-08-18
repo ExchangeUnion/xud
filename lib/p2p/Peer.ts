@@ -19,6 +19,8 @@ import NodeKey from '../nodekey/NodeKey';
 import Network from './Network';
 import Framer from './Framer';
 
+const { performance } = require('perf_hooks');
+
 /** Key info about a peer for display purposes */
 type PeerInfo = {
   address: string,
@@ -114,10 +116,12 @@ class Peer extends EventEmitter {
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
   /** Interval for measuring ping latency: 1 for testing, 2 for ~30000, 3 for ~10000000 */
   private readonly MEASURE_LATENCY_INTERVAL = 2;
-  /** Estimated round trip time (RTT) for this peer. Requires tuning to optimize convergence time. */
-  private rtt = 150;
-  /** Arbitrary maximum latency to cap delay. Requires tuning to optimize total delays. */
-  private static readonly MAX_LATENCY = 180;
+  /** Estimated round trip time (RTT) for this peer. Initial value should be set near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
+  private rtt = 1.0;
+  /** Arbitrary maximum latency to cap delay. 150ms = approximately one packet's trip around the globe */
+  private static readonly MAX_LATENCY = 155.0; 
+  /** RTT estimate convergence time. Makes deceiving the algorithm too time-consuming */
+  private static readonly CONVERGENCE_RATE = 0.001;
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -998,16 +1002,16 @@ class Peer extends EventEmitter {
 
   private measureLatency = async (): Promise<void> => {
     var peer = this;
-    var start = ms();
+    var start = performance.now();
     var socket = net.connect(peer.address.port, peer.address.host, function() { 
       socket.end();
-      var delta = (ms() - start) - peer.rtt; // positive means peer was slower this round
-      if (delta > 0) {
-        peer.rtt = peer.rtt + 1; // prevents abuse via intentionally slow sockets to fish for orders to front-run
+      var rtt = performance.now() - start;
+      if (rtt > peer.rtt) {
+        peer.rtt = peer.rtt + Peer.CONVERGENCE_RATE; // prevents abuse via intentionally slow sockets to fish for orders to front-run.
       } else {
-        peer.rtt = peer.rtt - (delta / 2); // gradual response to faster ping times to avoid punishing better performance
+        peer.rtt = rtt; // fast response to faster ping times.
       }
-      peer.logger.debug(`Estimated round trip time is now: ${peer.rtt}`);
+      peer.logger.debug(`Peer ${peer.nodePubKey} RTT: ${peer.rtt}`);
     });
         
     // set interval to random number so time of next latency assessment cannot be predicted
