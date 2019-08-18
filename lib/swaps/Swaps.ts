@@ -562,27 +562,29 @@ class Swaps extends EventEmitter {
     }
 
     if (height) {
-      this.logger.debug(`got block height of ${height} for ${takerCurrency}`);
+      this.logger.debug(`got ${takerCurrency} block height of ${height}`);
 
       const routeAbsoluteTimeLock = makerToTakerRoutes[0].getTotalTimeLock();
-      this.logger.debug(`choosing a route with total time lock of ${routeAbsoluteTimeLock}`);
-      const routeTimeLock = routeAbsoluteTimeLock - height;
-      this.logger.debug(`route time lock: ${routeTimeLock}`);
-      deal.takerMaxTimeLock = routeTimeLock;
+      const routeLockDuration = routeAbsoluteTimeLock - height;
+      const routeLockHours = Math.round(routeLockDuration / takerSwapClient.minutesPerBlock);
+      this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
+      deal.takerMaxTimeLock = routeLockDuration;
 
       const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
-      this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer}`);
+      const makerClientLockBufferHours = Math.round(makerClientLockBuffer / makerSwapClient.minutesPerBlock);
+      this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer} ${makerCurrency} blocks (~${makerClientLockBufferHours}h)`);
 
       /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
       const blockTimeFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
-      this.logger.debug(`CLTV delta factor: ${blockTimeFactor}`);
+      this.logger.debug(`block time factor of ${makerCurrency} to ${takerCurrency}: ${blockTimeFactor}`);
 
-      // Here we calculate the minimum CLTV delay the maker will expect on the final hop to him on
-      // the first leg of the swap. This is equal to the maker's configurable cltvDelta plus the
-      // total delay of the taker route times a factor to convert taker blocks to maker blocks.
-      // This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
-      deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeTimeLock * blockTimeFactor);
-      this.logger.debug(`makerCltvDelta: ${deal.makerCltvDelta}`);
+      // Here we calculate the minimum lock duration the maker will expect on the final hop to him
+      // on the first leg of the swap. This is equal to the maker's configurable lock buffer plus
+      // the total lock duration of the taker route times a factor to convert taker blocks to maker
+      // blocks. This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
+      deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeLockDuration * blockTimeFactor);
+      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta / makerSwapClient.minutesPerBlock);
+      this.logger.debug(`calculated lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
     }
 
     if (!deal.makerCltvDelta) {
