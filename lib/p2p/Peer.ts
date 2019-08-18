@@ -372,8 +372,9 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = async (packet: Packet): Promise<void> => {
+    // delay order packets to prevent front-running
     if (packet.type === PacketType.Order || packet.type === PacketType.Orders) {
-      new Promise(done => setTimeout(done, Peer.MAX_LATENCY - this.rtt));
+      new Promise(done => setTimeout(done, (Peer.MAX_LATENCY - this.rtt) / 2.0));
     }
     const data = await this.framer.frame(packet, this.outEncryptionKey);
     this.sendRaw(data);
