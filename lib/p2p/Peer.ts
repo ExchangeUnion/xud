@@ -115,7 +115,7 @@ class Peer extends EventEmitter {
   /** Interval for measuring ping latency: 1 for testing, 2 for ~30000, 3 for ~10000000 */
   private readonly MEASURE_LATENCY_INTERVAL = 2;
   /** Estimated round trip time (RTT) for this peer. Requires tuning to optimize convergence time. */
-  private rtt = 140;
+  private rtt = 145;
   /** Arbitrary maximum latency to cap delay. Requires tuning to optimize total delays. */
   private static readonly MAX_LATENCY = 180;
 
@@ -372,8 +372,10 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = async (packet: Packet): Promise<void> => {
+    if (packet.type === PacketType.Order || packet.type === PacketType.Orders) {
+      new Promise(done => setTimeout(done, Peer.MAX_LATENCY - this.rtt));
+    }
     const data = await this.framer.frame(packet, this.outEncryptionKey);
-    new Promise(done => setTimeout(done, Peer.MAX_LATENCY - this.rtt));
     this.sendRaw(data);
 
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
@@ -1004,7 +1006,7 @@ class Peer extends EventEmitter {
       } else {
         peer.rtt = peer.rtt - (delta / 2); // gradual response to faster ping times to avoid punishing better performance
       }
-      this.logger.debug("Round Trip Time: ", peer.rtt);
+      peer.logger.debug(`Estimated round trip time is now: ${peer.rtt}`);
     });
         
     // set interval to random number so time of next latency assessment cannot be predicted
