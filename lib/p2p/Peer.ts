@@ -115,7 +115,7 @@ class Peer extends EventEmitter {
   /** Interval for measuring ping latency: 1 for testing, 2 for ~30000, 3 for ~10000000 */
   private readonly MEASURE_LATENCY_INTERVAL = 2;
   /** Estimated round trip time (RTT) for this peer. Requires tuning to optimize convergence time. */
-  private rtt = 145;
+  private rtt = 150;
   /** Arbitrary maximum latency to cap delay. Requires tuning to optimize total delays. */
   private static readonly MAX_LATENCY = 180;
 
