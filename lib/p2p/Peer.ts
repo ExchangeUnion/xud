@@ -1,7 +1,7 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import { createHash, createECDH } from 'crypto';
+import { createHash, createECDH, randomBytes } from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
@@ -84,6 +84,7 @@ class Peer extends EventEmitter {
   private retryConnectionTimer?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
+  private measurementTimer?: NodeJS.Timer;
   private checkPairsTimer?: NodeJS.Timer;
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
   private connectTime!: number;
@@ -111,6 +112,12 @@ class Peer extends EventEmitter {
   private static readonly CONNECTION_RETRIES_MAX_DELAY = 300000;
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
+  /** Interval for measuring ping latency: 1 for testing, 2 for ~30000, 3 for ~10000000 */
+  private readonly MEASURE_LATENCY_INTERVAL = 2;
+  /** Estimated round trip time (RTT) for this peer. Requires tuning to optimize convergence time. */
+  private rtt = 140;
+  /** Arbitrary maximum latency to cap delay. Requires tuning to optimize total delays. */
+  private static readonly MAX_LATENCY = 180;
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -281,6 +288,11 @@ class Peer extends EventEmitter {
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
+    // Setup the ping interval
+    var interval = parseInt(randomBytes(this.MEASURE_LATENCY_INTERVAL).toString('hex'), 16)
+    this.measurementTimer = setInterval(this.measureLatency, interval);
+
+
     // Setup a timer to periodicially check if we can swap inactive pairs
     this.checkPairsTimer = setInterval(() => this.emit('verifyPairs'), Peer.CHECK_PAIRS_INTERVAL);
   }
@@ -323,6 +335,10 @@ class Peer extends EventEmitter {
       clearInterval(this.pingTimer);
       this.pingTimer = undefined;
     }
+    if (this.measurementTimer) {
+      clearInterval(this.measurementTimer);
+      this.measurementTimer = undefined;
+    }
 
     if (this.checkPairsTimer) {
       clearInterval(this.checkPairsTimer);
@@ -357,6 +373,7 @@ class Peer extends EventEmitter {
 
   public sendPacket = async (packet: Packet): Promise<void> => {
     const data = await this.framer.frame(packet, this.outEncryptionKey);
+    new Promise(done => setTimeout(done, Peer.MAX_LATENCY - this.rtt));
     this.sendRaw(data);
 
     this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
@@ -974,6 +991,28 @@ class Peer extends EventEmitter {
   private setInEncryption = (key: Buffer) => {
     this.parser.setEncryptionKey(key);
     this.logger.debug(`Peer (${this.label}) session in-encryption enabled`);
+  }
+
+  private measureLatency = async (): Promise<void> => {
+    var peer = this;
+    var start = ms();
+    var socket = net.connect(peer.address.port, peer.address.host, function() { 
+      socket.end();
+      var delta = (ms() - start) - peer.rtt; // positive means peer was slower this round
+      if (delta > 0) {
+        peer.rtt = peer.rtt + 1; // prevents abuse via intentionally slow sockets to fish for orders to front-run
+      } else {
+        peer.rtt = peer.rtt - (delta / 2); // gradual response to faster ping times to avoid punishing better performance
+      }
+      this.logger.debug("Round Trip Time: ", peer.rtt);
+    });
+        
+    // set interval to random number so time of next latency assessment cannot be predicted
+    if (this.measurementTimer) {
+      var interval = parseInt(randomBytes(this.MEASURE_LATENCY_INTERVAL).toString('hex'), 16);
+      clearInterval(this.measurementTimer);
+      this.measurementTimer = setInterval(this.measureLatency, interval);
+    }
   }
 }
 
