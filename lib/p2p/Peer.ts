@@ -580,7 +580,7 @@ class Peer extends EventEmitter {
         const request = PacketType[parseInt(packetId, 10)] || packetId;
         const err = errors.RESPONSE_TIMEOUT(request);
         this.emitError(err.message);
-        entry.reject(err.message);
+        entry.reject(err);
         await this.close(DisconnectionReason.ResponseStalling, packetId);
       }
     }
