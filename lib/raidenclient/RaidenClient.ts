@@ -165,26 +165,28 @@ class RaidenClient extends SwapClient {
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
-    let amount = 0;
-    let tokenAddress;
+    let amount: number;
+    let tokenAddress: string;
+    let lock_timeout: number | undefined;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
       amount = deal.takerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
+      tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
     } else {
       // we are the taker paying the maker
       amount = deal.makerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
+      tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
+      lock_timeout = deal.makerCltvDelta!;
     }
     if (!tokenAddress) {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
     const tokenPaymentResponse = await this.tokenPayment({
       amount,
+      lock_timeout,
       token_address: tokenAddress,
       target_address: deal.destination!,
       secret_hash: deal.rHash,
-      lock_timeout: deal.makerCltvDelta,
     });
     return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
   }
