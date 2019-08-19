@@ -367,6 +367,15 @@ class Pool extends EventEmitter {
   }
 
   /**
+   * Gets the active XU network as specified by the configuration.
+   *
+   * @returns the active XU network
+   */
+  public getNetwork = () => {
+    return this.network.xuNetwork;
+  }
+
+  /**
    * Gets a node's reputation score and whether it is banned
    * @param nodePubKey The node pub key of the node for which to get reputation information
    * @return true if the specified node exists and the event was added, false otherwise
@@ -393,10 +402,8 @@ class Pool extends EventEmitter {
    * @returns a promise that resolves to the connected and opened peer
    */
   public addOutbound = async (address: Address, nodePubKey: string, retryConnecting: boolean, revokeConnectionRetries: boolean): Promise<Peer> => {
-    if (nodePubKey === this.nodePubKey) {
-      const err = errors.ATTEMPTED_CONNECTION_TO_SELF;
-      this.logger.warn(err.message);
-      throw err;
+    if (nodePubKey === this.nodePubKey || this.addressIsSelf(address)) {
+      throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
     if (this.nodes.isBanned(nodePubKey)) {
@@ -430,6 +437,20 @@ class Pool extends EventEmitter {
       i += 1;
     });
     return peerInfos;
+  }
+
+  private addressIsSelf = (address: Address): boolean => {
+    if (address.port === this.listenPort) {
+      switch (address.host) {
+        case '::1':
+        case '0.0.0.0':
+        case '127.0.0.1':
+        case 'localhost':
+          return true;
+      }
+    }
+
+    return false;
   }
 
   private tryOpenPeer = async (peer: Peer, peerPubKey?: string, retryConnecting = false): Promise<void> => {

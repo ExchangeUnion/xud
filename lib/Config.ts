@@ -17,6 +17,8 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
+  /** The lock time in hours that we add to the cross-chain "hop" for swaps. */
+  public lockbuffer: number;
   public rpc: { disable: boolean, host: string, port: number };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
@@ -75,6 +77,7 @@ class Config {
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = this.getDefaultNetwork();
     this.dbpath = this.getDefaultDbPath();
+    this.lockbuffer = 24;
 
     this.p2p = {
       listen: true,
@@ -110,7 +113,6 @@ class Config {
       macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
-      cltvdelta: 144,
       nomacaroons: false,
     };
     this.lnd.LTC = {
@@ -120,7 +122,6 @@ class Config {
         this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
-      cltvdelta: 576,
       nomacaroons: false,
     };
     this.raiden = {

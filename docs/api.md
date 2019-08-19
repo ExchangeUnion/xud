@@ -298,6 +298,8 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated |  |
+| initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
 
 
 
@@ -1094,6 +1096,12 @@
 
 ### UnlockNodeResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| unlocked_lnds | [string](#string) | repeated | The list of lnd clients that were unlocked. |
+| unlocked_raiden | [bool](#bool) |  | Whether raiden was unlocked. |
 
 
 

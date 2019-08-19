@@ -12,6 +12,10 @@ import (
 type testCase struct {
 	name string
 	test func(net *xudtest.NetworkHarness, t *harnessTest)
+
+	// balanceMayChange indicates that the test might execute a successful swap,
+	// and so to affect the channels balance.
+	balanceMayChange bool
 }
 
 // harnessTest wraps a regular testing.T providing enhanced error detection

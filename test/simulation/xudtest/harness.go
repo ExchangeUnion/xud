@@ -1,6 +1,11 @@
 package xudtest
 
 import (
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
@@ -21,8 +26,8 @@ type NetworkHarness struct {
 	Carol *HarnessNode
 	Dave  *HarnessNode
 
-	lndBtcNetwork *lntest.NetworkHarness
-	lndLtcNetwork *lntest.NetworkHarness
+	LndBtcNetwork *lntest.NetworkHarness
+	LndLtcNetwork *lntest.NetworkHarness
 
 	errorChan chan *XudError
 
@@ -41,8 +46,69 @@ func NewNetworkHarness() (*NetworkHarness, error) {
 	return &n, nil
 }
 
-func (n *NetworkHarness) newNode(name string) (*HarnessNode, error) {
-	node, err := newNode(name)
+func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars []string) (*HarnessNode, error) {
+	err := node.shutdown(true, true)
+	if err != nil {
+		return nil, err
+	}
+	delete(n.ActiveNodes, node.ID)
+
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	xudPath := filepath.Join(wd, "./temp", branch)
+	if _, err := os.Stat(xudPath); os.IsNotExist(err) {
+		log.Printf("custon xud not found at %v, installing...", xudPath)
+		_, err := exec.Command("git", "clone", "-b", branch, "https://github.com/ExchangeUnion/xud", xudPath).Output()
+		if err != nil {
+			return nil, fmt.Errorf("custom xud git clone failure: %v", err)
+		}
+
+		cmd := exec.Command("npm", "i")
+		cmd.Dir = xudPath
+		_, err = cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("custom xud npm i failure: %v", err)
+		}
+
+		cmd = exec.Command("npm", "run", "compile")
+		cmd.Dir = xudPath
+		_, err = cmd.Output()
+		if err != nil {
+			return nil, fmt.Errorf("custom xud compilation failure: %v", err)
+		}
+	}
+
+	customNode, err := n.newNode(node.Name, xudPath, true)
+	if err != nil {
+		return nil, err
+	}
+
+	customNode.SetEnvVars(envVars)
+	customNode.SetLnd(node.LndBtcNode, "BTC")
+	customNode.SetLnd(node.LndLtcNode, "LTC")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	errChan := make(chan error, 1)
+	go func() {
+		defer wg.Done()
+		if err := customNode.start(n.errorChan); err != nil {
+			if err != nil {
+				errChan <- err
+				return
+			}
+		}
+	}()
+	wg.Wait()
+
+	return customNode, nil
+}
+
+func (n *NetworkHarness) newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, error) {
+	node, err := newNode(name, xudPath, noBalanceChecks)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +123,8 @@ func (n *NetworkHarness) newNode(name string) (*HarnessNode, error) {
 // Start starts this xud node and its corresponding lnd nodes.
 func (n *NetworkHarness) Start() error {
 	var wg sync.WaitGroup
-	errChan := make(chan error, 4)
 	wg.Add(4)
+	errChan := make(chan error, 4)
 
 	for _, _node := range n.ActiveNodes {
 		node := _node
@@ -84,23 +150,27 @@ func (n *NetworkHarness) Start() error {
 }
 
 // SetUp creates the xud nodes to be used for this harness.
-func (n *NetworkHarness) SetUp() error {
-	var err error
-	n.Alice, err = n.newNode("Alice")
-	if err != nil {
-		return err
-	}
-	n.Bob, err = n.newNode("Bob")
+func (n *NetworkHarness) SetUp(noBalanceChecks bool) error {
+	xudPath, err := filepath.Abs("../../")
 	if err != nil {
 		return err
 	}
 
-	n.Carol, err = n.newNode("Carol")
+	n.Alice, err = n.newNode("Alice", xudPath, noBalanceChecks)
+	if err != nil {
+		return err
+	}
+	n.Bob, err = n.newNode("Bob", xudPath, noBalanceChecks)
 	if err != nil {
 		return err
 	}
 
-	n.Dave, err = n.newNode("Dave")
+	n.Carol, err = n.newNode("Carol", xudPath, noBalanceChecks)
+	if err != nil {
+		return err
+	}
+
+	n.Dave, err = n.newNode("Dave", xudPath, noBalanceChecks)
 	if err != nil {
 		return err
 	}
@@ -111,7 +181,12 @@ func (n *NetworkHarness) SetUp() error {
 // SetLnd sets the lnd configuration for all nodes in the harness for a
 // specified chain.
 func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
-	n.lndBtcNetwork = ln
+	switch chain {
+	case "BTC":
+		n.LndBtcNetwork = ln
+	case "LTC":
+		n.LndLtcNetwork = ln
+	}
 	n.Alice.SetLnd(ln.Alice, chain)
 	n.Bob.SetLnd(ln.Bob, chain)
 	n.Carol.SetLnd(ln.Carol, chain)

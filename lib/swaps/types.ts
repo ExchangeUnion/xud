@@ -60,8 +60,11 @@ export type SwapDeal = {
   makerToTakerRoutes?: Route[];
   /** The identifier for the payment channel network node we should pay to complete the swap.  */
   destination?: string;
+  /** The time when we created this swap deal locally. */
   createTime: number;
+  /** The time when we began executing the swap by sending payment. */
   executeTime?: number;
+  /** The time when the swap either completed successfully or failed. */
   completeTime?: number;
 };
 
@@ -99,4 +102,7 @@ export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number,
   rHash: string,
+  tokenAddress: string,
+  /** The number of blocks before the incoming payment expires. */
+  expiration: number,
 };
