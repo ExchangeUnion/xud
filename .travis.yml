@@ -18,3 +18,4 @@ script:
   - npm run compile:seedutil
   - npm run test
   - npm run test:sim
+
