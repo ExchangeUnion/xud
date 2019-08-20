@@ -125,6 +125,8 @@ export enum SwapFailureReason {
   DealTimedOut = 11,
   /** The swap failed due to an unrecognized error. */
   UnknownError = 12,
+  /** The swap failed due to an error or unexpected behavior on behalf of the remote peer. */
+  RemoteError = 12,
 }
 
 export enum DisconnectionReason {
