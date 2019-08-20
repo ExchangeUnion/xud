@@ -36,6 +36,8 @@ var (
 	// connections.  Subsequent allocated ports for future Lightning nodes
 	// instances will be monotonically increasing numbers calculated as
 	// such: defaultP2pPort + (3 * harness.nodeNum).
+	// initial port will be calculated from one of the free ports at first call
+	// if fails to find a free port, it will use currently assigned one
 	defaultNodePort = 19555
 
 	// defaultClientPort is the initial rpc port which will be used by the
@@ -43,14 +45,18 @@ var (
 	// connections. Subsequent allocated ports for future rpc harness
 	// instances will be monotonically increasing numbers calculated
 	// as such: defaultP2pPort + (3 * harness.nodeNum).
-	defaultClientPort = 19556
+	// initial port will be calculated from one of the free ports at first call,
+	// if fails to find a free port, it will use currently assigned one
+	defaultClientPort = defaultNodePort + 1
 
 	// defaultRestPort is the initial rest port which will be used by the
 	// first created lightning node to listen on for incoming rest
 	// connections. Subsequent allocated ports for future rpc harness
 	// instances will be monotonically increasing numbers calculated
 	// as such: defaultP2pPort + (3 * harness.nodeNum).
-	defaultRestPort = 19557
+	// initial port will be calculated from one of the free ports at first call
+	// if fails to find a free port, it will use currently assigned one
+	defaultRestPort = defaultNodePort + 2
 
 	// logOutput is a flag that can be set to append the output from the
 	// seed nodes to log files.
@@ -76,6 +82,15 @@ var (
 func generateListeningPorts() (int, int, int) {
 	var p2p, rpc, rest int
 	if numActiveNodes == 0 {
+	    freePorts, err := getFreePorts(3)
+		if err != nil {
+		    fmt.Println(fmt.Errorf("could not find free ports %v", err))
+		} else{
+            defaultNodePort = freePorts[0]
+            defaultClientPort = freePorts[1]
+            defaultRestPort = freePorts[2]
+		}
+
 		p2p = defaultNodePort
 		rpc = defaultClientPort
 		rest = defaultRestPort
@@ -86,6 +101,25 @@ func generateListeningPorts() (int, int, int) {
 	}
 
 	return p2p, rpc, rest
+}
+
+// gets unused TCP ports from the system for given count
+func getFreePorts(count int) ([]int, error) {
+	var ports []int
+	for i := 0; i < count; i++ {
+		addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		if err != nil {
+			return nil, err
+		}
+
+		l, err := net.ListenTCP("tcp", addr)
+		if err != nil {
+			return nil, err
+		}
+		defer l.Close()
+		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
+	}
+	return ports, nil
 }
 
 type nodeConfig struct {
