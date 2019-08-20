@@ -171,6 +171,9 @@ class GrpcService {
       case p2pErrorCodes.POOL_CLOSED:
         code = status.ABORTED;
         break;
+      case p2pErrorCodes.RESPONSE_TIMEOUT:
+        code = status.DEADLINE_EXCEEDED;
+        break;
     }
 
     // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
