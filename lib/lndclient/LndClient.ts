@@ -36,7 +36,10 @@ const MAXFEE = 0.03;
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
-  public readonly cltvDelta: number;
+  public readonly lockBuffer: number;
+  public readonly finalLock: number;
+  public config: LndClientConfig;
+  public currency: string;
   private lightning?: LightningClient | LightningMethodIndex;
   private walletUnlocker?: WalletUnlockerClient | InvoicesMethodIndex;
   private invoices?: InvoicesClient | InvoicesMethodIndex;
@@ -53,18 +56,33 @@ class LndClient extends SwapClient {
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
 
+  private static MINUTES_PER_BLOCK_BY_CURRENCY: { [key: string]: number } = {
+    BTC: 10,
+    LTC: 2.5,
+  };
+
   /**
    * Creates an lnd client.
-   * @param config the lnd configuration
    */
-  constructor(private config: LndClientConfig, public currency: string, logger: Logger) {
+  constructor(
+    { config, logger, currency, lockBufferHours }:
+    { config: LndClientConfig, logger: Logger, currency: string, lockBufferHours: number },
+  ) {
     super(logger);
-    this.cltvDelta = config.cltvdelta || 0;
+    this.config = config;
+    this.currency = currency;
+    this.lockBuffer = Math.round(lockBufferHours * 60 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
+     // we set the expected final lock to 400 minutes which is the default for bitcoin on lnd 0.7.1
+    this.finalLock = Math.round(400 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
+  }
+
+  public get minutesPerBlock() {
+    return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
   }
 
   /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
   public init = async () => {
-    assert(this.cltvDelta > 0, `lnd-${this.currency}: cltvdelta must be a positive number`);
+    assert(this.lockBuffer > 0, `lnd-${this.currency}: lock buffer must be a positive number`);
 
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
@@ -96,7 +114,7 @@ class LndClient extends SwapClient {
     }
 
     this.uri = `${host}:${port}`;
-    await this.verifyConnection();
+    await this.verifyConnectionWithTimeout();
   }
 
   public get pubKey() {
@@ -220,9 +238,20 @@ class LndClient extends SwapClient {
 
     if (!this.isConnected()) {
       this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-      this.lightning = new LightningClient(this.uri, this.credentials);
+      const lightningClient = new LightningClient(this.uri, this.credentials);
+      const clientReadyPromise = new Promise((resolve, reject) => {
+        lightningClient.waitForReady(Number.POSITIVE_INFINITY, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        });
+      });
 
+      this.lightning = lightningClient;
       try {
+        await clientReadyPromise;
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
@@ -279,8 +308,8 @@ class LndClient extends SwapClient {
           this.lightning = undefined;
           await this.setStatus(ClientStatus.WaitingUnlock);
         } else {
-          this.logger.error(`could not verify connection to lnd at ${this.uri}, error: ${JSON.stringify(err)},
-            retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIMER} ms`);
           await this.disconnect();
         }
       }
@@ -303,7 +332,7 @@ class LndClient extends SwapClient {
       // In case of sanity swaps we don't know the
       // takerCltvDelta or the makerCltvDelta. Using our
       // client's default.
-      finalCltvDelta: this.cltvDelta,
+      finalCltvDelta: this.lockBuffer,
     });
     const preimage = await this.executeSendRequest(request);
     return preimage;
@@ -332,11 +361,9 @@ class LndClient extends SwapClient {
         rHash: deal.rHash,
         destination: deal.takerPubKey!,
         amount: deal.takerAmount,
-        // Using the agreed upon takerCltvDelta. Taker won't accept
-        // our payment if we provide a smaller value.
-        finalCltvDelta: deal.takerCltvDelta,
         // Enforcing the maximum duration/length of the payment by
         // specifying the cltvLimit.
+        finalCltvDelta: deal.takerCltvDelta,
         cltvLimit: deal.makerCltvDelta,
       });
     }
@@ -508,11 +535,10 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoutes =  async (amount: number, destination: string, _currency: string, finalCltvDelta = this.cltvDelta): Promise<lndrpc.Route[]> => {
+  public getRoutes = async (units: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer) => {
     const request = new lndrpc.QueryRoutesRequest();
-    request.setAmt(amount);
+    request.setAmt(units);
     request.setFinalCltvDelta(finalCltvDelta);
-    request.setNumRoutes(1);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
     fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
@@ -529,7 +555,7 @@ class LndClient extends SwapClient {
       )) {
         return [];
       } else {
-        this.logger.error(`error calling queryRoutes to ${destination}, amount ${amount} finalCltvDelta ${finalCltvDelta}: ${JSON.stringify(err)}`);
+        this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalCltvDelta}`, err);
         throw err;
       }
     }
@@ -570,13 +596,13 @@ class LndClient extends SwapClient {
     return unlockWalletResponse.toObject();
   }
 
-  public addInvoice = async (rHash: string, amount: number, cltvExpiry: number) => {
+  public addInvoice = async (rHash: string, units: number, cltvExpiry: number) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
-    addHoldInvoiceRequest.setValue(amount);
+    addHoldInvoiceRequest.setValue(units);
     addHoldInvoiceRequest.setCltvExpiry(cltvExpiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
-    this.logger.debug(`added invoice of ${amount} for ${rHash} with cltvExpiry ${cltvExpiry}`);
+    this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${cltvExpiry}`);
     this.subscribeSingleInvoice(rHash);
   }
 
@@ -618,10 +644,9 @@ class LndClient extends SwapClient {
     if (!this.invoices) {
       throw errors.LND_IS_UNAVAILABLE(this.status);
     }
-    const paymentHash = new lndrpc.PaymentHash();
-    // TODO: use RHashStr when bug fixed in lnd - https://github.com/lightningnetwork/lnd/pull/3019
-    paymentHash.setRHash(hexToUint8Array(rHash));
-    const invoiceSubscription = this.invoices.subscribeSingleInvoice(paymentHash, this.meta);
+    const request = new lndinvoices.SubscribeSingleInvoiceRequest();
+    request.setRHash(hexToUint8Array(rHash));
+    const invoiceSubscription = this.invoices.subscribeSingleInvoice(request, this.meta);
     const deleteInvoiceSubscription = () => {
       invoiceSubscription.removeAllListeners();
       this.invoiceSubscriptions.delete(rHash);

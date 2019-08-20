@@ -33,6 +33,14 @@ export class CreateNodeResponse extends jspb.Message {
     setSeedMnemonicList(value: Array<string>): void;
     addSeedMnemonic(value: string, index?: number): string;
 
+    clearInitializedLndsList(): void;
+    getInitializedLndsList(): Array<string>;
+    setInitializedLndsList(value: Array<string>): void;
+    addInitializedLnds(value: string, index?: number): string;
+
+    getInitializedRaiden(): boolean;
+    setInitializedRaiden(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CreateNodeResponse.AsObject;
@@ -47,6 +55,8 @@ export class CreateNodeResponse extends jspb.Message {
 export namespace CreateNodeResponse {
     export type AsObject = {
         seedMnemonicList: Array<string>,
+        initializedLndsList: Array<string>,
+        initializedRaiden: boolean,
     }
 }
 
@@ -72,6 +82,14 @@ export namespace UnlockNodeRequest {
 }
 
 export class UnlockNodeResponse extends jspb.Message { 
+    clearUnlockedLndsList(): void;
+    getUnlockedLndsList(): Array<string>;
+    setUnlockedLndsList(value: Array<string>): void;
+    addUnlockedLnds(value: string, index?: number): string;
+
+    getUnlockedRaiden(): boolean;
+    setUnlockedRaiden(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): UnlockNodeResponse.AsObject;
@@ -85,6 +103,8 @@ export class UnlockNodeResponse extends jspb.Message {
 
 export namespace UnlockNodeResponse {
     export type AsObject = {
+        unlockedLndsList: Array<string>,
+        unlockedRaiden: boolean,
     }
 }
 

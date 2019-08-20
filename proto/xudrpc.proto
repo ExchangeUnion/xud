@@ -37,6 +37,10 @@ message CreateNodeRequest {
 }
 message CreateNodeResponse {
   repeated string seed_mnemonic = 1;
+  // The list of lnd clients that were initialized.
+  repeated string initialized_lnds = 2;
+  // Whether raiden was initialized.
+  bool initialized_raiden = 3;
 }
 
 message UnlockNodeRequest {
@@ -44,7 +48,12 @@ message UnlockNodeRequest {
   // well as underlying client wallets such as lnd.
   string password = 1;
 }
-message UnlockNodeResponse { }
+message UnlockNodeResponse {
+  // The list of lnd clients that were unlocked.
+  repeated string unlocked_lnds = 1;
+  // Whether raiden was unlocked.
+  bool unlocked_raiden = 2;
+}
 
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for

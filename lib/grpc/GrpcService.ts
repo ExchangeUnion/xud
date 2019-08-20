@@ -7,6 +7,7 @@ import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, Pla
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as swapErrors } from '../swaps/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
@@ -134,6 +135,7 @@ class GrpcService {
       case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
       case orderErrorCodes.MIN_QUANTITY_VIOLATED:
       case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
+      case orderErrorCodes.EXCEEDING_LIMIT:
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
@@ -158,6 +160,8 @@ class GrpcService {
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
       case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
+      case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+      case swapErrors.SWAP_CLIENT_NOT_FOUND:
         code = status.FAILED_PRECONDITION;
         break;
       case lndErrorCodes.LND_IS_UNAVAILABLE:

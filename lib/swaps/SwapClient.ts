@@ -33,7 +33,18 @@ interface SwapClient {
  * A base class to represent an external swap client such as lnd or Raiden.
  */
 abstract class SwapClient extends EventEmitter {
-  public abstract readonly cltvDelta: number;
+  /**
+   * The number of blocks to use for determining the minimum delay for an incoming payment in excess
+   * of the total time delay of the contingent outgoing payment. This buffer ensures that the lock
+   * for incoming payments does not expire before the contingent outgoing payment lock.
+   */
+  public abstract readonly lockBuffer: number;
+  /**
+   * The number of blocks of lock time to expect on the final incoming hop of a swap. This affects
+   * only the second leg of a swap where knowledge of the preimage is not contingent on making a
+   * separate payment.
+   */
+  public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
@@ -41,12 +52,16 @@ abstract class SwapClient extends EventEmitter {
   protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;
+  /** The maximum amount of time we will wait for the connection to be verified during initialization. */
+  private static INITIALIZATION_TIME_LIMIT = 5000;
   /** Time in milliseconds between updating the maximum outbound capacity */
   private static CAPACITY_REFRESH_INTERVAL = 60000;
 
   constructor(public logger: Logger) {
     super();
   }
+
+  public abstract get minutesPerBlock(): number;
 
   /**
    * Returns the total balance available across all channels.
@@ -56,6 +71,22 @@ abstract class SwapClient extends EventEmitter {
   public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
   public abstract maximumOutboundCapacity(currency?: string): number;
   protected abstract updateCapacity(): Promise<void>;
+
+  public verifyConnectionWithTimeout = () => {
+    // don't wait longer than the allotted time for the connection to
+    // be verified to prevent initialization from hanging
+    return new Promise<void>((resolve, reject) => {
+      const verifyTimeout = setTimeout(() => {
+        // we could not verify the connection within the allotted time
+        this.logger.info(`could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`);
+        resolve();
+      }, SwapClient.INITIALIZATION_TIME_LIMIT);
+      this.verifyConnection().then(() => {
+        clearTimeout(verifyTimeout);
+        resolve();
+      }).catch(reject);
+    });
+  }
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
@@ -110,13 +141,16 @@ abstract class SwapClient extends EventEmitter {
 
   /**
    * Gets routes for the given currency, amount, and swap identifier.
-   * @param amount the capacity the route must support denominated in the smallest units supported by its currency
+   * @param units the capacity the route must support denominated in the smallest units supported by its currency
    * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoutes(amount: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
+  public abstract async getRoutes(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
 
-  public abstract async addInvoice(rHash: string, amount: number, cltvExpiry: number): Promise<void>;
+  /**
+   * @param units the amount of the invoice denominated in the smallest units supported by its currency
+   */
+  public abstract async addInvoice(rHash: string, units: number, cltvExpiry: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 

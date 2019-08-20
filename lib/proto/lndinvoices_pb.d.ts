@@ -166,3 +166,26 @@ export namespace SettleInvoiceResp {
     export type AsObject = {
     }
 }
+
+export class SubscribeSingleInvoiceRequest extends jspb.Message { 
+    getRHash(): Uint8Array | string;
+    getRHash_asU8(): Uint8Array;
+    getRHash_asB64(): string;
+    setRHash(value: Uint8Array | string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeSingleInvoiceRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeSingleInvoiceRequest): SubscribeSingleInvoiceRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeSingleInvoiceRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeSingleInvoiceRequest;
+    static deserializeBinaryFromReader(message: SubscribeSingleInvoiceRequest, reader: jspb.BinaryReader): SubscribeSingleInvoiceRequest;
+}
+
+export namespace SubscribeSingleInvoiceRequest {
+    export type AsObject = {
+        rHash: Uint8Array | string,
+    }
+}
