@@ -350,6 +350,18 @@ class Service {
   }
 
   /**
+   * Gets the list of trades.
+   */
+  public listTrades = (args: {limit: number}) => {
+    const { limit } = args;
+    if (limit === 0) {
+      return this.orderBook.getTrades();
+    } else {
+      return this.orderBook.getTrades(limit);
+    }
+  }
+
+  /**
    * Add an order to the order book.
    * If price is zero or unspecified a market order will get added.
    */
