@@ -149,7 +149,7 @@ describe('Swaps', () => {
       expect(dealAccepted).toEqual(false);
     });
 
-    test('it rejects upon 0 makerToTakerRoutes found', async () => {
+    test('it rejects upon 0 maker to taker routes found', async () => {
       lndBtc.getRoutes = jest.fn().mockReturnValue([]);
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {

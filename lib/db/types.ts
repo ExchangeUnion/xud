@@ -29,7 +29,7 @@ export type CurrencyInstance = CurrencyAttributes & Sequelize.Instance<CurrencyA
 
 /* SwapDeal */
 export type SwapDealFactory = Pick<SwapDeal, Exclude<keyof SwapDeal,
-  'makerToTakerRoutes' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'>>;
+  'takerMaxTimeLock' | 'price' | 'pairId' | 'isBuy' | 'takerUnits' | 'makerUnits'>>;
 
 export type SwapDealAttributes = SwapDealFactory & {
   /** The internal db node id of the counterparty peer for this swap deal. */

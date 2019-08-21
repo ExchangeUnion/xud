@@ -361,10 +361,11 @@ class LndClient extends SwapClient {
         rHash: deal.rHash,
         destination: deal.takerPubKey!,
         amount: deal.takerAmount,
+        finalCltvDelta: deal.takerCltvDelta,
         // Enforcing the maximum duration/length of the payment by
         // specifying the cltvLimit.
-        finalCltvDelta: deal.takerCltvDelta,
-        cltvLimit: deal.makerCltvDelta,
+        // TODO: investigate why we need to add 3 blocks - if not lnd says route not found
+        cltvLimit: deal.takerMaxTimeLock! + 3,
       });
     }
     const preimage = await this.executeSendRequest(request);
@@ -408,6 +409,7 @@ class LndClient extends SwapClient {
   private executeSendRequest = async (
     request: lndrpc.SendRequest,
   ): Promise<string> => {
+    this.logger.trace(`sending payment with ${JSON.stringify(request.toObject())}`);
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);

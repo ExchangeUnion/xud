@@ -115,6 +115,6 @@ export const getValidDeal = () => {
     state: 0,
     role: 1,
     createTime: 1559120485138,
-    makerToTakerRoutes: [{ getTotalTimeLock: () => {} }],
+    takerMaxTimeLock: 100,
   };
 };
