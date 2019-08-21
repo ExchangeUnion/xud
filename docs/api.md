@@ -38,6 +38,8 @@
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [ListSwapsRequest](#xudrpc.ListSwapsRequest)
     - [ListSwapsResponse](#xudrpc.ListSwapsResponse)
+    - [ListTradesRequest](#xudrpc.ListTradesRequest)
+    - [ListTradesResponse](#xudrpc.ListTradesResponse)
     - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
     - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
@@ -66,6 +68,7 @@
     - [Swap](#xudrpc.Swap)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
+    - [Trade](#xudrpc.Trade)
     - [UnbanRequest](#xudrpc.UnbanRequest)
     - [UnbanResponse](#xudrpc.UnbanResponse)
     - [UnlockNodeRequest](#xudrpc.UnlockNodeRequest)
@@ -298,6 +301,8 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated |  |
+| initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
 
 
 
@@ -579,6 +584,36 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | swaps | [Swap](#xudrpc.Swap) | repeated |  |
+
+
+
+
+
+
+<a name="xudrpc.ListTradesRequest"></a>
+
+### ListTradesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int32](#int32) |  | The maximum number of trades to return |
+
+
+
+
+
+
+<a name="xudrpc.ListTradesResponse"></a>
+
+### ListTradesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trades | [Trade](#xudrpc.Trade) | repeated |  |
 
 
 
@@ -1046,6 +1081,25 @@
 
 
 
+<a name="xudrpc.Trade"></a>
+
+### Trade
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| maker_order | [Order](#xudrpc.Order) |  | The maker order involved in this trade. |
+| taker_order | [Order](#xudrpc.Order) |  | The taker order involved in this trade. |
+| r_hash | [string](#string) |  | The payment hash involved in this trade. |
+| quantity | [int64](#int64) |  | The quantity transacted in this trade. |
+| pair_id | [string](#string) |  | The trading pair for this trade. |
+
+
+
+
+
+
 <a name="xudrpc.UnbanRequest"></a>
 
 ### UnbanRequest
@@ -1091,6 +1145,12 @@
 
 ### UnlockNodeResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| unlocked_lnds | [string](#string) | repeated | The list of lnd clients that were unlocked. |
+| unlocked_raiden | [bool](#bool) |  | Whether raiden was unlocked. |
 
 
 
@@ -1173,6 +1233,7 @@
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. |
+| ListTrades | [ListTradesRequest](#xudrpc.ListTradesRequest) | [ListTradesResponse](#xudrpc.ListTradesResponse) |  |
 | ListSwaps | [ListSwapsRequest](#xudrpc.ListSwapsRequest) | [ListSwapsResponse](#xudrpc.ListSwapsResponse) | Gets a list of completed swap deals. |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |

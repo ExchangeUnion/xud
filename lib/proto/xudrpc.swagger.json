@@ -21,7 +21,7 @@
         "operationId": "AddCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddCurrencyResponse"
             }
@@ -48,7 +48,7 @@
         "operationId": "AddPair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcAddPairResponse"
             }
@@ -75,7 +75,7 @@
         "operationId": "Ban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcBanResponse"
             }
@@ -102,7 +102,7 @@
         "operationId": "ChannelBalance",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcChannelBalanceResponse"
             }
@@ -128,7 +128,7 @@
         "operationId": "Connect",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcConnectResponse"
             }
@@ -155,7 +155,7 @@
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListCurrenciesResponse"
             }
@@ -172,7 +172,7 @@
         "operationId": "DiscoverNodes",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcDiscoverNodesResponse"
             }
@@ -199,7 +199,7 @@
         "operationId": "ExecuteSwap",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapSuccess"
             }
@@ -226,7 +226,7 @@
         "operationId": "GetInfo",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
             }
@@ -243,7 +243,7 @@
         "operationId": "ListSwaps",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListSwapsResponse"
             }
@@ -275,13 +275,39 @@
         ]
       }
     },
+    "/v1/listtrades": {
+      "post": {
+        "operationId": "ListTrades",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListTradesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcListTradesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.",
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcGetNodeInfoResponse"
             }
@@ -307,7 +333,7 @@
         "operationId": "OpenChannel",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcOpenChannelResponse"
             }
@@ -324,7 +350,7 @@
         "operationId": "ListOrders",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListOrdersResponse"
             }
@@ -366,7 +392,7 @@
         "operationId": "ListPairs",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPairsResponse"
             }
@@ -383,7 +409,7 @@
         "operationId": "ListPeers",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcListPeersResponse"
             }
@@ -400,7 +426,7 @@
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderEvent"
             }
@@ -427,7 +453,7 @@
         "operationId": "PlaceOrderSync",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }
@@ -454,7 +480,7 @@
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
             }
@@ -481,7 +507,7 @@
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
@@ -508,7 +534,7 @@
         "operationId": "RemovePair",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairResponse"
             }
@@ -535,7 +561,7 @@
         "operationId": "Shutdown",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcShutdownResponse"
             }
@@ -562,7 +588,7 @@
         "operationId": "SubscribeOrders",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcOrderUpdate"
             }
@@ -589,7 +615,7 @@
         "operationId": "SubscribeSwapFailures",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapFailure"
             }
@@ -616,7 +642,7 @@
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "A successful response.(streaming responses)",
+            "description": "(streaming responses)",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapSuccess"
             }
@@ -643,7 +669,7 @@
         "operationId": "Unban",
         "responses": {
           "200": {
-            "description": "A successful response.",
+            "description": "",
             "schema": {
               "$ref": "#/definitions/xudrpcUnbanResponse"
             }
@@ -673,15 +699,6 @@
         "RAIDEN"
       ],
       "default": "LND"
-    },
-    "ListSwapsRequestRequestedSwapState": {
-      "type": "string",
-      "enum": [
-        "BOTH",
-        "SUCCESSFUL",
-        "FAILED"
-      ],
-      "default": "BOTH"
     },
     "SwapSuccessRole": {
       "type": "string",
@@ -804,6 +821,18 @@
           "items": {
             "type": "string"
           }
+        },
+        "initialized_lnds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The list of lnd clients that were initialized."
+        },
+        "initialized_raiden": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether raiden was initialized."
         }
       }
     },
@@ -960,6 +989,27 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/xudrpcSwap"
+          }
+        }
+      }
+    },
+    "xudrpcListTradesRequest": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The maximum number of trades to return"
+        }
+      }
+    },
+    "xudrpcListTradesResponse": {
+      "type": "object",
+      "properties": {
+        "trades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcTrade"
           }
         }
       }
@@ -1449,6 +1499,32 @@
         }
       }
     },
+    "xudrpcTrade": {
+      "type": "object",
+      "properties": {
+        "maker_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "The maker order involved in this trade."
+        },
+        "taker_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "The taker order involved in this trade."
+        },
+        "r_hash": {
+          "type": "string",
+          "description": "The payment hash involved in this trade."
+        },
+        "quantity": {
+          "type": "string",
+          "format": "int64",
+          "description": "The quantity transacted in this trade."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair for this trade."
+        }
+      }
+    },
     "xudrpcUnbanRequest": {
       "type": "object",
       "properties": {
@@ -1467,7 +1543,21 @@
       "type": "object"
     },
     "xudrpcUnlockNodeResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "unlocked_lnds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The list of lnd clients that were unlocked."
+        },
+        "unlocked_raiden": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether raiden was unlocked."
+        }
+      }
     }
   }
 }

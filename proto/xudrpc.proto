@@ -37,6 +37,10 @@ message CreateNodeRequest {
 }
 message CreateNodeResponse {
   repeated string seed_mnemonic = 1;
+  // The list of lnd clients that were initialized.
+  repeated string initialized_lnds = 2;
+  // Whether raiden was initialized.
+  bool initialized_raiden = 3;
 }
 
 message UnlockNodeRequest {
@@ -44,7 +48,12 @@ message UnlockNodeRequest {
   // well as underlying client wallets such as lnd.
   string password = 1;
 }
-message UnlockNodeResponse { }
+message UnlockNodeResponse {
+  // The list of lnd clients that were unlocked.
+  repeated string unlocked_lnds = 1;
+  // Whether raiden was unlocked.
+  bool unlocked_raiden = 2;
+}
 
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
@@ -160,6 +169,13 @@ service Xud {
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
     option (google.api.http) = {
       get: "/v1/peers"
+    };
+  }
+
+  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse) {
+    option (google.api.http) = {
+      post: "/v1/listtrades"
+      body: "*"
     };
   }
 
@@ -430,9 +446,18 @@ message ListPeersResponse {
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
+message ListTradesRequest {
+  // The maximum number of trades to return
+  int32 limit = 1 [json_name = "limit"];
+}
+
+message ListTradesResponse {
+  repeated Trade trades = 1 [json_name = "trades"];
+}
+
 message ListSwapsRequest {
   int32 limit = 1 [json_name = "all"];
-  RequestedSwapState requested_swap_state = 2 [json_name = "requested_swap_state"]; 
+  RequestedSwapState requested_swap_state = 2 [json_name = "requested_swap_state"];
   enum RequestedSwapState {
     BOTH = 0;
     SUCCESSFUL = 1;
@@ -495,6 +520,19 @@ message Order {
   uint64 hold = 10 [json_name = "hold"];
 }
 
+message Trade {
+  // The maker order involved in this trade.
+  Order maker_order = 1 [json_name = "maker_order"];
+  // The taker order involved in this trade.
+  Order taker_order = 2 [json_name = "taker_order_id"];
+  // The payment hash involved in this trade.
+  string r_hash = 3 [json_name = "r_hash"];
+  // The quantity transacted in this trade.
+  int64 quantity = 4 [json_name = "quantity"];
+  // The trading pair for this trade.
+  string pair_id = 5 [json_name = "pair_id"];
+}
+
 message OrderUpdate {
   oneof order_update {
     // An order that was added to the order book.
@@ -536,7 +574,7 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // A map of ticker symbols to lnd pub keys for this peer 
+  // A map of ticker symbols to lnd pub keys for this peer
   map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
   bool inbound = 4 [json_name = "inbound"];

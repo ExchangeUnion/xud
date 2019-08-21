@@ -20,10 +20,17 @@ jest.mock('../../../lib/p2p/Peer');
 const mockedPeer = <jest.Mock<Peer>><any>Peer;
 jest.mock('../../../lib/lndclient/LndClient');
 const mockedLnd = <jest.Mock<LndClient>><any>LndClient;
-const getMockedLnd = (cltvDelta: number) => {
+jest.mock('../../../lib/swaps/SwapRepository', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      saveSwapDeal: jest.fn(),
+    };
+  });
+});
+const getMockedLnd = (lockBuffer: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
-  lnd.cltvDelta = cltvDelta;
+  lnd.lockBuffer = lockBuffer;
   // @ts-ignore
   lnd.type = SwapClientType.Lnd;
   lnd.isConnected = jest.fn().mockReturnValue(true);
@@ -142,7 +149,7 @@ describe('Swaps', () => {
       expect(dealAccepted).toEqual(false);
     });
 
-    test('it rejects upon 0 makerToTakerRoutes found', async () => {
+    test('it rejects upon 0 maker to taker routes found', async () => {
       lndBtc.getRoutes = jest.fn().mockReturnValue([]);
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
@@ -234,6 +241,12 @@ describe('Swaps', () => {
         { getTotalTimeLock: () => 1543845 },
       ]);
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
+      Object.defineProperty(lndBtc, 'minutesPerBlock', {
+        get: () => { return 10; },
+      });
+      Object.defineProperty(lndLtc, 'minutesPerBlock', {
+        get: () => { return 2.5; },
+      });
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
           return lndBtc;

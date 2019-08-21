@@ -8,15 +8,16 @@ import { errors as swapsErrors } from '../swaps/errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
-import { ms, derivePairId, setTimeoutPromise } from '../utils/utils';
+import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import { SwapRole, SwapFailureReason, SwapPhase, SwapClientType } from '../constants/enums';
-import { CurrencyInstance, PairInstance, CurrencyFactory } from '../db/types';
-import { Pair, OrderIdentifier, OwnOrder, OrderPortion, OwnLimitOrder, PeerOrder, Order, PlaceOrderEvent,
-  PlaceOrderEventType, PlaceOrderResult, OutgoingOrder, OwnMarketOrder, isOwnOrder, IncomingOrder, OrderBookThresholds } from './types';
-import { SwapRequestPacket, SwapFailedPacket } from '../p2p/packets';
-import { SwapSuccess, SwapDeal, SwapFailure } from '../swaps/types';
+import limits from '../constants/limits';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
+import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
+import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
+  OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from './types';
+import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
+import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 // We add the Bluebird import to ts-ignore because it's actually being used.
 // @ts-ignore
 import Bluebird from 'bluebird';
@@ -173,7 +174,7 @@ class OrderBook extends EventEmitter {
       }
     });
     this.swaps.on('swap.failed', (deal) => {
-      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAgreed || deal.phase === SwapPhase.SendingPayment)) {
+      if (deal.role === SwapRole.Maker && (deal.phase === SwapPhase.SwapAccepted || deal.phase === SwapPhase.SendingPayment)) {
         // if our order is the maker and the swap failed after it was agreed to but before it was executed
         // we must release the hold on the order that we set when we agreed to the deal
         this.removeOrderHold(deal.orderId, deal.pairId, deal.quantity!);
@@ -197,6 +198,14 @@ class OrderBook extends EventEmitter {
   public getCurrencyAttributes(currency: string) {
     const currencyInstance = this.currencyInstances.get(currency);
     return currencyInstance ? currencyInstance.toJSON() : undefined;
+  }
+
+  /**
+   * Gets all trades or a limited number of trades from the database.
+   */
+  public getTrades = async (limit?: number) => {
+    const response = await this.repository.getTrades(limit);
+    return response;
   }
 
   /**
@@ -374,16 +383,37 @@ class OrderBook extends EventEmitter {
       };
     }
 
+    const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+    const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+    const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+
     if (!this.nobalancechecks) {
-      // check if sufficient outbound channel capacity exists
-      const { outboundCurrency, outboundAmount } = Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-      const swapClient = this.swaps.swapClientManager.get(outboundCurrency);
-      if (!swapClient) {
+      // check if clients exists
+      if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
-      const maximumOutboundAmount = swapClient.maximumOutboundCapacity(outboundCurrency);
+      if (!inboundSwapClient) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(inboundCurrency);
+      }
+
+      // check if sufficient outbound channel capacity exists
+      const maximumOutboundAmount = outboundSwapClient.maximumOutboundCapacity(outboundCurrency);
       if (outboundAmount > maximumOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, maximumOutboundAmount);
+      }
+    }
+
+    if (this.pool.getNetwork() === XuNetwork.MainNet) {
+      // check if order abides by limits
+      const outboundCurrencyLimit = limits[outboundCurrency];
+      if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
+        throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
+      }
+
+      const inboundCurrencyLimit = limits[inboundCurrency];
+      if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
+        throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
       }
     }
 
@@ -883,6 +913,7 @@ class OrderBook extends EventEmitter {
       const quantity = Math.min(proposedQuantity, availableQuantity);
 
       this.addOrderHold(order.id, pairId, quantity);
+      await this.repository.addOrderIfNotExists(order);
 
       // try to accept the deal
       const orderToAccept = {
@@ -892,9 +923,7 @@ class OrderBook extends EventEmitter {
         isBuy: order.isBuy,
       };
       const dealAccepted = await this.swaps.acceptDeal(orderToAccept, requestPacket, peer);
-      if (dealAccepted) {
-        await this.repository.addOrderIfNotExists(order);
-      } else {
+      if (!dealAccepted) {
         this.removeOrderHold(order.id, pairId, quantity);
       }
     } else {

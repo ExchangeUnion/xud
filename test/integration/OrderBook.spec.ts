@@ -10,7 +10,7 @@ import SwapClient from '../../lib/swaps/SwapClient';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import Logger, { Level } from '../../lib/Logger';
 import * as orders from '../../lib/orderbook/types';
-import { SwapClientType } from '../../lib/constants/enums';
+import { SwapClientType, XuNetwork } from '../../lib/constants/enums';
 import { createOwnOrder } from '../utils';
 import sinon  from 'sinon';
 import Config from '../../lib/Config';
@@ -24,6 +24,7 @@ const getMockPool = (sandbox: sinon.SinonSandbox) => {
   pool.broadcastOrder = () => {};
   pool.broadcastOrderInvalidation = () => {};
   pool.updatePairs = () => {};
+  pool.getNetwork = () => XuNetwork.SimNet;
   return pool;
 };
 

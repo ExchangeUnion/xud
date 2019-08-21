@@ -7,10 +7,12 @@ import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, Pla
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as swapErrors } from '../swaps/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
+import { TradeInstance, OrderInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -66,6 +68,26 @@ const createSwapFailure = (swapFailure: SwapFailure) => {
   grpcSwapFailure.setQuantity(swapFailure.quantity);
   grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
   return grpcSwapFailure;
+};
+
+/**
+ * Creates an xudrpc Order from OrderInstance.
+ */
+const getGrpcOrderFromOrderInstance = (order: OrderInstance) => {
+  const grpcOrder = new xudrpc.Order();
+  grpcOrder.setCreatedAt(order.createdAt);
+  grpcOrder.setId(order.id);
+  grpcOrder.setIsOwnOrder(order.nodeId === undefined);
+  if (order.localId) {
+    grpcOrder.setLocalId(order.localId);
+  }
+  grpcOrder.setPairId(order.pairId);
+  // TODO: set peer pub key if order.nodeId has a value
+  if (order.price) {
+    grpcOrder.setPrice(order.price);
+  }
+  grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
+  return grpcOrder;
 };
 
 /**
@@ -139,6 +161,7 @@ class GrpcService {
       case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
       case orderErrorCodes.MIN_QUANTITY_VIOLATED:
       case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
+      case orderErrorCodes.EXCEEDING_LIMIT:
         code = status.INVALID_ARGUMENT;
         break;
       case orderErrorCodes.PAIR_DOES_NOT_EXIST:
@@ -163,6 +186,8 @@ class GrpcService {
       case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
       case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
       case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
+      case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+      case swapErrors.SWAP_CLIENT_NOT_FOUND:
         code = status.FAILED_PRECONDITION;
         break;
       case lndErrorCodes.LND_IS_UNAVAILABLE:
@@ -171,6 +196,9 @@ class GrpcService {
         break;
       case p2pErrorCodes.POOL_CLOSED:
         code = status.ABORTED;
+        break;
+      case p2pErrorCodes.RESPONSE_TIMEOUT:
+        code = status.DEADLINE_EXCEEDED;
         break;
     }
 
@@ -495,6 +523,33 @@ class GrpcService {
       const response = new xudrpc.ListPairsResponse();
       response.setPairsList(listPairsResponse);
 
+      callback(null, response);
+    } catch (err) {
+      callback(this.getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.listTrades]]
+   */
+  public listTrades: grpc.handleUnaryCall<xudrpc.ListTradesRequest, xudrpc.ListTradesResponse> = async (call, callback) => {
+    try {
+      const trades = await this.service.listTrades(call.request.toObject());
+      const response = new xudrpc.ListTradesResponse();
+      const tradesList: xudrpc.Trade[] = [];
+      await Promise.all(trades.map(async (trade: TradeInstance) => {
+        const grpcTrade = new xudrpc.Trade();
+        const makerOrder = await trade.getMakerOrder();
+        const takerOrder = await trade.getTakerOrder();
+        grpcTrade.setQuantity(trade.quantity);
+        grpcTrade.setRHash(trade.rHash ? trade.rHash : '');
+        grpcTrade.setMakerOrder(getGrpcOrderFromOrderInstance(makerOrder!));
+        grpcTrade.setTakerOrder(takerOrder ? getGrpcOrderFromOrderInstance(takerOrder) : undefined);
+        grpcTrade.setPairId(makerOrder!.pairId);
+        tradesList.push(grpcTrade);
+      }));
+
+      response.setTradesList(tradesList);
       callback(null, response);
     } catch (err) {
       callback(this.getGrpcError(err), null);

@@ -4,6 +4,7 @@ import Logger from '../../lib/Logger';
 import { SwapDeal } from '../../lib/swaps/types';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 import { CurrencyInstance } from '../../lib/db/types';
+import { getValidDeal } from '../utils';
 
 const getValidTokenPaymentResponse = () => {
   return {
@@ -57,34 +58,6 @@ const getChannelsResponse = [
   },
 ];
 
-const getValidDeal = () => {
-  return {
-    proposedQuantity: 10000,
-    pairId: 'LTC/BTC',
-    orderId: '53bc8a30-81f0-11e9-9259-a5617f44d209',
-    rHash: '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80',
-    takerCltvDelta: 144,
-    takerPubKey: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
-    price: 0.1,
-    isBuy: true,
-    quantity: 10000,
-    makerAmount: 10000,
-    takerAmount: 1000,
-    makerUnits: 10000,
-    takerUnits: 1000,
-    makerCurrency: 'LTC',
-    takerCurrency: 'BTC',
-    destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
-    peerPubKey: '021ea6d67c850a0811b01c78c8117dca044b224601791a4186bf5748f667f73517',
-    localId: '53bc8a30-81f0-11e9-9259-a5617f44d209',
-    phase: 3,
-    state: 0,
-    role: 1,
-    createTime: 1559120485138,
-    makerToTakerRoutes: [{ getTotalTimeLock: () => {} }],
-  };
-};
-
 const wethTokenAddress = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 const currencyInstances = [
   { id: 'WETH', tokenAddress: wethTokenAddress },
@@ -96,6 +69,7 @@ describe('RaidenClient', () => {
   let config: RaidenClientConfig;
   let raidenLogger: Logger;
   let unitConverter: UnitConverter;
+  const lockBufferHours = 24;
 
   beforeEach(() => {
     config = {
@@ -117,7 +91,7 @@ describe('RaidenClient', () => {
 
   describe('sendPayment', () => {
     test('it removes 0x from secret', async () => {
-      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
       await raiden.init(currencyInstances as CurrencyInstance[]);
       const validTokenPaymentResponse: TokenPaymentResponse = getValidTokenPaymentResponse();
       raiden['tokenPayment'] = jest.fn()
@@ -129,7 +103,7 @@ describe('RaidenClient', () => {
     });
 
     test('it rejects in case of empty secret response', async () => {
-      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
       await raiden.init(currencyInstances as CurrencyInstance[]);
       const invalidTokenPaymentResponse: TokenPaymentResponse = {
         ...getValidTokenPaymentResponse(),
@@ -157,7 +131,7 @@ describe('RaidenClient', () => {
 
     test('it fails when tokenAddress for currency not found', async () => {
       expect.assertions(1);
-      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
       await raiden.init([] as CurrencyInstance[]);
       try {
         await raiden.openChannel({
@@ -172,7 +146,7 @@ describe('RaidenClient', () => {
 
     test('it throws when openChannel fails', async () => {
       expect.assertions(1);
-      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
       const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
       const currency = 'WETH';
       const mockTokenAddresses = new Map<string, string>();
@@ -195,7 +169,7 @@ describe('RaidenClient', () => {
 
     test('it opens a channel', async () => {
       expect.assertions(2);
-      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
       const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
       const currency = 'WETH';
       const mockTokenAddresses = new Map<string, string>();
@@ -219,7 +193,7 @@ describe('RaidenClient', () => {
   });
 
   test('channelBalance calculates the total balance of open channels for a currency', async () => {
-    raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+    raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
     await raiden.init(currencyInstances as CurrencyInstance[]);
     raiden.tokenAddresses.get = jest.fn().mockReturnValue(channelBalanceTokenAddress);
     raiden['getChannels'] = jest.fn()

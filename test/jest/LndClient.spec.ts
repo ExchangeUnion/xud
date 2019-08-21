@@ -1,6 +1,22 @@
 import LndClient from '../../lib/lndclient/LndClient';
 import { LndClientConfig } from '../../lib/lndclient/types';
 import Logger from '../../lib/Logger';
+import { getValidDeal } from '../utils';
+import { SwapRole } from '../../lib/constants/enums';
+
+const getSendPaymentSyncResponse = () => {
+  return {
+    getPaymentError: () => {},
+    getPaymentPreimage_asB64: () =>
+      'IDAKXrx4dayn0H/gCxN12jPK2/LchwPZop4zICw43jg=',
+  };
+};
+
+const getSendPaymentSyncErrorResponse = () => {
+  return {
+    getPaymentError: () => 'error!',
+  };
+};
 
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
@@ -9,6 +25,7 @@ describe('LndClient', () => {
   let config: LndClientConfig;
   let currency: string;
   let logger: Logger;
+  const lockBufferHours = 24;
 
   beforeEach(() => {
     config = {
@@ -17,7 +34,6 @@ describe('LndClient', () => {
       macaroonpath: '/macaroon/path',
       host: '127.0.0.1',
       port: 4321,
-      cltvdelta: 144,
       nomacaroons: true,
     };
     currency = 'BTC';
@@ -44,7 +60,7 @@ describe('LndClient', () => {
 
     test('it throws when connectPeer fails', async () => {
       expect.assertions(3);
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['connectPeer'] = jest.fn().mockImplementation(() => {
         throw new Error('connectPeer failed');
       });
@@ -64,7 +80,7 @@ describe('LndClient', () => {
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
@@ -88,7 +104,7 @@ describe('LndClient', () => {
 
     test('it does succeed when connecting to already connected peer', async () => {
       expect.assertions(4);
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const alreadyConnected = () => {
         throw new Error('already connected');
@@ -111,7 +127,7 @@ describe('LndClient', () => {
     test('it throws when timeout reached', async () => {
       expect.assertions(3);
       jest.useFakeTimers();
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const timeOut = () => {
         jest.runAllTimers();
@@ -135,7 +151,7 @@ describe('LndClient', () => {
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
@@ -155,7 +171,7 @@ describe('LndClient', () => {
 
     test('it throws when openchannel fails', async () => {
       expect.assertions(2);
-      lnd = new LndClient(config, currency, logger);
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
       lnd['connectPeer'] = jest.fn().mockReturnValue(Promise.resolve());
       lnd['openChannelSync'] = jest.fn().mockImplementation(() => {
         throw new Error('openChannelSync error');
@@ -170,6 +186,71 @@ describe('LndClient', () => {
         expect(e).toMatchSnapshot();
       }
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
+    });
+
+  });
+
+  describe('sendPayment', () => {
+
+    test('it resolves upon maker success', async () => {
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
+      lnd['sendPaymentSync'] = jest.fn()
+        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      const deal = getValidDeal();
+      const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
+      await expect(lnd.sendPayment(deal))
+        .resolves.toMatchSnapshot();
+      expect(buildSendRequestSpy).toHaveBeenCalledWith({
+        amount: deal.takerAmount,
+        destination: deal.takerPubKey,
+        rHash: deal.rHash,
+        cltvLimit: deal.takerMaxTimeLock + 3,
+        finalCltvDelta: deal.takerCltvDelta,
+      });
+    });
+
+    test('it resolves upon taker success', async () => {
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
+      lnd['sendPaymentSync'] = jest.fn()
+        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      const deal = {
+        ...getValidDeal(),
+        role: SwapRole.Taker,
+      };
+      const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
+      await expect(lnd.sendPayment(deal))
+        .resolves.toMatchSnapshot();
+      expect(buildSendRequestSpy).toHaveBeenCalledWith({
+        amount: deal.makerAmount,
+        destination: deal.destination,
+        finalCltvDelta: deal.makerCltvDelta,
+        rHash: deal.rHash,
+      });
+    });
+
+    test('it rejects upon sendPaymentSync error', async () => {
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
+      lnd['sendPaymentSync'] = jest.fn()
+        .mockReturnValue(Promise.resolve(getSendPaymentSyncErrorResponse()));
+      await expect(lnd.sendPayment(getValidDeal()))
+        .rejects.toMatchSnapshot();
+    });
+
+    test('it resolves upon sendSmallestAmount success', async () => {
+      lnd = new LndClient({ config, currency, lockBufferHours, logger });
+      lnd['sendPaymentSync'] = jest.fn()
+        .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
+      const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
+      const rHash = '04b6ac45b770ec4abbb9713aebfa57b963a1f6c7a795d9b5757687e0688add80';
+      const destination = '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac';
+      await expect(lnd.sendSmallestAmount(rHash, destination))
+        .resolves.toMatchSnapshot();
+      expect(buildSendRequestSpy).toHaveBeenCalledWith({
+        destination,
+        rHash,
+        finalCltvDelta: lnd.lockBuffer,
+        amount: 1,
+      });
     });
 
   });

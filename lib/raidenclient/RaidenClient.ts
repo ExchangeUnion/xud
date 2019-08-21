@@ -42,7 +42,8 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly cltvDelta: number = 5760;
+  public readonly lockBuffer: number;
+  public readonly finalLock = 100;
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
@@ -57,17 +58,22 @@ class RaidenClient extends SwapClient {
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter, directChannelChecks = false }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
+    { config, logger, unitConverter, directChannelChecks = false, lockBufferHours }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean, lockBufferHours: number },
   ) {
     super(logger);
     const { disable, host, port } = config;
 
+    this.lockBuffer = Math.round(lockBufferHours * 60 / this.minutesPerBlock);
     this.port = port;
     this.host = host;
     this.disable = disable;
     this.unitConverter = unitConverter;
     this.directChannelChecks = directChannelChecks;
+  }
+
+  public get minutesPerBlock() {
+    return 0.25; // 15 seconds per block target
   }
 
   /**
@@ -79,7 +85,7 @@ class RaidenClient extends SwapClient {
       return;
     }
     this.setTokenAddresses(currencyInstances);
-    await this.verifyConnection();
+    await this.verifyConnectionWithTimeout();
   }
 
   /**
@@ -125,9 +131,9 @@ class RaidenClient extends SwapClient {
       /** The new raiden address value if different from the one we had previously. */
       let newAddress: string | undefined;
       if (this.address !== address) {
-        this.logger.debug(`address is ${newAddress}`);
         newAddress = address;
         this.address = newAddress;
+        this.logger.debug(`address is ${newAddress}`);
       }
 
       this.emit('connectionVerified', { newIdentifier: newAddress });
@@ -159,22 +165,25 @@ class RaidenClient extends SwapClient {
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
-    let amount = 0;
-    let tokenAddress;
+    let amount: number;
+    let tokenAddress: string;
+    let lock_timeout: number | undefined;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
       amount = deal.takerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.takerCurrency);
+      tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
     } else {
       // we are the taker paying the maker
       amount = deal.makerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.makerCurrency);
+      tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
+      lock_timeout = deal.makerCltvDelta!;
     }
     if (!tokenAddress) {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
     const tokenPaymentResponse = await this.tokenPayment({
       amount,
+      lock_timeout,
       token_address: tokenAddress,
       target_address: deal.destination!,
       secret_hash: deal.rHash,
@@ -203,7 +212,7 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes = async (amount: number, destination: string, currency: string) => {
+  public getRoutes = async (units: number, destination: string, currency: string) => {
     // a query routes call is not currently provided by raiden
 
     /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
@@ -218,11 +227,11 @@ class RaidenClient extends SwapClient {
       for (const channel of channels) {
         if (channel.partner_address && channel.partner_address === destination) {
           const balance = channel.balance;
-          if (balance >= amount) {
+          if (balance >= units) {
             this.logger.debug(`found a direct channel for ${currency} to ${destination} with ${balance} balance`);
             return [placeholderRoute];
           } else {
-            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${amount})`);
+            this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${units})`);
             return []; // we have a direct channel but it doesn't have enough balance, return no routes
           }
         }
@@ -287,6 +296,7 @@ class RaidenClient extends SwapClient {
         };
       }
 
+      this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
       const req = http.request(options, async (res) => {
         switch (res.statusCode) {
           case 200:
