@@ -72,6 +72,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     listCurrencies: IXudService_IListCurrencies;
     listPairs: IXudService_IListPairs;
     listPeers: IXudService_IListPeers;
+    listTrades: IXudService_IListTrades;
     listOrderHistory: IXudService_IListOrderHistory;
     placeOrder: IXudService_IPlaceOrder;
     placeOrderSync: IXudService_IPlaceOrderSync;
@@ -211,6 +212,15 @@ interface IXudService_IListPeers extends grpc.MethodDefinition<xudrpc_pb.ListPee
     responseSerialize: grpc.serialize<xudrpc_pb.ListPeersResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ListPeersResponse>;
 }
+interface IXudService_IListTrades extends grpc.MethodDefinition<xudrpc_pb.ListTradesRequest, xudrpc_pb.ListTradesResponse> {
+    path: string; // "/xudrpc.Xud/ListTrades"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.ListTradesRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.ListTradesRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.ListTradesResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.ListTradesResponse>;
+}
 interface IXudService_IListOrderHistory extends grpc.MethodDefinition<xudrpc_pb.ListOrderHistoryRequest, xudrpc_pb.ListOrderHistoryResponse> {
     path: string; // "/xudrpc.Xud/ListOrderHistory"
     requestStream: boolean; // false
@@ -328,6 +338,7 @@ export interface IXudServer {
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
     listPairs: grpc.handleUnaryCall<xudrpc_pb.ListPairsRequest, xudrpc_pb.ListPairsResponse>;
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
+    listTrades: grpc.handleUnaryCall<xudrpc_pb.ListTradesRequest, xudrpc_pb.ListTradesResponse>;
     listOrderHistory: grpc.handleUnaryCall<xudrpc_pb.ListOrderHistoryRequest, xudrpc_pb.ListOrderHistoryResponse>;
     placeOrder: grpc.handleServerStreamingCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
@@ -384,6 +395,9 @@ export interface IXudClient {
     listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
+    listTrades(request: xudrpc_pb.ListTradesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
+    listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
+    listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
     listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;
     listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;
     listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;
@@ -459,6 +473,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
+    public listTrades(request: xudrpc_pb.ListTradesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
+    public listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
+    public listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
     public listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;
     public listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;
     public listOrderHistory(request: xudrpc_pb.ListOrderHistoryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListOrderHistoryResponse) => void): grpc.ClientUnaryCall;

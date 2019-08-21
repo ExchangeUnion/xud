@@ -56,8 +56,8 @@ export type SwapDeal = {
   rHash: string;
   /** The hex-encoded preimage. */
   rPreimage?: string;
-  /** The routes the maker should use to send to the taker. */
-  makerToTakerRoutes?: Route[];
+  /** The maximum time lock from the maker to the taker in blocks. */
+  takerMaxTimeLock?: number;
   /** The identifier for the payment channel network node we should pay to complete the swap.  */
   destination?: string;
   /** The time when we created this swap deal locally. */

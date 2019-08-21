@@ -361,7 +361,7 @@ class Service {
       throw errors.PAIRID_NON_EXISTENT();
     }
 
-    const trades = await this.orderBook.getTrades(order.id, true);
+    const trades = await this.orderBook.getTradesByOrderId(order.id, true);
     const swapDeals = await this.swaps.getDeals(true);
 
     const isInOrderBook = this.orderBook.getOwnOrder(order.id, order.pairId);
@@ -386,6 +386,18 @@ class Service {
       trades,
       swapDeals,
     };
+  }
+
+  /**
+   * Gets the list of trades.
+   */
+  public listTrades = (args: {limit: number}) => {
+    const { limit } = args;
+    if (limit === 0) {
+      return this.orderBook.getTrades();
+    } else {
+      return this.orderBook.getTrades(limit);
+    }
   }
 
   /**

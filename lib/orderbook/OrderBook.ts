@@ -214,13 +214,21 @@ class OrderBook extends EventEmitter {
    * @param { string } orderId - order id
    * @param { boolean } order - sort trades by data of creation
    */
-  public getTrades = async (orderId: string, order = false) => {
-    return this.repository.getTrades(orderId, order);
+  public getTradesByOrderId = async (orderId: string, order = false) => {
+    return this.repository.getTradesByOrderId(orderId, order);
   }
 
   public getCurrencyAttributes(currency: string) {
     const currencyInstance = this.currencyInstances.get(currency);
     return currencyInstance ? currencyInstance.toJSON() : undefined;
+  }
+
+  /**
+   * Gets all trades or a limited number of trades from the database.
+   */
+  public getTrades = async (limit?: number) => {
+    const response = await this.repository.getTrades(limit);
+    return response;
   }
 
   /**

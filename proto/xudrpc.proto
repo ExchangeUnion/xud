@@ -172,6 +172,13 @@ service Xud {
     };
   }
 
+  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse) {
+    option (google.api.http) = {
+      post: "/v1/listtrades"
+      body: "*"
+    };
+  }
+
   /* List all events related to the order. */
   rpc ListOrderHistory(ListOrderHistoryRequest) returns (ListOrderHistoryResponse) {
     option (google.api.http) = {
@@ -439,6 +446,15 @@ message ListPeersResponse {
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
+message ListTradesRequest {
+  // The maximum number of trades to return
+  int32 limit = 1 [json_name = "limit"];
+}
+
+message ListTradesResponse {
+  repeated Trade trades = 1 [json_name = "trades"];
+}
+
 message ListOrderHistoryRequest {
   string order_id = 1 [json_name = "order_id"];
 }
@@ -454,14 +470,6 @@ message ListOrderHistoryResponse {
     OPEN = 2;
     CANCELLED = 3;
   };
-}
-
-message Trade {
-  string maker_order_id = 1 [json_name = "maker_order_id"];
-  string taker_order_id = 2 [json_name = "taker_order_id"];
-  string r_hash = 3 [json_name = "r_hash"];
-  uint64 quantity = 4 [json_name = "quantity"];
-  double price = 5 [json_name = "price"];
 }
 
 message LndChannels {
@@ -506,6 +514,21 @@ message Order {
   bool is_own_order = 9 [json_name = "is_own_order"];
   // The quantity on hold pending swap execution.
   uint64 hold = 10 [json_name = "hold"];
+}
+
+message Trade {
+  // The maker order involved in this trade.
+  Order maker_order = 1 [json_name = "maker_order"];
+  // The taker order involved in this trade.
+  Order taker_order = 2 [json_name = "taker_order_id"];
+  // The payment hash involved in this trade.
+  string r_hash = 3 [json_name = "r_hash"];
+  // The quantity transacted in this trade.
+  int64 quantity = 4 [json_name = "quantity"];
+  // The trading pair for this trade.
+  string pair_id = 5 [json_name = "pair_id"];
+  // The price for this trade.
+  double price = 6 [json_name = "price"];
 }
 
 message OrderUpdate {

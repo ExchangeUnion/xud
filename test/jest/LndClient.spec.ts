@@ -204,7 +204,7 @@ describe('LndClient', () => {
         amount: deal.takerAmount,
         destination: deal.takerPubKey,
         rHash: deal.rHash,
-        cltvLimit: deal.makerCltvDelta,
+        cltvLimit: deal.takerMaxTimeLock + 3,
         finalCltvDelta: deal.takerCltvDelta,
       });
     });

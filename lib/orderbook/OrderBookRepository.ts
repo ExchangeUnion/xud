@@ -56,7 +56,7 @@ class OrderbookRepository {
     return order;
   }
 
-  public getTrades = async (orderId: string, order = false): Promise<db.TradeInstance[]> => {
+  public getTradesByOrderId = async (orderId: string, order = false): Promise<db.TradeInstance[]> => {
     if (order) {
       return await this.models.Trade.findAll({
         order: [['createdAt', 'DESC']],
@@ -73,6 +73,14 @@ class OrderbookRepository {
 
   public addTrade = (trade: db.TradeFactory) => {
     return this.models.Trade.create(trade);
+  }
+
+  public getTrades = (limit?: number): Bluebird<db.TradeInstance[]> => {
+    if (limit) {
+      return this.models.Trade.findAll({ limit, order: [['createdAt', 'DESC']] });
+    } else {
+      return this.models.Trade.findAll({ order: [['createdAt', 'DESC']] });
+    }
   }
 }
 

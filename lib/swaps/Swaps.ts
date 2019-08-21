@@ -9,7 +9,7 @@ import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
-import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest } from './types';
+import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
@@ -525,8 +525,9 @@ class Swaps extends EventEmitter {
       return false;
     }
 
+    let makerToTakerRoutes: Route[];
     try {
-      deal.makerToTakerRoutes = await takerSwapClient.getRoutes(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
+      makerToTakerRoutes = await takerSwapClient.getRoutes(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -539,7 +540,7 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (deal.makerToTakerRoutes.length === 0) {
+    if (makerToTakerRoutes.length === 0) {
       this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
       await this.sendErrorToPeer({
         peer,
@@ -569,10 +570,11 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got block height of ${height} for ${takerCurrency}`);
 
-      const routeAbsoluteTimeLock = deal.makerToTakerRoutes[0].getTotalTimeLock();
+      const routeAbsoluteTimeLock = makerToTakerRoutes[0].getTotalTimeLock();
       this.logger.debug(`choosing a route with total time lock of ${routeAbsoluteTimeLock}`);
       const routeTimeLock = routeAbsoluteTimeLock - height;
       this.logger.debug(`route time lock: ${routeTimeLock}`);
+      deal.takerMaxTimeLock = routeTimeLock;
 
       const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
       this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer}`);
