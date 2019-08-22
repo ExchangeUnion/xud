@@ -400,7 +400,7 @@ func getInfo(ctx context.Context, n *xudtest.HarnessNode) (*xudrpc.GetInfoRespon
 }
 
 func openBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
-	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 0, false)
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 7500000, false)
 	if err != nil {
 		return nil, err
 	}
@@ -430,7 +430,7 @@ func closeBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntes
 }
 
 func openLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
-	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 0, false)
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 7500000, false)
 	if err != nil {
 		return nil, err
 	}
