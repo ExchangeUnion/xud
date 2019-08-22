@@ -11,7 +11,7 @@ import { errorCodes as swapErrors } from '../swaps/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapFailure, SwapSuccess } from '../swaps/types';
-import { LndInfoStatus, SwapFailureReason } from '../constants/enums';
+import { SwapClientStatus, SwapFailureReason } from '../constants/enums';
 import { OrderInstance, TradeInstance } from '../db/types';
 
 /**
@@ -417,11 +417,11 @@ class GrpcService {
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
+        lnd.setStatus(lndInfo.status === SwapClientStatus.Error ? xudrpc.SwapClientStatus.ERROR : xudrpc.SwapClientStatus.READY);
         if (lndInfo.error) lnd.setError(lndInfo.error);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
-        lnd.setStatus(lndInfo.status === LndInfoStatus.Error ? xudrpc.LndInfo.LndInfoStatus.ERROR : xudrpc.LndInfo.LndInfoStatus.READY);
         return lnd;
       });
       const lndMap = response.getLndMap();
@@ -431,6 +431,7 @@ class GrpcService {
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
+        raiden.setStatus(getInfoResponse.raiden.status === SwapClientStatus.Error ? xudrpc.SwapClientStatus.ERROR : xudrpc.SwapClientStatus.READY);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
         if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
         if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);

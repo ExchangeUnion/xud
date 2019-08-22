@@ -8,7 +8,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs } from 'fs';
-import { LndInfoStatus, SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import { SwapClientStatus, SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import { Chain, ChannelCount, LndClientConfig, LndInfo } from './types';
@@ -198,7 +198,7 @@ class LndClient extends SwapClient {
     let version: string | undefined;
     let error: string | undefined;
     let alias: string | undefined;
-    let status: LndInfoStatus = LndInfoStatus.Error;
+    let status: SwapClientStatus = SwapClientStatus.Error;
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
@@ -216,7 +216,7 @@ class LndClient extends SwapClient {
         version = lnd.getVersion();
         alias = lnd.getAlias();
         if (channels.active > 0) {
-          status = LndInfoStatus.Ready;
+          status = SwapClientStatus.Ready;
         } else {
           error = errors.LND_IS_UNAVAILABLE(ClientStatus.NotInitialized).message;
         }

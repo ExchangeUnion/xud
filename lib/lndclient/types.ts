@@ -1,5 +1,5 @@
 /** The configurable options for the lnd client. */
-import { LndInfoStatus } from '../constants/enums';
+import { SwapClientStatus } from '../constants/enums';
 
 export type LndClientConfig = {
   disable: boolean;
@@ -12,7 +12,7 @@ export type LndClientConfig = {
 
 /** General information about the state of this lnd client. */
 export type LndInfo = {
-  status: LndInfoStatus;
+  status: SwapClientStatus;
   error?: string;
   channels?: ChannelCount;
   chains?: Chain[];

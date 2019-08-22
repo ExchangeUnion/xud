@@ -72,8 +72,8 @@
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
-    - [LndInfo.LndInfoStatus](#xudrpc.LndInfo.LndInfoStatus)
     - [OrderSide](#xudrpc.OrderSide)
+    - [SwapClientStatus](#xudrpc.SwapClientStatus)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
   
@@ -611,7 +611,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [LndInfo.LndInfoStatus](#xudrpc.LndInfo.LndInfoStatus) |  |  |
+| status | [SwapClientStatus](#xudrpc.SwapClientStatus) |  |  |
 | error | [string](#string) |  |  |
 | channels | [LndChannels](#xudrpc.LndChannels) |  |  |
 | chains | [Chain](#xudrpc.Chain) | repeated |  |
@@ -844,6 +844,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| status | [SwapClientStatus](#xudrpc.SwapClientStatus) |  |  |
 | error | [string](#string) |  |  |
 | address | [string](#string) |  |  |
 | channels | [uint32](#uint32) |  |  |
@@ -1121,18 +1122,6 @@
 
 
 
-<a name="xudrpc.LndInfo.LndInfoStatus"></a>
-
-### LndInfo.LndInfoStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| READY | 0 |  |
-| ERROR | 1 |  |
-
-
-
 <a name="xudrpc.OrderSide"></a>
 
 ### OrderSide
@@ -1142,6 +1131,18 @@
 | ---- | ------ | ----------- |
 | BUY | 0 |  |
 | SELL | 1 |  |
+
+
+
+<a name="xudrpc.SwapClientStatus"></a>
+
+### SwapClientStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| READY | 0 |  |
+| ERROR | 1 |  |
 
 
 

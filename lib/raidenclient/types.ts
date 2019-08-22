@@ -1,6 +1,8 @@
 /**
  * The configurable options for the raiden client.
  */
+import { SwapClientStatus } from '../constants/enums';
+
 export type RaidenClientConfig = {
   disable: boolean;
   host: string;
@@ -9,6 +11,7 @@ export type RaidenClientConfig = {
 
 /** General information about the state of this raiden client. */
 export type RaidenInfo = {
+  status: SwapClientStatus;
   error?: string;
   address?: string;
   channels?: number;

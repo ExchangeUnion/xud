@@ -278,6 +278,11 @@ enum OrderSide {
   SELL = 1;
 }
 
+enum SwapClientStatus {
+  READY = 0;
+  ERROR = 1;
+}
+
 message AddCurrencyRequest {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
@@ -458,11 +463,7 @@ message LndChannels {
 }
 
 message LndInfo {
-  enum LndInfoStatus {
-      READY = 0;
-      ERROR = 1;
-  }
-  LndInfoStatus status = 1 [json_name = "status"];
+  SwapClientStatus status = 1 [json_name = "status"];
   string error = 2 [json_name = "error"];
   LndChannels channels = 3 [json_name = "channels"];
   repeated Chain chains = 4 [json_name = "chains"];
@@ -602,10 +603,11 @@ message PlaceOrderEvent {
 }
 
 message RaidenInfo {
-  string error = 1 [json_name = "error"];
-  string address = 2 [json_name = "address"];
-  uint32 channels = 3 [json_name = "channels"];
-  string version = 4 [json_name = "version"];
+  SwapClientStatus status = 1 [json_name = "status"];
+  string error = 2 [json_name = "error"];
+  string address = 3 [json_name = "address"];
+  uint32 channels = 4 [json_name = "channels"];
+  string version = 5 [json_name = "version"];
 }
 
 message RemoveCurrencyRequest {

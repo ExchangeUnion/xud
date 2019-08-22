@@ -3,7 +3,7 @@ import Logger from '../Logger';
 import SwapClient, { ClientStatus, ChannelBalance } from '../swaps/SwapClient';
 import errors from './errors';
 import { SwapDeal } from '../swaps/types';
-import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
+import { SwapClientType, SwapState, SwapRole, SwapClientStatus } from '../constants/enums';
 import assert from 'assert';
 import {
   RaidenClientConfig,
@@ -251,6 +251,7 @@ class RaidenClient extends SwapClient {
     let channels: number | undefined;
     let address: string | undefined;
     let error: string | undefined;
+    let status: SwapClientStatus = SwapClientStatus.Error;
     const version = ''; // Intentionally left blank until Raiden API exposes it
 
     if (this.isDisabled()) {
@@ -259,12 +260,19 @@ class RaidenClient extends SwapClient {
       try {
         channels = (await this.getChannels()).length;
         address = this.address;
+
+        if (channels > 0) {
+          status = SwapClientStatus.Ready;
+        } else {
+          error = errors.RAIDEN_IS_UNAVAILABLE(ClientStatus.NotInitialized).message;
+        }
       } catch (err) {
         error = err.message;
       }
     }
 
     return {
+      status,
       channels,
       address,
       error,

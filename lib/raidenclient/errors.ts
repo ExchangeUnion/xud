@@ -1,4 +1,5 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
+import { ClientStatus } from '../swaps/SwapClient';
 
 const codesPrefix = errorCodesPrefix.RAIDEN;
 const errorCodes = {
@@ -10,6 +11,7 @@ const errorCodes = {
   UNEXPECTED: codesPrefix.concat('.6'),
   TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.8'),
+  RAIDEN_IS_UNAVAILABLE: codesPrefix.concat('.9'),
 };
 
 const errors = {
@@ -17,6 +19,10 @@ const errors = {
     message: 'raiden is disabled',
     code: errorCodes.RAIDEN_IS_DISABLED,
   },
+  RAIDEN_IS_UNAVAILABLE: (status: ClientStatus) => ({
+    message: `raiden is ${ClientStatus[status]}`,
+    code: errorCodes.RAIDEN_IS_UNAVAILABLE,
+  }),
   INSUFFICIENT_BALANCE: {
     message: 'insufficient balance to perform request',
     code: errorCodes.INSUFFICIENT_BALANCE,

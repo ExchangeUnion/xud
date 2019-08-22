@@ -860,8 +860,8 @@ export namespace LndChannels {
 }
 
 export class LndInfo extends jspb.Message { 
-    getStatus(): LndInfo.LndInfoStatus;
-    setStatus(value: LndInfo.LndInfoStatus): void;
+    getStatus(): SwapClientStatus;
+    setStatus(value: SwapClientStatus): void;
 
     getError(): string;
     setError(value: string): void;
@@ -904,7 +904,7 @@ export class LndInfo extends jspb.Message {
 
 export namespace LndInfo {
     export type AsObject = {
-        status: LndInfo.LndInfoStatus,
+        status: SwapClientStatus,
         error: string,
         channels?: LndChannels.AsObject,
         chainsList: Array<Chain.AsObject>,
@@ -913,12 +913,6 @@ export namespace LndInfo {
         version: string,
         alias: string,
     }
-
-    export enum LndInfoStatus {
-    READY = 0,
-    ERROR = 1,
-    }
-
 }
 
 export class Order extends jspb.Message { 
@@ -1367,6 +1361,9 @@ export namespace PlaceOrderEvent {
 }
 
 export class RaidenInfo extends jspb.Message { 
+    getStatus(): SwapClientStatus;
+    setStatus(value: SwapClientStatus): void;
+
     getError(): string;
     setError(value: string): void;
 
@@ -1392,6 +1389,7 @@ export class RaidenInfo extends jspb.Message {
 
 export namespace RaidenInfo {
     export type AsObject = {
+        status: SwapClientStatus,
         error: string,
         address: string,
         channels: number,
@@ -1759,4 +1757,9 @@ export namespace UnbanResponse {
 export enum OrderSide {
     BUY = 0,
     SELL = 1,
+}
+
+export enum SwapClientStatus {
+    READY = 0,
+    ERROR = 1,
 }

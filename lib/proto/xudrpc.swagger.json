@@ -662,14 +662,6 @@
       ],
       "default": "LND"
     },
-    "LndInfoLndInfoStatus": {
-      "type": "string",
-      "enum": [
-        "READY",
-        "ERROR"
-      ],
-      "default": "READY"
-    },
     "SwapSuccessRole": {
       "type": "string",
       "enum": [
@@ -997,7 +989,7 @@
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/LndInfoLndInfoStatus"
+          "$ref": "#/definitions/xudrpcSwapClientStatus"
         },
         "error": {
           "type": "string"
@@ -1290,6 +1282,9 @@
     "xudrpcRaidenInfo": {
       "type": "object",
       "properties": {
+        "status": {
+          "$ref": "#/definitions/xudrpcSwapClientStatus"
+        },
         "error": {
           "type": "string"
         },
@@ -1358,6 +1353,14 @@
     },
     "xudrpcShutdownResponse": {
       "type": "object"
+    },
+    "xudrpcSwapClientStatus": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "ERROR"
+      ],
+      "default": "READY"
     },
     "xudrpcSwapFailure": {
       "type": "object",

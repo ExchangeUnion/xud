@@ -143,7 +143,7 @@ export enum DisconnectionReason {
   WireProtocolErr = 13,
 }
 
-export enum LndInfoStatus {
+export enum SwapClientStatus {
   Ready = 0,
   Error = 1,
 }
