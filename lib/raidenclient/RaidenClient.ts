@@ -252,7 +252,7 @@ class RaidenClient extends SwapClient {
     let address: string | undefined;
     let error: string | undefined;
     let status: SwapClientStatus = SwapClientStatus.Error;
-    const version = ''; // Intentionally left blank until Raiden API exposes it
+    const version = 'v0.100.3 - Rosemary'; // Intentionally left hardcoded until Raiden API exposes it
 
     if (this.isDisabled()) {
       error = errors.RAIDEN_IS_DISABLED.message;
