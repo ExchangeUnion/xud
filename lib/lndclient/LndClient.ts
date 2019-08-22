@@ -8,10 +8,10 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs } from 'fs';
-import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
+import { LndInfoStatus, SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
-import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
+import { Chain, ChannelCount, LndClientConfig, LndInfo } from './types';
 
 interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
@@ -198,6 +198,7 @@ class LndClient extends SwapClient {
     let version: string | undefined;
     let error: string | undefined;
     let alias: string | undefined;
+    let status: LndInfoStatus = LndInfoStatus.Error;
     if (this.isDisabled()) {
       error = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
@@ -210,10 +211,15 @@ class LndClient extends SwapClient {
           pending: lnd.getNumPendingChannels(),
         };
         chains = lnd.getChainsList().map(value => value.toObject());
-        blockheight = lnd.getBlockHeight(),
-        uris = lnd.getUrisList(),
+        blockheight = lnd.getBlockHeight();
+        uris = lnd.getUrisList();
         version = lnd.getVersion();
         alias = lnd.getAlias();
+        if (channels.active > 0) {
+          status = LndInfoStatus.Ready;
+        } else {
+          error = errors.LND_IS_UNAVAILABLE(ClientStatus.NotInitialized).message;
+        }
       } catch (err) {
         this.logger.error(`LND error: ${err}`);
         error = err.message;
@@ -221,6 +227,7 @@ class LndClient extends SwapClient {
     }
 
     return {
+      status,
       error,
       channels,
       chains,

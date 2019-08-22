@@ -662,6 +662,14 @@
       ],
       "default": "LND"
     },
+    "LndInfoLndInfoStatus": {
+      "type": "string",
+      "enum": [
+        "READY",
+        "ERROR"
+      ],
+      "default": "READY"
+    },
     "SwapSuccessRole": {
       "type": "string",
       "enum": [
@@ -988,6 +996,9 @@
     "xudrpcLndInfo": {
       "type": "object",
       "properties": {
+        "status": {
+          "$ref": "#/definitions/LndInfoLndInfoStatus"
+        },
         "error": {
           "type": "string"
         },

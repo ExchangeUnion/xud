@@ -3,16 +3,16 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
+import { isOwnOrder, Order, OrderPortion, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as swapErrors } from '../swaps/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
-import { SwapFailureReason } from '../constants/enums';
-import { TradeInstance, OrderInstance } from '../db/types';
+import { SwapFailure, SwapSuccess } from '../swaps/types';
+import { LndInfoStatus, SwapFailureReason } from '../constants/enums';
+import { OrderInstance, TradeInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -421,6 +421,7 @@ class GrpcService {
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
+        lnd.setStatus(lndInfo.status === LndInfoStatus.Error ? xudrpc.LndInfo.LndInfoStatus.ERROR : xudrpc.LndInfo.LndInfoStatus.READY);
         return lnd;
       });
       const lndMap = response.getLndMap();

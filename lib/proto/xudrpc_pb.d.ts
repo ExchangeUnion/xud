@@ -860,6 +860,9 @@ export namespace LndChannels {
 }
 
 export class LndInfo extends jspb.Message { 
+    getStatus(): LndInfo.LndInfoStatus;
+    setStatus(value: LndInfo.LndInfoStatus): void;
+
     getError(): string;
     setError(value: string): void;
 
@@ -901,6 +904,7 @@ export class LndInfo extends jspb.Message {
 
 export namespace LndInfo {
     export type AsObject = {
+        status: LndInfo.LndInfoStatus,
         error: string,
         channels?: LndChannels.AsObject,
         chainsList: Array<Chain.AsObject>,
@@ -909,6 +913,12 @@ export namespace LndInfo {
         version: string,
         alias: string,
     }
+
+    export enum LndInfoStatus {
+    READY = 0,
+    ERROR = 1,
+    }
+
 }
 
 export class Order extends jspb.Message { 

@@ -72,6 +72,7 @@
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
     - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [LndInfo.LndInfoStatus](#xudrpc.LndInfo.LndInfoStatus)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -610,6 +611,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| status | [LndInfo.LndInfoStatus](#xudrpc.LndInfo.LndInfoStatus) |  |  |
 | error | [string](#string) |  |  |
 | channels | [LndChannels](#xudrpc.LndChannels) |  |  |
 | chains | [Chain](#xudrpc.Chain) | repeated |  |
@@ -1116,6 +1118,18 @@
 | ---- | ------ | ----------- |
 | LND | 0 |  |
 | RAIDEN | 1 |  |
+
+
+
+<a name="xudrpc.LndInfo.LndInfoStatus"></a>
+
+### LndInfo.LndInfoStatus
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| READY | 0 |  |
+| ERROR | 1 |  |
 
 
 

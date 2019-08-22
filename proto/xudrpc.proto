@@ -442,7 +442,7 @@ message ListPeersResponse {
 message ListTradesRequest {
   // The maximum number of trades to return
   int32 limit = 1 [json_name = "limit"];
-} 
+}
 
 message ListTradesResponse {
   repeated Trade trades = 1 [json_name = "trades"];
@@ -458,13 +458,18 @@ message LndChannels {
 }
 
 message LndInfo {
-  string error = 1 [json_name = "error"];
-  LndChannels channels = 2 [json_name = "channels"];
-  repeated Chain chains = 3 [json_name = "chains"];
-  uint32 blockheight = 4 [json_name = "blockheight"];
-  repeated string uris = 5 [json_name = "uris"];
-  string version = 6 [json_name = "version"];
-  string alias = 7 [json_name = "alias"];
+  enum LndInfoStatus {
+      READY = 0;
+      ERROR = 1;
+  }
+  LndInfoStatus status = 1 [json_name = "status"];
+  string error = 2 [json_name = "error"];
+  LndChannels channels = 3 [json_name = "channels"];
+  repeated Chain chains = 4 [json_name = "chains"];
+  uint32 blockheight = 5 [json_name = "blockheight"];
+  repeated string uris = 6 [json_name = "uris"];
+  string version = 7 [json_name = "version"];
+  string alias = 8 [json_name = "alias"];
 }
 
 message Order {
@@ -546,7 +551,7 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // A map of ticker symbols to lnd pub keys for this peer 
+  // A map of ticker symbols to lnd pub keys for this peer
   map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
   bool inbound = 4 [json_name = "inbound"];

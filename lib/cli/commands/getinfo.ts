@@ -3,6 +3,7 @@ import { Arguments } from 'yargs';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { GetInfoRequest, GetInfoResponse, LndInfo, RaidenInfo } from '../../proto/xudrpc_pb';
+import { LndInfoStatus } from '../../constants/enums';
 
 type generalInfo = {
   version: string;
@@ -46,8 +47,13 @@ const displayUriList = (uris: string[], asset: string) => {
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
   basicInfotable.push(
-    { [colors.blue('Error')]: info.error },
+    { [colors.blue('Status')]: LndInfoStatus[info.status] },
   );
+  if (info.error) {
+    basicInfotable.push(
+        { [colors.blue('Error')]: info.error },
+    );
+  }
   if (info.blockheight) {
     basicInfotable.push({ [colors.blue('Block Height')]: info.blockheight });
   }

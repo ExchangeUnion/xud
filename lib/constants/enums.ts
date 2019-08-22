@@ -142,3 +142,8 @@ export enum DisconnectionReason {
   AuthFailureInvalidSignature = 12,
   WireProtocolErr = 13,
 }
+
+export enum LndInfoStatus {
+  Ready = 0,
+  Error = 1,
+}
