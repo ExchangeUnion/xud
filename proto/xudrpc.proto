@@ -459,7 +459,7 @@ message ListSwapsRequest {
   int32 limit = 1 [json_name = "all"];
   RequestedSwapState requested_swap_state = 2 [json_name = "requested_swap_state"];
   enum RequestedSwapState {
-    BOTH = 0;
+    ALL = 0;
     SUCCESSFUL = 1;
     FAILED = 2;
   }

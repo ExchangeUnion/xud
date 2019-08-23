@@ -263,11 +263,11 @@
             "required": false,
             "type": "string",
             "enum": [
-              "BOTH",
+              "ALL",
               "SUCCESSFUL",
               "FAILED"
             ],
-            "default": "BOTH"
+            "default": "ALL"
           }
         ],
         "tags": [

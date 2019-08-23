@@ -855,7 +855,7 @@ export namespace ListSwapsRequest {
     }
 
     export enum RequestedSwapState {
-    BOTH = 0,
+    ALL = 0,
     SUCCESSFUL = 1,
     FAILED = 2,
     }

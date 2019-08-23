@@ -367,7 +367,7 @@ class Service {
       case ListSwapsRequest.RequestedSwapState.SUCCESSFUL:
         deals = await this.swaps.getCompletedDeals(SwapState.Completed, queryLimit);
         break;
-      case ListSwapsRequest.RequestedSwapState.BOTH:
+      case ListSwapsRequest.RequestedSwapState.ALL:
         deals = await this.swaps.getCompletedDeals(undefined, queryLimit);
         break;
       default:

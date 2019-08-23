@@ -1178,7 +1178,7 @@
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| BOTH | 0 |  |
+| ALL | 0 |  |
 | SUCCESSFUL | 1 |  |
 | FAILED | 2 |  |
 

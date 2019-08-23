@@ -5,27 +5,19 @@ import Table , { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 
 const FAILED_HEADERS = [
-  colors.blue('peer public key'),
-  colors.blue('order id'),
-  colors.blue('trading pair'),
-  colors.blue('quantity'),
-  colors.blue('failure reason'),
+  colors.blue('Peer Public key'),
+  colors.blue('Failure Reason'),
 ];
 // TODO: create a function that generates these tables
 const SUCCESS_HEADERS = [
-  colors.blue('peer public key'),
-  colors.blue('order id'),
-  colors.blue('local id'),
-  colors.blue('trading pair'),
-  colors.blue('quantity'),
-  colors.blue('price'),
-  colors.blue('amount sent'),
-  colors.blue('amount received'),
-  colors.blue('currency received'),
-  colors.blue('currency send'),
-  colors.blue('role'),
-  colors.blue('rhash'),
-  colors.blue('rpreimage'),
+  colors.blue('Peer Public Key'),
+  colors.blue('Local Id'),
+  colors.blue('Amount Sent'),
+  colors.blue('Amount Received'),
+  colors.blue('Currency Received'),
+  colors.blue('Currency Send'),
+  colors.blue('Role'),
+  colors.blue('Swap Hash'),
 ];
 
 const displaySwaps = (swaps: ListSwapsResponse.AsObject) => {
@@ -37,27 +29,19 @@ const displaySwaps = (swaps: ListSwapsResponse.AsObject) => {
       const fail = swap.swapFailure;
       failedTable.push([
         fail.peerPubKey,
-        fail.orderId,
-        fail.pairId,
-        fail.quantity,
         fail.failureReason,
       ]);
     } else {
       const success = swap.swapSuccess!;
       successTable.push([
         success.peerPubKey,
-        success.orderId,
         success.localId,
-        success.pairId,
-        success.quantity,
-        success.price,
         success.amountSent,
         success.amountReceived,
         success.currencyReceived,
         success.currencySent,
         success.role,
         success.rHash,
-        success.rPreimage,
       ]);
     }
   });
@@ -77,7 +61,7 @@ export const builder = {
     default: 0,
   },
   status: {
-    description: 'list failed deals',
+    description: '0=all, 1=completed, 2=failed',
     type: 'number',
     default: 0,
   },
