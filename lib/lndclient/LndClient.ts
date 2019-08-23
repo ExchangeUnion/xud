@@ -542,7 +542,7 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoutes = async (units: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer) => {
+  public getRoute = async (units: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer) => {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(units);
     request.setFinalCltvDelta(finalCltvDelta);
@@ -551,21 +551,27 @@ class LndClient extends SwapClient {
     fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
     request.setFeeLimit(fee);
 
+    let route: lndrpc.Route | undefined;
+
     try {
-      const routes = (await this.queryRoutes(request)).getRoutesList();
-      this.logger.debug(`got ${routes.length} route(s) to destination ${destination}: ${routes}, finalCltvDelta: ${finalCltvDelta}`);
-      return routes;
+      // QueryRoutes no longer returns more than one route
+      route = (await this.queryRoutes(request)).getRoutesList()[0];
     } catch (err) {
-      if (typeof err.message === 'string' && (
-        err.message.includes('unable to find a path to destination') ||
-        err.message.includes('target not found')
+      if (typeof err.message !== 'string' || (
+        !err.message.includes('unable to find a path to destination') &&
+        !err.message.includes('target not found')
       )) {
-        return [];
-      } else {
         this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalCltvDelta}`, err);
         throw err;
       }
     }
+
+    if (route) {
+      this.logger.debug(`found a route to ${destination} for ${units} units with finalCltvDelta ${finalCltvDelta}: ${route}`);
+    } else {
+      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalCltvDelta}: ${route}`);
+    }
+    return route;
   }
 
   /**
