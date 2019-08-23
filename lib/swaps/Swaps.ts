@@ -697,13 +697,19 @@ class Swaps extends EventEmitter {
     try {
       await makerSwapClient.sendPayment(deal);
     } catch (err) {
-      this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
-      await this.sendErrorToPeer({
-        peer,
-        rHash,
-        failureReason: SwapFailureReason.SendPaymentFailure,
-        errorMessage: err.message,
-      });
+      if (err.code === errors.PAYMENT_REJECTED) {
+        // if the maker rejected our payment, the swap failed due to an error on their side
+        // and we don't need to send them a SwapFailedPacket
+        this.failDeal(deal, SwapFailureReason.RemoteError, err.message);
+      } else {
+        this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
+        await this.sendErrorToPeer({
+          peer,
+          rHash,
+          failureReason: SwapFailureReason.SendPaymentFailure,
+          errorMessage: err.message,
+        });
+      }
       return;
     }
 
@@ -1043,11 +1049,21 @@ class Swaps extends EventEmitter {
     const deal = this.getDeal(rHash);
     // TODO: penalize for unexpected swap failed packets
     if (!deal) {
-      this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
-      return;
-    }
-    if (deal.state !== SwapState.Active) {
-      this.logger.warn(`received swap failed packet for inactive deal with payment hash ${rHash}`);
+      const dealInstance = await this.repository.getSwapDeal(rHash);
+      if (dealInstance) {
+        if (dealInstance.state === SwapState.Error && dealInstance.failureReason === SwapFailureReason.RemoteError) {
+          const errorMessageWithReason = `${SwapFailureReason[failureReason]} - ${errorMessage}`;
+          // update the error message for this saved deal to include the reason it failed
+          dealInstance.errorMessage = dealInstance.errorMessage ?
+            `${dealInstance.errorMessage}; ${errorMessageWithReason}` :
+            errorMessageWithReason;
+          await dealInstance.save();
+        } else {
+          this.logger.warn(`received unexpected swap failed packet for deal with payment hash ${rHash}`);
+        }
+      } else {
+        this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
+      }
       return;
     }
 
