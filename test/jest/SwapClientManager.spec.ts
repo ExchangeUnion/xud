@@ -95,6 +95,7 @@ describe('Swaps.SwapClientManager', () => {
         port: 10009,
         nomacaroons: true,
         macaroonpath: '',
+        cltvdelta: 40,
       },
       LTC: {
         disable: false,
@@ -103,6 +104,7 @@ describe('Swaps.SwapClientManager', () => {
         port: 10009,
         nomacaroons: true,
         macaroonpath: '',
+        cltvdelta: 576,
       },
     };
     config.raiden = {

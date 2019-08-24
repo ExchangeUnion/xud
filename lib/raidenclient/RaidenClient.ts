@@ -45,7 +45,6 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly lockBuffer: number;
   public readonly finalLock = 100;
   public address?: string;
   /** A map of currency symbols to token addresses. */
@@ -61,13 +60,12 @@ class RaidenClient extends SwapClient {
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter, directChannelChecks = false, lockBufferHours }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean, lockBufferHours: number },
+    { config, logger, unitConverter, directChannelChecks = false }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
   ) {
     super(logger);
     const { disable, host, port } = config;
 
-    this.lockBuffer = Math.round(lockBufferHours * 60 / this.minutesPerBlock);
     this.port = port;
     this.host = host;
     this.disable = disable;

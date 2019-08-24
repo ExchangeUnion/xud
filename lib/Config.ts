@@ -17,8 +17,6 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
-  /** The lock time in hours that we add to the cross-chain "hop" for swaps. */
-  public lockbuffer: number;
   public rpc: { disable: boolean, host: string, port: number };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
@@ -77,7 +75,6 @@ class Config {
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = this.getDefaultNetwork();
     this.dbpath = this.getDefaultDbPath();
-    this.lockbuffer = 24;
 
     this.p2p = {
       listen: true,
@@ -114,6 +111,7 @@ class Config {
       host: 'localhost',
       port: 10009,
       nomacaroons: false,
+      cltvdelta: 40,
     };
     this.lnd.LTC = {
       disable: false,
@@ -123,6 +121,7 @@ class Config {
       host: 'localhost',
       port: 10010,
       nomacaroons: false,
+      cltvdelta: 576,
     };
     this.raiden = {
       disable: false,
