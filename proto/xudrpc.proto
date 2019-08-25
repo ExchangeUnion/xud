@@ -85,10 +85,10 @@ service Xud {
     };
   }
 
-  /* Gets the total balance available across all payment channels for one or all currencies. */
-  rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
+  /* Gets the total balance available across all payment channels and wallets for one or all currencies. */
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse) {
     option (google.api.http) = {
-      get: "/v1/channelbalance"
+      get: "/v1/balance"
     };
   }
 
@@ -319,21 +319,21 @@ message Chain {
   string network = 2 [json_name = "network"];
 }
 
-message ChannelBalance {
-  // Sum of channel balances denominated in satoshis.
+message Balance {
+  // Total balance denominated in satoshis.
   uint64 balance = 1 [json_name = "balance"];
   // Sum of pending channel balances denominated in satoshis.
   uint64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
-message ChannelBalanceRequest {
+message GetBalanceRequest {
   // The ticker symbol of the currency to query for, if unspecified then balances for all supported
   // currencies are queried.
   string currency = 1 [json_name = "currency"];
 }
-message ChannelBalanceResponse {
-  // A map between currency ticker symbols and their channel balances.
-  map<string, ChannelBalance> balances = 1 [json_name = "orders"];
+message GetBalanceResponse {
+  // A map between currency ticker symbols and their balances.
+  map<string, Balance> balances = 1 [json_name = "orders"];
 }
 
 message OpenChannelRequest {
