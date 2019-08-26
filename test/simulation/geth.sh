@@ -12,4 +12,4 @@ git checkout v1.9.2
 # cd "$GETH_PATH" || exit 1
 # echo "go version $(go version)"
 # go run build/ci.go install
-make geth
+go run build/ci.go install ./cmd/geth
