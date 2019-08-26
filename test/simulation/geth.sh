@@ -1,6 +1,7 @@
 #!/bin/bash
 set -xe
 declare -xp
+export GOROOT="$PWD/go"
 GETH_PATH="$PWD/go/src/github.com/ethereum/go-ethereum"
 git clone --verbose https://github.com/ethereum/go-ethereum "$GETH_PATH"
 cd "$GETH_PATH" || exit 1
