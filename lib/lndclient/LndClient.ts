@@ -2,6 +2,7 @@ import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import SwapClient, { ClientStatus, SwapClientInfo } from '../swaps/SwapClient';
 import errors from './errors';
+import { errors as swapErrors } from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
@@ -414,12 +415,16 @@ class LndClient extends SwapClient {
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
-      this.logger.error('got exception from sendPaymentSync', err.message);
-      throw err;
+      this.logger.error('got exception from sendPaymentSync', err);
+      throw swapErrors.PAYMENT_ERROR(err.message);
     }
     const paymentError = sendPaymentResponse.getPaymentError();
     if (paymentError) {
-      throw new Error(paymentError);
+      if (paymentError.includes('UnknownPaymentHash') || paymentError.includes('IncorrectOrUnknownPaymentDetails')) {
+        throw swapErrors.PAYMENT_REJECTED;
+      } else {
+        throw swapErrors.PAYMENT_ERROR(paymentError);
+      }
     }
     return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
   }

@@ -36,6 +36,10 @@ var integrationTestCases = []*testCase{
 		name: "order matching and swap",
 		test: testOrderMatchingAndSwap,
 	},
+	{
+		name: "multiple hop swap",
+		test: testMultiHopSwap,
+	},
 }
 
 // testNetworkInit implements:
@@ -213,4 +217,53 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testMultiHopSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Dave.
+	ht.act.connect(net.Alice, net.Dave)
+	ht.act.verifyConnectivity(net.Alice, net.Dave)
+
+	// Place a buy order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    0.02,
+		Quantity: 1000000,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Dave, req)
+
+	// Place a matching order on Dave.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndSwap(net.Dave, net.Alice, req)
+
+	// Place a sell order on Dave.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id2",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndBroadcast(net.Dave, net.Alice, req)
+
+	// Place a matching order on Alice.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id2",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndSwap(net.Alice, net.Dave, req)
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Dave)
 }
