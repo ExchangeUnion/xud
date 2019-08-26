@@ -1,4 +1,5 @@
 #!/bin/bash
+set -xe
 
 delete_dir() {
 	if ! rm -rf  $1 >/dev/null 2>&1; then
