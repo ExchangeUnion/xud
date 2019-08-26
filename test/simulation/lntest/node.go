@@ -79,12 +79,13 @@ var (
 // test instances created, the default ports are used. Otherwise, in order to
 // support multiple test nodes running at once, the p2p, rpc, and rest ports
 // are incremented after each initialization.
-func generateListeningPorts() (int, int, int) {
+func generateListeningPorts() (int, int, int, error) {
 	var p2p, rpc, rest int
 	if numActiveNodes == 0 {
 	    freePorts, err := getFreePorts(3)
 		if err != nil {
 		    fmt.Println(fmt.Errorf("could not find free ports %v", err))
+		    return 0, 0, 0, err
 		} else{
             defaultNodePort = freePorts[0]
             defaultClientPort = freePorts[1]
@@ -100,7 +101,7 @@ func generateListeningPorts() (int, int, int) {
 		rest = defaultRestPort + (3 * numActiveNodes)
 	}
 
-	return p2p, rpc, rest
+	return p2p, rpc, rest, nil
 }
 
 // gets unused TCP ports from the system for given count
@@ -264,7 +265,12 @@ func newNode(cfg nodeConfig) (*HarnessNode, error) {
 	cfg.ReadMacPath = filepath.Join(cfg.DataDir, "readonly.macaroon")
 	cfg.InvoiceMacPath = filepath.Join(cfg.DataDir, "invoice.macaroon")
 
-	cfg.P2PPort, cfg.RPCPort, cfg.RESTPort = generateListeningPorts()
+    var portError error
+	cfg.P2PPort, cfg.RPCPort, cfg.RESTPort, portError  = generateListeningPorts()
+
+	if portError != nil {
+	    return nil, portError
+	}
 
 	nodeNum := numActiveNodes
 	numActiveNodes++
