@@ -33,7 +33,7 @@
     "test:p2p": "mocha --timeout 10000 -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha --timeout 10000 -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
-    "test:sim": "(cd test/simulation && ./geth.sh)",
+    "test:sim": "(cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on ./geth.sh)",
     "test:sim:security": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestSecurity -v)",
     "test:jest": "jest",
     "test:seedutil": "jest seedutil",
