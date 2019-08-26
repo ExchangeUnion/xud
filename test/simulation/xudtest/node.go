@@ -22,9 +22,6 @@ import (
 
 var (
 	numActiveNodes int32
-	baseP2PPort    = 40000
-	baseRPCPort    = 30000
-	baseHTTPPort   = 35000
 )
 
 type nodeConfig struct {
@@ -137,10 +134,16 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
 
+    freePorts, err := getFreePorts(3)
+
+    if err != nil {
+        return nil, err
+    }
+
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort = baseP2PPort + nodeNum
-	cfg.RPCPort = baseRPCPort + nodeNum
-	cfg.HTTPPort = baseHTTPPort + nodeNum
+	cfg.P2PPort = freePorts[0]
+	cfg.RPCPort = freePorts[1]
+	cfg.HTTPPort = freePorts[2]
 
 	return &HarnessNode{
 		Cfg:  &cfg,
@@ -332,4 +335,23 @@ func fileExists(name string) bool {
 		}
 	}
 	return true
+}
+
+// getFreePorts returns unused TCP ports from the system for given count
+func getFreePorts(count int) ([]int, error) {
+	var ports []int
+	for i := 0; i < count; i++ {
+		addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+		if err != nil {
+			return nil, err
+		}
+
+		l, err := net.ListenTCP("tcp", addr)
+		if err != nil {
+			return nil, err
+		}
+		defer l.Close()
+		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
+	}
+	return ports, nil
 }
