@@ -56,7 +56,7 @@ else echo "starting geth clone..."
 
   echo "starting geth make..."
   cd "$GETH_PATH" || exit 1
-  make geth
+  GOPATH=$GO_PATH make geth
   # if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH GO111MODULE=off make geth); then
       # echo "unable to make geth"
       # exit 1
