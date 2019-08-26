@@ -20,4 +20,4 @@ script:
   # - npm run compile:seedutil
   # - npm run test
   # - npm run test:sim
-  - cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on ./geth.sh
+  - cd test/simulation && ./geth.sh
