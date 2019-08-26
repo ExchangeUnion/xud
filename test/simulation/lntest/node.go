@@ -104,7 +104,7 @@ func generateListeningPorts() (int, int, int, error) {
 	return p2p, rpc, rest, nil
 }
 
-// gets unused TCP ports from the system for given count
+// getFreePorts returns unused TCP ports from the system for given count
 func getFreePorts(count int) ([]int, error) {
 	var ports []int
 	for i := 0; i < count; i++ {
