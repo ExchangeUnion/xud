@@ -20,4 +20,8 @@ script:
   # - npm run compile:seedutil
   # - npm run test
   # - npm run test:sim
-  - cd test/simulation && ./geth.sh
+  # - cd test/simulation && ./geth.sh
+  - git clone https://github.com/ethereum/go-ethereum "$GOPATH/src/github.com/ethereum/go-ethereum"
+  - cd "$GOPATH/src/github.com/ethereum/go-ethereum"
+  - git checkout v1.9.2
+  - go run build/ci.go install ./cmd/geth
