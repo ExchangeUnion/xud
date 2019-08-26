@@ -37,7 +37,8 @@ else echo "starting geth clone..."
       # echo "unable to git clone geth"
       # exit 1
   # fi
-  git clone --verbose --depth 1 https://github.com/ExchangeUnion/go-ethereum "$GETH_PATH"
+  # git clone --verbose --depth 1 https://github.com/ExchangeUnion/go-ethereum "$GETH_PATH"
+  git clone --verbose --depth 1 https://github.com/ethereum/go-ethereum "$GETH_PATH"
   echo "finished geth clone"
 
   # echo "cloning raiden-contracts..."
