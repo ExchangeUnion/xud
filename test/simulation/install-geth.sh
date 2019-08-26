@@ -18,8 +18,8 @@ CONTRACTS_WETH_LOG_JSON="$CONTRACTS_PATH/weth.log"
 CONTRACTS_REPOSITORY="https://github.com/ExchangeUnion/raiden-contracts.git"
 CONTRACTS_BRANCH="simnet-contracts"
 SOLC_DIR="$ROOT/temp/solc"
-rm -Rf "$GO_PATH"
-rm -Rf "$PWD/temp" # TODO: delete later
+# rm -Rf "$GO_PATH"
+# rm -Rf "$PWD/temp" # TODO: delete later
 mkdir -p "$GETH_DATA_DIR"
 if [ -f "$GETH_BINARY_PATH" ]
   then
