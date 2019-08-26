@@ -1,4 +1,7 @@
-dist: xenial
+language: go
+go:
+  1.12.9
+# dist: xenial
 
 # language: node_js
 
@@ -12,8 +15,8 @@ cache:
     - "seedutil/go" # go modules used for xudseed
     # - "test/simulation/go" # lnd, btcd, and dependencies
 
-before_install:
-  - eval "$(GIMME_GO_VERSION=1.12.9 gimme)"
+      # before_install:
+      # - eval "$(GIMME_GO_VERSION=1.12.9 gimme)"
 
 script:
   # - npm run lintNoFix
