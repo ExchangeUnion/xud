@@ -53,7 +53,7 @@ else echo "starting geth clone..."
   echo "solc version is $(solc --version)" # TODO: debug remove
 
   echo "starting geth make..."
-  if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH VERBOSE=1 make geth); then
+  if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH make geth); then
       echo "unable to make geth"
       exit 1
   fi
