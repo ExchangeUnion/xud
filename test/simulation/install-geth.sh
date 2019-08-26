@@ -18,9 +18,8 @@ CONTRACTS_WETH_LOG_JSON="$CONTRACTS_PATH/weth.log"
 CONTRACTS_REPOSITORY="https://github.com/ExchangeUnion/raiden-contracts.git"
 CONTRACTS_BRANCH="simnet-contracts"
 SOLC_DIR="$ROOT/temp/solc"
-rm -Rf "$GETH_PATH" # TODO: temp - delete later
-rm -Rf "$GETH_DATA_DIR" # TODO: temp - delete later
-rm -Rf /home/ar/xud/test/simulation/temp # TODO: delete later
+rm -Rf "$GO_PATH"
+rm -Rf "$PWD/temp" # TODO: delete later
 mkdir -p "$GETH_DATA_DIR"
 if [ -f "$GETH_BINARY_PATH" ]
   then
@@ -40,8 +39,8 @@ else echo "starting geth clone..."
 
   echo "cloning raiden-contracts..."
   if ! git clone --depth 1 $CONTRACTS_REPOSITORY -b $CONTRACTS_BRANCH "$CONTRACTS_PATH" > /dev/null 2>&1; then
-      echo "unable to git clone raiden-contracts"
-      exit 1
+    echo "unable to git clone raiden-contracts"
+    exit 1
   fi
   echo "finished raiden-contracts clone"
 
@@ -53,11 +52,12 @@ else echo "starting geth clone..."
   echo "solc version is $(solc --version)" # TODO: debug remove
 
   echo "starting geth make..."
-  if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH make geth); then
+  if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH GO111MODULE=off make geth); then
       echo "unable to make geth"
       exit 1
   fi
   echo "finished geth make"
+  exit 1
 
   echo "setting up Ethereum chain..."
   # create a genesis block
