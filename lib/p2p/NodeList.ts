@@ -194,7 +194,7 @@ class NodeList extends EventEmitter {
         node.reputationScore = reputationEventWeight[event];
         break;
       }
-      default: node.reputationScore += reputationEventWeight[event];
+      default: node.reputationScore += reputationEventWeight[event]; break;
     }
   }
 
