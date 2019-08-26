@@ -19,4 +19,5 @@ script:
   # - npm run lintNoFix
   # - npm run compile:seedutil
   # - npm run test
-  - npm run test:sim
+  # - npm run test:sim
+  - cd test/simulation && ./geth.sh
