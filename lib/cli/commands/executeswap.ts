@@ -36,6 +36,8 @@ export const handler = (argv: Arguments) => {
   const request = new ExecuteSwapRequest();
   request.setOrderId(argv.order_id);
   request.setPairId(argv.pair_id);
-  request.setQuantity(coinsToSats(argv.quantity));
+  if (argv.quantity) {
+    request.setQuantity(coinsToSats(argv.quantity));
+  }
   loadXudClient(argv).executeSwap(request, callback(argv, displaySwapSuccess));
 };
