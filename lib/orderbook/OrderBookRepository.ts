@@ -49,6 +49,14 @@ class OrderbookRepository {
   public addTrade = (trade: db.TradeFactory) => {
     return this.models.Trade.create(trade);
   }
+
+  public getTrades = (limit?: number): Bluebird<db.TradeInstance[]> => {
+    if (limit) {
+      return this.models.Trade.findAll({ limit, order: [['createdAt', 'DESC']] });
+    } else {
+      return this.models.Trade.findAll({ order: [['createdAt', 'DESC']] });
+    }
+  }
 }
 
 export default OrderbookRepository;

@@ -54,13 +54,19 @@ func TestIntegration(t *testing.T) {
 	t.Logf("Running %v integration tests", len(integrationTestCases))
 
 	// Open channels from both directions on each chain.
-	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
 	ht.assert.NoError(err)
-	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+	aliceBobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
 	ht.assert.NoError(err)
-	bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
+
+	bobCarolBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Carol.LndBtcNode)
 	ht.assert.NoError(err)
-	bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
+	bobCarolLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Carol.LndLtcNode)
+	ht.assert.NoError(err)
+
+	carolDavidBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, xudNetwork.Dave.LndBtcNode)
+	ht.assert.NoError(err)
+	carolDavidLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, xudNetwork.Dave.LndLtcNode)
 	ht.assert.NoError(err)
 
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
@@ -107,13 +113,17 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Close all channels, mostly in order to verify there are no pending HTLCs (which would require force-close).
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
 	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
 	ht.assert.NoError(err)
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobCarolBtcChanPoint, false)
 	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobCarolLtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, carolDavidBtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, carolDavidLtcChanPoint, false)
 	ht.assert.NoError(err)
 }
 

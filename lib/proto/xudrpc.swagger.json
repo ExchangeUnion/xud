@@ -237,6 +237,32 @@
         ]
       }
     },
+    "/v1/listtrades": {
+      "post": {
+        "operationId": "ListTrades",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcListTradesResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcListTradesRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.",
@@ -918,6 +944,27 @@
         }
       }
     },
+    "xudrpcListTradesRequest": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "format": "int32",
+          "title": "The maximum number of trades to return"
+        }
+      }
+    },
+    "xudrpcListTradesResponse": {
+      "type": "object",
+      "properties": {
+        "trades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcTrade"
+          }
+        }
+      }
+    },
     "xudrpcLndChannels": {
       "type": "object",
       "properties": {
@@ -1385,6 +1432,32 @@
           "type": "number",
           "format": "double",
           "description": "The price used for the swap."
+        }
+      }
+    },
+    "xudrpcTrade": {
+      "type": "object",
+      "properties": {
+        "maker_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "The maker order involved in this trade."
+        },
+        "taker_order": {
+          "$ref": "#/definitions/xudrpcOrder",
+          "description": "The taker order involved in this trade."
+        },
+        "r_hash": {
+          "type": "string",
+          "description": "The payment hash involved in this trade."
+        },
+        "quantity": {
+          "type": "string",
+          "format": "int64",
+          "description": "The quantity transacted in this trade."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair for this trade."
         }
       }
     },

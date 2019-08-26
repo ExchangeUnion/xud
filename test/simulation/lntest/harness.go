@@ -190,7 +190,7 @@ func (n *NetworkHarness) SetUp(lndArgs []string) error {
 	addrReq := &lnrpc.NewAddressRequest{
 		Type: lnrpc.AddressType_WITNESS_PUBKEY_HASH,
 	}
-	clients := []lnrpc.LightningClient{n.Alice, n.Bob}
+	clients := []lnrpc.LightningClient{n.Alice, n.Bob, n.Carol}
 	for _, client := range clients {
 		for i := 0; i < 10; i++ {
 			resp, err := client.NewAddress(ctxb, addrReq)
@@ -253,8 +253,14 @@ func (n *NetworkHarness) SetUp(lndArgs []string) error {
 		}
 	}
 
-	// Finally, make a connection between both of the nodes.
+	// Finally, make connections between the nodes.
 	if err := n.ConnectNodes(ctxb, n.Alice, n.Bob); err != nil {
+		return err
+	}
+	if err := n.ConnectNodes(ctxb, n.Bob, n.Carol); err != nil {
+		return err
+	}
+	if err := n.ConnectNodes(ctxb, n.Carol, n.Dave); err != nil {
 		return err
 	}
 

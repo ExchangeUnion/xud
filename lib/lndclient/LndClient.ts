@@ -2,6 +2,7 @@ import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import SwapClient, { ClientStatus, SwapClientInfo } from '../swaps/SwapClient';
 import errors from './errors';
+import { errors as swapErrors } from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
@@ -361,10 +362,11 @@ class LndClient extends SwapClient {
         rHash: deal.rHash,
         destination: deal.takerPubKey!,
         amount: deal.takerAmount,
+        finalCltvDelta: deal.takerCltvDelta,
         // Enforcing the maximum duration/length of the payment by
         // specifying the cltvLimit.
-        finalCltvDelta: deal.takerCltvDelta,
-        cltvLimit: deal.makerCltvDelta,
+        // TODO: investigate why we need to add 3 blocks - if not lnd says route not found
+        cltvLimit: deal.takerMaxTimeLock! + 3,
       });
     }
     const preimage = await this.executeSendRequest(request);
@@ -408,16 +410,21 @@ class LndClient extends SwapClient {
   private executeSendRequest = async (
     request: lndrpc.SendRequest,
   ): Promise<string> => {
+    this.logger.trace(`sending payment with ${JSON.stringify(request.toObject())}`);
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
-      this.logger.error('got exception from sendPaymentSync', err.message);
-      throw err;
+      this.logger.error('got exception from sendPaymentSync', err);
+      throw swapErrors.PAYMENT_ERROR(err.message);
     }
     const paymentError = sendPaymentResponse.getPaymentError();
     if (paymentError) {
-      throw new Error(paymentError);
+      if (paymentError.includes('UnknownPaymentHash') || paymentError.includes('IncorrectOrUnknownPaymentDetails')) {
+        throw swapErrors.PAYMENT_REJECTED;
+      } else {
+        throw swapErrors.PAYMENT_ERROR(paymentError);
+      }
     }
     return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
   }
