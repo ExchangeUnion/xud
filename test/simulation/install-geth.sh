@@ -31,25 +31,27 @@ fi
 if [[ $GETH_COMMIT == *"$EXPECTED_GETH_COMMIT" ]]; then
     echo "geth already installed"
 else echo "starting geth clone..."
-  if ! git clone --depth 1 https://github.com/ExchangeUnion/go-ethereum "$GETH_PATH" > /dev/null 2>&1; then
-      echo "unable to git clone geth"
-      exit 1
-  fi
+
+  # if ! git clone --depth 1 https://github.com/ExchangeUnion/go-ethereum "$GETH_PATH" > /dev/null 2>&1; then
+      # echo "unable to git clone geth"
+      # exit 1
+  # fi
+  git clone --verbose --depth 1 https://github.com/ExchangeUnion/go-ethereum "$GETH_PATH"
   echo "finished geth clone"
 
-  echo "cloning raiden-contracts..."
-  if ! git clone --depth 1 $CONTRACTS_REPOSITORY -b $CONTRACTS_BRANCH "$CONTRACTS_PATH" > /dev/null 2>&1; then
-    echo "unable to git clone raiden-contracts"
-    exit 1
-  fi
-  echo "finished raiden-contracts clone"
-
-  mkdir -p "$SOLC_DIR"
-  cd "$SOLC_DIR" || exit 1
-  wget https://github.com/ethereum/solidity/releases/download/v0.4.23/solidity-ubuntu-trusty.zip
-  unzip solidity-ubuntu-trusty.zip
-  export PATH="$SOLC_DIR:$PATH"
-  echo "solc version is $(solc --version)" # TODO: debug remove
+  # echo "cloning raiden-contracts..."
+  # if ! git clone --depth 1 $CONTRACTS_REPOSITORY -b $CONTRACTS_BRANCH "$CONTRACTS_PATH" > /dev/null 2>&1; then
+    # echo "unable to git clone raiden-contracts"
+    # exit 1
+  # fi
+  # echo "finished raiden-contracts clone"
+#
+  # mkdir -p "$SOLC_DIR"
+  # cd "$SOLC_DIR" || exit 1
+  # wget https://github.com/ethereum/solidity/releases/download/v0.4.23/solidity-ubuntu-trusty.zip
+  # unzip solidity-ubuntu-trusty.zip
+  # export PATH="$SOLC_DIR:$PATH"
+  # echo "solc version is $(solc --version)" # TODO: debug remove
 
   echo "starting geth make..."
   if ! (cd "$GETH_PATH" && GOPATH=$GO_PATH GO111MODULE=off make geth); then
