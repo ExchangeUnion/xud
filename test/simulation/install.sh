@@ -8,7 +8,7 @@ delete_dir() {
 	return 0
 }
 
-GO_PATH=$PWD/go
+export GO_PATH=$PWD/go
 LND_PATH=${GO_PATH}/src/github.com/lightningnetwork/lnd
 LND_TAG="v0.7.1-beta"
 if [ -f ${LND_PATH}/lnd-debug ]
@@ -44,3 +44,5 @@ else
     fi
     echo "finished lnd make"
 fi
+
+./install-geth.sh
