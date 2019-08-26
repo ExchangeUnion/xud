@@ -44,3 +44,4 @@ $ GOPATH=$PWD/go GO111MODULE=on go test -v
 ### Swaps
 - [x] Placed order should trigger a swap.
 - [ ] Placed order should trigger a swap and order invalidation on the maker order to all connected peers besides the taker peer.
+- [x] Swaps that use multihop routes for payment on lnd.

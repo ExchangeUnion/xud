@@ -38,7 +38,7 @@
     "test:jest": "jest",
     "test:seedutil": "jest seedutil",
     "test:jest:watch": "jest --watch",
-    "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none --ignoreCompilerErrors",
+    "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
     "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
   },
@@ -177,7 +177,7 @@
     "tslint": "^5.18.0",
     "tslint-config-airbnb": "^5.11.1",
     "tslint-no-circular-imports": "^0.7.0",
-    "typedoc": "^0.14.2",
+    "typedoc": "^0.15.0",
     "typescript": "^3.5.2"
   },
   "engines": {
