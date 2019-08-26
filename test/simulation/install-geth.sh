@@ -3,7 +3,8 @@ set -xe
 export GO_PATH=$PWD/go # TODO: temp - delete later
 export GOPATH=$PWD/go # TODO: temp - delete later
 ROOT=$PWD
-GETH_PATH="$GO_PATH/src/github.com/ExchangeUnion/go-ethereum"
+# GETH_PATH="$GO_PATH/src/github.com/ExchangeUnion/go-ethereum"
+GETH_PATH="$GO_PATH/src/github.com/ethereum/go-ethereum"
 EXPECTED_GETH_COMMIT="e0bb1631c21042336d230c11de0dfe8580aa28c4"
 GETH_BINARY_PATH="$GETH_PATH/build/bin/geth"
 GETH_DATA_DIR="$ROOT/temp/geth/data"
