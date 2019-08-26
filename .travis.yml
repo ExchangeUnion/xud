@@ -1,8 +1,10 @@
-language: node_js
+dist: bionic
 
-node_js:
+# language: node_js
+
+# node_js:
   # - "node"
-  - "lts/*"
+  # - "lts/*"
 
 cache:
   directories:
