@@ -608,7 +608,7 @@ class GrpcService {
       const response = new xudrpc.ListOrderHistoryResponse();
 
       const trades: xudrpc.Trade[] = [];
-      const swapDeals: xudrpc.SwapSuccess[] = [];
+      const swapSuccesses: xudrpc.SwapSuccess[] = [];
 
       orderHistory.trades.forEach(async (trade) => {
         const tradeRpc = new xudrpc.Trade();
@@ -623,12 +623,12 @@ class GrpcService {
 
       orderHistory.swapDeals.forEach((swap) => {
         const swapDeal = createSwapSuccessFromSwapDealInstance(swap);
-        swapDeals.push(swapDeal);
+        swapSuccesses.push(swapDeal);
       });
 
       response.setStatus(orderHistory.status);
       response.setTradesList(trades);
-      response.setSwapsList(swapDeals);
+      response.setSwapsList(swapSuccesses);
 
       callback(null, response);
     } catch (err) {

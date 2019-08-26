@@ -210,9 +210,7 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Get trades by order id
-   * @param { string } orderId - order id
-   * @param { boolean } order - sort trades by data of creation
+   * Gets trades by order id, sorts trades by date of creation.
    */
   public getTradesByOrderId = async (orderId: string, order = false) => {
     return this.repository.getTradesByOrderId(orderId, order);

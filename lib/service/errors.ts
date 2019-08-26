@@ -7,7 +7,6 @@ const errorCodes = {
   UNIMPLEMENTED: codesPrefix.concat('.3'),
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
-  PAIRID_NON_EXISTENT: codesPrefix.concat('.6'),
 };
 
 const errors = {
@@ -30,10 +29,6 @@ const errors = {
   OPEN_CHANNEL_FAILURE: (currency: string, nodePubKey: string, amount: number, message: string) => ({
     message: `failed to open channel with nodePubKey: ${nodePubKey}, currency: ${currency}, amount: ${amount}, message: ${message}`,
     code: errorCodes.OPEN_CHANNEL_FAILURE,
-  }),
-  PAIRID_NON_EXISTENT: () => ({
-    message: "pairId provided doesn't exist",
-    code: errorCodes.PAIRID_NON_EXISTENT,
   }),
 };
 

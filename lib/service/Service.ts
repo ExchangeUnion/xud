@@ -3,6 +3,7 @@ import OrderBook from '../orderbook/OrderBook';
 import { LndInfo } from '../lndclient/types';
 import { RaidenInfo } from '../raidenclient/types';
 import errors from './errors';
+import orderbookErrors from '../orderbook/errors';
 import { SwapClientType, OrderSide, SwapRole, OrderStatus } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
@@ -358,26 +359,26 @@ class Service {
     const order = await this.orderBook.getOrder(args.orderId);
 
     if (order === null) {
-      throw errors.PAIRID_NON_EXISTENT();
+      throw orderbookErrors.PAIR_DOES_NOT_EXIST('');
     }
 
     const trades = await this.orderBook.getTradesByOrderId(order.id, true);
     const swapDeals = await this.swaps.getDeals(true);
 
     const isInOrderBook = this.orderBook.getOwnOrder(order.id, order.pairId);
-    let quantity = 0;
+    let tradedQuantity = 0;
     let status: OrderStatus = OrderStatus.OPEN;
     trades.forEach((trade) => {
-      quantity = quantity + trade.quantity;
+      tradedQuantity = tradedQuantity + trade.quantity;
     });
 
-    if (!isInOrderBook && quantity === order.initialQuantity) {
+    if (!isInOrderBook && tradedQuantity === order.initialQuantity) {
       status = OrderStatus.FILLED;
     } else if (!isInOrderBook && trades.length === 0) {
       status = OrderStatus.CANCELLED;
     } else if (isInOrderBook && trades.length === 0) {
       status = OrderStatus.OPEN;
-    } else if (isInOrderBook && quantity < order.initialQuantity) {
+    } else if (isInOrderBook && tradedQuantity < order.initialQuantity) {
       status = OrderStatus.PARTIALLY_FILLED;
     }
 

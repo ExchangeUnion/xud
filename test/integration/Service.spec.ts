@@ -105,7 +105,7 @@ describe('API Service', () => {
     expect(order.id).to.equal(orderId);
   });
 
-  it('should list order history with a trade', async () => {
+  it('should list order history without a trade', async () => {
     const { status, trades, swapDeals } = await service.listOrderHistory({ orderId: orderId! });
 
     expect(status).to.equal(2);

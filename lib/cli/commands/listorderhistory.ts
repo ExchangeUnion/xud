@@ -4,7 +4,7 @@ import { ListOrderHistoryRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'listorderhistory <order_id>';
 
-export const describe = 'list all events related to the order since entered until fully removed from the orderbook';
+export const describe = 'list all events related to ab order';
 
 export const builder = {
   order_id: {
