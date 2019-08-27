@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 delete_dir() {
 	if ! rm -rf  $1 >/dev/null 2>&1; then
@@ -8,7 +9,7 @@ delete_dir() {
 	return 0
 }
 
-GO_PATH=$PWD/go
+export GO_PATH=$PWD/go
 LND_PATH=${GO_PATH}/src/github.com/lightningnetwork/lnd
 LND_TAG="v0.7.1-beta"
 if [ -f ${LND_PATH}/lnd-debug ]
@@ -44,3 +45,8 @@ else
     fi
     echo "finished lnd make"
 fi
+
+GETH_SOURCE="https://github.com/ExchangeUnion/go-ethereum"
+GETH_PATH="$GO_PATH/src/github.com/ethereum/go-ethereum"
+GETH_COMMIT_HASH="e0bb1631c21042336d230c11de0dfe8580aa28c4"
+./install-geth.sh "$GETH_SOURCE" "$GETH_PATH" "$GETH_COMMIT_HASH"
