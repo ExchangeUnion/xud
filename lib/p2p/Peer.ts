@@ -115,14 +115,12 @@ class Peer extends EventEmitter {
   private static readonly CONNECTION_RETRIES_MAX_DELAY = 300000;
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
-  /** Interval for measuring ping latency: 1 for testing, 2 for ~30000, 3 for ~10000000 */
-  private readonly MEASURE_LATENCY_INTERVAL = 2;
-  /** Estimated round trip time (RTT) for this peer. Initial value should be set near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
+  /** Interval for measuring ping latency: 1 for ~30 second intervals, 10 for ~300 seconds, etc. */
+  private readonly MEASURE_LATENCY_INTERVAL = 1;
+  /** Estimated round trip time. Initial value should be near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
   private rtt = 1.0;
   /** Arbitrary maximum latency to cap delay. 150ms = approximately one packet's trip around the globe */
   private static readonly MAX_LATENCY = 155.0; 
-  /** RTT estimate convergence time. Makes deceiving the algorithm too time-consuming */
-  //private static readonly CONVERGENCE_RATE = 0.001;
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -294,7 +292,7 @@ class Peer extends EventEmitter {
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // Setup the ping interval
-    var interval = parseInt(randomBytes(this.MEASURE_LATENCY_INTERVAL).toString('hex'), 16)
+    var interval = this.getRandomInterval();//parseInt(randomBytes(2).toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
     this.measurementTimer = setInterval(this.measureLatency, interval);
 
 
@@ -1001,6 +999,10 @@ class Peer extends EventEmitter {
     this.logger.debug(`Peer (${this.label}) session in-encryption enabled`);
   }
 
+  private getRandomInterval(): number {
+    return parseInt(randomBytes(2).toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
+  }
+
   private measureLatency = async (): Promise<void> => {
     try {
       /* Test if host is an IP address. If not, resolve via DNS lookup */
@@ -1044,7 +1046,7 @@ class Peer extends EventEmitter {
 
     // set interval to random number so time of next latency assessment cannot be predicted
     if (this.measurementTimer) {
-      var interval = parseInt(randomBytes(this.MEASURE_LATENCY_INTERVAL).toString('hex'), 16);
+      var interval = this.getRandomInterval();
       clearInterval(this.measurementTimer);
       this.measurementTimer = setInterval(this.measureLatency, interval);
     }
