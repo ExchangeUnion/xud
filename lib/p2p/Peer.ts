@@ -19,7 +19,8 @@ import NodeKey from '../nodekey/NodeKey';
 import Network from './Network';
 import Framer from './Framer';
 
-const { performance } = require('perf_hooks');
+const dns = require('dns');
+const Traceroute = require('nodejs-traceroute');
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -121,7 +122,7 @@ class Peer extends EventEmitter {
   /** Arbitrary maximum latency to cap delay. 150ms = approximately one packet's trip around the globe */
   private static readonly MAX_LATENCY = 155.0; 
   /** RTT estimate convergence time. Makes deceiving the algorithm too time-consuming */
-  private static readonly CONVERGENCE_RATE = 0.001;
+  //private static readonly CONVERGENCE_RATE = 0.001;
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -1001,19 +1002,46 @@ class Peer extends EventEmitter {
   }
 
   private measureLatency = async (): Promise<void> => {
-    var peer = this;
-    var start = performance.now();
-    var socket = net.connect(peer.address.port, peer.address.host, function() { 
-      socket.end();
-      var rtt = performance.now() - start;
-      if (rtt > peer.rtt) {
-        peer.rtt = peer.rtt + Peer.CONVERGENCE_RATE; // prevents abuse via intentionally slow sockets to fish for orders to front-run.
-      } else {
-        peer.rtt = rtt; // fast response to faster ping times.
+    try {
+      /* Test if host is an IP address. If not, resolve via DNS lookup */
+      var host = this.address.host.split(":")[0];
+      if (!(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(host))) {
+        var dnsPromise = dns.promises;
+        var dnsResults = await dnsPromise.resolve(host);
+        if (dnsResults.length) {
+          host = dnsResults[0];
+        }
       }
-      peer.logger.debug(`Peer ${peer.nodePubKey} RTT: ${peer.rtt}`);
-    });
-        
+
+      /* Replace last octet with a random value */
+      var octets = host.split(".");
+      octets[3] = String(parseInt(randomBytes(1).toString('hex'), 16));
+      host = octets.join(".");
+
+      /* Find RTT to IP address that likely is penultimate hop before peer's IP */
+      var nearest = '127.0.0.1';
+      var resp;
+      var tracer = new Traceroute();
+      const callback = (hop : string) => {
+        resp = JSON.parse(JSON.stringify(hop));
+        if (resp['ip'] === this.address.host || resp['hop'] == 30) {
+          var rtt = Number(JSON.parse(JSON.stringify(nearest))['rtt1'].split(" ")[0]);
+          this.rtt = rtt
+          this.logger.debug(`RTT to ${this.label}: ${this.rtt}`);
+          tracer.off('hop', callback);
+          return;
+        }
+        if (resp['ip'] !== '*') {
+          nearest = hop;
+        }
+      };
+      tracer.on('hop', callback);
+      await tracer.trace(host);
+
+    } catch (e) {
+      this.logger.debug(`Could not measure RTT to ${this.label}: ${e}`);
+    }
+
     // set interval to random number so time of next latency assessment cannot be predicted
     if (this.measurementTimer) {
       var interval = parseInt(randomBytes(this.MEASURE_LATENCY_INTERVAL).toString('hex'), 16);
