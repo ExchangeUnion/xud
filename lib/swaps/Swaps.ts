@@ -697,13 +697,19 @@ class Swaps extends EventEmitter {
     try {
       await makerSwapClient.sendPayment(deal);
     } catch (err) {
-      this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
-      await this.sendErrorToPeer({
-        peer,
-        rHash,
-        failureReason: SwapFailureReason.SendPaymentFailure,
-        errorMessage: err.message,
-      });
+      if (err.code === errors.PAYMENT_REJECTED) {
+        // if the maker rejected our payment, the swap failed due to an error on their side
+        // and we don't need to send them a SwapFailedPacket
+        this.failDeal(deal, SwapFailureReason.RemoteError, err.message);
+      } else {
+        this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
+        await this.sendErrorToPeer({
+          peer,
+          rHash,
+          failureReason: SwapFailureReason.SendPaymentFailure,
+          errorMessage: err.message,
+        });
+      }
       return;
     }
 
@@ -721,25 +727,22 @@ class Swaps extends EventEmitter {
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
-    const { amount, tokenAddress, expiration } = resolveRequest;
+    const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
     let expectedAmount: number;
     let expectedTokenAddress: string | undefined;
     let source: string;
     let destination: string;
-    // TODO: check cltv value
     switch (deal.role) {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
-        if (deal.makerCltvDelta! > expiration) {
-          // temporary code to relax the lock time check for raiden
-          this.logger.warn(`lock expiration of ${expiration} does not meet ${deal.makerCltvDelta} minimum for ${deal.rHash}`);
-          // end temp code
-          // this.logger.error(`cltvDelta of ${expiration} does not meet ${deal.makerCltvDelta!} minimum`);
-          // this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
-          // return false;
+        const lockExpirationDelta = expiration - chain_height;
+        if (deal.makerCltvDelta! > lockExpirationDelta) {
+          this.logger.error(`cltvDelta of ${lockExpirationDelta} does not meet ${deal.makerCltvDelta!} minimum`);
+          this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
+          return false;
         }
         break;
       case SwapRole.Taker:
@@ -864,10 +867,10 @@ class Swaps extends EventEmitter {
 
     if (deal) {
       if (!this.validateResolveRequest(deal, resolveRequest)) {
-        return deal.errorMessage || '';
+        throw errors.INVALID_RESOLVE_REQUEST(rHash, deal.errorMessage || '');
       }
     } else {
-      return 'swap deal not found';
+      throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
 
     try {
@@ -880,7 +883,7 @@ class Swaps extends EventEmitter {
       return preimage;
     } catch (err) {
       this.logger.error(err.message);
-      return err.message;
+      throw err;
     }
   }
 
@@ -995,6 +998,7 @@ class Swaps extends EventEmitter {
         break;
       default:
         assert.fail('unknown deal phase');
+        break;
     }
 
     deal.phase = newPhase;
@@ -1043,11 +1047,21 @@ class Swaps extends EventEmitter {
     const deal = this.getDeal(rHash);
     // TODO: penalize for unexpected swap failed packets
     if (!deal) {
-      this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
-      return;
-    }
-    if (deal.state !== SwapState.Active) {
-      this.logger.warn(`received swap failed packet for inactive deal with payment hash ${rHash}`);
+      const dealInstance = await this.repository.getSwapDeal(rHash);
+      if (dealInstance) {
+        if (dealInstance.state === SwapState.Error && dealInstance.failureReason === SwapFailureReason.RemoteError) {
+          const errorMessageWithReason = `${SwapFailureReason[failureReason]} - ${errorMessage}`;
+          // update the error message for this saved deal to include the reason it failed
+          dealInstance.errorMessage = dealInstance.errorMessage ?
+            `${dealInstance.errorMessage}; ${errorMessageWithReason}` :
+            errorMessageWithReason;
+          await dealInstance.save();
+        } else {
+          this.logger.warn(`received unexpected swap failed packet for deal with payment hash ${rHash}`);
+        }
+      } else {
+        this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
+      }
       return;
     }
 
