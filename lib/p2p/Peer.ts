@@ -292,7 +292,7 @@ class Peer extends EventEmitter {
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // Setup the ping interval
-    var interval = this.getRandomInterval();//parseInt(randomBytes(2).toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
+    var interval = this.getRandomInterval();
     this.measurementTimer = setInterval(this.measureLatency, interval);
 
 
