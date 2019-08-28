@@ -11,7 +11,10 @@ Whenever `xudrpc.proto` is updated, the protobuf javascript code and type defini
 2. Install [protoc-gen-swagger](https://github.com/grpc-ecosystem/grpc-gateway):
 
     ```bash
-    go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+    git clone https://github.com/grpc-ecosystem/grpc-gateway $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
+    cd $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
+    git reset --hard f2862b476edcef83412c7af8687c9cd8e4097c0f
+    go install ./protoc-gen-swagger
     ```
 
 3. Install [protoc-gen-doc](https://github.com/pseudomuto/protoc-gen-doc):
