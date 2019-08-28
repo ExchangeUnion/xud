@@ -76,7 +76,7 @@ class Xud extends EventEmitter {
       await this.swapClientManager.init(this.db.models);
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
-      let nodeKey: NodeKey;
+      let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
         nodeKey = await NodeKey.load(nodeKeyPath);
       } else {
@@ -94,10 +94,18 @@ class Xud extends EventEmitter {
 
         this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
         " 'xucli create' if this is the first time starting xud");
-        nodeKey = await new Promise<NodeKey>((resolve) => {
+        nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
+          this.on('shutdown', () => {
+            // in case we shutdown before unlocking xud
+            resolve();
+            initService.removeListener('nodekey', resolve);
+          });
         });
         await initRpcServer.close();
+        if (!nodeKey) {
+          return; // we interrupted before unlocking xud
+        }
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
