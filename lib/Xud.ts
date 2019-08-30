@@ -72,15 +72,22 @@ class Xud extends EventEmitter {
       this.unitConverter = new UnitConverter();
       this.unitConverter.init();
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models);
-
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
+      const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+      const awaitingCreate = !nodeKeyExists && !this.config.noencrypt;
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
+      await this.swapClientManager.init(this.db.models, awaitingCreate);
+
       let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
-        nodeKey = await NodeKey.load(nodeKeyPath);
+        if (nodeKeyExists) {
+          nodeKey = await NodeKey.fromFile(nodeKeyPath);
+        } else {
+          nodeKey = await NodeKey.generate();
+          await nodeKey.toFile(nodeKeyPath);
+        }
       } else {
-        const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
 
         const initRpcServer = new GrpcServer(loggers.rpc);
