@@ -49,4 +49,10 @@ export type PoolConfig = {
    * It will be advertised with peers for them to try to connect to the server in the future.
    */
   addresses: string[];
+
+  /**
+   * Whether or not to enable front-running protection.
+   * Measures ping to nodes and delays orders so that they reach peers simulaneously.
+   */
+  preventfrontrunning: boolean;
 };

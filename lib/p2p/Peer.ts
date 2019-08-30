@@ -101,6 +101,7 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   private readonly network: Network;
   private readonly framer: Framer;
+  private readonly preventfrontrunning: boolean;
   /** Interval to check required responses from peer. */
   private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
@@ -120,7 +121,7 @@ class Peer extends EventEmitter {
   /** Estimated round trip time. Initial value should be near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
   private rtt = 1.0;
   /** Arbitrary maximum latency to cap delay. 150ms = approximately one packet's trip around the globe */
-  private static readonly MAX_LATENCY = 155.0; 
+  private static readonly MAX_LATENCY = 155.0;
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -172,19 +173,20 @@ class Peer extends EventEmitter {
   /**
    * @param address The socket address for the connection to this peer.
    */
-  constructor(private logger: Logger, public address: Address, network: Network) {
+  constructor(private logger: Logger, public address: Address, network: Network, preventfrontrunning: boolean) {
     super();
     this.network = network;
     this.framer = new Framer(this.network);
     this.parser = new Parser(this.framer);
     this.bindParser(this.parser);
+    this.preventfrontrunning = preventfrontrunning;
   }
 
   /**
    * Creates a Peer from an inbound socket connection.
    */
-  public static fromInbound = (socket: Socket, logger: Logger, network: Network): Peer => {
-    const peer = new Peer(logger, addressUtils.fromSocket(socket), network);
+  public static fromInbound = (socket: Socket, logger: Logger, network: Network, preventfrontrunning: boolean): Peer => {
+    const peer = new Peer(logger, addressUtils.fromSocket(socket), network, preventfrontrunning);
 
     peer.inbound = true;
     peer.socket = socket;
@@ -291,10 +293,11 @@ class Peer extends EventEmitter {
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
-    // Setup the ping interval
-    var interval = await this.getRandomInterval();
-    this.measurementTimer = setInterval(this.measureLatency, interval);
-
+    if (this.preventfrontrunning) {
+      // Setup the ping interval
+      var interval = await this.getRandomInterval();
+      this.measurementTimer = setInterval(this.measureLatency, interval);
+    }
 
     // Setup a timer to periodicially check if we can swap inactive pairs
     this.checkPairsTimer = setInterval(() => this.emit('verifyPairs'), Peer.CHECK_PAIRS_INTERVAL);

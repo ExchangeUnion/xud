@@ -138,6 +138,11 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    'p2p.preventfrontrunning': {
+      describe: "Prevent front-running via THOR-like mechanism",
+      type: 'boolean',
+      default: undefined,
+    },
     'p2p.port': {
       describe: 'Port to listen for incoming peers',
       type: 'number',
