@@ -131,6 +131,7 @@
     "json-stable-stringify": "^1.0.1",
     "moment": "^2.24.0",
     "node-forge": "^0.7.6",
+    "nodejs-traceroute": "^1.1.1",
     "secp256k1": "^3.7.1",
     "semver": "^6.2.0",
     "sequelize": "^4.44.2",

@@ -1,14 +1,14 @@
 import assert from 'assert';
 import net, { Socket } from 'net';
 import { EventEmitter } from 'events';
-import { createHash, createECDH, randomBytes } from 'crypto';
+import { createHash, createECDH } from 'crypto';
 import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
 import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
 import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
-import { ms } from '../utils/utils';
+import { ms, randomBytes } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
@@ -19,7 +19,7 @@ import NodeKey from '../nodekey/NodeKey';
 import Network from './Network';
 import Framer from './Framer';
 
-const dns = require('dns');
+const dns = require('dns').promises;
 const Traceroute = require('nodejs-traceroute');
 
 /** Key info about a peer for display purposes */
@@ -292,7 +292,7 @@ class Peer extends EventEmitter {
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
 
     // Setup the ping interval
-    var interval = this.getRandomInterval();
+    var interval = await this.getRandomInterval();
     this.measurementTimer = setInterval(this.measureLatency, interval);
 
 
@@ -999,8 +999,9 @@ class Peer extends EventEmitter {
     this.logger.debug(`Peer (${this.label}) session in-encryption enabled`);
   }
 
-  private getRandomInterval(): number {
-    return parseInt(randomBytes(2).toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
+  private async getRandomInterval(): Promise<number> {
+    var r = await randomBytes(2);
+    return parseInt(r.toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
   }
 
   private measureLatency = async (): Promise<void> => {
@@ -1008,8 +1009,7 @@ class Peer extends EventEmitter {
       /* Test if host is an IP address. If not, resolve via DNS lookup */
       var host = this.address.host.split(":")[0];
       if (!(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(host))) {
-        var dnsPromise = dns.promises;
-        var dnsResults = await dnsPromise.resolve(host);
+        var dnsResults = await dns.resolve(host);
         if (dnsResults.length) {
           host = dnsResults[0];
         }
@@ -1017,7 +1017,8 @@ class Peer extends EventEmitter {
 
       /* Replace last octet with a random value */
       var octets = host.split(".");
-      octets[3] = String(parseInt(randomBytes(1).toString('hex'), 16));
+      var r = await randomBytes(1);
+      octets[3] = String(parseInt(r.toString('hex'), 16));
       host = octets.join(".");
 
       /* Find RTT to IP address that likely is penultimate hop before peer's IP */
@@ -1046,7 +1047,7 @@ class Peer extends EventEmitter {
 
     // set interval to random number so time of next latency assessment cannot be predicted
     if (this.measurementTimer) {
-      var interval = this.getRandomInterval();
+      var interval = await this.getRandomInterval();
       clearInterval(this.measurementTimer);
       this.measurementTimer = setInterval(this.measureLatency, interval);
     }
