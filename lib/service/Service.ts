@@ -34,7 +34,7 @@ type XudInfo = {
   uris: string[];
   numPeers: number;
   numPairs: number;
-  orders: { peer: number, own: number};
+  orders: { peer: number, own: number };
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
   pendingSwapHashes: string[];
@@ -56,7 +56,7 @@ const argChecks = {
   POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
-    if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/))  {
+    if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/)) {
       throw errors.INVALID_ARGUMENT('currency must consist of 2 to 5 upper case English letters or numbers');
     }
   },
@@ -89,7 +89,7 @@ class Service {
   }
 
   /** Adds a currency. */
-  public addCurrency = async (args: { currency: string, swapClient: SwapClientType | number, decimalPlaces: number, tokenAddress?: string}) => {
+  public addCurrency = async (args: { currency: string, swapClient: SwapClientType | number, decimalPlaces: number, tokenAddress?: string }) => {
     argChecks.VALID_CURRENCY(args);
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
@@ -120,7 +120,8 @@ class Service {
   /** Gets the total lightning network balance for a given currency. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
-    const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
+    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number }>();
+    const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
@@ -128,7 +129,9 @@ class Service {
       const swapClient = this.swapClientManager.get(currency.toUpperCase());
       if (swapClient) {
         const channelBalance = await swapClient.channelBalance(currency);
-        balances.set(currency, channelBalance);
+        channelBalances.set(currency, channelBalance);
+        const walletBalance = await swapClient.walletBalance(currency);
+        walletBalances.set(currency, walletBalance);
       } else {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
@@ -137,13 +140,34 @@ class Service {
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
           balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
-            balances.set(currency, channelBalance);
+            channelBalances.set(currency, channelBalance);
+          }));
+          balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
+            walletBalances.set(currency, walletBalance);
           }));
         }
       });
       await Promise.all(balancePromises);
     }
-
+    const balances = new Map<string, {
+      channelBalance: number, pendingChannelBalance: number,
+      walletBalance: number, unconfirmedWalletBalance: number,
+      totalBalance: number,
+    }>();
+    channelBalances.forEach((channelBalance, currency) => {
+      const walletBalance = walletBalances.get(currency) as { confirmedBalance: number, unconfirmedBalance: number };
+      const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance +
+        walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
+      balances.set(
+        currency,
+        {
+          totalBalance,
+          channelBalance: channelBalance.balance,
+          pendingChannelBalance: channelBalance.pendingOpenBalance,
+          walletBalance: walletBalance.confirmedBalance,
+          unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
+        });
+    });
     return balances;
   }
 
@@ -193,7 +217,7 @@ class Service {
   /*
    * Ban a XU node manually and disconnect from it.
    */
-  public ban = async (args: { nodePubKey: string}) => {
+  public ban = async (args: { nodePubKey: string }) => {
     argChecks.HAS_NODE_PUB_KEY(args);
     await this.pool.banNode(args.nodePubKey);
   }
@@ -201,7 +225,7 @@ class Service {
   /*
    * Remove ban from XU node manually and connenct to it.
    */
-  public unban = async (args: { nodePubKey: string, reconnect: boolean}) => {
+  public unban = async (args: { nodePubKey: string, reconnect: boolean }) => {
     argChecks.HAS_NODE_PUB_KEY(args);
     await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
@@ -292,7 +316,7 @@ class Service {
     const result = new Map<string, OrderSidesArrays<any>>();
 
     const listOrderTypes = (pairId: string) => {
-      const  orders: OrderSidesArrays<any> = {
+      const orders: OrderSidesArrays<any> = {
         buyArray: [],
         sellArray: [],
       };
@@ -357,7 +381,7 @@ class Service {
   /**
    * Gets the list of trades.
    */
-  public listTrades = (args: {limit: number}) => {
+  public listTrades = (args: { limit: number }) => {
     const { limit } = args;
     if (limit === 0) {
       return this.orderBook.getTrades();

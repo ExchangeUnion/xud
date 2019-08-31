@@ -3,7 +3,7 @@ import http from 'http';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState } from '../swaps/SwapClient';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
@@ -436,6 +436,13 @@ class RaidenClient extends SwapClient {
     }
 
     return { balance, pendingOpenBalance: 0 };
+  }
+
+  /**
+   * Returns the balances available in wallet for a specified currency.
+   */
+  public walletBalance = async (_currency?: string): Promise<WalletBalance> => {
+    return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
   }
 
   /**
