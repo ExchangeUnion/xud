@@ -83,7 +83,7 @@ class Config {
       detectexternalip: false,
       port: 8885, // X = 88, U = 85 in ASCII
       addresses: [],
-      preventfrontrunning: true,
+      preventfrontrunning: false,
     };
     this.rpc = {
       disable: false,
