@@ -6,7 +6,8 @@ const errorCodes = {
   SWAP_CLIENT_NOT_CONFIGURED: codesPrefix.concat('.2'),
   PAYMENT_HASH_NOT_FOUND: codesPrefix.concat('.3'),
   PAYMENT_ERROR: codesPrefix.concat('.4'),
-  PAYMENT_REJECTED: codesPrefix.concat('.4'),
+  PAYMENT_REJECTED: codesPrefix.concat('.5'),
+  INVALID_RESOLVE_REQUEST: codesPrefix.concat('.6'),
 };
 
 const errors = {
@@ -30,6 +31,10 @@ const errors = {
     message: 'the recipient rejected our payment for the swap',
     code: errorCodes.PAYMENT_REJECTED,
   },
+  INVALID_RESOLVE_REQUEST: (rHash: string, errorMessage: string) => ({
+    message: `invalid resolve request for rHash ${rHash}: ${errorMessage}`,
+    code: errorCodes.INVALID_RESOLVE_REQUEST,
+  }),
 };
 
 export { errorCodes, errors };

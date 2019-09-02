@@ -8,11 +8,12 @@ import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
-import { promises as fs } from 'fs';
+import { promises as fs, watch } from 'fs';
 import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
+import path from 'path';
 
 interface LightningMethodIndex extends LightningClient {
   [methodName: string]: Function;
@@ -34,6 +35,7 @@ interface LndClient {
 }
 
 const MAXFEE = 0.03;
+
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
@@ -44,7 +46,8 @@ class LndClient extends SwapClient {
   private lightning?: LightningClient | LightningMethodIndex;
   private walletUnlocker?: WalletUnlockerClient | InvoicesMethodIndex;
   private invoices?: InvoicesClient | InvoicesMethodIndex;
-  private meta!: grpc.Metadata;
+  private macaroonpath?: string;
+  private meta = new grpc.Metadata();
   private uri!: string;
   private credentials!: ChannelCredentials;
   /** The identity pub key for this lnd instance. */
@@ -56,6 +59,8 @@ class LndClient extends SwapClient {
   private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
+  private initWalletResolve?: (value: boolean) => void;
+  private watchMacaroonResolve?: (value: boolean) => void;
 
   private static MINUTES_PER_BLOCK_BY_CURRENCY: { [key: string]: number } = {
     BTC: 10,
@@ -77,12 +82,27 @@ class LndClient extends SwapClient {
     this.finalLock = Math.round(400 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
   }
 
+  private static waitForClientReady = (client: grpc.Client) => {
+    return new Promise((resolve, reject) => {
+      client.waitForReady(Number.POSITIVE_INFINITY, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
   public get minutesPerBlock() {
     return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
   }
 
-  /** Initializes the client for calls to lnd and verifies that we can connect to it.  */
-  public init = async () => {
+  /**
+   * Initializes the client for calls to lnd and verifies that we can connect to it.
+   * @param awaitingCreate whether xud is waiting for its node key to be created
+   */
+  public init = async (awaitingCreate = false) => {
     assert(this.lockBuffer > 0, `lnd-${this.currency}: lock buffer must be a positive number`);
 
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
@@ -94,24 +114,28 @@ class LndClient extends SwapClient {
     try {
       const lndCert = await fs.readFile(certpath);
       this.credentials = grpc.credentials.createSsl(lndCert);
+      this.logger.debug(`loaded tls cert from ${certpath}`);
     } catch (err) {
-      this.logger.error('could not load lnd certificate, is lnd installed?');
+      this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
 
-    this.meta = new grpc.Metadata();
     if (!nomacaroons) {
+      this.macaroonpath = macaroonpath;
       try {
-        const adminMacaroon = await fs.readFile(macaroonpath);
-        this.meta.add('macaroon', adminMacaroon.toString('hex'));
+        await this.loadMacaroon();
       } catch (err) {
-        this.logger.error('could not load lnd macaroon, is lnd installed?');
-        await this.setStatus(ClientStatus.Disabled);
-        return;
+        if (!awaitingCreate) {
+          // unless we are waiting for the xud nodekey and lnd wallet to be created
+          // we expect the macaroon to exist and disable this client otherwise
+          this.logger.error(`expected macaroon not found at ${macaroonpath}`);
+          await this.setStatus(ClientStatus.Disabled);
+          return;
+        }
       }
     } else {
-      this.logger.info('macaroons are disabled for lnd');
+      this.logger.info('macaroons are disabled');
     }
 
     this.uri = `${host}:${port}`;
@@ -157,6 +181,14 @@ class LndClient extends SwapClient {
         }
       });
     });
+  }
+
+  private loadMacaroon = async () => {
+    if (this.macaroonpath) {
+      const adminMacaroon = await fs.readFile(this.macaroonpath);
+      this.meta.add('macaroon', adminMacaroon.toString('hex'));
+      this.logger.debug(`loaded macaroon from ${this.macaroonpath}`);
+    }
   }
 
   private unaryInvoiceCall = <T, U>(methodName: string, params: T): Promise<U> => {
@@ -232,27 +264,87 @@ class LndClient extends SwapClient {
     };
   }
 
+  /**
+   * Waits for the lnd wallet to be initialized and for its macaroons to be created then attempts
+   * to verify the connection to lnd.
+   */
+  private awaitWalletInit = async () => {
+    // we are waiting for lnd to be initialized by xud and for the lnd macaroons to be created
+    this.logger.info('waiting for wallet to be initialized...');
+
+    const isWalletInitialized = await new Promise<boolean>((resolve) => {
+      this.initWalletResolve = resolve;
+    });
+
+    if (isWalletInitialized) {
+      if (this.walletUnlocker) {
+        this.walletUnlocker.close();
+        this.walletUnlocker = undefined;
+      }
+
+      // admin.macaroon will not necessarily be created by the time lnd responds to a successful
+      // InitWallet call, so we watch the folder that we expect it to be in for it to be created
+      const watchMacaroonPromise = new Promise<boolean>((resolve) => {
+        this.watchMacaroonResolve = resolve;
+      });
+      const macaroonDir = path.join(this.macaroonpath!, '..');
+      const fsWatcher = watch(macaroonDir, (_, filename) => {
+        if (filename === 'admin.macaroon') {
+          this.logger.debug('admin.macaroon was created');
+          if (this.watchMacaroonResolve) {
+            this.watchMacaroonResolve(true);
+          }
+        }
+      });
+      this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
+      const macaroonCreated = await watchMacaroonPromise;
+      fsWatcher.close();
+      this.watchMacaroonResolve = undefined;
+
+      if (macaroonCreated) {
+        try {
+          await this.loadMacaroon();
+
+          // once we've loaded the macaroon we can attempt to verify the conneciton
+          this.verifyConnection().catch(this.logger.error);
+        } catch (err) {
+          this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
+          await this.setStatus(ClientStatus.Disabled);
+        }
+      }
+    }
+  }
+
   protected verifyConnection = async () => {
     if (this.isDisabled()) {
       throw(errors.LND_IS_DISABLED);
     }
 
+    if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
+      // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
+      if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
+        this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+        await LndClient.waitForClientReady(this.walletUnlocker);
+        await this.setStatus(ClientStatus.WaitingUnlock);
+
+        if (this.reconnectionTimer) {
+          // we don't need scheduled attempts to retry the connection while waiting on the wallet
+          clearTimeout(this.reconnectionTimer);
+          this.reconnectionTimer = undefined;
+        }
+
+        this.awaitWalletInit().catch(this.logger.error);
+      }
+      return;
+    }
+
     if (!this.isConnected()) {
       this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-      const lightningClient = new LightningClient(this.uri, this.credentials);
-      const clientReadyPromise = new Promise((resolve, reject) => {
-        lightningClient.waitForReady(Number.POSITIVE_INFINITY, (err) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve();
-          }
-        });
-      });
+      this.lightning = new LightningClient(this.uri, this.credentials);
 
-      this.lightning = lightningClient;
       try {
-        await clientReadyPromise;
+        await LndClient.waitForClientReady(this.lightning);
+
         const getInfoResponse = await this.getInfo();
         if (getInfoResponse.getSyncedToChain()) {
           // mark connection as active
@@ -585,19 +677,22 @@ class LndClient extends SwapClient {
   public initWallet = async (walletPassword: string, seedMnemonic: string[]): Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
     request.setCipherSeedMnemonicList(seedMnemonic);
-    request.setWalletPassword(walletPassword);
+    request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
     const initWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>(
-      'initWallet', new lndrpc.InitWalletRequest(),
+      'initWallet', request,
     );
+    if (this.initWalletResolve) {
+      this.initWalletResolve(true);
+    }
     this.logger.info('wallet initialized');
     return initWalletResponse.toObject();
   }
 
   public unlockWallet = async (walletPassword: string): Promise<lndrpc.UnlockWalletResponse.AsObject> => {
     const request = new lndrpc.UnlockWalletRequest();
-    request.setWalletPassword(walletPassword);
+    request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
     const unlockWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
-      'unlockWallet', new lndrpc.UnlockWalletRequest(),
+      'unlockWallet', request,
     );
     this.logger.info('wallet unlocked');
     return unlockWalletResponse.toObject();
@@ -730,7 +825,18 @@ class LndClient extends SwapClient {
       this.invoices.close();
       this.invoices = undefined;
     }
-    await this.setStatus(ClientStatus.Disconnected);
+    if (this.initWalletResolve) {
+      this.initWalletResolve(false);
+      this.initWalletResolve = undefined;
+    }
+    if (this.watchMacaroonResolve) {
+      this.watchMacaroonResolve(false);
+      this.watchMacaroonResolve = undefined;
+    }
+
+    if (!this.isDisabled()) {
+      await this.setStatus(ClientStatus.Disconnected);
+    }
   }
 }
 

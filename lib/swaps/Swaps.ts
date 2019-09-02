@@ -735,25 +735,22 @@ class Swaps extends EventEmitter {
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
   private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
-    const { amount, tokenAddress, expiration } = resolveRequest;
+    const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
     let expectedAmount: number;
     let expectedTokenAddress: string | undefined;
     let source: string;
     let destination: string;
-    // TODO: check cltv value
     switch (deal.role) {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
-        if (deal.makerCltvDelta! > expiration) {
-          // temporary code to relax the lock time check for raiden
-          this.logger.warn(`lock expiration of ${expiration} does not meet ${deal.makerCltvDelta} minimum for ${deal.rHash}`);
-          // end temp code
-          // this.logger.error(`cltvDelta of ${expiration} does not meet ${deal.makerCltvDelta!} minimum`);
-          // this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
-          // return false;
+        const lockExpirationDelta = expiration - chain_height;
+        if (deal.makerCltvDelta! > lockExpirationDelta) {
+          this.logger.error(`cltvDelta of ${lockExpirationDelta} does not meet ${deal.makerCltvDelta!} minimum`);
+          this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
+          return false;
         }
         break;
       case SwapRole.Taker:
@@ -878,10 +875,10 @@ class Swaps extends EventEmitter {
 
     if (deal) {
       if (!this.validateResolveRequest(deal, resolveRequest)) {
-        return deal.errorMessage || '';
+        throw errors.INVALID_RESOLVE_REQUEST(rHash, deal.errorMessage || '');
       }
     } else {
-      return 'swap deal not found';
+      throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
 
     try {
@@ -894,7 +891,7 @@ class Swaps extends EventEmitter {
       return preimage;
     } catch (err) {
       this.logger.error(err.message);
-      return err.message;
+      throw err;
     }
   }
 
@@ -1009,6 +1006,7 @@ class Swaps extends EventEmitter {
         break;
       default:
         assert.fail('unknown deal phase');
+        break;
     }
 
     deal.phase = newPhase;
