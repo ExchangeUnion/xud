@@ -696,6 +696,7 @@ class Peer extends EventEmitter {
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);
           await this.close(DisconnectionReason.WireProtocolErr, err.message);
+          break;
       }
     });
   }

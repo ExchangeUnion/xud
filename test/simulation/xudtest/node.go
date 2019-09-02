@@ -15,17 +15,13 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/go-errors/errors"
+	"github.com/phayes/freeport"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
-var (
-	numActiveNodes int32
-	baseP2PPort    = 40000
-	baseRPCPort    = 30000
-	baseHTTPPort   = 35000
-)
+var numActiveNodes int32
 
 type nodeConfig struct {
 	DataDir     string
@@ -138,9 +134,18 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort = baseP2PPort + nodeNum
-	cfg.RPCPort = baseRPCPort + nodeNum
-	cfg.HTTPPort = baseHTTPPort + nodeNum
+	cfg.P2PPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
+	cfg.RPCPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
+	cfg.HTTPPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
 
 	return &HarnessNode{
 		Cfg:  &cfg,

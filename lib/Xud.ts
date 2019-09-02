@@ -72,15 +72,22 @@ class Xud extends EventEmitter {
       this.unitConverter = new UnitConverter();
       this.unitConverter.init();
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models);
-
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
-      let nodeKey: NodeKey;
+      const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+      const awaitingCreate = !nodeKeyExists && !this.config.noencrypt;
+
+      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
+      await this.swapClientManager.init(this.db.models, awaitingCreate);
+
+      let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
-        nodeKey = await NodeKey.load(nodeKeyPath);
+        if (nodeKeyExists) {
+          nodeKey = await NodeKey.fromFile(nodeKeyPath);
+        } else {
+          nodeKey = await NodeKey.generate();
+          await nodeKey.toFile(nodeKeyPath);
+        }
       } else {
-        const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
 
         const initRpcServer = new GrpcServer(loggers.rpc);
@@ -94,10 +101,18 @@ class Xud extends EventEmitter {
 
         this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
         " 'xucli create' if this is the first time starting xud");
-        nodeKey = await new Promise<NodeKey>((resolve) => {
+        nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
+          this.on('shutdown', () => {
+            // in case we shutdown before unlocking xud
+            resolve();
+            initService.removeListener('nodekey', resolve);
+          });
         });
         await initRpcServer.close();
+        if (!nodeKey) {
+          return; // we interrupted before unlocking xud
+        }
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
