@@ -14,7 +14,7 @@ The Exchange Union Daemon (`xud`) powers [Exchange Union](https://www.exchangeun
 
 ## Install
 
-This section contains instructions for installing `xud` manually, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined setup via [docker](https://github.com/ExchangeUnion/xud/wiki/Docker).
+This section contains instructions for installing `xud` manually, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined setup via [docker](https://docs.exchangeunion.com/start-trading/user-guide).
 
 If you already have [Node.js](https://nodejs.org/en/download/) (min 10.15.3) installed, you can install `xud` via npm by running
 
@@ -22,7 +22,7 @@ If you already have [Node.js](https://nodejs.org/en/download/) (min 10.15.3) ins
 sudo npm install xud -g --unsafe-perm
 ```
 
-Detailed instructions for installing `xud` can be found in the wiki on our [Installation](https://github.com/ExchangeUnion/xud/wiki/Installation) page.
+Detailed instructions for installing `xud` natively can be found on the [Installation](https://docs.exchangeunion.com/development/native-installation) page.
 
 ## Usage
 
@@ -43,7 +43,7 @@ Open a new terminal and issue commands to `xud` with the `xucli` command line to
 ./xucli --help
 ```
 
-You can find more information on how to use `xud` in the wiki at [Running xud](https://github.com/ExchangeUnion/xud/wiki/Running-xud) and [Command Line Interface](https://github.com/ExchangeUnion/xud/wiki/Command-Line-Interface).
+You can find more information on how to use `xud` at [docs.exchangeunion.com](https://docs.exchangeunion.com/).
 
 Note: If you installed `xud` globally via npm, you can run `xud` and `xucli` from anywhere. Otherwise you must run them from the `bin` folder.
 
