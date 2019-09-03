@@ -107,7 +107,7 @@ describe('OrderBook', () => {
     peer = new Peer(loggers.p2p, {
       host: 'localhost',
       port: 9735,
-    }, network);
+    }, network, false);
     peer['nodeState'] = {} as any;
     db = new DB(loggers.db, config.dbpath);
     pool = new Pool({
