@@ -8574,6 +8574,21 @@
         }
       }
     },
+    "nodejs-traceroute": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/nodejs-traceroute/-/nodejs-traceroute-1.1.1.tgz",
+      "integrity": "sha1-8ZPw58rAPWXDGuj4GgicNVVKCow=",
+      "requires": {
+        "validator": "^5.5.0"
+      },
+      "dependencies": {
+        "validator": {
+          "version": "5.7.0",
+          "resolved": "https://registry.npmjs.org/validator/-/validator-5.7.0.tgz",
+          "integrity": "sha1-eoelgUa2laxIYHEUHAxJ1n2gXlw="
+        }
+      }
+    },
     "nodemon": {
       "version": "1.19.1",
       "resolved": "https://registry.npmjs.org/nodemon/-/nodemon-1.19.1.tgz",
