@@ -99,6 +99,8 @@ class Peer extends EventEmitter {
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
   private outEncryptionKey?: Buffer;
+  /** Estimated round trip time. Initial value should be near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
+  private rtt = 1.0;
   private readonly network: Network;
   private readonly framer: Framer;
   private readonly preventfrontrunning: boolean;
@@ -117,9 +119,7 @@ class Peer extends EventEmitter {
   /** Connection retries max period. */
   private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
   /** Interval for measuring ping latency: 1 for ~30 second intervals, 10 for ~300 seconds, etc. */
-  private readonly MEASURE_LATENCY_INTERVAL = 1;
-  /** Estimated round trip time. Initial value should be near 0.5ms to mitigate datacenter co-location on-first-connection attacks */
-  private rtt = 1.0;
+  private static readonly MEASURE_LATENCY_INTERVAL = 1;
   /** Arbitrary maximum latency to cap delay. 150ms = approximately one packet's trip around the globe */
   private static readonly MAX_LATENCY = 155.0;
 
@@ -295,7 +295,7 @@ class Peer extends EventEmitter {
 
     if (this.preventfrontrunning) {
       // Setup the ping interval
-      var interval = await this.getRandomInterval();
+      const interval = await this.getRandomInterval();
       this.measurementTimer = setInterval(this.measureLatency, interval);
     }
 
@@ -1003,36 +1003,37 @@ class Peer extends EventEmitter {
   }
 
   private async getRandomInterval(): Promise<number> {
-    var r = await randomBytes(2);
-    return parseInt(r.toString('hex'), 16) * this.MEASURE_LATENCY_INTERVAL;
+    const r = await randomBytes(2);
+    return parseInt(r.toString('hex'), 16) * Peer.MEASURE_LATENCY_INTERVAL;
   }
 
   private measureLatency = async (): Promise<void> => {
     try {
       /* Test if host is an IP address. If not, resolve via DNS lookup */
-      var host = this.address.host.split(":")[0];
+      let host = this.address.host.split(':')[0];
       if (!(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/.test(host))) {
-        var dnsResults = await dns.resolve(host);
+        const dnsResults = await dns.resolve(host);
         if (dnsResults.length) {
           host = dnsResults[0];
         }
       }
 
       /* Replace last octet with a random value */
-      var octets = host.split(".");
-      var r = await randomBytes(1);
+      const octets = host.split('.');
+      const r = await randomBytes(1);
       octets[3] = String(parseInt(r.toString('hex'), 16));
-      host = octets.join(".");
+      host = octets.join('.');
+      console.log(host);
 
       /* Find RTT to IP address that likely is penultimate hop before peer's IP */
-      var nearest = '127.0.0.1';
-      var resp;
-      var tracer = new Traceroute();
-      const callback = (hop : string) => {
+      let nearest = '127.0.0.1';
+      let resp;
+      const tracer = new Traceroute();
+      const callback = (hop: string) => {
         resp = JSON.parse(JSON.stringify(hop));
-        if (resp['ip'] === this.address.host || resp['hop'] == 30) {
-          var rtt = Number(JSON.parse(JSON.stringify(nearest))['rtt1'].split(" ")[0]);
-          this.rtt = rtt
+        if (resp['ip'] === this.address.host || resp['hop'] === 30) {
+          const rtt = Number(JSON.parse(JSON.stringify(nearest))['rtt1'].split(' ')[0]);
+          this.rtt = rtt;
           this.logger.debug(`RTT to ${this.label}: ${this.rtt}`);
           tracer.off('hop', callback);
           return;
@@ -1050,7 +1051,7 @@ class Peer extends EventEmitter {
 
     // set interval to random number so time of next latency assessment cannot be predicted
     if (this.measurementTimer) {
-      var interval = await this.getRandomInterval();
+      const interval = await this.getRandomInterval();
       clearInterval(this.measurementTimer);
       this.measurementTimer = setInterval(this.measureLatency, interval);
     }
