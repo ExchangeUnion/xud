@@ -83,7 +83,7 @@ class GrpcServer {
     }
     return new Promise((resolve) => {
       this.server.tryShutdown(() => {
-        this.logger.info('GRPC server completed shutdown');
+        this.logger.info('gRPC server completed shutdown');
         resolve();
       });
     });

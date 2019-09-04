@@ -1,7 +1,12 @@
 import * as db from '../../db/types';
 import { SwapClientType } from '../../constants/enums';
 
-const nodes = [] as db.NodeAttributes[];
+const nodes = [
+  {
+    nodePubKey: '025fbfe0e92bf0e5e64500ed542d51f4f9d59111a2d3fa142e90567ec417c4a617',
+    addresses: [{ host: 'xud1.exchangeunion.com', port: 8885 }],
+  },
+] as db.NodeAttributes[];
 
 const currencies = [
   { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
