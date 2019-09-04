@@ -11,6 +11,8 @@
   "scripts": {
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "config": "gulp config.create",
+    "postinstall": "npm run precompile",
+    "precompile": "node parseGitCommit.js",
     "compile": "tsc && cross-os postcompile",
     "compile:seedutil": "(cd seedutil && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go build -v)",
     "compile:watch": "tsc -w",
@@ -40,6 +42,7 @@
     "test:jest:watch": "jest --watch",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
+    "postversion": "npm run compile",
     "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
   },
   "cross-os": {
