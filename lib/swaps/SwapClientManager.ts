@@ -62,7 +62,7 @@ class SwapClientManager extends EventEmitter {
    * and waits for the swap clients to initialize.
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
    */
-  public init = async (models: Models): Promise<void> => {
+  public init = async (models: Models, awaitingCreate = false): Promise<void> => {
     const initPromises = [];
     // setup configured LND clients and initialize them
     for (const currency in this.config.lnd) {
@@ -75,7 +75,7 @@ class SwapClientManager extends EventEmitter {
           logger: this.loggers.lnd.createSubLogger(currency),
         });
         this.swapClients.set(currency, lndClient);
-        initPromises.push(lndClient.init());
+        initPromises.push(lndClient.init(awaitingCreate));
       }
     }
     // setup Raiden
@@ -109,9 +109,9 @@ class SwapClientManager extends EventEmitter {
    * Generates a cryptographically random 24 word seed mnemonic from an lnd client.
    */
   public genSeed = async () => {
-    // loop through swap clients until we find a connected lnd client
+    // loop through swap clients until we find an lnd client awaiting unlock
     for (const swapClient of this.swapClients.values()) {
-      if (isLndClient(swapClient) && swapClient.isConnected()) {
+      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
         try {
           return swapClient.genSeed();
         } catch (err) {
@@ -135,8 +135,8 @@ class SwapClientManager extends EventEmitter {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
         const initWalletPromise = swapClient.initWallet(walletPassword, seedMnemonic).then(() => {
           createdLndWallets.push(swapClient.currency);
-        }).catch(() => {
-          this.loggers.lnd.debug(`could not initialize ${swapClient.currency} client`);
+        }).catch((err) => {
+          this.loggers.lnd.debug(`could not initialize ${swapClient.currency} client: ${err.message}`);
         });
         initWalletPromises.push(initWalletPromise);
       }
@@ -162,8 +162,8 @@ class SwapClientManager extends EventEmitter {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
         const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
           unlockedLndClients.push(swapClient.currency);
-        }).catch(() => {
-          this.loggers.lnd.debug(`could not unlock ${swapClient.currency} client`);
+        }).catch((err) => {
+          this.loggers.lnd.debug(`could not unlock ${swapClient.currency} client: ${err.message}`);
         });
         unlockWalletPromises.push(unlockWalletPromise);
       }

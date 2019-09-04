@@ -64,25 +64,6 @@ class NodeKey {
     }
   }
 
-  /**
-   * Loads a node key from a file or creates one if none exists. See [[fromFile]] and [[generate]].
-   */
-  public static load = async (path: string): Promise<NodeKey> => {
-    let nodeKey: NodeKey;
-    try {
-      nodeKey = await NodeKey.fromFile(path);
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        // node key file does not exist, so create one
-        nodeKey = await NodeKey.generate();
-        await nodeKey.toFile(path);
-      } else {
-        throw err;
-      }
-    }
-    return nodeKey;
-  }
-
   public static getPath = (xudir: string, instanceId = 0) => {
     return instanceId > 0
       ? `${xudir}/nodekey_${instanceId}.dat`
