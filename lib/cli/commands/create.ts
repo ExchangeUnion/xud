@@ -8,7 +8,7 @@ export const describe = 'create your xud node and set a password';
 
 export const builder = {
   password: {
-    description: 'This is the first method that should be used to instantiate a new xud instance. Set a password to encrypt your public key and underlying wallets.',
+    description: 'Use this to instantiate a new xud instance',
     type: 'string',
   },
 };
