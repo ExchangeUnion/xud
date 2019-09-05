@@ -4,11 +4,11 @@ import { CreateNodeRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'create <password>';
 
-export const describe = 'create an xud node';
+export const describe = 'create your xud node and set a password';
 
 export const builder = {
   password: {
-    description: 'password to encrypt xud key and wallets',
+    description: 'This is the first method that should be used to instantiate a new xud instance. Set a password to encrypt your node_pub_key and underlying wallets.',
     type: 'string',
   },
 };

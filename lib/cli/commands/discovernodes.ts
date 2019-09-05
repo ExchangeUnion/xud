@@ -2,13 +2,13 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import { DiscoverNodesRequest } from '../../proto/xudrpc_pb';
 
-export const command = 'discovernodes <peer_pub_key>';
+export const command = 'discovernodes <node_pub_key>';
 
 export const describe = 'discover nodes from a specific peer';
 
 export const builder = {
   peer_pub_key: {
-    description: 'nodePubKey of the peer to discover nodes from',
+    description: 'node_pub_key of the peer to discover nodes from',
     type: 'string',
   },
 };

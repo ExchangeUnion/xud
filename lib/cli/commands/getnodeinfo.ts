@@ -17,12 +17,12 @@ const displayNodeInfo = (node: GetNodeInfoResponse.AsObject) => {
 
 export const command = 'getnodeinfo <node_pub_key>';
 
-export const describe = 'get general information about a node';
+export const describe = 'get general information about a peer';
 
 export const builder = {
   node_pub_key: {
     type: 'string',
-    description: 'nodePubKey of node to get reputation',
+    description: 'use with node_pub_key of the peer to get general information from',
   },
 };
 

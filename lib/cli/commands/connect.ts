@@ -4,11 +4,11 @@ import { ConnectRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'connect <node_uri>';
 
-export const describe = 'connect to an xu node';
+export const describe = 'connect to a peer';
 
 export const builder = {
   node_uri: {
-    description: 'uri of peer in [nodePubKey]@[host]:[port]',
+    description: 'uri of peer as [node_pub_key]@[host]:[port]',
     type: 'string',
   },
 };

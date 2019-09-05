@@ -3,13 +3,13 @@ import { callback, loadXudClient } from '../command';
 import { OpenChannelRequest } from '../../proto/xudrpc_pb';
 import { coinsToSats } from '../utils';
 
-export const command = 'openchannel <nodePubKey> <currency> <amount>';
+export const command = 'openchannel <node_pub_key> <currency> <amount>';
 
-export const describe = 'open a payment channel';
+export const describe = 'open a payment channel with a peer';
 
 export const builder = {
   nodePubKey: {
-    description: 'The node pub key of the peer to open the channel with',
+    description: 'The node_pub_key of the peer to open the channel with',
     type: 'string',
   },
   currency: {
@@ -18,7 +18,7 @@ export const builder = {
   },
   amount: {
     type: 'number',
-    description: 'The amount of the channel',
+    description: 'The amount to be deposited into the channel',
   },
 };
 

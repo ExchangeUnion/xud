@@ -4,11 +4,11 @@ import { UnlockNodeRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'unlock <password>';
 
-export const describe = 'unlock an xud node';
+export const describe = 'unlock your xud node';
 
 export const builder = {
   password: {
-    description: 'password to decrypt xud key and wallets',
+    description: 'password to decrypt your xud node key and underlying wallets',
     type: 'string',
   },
 };

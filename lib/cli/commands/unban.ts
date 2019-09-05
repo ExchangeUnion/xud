@@ -4,15 +4,15 @@ import { UnbanRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'unban <node_pub_key> [reconnect]';
 
-export const describe = 'unban an xud node';
+export const describe = 'unban a previously banned peer';
 
 export const builder = {
   node_pub_key: {
-    description: 'NodePubKey of the node to unban',
+    description: 'node_pub_key of the peer to unban',
     type: 'string',
   },
   reconnect: {
-    description: 'Whether to reconnect after unbanning',
+    description: 'Whether to reconnect to the peer after unbanning',
     type: 'boolean',
     default: true,
   },
