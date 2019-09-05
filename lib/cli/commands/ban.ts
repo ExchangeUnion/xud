@@ -8,7 +8,7 @@ export const describe = 'ban a peer';
 
 export const builder = {
   node_pub_key: {
-    description: 'node_pub_key of the peer to ban',
+    description: 'Replace <node_pub_key> with the public key of the peer to ban',
     type: 'string',
   },
 };

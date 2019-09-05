@@ -8,7 +8,7 @@ export const describe = 'discover nodes from a specific peer';
 
 export const builder = {
   peer_pub_key: {
-    description: 'node_pub_key of the peer to discover nodes from',
+    description: 'Replace <node_pub_key> with the public key of the peer to discover nodes from',
     type: 'string',
   },
 };

@@ -9,7 +9,7 @@ export const describe = 'open a payment channel with a peer';
 
 export const builder = {
   nodePubKey: {
-    description: 'The node_pub_key of the peer to open the channel with',
+    description: 'Replace <node_pub_key> with the public key of the peer to open the channel with',
     type: 'string',
   },
   currency: {

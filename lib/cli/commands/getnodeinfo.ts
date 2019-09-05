@@ -22,7 +22,7 @@ export const describe = 'get general information about a peer';
 export const builder = {
   node_pub_key: {
     type: 'string',
-    description: 'use with node_pub_key of the peer to get general information from',
+    description: 'Replace <node_pub_key> with the public key of the peer to get general information from',
   },
 };
 

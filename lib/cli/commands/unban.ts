@@ -8,7 +8,7 @@ export const describe = 'unban a previously banned peer';
 
 export const builder = {
   node_pub_key: {
-    description: 'node_pub_key of the peer to unban',
+    description: 'Replace <node_pub_key> with the public key of the peer to unban',
     type: 'string',
   },
   reconnect: {
