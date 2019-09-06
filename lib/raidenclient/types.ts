@@ -15,6 +15,7 @@ export type RaidenInfo = {
   error?: string;
   address?: string;
   channels?: number;
+  chain?: string;
   version?: string;
 };
 

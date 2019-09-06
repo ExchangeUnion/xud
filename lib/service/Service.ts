@@ -31,6 +31,8 @@ type XudInfo = {
   version: string;
   nodePubKey: string;
   uris: string[];
+  network: string;
+  alias: string;
   numPeers: number;
   numPairs: number;
   orders: { peer: number, own: number};
@@ -250,6 +252,8 @@ class Service {
 
     let peerOrdersCount = 0;
     let ownOrdersCount = 0;
+    const network = this.pool.getNetwork();
+
     let numPairs = 0;
     for (const pairId of this.orderBook.pairIds) {
       const peerOrders = this.orderBook.getPeersOrders(pairId);
@@ -262,6 +266,7 @@ class Service {
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
     const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
+    raiden.chain = `XUD ${this.pool.getNetwork()}`;
 
     return {
       lnd,
@@ -269,6 +274,8 @@ class Service {
       nodePubKey,
       uris,
       numPairs,
+      network,
+      alias: '',
       version: this.version,
       numPeers: this.pool.peerCount,
       orders: {

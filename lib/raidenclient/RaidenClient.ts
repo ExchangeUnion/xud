@@ -260,7 +260,6 @@ class RaidenClient extends SwapClient {
       try {
         channels = (await this.getChannels()).length;
         address = this.address;
-
         if (channels > 0) {
           status = SwapClientStatus.Ready;
         } else {

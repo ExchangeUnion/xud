@@ -510,8 +510,8 @@ export namespace GetInfoRequest {
 }
 
 export class GetInfoResponse extends jspb.Message { 
-    getVersion(): string;
-    setVersion(value: string): void;
+    getAlias(): string;
+    setAlias(value: string): void;
 
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
@@ -520,6 +520,12 @@ export class GetInfoResponse extends jspb.Message {
     getUrisList(): Array<string>;
     setUrisList(value: Array<string>): void;
     addUris(value: string, index?: number): string;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
+    getVersion(): string;
+    setVersion(value: string): void;
 
     getNumPeers(): number;
     setNumPeers(value: number): void;
@@ -556,9 +562,11 @@ export class GetInfoResponse extends jspb.Message {
 
 export namespace GetInfoResponse {
     export type AsObject = {
-        version: string,
+        alias: string,
         nodePubKey: string,
         urisList: Array<string>,
+        network: string,
+        version: string,
         numPeers: number,
         numPairs: number,
         orders?: OrdersCount.AsObject,
@@ -1376,6 +1384,9 @@ export class RaidenInfo extends jspb.Message {
     getVersion(): string;
     setVersion(value: string): void;
 
+    getChain(): string;
+    setChain(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RaidenInfo.AsObject;
@@ -1394,6 +1405,7 @@ export namespace RaidenInfo {
         address: string,
         channels: number,
         version: string,
+        chain: string,
     }
 }
 

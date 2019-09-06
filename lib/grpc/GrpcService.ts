@@ -397,6 +397,8 @@ class GrpcService {
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
+      response.setAlias(getInfoResponse.alias);
+      response.setNetwork(getInfoResponse.network);
 
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
@@ -436,6 +438,7 @@ class GrpcService {
         if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
         if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
+        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
         response.setRaiden(raiden);
       }
 

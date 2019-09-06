@@ -372,9 +372,11 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  | The version of this instance of xud. |
+| alias | [string](#string) |  | The alias of this instance of xud. |
 | node_pub_key | [string](#string) |  | The node pub key of this node. |
 | uris | [string](#string) | repeated | A list of uris that can be used to connect to this node. These are shared with peers. |
+| network | [string](#string) |  | The address of this node. |
+| version | [string](#string) |  | The version of this instance of xud. |
 | num_peers | [uint32](#uint32) |  | The number of currently connected peers. |
 | num_pairs | [uint32](#uint32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
@@ -849,6 +851,7 @@
 | address | [string](#string) |  |  |
 | channels | [uint32](#uint32) |  |  |
 | version | [string](#string) |  |  |
+| chain | [string](#string) |  |  |
 
 
 

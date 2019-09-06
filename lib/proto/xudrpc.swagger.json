@@ -841,9 +841,9 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
-        "version": {
+        "alias": {
           "type": "string",
-          "description": "The version of this instance of xud."
+          "description": "The alias of this instance of xud."
         },
         "node_pub_key": {
           "type": "string",
@@ -855,6 +855,14 @@
             "type": "string"
           },
           "description": "A list of uris that can be used to connect to this node. These are shared with peers."
+        },
+        "network": {
+          "type": "string",
+          "description": "The address of this node."
+        },
+        "version": {
+          "type": "string",
+          "description": "The version of this instance of xud."
         },
         "num_peers": {
           "type": "integer",
@@ -1296,6 +1304,9 @@
           "format": "int64"
         },
         "version": {
+          "type": "string"
+        },
+        "chain": {
           "type": "string"
         }
       }
