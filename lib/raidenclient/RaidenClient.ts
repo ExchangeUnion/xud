@@ -253,6 +253,7 @@ class RaidenClient extends SwapClient {
     let error: string | undefined;
     let status: SwapClientStatus = SwapClientStatus.Error;
     const version = 'v0.100.3 - Rosemary'; // Intentionally left hardcoded until Raiden API exposes it
+    const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address);
 
     if (this.isDisabled()) {
       error = errors.RAIDEN_IS_DISABLED.message;
@@ -271,6 +272,7 @@ class RaidenClient extends SwapClient {
     }
 
     return {
+      chain,
       status,
       channels,
       address,
