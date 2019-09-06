@@ -26,9 +26,13 @@ const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
         { [colors.blue('Error')]: info.error },
     );
   }
+
+  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+
   basicInfotable.push(
     { [colors.blue('Version')]: info.version ? info.version : ''   },
-    { [colors.blue('Address')]: info.urisList[0]  },
+    { [colors.blue('Address')]: address },
     { [colors.blue('Alias')] : info.alias ? info.alias : '' },
     { [colors.blue('Channels')] :  `Active: ${info.channels ? info.channels['active'] : 0} | Pending: ${info.channels ? info.channels['pending'] : 0}\
  | Closed: ${info.channels ? info.channels['inactive'] : 0}` },
