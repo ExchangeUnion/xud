@@ -739,8 +739,17 @@ class Swaps extends EventEmitter {
         source = 'Taker';
         destination = 'Maker';
         const lockExpirationDelta = expiration - chain_height;
-        if (deal.makerCltvDelta! > lockExpirationDelta) {
-          this.logger.error(`cltvDelta of ${lockExpirationDelta} does not meet ${deal.makerCltvDelta!} minimum`);
+        // We relax the validation by LOCK_EXPIRATION_SLIPPAGE blocks because
+        // new blocks could be mined during the time it takes from taker's
+        // payment to reach the maker for validation.
+        // This usually happens in simulated environments with fast mining enabled.
+        const LOCK_EXPIRATION_SLIPPAGE = 3;
+        if (deal.makerCltvDelta! - LOCK_EXPIRATION_SLIPPAGE > lockExpirationDelta) {
+          this.logger.error(`
+            lockExpirationDelta of ${lockExpirationDelta} does not meet
+            makerCltvDelta ${deal.makerCltvDelta!} - LOCK_EXPIRATION_SLIPPAGE ${LOCK_EXPIRATION_SLIPPAGE}
+            = ${deal.makerCltvDelta! - LOCK_EXPIRATION_SLIPPAGE} minimum
+          `);
           this.failDeal(deal, SwapFailureReason.InvalidResolveRequest, 'Insufficient CLTV received on first leg');
           return false;
         }
