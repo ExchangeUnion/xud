@@ -907,9 +907,9 @@ class Swaps extends EventEmitter {
     }
 
     if (errorMessage) {
-      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}`);
-    } else {
       this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}: ${errorMessage}`);
+    } else {
+      this.logger.debug(`deal ${deal.rHash} failed due to ${SwapFailureReason[failureReason]}`);
     }
 
     switch (failureReason) {
