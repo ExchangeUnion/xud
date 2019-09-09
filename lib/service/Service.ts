@@ -12,6 +12,7 @@ import SwapClientManager from '../swaps/SwapClientManager';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
 import { errors as swapsErrors } from '../swaps/errors';
+import commitHash from '../Version';
 
 /**
  * The components required by the API service layer.
@@ -276,7 +277,7 @@ class Service {
       numPairs,
       network,
       alias: '',
-      version: this.version,
+      version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {
         peer: peerOrdersCount,
