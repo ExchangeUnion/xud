@@ -4,7 +4,7 @@ import { ShutdownRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'shutdown';
 
-export const describe = 'gracefully shutdown the xud node';
+export const describe = 'gracefully shutdown xud';
 
 export const handler = (argv: Arguments) => {
   loadXudClient(argv).shutdown(new ShutdownRequest(), callback(argv));

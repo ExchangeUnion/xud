@@ -15,14 +15,14 @@ const displayNodeInfo = (node: GetNodeInfoResponse.AsObject) => {
   console.log(table.toString());
 };
 
-export const command = 'getnodeinfo <node_pub_key>';
+export const command = 'getnodeinfo <node_key>';
 
 export const describe = 'get general information about a peer';
 
 export const builder = {
-  node_pub_key: {
+  node_key: {
     type: 'string',
-    description: 'Replace <node_pub_key> with the public key of the peer to get general information from',
+    description: 'the node key of the peer to get general information from',
   },
 };
 

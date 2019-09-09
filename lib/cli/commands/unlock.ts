@@ -8,7 +8,7 @@ export const describe = 'unlock your xud node';
 
 export const builder = {
   password: {
-    description: 'Replace <password> with the password you previously used to create your xud node',
+    description: 'the password you previously used to create the xud instance',
     type: 'string',
   },
 };

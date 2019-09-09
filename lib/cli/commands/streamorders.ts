@@ -9,7 +9,7 @@ export const describe = 'stream order added, removed, and swapped events (DEMO)'
 
 export const builder = {
   existing: {
-    description: 'should return existing orders',
+    description: 'returns existing orders',
     type: 'boolean',
     default: true,
   },

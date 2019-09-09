@@ -4,11 +4,11 @@ import { CreateNodeRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'create <password>';
 
-export const describe = 'create your xud node and set a password';
+export const describe = 'use this to create a new xud instance and set a password';
 
 export const builder = {
   password: {
-    description: 'Use this to instantiate a new xud instance',
+    description: 'the password to secure xud with',
     type: 'string',
   },
 };

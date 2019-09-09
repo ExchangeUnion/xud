@@ -9,21 +9,21 @@ export const describe = 'add a currency';
 
 export const builder = {
   currency: {
-    description: 'The ticker symbol for the currency',
+    description: 'the ticker symbol for the currency',
     type: 'string',
   },
   swap_client: {
-    description: 'The payment channel network client for swaps',
+    description: 'the payment channel network client for swaps',
     type: 'string',
     choices: ['Lnd', 'Raiden'],
   },
   decimal_places: {
-    description: 'The places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
+    description: 'the places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
     default: 8,
     type: 'number',
   },
   token_address: {
-    description: 'The contract address for layered tokens such as ERC20',
+    description: 'the contract address for tokens such as ERC20',
     type: 'string',
   },
 };

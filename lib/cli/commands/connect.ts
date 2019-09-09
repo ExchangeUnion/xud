@@ -8,7 +8,7 @@ export const describe = 'connect to a peer';
 
 export const builder = {
   node_uri: {
-    description: 'uri of peer as [node_pub_key]@[host]:[port]',
+    description: 'uri of peer as [node_key]@[host]:[port]',
     type: 'string',
   },
 };
