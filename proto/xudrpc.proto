@@ -25,17 +25,22 @@ import "annotations.proto";
 package xudrpc;
 
 service XudInit {
+  /* Creates an xud identity node key and underlying wallets. The node key and
+   * wallets are derived from a single seed and encrypted using a single
+   * password provided as a parameter to the call. */
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
+  /* Unlocks and decrypts the xud node key and any underlying wallets. */
   rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
 }
 
 message CreateNodeRequest {
   // The password in utf-8 with which to encrypt the new xud node key as well
-  // as underlying client wallets such as lnd.
+  // as any uninitialized underlying wallets.
   string password = 1;
 }
 message CreateNodeResponse {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
