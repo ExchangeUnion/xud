@@ -19,6 +19,10 @@ class InitService extends EventEmitter {
 
   public createNode = async (args: { password: string }) => {
     const { password } = args;
+    if (password.length < 8) {
+      // lnd requires 8+ character passwords, so we must as well
+      throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
+    }
     if (this.nodeKeyExists) {
       throw errors.UNIMPLEMENTED;
     }
