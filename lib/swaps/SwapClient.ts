@@ -10,6 +10,7 @@ enum ClientStatus {
   ConnectionVerified,
   OutOfSync,
   WaitingUnlock,
+  NoChannels,
 }
 
 type ChannelBalance = {

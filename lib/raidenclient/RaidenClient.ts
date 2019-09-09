@@ -11,7 +11,7 @@ import {
   OpenChannelPayload,
   Channel,
   TokenPaymentRequest,
-  TokenPaymentResponse,
+  TokenPaymentResponse, RaidenChannelCount,
 } from './types';
 import { UnitConverter } from '../utils/UnitConverter';
 import { CurrencyInstance } from '../db/types';
@@ -248,7 +248,7 @@ class RaidenClient extends SwapClient {
   }
 
   public getRaidenInfo = async (): Promise<RaidenInfo> => {
-    let channels: number | undefined;
+    let channels: RaidenChannelCount | undefined;
     let address: string | undefined;
     let error: string | undefined;
     let status: SwapClientStatus = SwapClientStatus.Error;
@@ -259,12 +259,17 @@ class RaidenClient extends SwapClient {
       error = errors.RAIDEN_IS_DISABLED.message;
     } else {
       try {
-        channels = (await this.getChannels()).length;
+        const raidenChannels = await this.getChannels();
+        channels = {
+          active: raidenChannels.filter(c => c.state === 'opened').length,
+          settled: raidenChannels.filter(c => c.state === 'settled').length,
+          closed: raidenChannels.filter(c => c.state === 'closed').length,
+        };
         address = this.address;
-        if (channels > 0) {
+        if (channels.active > 0) {
           status = SwapClientStatus.Ready;
         } else {
-          error = errors.RAIDEN_IS_UNAVAILABLE(ClientStatus.NotInitialized).message;
+          error = errors.RAIDEN_IS_UNAVAILABLE(ClientStatus.NoChannels).message;
         }
       } catch (err) {
         error = err.message;

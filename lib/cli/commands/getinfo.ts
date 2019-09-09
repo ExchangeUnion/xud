@@ -31,11 +31,14 @@ const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   basicInfotable.push(
-    { [colors.blue('Version')]: info.version ? info.version : ''   },
+    { [colors.blue('Version')]: info.version || ''   },
     { [colors.blue('Address')]: address },
-    { [colors.blue('Alias')] : info.alias ? info.alias : '' },
-    { [colors.blue('Channels')] :  `Active: ${info.channels ? info.channels['active'] : 0} | Pending: ${info.channels ? info.channels['pending'] : 0}\
- | Closed: ${info.channels ? info.channels['inactive'] : 0}` },
+    { [colors.blue('Alias')] : info.alias || '' },
+    { [colors.blue('Channels')] :
+ `Active: ${info.channels ? info.channels['active'] : 0}\
+ | Pending: ${info.channels ? info.channels['pending'] : 0}\
+ | Closed: ${info.channels ? info.channels['closed'] : 0}`,
+    },
     { [colors.blue('Chain')] : info.chainsList ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
   );
 
@@ -70,7 +73,11 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
   table.push(
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
-    { [colors.blue('Channels')]:  `Active: ${info.channels ? info.channels : 0} | Pending: 0 | Closed: 0` },
+    { [colors.blue('Channels')] :
+ `Active: ${info.channels ? info.channels['active'] : 0}\
+ | Pending: 0\
+ | Closed: ${info.channels ? info.channels['closed'] : 0}`,
+    },
     { [colors.blue('Chain')] : info.chain  },
   );
 

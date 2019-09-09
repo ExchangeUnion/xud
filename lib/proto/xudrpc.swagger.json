@@ -858,7 +858,7 @@
         },
         "network": {
           "type": "string",
-          "description": "The address of this node."
+          "description": "The network of this node."
         },
         "version": {
           "type": "string",
@@ -987,6 +987,11 @@
           "description": "The number of inactive/offline channels for this lnd instance."
         },
         "pending": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of channels that are pending on-chain confirmation before they can be used."
+        },
+        "closed": {
           "type": "integer",
           "format": "int64",
           "description": "The number of channels that are pending on-chain confirmation before they can be used."
@@ -1287,6 +1292,23 @@
         }
       }
     },
+    "xudrpcRaidenChannels": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "settled": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "closed": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
     "xudrpcRaidenInfo": {
       "type": "object",
       "properties": {
@@ -1300,8 +1322,7 @@
           "type": "string"
         },
         "channels": {
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/xudrpcRaidenChannels"
         },
         "version": {
           "type": "string"

@@ -416,6 +416,7 @@ class GrpcService {
           const channels = new xudrpc.LndChannels();
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
+          channels.setClosed(lndInfo.channels.closed);
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
@@ -435,7 +436,13 @@ class GrpcService {
         const raiden = new xudrpc.RaidenInfo();
         raiden.setStatus(getInfoResponse.raiden.status as number);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
+        if (getInfoResponse.raiden.channels) {
+          const channels = new xudrpc.RaidenChannels();
+          channels.setActive(getInfoResponse.raiden.channels.active);
+          channels.setSettled(getInfoResponse.raiden.channels.settled);
+          channels.setClosed(getInfoResponse.raiden.channels.closed);
+          raiden.setChannels(channels);
+        }
         if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
         if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);

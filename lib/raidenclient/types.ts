@@ -14,9 +14,15 @@ export type RaidenInfo = {
   status: SwapClientStatus;
   error?: string;
   address?: string;
-  channels?: number;
+  channels?: RaidenChannelCount;
   chain?: string;
   version?: string;
+};
+
+export type RaidenChannelCount = {
+  active: number,
+  settled: number,
+  closed: number,
 };
 
 /**

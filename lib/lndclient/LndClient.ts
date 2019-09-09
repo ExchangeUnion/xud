@@ -238,20 +238,23 @@ class LndClient extends SwapClient {
       error = errors.LND_IS_UNAVAILABLE(this.status).message;
     } else {
       try {
-        const lnd = await this.getInfo();
+        const getInfoResponse = await this.getInfo();
+        const closedChannelsResponse = await this.getClosedChannels();
         channels = {
-          active: lnd.getNumActiveChannels(),
-          pending: lnd.getNumPendingChannels(),
+          active: getInfoResponse.getNumActiveChannels(),
+          inactive: getInfoResponse.getNumInactiveChannels(),
+          pending: getInfoResponse.getNumPendingChannels(),
+          closed: closedChannelsResponse.getChannelsList().length,
         };
-        chains = lnd.getChainsList().map(value => value.toObject());
-        blockheight = lnd.getBlockHeight();
-        uris = lnd.getUrisList();
-        version = lnd.getVersion();
-        alias = lnd.getAlias();
+        chains = getInfoResponse.getChainsList().map(value => value.toObject());
+        blockheight = getInfoResponse.getBlockHeight();
+        uris = getInfoResponse.getUrisList();
+        version = getInfoResponse.getVersion();
+        alias = getInfoResponse.getAlias();
         if (channels.active > 0) {
           status = SwapClientStatus.Ready;
         } else {
-          error = errors.LND_IS_UNAVAILABLE(ClientStatus.NotInitialized).message;
+          error = errors.LND_IS_UNAVAILABLE(ClientStatus.NoChannels).message;
         }
       } catch (err) {
         this.logger.error(`LND error: ${err}`);
@@ -422,6 +425,13 @@ class LndClient extends SwapClient {
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
+  }
+
+  /**
+   * Returns closed channels that this node was a participant in.
+   */
+  public getClosedChannels = (): Promise<lndrpc.ClosedChannelsResponse> => {
+    return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
   }
 
   public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {

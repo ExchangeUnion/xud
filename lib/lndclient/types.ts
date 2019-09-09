@@ -26,6 +26,7 @@ export type ChannelCount = {
   active: number,
   inactive?: number,
   pending: number,
+  closed: number,
 };
 
 export type Chain = {

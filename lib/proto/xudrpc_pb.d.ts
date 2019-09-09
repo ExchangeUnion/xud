@@ -848,6 +848,9 @@ export class LndChannels extends jspb.Message {
     getPending(): number;
     setPending(value: number): void;
 
+    getClosed(): number;
+    setClosed(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): LndChannels.AsObject;
@@ -864,6 +867,7 @@ export namespace LndChannels {
         active: number,
         inactive: number,
         pending: number,
+        closed: number,
     }
 }
 
@@ -1368,6 +1372,35 @@ export namespace PlaceOrderEvent {
 
 }
 
+export class RaidenChannels extends jspb.Message { 
+    getActive(): number;
+    setActive(value: number): void;
+
+    getSettled(): number;
+    setSettled(value: number): void;
+
+    getClosed(): number;
+    setClosed(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RaidenChannels.AsObject;
+    static toObject(includeInstance: boolean, msg: RaidenChannels): RaidenChannels.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RaidenChannels, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RaidenChannels;
+    static deserializeBinaryFromReader(message: RaidenChannels, reader: jspb.BinaryReader): RaidenChannels;
+}
+
+export namespace RaidenChannels {
+    export type AsObject = {
+        active: number,
+        settled: number,
+        closed: number,
+    }
+}
+
 export class RaidenInfo extends jspb.Message { 
     getStatus(): SwapClientStatus;
     setStatus(value: SwapClientStatus): void;
@@ -1378,8 +1411,11 @@ export class RaidenInfo extends jspb.Message {
     getAddress(): string;
     setAddress(value: string): void;
 
-    getChannels(): number;
-    setChannels(value: number): void;
+
+    hasChannels(): boolean;
+    clearChannels(): void;
+    getChannels(): RaidenChannels | undefined;
+    setChannels(value?: RaidenChannels): void;
 
     getVersion(): string;
     setVersion(value: string): void;
@@ -1403,7 +1439,7 @@ export namespace RaidenInfo {
         status: SwapClientStatus,
         error: string,
         address: string,
-        channels: number,
+        channels?: RaidenChannels.AsObject,
         version: string,
         chain: string,
     }
