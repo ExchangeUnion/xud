@@ -36,6 +36,14 @@ export type OpenChannelPayload = {
 };
 
 /**
+ * The raiden version.
+ */
+
+export type RaidenVersion = {
+  version: string;
+};
+
+/**
  * A raiden payment channel.
  */
 export type Channel = OpenChannelPayload & {

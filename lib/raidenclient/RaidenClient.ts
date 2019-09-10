@@ -11,7 +11,7 @@ import {
   OpenChannelPayload,
   Channel,
   TokenPaymentRequest,
-  TokenPaymentResponse, RaidenChannelCount,
+  TokenPaymentResponse, RaidenChannelCount, RaidenVersion,
 } from './types';
 import { UnitConverter } from '../utils/UnitConverter';
 import { CurrencyInstance } from '../db/types';
@@ -252,13 +252,14 @@ class RaidenClient extends SwapClient {
     let address: string | undefined;
     let error: string | undefined;
     let status: SwapClientStatus = SwapClientStatus.Error;
-    const version = 'v0.100.3 - Rosemary'; // Intentionally left hardcoded until Raiden API exposes it
+    let version: string | undefined;
     const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address);
 
     if (this.isDisabled()) {
       error = errors.RAIDEN_IS_DISABLED.message;
     } else {
       try {
+        version = (await this.getVersion()).version;
         const raidenChannels = await this.getChannels();
         channels = {
           active: raidenChannels.filter(c => c.state === 'opened').length,
@@ -349,6 +350,15 @@ class RaidenClient extends SwapClient {
       }
       req.end();
     });
+  }
+
+  /**
+   * Gets the raiden version.
+   */
+  public getVersion = async (): Promise<RaidenVersion> => {
+    const endpoint = 'version';
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<RaidenVersion>(res);
   }
 
   /**
