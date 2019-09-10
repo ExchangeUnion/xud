@@ -770,7 +770,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "The 24 word mnemonic to recover the xud identity key and underlying wallets"
         },
         "initialized_lnds": {
           "type": "array",

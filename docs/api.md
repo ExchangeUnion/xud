@@ -235,7 +235,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| password | [string](#string) |  | The password in utf-8 with which to encrypt the new xud node key as well as underlying client wallets such as lnd. |
+| password | [string](#string) |  | The password in utf-8 with which to encrypt the new xud node key as well as any uninitialized underlying wallets. |
 
 
 
@@ -250,7 +250,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| seed_mnemonic | [string](#string) | repeated |  |
+| seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
 | initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
 
@@ -1188,8 +1188,8 @@
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) |  |
-| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) |  |
+| CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. |
+| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. |
 
  
 
