@@ -269,7 +269,7 @@ export namespace Chain {
     }
 }
 
-export class ChannelBalance extends jspb.Message { 
+export class Balance extends jspb.Message { 
     getBalance(): number;
     setBalance(value: number): void;
 
@@ -278,63 +278,63 @@ export class ChannelBalance extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalance.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalance): ChannelBalance.AsObject;
+    toObject(includeInstance?: boolean): Balance.AsObject;
+    static toObject(includeInstance: boolean, msg: Balance): Balance.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalance, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalance;
-    static deserializeBinaryFromReader(message: ChannelBalance, reader: jspb.BinaryReader): ChannelBalance;
+    static serializeBinaryToWriter(message: Balance, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Balance;
+    static deserializeBinaryFromReader(message: Balance, reader: jspb.BinaryReader): Balance;
 }
 
-export namespace ChannelBalance {
+export namespace Balance {
     export type AsObject = {
         balance: number,
         pendingOpenBalance: number,
     }
 }
 
-export class ChannelBalanceRequest extends jspb.Message { 
+export class GetBalanceRequest extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalanceRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalanceRequest): ChannelBalanceRequest.AsObject;
+    toObject(includeInstance?: boolean): GetBalanceRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetBalanceRequest): GetBalanceRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalanceRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalanceRequest;
-    static deserializeBinaryFromReader(message: ChannelBalanceRequest, reader: jspb.BinaryReader): ChannelBalanceRequest;
+    static serializeBinaryToWriter(message: GetBalanceRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetBalanceRequest;
+    static deserializeBinaryFromReader(message: GetBalanceRequest, reader: jspb.BinaryReader): GetBalanceRequest;
 }
 
-export namespace ChannelBalanceRequest {
+export namespace GetBalanceRequest {
     export type AsObject = {
         currency: string,
     }
 }
 
-export class ChannelBalanceResponse extends jspb.Message { 
+export class GetBalanceResponse extends jspb.Message { 
 
-    getBalancesMap(): jspb.Map<string, ChannelBalance>;
+    getBalancesMap(): jspb.Map<string, Balance>;
     clearBalancesMap(): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalanceResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalanceResponse): ChannelBalanceResponse.AsObject;
+    toObject(includeInstance?: boolean): GetBalanceResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetBalanceResponse): GetBalanceResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalanceResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalanceResponse;
-    static deserializeBinaryFromReader(message: ChannelBalanceResponse, reader: jspb.BinaryReader): ChannelBalanceResponse;
+    static serializeBinaryToWriter(message: GetBalanceResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetBalanceResponse;
+    static deserializeBinaryFromReader(message: GetBalanceResponse, reader: jspb.BinaryReader): GetBalanceResponse;
 }
 
-export namespace ChannelBalanceResponse {
+export namespace GetBalanceResponse {
     export type AsObject = {
 
-        balancesMap: Array<[string, ChannelBalance.AsObject]>,
+        balancesMap: Array<[string, Balance.AsObject]>,
     }
 }
 

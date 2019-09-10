@@ -69,6 +69,32 @@
         ]
       }
     },
+    "/v1/balance": {
+      "get": {
+        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.",
+        "operationId": "GetBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/ban": {
       "post": {
         "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.",
@@ -89,32 +115,6 @@
             "schema": {
               "$ref": "#/definitions/xudrpcBanRequest"
             }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/channelbalance": {
-      "get": {
-        "summary": "Gets the total balance available across all payment channels for one or all currencies.",
-        "operationId": "ChannelBalance",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcChannelBalanceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "currency",
-            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -711,6 +711,21 @@
     "xudrpcAddPairResponse": {
       "type": "object"
     },
+    "xudrpcBalance": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Total balance denominated in satoshis."
+        },
+        "pending_open_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Sum of pending channel balances denominated in satoshis."
+        }
+      }
+    },
     "xudrpcBanRequest": {
       "type": "object",
       "properties": {
@@ -733,33 +748,6 @@
         "network": {
           "type": "string",
           "title": "The network the swap client is on (eg regtest, testnet, mainnet)"
-        }
-      }
-    },
-    "xudrpcChannelBalance": {
-      "type": "object",
-      "properties": {
-        "balance": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Sum of channel balances denominated in satoshis."
-        },
-        "pending_open_balance": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Sum of pending channel balances denominated in satoshis."
-        }
-      }
-    },
-    "xudrpcChannelBalanceResponse": {
-      "type": "object",
-      "properties": {
-        "balances": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/xudrpcChannelBalance"
-          },
-          "description": "A map between currency ticker symbols and their channel balances."
         }
       }
     },
@@ -835,6 +823,18 @@
           "type": "string",
           "format": "uint64",
           "description": "The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified."
+        }
+      }
+    },
+    "xudrpcGetBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcBalance"
+          },
+          "description": "A map between currency ticker symbols and their balances."
         }
       }
     },

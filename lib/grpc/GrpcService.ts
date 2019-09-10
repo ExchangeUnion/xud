@@ -267,17 +267,17 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.channelBalance]]
+   * See [[Service.getBalance]]
    */
-  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+  public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (call, callback) => {
     try {
-      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
-      const response = new xudrpc.ChannelBalanceResponse();
+      const balanceResponse = await this.service.getBalance(call.request.toObject());
+      const response = new xudrpc.GetBalanceResponse();
       const balancesMap = response.getBalancesMap();
-      channelBalanceResponse.forEach((channelBalance, currency) => {
-        const balance = new xudrpc.ChannelBalance();
-        balance.setBalance(channelBalance.balance);
-        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+      balanceResponse.forEach((balanceObj, currency) => {
+        const balance = new xudrpc.Balance();
+        balance.setBalance(balanceObj.balance);
+        balance.setPendingOpenBalance(balanceObj.pendingOpenBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);

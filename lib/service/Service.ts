@@ -116,8 +116,8 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, quantity);
   }
 
-  /** Gets the total lightning network channel balance for a given currency. */
-  public channelBalance = async (args: { currency: string }) => {
+  /** Gets the total lightning network balance for a given currency. */
+  public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
 
