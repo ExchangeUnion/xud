@@ -24,7 +24,7 @@ export const builder = {
 
 export const handler = (argv: Arguments) => {
   const request = new OpenChannelRequest();
-  request.setNodePubKey(argv.nodePubKey);
+  request.setNodePubKey(argv.node_key);
   request.setCurrency(argv.currency.toUpperCase());
   request.setAmount(coinsToSats(argv.amount));
   loadXudClient(argv).openChannel(request, callback(argv));
