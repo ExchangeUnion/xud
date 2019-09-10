@@ -29,3 +29,6 @@ export type Chain = {
   network: string,
   chain: string,
 };
+
+export type ClientMethods = 'close' | 'waitForReady' | 'makeClientStreamRequest' | 'makeBidiStreamRequest'
+  | 'makeServerStreamRequest' | 'makeUnaryRequest';

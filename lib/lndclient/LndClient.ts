@@ -12,20 +12,8 @@ import { promises as fs, watch } from 'fs';
 import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
-import { LndClientConfig, LndInfo, ChannelCount, Chain } from './types';
+import { LndClientConfig, LndInfo, ChannelCount, Chain, ClientMethods } from './types';
 import path from 'path';
-
-interface LightningMethodIndex extends LightningClient {
-  [methodName: string]: Function;
-}
-
-interface WalletUnlockerMethodIndex extends WalletUnlockerClient {
-  [methodName: string]: Function;
-}
-
-interface InvoicesMethodIndex extends InvoicesClient {
-  [methodName: string]: Function;
-}
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -43,9 +31,9 @@ class LndClient extends SwapClient {
   public readonly finalLock: number;
   public config: LndClientConfig;
   public currency: string;
-  private lightning?: LightningClient | LightningMethodIndex;
-  private walletUnlocker?: WalletUnlockerClient | InvoicesMethodIndex;
-  private invoices?: InvoicesClient | InvoicesMethodIndex;
+  private lightning?: LightningClient;
+  private walletUnlocker?: WalletUnlockerClient;
+  private invoices?: InvoicesClient;
   private macaroonpath?: string;
   private meta = new grpc.Metadata();
   private uri!: string;
@@ -167,13 +155,13 @@ class LndClient extends SwapClient {
     }
   }
 
-  private unaryCall = <T, U>(methodName: string, params: T): Promise<U> => {
+  private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      (this.lightning as LightningMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+      (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           reject(err);
         } else {
@@ -191,13 +179,13 @@ class LndClient extends SwapClient {
     }
   }
 
-  private unaryInvoiceCall = <T, U>(methodName: string, params: T): Promise<U> => {
+  private unaryInvoiceCall = <T, U>(methodName: Exclude<keyof InvoicesClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      (this.invoices as InvoicesMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+      (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           reject(err);
         } else {
@@ -207,13 +195,13 @@ class LndClient extends SwapClient {
     });
   }
 
-  private unaryWalletUnlockerCall = <T, U>(methodName: string, params: T): Promise<U> => {
+  private unaryWalletUnlockerCall = <T, U>(methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
         reject(errors.LND_IS_DISABLED);
         return;
       }
-      (this.walletUnlocker as WalletUnlockerMethodIndex)[methodName](params, this.meta, (err: grpc.ServiceError, response: U) => {
+      (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           reject(err);
         } else {
