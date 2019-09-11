@@ -269,14 +269,14 @@ class Swaps extends EventEmitter {
       throw SwapFailureReason.SwapClientNotSetup;
     }
 
-    let routes;
+    let route: Route | undefined;
     try {
-      routes = await swapClient.getRoutes(makerUnits, destination, makerCurrency);
+      route = await swapClient.getRoute(makerUnits, destination, makerCurrency);
     } catch (err) {
       throw SwapFailureReason.UnexpectedClientError;
     }
 
-    if (routes.length === 0) {
+    if (!route) {
       throw SwapFailureReason.NoRouteFound;
     }
   }
@@ -519,9 +519,9 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    let makerToTakerRoutes: Route[];
+    let makerToTakerRoute: Route | undefined;
     try {
-      makerToTakerRoutes = await takerSwapClient.getRoutes(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
+      makerToTakerRoute = await takerSwapClient.getRoute(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -534,7 +534,7 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (makerToTakerRoutes.length === 0) {
+    if (!makerToTakerRoute) {
       this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
       await this.sendErrorToPeer({
         peer,
@@ -564,7 +564,7 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got ${takerCurrency} block height of ${height}`);
 
-      const routeAbsoluteTimeLock = makerToTakerRoutes[0].getTotalTimeLock();
+      const routeAbsoluteTimeLock = makerToTakerRoute.getTotalTimeLock();
       const routeLockDuration = routeAbsoluteTimeLock - height;
       const routeLockHours = Math.round(routeLockDuration / takerSwapClient.minutesPerBlock);
       this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);

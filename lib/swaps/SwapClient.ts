@@ -145,7 +145,7 @@ abstract class SwapClient extends EventEmitter {
    * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoutes(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
+  public abstract async getRoute(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route | undefined>;
 
   /**
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
