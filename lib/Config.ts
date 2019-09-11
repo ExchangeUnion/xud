@@ -131,7 +131,11 @@ class Config {
     };
   }
 
-  public load = async (args?: { [argName: string]: any }): Promise<Config> => {
+  /**
+   * Loads the xud configuration from an optional file and any command line arguments.
+   * @returns a promise that resolves to `true` if a config file was found and loaded, otherwise `false`
+   */
+  public load = async (args?: { [argName: string]: any }): Promise<boolean> => {
     if (args) {
       if (args.xudir) {
         this.xudir = args.xudir;
@@ -142,15 +146,20 @@ class Config {
       this.updateMacaroonPaths();
     }
 
-    const configPath = path.join(this.xudir, 'xud.conf');
     await this.mkDirIfNotExist(this.xudir);
+
+    const configPath = path.join(this.xudir, 'xud.conf');
+    let configText: string | undefined;
     try {
-      const configText = await fs.readFile(configPath, 'utf8');
+      configText = await fs.readFile(configPath, 'utf8');
+    } catch (err) {}
+
+    if (configText) {
       let props;
       try {
         props = toml.parse(configText);
       } catch (e) {
-        throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
+        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
       }
 
       if (props.xudir && (!args || !args.xudir)) {
@@ -177,7 +186,7 @@ class Config {
       }
       // merge parsed json properties from config file to the default config
       deepMerge(this, props);
-    } catch (err) {}
+    }
 
     if (args) {
       // override our config file with command line arguments
@@ -191,7 +200,7 @@ class Config {
     const logDir = path.dirname(this.logpath);
     await this.mkDirIfNotExist(logDir);
 
-    return this;
+    return !!configText;
   }
 
   /**
