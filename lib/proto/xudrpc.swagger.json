@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/xudrpcAddCurrencyRequest"
+              "$ref": "#/definitions/xudrpcCurrency"
             }
           }
         ],
@@ -654,7 +654,7 @@
     }
   },
   "definitions": {
-    "AddCurrencyRequestSwapClient": {
+    "CurrencySwapClient": {
       "type": "string",
       "enum": [
         "LND",
@@ -669,28 +669,6 @@
         "MAKER"
       ],
       "default": "TAKER"
-    },
-    "xudrpcAddCurrencyRequest": {
-      "type": "object",
-      "properties": {
-        "currency": {
-          "type": "string",
-          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
-        },
-        "swap_client": {
-          "$ref": "#/definitions/AddCurrencyRequestSwapClient",
-          "description": "The payment channel network client to use for executing swaps."
-        },
-        "token_address": {
-          "type": "string",
-          "description": "The contract address for layered tokens such as ERC20."
-        },
-        "decimal_places": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
-        }
-      }
     },
     "xudrpcAddCurrencyResponse": {
       "type": "object"
@@ -784,6 +762,28 @@
           "type": "boolean",
           "format": "boolean",
           "description": "Whether raiden was initialized."
+        }
+      }
+    },
+    "xudrpcCurrency": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
+        },
+        "swap_client": {
+          "$ref": "#/definitions/CurrencySwapClient",
+          "description": "The payment channel network client to use for executing swaps."
+        },
+        "token_address": {
+          "type": "string",
+          "description": "The contract address for layered tokens such as ERC20."
+        },
+        "decimal_places": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
         }
       }
     },
@@ -903,9 +903,9 @@
         "currencies": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/xudrpcCurrency"
           },
-          "description": "A list of ticker symbols of the supported currencies."
+          "description": "The list of available currencies in the orderbook."
         }
       }
     },

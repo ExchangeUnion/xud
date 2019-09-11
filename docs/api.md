@@ -4,7 +4,6 @@
 ## Table of Contents
 
 - [xudrpc.proto](#xudrpc.proto)
-    - [AddCurrencyRequest](#xudrpc.AddCurrencyRequest)
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
@@ -16,6 +15,7 @@
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
     - [CreateNodeResponse](#xudrpc.CreateNodeResponse)
+    - [Currency](#xudrpc.Currency)
     - [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest)
     - [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse)
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
@@ -71,7 +71,7 @@
     - [UnlockNodeRequest](#xudrpc.UnlockNodeRequest)
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
-    - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -88,24 +88,6 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## xudrpc.proto
-
-
-
-<a name="xudrpc.AddCurrencyRequest"></a>
-
-### AddCurrencyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
-| swap_client | [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient) |  | The payment channel network client to use for executing swaps. |
-| token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
-| decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
-
-
-
 
 
 
@@ -253,6 +235,24 @@
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
 | initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+
+
+
+
+
+
+<a name="xudrpc.Currency"></a>
+
+### Currency
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
+| swap_client | [Currency.SwapClient](#xudrpc.Currency.SwapClient) |  | The payment channel network client to use for executing swaps. |
+| token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
+| decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
 
 
 
@@ -450,7 +450,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| currencies | [string](#string) | repeated | A list of ticker symbols of the supported currencies. |
+| currencies | [Currency](#xudrpc.Currency) | repeated | The list of available currencies in the orderbook. |
 
 
 
@@ -1107,9 +1107,9 @@
  
 
 
-<a name="xudrpc.AddCurrencyRequest.SwapClient"></a>
+<a name="xudrpc.Currency.SwapClient"></a>
 
-### AddCurrencyRequest.SwapClient
+### Currency.SwapClient
 
 
 | Name | Number | Description |
@@ -1154,7 +1154,7 @@
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. |
+| AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. |
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. |
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. |

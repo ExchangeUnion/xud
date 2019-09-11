@@ -108,12 +108,12 @@ export namespace UnlockNodeResponse {
     }
 }
 
-export class AddCurrencyRequest extends jspb.Message { 
+export class Currency extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
 
-    getSwapClient(): AddCurrencyRequest.SwapClient;
-    setSwapClient(value: AddCurrencyRequest.SwapClient): void;
+    getSwapClient(): Currency.SwapClient;
+    setSwapClient(value: Currency.SwapClient): void;
 
     getTokenAddress(): string;
     setTokenAddress(value: string): void;
@@ -123,19 +123,19 @@ export class AddCurrencyRequest extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): AddCurrencyRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: AddCurrencyRequest): AddCurrencyRequest.AsObject;
+    toObject(includeInstance?: boolean): Currency.AsObject;
+    static toObject(includeInstance: boolean, msg: Currency): Currency.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: AddCurrencyRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): AddCurrencyRequest;
-    static deserializeBinaryFromReader(message: AddCurrencyRequest, reader: jspb.BinaryReader): AddCurrencyRequest;
+    static serializeBinaryToWriter(message: Currency, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Currency;
+    static deserializeBinaryFromReader(message: Currency, reader: jspb.BinaryReader): Currency;
 }
 
-export namespace AddCurrencyRequest {
+export namespace Currency {
     export type AsObject = {
         currency: string,
-        swapClient: AddCurrencyRequest.SwapClient,
+        swapClient: Currency.SwapClient,
         tokenAddress: string,
         decimalPlaces: number,
     }
@@ -685,9 +685,9 @@ export namespace ListCurrenciesRequest {
 
 export class ListCurrenciesResponse extends jspb.Message { 
     clearCurrenciesList(): void;
-    getCurrenciesList(): Array<string>;
-    setCurrenciesList(value: Array<string>): void;
-    addCurrencies(value: string, index?: number): string;
+    getCurrenciesList(): Array<Currency>;
+    setCurrenciesList(value: Array<Currency>): void;
+    addCurrencies(value?: Currency, index?: number): Currency;
 
 
     serializeBinary(): Uint8Array;
@@ -702,7 +702,7 @@ export class ListCurrenciesResponse extends jspb.Message {
 
 export namespace ListCurrenciesResponse {
     export type AsObject = {
-        currenciesList: Array<string>,
+        currenciesList: Array<Currency.AsObject>,
     }
 }
 

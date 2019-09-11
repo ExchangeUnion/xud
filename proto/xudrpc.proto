@@ -63,7 +63,7 @@ message UnlockNodeResponse {
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
    * new trading pairs. */
-  rpc AddCurrency(AddCurrencyRequest) returns (AddCurrencyResponse) {
+  rpc AddCurrency(Currency) returns (AddCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/addcurrency"
       body: "*"
@@ -283,7 +283,7 @@ enum OrderSide {
   SELL = 1;
 }
 
-message AddCurrencyRequest {
+message Currency {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
   enum SwapClient {
@@ -301,6 +301,7 @@ message AddCurrencyRequest {
   // used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
+
 message AddCurrencyResponse {}
 
 message AddPairRequest {
@@ -428,8 +429,8 @@ message ListOrdersResponse {
 
 message ListCurrenciesRequest {}
 message ListCurrenciesResponse {
-  // A list of ticker symbols of the supported currencies.
-  repeated string currencies = 1 [json_name = "currencies"];
+  // The list of available currencies in the orderbook.
+  repeated Currency currencies = 1 [json_name = "currencies"];
 }
 
 message ListPairsRequest {}
@@ -551,7 +552,7 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // A map of ticker symbols to lnd pub keys for this peer 
+  // A map of ticker symbols to lnd pub keys for this peer
   map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
   bool inbound = 4 [json_name = "inbound"];
