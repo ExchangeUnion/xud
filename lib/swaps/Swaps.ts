@@ -13,7 +13,7 @@ import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './type
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
-import { errors } from './errors';
+import { errors, errorCodes } from './errors';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -697,7 +697,7 @@ class Swaps extends EventEmitter {
     try {
       await makerSwapClient.sendPayment(deal);
     } catch (err) {
-      if (err.code === errors.PAYMENT_REJECTED) {
+      if (err.code === errorCodes.PAYMENT_REJECTED) {
         // if the maker rejected our payment, the swap failed due to an error on their side
         // and we don't need to send them a SwapFailedPacket
         this.failDeal(deal, SwapFailureReason.RemoteError, err.message);
