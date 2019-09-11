@@ -36,7 +36,7 @@ const displayBalances = (balances: GetBalanceResponse.AsObject) => {
   console.log(table.toString());
 };
 
-export const command = 'balance [currency]';
+export const command = 'getbalance [currency]';
 
 export const describe = 'get total balance for a given currency';
 
