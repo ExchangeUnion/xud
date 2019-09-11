@@ -37,6 +37,7 @@
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
     "test:sim": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestIntegration -v)",
     "test:sim:security": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestSecurity -v)",
+    "test:sim:instability": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestInstability -v)",
     "test:jest": "jest",
     "test:seedutil": "jest seedutil",
     "test:jest:watch": "jest --watch",
