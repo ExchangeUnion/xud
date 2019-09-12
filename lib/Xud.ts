@@ -53,6 +53,10 @@ class Xud extends EventEmitter {
     process.on('SIGINT', () => {
       this.beginShutdown();
     });
+
+    process.on('SIGTERM', () => {
+      this.beginShutdown();
+    });
   }
 
   /**
