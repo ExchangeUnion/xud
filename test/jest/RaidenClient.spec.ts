@@ -80,6 +80,7 @@ describe('RaidenClient', () => {
     raidenLogger = new Logger({});
     raidenLogger.info = jest.fn();
     raidenLogger.error = jest.fn();
+    raidenLogger.debug = jest.fn();
     unitConverter = new UnitConverter();
     unitConverter.init();
   });

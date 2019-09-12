@@ -116,18 +116,11 @@ class RaidenClient extends SwapClient {
     try {
       const channelBalancePromises = [];
       for (const [currency] of this.tokenAddresses) {
-        const channelBalancePromise = this.channelBalance(currency)
-          .then((balance) => {
-            return { ...balance, currency };
-          });
-        channelBalancePromises.push(channelBalancePromise);
+        channelBalancePromises.push(this.channelBalance(currency));
       }
-      const channelBalances = await Promise.all(channelBalancePromises);
-      channelBalances.forEach(({ currency, balance }) => {
-        this.maximumOutboundAmounts.set(currency, balance);
-      });
+      await Promise.all(channelBalancePromises);
     } catch (e) {
-      this.logger.error(`failed to fetch channelbalances: ${e}`);
+      this.logger.error('failed to update maximum outbound capacity', e);
     }
   }
 
@@ -424,9 +417,6 @@ class RaidenClient extends SwapClient {
     return parseResponseBody<[Channel]>(res);
   }
 
-  /**
-   * Returns the total balance available across all channels for a specified currency.
-   */
   public channelBalance = async (currency?: string): Promise<ChannelBalance> => {
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0 };
@@ -440,6 +430,11 @@ class RaidenClient extends SwapClient {
       currency,
       units,
     });
+    if (this.maximumOutboundAmounts.get(currency) !== balance) {
+      this.maximumOutboundAmounts.set(currency, balance);
+      this.logger.debug(`new outbound capacity for ${currency}: ${balance}`);
+    }
+
     return { balance, pendingOpenBalance: 0 };
   }
 
