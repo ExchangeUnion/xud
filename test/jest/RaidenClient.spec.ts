@@ -5,6 +5,7 @@ import { SwapDeal } from '../../lib/swaps/types';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 import { CurrencyInstance } from '../../lib/db/types';
 import { getValidDeal } from '../utils';
+import { PaymentState } from '../../lib/swaps/SwapClient';
 
 const getValidTokenPaymentResponse = () => {
   return {
@@ -189,6 +190,45 @@ describe('RaidenClient', () => {
         total_deposit: units,
         settle_timeout: 500,
       });
+    });
+  });
+
+  describe('lookupPayment', () => {
+    const paymentHash = '63699fb42306ea693c7c9c038c18ecc8c7dbc8095b8ddd8d2e4421f2ce7b4c0c';
+
+    test('it detects payment in pending state', async () => {
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
+      const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
+      const currency = 'WETH';
+      const mockTokenAddresses = new Map<string, string>();
+      mockTokenAddresses.set('WETH', wethTokenAddress);
+      raiden.tokenAddresses = mockTokenAddresses;
+      raiden['getPendingTransfers'] = jest.fn().mockReturnValue(Promise.resolve([{
+        payment_identifier: RaidenClient['getIdentifier'](paymentHash),
+      }]));
+      raiden['getPaymentEvents'] = jest.fn();
+      await raiden.init(currencyInstances as CurrencyInstance[]);
+      await expect(raiden.lookupPayment(paymentHash, currency, peerRaidenAddress))
+        .resolves.toHaveProperty('state', PaymentState.Pending);
+      expect(raiden['getPendingTransfers']).toHaveBeenCalledTimes(1);
+      expect(raiden['getPendingTransfers']).toHaveBeenCalledWith(currency, peerRaidenAddress);
+      expect(raiden['getPaymentEvents']).toHaveBeenCalledTimes(0);
+    });
+
+    test('it checks if payment has failed or completed if it is not pending', async () => {
+      raiden = new RaidenClient({ unitConverter, config, lockBufferHours, directChannelChecks: true, logger: raidenLogger });
+      const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
+      const currency = 'WETH';
+      const mockTokenAddresses = new Map<string, string>();
+      mockTokenAddresses.set('WETH', wethTokenAddress);
+      raiden.tokenAddresses = mockTokenAddresses;
+      raiden['getPendingTransfers'] = jest.fn().mockReturnValue(Promise.resolve([]));
+      raiden['getPaymentEvents'] = jest.fn().mockReturnValue(Promise.resolve([]));
+      await raiden.init(currencyInstances as CurrencyInstance[]);
+      await raiden.lookupPayment(paymentHash, currency, peerRaidenAddress);
+      expect(raiden['getPendingTransfers']).toHaveBeenCalledTimes(1);
+      expect(raiden['getPaymentEvents']).toHaveBeenCalledTimes(1);
+      expect(raiden['getPaymentEvents']).toHaveBeenCalledWith(currency, peerRaidenAddress);
     });
   });
 

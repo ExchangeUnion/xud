@@ -1,22 +1,25 @@
-import http from 'http';
-import Logger from '../Logger';
-import SwapClient, { ClientStatus, ChannelBalance } from '../swaps/SwapClient';
-import errors from './errors';
-import { SwapDeal } from '../swaps/types';
-import { SwapClientType, SwapState, SwapRole } from '../constants/enums';
 import assert from 'assert';
-import {
-  RaidenClientConfig,
-  RaidenInfo,
-  OpenChannelPayload,
-  Channel,
-  TokenPaymentRequest,
-  TokenPaymentResponse,
-} from './types';
-import { UnitConverter } from '../utils/UnitConverter';
+import http from 'http';
+import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
+import Logger from '../Logger';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState } from '../swaps/SwapClient';
+import { SwapDeal } from '../swaps/types';
+import { UnitConverter } from '../utils/UnitConverter';
+import errors from './errors';
+import { Channel, OpenChannelPayload, PaymentEvent, RaidenClientConfig, RaidenInfo, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 type RaidenErrorResponse = { errors: string };
+
+type PendingTransfer = {
+  initiator: string;
+  locked_amount: string;
+  payment_identifier: string;
+  role: string;
+  target: string;
+  token_address: string;
+  transferred_amount: string;
+};
 
 /**
  * A utility function to parse the payload from an http response.
@@ -74,6 +77,14 @@ class RaidenClient extends SwapClient {
 
   public get minutesPerBlock() {
     return 0.25; // 15 seconds per block target
+  }
+
+  /**
+   * Derives an integer identifier using the first 4 bytes of a provided payment hash in hex.
+   * @param rHash a payment hash in hex
+   */
+  private static getIdentifier(rHash: string) {
+    return parseInt(rHash.substr(0, 8), 16);
   }
 
   /**
@@ -210,6 +221,61 @@ class RaidenClient extends SwapClient {
 
   public removeInvoice = async () => {
     // not implemented, raiden does not use invoices
+  }
+
+  public lookupPayment = async (rHash: string, currency?: string, destination?: string) => {
+    const identifier = RaidenClient.getIdentifier(rHash);
+
+    // first check if the payment is pending
+    const pendingTransfers = await this.getPendingTransfers(currency, destination);
+    for (const pendingTransfer of pendingTransfers) {
+      if (identifier === Number(pendingTransfer.payment_identifier)) {
+        return { state: PaymentState.Pending };
+      }
+    }
+
+    // if the payment isn't pending, check if it has succeeded or failed
+    const paymentEvents = await this.getPaymentEvents(currency, destination);
+    for (const paymentEvent of paymentEvents) {
+      if (paymentEvent.identifier === identifier) {
+        const success = paymentEvent.event === 'EventPaymentSentSuccess';
+        if (success) {
+          const preimage = paymentEvent.secret;
+          return { preimage, state: PaymentState.Succeeded };
+        } else {
+          return { state: PaymentState.Failed };
+        }
+      }
+    }
+
+    // if there is no pending payment or event found, we assume that the payment was never attempted by raiden
+    return { state: PaymentState.Failed };
+  }
+
+  private getPendingTransfers = async (currency?: string, destination?: string) => {
+    let endpoint = 'pending_transfers';
+    if (currency) {
+      const tokenAddress = this.tokenAddresses.get(currency);
+      endpoint += `/${tokenAddress}`;
+      if (destination) {
+        endpoint += `/${destination}`;
+      }
+    }
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<PendingTransfer[]>(res);
+  }
+
+  private getPaymentEvents = async (currency?: string, destination?: string) => {
+    let endpoint = 'payments';
+    if (currency) {
+      const tokenAddress = this.tokenAddresses.get(currency);
+      endpoint += `/${tokenAddress}`;
+      if (destination) {
+        endpoint += `/${destination}`;
+      }
+    }
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<PaymentEvent[]>(res);
   }
 
   public getRoute = async (units: number, destination: string, currency: string) => {
@@ -427,8 +493,8 @@ class RaidenClient extends SwapClient {
    */
   private tokenPayment = async (payload: TokenPaymentRequest): Promise<TokenPaymentResponse> => {
     const endpoint = `payments/${payload.token_address}/${payload.target_address}`;
-    payload.identifier = Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1);
     if (payload.secret_hash) {
+      payload.identifier = RaidenClient.getIdentifier(payload.secret_hash);
       payload.secret_hash = `0x${payload.secret_hash}`;
     }
 
