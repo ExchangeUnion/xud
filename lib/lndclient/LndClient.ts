@@ -44,7 +44,6 @@ class LndClient extends SwapClient {
   private urisList?: string[];
   /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
   private chainIdentifier?: string;
-  private channelSubscription?: ClientReadableStream<lndrpc.ChannelEventUpdate>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
   private initWalletResolve?: (value: boolean) => void;
@@ -163,6 +162,10 @@ class LndClient extends SwapClient {
       }
       (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
+          if (err.code === grpc.status.UNAVAILABLE) {
+            this.disconnect().catch(this.logger.error);
+          }
+          this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
         } else {
           resolve(response);
@@ -187,6 +190,10 @@ class LndClient extends SwapClient {
       }
       (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
+          if (err.code === grpc.status.UNAVAILABLE) {
+            this.disconnect().catch(this.logger.error);
+          }
+          this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
         } else {
           resolve(response);
@@ -203,6 +210,7 @@ class LndClient extends SwapClient {
       }
       (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
+          this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
         } else {
           resolve(response);
@@ -236,7 +244,7 @@ class LndClient extends SwapClient {
         version = lnd.getVersion();
         alias = lnd.getAlias();
       } catch (err) {
-        this.logger.error(`LND error: ${err}`);
+        this.logger.error('getinfo error', err);
         error = err.message;
       }
     }
@@ -375,8 +383,6 @@ class LndClient extends SwapClient {
             this.walletUnlocker.close();
             this.walletUnlocker = undefined;
           }
-
-          this.subscribeChannels();
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
           this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
@@ -801,25 +807,6 @@ class LndClient extends SwapClient {
   }
 
   /**
-   * Subscribes to channel events.
-   */
-  private subscribeChannels = (): void => {
-    if (!this.lightning) {
-      throw errors.LND_IS_UNAVAILABLE(this.status);
-    }
-    if (this.channelSubscription) {
-      this.channelSubscription.cancel();
-    }
-
-    this.channelSubscription = this.lightning.subscribeChannelEvents(new lndrpc.ChannelEventSubscription(), this.meta)
-    .on('error', async (error) => {
-      this.channelSubscription = undefined;
-      this.logger.error(`lnd has been disconnected, error: ${error}`);
-      await this.disconnect();
-    });
-  }
-
-  /**
    * Attempts to close an open channel.
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
@@ -850,10 +837,6 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = async () => {
-    if (this.channelSubscription) {
-      this.channelSubscription.cancel();
-      this.channelSubscription = undefined;
-    }
     if (this.lightning) {
       this.lightning.close();
       this.lightning = undefined;

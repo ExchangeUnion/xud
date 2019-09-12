@@ -129,7 +129,6 @@ class RaidenClient extends SwapClient {
         this.maximumOutboundAmounts.set(currency, balance);
       });
     } catch (e) {
-      // TODO: Mark client as disconnected
       this.logger.error(`failed to fetch channelbalances: ${e}`);
     }
   }
@@ -391,7 +390,10 @@ class RaidenClient extends SwapClient {
         }
       });
 
-      req.on('error', (err) => {
+      req.on('error', (err: any) => {
+        if (err.code === 'ECONNREFUSED') {
+          this.disconnect().catch(this.logger.error);
+        }
         this.logger.error(err);
         reject(err);
       });
