@@ -40,6 +40,7 @@ class SwapClientManager extends EventEmitter {
   /** A map between currencies and all swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
+  private walletPassword?: string;
 
   constructor(
     private config: Config,
@@ -128,6 +129,8 @@ class SwapClientManager extends EventEmitter {
    * Initializes wallets with seed and password.
    */
   public initWallets = async (walletPassword: string, seedMnemonic: string[]) => {
+    this.walletPassword = walletPassword;
+
     // loop through swap clients to find locked lnd clients
     const initWalletPromises: Promise<any>[] = [];
     const createdLndWallets: string[] = [];
@@ -136,7 +139,7 @@ class SwapClientManager extends EventEmitter {
         const initWalletPromise = swapClient.initWallet(walletPassword, seedMnemonic).then(() => {
           createdLndWallets.push(swapClient.currency);
         }).catch((err) => {
-          this.loggers.lnd.debug(`could not initialize ${swapClient.currency} client: ${err.message}`);
+          swapClient.logger.debug(`could not initialize wallet: ${err.message}`);
         });
         initWalletPromises.push(initWalletPromise);
       }
@@ -154,6 +157,8 @@ class SwapClientManager extends EventEmitter {
    * @returns an array of currencies for each lnd client that was unlocked
    */
   public unlockWallets = async (walletPassword: string) => {
+    this.walletPassword = walletPassword;
+
     // loop through swap clients to find locked lnd clients
     const unlockWalletPromises: Promise<any>[] = [];
     const unlockedLndClients: string[] = [];
@@ -163,7 +168,7 @@ class SwapClientManager extends EventEmitter {
         const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
           unlockedLndClients.push(swapClient.currency);
         }).catch((err) => {
-          this.loggers.lnd.debug(`could not unlock ${swapClient.currency} client: ${err.message}`);
+          swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
         });
         unlockWalletPromises.push(unlockWalletPromise);
       }
@@ -334,6 +339,11 @@ class SwapClientManager extends EventEmitter {
         // lnd clients emit htlcAccepted evented we must handle
         swapClient.on('htlcAccepted', (rHash, amount) => {
           this.emit('htlcAccepted', swapClient, rHash, amount, currency);
+        });
+        swapClient.on('locked', () => {
+          if (this.walletPassword) {
+            swapClient.unlockWallet(this.walletPassword).catch(swapClient.logger.error);
+          }
         });
       }
     }

@@ -100,6 +100,10 @@ abstract class SwapClient extends EventEmitter {
   }
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
+    if (this.status === status) {
+      return;
+    }
+
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
     await this.setTimers();
