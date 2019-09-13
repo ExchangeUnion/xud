@@ -577,12 +577,12 @@ class Swaps extends EventEmitter {
 
       const routeAbsoluteTimeLock = makerToTakerRoute.getTotalTimeLock();
       const routeLockDuration = routeAbsoluteTimeLock - height;
-      const routeLockHours = Math.round(routeLockDuration / takerSwapClient.minutesPerBlock);
+      const routeLockHours = Math.round(routeLockDuration * takerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
       deal.takerMaxTimeLock = routeLockDuration;
 
       const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
-      const makerClientLockBufferHours = Math.round(makerClientLockBuffer / makerSwapClient.minutesPerBlock);
+      const makerClientLockBufferHours = Math.round(makerClientLockBuffer * makerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer} ${makerCurrency} blocks (~${makerClientLockBufferHours}h)`);
 
       /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
@@ -594,7 +594,7 @@ class Swaps extends EventEmitter {
       // the total lock duration of the taker route times a factor to convert taker blocks to maker
       // blocks. This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
       deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeLockDuration * blockTimeFactor);
-      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta / makerSwapClient.minutesPerBlock);
+      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta * makerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`calculated lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
     }
 
