@@ -27,12 +27,14 @@ jest.mock('../../../lib/swaps/SwapRepository', () => {
     };
   });
 });
-const getMockedLnd = (lockBuffer: number) => {
+const getMockedLnd = (cltvDelta: number, minutesPerBlock: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
-  lnd.lockBuffer = lockBuffer;
+  lnd.finalLock = cltvDelta;
   // @ts-ignore
   lnd.type = SwapClientType.Lnd;
+  // @ts-ignore
+  lnd.minutesPerBlock = minutesPerBlock;
   lnd.isConnected = jest.fn().mockReturnValue(true);
   const removeInvoice = jest.fn().mockImplementation(() => {
     return { catch: () => {} };
@@ -58,7 +60,7 @@ const getSwapRequestBody = (): SwapRequestPacketBody => {
     proposedQuantity: 10000,
   };
 };
-describe('Swaps', () => {
+describe('Swaps Integration', () => {
   let swaps: Swaps;
   let pool: Pool;
   let logger: Logger;
@@ -80,8 +82,8 @@ describe('Swaps', () => {
     swapClientManager.get = jest.fn();
     peer = new mockedPeer();
     peer.sendPacket = jest.fn();
-    lndBtc = getMockedLnd(144);
-    lndLtc = getMockedLnd(576);
+    lndBtc = getMockedLnd(40, 10);
+    lndLtc = getMockedLnd(576, 2.5);
     makerCurrency = 'LTC';
     takerCurrency = 'BTC';
   });
@@ -277,7 +279,7 @@ describe('Swaps', () => {
         swapRequestBody.takerCltvDelta,
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);
-      const expectedMakerCltvDelta = 1152;
+      const expectedMakerCltvDelta = 1445;
       expect(lndLtc.addInvoice).toHaveBeenCalledWith(
         swapRequestBody.rHash,
         swapRequestBody.proposedQuantity,

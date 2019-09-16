@@ -15,6 +15,7 @@ import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
 import { errors, errorCodes } from './errors';
 import SwapRecovery from './SwapRecovery';
+import poissonQuantile from 'distributions-poisson-quantile';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -75,6 +76,26 @@ class Swaps extends EventEmitter {
     // proposed quantity must be a positive number
     // rHash must be exactly 64 characters
     return proposedQuantity > 0 && rHash.length === 64;
+  }
+
+  /**
+   * Calculates the minimum expected lock delta for the final hop of the first leg to ensure a
+   * very high probability that it won't expire before the second leg payment. We use a Poisson
+   * distribution to model the possible block times of two independent chains, first calculating
+   * a probabilistic upper bound for the lock time in minuntes of the second leg then a
+   * probabilistic lower bound for the number of blocks for the lock time extended to the final
+   * hop of the first leg.
+   * @param secondLegLockDuration The lock duration (aka time lock or cltv delta) of the second
+   * leg (maker to taker) denominated in blocks of that chain.
+   * @returns A number of blocks for the chain of the first leg that is highly likely to take
+   * more time in minutes than the provided second leg lock duration.
+   */
+  private static calculateLockBuffer = (secondLegLockDuration: number, secondLegMinutesPerBlock: number, firstLegMinutesPerBlock: number) => {
+    /** A probabilistic upper bound for the time it will take for the second leg route time lock to expire. */
+    const secondLegLockMinutes = poissonQuantile(.9999, { lambda: secondLegLockDuration }) * secondLegMinutesPerBlock;
+    const firstLegLockBuffer = poissonQuantile(.9999, { lambda: secondLegLockMinutes / firstLegMinutesPerBlock });
+
+    return firstLegLockBuffer;
   }
 
   /**
@@ -161,7 +182,7 @@ class Swaps extends EventEmitter {
       this.sanitySwaps.set(rHash, sanitySwap);
       const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await swapClient.addInvoice(rHash, 1, swapClient.lockBuffer);
+        await swapClient.addInvoice(rHash, 1);
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
@@ -356,7 +377,7 @@ class Swaps extends EventEmitter {
 
     try {
       await Promise.all([
-        swapClient.addInvoice(rHash, 1, swapClient.lockBuffer),
+        swapClient.addInvoice(rHash, 1),
         peer.sendPacket(sanitySwapInitPacket),
         peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
@@ -575,27 +596,23 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got ${takerCurrency} block height of ${height}`);
 
-      const routeAbsoluteTimeLock = makerToTakerRoute.getTotalTimeLock();
-      const routeLockDuration = routeAbsoluteTimeLock - height;
+      const routeTotalTimeLock = makerToTakerRoute.getTotalTimeLock();
+      const routeLockDuration = routeTotalTimeLock - height;
       const routeLockHours = Math.round(routeLockDuration * takerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
       deal.takerMaxTimeLock = routeLockDuration;
 
-      const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
-      const makerClientLockBufferHours = Math.round(makerClientLockBuffer * makerSwapClient.minutesPerBlock / 60);
-      this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer} ${makerCurrency} blocks (~${makerClientLockBufferHours}h)`);
+      // Here we calculate the minimum lock delta we will expect as maker on the final hop to us on
+      // the first leg of the swap. This should ensure a very high probability that the final hop
+      // of the payment to us won't expire before our payment to the taker with time leftover to
+      // satisfy our finalLock/cltvDelta requirement for the incoming payment swap client.
+      const lockBuffer = Swaps.calculateLockBuffer(routeLockDuration, takerSwapClient.minutesPerBlock, makerSwapClient.minutesPerBlock);
+      const lockBufferHours = Math.round(lockBuffer * makerSwapClient.minutesPerBlock / 60);
+      this.logger.debug(`calculated lock buffer for first leg: ${lockBuffer} ${makerCurrency} blocks (~${lockBufferHours}h)`);
 
-      /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
-      const blockTimeFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
-      this.logger.debug(`block time factor of ${makerCurrency} to ${takerCurrency}: ${blockTimeFactor}`);
-
-      // Here we calculate the minimum lock duration the maker will expect on the final hop to him
-      // on the first leg of the swap. This is equal to the maker's configurable lock buffer plus
-      // the total lock duration of the taker route times a factor to convert taker blocks to maker
-      // blocks. This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
-      deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeLockDuration * blockTimeFactor);
+      deal.makerCltvDelta = lockBuffer + makerSwapClient.finalLock;
       const makerCltvDeltaHours = Math.round(deal.makerCltvDelta * makerSwapClient.minutesPerBlock / 60);
-      this.logger.debug(`calculated lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
+      this.logger.debug(`lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
     }
 
     if (!deal.makerCltvDelta) {

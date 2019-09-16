@@ -51,7 +51,6 @@ class SwapClientManager extends EventEmitter {
     this.raidenClient = new RaidenClient({
       unitConverter,
       config: config.raiden,
-      lockBufferHours: config.lockbuffer,
       logger: loggers.raiden,
       directChannelChecks: config.debug.raidenDirectChannelChecks,
     });
@@ -71,7 +70,6 @@ class SwapClientManager extends EventEmitter {
         const lndClient = new LndClient({
           currency,
           config: lndConfig,
-          lockBufferHours: this.config.lockbuffer,
           logger: this.loggers.lnd.createSubLogger(currency),
         });
         this.swapClients.set(currency, lndClient);

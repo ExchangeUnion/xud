@@ -27,7 +27,6 @@ const MAXFEE = 0.03;
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
   public readonly type = SwapClientType.Lnd;
-  public readonly lockBuffer: number;
   public readonly finalLock: number;
   public config: LndClientConfig;
   public currency: string;
@@ -59,15 +58,13 @@ class LndClient extends SwapClient {
    * Creates an lnd client.
    */
   constructor(
-    { config, logger, currency, lockBufferHours }:
-    { config: LndClientConfig, logger: Logger, currency: string, lockBufferHours: number },
+    { config, logger, currency }:
+    { config: LndClientConfig, logger: Logger, currency: string },
   ) {
     super(logger);
     this.config = config;
     this.currency = currency;
-    this.lockBuffer = Math.round(lockBufferHours * 60 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
-     // we set the expected final lock to 400 minutes which is the default for bitcoin on lnd 0.7.1
-    this.finalLock = Math.round(400 / LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[currency]);
+    this.finalLock = config.cltvdelta;
   }
 
   private static waitForClientReady = (client: grpc.Client) => {
@@ -91,8 +88,6 @@ class LndClient extends SwapClient {
    * @param awaitingCreate whether xud is waiting for its node key to be created
    */
   public init = async (awaitingCreate = false) => {
-    assert(this.lockBuffer > 0, `lnd-${this.currency}: lock buffer must be a positive number`);
-
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
       await this.setStatus(ClientStatus.Disabled);
@@ -413,7 +408,7 @@ class LndClient extends SwapClient {
       // In case of sanity swaps we don't know the
       // takerCltvDelta or the makerCltvDelta. Using our
       // client's default.
-      finalCltvDelta: this.lockBuffer,
+      finalCltvDelta: this.finalLock,
     });
     const preimage = await this.executeSendRequest(request);
     return preimage;
@@ -622,10 +617,10 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
   }
 
-  public getRoute = async (units: number, destination: string, _currency: string, finalCltvDelta = this.lockBuffer) => {
+  public getRoute = async (units: number, destination: string, _currency: string, finalLock = this.finalLock) => {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(units);
-    request.setFinalCltvDelta(finalCltvDelta);
+    request.setFinalCltvDelta(finalLock);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
     fee.setFixed(Math.floor(MAXFEE * request.getAmt()));
@@ -641,15 +636,15 @@ class LndClient extends SwapClient {
         !err.message.includes('unable to find a path to destination') &&
         !err.message.includes('target not found')
       )) {
-        this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalCltvDelta}`, err);
+        this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalLock}`, err);
         throw err;
       }
     }
 
     if (route) {
-      this.logger.debug(`found a route to ${destination} for ${units} units with finalCltvDelta ${finalCltvDelta}: ${route}`);
+      this.logger.debug(`found a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
     } else {
-      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalCltvDelta}: ${route}`);
+      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
     }
     return route;
   }
@@ -692,13 +687,13 @@ class LndClient extends SwapClient {
     return unlockWalletResponse.toObject();
   }
 
-  public addInvoice = async (rHash: string, units: number, cltvExpiry: number) => {
+  public addInvoice = async (rHash: string, units: number, expiry = this.finalLock) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
     addHoldInvoiceRequest.setValue(units);
-    addHoldInvoiceRequest.setCltvExpiry(cltvExpiry);
+    addHoldInvoiceRequest.setCltvExpiry(expiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
-    this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${cltvExpiry}`);
+    this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${expiry}`);
     this.subscribeSingleInvoice(rHash);
   }
 

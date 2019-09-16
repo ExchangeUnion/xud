@@ -45,15 +45,7 @@ interface SwapClient {
  */
 abstract class SwapClient extends EventEmitter {
   /**
-   * The number of blocks to use for determining the minimum delay for an incoming payment in excess
-   * of the total time delay of the contingent outgoing payment. This buffer ensures that the lock
-   * for incoming payments does not expire before the contingent outgoing payment lock.
-   */
-  public abstract readonly lockBuffer: number;
-  /**
-   * The number of blocks of lock time to expect on the final incoming hop of a swap. This affects
-   * only the second leg of a swap where knowledge of the preimage is not contingent on making a
-   * separate payment.
+   * The number of blocks of lock time to expect on the final hop of an incoming swap payment.
    */
   public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
@@ -161,7 +153,7 @@ abstract class SwapClient extends EventEmitter {
   /**
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
    */
-  public abstract async addInvoice(rHash: string, units: number, cltvExpiry: number): Promise<void>;
+  public abstract async addInvoice(rHash: string, units: number, expiry?: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
