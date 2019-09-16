@@ -111,7 +111,8 @@ class SwapClientManager extends EventEmitter {
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
         try {
-          return swapClient.genSeed();
+          const seed = await swapClient.genSeed();
+          return seed;
         } catch (err) {
           swapClient.logger.error('could not generate seed', err);
         }
