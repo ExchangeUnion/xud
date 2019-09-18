@@ -18,8 +18,10 @@ import path from 'path';
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
+  on(event: 'locked', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
+  emit(event: 'locked'): boolean;
 }
 
 const MAXFEE = 0.03;
@@ -388,7 +390,11 @@ class LndClient extends SwapClient {
           this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
           this.lightning.close();
           this.lightning = undefined;
-          await this.setStatus(ClientStatus.WaitingUnlock);
+
+          if (!this.isWaitingUnlock()) {
+            await this.setStatus(ClientStatus.WaitingUnlock);
+            this.emit('locked');
+          }
         } else {
           const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
           this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIMER} ms`);
