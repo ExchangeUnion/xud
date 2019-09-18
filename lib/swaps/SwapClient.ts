@@ -57,8 +57,8 @@ abstract class SwapClient extends EventEmitter {
   private updateCapacityTimer?: NodeJS.Timer;
   /** The maximum amount of time we will wait for the connection to be verified during initialization. */
   private static INITIALIZATION_TIME_LIMIT = 5000;
-  /** Time in milliseconds between updating the maximum outbound capacity */
-  private static CAPACITY_REFRESH_INTERVAL = 60000;
+  /** Time in milliseconds between updating the maximum outbound capacity. */
+  private static CAPACITY_REFRESH_INTERVAL = 3000;
 
   constructor(public logger: Logger) {
     super();
