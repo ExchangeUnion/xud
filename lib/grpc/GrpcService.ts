@@ -344,8 +344,8 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const swapResult = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(swapResult));
+      const swapSuccess = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapSuccess));
     } catch (err) {
       if (typeof err === 'number') {
         // treat the error as a SwapFailureReason enum

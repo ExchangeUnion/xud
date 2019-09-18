@@ -224,7 +224,9 @@ class Service {
       hold: 0,
     });
 
-    return this.orderBook.executeSwap(maker, taker);
+    const swapSuccess = await this.orderBook.executeSwap(maker, taker);
+    swapSuccess.localId = ''; // we shouldn't return the localId for ExecuteSwap in nomatching mode
+    return swapSuccess;
   }
 
   /**
