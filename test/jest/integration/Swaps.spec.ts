@@ -27,12 +27,14 @@ jest.mock('../../../lib/swaps/SwapRepository', () => {
     };
   });
 });
-const getMockedLnd = (lockBuffer: number) => {
+const getMockedLnd = (cltvDelta: number, minutesPerBlock: number) => {
   const lnd = new mockedLnd();
   // @ts-ignore
-  lnd.lockBuffer = lockBuffer;
+  lnd.finalLock = cltvDelta;
   // @ts-ignore
   lnd.type = SwapClientType.Lnd;
+  // @ts-ignore
+  lnd.minutesPerBlock = minutesPerBlock;
   lnd.isConnected = jest.fn().mockReturnValue(true);
   const removeInvoice = jest.fn().mockImplementation(() => {
     return { catch: () => {} };
@@ -58,7 +60,7 @@ const getSwapRequestBody = (): SwapRequestPacketBody => {
     proposedQuantity: 10000,
   };
 };
-describe('Swaps', () => {
+describe('Swaps Integration', () => {
   let swaps: Swaps;
   let pool: Pool;
   let logger: Logger;
@@ -80,8 +82,8 @@ describe('Swaps', () => {
     swapClientManager.get = jest.fn();
     peer = new mockedPeer();
     peer.sendPacket = jest.fn();
-    lndBtc = getMockedLnd(144);
-    lndLtc = getMockedLnd(576);
+    lndBtc = getMockedLnd(40, 10);
+    lndLtc = getMockedLnd(576, 2.5);
     makerCurrency = 'LTC';
     takerCurrency = 'BTC';
   });
@@ -150,7 +152,7 @@ describe('Swaps', () => {
     });
 
     test('it rejects upon 0 maker to taker routes found', async () => {
-      lndBtc.getRoutes = jest.fn().mockReturnValue([]);
+      lndBtc.getRoute = jest.fn().mockReturnValue(undefined);
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
           return lndBtc;
@@ -176,9 +178,9 @@ describe('Swaps', () => {
     });
 
     test('it rejects upon failed getHeight request', async () => {
-      lndBtc.getRoutes = jest.fn().mockReturnValue([
-        { getTotalTimeLock: () => 1543845 },
-      ]);
+      lndBtc.getRoute = jest.fn().mockReturnValue({
+        getTotalTimeLock: () => 1543845,
+      });
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
           return lndBtc;
@@ -207,9 +209,9 @@ describe('Swaps', () => {
       lndLtc.addInvoice = jest.fn().mockImplementation(() => {
         throw new Error('addInvoice failure');
       });
-      lndBtc.getRoutes = jest.fn().mockReturnValue([
-        { getTotalTimeLock: () => 1543845 },
-      ]);
+      lndBtc.getRoute = jest.fn().mockReturnValue({
+        getTotalTimeLock: () => 1543845,
+      });
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
       swapClientManager.get = jest.fn().mockImplementation((currency) => {
         if (currency === takerCurrency) {
@@ -237,9 +239,9 @@ describe('Swaps', () => {
 
     test('it accepts deal', async () => {
       const peerLndBtcPubKey = '02d9fb6c41686b7bee95958bde0ada72c249b8fa9928987c93d839225d6883e6c0';
-      lndBtc.getRoutes = jest.fn().mockReturnValue([
-        { getTotalTimeLock: () => 1543845 },
-      ]);
+      lndBtc.getRoute = jest.fn().mockReturnValue({
+        getTotalTimeLock: () => 1543845,
+      });
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
       Object.defineProperty(lndBtc, 'minutesPerBlock', {
         get: () => { return 10; },
@@ -270,14 +272,14 @@ describe('Swaps', () => {
       peer.sendPacket = jest.fn();
       const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
       expect(dealAccepted).toEqual(true);
-      expect(lndBtc.getRoutes).toHaveBeenCalledWith(
+      expect(lndBtc.getRoute).toHaveBeenCalledWith(
         1000,
         peerLndBtcPubKey,
         takerCurrency,
         swapRequestBody.takerCltvDelta,
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);
-      const expectedMakerCltvDelta = 1152;
+      const expectedMakerCltvDelta = 1445;
       expect(lndLtc.addInvoice).toHaveBeenCalledWith(
         swapRequestBody.rHash,
         swapRequestBody.proposedQuantity,

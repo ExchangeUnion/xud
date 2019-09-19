@@ -95,7 +95,7 @@ describe('Swaps.Integration', () => {
   let swapClientManager: any;
   let peer: Peer;
   let sandbox: SinonSandbox;
-  let getRoutesResponse;
+  let getRouteResponse;
 
   before(async () => {
     db = new DB(loggers.db);
@@ -116,23 +116,23 @@ describe('Swaps.Integration', () => {
     pool = sandbox.createStubInstance(Pool) as any;
     pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
-    // queryRoutes response
-    getRoutesResponse = () => {
+    // getRoute response
+    getRouteResponse = () => {
       return Promise.resolve({
-        getRoutesList: () => [1],
-      } as any);
+        getTotalTimeLock: () => 1,
+      });
     };
     swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
     swapClientManager['swapClients'] = new Map<string, SwapClient>();
     const btcSwapClient = sandbox.createStubInstance(SwapClient) as any;
     btcSwapClient['removeInvoice'] = async () => {};
-    btcSwapClient.getRoutes = getRoutesResponse;
+    btcSwapClient.getRoute = getRouteResponse;
     btcSwapClient.isConnected = () => true;
     swapClientManager['swapClients'].set('BTC', btcSwapClient);
     const ltcSwapClient = sandbox.createStubInstance(SwapClient) as any;
     ltcSwapClient['removeInvoice'] = async () => {};
     ltcSwapClient.isConnected = () => true;
-    ltcSwapClient.getRoutes = getRoutesResponse;
+    ltcSwapClient.getRoute = getRouteResponse;
     swapClientManager['swapClients'].set('LTC', ltcSwapClient);
     swapClientManager.get = (currency: string) => {
       const client = swaps.swapClientManager['swapClients'].get(currency);
@@ -196,26 +196,26 @@ describe('Swaps.Integration', () => {
 
     it('will reject if unable to retrieve routes', async () => {
       const noRoutesFound = () => {
-        return Promise.resolve([]);
+        return Promise.resolve(undefined);
       };
       let btcSwapClient = swapClientManager.get('BTC');
-      btcSwapClient!.getRoutes = noRoutesFound;
+      btcSwapClient!.getRoute = noRoutesFound;
       swapClientManager['swapClients'].set('BTC', btcSwapClient!);
       let ltcSwapClient = swapClientManager.get('LTC');
-      ltcSwapClient!.getRoutes = noRoutesFound;
+      ltcSwapClient!.getRoute = noRoutesFound;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
-      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.NoRouteFound);
       const rejectsWithUnknownError = () => {
         return Promise.reject('UNKNOWN');
       };
       btcSwapClient = swapClientManager.get('BTC');
-      btcSwapClient!.getRoutes = rejectsWithUnknownError;
+      btcSwapClient!.getRoute = rejectsWithUnknownError;
       swapClientManager['swapClients'].set('BTC', btcSwapClient!);
       ltcSwapClient = swapClientManager.get('LTC');
-      ltcSwapClient!.getRoutes = rejectsWithUnknownError;
+      ltcSwapClient!.getRoute = rejectsWithUnknownError;
       swapClientManager['swapClients'].set('LTC', ltcSwapClient!);
-      await expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
+      expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });
 

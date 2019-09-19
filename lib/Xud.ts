@@ -53,6 +53,10 @@ class Xud extends EventEmitter {
     process.on('SIGINT', () => {
       this.beginShutdown();
     });
+
+    process.on('SIGTERM', () => {
+      this.beginShutdown();
+    });
   }
 
   /**
@@ -60,10 +64,12 @@ class Xud extends EventEmitter {
    * @param args optional arguments to override configuration parameters.
    */
   public start = async (args?: { [argName: string]: any }) => {
-    await this.config.load(args);
+    const configFileLoaded = await this.config.load(args);
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
     this.logger = loggers.global;
-    this.logger.info('config loaded');
+    if (configFileLoaded) {
+      this.logger.info('config file loaded');
+    }
 
     try {
       this.db = new DB(loggers.db, this.config.dbpath);
@@ -220,7 +226,9 @@ class Xud extends EventEmitter {
     }
     if (this.grpcAPIProxy) {
       closePromises.push(this.grpcAPIProxy.close());
-      await this.grpcAPIProxy.close();
+    }
+    if (this.swaps) {
+      this.swaps.close();
     }
     await Promise.all(closePromises);
 

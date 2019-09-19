@@ -24,6 +24,17 @@ export type SwapClientInfo = {
   newUris?: string[];
 };
 
+export enum PaymentState {
+  Succeeded,
+  Failed,
+  Pending,
+}
+
+export type PaymentStatus = {
+  state: PaymentState,
+  preimage?: string,
+};
+
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
@@ -34,15 +45,7 @@ interface SwapClient {
  */
 abstract class SwapClient extends EventEmitter {
   /**
-   * The number of blocks to use for determining the minimum delay for an incoming payment in excess
-   * of the total time delay of the contingent outgoing payment. This buffer ensures that the lock
-   * for incoming payments does not expire before the contingent outgoing payment lock.
-   */
-  public abstract readonly lockBuffer: number;
-  /**
-   * The number of blocks of lock time to expect on the final incoming hop of a swap. This affects
-   * only the second leg of a swap where knowledge of the preimage is not contingent on making a
-   * separate payment.
+   * The number of blocks of lock time to expect on the final hop of an incoming swap payment.
    */
   public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
@@ -54,8 +57,8 @@ abstract class SwapClient extends EventEmitter {
   private updateCapacityTimer?: NodeJS.Timer;
   /** The maximum amount of time we will wait for the connection to be verified during initialization. */
   private static INITIALIZATION_TIME_LIMIT = 5000;
-  /** Time in milliseconds between updating the maximum outbound capacity */
-  private static CAPACITY_REFRESH_INTERVAL = 60000;
+  /** Time in milliseconds between updating the maximum outbound capacity. */
+  private static CAPACITY_REFRESH_INTERVAL = 3000;
 
   constructor(public logger: Logger) {
     super();
@@ -89,6 +92,10 @@ abstract class SwapClient extends EventEmitter {
   }
 
   protected setStatus = async (status: ClientStatus): Promise<void> => {
+    if (this.status === status) {
+      return;
+    }
+
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
     await this.setTimers();
@@ -145,16 +152,22 @@ abstract class SwapClient extends EventEmitter {
    * @param destination the identifier for the receiving node
    * @returns routes
    */
-  public abstract async getRoutes(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route[]>;
+  public abstract async getRoute(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route | undefined>;
 
   /**
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
    */
-  public abstract async addInvoice(rHash: string, units: number, cltvExpiry: number): Promise<void>;
+  public abstract async addInvoice(rHash: string, units: number, expiry?: number): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 
   public abstract async removeInvoice(rHash: string): Promise<void>;
+
+  /**
+   * Checks to see whether we've made a payment using a given rHash.
+   * @returns the preimage for the payment, or `undefined` if no payment was made
+   */
+  public abstract async lookupPayment(rHash: string, currency?: string, destination?: string): Promise<PaymentStatus>;
 
   /**
    * Gets the block height of the chain backing this swap client.

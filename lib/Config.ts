@@ -17,8 +17,6 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
-  /** The lock time in hours that we add to the cross-chain "hop" for swaps. */
-  public lockbuffer: number;
   public rpc: { disable: boolean, host: string, port: number };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
@@ -77,7 +75,6 @@ class Config {
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = this.getDefaultNetwork();
     this.dbpath = this.getDefaultDbPath();
-    this.lockbuffer = 24;
 
     this.p2p = {
       listen: true,
@@ -114,6 +111,7 @@ class Config {
       host: 'localhost',
       port: 10009,
       nomacaroons: false,
+      cltvdelta: 40,
     };
     this.lnd.LTC = {
       disable: false,
@@ -123,6 +121,7 @@ class Config {
       host: 'localhost',
       port: 10010,
       nomacaroons: false,
+      cltvdelta: 576,
     };
     this.raiden = {
       disable: false,
@@ -131,7 +130,11 @@ class Config {
     };
   }
 
-  public load = async (args?: { [argName: string]: any }): Promise<Config> => {
+  /**
+   * Loads the xud configuration from an optional file and any command line arguments.
+   * @returns a promise that resolves to `true` if a config file was found and loaded, otherwise `false`
+   */
+  public load = async (args?: { [argName: string]: any }): Promise<boolean> => {
     if (args) {
       if (args.xudir) {
         this.xudir = args.xudir;
@@ -142,15 +145,20 @@ class Config {
       this.updateMacaroonPaths();
     }
 
-    const configPath = path.join(this.xudir, 'xud.conf');
     await this.mkDirIfNotExist(this.xudir);
+
+    const configPath = path.join(this.xudir, 'xud.conf');
+    let configText: string | undefined;
     try {
-      const configText = await fs.readFile(configPath, 'utf8');
+      configText = await fs.readFile(configPath, 'utf8');
+    } catch (err) {}
+
+    if (configText) {
       let props;
       try {
         props = toml.parse(configText);
       } catch (e) {
-        throw new Error(`Parsing error on line ${e.line}, column ${e.column}: ${e.message}`);
+        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
       }
 
       if (props.xudir && (!args || !args.xudir)) {
@@ -177,7 +185,7 @@ class Config {
       }
       // merge parsed json properties from config file to the default config
       deepMerge(this, props);
-    } catch (err) {}
+    }
 
     if (args) {
       // override our config file with command line arguments
@@ -191,7 +199,7 @@ class Config {
     const logDir = path.dirname(this.logpath);
     await this.mkDirIfNotExist(logDir);
 
-    return this;
+    return !!configText;
   }
 
   /**
