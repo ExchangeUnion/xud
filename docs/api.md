@@ -4,24 +4,24 @@
 ## Table of Contents
 
 - [xudrpc.proto](#xudrpc.proto)
-    - [AddCurrencyRequest](#xudrpc.AddCurrencyRequest)
     - [AddCurrencyResponse](#xudrpc.AddCurrencyResponse)
     - [AddPairRequest](#xudrpc.AddPairRequest)
     - [AddPairResponse](#xudrpc.AddPairResponse)
+    - [Balance](#xudrpc.Balance)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
-    - [ChannelBalance](#xudrpc.ChannelBalance)
-    - [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest)
-    - [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse)
-    - [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
     - [CreateNodeResponse](#xudrpc.CreateNodeResponse)
+    - [Currency](#xudrpc.Currency)
     - [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest)
     - [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse)
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
+    - [GetBalanceRequest](#xudrpc.GetBalanceRequest)
+    - [GetBalanceResponse](#xudrpc.GetBalanceResponse)
+    - [GetBalanceResponse.BalancesEntry](#xudrpc.GetBalanceResponse.BalancesEntry)
     - [GetInfoRequest](#xudrpc.GetInfoRequest)
     - [GetInfoResponse](#xudrpc.GetInfoResponse)
     - [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry)
@@ -72,7 +72,7 @@
     - [UnlockNodeRequest](#xudrpc.UnlockNodeRequest)
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
-    - [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient)
+    - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapClientStatus](#xudrpc.SwapClientStatus)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
@@ -90,24 +90,6 @@
 <p align="right"><a href="#top">Top</a></p>
 
 ## xudrpc.proto
-
-
-
-<a name="xudrpc.AddCurrencyRequest"></a>
-
-### AddCurrencyRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
-| swap_client | [AddCurrencyRequest.SwapClient](#xudrpc.AddCurrencyRequest.SwapClient) |  | The payment channel network client to use for executing swaps. |
-| token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
-| decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
-
-
-
 
 
 
@@ -141,6 +123,22 @@
 
 ### AddPairResponse
 
+
+
+
+
+
+
+<a name="xudrpc.Balance"></a>
+
+### Balance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| balance | [uint64](#uint64) |  | Total balance denominated in satoshis. |
+| pending_open_balance | [uint64](#uint64) |  | Sum of pending channel balances denominated in satoshis. |
 
 
 
@@ -188,68 +186,6 @@
 
 
 
-<a name="xudrpc.ChannelBalance"></a>
-
-### ChannelBalance
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| balance | [uint64](#uint64) |  | Sum of channel balances denominated in satoshis. |
-| pending_open_balance | [uint64](#uint64) |  | Sum of pending channel balances denominated in satoshis. |
-
-
-
-
-
-
-<a name="xudrpc.ChannelBalanceRequest"></a>
-
-### ChannelBalanceRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| currency | [string](#string) |  | The ticker symbol of the currency to query for, if unspecified then balances for all supported currencies are queried. |
-
-
-
-
-
-
-<a name="xudrpc.ChannelBalanceResponse"></a>
-
-### ChannelBalanceResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| balances | [ChannelBalanceResponse.BalancesEntry](#xudrpc.ChannelBalanceResponse.BalancesEntry) | repeated | A map between currency ticker symbols and their channel balances. |
-
-
-
-
-
-
-<a name="xudrpc.ChannelBalanceResponse.BalancesEntry"></a>
-
-### ChannelBalanceResponse.BalancesEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [ChannelBalance](#xudrpc.ChannelBalance) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.ConnectRequest"></a>
 
 ### ConnectRequest
@@ -283,7 +219,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| password | [string](#string) |  | The password in utf-8 with which to encrypt the new xud node key as well as underlying client wallets such as lnd. |
+| password | [string](#string) |  | The password in utf-8 with which to encrypt the new xud node key as well as any uninitialized underlying wallets. |
 
 
 
@@ -298,9 +234,27 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| seed_mnemonic | [string](#string) | repeated |  |
+| seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
 | initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+
+
+
+
+
+
+<a name="xudrpc.Currency"></a>
+
+### Currency
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol for this currency such as BTC, LTC, ETH, etc... |
+| swap_client | [Currency.SwapClient](#xudrpc.Currency.SwapClient) |  | The payment channel network client to use for executing swaps. |
+| token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
+| decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
 
 
 
@@ -355,6 +309,52 @@
 
 
 
+<a name="xudrpc.GetBalanceRequest"></a>
+
+### GetBalanceRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol of the currency to query for, if unspecified then balances for all supported currencies are queried. |
+
+
+
+
+
+
+<a name="xudrpc.GetBalanceResponse"></a>
+
+### GetBalanceResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| balances | [GetBalanceResponse.BalancesEntry](#xudrpc.GetBalanceResponse.BalancesEntry) | repeated | A map between currency ticker symbols and their balances. |
+
+
+
+
+
+
+<a name="xudrpc.GetBalanceResponse.BalancesEntry"></a>
+
+### GetBalanceResponse.BalancesEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [Balance](#xudrpc.Balance) |  |  |
+
+
+
+
+
+
 <a name="xudrpc.GetInfoRequest"></a>
 
 ### GetInfoRequest
@@ -383,6 +383,7 @@
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+| pending_swap_hashes | [string](#string) | repeated |  |
 
 
 
@@ -454,7 +455,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| currencies | [string](#string) | repeated | A list of ticker symbols of the supported currencies. |
+| currencies | [Currency](#xudrpc.Currency) | repeated | The list of available currencies in the orderbook. |
 
 
 
@@ -1132,9 +1133,9 @@
  
 
 
-<a name="xudrpc.AddCurrencyRequest.SwapClient"></a>
+<a name="xudrpc.Currency.SwapClient"></a>
 
-### AddCurrencyRequest.SwapClient
+### Currency.SwapClient
 
 
 | Name | Number | Description |
@@ -1191,10 +1192,10 @@
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| AddCurrency | [AddCurrencyRequest](#xudrpc.AddCurrencyRequest) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. |
+| AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. |
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. |
-| ChannelBalance | [ChannelBalanceRequest](#xudrpc.ChannelBalanceRequest) | [ChannelBalanceResponse](#xudrpc.ChannelBalanceResponse) | Gets the total balance available across all payment channels for one or all currencies. |
+| GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. |
 | OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer with the given node pub key for the specified amount and currency. |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. |
@@ -1225,8 +1226,8 @@
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) |  |
-| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) |  |
+| CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. |
+| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. |
 
  
 

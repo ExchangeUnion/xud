@@ -13,7 +13,9 @@ import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './type
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
-import { errors } from './errors';
+import { errors, errorCodes } from './errors';
+import SwapRecovery from './SwapRecovery';
+import poissonQuantile from 'distributions-poisson-quantile';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
@@ -31,6 +33,7 @@ class Swaps extends EventEmitter {
   public sanitySwaps = new Map<string, SanitySwap>();
   /** A map between payment hashes and swap deals. */
   private deals = new Map<string, SwapDeal>();
+  private swapRecovery: SwapRecovery;
   /** A map between payment hashes and timeouts for swaps. */
   private timeouts = new Map<string, number>();
   private usedHashes = new Set<string>();
@@ -59,6 +62,7 @@ class Swaps extends EventEmitter {
   ) {
     super();
 
+    this.swapRecovery = new SwapRecovery(swapClientManager, logger);
     this.repository = new SwapRepository(this.models);
     this.bind();
   }
@@ -72,6 +76,26 @@ class Swaps extends EventEmitter {
     // proposed quantity must be a positive number
     // rHash must be exactly 64 characters
     return proposedQuantity > 0 && rHash.length === 64;
+  }
+
+  /**
+   * Calculates the minimum expected lock delta for the final hop of the first leg to ensure a
+   * very high probability that it won't expire before the second leg payment. We use a Poisson
+   * distribution to model the possible block times of two independent chains, first calculating
+   * a probabilistic upper bound for the lock time in minuntes of the second leg then a
+   * probabilistic lower bound for the number of blocks for the lock time extended to the final
+   * hop of the first leg.
+   * @param secondLegLockDuration The lock duration (aka time lock or cltv delta) of the second
+   * leg (maker to taker) denominated in blocks of that chain.
+   * @returns A number of blocks for the chain of the first leg that is highly likely to take
+   * more time in minutes than the provided second leg lock duration.
+   */
+  private static calculateLockBuffer = (secondLegLockDuration: number, secondLegMinutesPerBlock: number, firstLegMinutesPerBlock: number) => {
+    /** A probabilistic upper bound for the time it will take for the second leg route time lock to expire. */
+    const secondLegLockMinutes = poissonQuantile(.9999, { lambda: secondLegLockDuration }) * secondLegMinutesPerBlock;
+    const firstLegLockBuffer = poissonQuantile(.9999, { lambda: secondLegLockMinutes / firstLegMinutesPerBlock });
+
+    return firstLegLockBuffer;
   }
 
   /**
@@ -136,10 +160,14 @@ class Swaps extends EventEmitter {
       this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
     }
 
-    // Load Swaps from database
-    const result = await this.repository.getSwapDeals();
-    result.forEach((deal: SwapDealInstance) => {
+    this.swapRecovery.beginTimer();
+    const swapDealInstances = await this.repository.getSwapDeals();
+    swapDealInstances.forEach((deal: SwapDealInstance) => {
       this.usedHashes.add(deal.rHash);
+
+      if (deal.state === SwapState.Active) {
+        this.swapRecovery.recoverDeal(deal).catch(this.logger.error);
+      }
     });
   }
 
@@ -154,7 +182,7 @@ class Swaps extends EventEmitter {
       this.sanitySwaps.set(rHash, sanitySwap);
       const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await swapClient.addInvoice(rHash, 1, swapClient.lockBuffer);
+        await swapClient.addInvoice(rHash, 1);
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
@@ -228,6 +256,10 @@ class Swaps extends EventEmitter {
     }
   }
 
+  public getPendingSwapHashes = () => {
+    return Array.from(this.swapRecovery.pendingSwaps).map(pendingSwap => pendingSwap.rHash);
+  }
+
   /**
    * Gets a deal by its rHash value.
    * @param rHash The rHash value of the deal to get.
@@ -269,14 +301,14 @@ class Swaps extends EventEmitter {
       throw SwapFailureReason.SwapClientNotSetup;
     }
 
-    let routes;
+    let route: Route | undefined;
     try {
-      routes = await swapClient.getRoutes(makerUnits, destination, makerCurrency);
+      route = await swapClient.getRoute(makerUnits, destination, makerCurrency);
     } catch (err) {
       throw SwapFailureReason.UnexpectedClientError;
     }
 
-    if (routes.length === 0) {
+    if (!route) {
       throw SwapFailureReason.NoRouteFound;
     }
   }
@@ -345,7 +377,7 @@ class Swaps extends EventEmitter {
 
     try {
       await Promise.all([
-        swapClient.addInvoice(rHash, 1, swapClient.lockBuffer),
+        swapClient.addInvoice(rHash, 1),
         peer.sendPacket(sanitySwapInitPacket),
         peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
@@ -519,9 +551,9 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    let makerToTakerRoutes: Route[];
+    let makerToTakerRoute: Route | undefined;
     try {
-      makerToTakerRoutes = await takerSwapClient.getRoutes(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
+      makerToTakerRoute = await takerSwapClient.getRoute(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
     } catch (err) {
       this.failDeal(deal, SwapFailureReason.UnexpectedClientError, err.message);
       await this.sendErrorToPeer({
@@ -534,7 +566,7 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    if (makerToTakerRoutes.length === 0) {
+    if (!makerToTakerRoute) {
       this.failDeal(deal, SwapFailureReason.NoRouteFound, 'Unable to find route to destination');
       await this.sendErrorToPeer({
         peer,
@@ -564,27 +596,23 @@ class Swaps extends EventEmitter {
     if (height) {
       this.logger.debug(`got ${takerCurrency} block height of ${height}`);
 
-      const routeAbsoluteTimeLock = makerToTakerRoutes[0].getTotalTimeLock();
-      const routeLockDuration = routeAbsoluteTimeLock - height;
-      const routeLockHours = Math.round(routeLockDuration / takerSwapClient.minutesPerBlock);
+      const routeTotalTimeLock = makerToTakerRoute.getTotalTimeLock();
+      const routeLockDuration = routeTotalTimeLock - height;
+      const routeLockHours = Math.round(routeLockDuration * takerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
       deal.takerMaxTimeLock = routeLockDuration;
 
-      const makerClientLockBuffer = this.swapClientManager.get(makerCurrency)!.lockBuffer;
-      const makerClientLockBufferHours = Math.round(makerClientLockBuffer / makerSwapClient.minutesPerBlock);
-      this.logger.debug(`maker client lock buffer: ${makerClientLockBuffer} ${makerCurrency} blocks (~${makerClientLockBufferHours}h)`);
+      // Here we calculate the minimum lock delta we will expect as maker on the final hop to us on
+      // the first leg of the swap. This should ensure a very high probability that the final hop
+      // of the payment to us won't expire before our payment to the taker with time leftover to
+      // satisfy our finalLock/cltvDelta requirement for the incoming payment swap client.
+      const lockBuffer = Swaps.calculateLockBuffer(routeLockDuration, takerSwapClient.minutesPerBlock, makerSwapClient.minutesPerBlock);
+      const lockBufferHours = Math.round(lockBuffer * makerSwapClient.minutesPerBlock / 60);
+      this.logger.debug(`calculated lock buffer for first leg: ${lockBuffer} ${makerCurrency} blocks (~${lockBufferHours}h)`);
 
-      /** The ratio of the average time for blocks on the taker (2nd leg) currency per blocks on the maker (1st leg) currency. */
-      const blockTimeFactor = takerSwapClient.minutesPerBlock / makerSwapClient.minutesPerBlock;
-      this.logger.debug(`block time factor of ${makerCurrency} to ${takerCurrency}: ${blockTimeFactor}`);
-
-      // Here we calculate the minimum lock duration the maker will expect on the final hop to him
-      // on the first leg of the swap. This is equal to the maker's configurable lock buffer plus
-      // the total lock duration of the taker route times a factor to convert taker blocks to maker
-      // blocks. This is to ensure that the 1st leg payment HTLC doesn't expire before the 2nd leg.
-      deal.makerCltvDelta = makerClientLockBuffer + Math.ceil(routeLockDuration * blockTimeFactor);
-      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta / makerSwapClient.minutesPerBlock);
-      this.logger.debug(`calculated lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
+      deal.makerCltvDelta = lockBuffer + makerSwapClient.finalLock;
+      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta * makerSwapClient.minutesPerBlock / 60);
+      this.logger.debug(`lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
     }
 
     if (!deal.makerCltvDelta) {
@@ -697,7 +725,7 @@ class Swaps extends EventEmitter {
     try {
       await makerSwapClient.sendPayment(deal);
     } catch (err) {
-      if (err.code === errors.PAYMENT_REJECTED) {
+      if (err.code === errorCodes.PAYMENT_REJECTED) {
         // if the maker rejected our payment, the swap failed due to an error on their side
         // and we don't need to send them a SwapFailedPacket
         this.failDeal(deal, SwapFailureReason.RemoteError, err.message);
@@ -896,10 +924,18 @@ class Swaps extends EventEmitter {
     }
   }
 
-  private handleSwapTimeout = (rHash: string, reason: SwapFailureReason) => {
+  private handleSwapTimeout = async (rHash: string, reason: SwapFailureReason) => {
     const deal = this.getDeal(rHash)!;
     this.timeouts.delete(rHash);
     this.failDeal(deal, reason);
+
+    if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
+      // if the swap times out while we are in the middle of sending payment as the maker
+      // we need to make sure that the taker doesn't claim our payment without us having a chance
+      // to claim ours. we will send this swap to recovery to monitor its outcome
+      const swapDealInstance = await this.repository.getSwapDeal(rHash);
+      this.swapRecovery.pendingSwaps.add(swapDealInstance!);
+    }
   }
 
   private failDeal = (deal: SwapDeal, failureReason: SwapFailureReason, errorMessage?: string): void => {
@@ -1075,6 +1111,10 @@ class Swaps extends EventEmitter {
     }
 
     this.failDeal(deal, failureReason, errorMessage);
+  }
+
+  public close = () => {
+    this.swapRecovery.stopTimer();
   }
 }
 

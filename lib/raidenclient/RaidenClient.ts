@@ -1,22 +1,34 @@
-import http from 'http';
-import Logger from '../Logger';
-import SwapClient, { ClientStatus, ChannelBalance } from '../swaps/SwapClient';
-import errors from './errors';
-import { SwapDeal } from '../swaps/types';
-import { SwapClientType, SwapState, SwapRole, SwapClientStatus } from '../constants/enums';
 import assert from 'assert';
-import {
-  RaidenClientConfig,
-  RaidenInfo,
-  OpenChannelPayload,
-  Channel,
-  TokenPaymentRequest,
-  TokenPaymentResponse, RaidenChannelCount, RaidenVersion,
-} from './types';
-import { UnitConverter } from '../utils/UnitConverter';
+import http from 'http';
+import { SwapClientType, SwapClientStatus, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
+import Logger from '../Logger';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState } from '../swaps/SwapClient';
+import { SwapDeal } from '../swaps/types';
+import { UnitConverter } from '../utils/UnitConverter';
+import errors from './errors';
+import {
+  Channel,
+  OpenChannelPayload,
+  PaymentEvent,
+  RaidenChannelCount,
+  RaidenClientConfig,
+  RaidenInfo, RaidenVersion,
+  TokenPaymentRequest,
+  TokenPaymentResponse,
+} from './types';
 
 type RaidenErrorResponse = { errors: string };
+
+type PendingTransfer = {
+  initiator: string;
+  locked_amount: string;
+  payment_identifier: string;
+  role: string;
+  target: string;
+  token_address: string;
+  transferred_amount: string;
+};
 
 /**
  * A utility function to parse the payload from an http response.
@@ -42,7 +54,6 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
  */
 class RaidenClient extends SwapClient {
   public readonly type = SwapClientType.Raiden;
-  public readonly lockBuffer: number;
   public readonly finalLock = 100;
   public address?: string;
   /** A map of currency symbols to token addresses. */
@@ -58,13 +69,12 @@ class RaidenClient extends SwapClient {
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter, directChannelChecks = false, lockBufferHours }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean, lockBufferHours: number },
+    { config, logger, unitConverter, directChannelChecks = false }:
+    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
   ) {
     super(logger);
     const { disable, host, port } = config;
 
-    this.lockBuffer = Math.round(lockBufferHours * 60 / this.minutesPerBlock);
     this.port = port;
     this.host = host;
     this.disable = disable;
@@ -74,6 +84,14 @@ class RaidenClient extends SwapClient {
 
   public get minutesPerBlock() {
     return 0.25; // 15 seconds per block target
+  }
+
+  /**
+   * Derives an integer identifier using the first 4 bytes of a provided payment hash in hex.
+   * @param rHash a payment hash in hex
+   */
+  private static getIdentifier(rHash: string) {
+    return parseInt(rHash.substr(0, 8), 16);
   }
 
   /**
@@ -118,7 +136,6 @@ class RaidenClient extends SwapClient {
         this.maximumOutboundAmounts.set(currency, balance);
       });
     } catch (e) {
-      // TODO: Mark client as disconnected
       this.logger.error(`failed to fetch channelbalances: ${e}`);
     }
   }
@@ -212,7 +229,62 @@ class RaidenClient extends SwapClient {
     // not implemented, raiden does not use invoices
   }
 
-  public getRoutes = async (units: number, destination: string, currency: string) => {
+  public lookupPayment = async (rHash: string, currency?: string, destination?: string) => {
+    const identifier = RaidenClient.getIdentifier(rHash);
+
+    // first check if the payment is pending
+    const pendingTransfers = await this.getPendingTransfers(currency, destination);
+    for (const pendingTransfer of pendingTransfers) {
+      if (identifier === Number(pendingTransfer.payment_identifier)) {
+        return { state: PaymentState.Pending };
+      }
+    }
+
+    // if the payment isn't pending, check if it has succeeded or failed
+    const paymentEvents = await this.getPaymentEvents(currency, destination);
+    for (const paymentEvent of paymentEvents) {
+      if (paymentEvent.identifier === identifier) {
+        const success = paymentEvent.event === 'EventPaymentSentSuccess';
+        if (success) {
+          const preimage = paymentEvent.secret;
+          return { preimage, state: PaymentState.Succeeded };
+        } else {
+          return { state: PaymentState.Failed };
+        }
+      }
+    }
+
+    // if there is no pending payment or event found, we assume that the payment was never attempted by raiden
+    return { state: PaymentState.Failed };
+  }
+
+  private getPendingTransfers = async (currency?: string, destination?: string) => {
+    let endpoint = 'pending_transfers';
+    if (currency) {
+      const tokenAddress = this.tokenAddresses.get(currency);
+      endpoint += `/${tokenAddress}`;
+      if (destination) {
+        endpoint += `/${destination}`;
+      }
+    }
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<PendingTransfer[]>(res);
+  }
+
+  private getPaymentEvents = async (currency?: string, destination?: string) => {
+    let endpoint = 'payments';
+    if (currency) {
+      const tokenAddress = this.tokenAddresses.get(currency);
+      endpoint += `/${tokenAddress}`;
+      if (destination) {
+        endpoint += `/${destination}`;
+      }
+    }
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<PaymentEvent[]>(res);
+  }
+
+  public getRoute = async (units: number, destination: string, currency: string) => {
     // a query routes call is not currently provided by raiden
 
     /** A placeholder route value that assumes a fixed lock time of 100 Raiden's blocks. */
@@ -229,17 +301,17 @@ class RaidenClient extends SwapClient {
           const balance = channel.balance;
           if (balance >= units) {
             this.logger.debug(`found a direct channel for ${currency} to ${destination} with ${balance} balance`);
-            return [placeholderRoute];
+            return placeholderRoute;
           } else {
             this.logger.warn(`direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${units})`);
-            return []; // we have a direct channel but it doesn't have enough balance, return no routes
+            return undefined; // we have a direct channel but it doesn't have enough balance, return no route
           }
         }
       }
       this.logger.warn(`no direct channel found for ${currency} to ${destination}`);
-      return []; // no direct channels, return no routes
+      return undefined; // no direct channels, return no route
     } else {
-      return [placeholderRoute];
+      return placeholderRoute;
     }
   }
 
@@ -340,7 +412,10 @@ class RaidenClient extends SwapClient {
         }
       });
 
-      req.on('error', (err) => {
+      req.on('error', (err: any) => {
+        if (err.code === 'ECONNREFUSED') {
+          this.disconnect().catch(this.logger.error);
+        }
         this.logger.error(err);
         reject(err);
       });
@@ -451,7 +526,6 @@ class RaidenClient extends SwapClient {
    */
   private tokenPayment = async (payload: TokenPaymentRequest): Promise<TokenPaymentResponse> => {
     const endpoint = `payments/${payload.token_address}/${payload.target_address}`;
-    payload.identifier = Math.round(Math.random() * (Number.MAX_SAFE_INTEGER - 1) + 1);
     if (payload.secret_hash) {
       payload.secret_hash = `0x${payload.secret_hash}`;
     }

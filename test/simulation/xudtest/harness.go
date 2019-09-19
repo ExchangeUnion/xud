@@ -60,7 +60,7 @@ func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars 
 
 	xudPath := filepath.Join(wd, "./temp", branch)
 	if _, err := os.Stat(xudPath); os.IsNotExist(err) {
-		log.Printf("custon xud not found at %v, installing...", xudPath)
+		log.Printf("custom xud not found at %v, installing...", xudPath)
 		_, err := exec.Command("git", "clone", "-b", branch, "https://github.com/ExchangeUnion/xud", xudPath).Output()
 		if err != nil {
 			return nil, fmt.Errorf("custom xud git clone failure: %v", err)
@@ -95,7 +95,7 @@ func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars 
 	errChan := make(chan error, 1)
 	go func() {
 		defer wg.Done()
-		if err := customNode.start(n.errorChan); err != nil {
+		if err := customNode.Start(n.errorChan); err != nil {
 			if err != nil {
 				errChan <- err
 				return
@@ -120,7 +120,7 @@ func (n *NetworkHarness) newNode(name string, xudPath string, noBalanceChecks bo
 	return node, nil
 }
 
-// Start starts this xud node and its corresponding lnd nodes.
+// Start starts all xud nodes and their corresponding lnd nodes.
 func (n *NetworkHarness) Start() error {
 	var wg sync.WaitGroup
 	wg.Add(4)
@@ -130,7 +130,7 @@ func (n *NetworkHarness) Start() error {
 		node := _node
 		go func() {
 			defer wg.Done()
-			if err := node.start(n.errorChan); err != nil {
+			if err := node.Start(n.errorChan); err != nil {
 				if err != nil {
 					errChan <- err
 					return

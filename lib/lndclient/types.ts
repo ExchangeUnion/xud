@@ -8,6 +8,7 @@ export type LndClientConfig = {
   host: string;
   port: number;
   nomacaroons: boolean;
+  cltvdelta: number;
 };
 
 /** General information about the state of this lnd client. */
@@ -33,3 +34,6 @@ export type Chain = {
   network: string,
   chain: string,
 };
+
+export type ClientMethods = 'close' | 'waitForReady' | 'makeClientStreamRequest' | 'makeBidiStreamRequest'
+  | 'makeServerStreamRequest' | 'makeUnaryRequest';

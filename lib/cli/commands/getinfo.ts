@@ -5,17 +5,6 @@ import colors from 'colors/safe';
 import { GetInfoRequest, GetInfoResponse, LndInfo, RaidenInfo } from '../../proto/xudrpc_pb';
 import { SwapClientStatus } from '../../constants/enums';
 
-type generalInfo = {
-  alias: string;
-  address: string;
-  network: string;
-  version: string;
-  numPeers: number;
-  numPairs: number;
-  nodePubKey: string;
-  orders: {own: number, peer: number} | undefined
-};
-
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
   basicInfotable.push(
@@ -46,20 +35,21 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
   console.log(basicInfotable.toString(), '\n');
 };
 
-const displayGeneral = (info: generalInfo) => {
+const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
   table.push(
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Public Key')]: info.nodePubKey },
-    { [colors.blue('Address')]: info.address },
+    { [colors.blue('Address')]: info.urisList[0] },
     { [colors.blue('Network')]: info.network },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Peers')]: info.numPeers },
     { [colors.blue('Pairs')]: info.numPairs },
     { [colors.blue('Own orders')]: info.orders ? info.orders.own : '0' },
     { [colors.blue('Peer orders')]: info.orders ? info.orders.peer : '0' },
+    { [colors.blue('Pending swaps')]: info.pendingSwapHashesList ? JSON.stringify(info.pendingSwapHashesList, undefined, 1) : '' },
   );
-  console.log(colors.underline(colors.bold('\nXUD Info')));
+  console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
   console.log(table.toString(), '\n');
 };
 
@@ -87,16 +77,7 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
 };
 
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
-  displayGeneral({
-    alias: response.alias,
-    address: response.urisList[0],
-    network: response.network,
-    nodePubKey: response.nodePubKey,
-    numPairs: response.numPairs,
-    numPeers: response.numPeers,
-    version: response.version,
-    orders: response.orders,
-  });
+  displayGeneral(response);
   if (response.raiden) {
     displayRaiden(response.raiden);
   }
