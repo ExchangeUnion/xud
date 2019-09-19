@@ -413,15 +413,14 @@ class GrpcService {
           lnd.setChainsList(chains);
         }
         if (lndInfo.channels) {
-          const channels = new xudrpc.LndChannels();
+          const channels = new xudrpc.Channels();
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
           channels.setClosed(lndInfo.channels.closed);
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
-        lnd.setStatus(lndInfo.status as number);
-        if (lndInfo.error) lnd.setError(lndInfo.error);
+        lnd.setStatus(lndInfo.status);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
@@ -434,16 +433,15 @@ class GrpcService {
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
-        raiden.setStatus(getInfoResponse.raiden.status as number);
+        raiden.setStatus(getInfoResponse.raiden.status);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
         if (getInfoResponse.raiden.channels) {
-          const channels = new xudrpc.RaidenChannels();
+          const channels = new xudrpc.Channels();
           channels.setActive(getInfoResponse.raiden.channels.active);
-          channels.setSettled(getInfoResponse.raiden.channels.settled);
+          // channels.setSettled(getInfoResponse.raiden.channels.settled);
           channels.setClosed(getInfoResponse.raiden.channels.closed);
           raiden.setChannels(channels);
         }
-        if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
         if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
         response.setRaiden(raiden);

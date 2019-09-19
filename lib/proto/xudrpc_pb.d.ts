@@ -510,8 +510,8 @@ export namespace GetInfoRequest {
 }
 
 export class GetInfoResponse extends jspb.Message { 
-    getAlias(): string;
-    setAlias(value: string): void;
+    getVersion(): string;
+    setVersion(value: string): void;
 
     getNodePubKey(): string;
     setNodePubKey(value: string): void;
@@ -520,12 +520,6 @@ export class GetInfoResponse extends jspb.Message {
     getUrisList(): Array<string>;
     setUrisList(value: Array<string>): void;
     addUris(value: string, index?: number): string;
-
-    getNetwork(): string;
-    setNetwork(value: string): void;
-
-    getVersion(): string;
-    setVersion(value: string): void;
 
     getNumPeers(): number;
     setNumPeers(value: number): void;
@@ -549,6 +543,12 @@ export class GetInfoResponse extends jspb.Message {
     getRaiden(): RaidenInfo | undefined;
     setRaiden(value?: RaidenInfo): void;
 
+    getAlias(): string;
+    setAlias(value: string): void;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
     clearPendingSwapHashesList(): void;
     getPendingSwapHashesList(): Array<string>;
     setPendingSwapHashesList(value: Array<string>): void;
@@ -567,17 +567,17 @@ export class GetInfoResponse extends jspb.Message {
 
 export namespace GetInfoResponse {
     export type AsObject = {
-        alias: string,
+        version: string,
         nodePubKey: string,
         urisList: Array<string>,
-        network: string,
-        version: string,
         numPeers: number,
         numPairs: number,
         orders?: OrdersCount.AsObject,
 
         lndMap: Array<[string, LndInfo.AsObject]>,
         raiden?: RaidenInfo.AsObject,
+        alias: string,
+        network: string,
         pendingSwapHashesList: Array<string>,
     }
 }
@@ -844,7 +844,7 @@ export namespace ListTradesResponse {
     }
 }
 
-export class LndChannels extends jspb.Message { 
+export class Channels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;
 
@@ -859,16 +859,16 @@ export class LndChannels extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): LndChannels.AsObject;
-    static toObject(includeInstance: boolean, msg: LndChannels): LndChannels.AsObject;
+    toObject(includeInstance?: boolean): Channels.AsObject;
+    static toObject(includeInstance: boolean, msg: Channels): Channels.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: LndChannels, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): LndChannels;
-    static deserializeBinaryFromReader(message: LndChannels, reader: jspb.BinaryReader): LndChannels;
+    static serializeBinaryToWriter(message: Channels, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Channels;
+    static deserializeBinaryFromReader(message: Channels, reader: jspb.BinaryReader): Channels;
 }
 
-export namespace LndChannels {
+export namespace Channels {
     export type AsObject = {
         active: number,
         inactive: number,
@@ -878,17 +878,14 @@ export namespace LndChannels {
 }
 
 export class LndInfo extends jspb.Message { 
-    getStatus(): SwapClientStatus;
-    setStatus(value: SwapClientStatus): void;
-
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
 
     hasChannels(): boolean;
     clearChannels(): void;
-    getChannels(): LndChannels | undefined;
-    setChannels(value?: LndChannels): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     clearChainsList(): void;
     getChainsList(): Array<Chain>;
@@ -922,9 +919,8 @@ export class LndInfo extends jspb.Message {
 
 export namespace LndInfo {
     export type AsObject = {
-        status: SwapClientStatus,
-        error: string,
-        channels?: LndChannels.AsObject,
+        status: string,
+        channels?: Channels.AsObject,
         chainsList: Array<Chain.AsObject>,
         blockheight: number,
         urisList: Array<string>,
@@ -1378,41 +1374,9 @@ export namespace PlaceOrderEvent {
 
 }
 
-export class RaidenChannels extends jspb.Message { 
-    getActive(): number;
-    setActive(value: number): void;
-
-    getSettled(): number;
-    setSettled(value: number): void;
-
-    getClosed(): number;
-    setClosed(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): RaidenChannels.AsObject;
-    static toObject(includeInstance: boolean, msg: RaidenChannels): RaidenChannels.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: RaidenChannels, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): RaidenChannels;
-    static deserializeBinaryFromReader(message: RaidenChannels, reader: jspb.BinaryReader): RaidenChannels;
-}
-
-export namespace RaidenChannels {
-    export type AsObject = {
-        active: number,
-        settled: number,
-        closed: number,
-    }
-}
-
 export class RaidenInfo extends jspb.Message { 
-    getStatus(): SwapClientStatus;
-    setStatus(value: SwapClientStatus): void;
-
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
     getAddress(): string;
     setAddress(value: string): void;
@@ -1420,8 +1384,8 @@ export class RaidenInfo extends jspb.Message {
 
     hasChannels(): boolean;
     clearChannels(): void;
-    getChannels(): RaidenChannels | undefined;
-    setChannels(value?: RaidenChannels): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     getVersion(): string;
     setVersion(value: string): void;
@@ -1442,10 +1406,9 @@ export class RaidenInfo extends jspb.Message {
 
 export namespace RaidenInfo {
     export type AsObject = {
-        status: SwapClientStatus,
-        error: string,
+        status: string,
         address: string,
-        channels?: RaidenChannels.AsObject,
+        channels?: Channels.AsObject,
         version: string,
         chain: string,
     }
@@ -1811,9 +1774,4 @@ export namespace UnbanResponse {
 export enum OrderSide {
     BUY = 0,
     SELL = 1,
-}
-
-export enum SwapClientStatus {
-    READY = 0,
-    ERROR = 1,
 }

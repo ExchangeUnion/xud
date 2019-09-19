@@ -152,8 +152,3 @@ export enum DisconnectionReason {
   AuthFailureInvalidSignature = 12,
   WireProtocolErr = 13,
 }
-
-export enum SwapClientStatus {
-  Ready = 0,
-  Error = 1,
-}

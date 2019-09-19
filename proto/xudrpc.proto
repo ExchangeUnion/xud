@@ -283,11 +283,6 @@ enum OrderSide {
   SELL = 1;
 }
 
-enum SwapClientStatus {
-    READY = 0;
-    ERROR = 1;
-}
-
 message Currency {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
@@ -391,24 +386,24 @@ message SwapFailure {
 
 message GetInfoRequest {}
 message GetInfoResponse {
-  // The alias of this instance of xud.
-  string alias = 1 [json_name = "alias"];
+  // The version of this instance of xud.
+  string version = 1 [json_name = "version"];
   // The node pub key of this node.
   string node_pub_key = 2 [json_name = "node_pub_key"];
   // A list of uris that can be used to connect to this node. These are shared with peers.
   repeated string uris = 3 [json_name = "uris"];
-  // The network of this node.
-  string network = 4 [json_name = "network"];
-  // The version of this instance of xud.
-  string version = 5 [json_name = "version"];
   // The number of currently connected peers.
-  uint32 num_peers = 6 [json_name = "num_peers"];
+  uint32 num_peers = 4 [json_name = "num_peers"];
   // The number of supported trading pairs.
-  uint32 num_pairs = 7 [json_name = "num_pairs"];
+  uint32 num_pairs = 5 [json_name = "num_pairs"];
   // The number of active, standing orders in the order book.
-  OrdersCount orders = 8 [json_name = "orders"];
-  map<string, LndInfo> lnd = 9 [json_name = "lnd"];
-  RaidenInfo raiden = 10 [json_name = "raiden"];
+  OrdersCount orders = 6 [json_name = "orders"];
+  map<string, LndInfo> lnd = 7 [json_name = "lnd"];
+  RaidenInfo raiden = 8 [json_name = "raiden"];
+  // The alias of this instance of xud.
+  string alias = 9 [json_name = "alias"];
+  // The network of this node.
+  string network = 10 [json_name = "network"];
   repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
 }
 
@@ -464,26 +459,25 @@ message ListTradesResponse {
   repeated Trade trades = 1 [json_name = "trades"];
 }
 
-message LndChannels {
+message Channels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
   uint32 active = 1 [json_name = "active"];
   // The number of inactive/offline channels for this lnd instance.
   uint32 inactive = 2 [json_name = "inactive"];
   // The number of channels that are pending on-chain confirmation before they can be used.
   uint32 pending = 3 [json_name = "pending"];
-  // The number of channels that are pending on-chain confirmation before they can be used.
+  // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
 }
 
 message LndInfo {
-  SwapClientStatus status = 1 [json_name = "status"];
-  string error = 2 [json_name = "error"];
-  LndChannels channels = 3 [json_name = "channels"];
-  repeated Chain chains = 4 [json_name = "chains"];
-  uint32 blockheight = 5 [json_name = "blockheight"];
-  repeated string uris = 6 [json_name = "uris"];
-  string version = 7 [json_name = "version"];
-  string alias = 8 [json_name = "alias"];
+  string status = 1 [json_name = "status"];
+  Channels channels = 2 [json_name = "channels"];
+  repeated Chain chains = 3 [json_name = "chains"];
+  uint32 blockheight = 4 [json_name = "blockheight"];
+  repeated string uris = 5 [json_name = "uris"];
+  string version = 6 [json_name = "version"];
+  string alias = 7 [json_name = "alias"];
 }
 
 message Order {
@@ -615,19 +609,12 @@ message PlaceOrderEvent {
   }
 }
 
-message RaidenChannels {
-  uint32 active = 1 [json_name = "active"];
-  uint32 settled = 2 [json_name = "settled"];
-  uint32 closed = 3 [json_name = "closed"];
-}
-
 message RaidenInfo {
-  SwapClientStatus status = 1 [json_name = "status"];
-  string error = 2 [json_name = "error"];
-  string address = 3 [json_name = "address"];
-  RaidenChannels channels = 4 [json_name = "channels"];
-  string version = 5 [json_name = "version"];
-  string chain = 6 [json_name = "chain"];
+  string status = 1 [json_name = "status"];
+  string address = 2 [json_name = "address"];
+  Channels channels = 3 [json_name = "channels"];
+  string version = 4 [json_name = "version"];
+  string chain = 5 [json_name = "chain"];
 }
 
 message RemoveCurrencyRequest {

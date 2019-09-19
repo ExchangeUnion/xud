@@ -3,18 +3,12 @@ import { Arguments } from 'yargs';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { GetInfoRequest, GetInfoResponse, LndInfo, RaidenInfo } from '../../proto/xudrpc_pb';
-import { SwapClientStatus } from '../../constants/enums';
 
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
   basicInfotable.push(
-    { [colors.blue('Status')]: SwapClientStatus[info.status] },
+    { [colors.blue('Status')]: info.status },
   );
-  if (info.error) {
-    basicInfotable.push(
-        { [colors.blue('Error')]: info.error },
-    );
-  }
 
   const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
@@ -56,11 +50,8 @@ const displayGeneral = (info: GetInfoResponse.AsObject) => {
 const displayRaiden = (info: RaidenInfo.AsObject) => {
   const table = new Table() as VerticalTable;
 
-  table.push({ [colors.blue('Status')]: SwapClientStatus[info.status] });
-  if (info.error) {
-    table.push({ [colors.blue('Error')]: info.error });
-  }
   table.push(
+    { [colors.blue('Status')]: info.status },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
     { [colors.blue('Channels')] :

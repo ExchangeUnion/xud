@@ -11,6 +11,7 @@
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
+    - [Channels](#xudrpc.Channels)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
@@ -38,7 +39,6 @@
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
     - [ListTradesRequest](#xudrpc.ListTradesRequest)
     - [ListTradesResponse](#xudrpc.ListTradesResponse)
-    - [LndChannels](#xudrpc.LndChannels)
     - [LndInfo](#xudrpc.LndInfo)
     - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
     - [OpenChannelResponse](#xudrpc.OpenChannelResponse)
@@ -52,7 +52,6 @@
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
-    - [RaidenChannels](#xudrpc.RaidenChannels)
     - [RaidenInfo](#xudrpc.RaidenInfo)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
@@ -74,7 +73,6 @@
   
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [OrderSide](#xudrpc.OrderSide)
-    - [SwapClientStatus](#xudrpc.SwapClientStatus)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
   
@@ -180,6 +178,24 @@
 | ----- | ---- | ----- | ----------- |
 | chain | [string](#string) |  | The blockchain the swap client is on (eg bitcoin, litecoin) |
 | network | [string](#string) |  | The network the swap client is on (eg regtest, testnet, mainnet) |
+
+
+
+
+
+
+<a name="xudrpc.Channels"></a>
+
+### Channels
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| active | [uint32](#uint32) |  | The number of active/online channels for this lnd instance that can be used for swaps. |
+| inactive | [uint32](#uint32) |  | The number of inactive/offline channels for this lnd instance. |
+| pending | [uint32](#uint32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
+| closed | [uint32](#uint32) |  | The number of channels that have been closed. |
 
 
 
@@ -373,16 +389,16 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| alias | [string](#string) |  | The alias of this instance of xud. |
+| version | [string](#string) |  | The version of this instance of xud. |
 | node_pub_key | [string](#string) |  | The node pub key of this node. |
 | uris | [string](#string) | repeated | A list of uris that can be used to connect to this node. These are shared with peers. |
-| network | [string](#string) |  | The network of this node. |
-| version | [string](#string) |  | The version of this instance of xud. |
 | num_peers | [uint32](#uint32) |  | The number of currently connected peers. |
 | num_pairs | [uint32](#uint32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
 | raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
+| alias | [string](#string) |  | The alias of this instance of xud. |
+| network | [string](#string) |  | The network of this node. |
 | pending_swap_hashes | [string](#string) | repeated |  |
 
 
@@ -590,24 +606,6 @@
 
 
 
-<a name="xudrpc.LndChannels"></a>
-
-### LndChannels
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [uint32](#uint32) |  | The number of active/online channels for this lnd instance that can be used for swaps. |
-| inactive | [uint32](#uint32) |  | The number of inactive/offline channels for this lnd instance. |
-| pending | [uint32](#uint32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
-| closed | [uint32](#uint32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
-
-
-
-
-
-
 <a name="xudrpc.LndInfo"></a>
 
 ### LndInfo
@@ -616,9 +614,8 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [SwapClientStatus](#xudrpc.SwapClientStatus) |  |  |
-| error | [string](#string) |  |  |
-| channels | [LndChannels](#xudrpc.LndChannels) |  |  |
+| status | [string](#string) |  |  |
+| channels | [Channels](#xudrpc.Channels) |  |  |
 | chains | [Chain](#xudrpc.Chain) | repeated |  |
 | blockheight | [uint32](#uint32) |  |  |
 | uris | [string](#string) | repeated |  |
@@ -841,23 +838,6 @@
 
 
 
-<a name="xudrpc.RaidenChannels"></a>
-
-### RaidenChannels
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| active | [uint32](#uint32) |  |  |
-| settled | [uint32](#uint32) |  |  |
-| closed | [uint32](#uint32) |  |  |
-
-
-
-
-
-
 <a name="xudrpc.RaidenInfo"></a>
 
 ### RaidenInfo
@@ -866,10 +846,9 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [SwapClientStatus](#xudrpc.SwapClientStatus) |  |  |
-| error | [string](#string) |  |  |
+| status | [string](#string) |  |  |
 | address | [string](#string) |  |  |
-| channels | [RaidenChannels](#xudrpc.RaidenChannels) |  |  |
+| channels | [Channels](#xudrpc.Channels) |  |  |
 | version | [string](#string) |  |  |
 | chain | [string](#string) |  |  |
 
@@ -1154,18 +1133,6 @@
 | ---- | ------ | ----------- |
 | BUY | 0 |  |
 | SELL | 1 |  |
-
-
-
-<a name="xudrpc.SwapClientStatus"></a>
-
-### SwapClientStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| READY | 0 |  |
-| ERROR | 1 |  |
 
 
 

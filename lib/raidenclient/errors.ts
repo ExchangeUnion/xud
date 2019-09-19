@@ -12,6 +12,7 @@ const errorCodes = {
   TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.8'),
   RAIDEN_IS_UNAVAILABLE: codesPrefix.concat('.9'),
+  RAIDEN_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.10'),
 };
 
 const errors = {
@@ -22,6 +23,10 @@ const errors = {
   RAIDEN_IS_UNAVAILABLE: (status: ClientStatus) => ({
     message: `raiden is ${ClientStatus[status]}`,
     code: errorCodes.RAIDEN_IS_UNAVAILABLE,
+  }),
+  RAIDEN_HAS_NO_ACTIVE_CHANNELS: () => ({
+    message: 'raiden has no active channels',
+    code: errorCodes.RAIDEN_HAS_NO_ACTIVE_CHANNELS,
   }),
   INSUFFICIENT_BALANCE: {
     message: 'insufficient balance to perform request',

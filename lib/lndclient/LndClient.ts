@@ -9,7 +9,7 @@ import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs, watch } from 'fs';
-import { SwapClientStatus, SwapRole, SwapClientType, SwapState } from '../constants/enums';
+import { SwapRole, SwapClientType, SwapState } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import { LndClientConfig, LndInfo, ChannelCount, Chain, ClientMethods } from './types';
@@ -222,13 +222,12 @@ class LndClient extends SwapClient {
     let blockheight: number | undefined;
     let uris: string[] | undefined;
     let version: string | undefined;
-    let error: string | undefined;
     let alias: string | undefined;
-    let status: SwapClientStatus = SwapClientStatus.Error;
+    let status = 'Ready';
     if (this.isDisabled()) {
-      error = errors.LND_IS_DISABLED.message;
+      status = errors.LND_IS_DISABLED.message;
     } else if (!this.isConnected()) {
-      error = errors.LND_IS_UNAVAILABLE(this.status).message;
+      status = errors.LND_IS_UNAVAILABLE(this.status).message;
     } else {
       try {
         const getInfoResponse = await this.getInfo();
@@ -244,20 +243,17 @@ class LndClient extends SwapClient {
         uris = getInfoResponse.getUrisList();
         version = getInfoResponse.getVersion();
         alias = getInfoResponse.getAlias();
-        if (channels.active > 0) {
-          status = SwapClientStatus.Ready;
-        } else {
-          error = errors.LND_IS_UNAVAILABLE(ClientStatus.NoChannels).message;
+        if (channels.active <= 0) {
+          status = errors.LND_HAS_NO_ACTIVE_CHANNELS().message;
         }
       } catch (err) {
         this.logger.error('getinfo error', err);
-        error = err.message;
+        status = err.message;
       }
     }
 
     return {
       status,
-      error,
       channels,
       chains,
       blockheight,

@@ -729,6 +729,31 @@
         }
       }
     },
+    "xudrpcChannels": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of active/online channels for this lnd instance that can be used for swaps."
+        },
+        "inactive": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of inactive/offline channels for this lnd instance."
+        },
+        "pending": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of channels that are pending on-chain confirmation before they can be used."
+        },
+        "closed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of channels that have been closed."
+        }
+      }
+    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -842,9 +867,9 @@
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
-        "alias": {
+        "version": {
           "type": "string",
-          "description": "The alias of this instance of xud."
+          "description": "The version of this instance of xud."
         },
         "node_pub_key": {
           "type": "string",
@@ -856,14 +881,6 @@
             "type": "string"
           },
           "description": "A list of uris that can be used to connect to this node. These are shared with peers."
-        },
-        "network": {
-          "type": "string",
-          "description": "The network of this node."
-        },
-        "version": {
-          "type": "string",
-          "description": "The version of this instance of xud."
         },
         "num_peers": {
           "type": "integer",
@@ -887,6 +904,14 @@
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
+        },
+        "alias": {
+          "type": "string",
+          "description": "The alias of this instance of xud."
+        },
+        "network": {
+          "type": "string",
+          "description": "The network of this node."
         },
         "pending_swap_hashes": {
           "type": "array",
@@ -980,42 +1005,14 @@
         }
       }
     },
-    "xudrpcLndChannels": {
-      "type": "object",
-      "properties": {
-        "active": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of active/online channels for this lnd instance that can be used for swaps."
-        },
-        "inactive": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of inactive/offline channels for this lnd instance."
-        },
-        "pending": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of channels that are pending on-chain confirmation before they can be used."
-        },
-        "closed": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of channels that are pending on-chain confirmation before they can be used."
-        }
-      }
-    },
     "xudrpcLndInfo": {
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/xudrpcSwapClientStatus"
-        },
-        "error": {
           "type": "string"
         },
         "channels": {
-          "$ref": "#/definitions/xudrpcLndChannels"
+          "$ref": "#/definitions/xudrpcChannels"
         },
         "chains": {
           "type": "array",
@@ -1299,37 +1296,17 @@
         }
       }
     },
-    "xudrpcRaidenChannels": {
-      "type": "object",
-      "properties": {
-        "active": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "settled": {
-          "type": "integer",
-          "format": "int64"
-        },
-        "closed": {
-          "type": "integer",
-          "format": "int64"
-        }
-      }
-    },
     "xudrpcRaidenInfo": {
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/xudrpcSwapClientStatus"
-        },
-        "error": {
           "type": "string"
         },
         "address": {
           "type": "string"
         },
         "channels": {
-          "$ref": "#/definitions/xudrpcRaidenChannels"
+          "$ref": "#/definitions/xudrpcChannels"
         },
         "version": {
           "type": "string"
@@ -1392,14 +1369,6 @@
     },
     "xudrpcShutdownResponse": {
       "type": "object"
-    },
-    "xudrpcSwapClientStatus": {
-      "type": "string",
-      "enum": [
-        "READY",
-        "ERROR"
-      ],
-      "default": "READY"
     },
     "xudrpcSwapFailure": {
       "type": "object",

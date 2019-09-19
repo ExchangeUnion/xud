@@ -1,6 +1,6 @@
 import assert from 'assert';
 import http from 'http';
-import { SwapClientType, SwapClientStatus, SwapRole, SwapState } from '../constants/enums';
+import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
 import SwapClient, { ChannelBalance, ClientStatus, PaymentState } from '../swaps/SwapClient';
@@ -322,13 +322,12 @@ class RaidenClient extends SwapClient {
   public getRaidenInfo = async (): Promise<RaidenInfo> => {
     let channels: RaidenChannelCount | undefined;
     let address: string | undefined;
-    let error: string | undefined;
-    let status: SwapClientStatus = SwapClientStatus.Error;
     let version: string | undefined;
+    let status = 'Ready';
     const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address);
 
     if (this.isDisabled()) {
-      error = errors.RAIDEN_IS_DISABLED.message;
+      status = errors.RAIDEN_IS_DISABLED.message;
     } else {
       try {
         version = (await this.getVersion()).version;
@@ -339,13 +338,11 @@ class RaidenClient extends SwapClient {
           closed: raidenChannels.filter(c => c.state === 'closed').length,
         };
         address = this.address;
-        if (channels.active > 0) {
-          status = SwapClientStatus.Ready;
-        } else {
-          error = errors.RAIDEN_IS_UNAVAILABLE(ClientStatus.NoChannels).message;
+        if (channels.active <= 0) {
+          status = errors.RAIDEN_HAS_NO_ACTIVE_CHANNELS().message;
         }
       } catch (err) {
-        error = err.message;
+        status = err.message;
       }
     }
 
@@ -354,7 +351,6 @@ class RaidenClient extends SwapClient {
       status,
       channels,
       address,
-      error,
       version,
     };
   }
