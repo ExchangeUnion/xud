@@ -12,7 +12,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
-import { TradeInstance, OrderInstance, SwapDealInstance } from '../db/types';
+import { TradeInstance, OrderInstance, SwapDealInstance, CurrencyInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -243,7 +243,7 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public addCurrency: grpc.handleUnaryCall<xudrpc.AddCurrencyRequest, xudrpc.AddCurrencyResponse> = async (call, callback) => {
+  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (call, callback) => {
     try {
       await this.service.addCurrency(call.request.toObject());
       const response = new xudrpc.AddCurrencyResponse();
@@ -283,17 +283,17 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.channelBalance]]
+   * See [[Service.getBalance]]
    */
-  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+  public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (call, callback) => {
     try {
-      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
-      const response = new xudrpc.ChannelBalanceResponse();
+      const balanceResponse = await this.service.getBalance(call.request.toObject());
+      const response = new xudrpc.GetBalanceResponse();
       const balancesMap = response.getBalancesMap();
-      channelBalanceResponse.forEach((channelBalance, currency) => {
-        const balance = new xudrpc.ChannelBalance();
-        balance.setBalance(channelBalance.balance);
-        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+      balanceResponse.forEach((balanceObj, currency) => {
+        const balance = new xudrpc.Balance();
+        balance.setBalance(balanceObj.balance);
+        balance.setPendingOpenBalance(balanceObj.pendingOpenBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);
@@ -360,8 +360,8 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const swapResult = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(swapResult));
+      const swapSuccess = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapSuccess));
     } catch (err) {
       if (typeof err === 'number') {
         // treat the error as a SwapFailureReason enum
@@ -515,9 +515,17 @@ class GrpcService {
    */
   public listCurrencies: grpc.handleUnaryCall<xudrpc.ListCurrenciesRequest, xudrpc.ListCurrenciesResponse> = (_, callback) => {
     try {
-      const listCurrenciesResponse = this.service.listCurrencies();
+      const currencies = this.service.listCurrencies();
       const response = new xudrpc.ListCurrenciesResponse();
-      response.setCurrenciesList(listCurrenciesResponse);
+
+      currencies.forEach((currency: CurrencyInstance) => {
+        const resultCurrency = new xudrpc.Currency();
+        resultCurrency.setDecimalPlaces(currency.decimalPlaces);
+        resultCurrency.setCurrency(currency.id);
+        resultCurrency.setTokenAddress(currency.tokenAddress);
+        resultCurrency.setSwapClient(currency.swapClient as number);
+        response.getCurrenciesList().push(resultCurrency);
+      });
 
       callback(null, response);
     } catch (err) {

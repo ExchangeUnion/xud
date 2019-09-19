@@ -23,13 +23,13 @@ const currencies = [
     id: 'WETH',
     swapClient: SwapClientType.Raiden,
     decimalPlaces: 18,
-    tokenAddress: '0x46AF55C4320D37bCeA9a3cF6f0Fe18FFf7D9685b',
+    tokenAddress: '0x892F91dc428Fc3Dc0a57eC46C8245F2511b8a542',
   },
   {
     id: 'DAI',
     swapClient: SwapClientType.Raiden,
     decimalPlaces: 18,
-    tokenAddress: '0x7CB0a7b39358CFac898CD26A6934c2f74d9aAD20',
+    tokenAddress: '0x4115652c9025d99512e9026B8F11C3E265bfecD7',
   },
 ] as db.CurrencyAttributes[];
 

@@ -4,14 +4,6 @@ import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { GetInfoRequest, GetInfoResponse, LndInfo, RaidenInfo } from '../../proto/xudrpc_pb';
 
-type generalInfo = {
-  version: string;
-  numPeers: number;
-  numPairs: number;
-  nodePubKey: string;
-  orders: {own: number, peer: number} | undefined
-};
-
 const displayChannels = (channels: any, asset: string) => {
   const table = new Table() as VerticalTable;
   Object.keys(channels).forEach((key: any) => {
@@ -74,7 +66,7 @@ const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   }
 };
 
-const displayGeneral = (info: generalInfo) => {
+const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
   table.push(
     { [colors.blue('Version')]: info.version },
@@ -86,6 +78,11 @@ const displayGeneral = (info: generalInfo) => {
     table.push(
       { [colors.blue('Own orders')]: info.orders.own },
       { [colors.blue('Peer orders')]: info.orders.peer },
+    );
+  }
+  if (info.pendingSwapHashesList) {
+    table.push(
+      { [colors.blue('Pending swaps')]: JSON.stringify(info.pendingSwapHashesList) },
     );
   }
   console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
@@ -105,13 +102,7 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
 };
 
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
-  displayGeneral({
-    nodePubKey: response.nodePubKey,
-    numPairs: response.numPairs,
-    numPeers: response.numPeers,
-    version: response.version,
-    orders: response.orders,
-  });
+  displayGeneral(response);
   if (response.raiden) {
     displayRaiden(response.raiden);
   }

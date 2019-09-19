@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
@@ -124,6 +125,38 @@ func TestIntegration(t *testing.T) {
 	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, carolDavidBtcChanPoint, false)
 	ht.assert.NoError(err)
 	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, carolDavidLtcChanPoint, false)
+	ht.assert.NoError(err)
+}
+
+func TestInstability(t *testing.T) {
+	xudNetwork, teardown := launchNetwork(true)
+	defer teardown()
+	ht := newHarnessTest(context.Background(), t)
+	t.Logf("Running %v instability tests", len(instabilityTestCases))
+
+	// Open channels from both directions on each chain.
+	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+	ht.assert.NoError(err)
+	aliceBobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+	ht.assert.NoError(err)
+
+	for _, testCase := range instabilityTestCases {
+		success := t.Run(testCase.name, func(t1 *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			ht := newHarnessTest(ctx, t1)
+			ht.RunTestCase(testCase, xudNetwork)
+		})
+
+		if !success {
+			break
+		}
+	}
+
+	// Close all channels before next iteration.
+	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
+	ht.assert.NoError(err)
+	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
 	ht.assert.NoError(err)
 }
 

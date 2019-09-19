@@ -17,8 +17,9 @@ export enum OrderSide {
 export enum OrderStatus {
   FILLED  = 0,
   PARTIALLY_FILLED = 1,
-  OPEN = 2,
-  CANCELLED = 3,
+  PARTIALLY_FILLED_CANCELED = 2,
+  OPEN = 3,
+  CANCELLED = 4,
 }
 
 export enum XuNetwork {
@@ -88,6 +89,12 @@ export enum SwapState {
   Active = 0,
   Error = 1,
   Completed = 2,
+  /**
+   * A swap that was executed but wasn't formally completed. This may occur as a result of xud
+   * crashing late in the swap process, after htlcs for both legs of the swap are set up but
+   * before the swap is formally complete.
+   */
+  Recovered = 3,
 }
 
 export enum ReputationEvent {
@@ -133,7 +140,9 @@ export enum SwapFailureReason {
   /** The swap failed due to an unrecognized error. */
   UnknownError = 12,
   /** The swap failed due to an error or unexpected behavior on behalf of the remote peer. */
-  RemoteError = 12,
+  RemoteError = 13,
+  /** The swap failed because of a system or xud crash while the swap was being executed. */
+  Crash = 14,
 }
 
 export enum DisconnectionReason {

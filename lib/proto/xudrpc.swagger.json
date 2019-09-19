@@ -33,7 +33,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/xudrpcAddCurrencyRequest"
+              "$ref": "#/definitions/xudrpcCurrency"
             }
           }
         ],
@@ -69,6 +69,32 @@
         ]
       }
     },
+    "/v1/balance": {
+      "get": {
+        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.",
+        "operationId": "GetBalance",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcGetBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/ban": {
       "post": {
         "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.",
@@ -89,32 +115,6 @@
             "schema": {
               "$ref": "#/definitions/xudrpcBanRequest"
             }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/channelbalance": {
-      "get": {
-        "summary": "Gets the total balance available across all payment channels for one or all currencies.",
-        "operationId": "ChannelBalance",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcChannelBalanceResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "currency",
-            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
-            "in": "query",
-            "required": false,
-            "type": "string"
           }
         ],
         "tags": [
@@ -679,7 +679,7 @@
     }
   },
   "definitions": {
-    "AddCurrencyRequestSwapClient": {
+    "CurrencySwapClient": {
       "type": "string",
       "enum": [
         "LND",
@@ -692,6 +692,7 @@
       "enum": [
         "FILLED",
         "PARTIALLY_FILLED",
+        "PARTIALLY_FILLED_CANCELED",
         "OPEN",
         "CANCELLED"
       ],
@@ -704,28 +705,6 @@
         "MAKER"
       ],
       "default": "TAKER"
-    },
-    "xudrpcAddCurrencyRequest": {
-      "type": "object",
-      "properties": {
-        "currency": {
-          "type": "string",
-          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
-        },
-        "swap_client": {
-          "$ref": "#/definitions/AddCurrencyRequestSwapClient",
-          "description": "The payment channel network client to use for executing swaps."
-        },
-        "token_address": {
-          "type": "string",
-          "description": "The contract address for layered tokens such as ERC20."
-        },
-        "decimal_places": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
-        }
-      }
     },
     "xudrpcAddCurrencyResponse": {
       "type": "object"
@@ -745,6 +724,21 @@
     },
     "xudrpcAddPairResponse": {
       "type": "object"
+    },
+    "xudrpcBalance": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Total balance denominated in satoshis."
+        },
+        "pending_open_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Sum of pending channel balances denominated in satoshis."
+        }
+      }
     },
     "xudrpcBanRequest": {
       "type": "object",
@@ -771,33 +765,6 @@
         }
       }
     },
-    "xudrpcChannelBalance": {
-      "type": "object",
-      "properties": {
-        "balance": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Sum of channel balances denominated in satoshis."
-        },
-        "pending_open_balance": {
-          "type": "string",
-          "format": "uint64",
-          "description": "Sum of pending channel balances denominated in satoshis."
-        }
-      }
-    },
-    "xudrpcChannelBalanceResponse": {
-      "type": "object",
-      "properties": {
-        "balances": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/xudrpcChannelBalance"
-          },
-          "description": "A map between currency ticker symbols and their channel balances."
-        }
-      }
-    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -817,7 +784,8 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "The 24 word mnemonic to recover the xud identity key and underlying wallets"
         },
         "initialized_lnds": {
           "type": "array",
@@ -830,6 +798,28 @@
           "type": "boolean",
           "format": "boolean",
           "description": "Whether raiden was initialized."
+        }
+      }
+    },
+    "xudrpcCurrency": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol for this currency such as BTC, LTC, ETH, etc..."
+        },
+        "swap_client": {
+          "$ref": "#/definitions/CurrencySwapClient",
+          "description": "The payment channel network client to use for executing swaps."
+        },
+        "token_address": {
+          "type": "string",
+          "description": "The contract address for layered tokens such as ERC20."
+        },
+        "decimal_places": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
         }
       }
     },
@@ -873,6 +863,18 @@
         }
       }
     },
+    "xudrpcGetBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balances": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcBalance"
+          },
+          "description": "A map between currency ticker symbols and their balances."
+        }
+      }
+    },
     "xudrpcGetInfoResponse": {
       "type": "object",
       "properties": {
@@ -913,6 +915,12 @@
         },
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
+        },
+        "pending_swap_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -937,9 +945,9 @@
         "currencies": {
           "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/xudrpcCurrency"
           },
-          "description": "A list of ticker symbols of the supported currencies."
+          "description": "The list of available currencies in the orderbook."
         }
       }
     },

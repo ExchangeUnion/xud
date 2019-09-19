@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Swaps calculateLockBuffer it calculates a lock buffer with BTC first leg and LTC second leg 1`] = `389`;
+
+exports[`Swaps calculateLockBuffer it calculates a lock buffer with BTC first leg and WETH second leg 1`] = `12`;
+
+exports[`Swaps calculateLockBuffer it calculates a lock buffer with LTC first leg and BTC second leg 1`] = `542`;
+
+exports[`Swaps calculateLockBuffer it calculates a lock buffer with WETH first leg and BTC second leg 1`] = `4854`;
