@@ -4,7 +4,7 @@ import { SwapClientType } from '../../constants/enums';
 const nodes = [
   {
     nodePubKey: '03640f9e41cf77349ef29ed84ab02671dfc0a76963b8e84209cdeab4c9639ace0b',
-    addresses: [{ host: 'xud1.testnet.exchangeunion.com', port: 8885 }],
+    addresses: [{ host: 'xud1.testnet.exchangeunion.com', port: 18885 }],
   },
 ] as db.NodeAttributes[];
 
