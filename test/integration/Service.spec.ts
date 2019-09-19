@@ -108,7 +108,7 @@ describe('API Service', () => {
   it('should list order history without a trade', async () => {
     const { status, trades, swapDeals } = await service.listOrderHistory({ orderId: orderId! });
 
-    expect(status).to.equal(2);
+    expect(status).to.equal(3);
     expect(trades).to.eql([]);
     expect(swapDeals).to.eql([]);
   });
