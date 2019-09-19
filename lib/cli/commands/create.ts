@@ -7,13 +7,6 @@ export const command = 'create';
 
 export const describe = 'use this to create a new xud instance and set a password';
 
-<<<<<<< HEAD
-export const builder = {
-  password: {
-    description: 'the password to secure xud with',
-    type: 'string',
-  },
-=======
 export const builder = {};
 
 const formatOutput = (response: CreateNodeResponse.AsObject) => {
@@ -43,7 +36,6 @@ password or lose your device. Keep it somewhere safe, it is your ONLY backup.
   } else {
     console.log('xud was initialized without a seed because no wallets could be initialized.');
   }
->>>>>>> master
 };
 
 export const handler = (argv: Arguments) => {

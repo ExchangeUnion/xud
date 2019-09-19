@@ -22,7 +22,7 @@ export const describe = 'get general information about a peer';
 export const builder = {
   node_key: {
     type: 'string',
-    description: 'the node key of the peer to get general information from',
+    description: 'the node key of the connected peer to get general information from',
   },
 };
 

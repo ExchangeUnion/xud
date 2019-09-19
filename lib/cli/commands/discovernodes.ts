@@ -8,7 +8,7 @@ export const describe = 'discover nodes from a specific peer';
 
 export const builder = {
   node_key: {
-    description: 'the node key of the peer to discover nodes from',
+    description: 'the node key of the connected peer to discover nodes from',
     type: 'string',
   },
 };

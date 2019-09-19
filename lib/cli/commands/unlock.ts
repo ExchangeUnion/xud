@@ -5,7 +5,7 @@ import readline from 'readline';
 
 export const command = 'unlock';
 
-export const describe = 'unlock xud';
+export const describe = 'unlock local xud node';
 
 export const builder = {};
 

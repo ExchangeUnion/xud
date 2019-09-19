@@ -4,11 +4,11 @@ import { BanRequest } from '../../proto/xudrpc_pb';
 
 export const command = 'ban <node_key>';
 
-export const describe = 'ban a peer';
+export const describe = 'ban a remote node';
 
 export const builder = {
   node_key: {
-    description: 'the node key of the peer to ban',
+    description: 'the node key of the remote node to ban',
     type: 'string',
   },
 };
