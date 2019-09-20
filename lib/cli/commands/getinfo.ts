@@ -31,10 +31,13 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
 const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
+  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+
   table.push(
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Public Key')]: info.nodePubKey },
-    { [colors.blue('Address')]: info.urisList[0] },
+    { [colors.blue('Address')]: address },
     { [colors.blue('Network')]: info.network },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Peers')]: info.numPeers },

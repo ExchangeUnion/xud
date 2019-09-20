@@ -317,8 +317,7 @@ class RaidenClient extends SwapClient {
     let address: string | undefined;
     let version: string | undefined;
     let status = 'Ready';
-    const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address);
-
+    const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address) || 'raiden';
     if (this.isDisabled()) {
       status = errors.RAIDEN_IS_DISABLED.message;
     } else {
