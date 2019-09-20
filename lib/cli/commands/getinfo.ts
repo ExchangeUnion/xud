@@ -22,7 +22,7 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
  | Pending: ${info.channels ? info.channels['pending'] : 0}\
  | Closed: ${info.channels ? info.channels['closed'] : 0}`,
     },
-    { [colors.blue('Chain')] : info.chainsList ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
+    { [colors.blue('Network')] : info.chainsList && info.chainsList.length > 0 ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
   );
 
   console.log(colors.underline(colors.bold(`\nLND-${asset} Info:`)));
@@ -59,7 +59,7 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
  | Pending: 0\
  | Closed: ${info.channels ? info.channels['closed'] : 0}`,
     },
-    { [colors.blue('Chain')] : info.chain  },
+    { [colors.blue('Network')] : info.chain  },
   );
 
   console.log(colors.underline(colors.bold('\nRaiden info:')));
