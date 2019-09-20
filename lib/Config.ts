@@ -81,7 +81,7 @@ class Config {
       discover: true,
       discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
-      port: 8885, // X = 88, U = 85 in ASCII
+      port: this.getDefaultP2pPort(),
       addresses: [],
     };
     this.rpc = {
@@ -191,6 +191,7 @@ class Config {
     // update defaults based on the xudir and network from the args or config file
     this.logpath = this.getDefaultLogPath();
     this.dbpath = this.getDefaultDbPath();
+    this.p2p.port = this.getDefaultP2pPort();
     this.setDefaultMacaroonPaths();
 
     if (configProps) {
@@ -260,6 +261,21 @@ class Config {
           this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', this.network, 'admin.macaroon');
           break;
       }
+    }
+  }
+
+  private getDefaultP2pPort = () => {
+    switch (this.network) {
+      case XuNetwork.MainNet:
+        return 8885;  // X = 88, U = 85 in ASCII
+      case XuNetwork.TestNet:
+        return 18885;
+      case XuNetwork.SimNet:
+        return 28885;
+      case XuNetwork.RegTest:
+        return 38885;
+      default:
+        throw new Error('unrecognized network');
     }
   }
 
