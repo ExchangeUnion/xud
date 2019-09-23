@@ -36,7 +36,7 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   table.push(
     { [colors.blue('Alias')]: info.alias },
-    { [colors.blue('Public Key')]: info.nodePubKey },
+    { [colors.blue('Node Key')]: info.nodePubKey },
     { [colors.blue('Address')]: address },
     { [colors.blue('Network')]: info.network },
     { [colors.blue('Version')]: info.version },
