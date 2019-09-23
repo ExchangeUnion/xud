@@ -14,6 +14,9 @@ class SwapRepository {
       return this.models.SwapDeal.findAll({
         limit,
         where : query,
+        order: [
+          ['createTime', 'DESC'],
+        ],
         include: [this.models.Node, this.models.Order] });
     } else {
       return this.models.SwapDeal.findAll({ where : query, include: [this.models.Node, this.models.Order] });

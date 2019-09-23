@@ -1,6 +1,6 @@
 import { Arguments } from 'yargs';
 import { callback, loadXudClient } from '../command';
-import { AddCurrencyRequest } from '../../proto/xudrpc_pb';
+import { Currency } from '../../proto/xudrpc_pb';
 import { SwapClientType } from '../../constants/enums';
 
 export const command = 'addcurrency <currency> <swap_client> [decimal_places] [token_address]';
@@ -29,7 +29,7 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new AddCurrencyRequest();
+  const request = new Currency();
   request.setCurrency(argv.currency.toUpperCase());
   request.setSwapClient(Number(SwapClientType[argv.swap_client]));
   request.setTokenAddress(argv.token_address);

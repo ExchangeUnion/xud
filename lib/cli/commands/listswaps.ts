@@ -3,53 +3,65 @@ import { Arguments } from 'yargs';
 import { ListSwapsRequest, ListSwapsResponse } from '../../proto/xudrpc_pb';
 import Table , { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { SwapRole } from '../../constants/enums';
 
-const FAILED_HEADERS = [
-  colors.blue('Peer Public key'),
-  colors.blue('Failure Reason'),
-];
-// TODO: create a function that generates these tables
 const SUCCESS_HEADERS = [
   colors.blue('Peer Public Key'),
   colors.blue('Local Id'),
   colors.blue('Amount Sent'),
   colors.blue('Amount Received'),
   colors.blue('Currency Received'),
-  colors.blue('Currency Send'),
+  colors.blue('Currency Sent'),
   colors.blue('Role'),
   colors.blue('Swap Hash'),
 ];
+const FAILED_HEADERS = [
+  ...SUCCESS_HEADERS,
+  colors.blue('Failure Reason'),
+];
+
+const trimPubKey = (key: string) => {
+  if (key.length <= 0) {
+    return '';
+  }
+  if (key.length <= 10) return key;
+
+  return `${key.slice(0, 10)}...${key.slice(key.length - 10)}`;
+};
 
 const displaySwaps = (swaps: ListSwapsResponse.AsObject) => {
   const failedTable = new Table({ head: FAILED_HEADERS }) as HorizontalTable;
   const successTable = new Table({ head: SUCCESS_HEADERS }) as HorizontalTable;
 
   swaps.swapsList.forEach((swap) => {
-    if (swap.swapFailure) {
-      const fail = swap.swapFailure;
-      failedTable.push([
-        fail.peerPubKey,
-        fail.failureReason,
-      ]);
+    const element = [
+      trimPubKey(swap.peerPubKey),
+      swap.localId,
+      swap.amountSent,
+      swap.amountReceived,
+      swap.currencyReceived,
+      swap.currencySent,
+      SwapRole[swap.role],
+      trimPubKey(swap.rHash),
+    ];
+
+    if (swap.failureReason) {
+      element.push(swap.failureReason);
+      failedTable.push(element);
     } else {
-      const success = swap.swapSuccess!;
-      successTable.push([
-        success.peerPubKey,
-        success.localId,
-        success.amountSent,
-        success.amountReceived,
-        success.currencyReceived,
-        success.currencySent,
-        success.role,
-        success.rHash,
-      ]);
+      successTable.push(element);
     }
   });
 
-  console.log(colors.underline(colors.bold('\Failed Swaps:')));
-  console.log(failedTable.toString());
-  console.log(colors.underline(colors.bold('\Successful Swaps:')));
-  console.log(successTable.toString());
+  if (successTable.length > 0) {
+    console.log(colors.underline(colors.bold('\Successful Swaps:')));
+    console.log(successTable.toString());
+  }
+
+  if (failedTable.length > 0) {
+    console.log(colors.underline(colors.bold('\Failed Swaps:')));
+    console.log(failedTable.toString());
+  }
 };
 
 export const command = 'listswaps [limit] [status]';
@@ -58,12 +70,11 @@ export const builder = {
   limit: {
     description: 'the maximum number of deals to list',
     type: 'number',
-    default: 0,
+    default: 10,
   },
   status: {
-    description: '0=all, 1=completed, 2=failed',
+    description: '0=all, 1=failed',
     type: 'number',
-    default: 0,
   },
 };
 

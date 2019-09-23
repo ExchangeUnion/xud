@@ -14,6 +14,7 @@ import SwapClientManager from '../swaps/SwapClientManager';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
 import { errors as swapsErrors } from '../swaps/errors';
+import commitHash from '../Version';
 
 /**
  * The components required by the API service layer.
@@ -38,6 +39,7 @@ type XudInfo = {
   orders: { peer: number, own: number};
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
+  pendingSwapHashes: string[];
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -117,8 +119,8 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, quantity);
   }
 
-  /** Gets the total lightning network channel balance for a given currency. */
-  public channelBalance = async (args: { currency: string }) => {
+  /** Gets the total lightning network balance for a given currency. */
+  public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const balances = new Map<string, { balance: number, pendingOpenBalance: number }>();
 
@@ -224,7 +226,9 @@ class Service {
       hold: 0,
     });
 
-    return this.orderBook.executeSwap(maker, taker);
+    const swapSuccess = await this.orderBook.executeSwap(maker, taker);
+    swapSuccess.localId = ''; // we shouldn't return the localId for ExecuteSwap in nomatching mode
+    return swapSuccess;
   }
 
   /**
@@ -271,12 +275,13 @@ class Service {
       nodePubKey,
       uris,
       numPairs,
-      version: this.version,
+      version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {
         peer: peerOrdersCount,
         own: ownOrdersCount,
       },
+      pendingSwapHashes: this.swaps.getPendingSwapHashes(),
     };
   }
 
@@ -332,7 +337,7 @@ class Service {
    * @returns A list of supported currency ticker symbols
    */
   public listCurrencies = () => {
-    return Array.from(this.orderBook.currencies);
+    return this.orderBook.currencies;
   }
 
   /**
@@ -364,14 +369,12 @@ class Service {
       case ListSwapsRequest.RequestedSwapState.FAILED:
         deals = await this.swaps.getCompletedDeals(SwapState.Error, queryLimit);
         break;
-      case ListSwapsRequest.RequestedSwapState.SUCCESSFUL:
-        deals = await this.swaps.getCompletedDeals(SwapState.Completed, queryLimit);
-        break;
       case ListSwapsRequest.RequestedSwapState.ALL:
         deals = await this.swaps.getCompletedDeals(undefined, queryLimit);
         break;
       default:
-        throw errors.INVALID_ARGUMENT('swap status is invalid');
+        deals = await this.swaps.getCompletedDeals(SwapState.Completed, queryLimit);
+        break;
     }
 
     return deals;
@@ -496,4 +499,4 @@ class Service {
   }
 }
 export default Service;
-export { ServiceComponents };
+export { ServiceComponents, XudInfo };

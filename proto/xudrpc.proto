@@ -25,17 +25,22 @@ import "annotations.proto";
 package xudrpc;
 
 service XudInit {
+  /* Creates an xud identity node key and underlying wallets. The node key and
+   * wallets are derived from a single seed and encrypted using a single
+   * password provided as a parameter to the call. */
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
+  /* Unlocks and decrypts the xud node key and any underlying wallets. */
   rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
 }
 
 message CreateNodeRequest {
   // The password in utf-8 with which to encrypt the new xud node key as well
-  // as underlying client wallets such as lnd.
+  // as any uninitialized underlying wallets.
   string password = 1;
 }
 message CreateNodeResponse {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
@@ -58,7 +63,7 @@ message UnlockNodeResponse {
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
    * new trading pairs. */
-  rpc AddCurrency(AddCurrencyRequest) returns (AddCurrencyResponse) {
+  rpc AddCurrency(Currency) returns (AddCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/addcurrency"
       body: "*"
@@ -85,10 +90,10 @@ service Xud {
     };
   }
 
-  /* Gets the total balance available across all payment channels for one or all currencies. */
-  rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
+  /* Gets the total balance available across all payment channels and wallets for one or all currencies. */
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse) {
     option (google.api.http) = {
-      get: "/v1/channelbalance"
+      get: "/v1/balance"
     };
   }
 
@@ -285,7 +290,12 @@ enum OrderSide {
   SELL = 1;
 }
 
-message AddCurrencyRequest {
+enum SwapRole {
+  TAKER = 0;
+  MAKER = 1;
+}
+
+message Currency {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
   enum SwapClient {
@@ -303,6 +313,7 @@ message AddCurrencyRequest {
   // used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
+
 message AddCurrencyResponse {}
 
 message AddPairRequest {
@@ -326,21 +337,21 @@ message Chain {
   string network = 2 [json_name = "network"];
 }
 
-message ChannelBalance {
-  // Sum of channel balances denominated in satoshis.
+message Balance {
+  // Total balance denominated in satoshis.
   uint64 balance = 1 [json_name = "balance"];
   // Sum of pending channel balances denominated in satoshis.
   uint64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
-message ChannelBalanceRequest {
+message GetBalanceRequest {
   // The ticker symbol of the currency to query for, if unspecified then balances for all supported
   // currencies are queried.
   string currency = 1 [json_name = "currency"];
 }
-message ChannelBalanceResponse {
-  // A map between currency ticker symbols and their channel balances.
-  map<string, ChannelBalance> balances = 1 [json_name = "orders"];
+message GetBalanceResponse {
+  // A map between currency ticker symbols and their balances.
+  map<string, Balance> balances = 1 [json_name = "orders"];
 }
 
 message OpenChannelRequest {
@@ -401,6 +412,7 @@ message GetInfoResponse {
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
   RaidenInfo raiden = 8 [json_name = "raiden"];
+  repeated string pending_swap_hashes = 9 [json_name = "pending_swap_hashes"];
 }
 
 message GetNodeInfoRequest {
@@ -430,8 +442,8 @@ message ListOrdersResponse {
 
 message ListCurrenciesRequest {}
 message ListCurrenciesResponse {
-  // A list of ticker symbols of the supported currencies.
-  repeated string currencies = 1 [json_name = "currencies"];
+  // The list of available currencies in the orderbook.
+  repeated Currency currencies = 1 [json_name = "currencies"];
 }
 
 message ListPairsRequest {}
@@ -460,12 +472,32 @@ message ListSwapsRequest {
   RequestedSwapState requested_swap_state = 2 [json_name = "requested_swap_state"];
   enum RequestedSwapState {
     ALL = 0;
-    SUCCESSFUL = 1;
-    FAILED = 2;
+    FAILED = 1;
   }
 }
 message ListSwapsResponse {
-  repeated Swap swaps = 1 [json_name = "swaps"];
+  repeated SwapDeal swaps = 1 [json_name = "swaps"];
+}
+
+message SwapDeal {
+  // The node pub key of the peer that executed this order.
+  string peer_pub_key = 1 [json_name = "peer_pub_key"];
+  // The local id for the order that was swapped.
+  string local_id = 2 [json_name = "local_id"];
+  // The amount sent denominated in satoshis.
+  uint64 amount_sent = 3 [json_name = "amount_sent"];
+  // The amount received denominated in satoshis.
+  uint64 amount_received = 4 [json_name = "amount_received"];
+  // The ticker symbol of the currency received.
+  string currency_received = 5 [json_name = "currency_received"];
+  // The ticker symbol of the currency sent.
+  string currency_sent = 6 [json_name = "currency_sent"];
+  // Our role in the swap, either MAKER or TAKER.
+  SwapRole role = 7 [json_name = "role"];
+  // The hex-encoded payment hash for the swap.
+  string r_hash = 8 [json_name = "r_hash"];
+  // The reason why the swap failed, if the swap is failed.
+  string failure_reason = 9 [json_name = "failure_reason"];
 }
 
 message Swap {
@@ -695,12 +727,8 @@ message SwapSuccess {
   uint64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
   string peer_pub_key = 10 [json_name = "peer_pub_key"];
-  enum Role {
-    TAKER = 0;
-    MAKER = 1;
-  }
   // Our role in the swap, either MAKER or TAKER.
-  Role role = 11 [json_name = "role"];
+  SwapRole role = 11 [json_name = "role"];
   // The ticker symbol of the currency received.
   string currency_received = 12 [json_name = "currency_received"];
   // The ticker symbol of the currency sent.

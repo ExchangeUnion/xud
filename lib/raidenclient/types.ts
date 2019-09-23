@@ -74,3 +74,17 @@ export type RaidenResolveResponse = {
   /** The preimage in hex format. */
   secret: string,
 };
+
+export type PaymentEvent = {
+  event: string;
+  payment_network_address: string;
+  token_network_address: string
+  identifier: number;
+  amount?: number;
+  target?: string
+  initiator?: string;
+  secret?: string;
+  route?: string[];
+  reason?: string;
+  log_time: string;
+};

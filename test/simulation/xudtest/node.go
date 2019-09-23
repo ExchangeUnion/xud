@@ -177,7 +177,7 @@ func (hn *HarnessNode) SetEnvVars(envVars []string) {
 }
 
 // Start launches a new running process of xud.
-func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
+func (hn *HarnessNode) Start(errorChan chan<- *XudError) error {
 	hn.quit = make(chan struct{})
 
 	args := hn.Cfg.genArgs()
@@ -210,7 +210,7 @@ func (hn *HarnessNode) start(errorChan chan<- *XudError) error {
 		defer hn.wg.Done()
 
 		err := hn.Cmd.Wait()
-		if err != nil {
+		if err != nil && errorChan != nil {
 			errorChan <- &XudError{hn, errors.Errorf("%v: %v\n%v\n", err, errb.String(), out.String())}
 		}
 

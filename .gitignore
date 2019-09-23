@@ -78,3 +78,6 @@ test/simulation/go
 # seedutil go directory and compiled binary
 seedutil/go
 seedutil/seedutil
+
+# Version file generated in build process
+lib/Version.ts

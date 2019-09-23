@@ -3,16 +3,16 @@ import grpc, { status } from 'grpc';
 import Logger from '../Logger';
 import Service from '../service/Service';
 import * as xudrpc from '../proto/xudrpc_pb';
-import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
+import { isOwnOrder, Order, OrderPortion, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as swapErrors } from '../swaps/errors';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
-import { SwapFailureReason } from '../constants/enums';
-import { TradeInstance, OrderInstance } from '../db/types';
+import { SwapFailure, SwapSuccess } from '../swaps/types';
+import { SwapFailureReason, SwapRole } from '../constants/enums';
+import { CurrencyInstance, OrderInstance, TradeInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -227,7 +227,7 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public addCurrency: grpc.handleUnaryCall<xudrpc.AddCurrencyRequest, xudrpc.AddCurrencyResponse> = async (call, callback) => {
+  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (call, callback) => {
     try {
       await this.service.addCurrency(call.request.toObject());
       const response = new xudrpc.AddCurrencyResponse();
@@ -267,17 +267,17 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.channelBalance]]
+   * See [[Service.getBalance]]
    */
-  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+  public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (call, callback) => {
     try {
-      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
-      const response = new xudrpc.ChannelBalanceResponse();
+      const balanceResponse = await this.service.getBalance(call.request.toObject());
+      const response = new xudrpc.GetBalanceResponse();
       const balancesMap = response.getBalancesMap();
-      channelBalanceResponse.forEach((channelBalance, currency) => {
-        const balance = new xudrpc.ChannelBalance();
-        balance.setBalance(channelBalance.balance);
-        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+      balanceResponse.forEach((balanceObj, currency) => {
+        const balance = new xudrpc.Balance();
+        balance.setBalance(balanceObj.balance);
+        balance.setPendingOpenBalance(balanceObj.pendingOpenBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);
@@ -344,8 +344,8 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const swapResult = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(swapResult));
+      const swapSuccess = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapSuccess));
     } catch (err) {
       if (typeof err === 'number') {
         // treat the error as a SwapFailureReason enum
@@ -499,9 +499,17 @@ class GrpcService {
    */
   public listCurrencies: grpc.handleUnaryCall<xudrpc.ListCurrenciesRequest, xudrpc.ListCurrenciesResponse> = (_, callback) => {
     try {
-      const listCurrenciesResponse = this.service.listCurrencies();
+      const currencies = this.service.listCurrencies();
       const response = new xudrpc.ListCurrenciesResponse();
-      response.setCurrenciesList(listCurrenciesResponse);
+
+      currencies.forEach((currency: CurrencyInstance) => {
+        const resultCurrency = new xudrpc.Currency();
+        resultCurrency.setDecimalPlaces(currency.decimalPlaces);
+        resultCurrency.setCurrency(currency.id);
+        resultCurrency.setTokenAddress(currency.tokenAddress);
+        resultCurrency.setSwapClient(currency.swapClient as number);
+        response.getCurrenciesList().push(resultCurrency);
+      });
 
       callback(null, response);
     } catch (err) {
@@ -589,30 +597,21 @@ class GrpcService {
   public listSwaps: grpc.handleUnaryCall<xudrpc.ListSwapsRequest, xudrpc.ListSwapsResponse> = async (call, callback) => {
     try {
       const listSwapsResponse = await this.service.listSwaps(call.request.toObject());
-      const swaps: xudrpc.Swap[] = [];
+      const swaps: xudrpc.SwapDeal[] = [];
       const response = new xudrpc.ListSwapsResponse();
       listSwapsResponse.forEach((deal) => {
-        const grpcSwap = new xudrpc.Swap();
-        grpcSwap.setCreateTime(deal.createTime);
+        const grpcSwap = new xudrpc.SwapDeal();
+        grpcSwap.setPeerPubKey(deal.peerPubKey);
+        grpcSwap.setLocalId(deal.localId);
+        grpcSwap.setAmountSent(deal.role === SwapRole.Maker ? deal.takerAmount : deal.makerAmount);
+        grpcSwap.setAmountReceived(deal.role === SwapRole.Maker ? deal.makerAmount : deal.takerAmount);
+        grpcSwap.setCurrencyReceived(deal.role === SwapRole.Maker ? deal.makerCurrency : deal.takerCurrency);
+        grpcSwap.setCurrencySent(deal.role === SwapRole.Maker ? deal.takerCurrency : deal.makerCurrency);
+        grpcSwap.setRole(deal.role as number);
+        grpcSwap.setRHash(deal.rHash);
+
         if (deal.errorMessage) {
-          const swapFailure = new xudrpc.SwapFailure();
-          swapFailure.setFailureReason(deal.failureReason ? SwapFailureReason[deal.failureReason] : '');
-          swapFailure.setOrderId(deal.orderId);
-          swapFailure.setPairId(deal.Order!.pairId);
-          swapFailure .setPeerPubKey(deal.peerPubKey);
-          swapFailure.setQuantity(deal.quantity ? deal.quantity : 0);
-          grpcSwap.setSwapFailure(swapFailure);
-        } else {
-          const swapSuccess = new xudrpc.SwapSuccess();
-          swapSuccess.setOrderId(deal.orderId);
-          swapSuccess.setLocalId(deal.localId);
-          swapSuccess.setPairId(deal.Order!.pairId);
-          swapSuccess.setQuantity(deal.Order!.initialQuantity);
-          swapSuccess.setRHash(deal.rHash);
-          swapSuccess.setRPreimage(deal.rPreimage ? deal.rPreimage : '');
-          swapSuccess.setPeerPubKey(deal.peerPubKey);
-          swapSuccess.setRole(deal.role as number);
-          grpcSwap.setSwapSuccess(swapSuccess);
+          grpcSwap.setFailureReason(deal.failureReason ? SwapFailureReason[deal.failureReason] : deal.errorMessage);
         }
         swaps.push(grpcSwap);
       });
@@ -623,6 +622,7 @@ class GrpcService {
       callback(this.getGrpcError(err), null);
     }
   }
+
   /**
    * See [[Service.placeOrder]]
    */

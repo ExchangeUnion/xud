@@ -14,10 +14,6 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
-    lockbuffer: {
-      describe: 'Lock time in hours to add to cross-chain hop for swaps',
-      type: 'number',
-    },
     loglevel: {
       describe: 'Verbosity of the logger',
       type: 'string',
@@ -92,6 +88,10 @@ const { argv } = require('yargs')
     'lnd.[currency].certpath': {
       describe: 'Path to the SSL certificate for lnd',
       type: 'string',
+    },
+    'lnd.[currency].cltvdelta': {
+      describe: 'CLTV delta for the final timelock',
+      type: 'number',
     },
     'lnd.[currency].disable': {
       describe: 'Disable lnd integration',
@@ -191,6 +191,7 @@ const { argv } = require('yargs')
     currencies.forEach((currency) => {
       parseBoolean(arg[currency], 'disable');
       parseBoolean(arg[currency], 'nomacaroons');
+      parseNumber(arg[currency], 'cltvdelta');
       parseNumber(arg[currency], 'port');
     });
 
