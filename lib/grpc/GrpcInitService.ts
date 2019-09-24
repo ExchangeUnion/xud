@@ -34,7 +34,7 @@ class GrpcInitService {
    */
   public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (call, callback) => {
     try {
-      const { mnemonic, initializedLndWallets } = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets, initializedRaiden } = await this.initService.createNode(call.request.toObject());
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
@@ -42,6 +42,7 @@ class GrpcInitService {
       if (initializedLndWallets) {
         response.setInitializedLndsList(initializedLndWallets);
       }
+      response.setInitializedRaiden(initializedRaiden);
 
       callback(null, response);
     } catch (err) {

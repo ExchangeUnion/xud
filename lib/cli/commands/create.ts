@@ -25,14 +25,15 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
       console.log(`The following lnd wallets were initialized: ${response.initializedLndsList.join(', ')}`);
     }
     if (response.initializedRaiden) {
-      console.log('The wallet for raiden was initialized.');
+      console.log('The keystore for raiden was initialized.');
     }
 
     console.log(`
 Please write down your 24 word mnemonic. It will allow you to recover your xud
 node key and on-chain funds for the initialized wallets listed above should you
-forget your password or lose your device. Off-chain funds are NOT recovered with
-it and are secured separately. Keep it somewhere safe, it is your ONLY backup.
+forget your password or lose your device. Off-chain funds in channels can NOT
+be recovered with it and must be backed up and recovered separately. Keep it
+somewhere safe, it is your ONLY backup in case of data loss.
     `);
   } else {
     console.log('xud was initialized without a seed because no wallets could be initialized.');
@@ -45,7 +46,10 @@ export const handler = (argv: Arguments) => {
     terminal: true,
   });
 
-  console.log('You are creating an xud node key and underlying wallets. All secured by a single password.');
+  console.log(`
+You are creating an xud node key and underlying wallets. All will be secured by
+a single password provided below.
+  `);
   process.stdout.write('Enter a password: ');
   rl.question('', (password1) => {
     process.stdout.write('\nRe-enter password: ');

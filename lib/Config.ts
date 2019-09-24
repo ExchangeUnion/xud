@@ -47,24 +47,28 @@ class Config {
 
   constructor() {
     const platform = os.platform();
-    let lndDefaultDatadir;
+    let lndDefaultDatadir: string;
+    let raidenDefaultKeystorePath: string;
     switch (platform) {
       case 'win32': { // windows
         const homeDir = process.env.LOCALAPPDATA!;
         this.xudir = path.join(homeDir, 'Xud');
         lndDefaultDatadir = path.join(homeDir, 'Lnd');
+        raidenDefaultKeystorePath = path.join(homeDir, 'Ethereum');
         break;
       }
       case 'darwin': { // mac
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
+        raidenDefaultKeystorePath = path.join(homeDir, 'Library', 'Ethereum');
         break;
       }
       default: { // linux
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, '.lnd');
+        raidenDefaultKeystorePath = path.join(homeDir, '.ethereum');
         break;
       }
     }
@@ -126,6 +130,7 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 5001,
+      keystorepath: raidenDefaultKeystorePath,
     };
   }
 

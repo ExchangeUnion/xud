@@ -6,6 +6,7 @@ export type RaidenClientConfig = {
   disable: boolean;
   host: string;
   port: number;
+  keystorepath: string;
 };
 
 /** General information about the state of this raiden client. */
