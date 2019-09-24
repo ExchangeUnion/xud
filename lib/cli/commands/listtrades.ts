@@ -4,31 +4,46 @@ import { ListTradesRequest, ListTradesResponse, Trade } from '../../proto/xudrpc
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { satsToCoinsStr } from '../utils';
+import { OrderSide } from '../../constants/enums';
 
 const HEADERS = [
   colors.blue('Trading Pair'),
-  colors.blue('Trade Quantity'),
+  colors.blue('Amount'),
+  colors.blue('Buy/Sell'),
   colors.blue('Price'),
-  colors.blue('Order Type'),
+  colors.blue('Peer Pubkey'),
+  colors.blue('Secret'),
+  colors.blue('Role'),
 ];
+
+const trimPubKey = (key: string) => {
+  if (key.length <= 0) {
+    return '';
+  }
+  return `${key.slice(0, 10)}...${key.slice(key.length - 10)}`;
+};
 
 const displayTrades = (trades: ListTradesResponse.AsObject) => {
   const table = new Table({ head: HEADERS }) as HorizontalTable;
   trades.tradesList.forEach((trade: Trade.AsObject) => {
-    const type = trade.makerOrder ? 'maker' : 'taker';
-    let price = 0;
-    if (trade.makerOrder) {
-      price = trade.makerOrder.price;
-    } else if (trade.takerOrder) {
-      price = trade.takerOrder.price;
-    }
-
-    table.push([
+    const details = [
       trade.pairId,
       satsToCoinsStr(trade.quantity),
-      parseFloat(price.toFixed(5)),
-      type,
-    ]);
+    ];
+
+    const order = trade.makerOrder ? trade.makerOrder : trade.takerOrder;
+    if (order) {
+      details.push(OrderSide[order.side]);
+      details.push(order.price.toFixed(5));
+      details.push(trimPubKey(order.peerPubKey));
+    } else {
+      details.push(...['', '', '']);
+    }
+
+    details.push(trimPubKey(trade.rHash));
+    details.push(trade.makerOrder ? 'Maker' : 'Taker');
+
+    table.push(details);
   });
   console.log(colors.underline(colors.bold('\Trades:')));
   console.log(table.toString());
