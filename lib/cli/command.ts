@@ -9,7 +9,7 @@ import { getDefaultCertPath } from './utils';
  * @param argv the command line arguments
  */
 export const loadXudClient = (argv: Arguments) => {
-  const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
+  const certPath = argv.tlscertpath || getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
@@ -17,7 +17,7 @@ export const loadXudClient = (argv: Arguments) => {
 };
 
 export const loadXudInitClient = (argv: Arguments) => {
-  const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
+  const certPath = argv.tlscertpath || getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
