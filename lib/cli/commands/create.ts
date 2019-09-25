@@ -55,7 +55,11 @@ export const handler = (argv: Arguments) => {
       if (password1 === password2) {
         const request = new CreateNodeRequest();
         request.setPassword(password1);
-        loadXudInitClient(argv).createNode(request, callback(argv, formatOutput));
+        const client = loadXudInitClient(argv);
+        // wait up to 3 seconds for rpc server to listen before call in case xud was just started
+        client.waitForReady(Date.now() + 3000, () => {
+          client.createNode(request, callback(argv, formatOutput));
+        });
       } else {
         console.log('Passwords do not match, please try again.');
       }
