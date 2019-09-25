@@ -120,9 +120,13 @@ abstract class SwapClient extends EventEmitter {
       }
       if (this.status !== ClientStatus.Disabled) {
         if (!this.reconnectionTimer) {
-          this.reconnectionTimer = setTimeout(this.verifyConnection, SwapClient.RECONNECT_TIMER);
-        } else {
-          this.reconnectionTimer.refresh();
+          this.reconnectionTimer = setTimeout(async () => {
+            await this.verifyConnection();
+            if (!this.isConnected() && this.reconnectionTimer) {
+              // if we were still not able to verify the connection, schedule another attempt
+              this.reconnectionTimer.refresh();
+            }
+          }, SwapClient.RECONNECT_TIMER);
         }
       }
     }
