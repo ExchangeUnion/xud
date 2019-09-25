@@ -397,6 +397,8 @@ class GrpcService {
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
+      response.setAlias(getInfoResponse.alias);
+      response.setNetwork(getInfoResponse.network);
 
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
@@ -411,13 +413,14 @@ class GrpcService {
           lnd.setChainsList(chains);
         }
         if (lndInfo.channels) {
-          const channels = new xudrpc.LndChannels();
+          const channels = new xudrpc.Channels();
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
+          channels.setClosed(lndInfo.channels.closed);
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
-        if (lndInfo.error) lnd.setError(lndInfo.error);
+        lnd.setStatus(lndInfo.status);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
@@ -430,10 +433,17 @@ class GrpcService {
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
+        raiden.setStatus(getInfoResponse.raiden.status);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
-        if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
+        if (getInfoResponse.raiden.channels) {
+          const channels = new xudrpc.Channels();
+          channels.setActive(getInfoResponse.raiden.channels.active);
+          // channels.setSettled(getInfoResponse.raiden.channels.settled);
+          channels.setClosed(getInfoResponse.raiden.channels.closed);
+          raiden.setChannels(channels);
+        }
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
+        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
         response.setRaiden(raiden);
       }
 

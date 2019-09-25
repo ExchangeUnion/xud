@@ -41,7 +41,7 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			node.SetPubKey(res.NodePubKey)
 
 			// Add pair to the node.
-			a.addPair(node, "LTC", "BTC", xudrpc.AddCurrencyRequest_LND)
+			a.addPair(node, "LTC", "BTC", xudrpc.Currency_LND)
 			break
 		}
 		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
@@ -51,7 +51,7 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 }
 
 func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteCurrency string,
-	swapClient xudrpc.AddCurrencyRequest_SwapClient) {
+	swapClient xudrpc.Currency_SwapClient) {
 	// Check the current number of pairs.
 	resInfo, err := node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
 	a.assert.NoError(err)
@@ -59,11 +59,11 @@ func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteC
 	prevNumPairs := resInfo.NumPairs
 
 	// Add currencies.
-	reqAddCurr := &xudrpc.AddCurrencyRequest{Currency: baseCurrency, SwapClient: swapClient}
+	reqAddCurr := &xudrpc.Currency{Currency: baseCurrency, SwapClient: swapClient}
 	_, err = node.Client.AddCurrency(a.ctx, reqAddCurr)
 	a.assert.NoError(err)
 
-	reqAddCurr = &xudrpc.AddCurrencyRequest{Currency: quoteCurrency, SwapClient: swapClient}
+	reqAddCurr = &xudrpc.Currency{Currency: quoteCurrency, SwapClient: swapClient}
 	_, err = node.Client.AddCurrency(a.ctx, reqAddCurr)
 	a.assert.NoError(err)
 

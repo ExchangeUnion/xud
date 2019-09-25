@@ -1,4 +1,5 @@
 /** The configurable options for the lnd client. */
+
 export type LndClientConfig = {
   disable: boolean;
   certpath: string;
@@ -11,6 +12,7 @@ export type LndClientConfig = {
 
 /** General information about the state of this lnd client. */
 export type LndInfo = {
+  status: string;
   error?: string;
   channels?: ChannelCount;
   chains?: Chain[];
@@ -24,6 +26,7 @@ export type ChannelCount = {
   active: number,
   inactive?: number,
   pending: number,
+  closed: number,
 };
 
 export type Chain = {

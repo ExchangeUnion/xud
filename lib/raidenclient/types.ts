@@ -1,6 +1,7 @@
 /**
  * The configurable options for the raiden client.
  */
+
 export type RaidenClientConfig = {
   disable: boolean;
   host: string;
@@ -9,10 +10,18 @@ export type RaidenClientConfig = {
 
 /** General information about the state of this raiden client. */
 export type RaidenInfo = {
+  status: string;
   error?: string;
   address?: string;
-  channels?: number;
+  channels?: RaidenChannelCount;
+  chain?: string;
   version?: string;
+};
+
+export type RaidenChannelCount = {
+  active: number,
+  settled: number,
+  closed: number,
 };
 
 /**
@@ -23,6 +32,14 @@ export type OpenChannelPayload = {
   token_address: string;
   total_deposit: number;
   settle_timeout: number;
+};
+
+/**
+ * The raiden version.
+ */
+
+export type RaidenVersion = {
+  version: string;
 };
 
 /**

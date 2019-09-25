@@ -7,7 +7,16 @@ import SwapClient, { ChannelBalance, ClientStatus, PaymentState } from '../swaps
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
-import { Channel, OpenChannelPayload, PaymentEvent, RaidenClientConfig, RaidenInfo, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import {
+  Channel,
+  OpenChannelPayload,
+  PaymentEvent,
+  RaidenChannelCount,
+  RaidenClientConfig,
+  RaidenInfo, RaidenVersion,
+  TokenPaymentRequest,
+  TokenPaymentResponse,
+} from './types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -304,26 +313,36 @@ class RaidenClient extends SwapClient {
   }
 
   public getRaidenInfo = async (): Promise<RaidenInfo> => {
-    let channels: number | undefined;
+    let channels: RaidenChannelCount | undefined;
     let address: string | undefined;
-    let error: string | undefined;
-    const version = ''; // Intentionally left blank until Raiden API exposes it
-
+    let version: string | undefined;
+    let status = 'Ready';
+    const chain = Object.keys(this.tokenAddresses).find(key => this.tokenAddresses.get(key) === this.address) || 'raiden';
     if (this.isDisabled()) {
-      error = errors.RAIDEN_IS_DISABLED.message;
+      status = errors.RAIDEN_IS_DISABLED.message;
     } else {
       try {
-        channels = (await this.getChannels()).length;
+        version = (await this.getVersion()).version;
+        const raidenChannels = await this.getChannels();
+        channels = {
+          active: raidenChannels.filter(c => c.state === 'opened').length,
+          settled: raidenChannels.filter(c => c.state === 'settled').length,
+          closed: raidenChannels.filter(c => c.state === 'closed').length,
+        };
         address = this.address;
+        if (channels.active <= 0) {
+          status = errors.RAIDEN_HAS_NO_ACTIVE_CHANNELS().message;
+        }
       } catch (err) {
-        error = err.message;
+        status = err.message;
       }
     }
 
     return {
+      chain,
+      status,
       channels,
       address,
-      error,
       version,
     };
   }
@@ -394,6 +413,15 @@ class RaidenClient extends SwapClient {
       }
       req.end();
     });
+  }
+
+  /**
+   * Gets the raiden version.
+   */
+  public getVersion = async (): Promise<RaidenVersion> => {
+    const endpoint = 'version';
+    const res = await this.sendRequest(endpoint, 'GET');
+    return parseResponseBody<RaidenVersion>(res);
   }
 
   /**
@@ -489,7 +517,6 @@ class RaidenClient extends SwapClient {
   private tokenPayment = async (payload: TokenPaymentRequest): Promise<TokenPaymentResponse> => {
     const endpoint = `payments/${payload.token_address}/${payload.target_address}`;
     if (payload.secret_hash) {
-      payload.identifier = RaidenClient.getIdentifier(payload.secret_hash);
       payload.secret_hash = `0x${payload.secret_hash}`;
     }
 
