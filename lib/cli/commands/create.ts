@@ -25,13 +25,14 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
       console.log(`The following lnd wallets were initialized: ${response.initializedLndsList.join(', ')}`);
     }
     if (response.initializedRaiden) {
-      console.log('The wallet for raiden was initialized');
+      console.log('The wallet for raiden was initialized.');
     }
 
     console.log(`
 Please write down your 24 word mnemonic. It will allow you to recover your xud
-key and funds for the initialized wallets listed above should you forget your
-password or lose your device. Keep it somewhere safe, it is your ONLY backup.
+node key and on-chain funds for the initialized wallets listed above should you
+forget your password or lose your device. Off-chain funds are NOT recovered with
+it and are secured separately. Keep it somewhere safe, it is your ONLY backup.
     `);
   } else {
     console.log('xud was initialized without a seed because no wallets could be initialized.');
@@ -44,7 +45,7 @@ export const handler = (argv: Arguments) => {
     terminal: true,
   });
 
-  console.log('You are creating an xud key and underlying wallets secured by a single password.');
+  console.log('You are creating an xud node key and underlying wallets. All secured by a single password.');
   process.stdout.write('Enter a password: ');
   rl.question('', (password1) => {
     process.stdout.write('\nRe-enter password: ');
@@ -56,7 +57,7 @@ export const handler = (argv: Arguments) => {
         request.setPassword(password1);
         loadXudInitClient(argv).createNode(request, callback(argv, formatOutput));
       } else {
-        console.log('Passwords do not match, please try again');
+        console.log('Passwords do not match, please try again.');
       }
     });
   });
