@@ -29,9 +29,10 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
     }
 
     console.log(`
-Please write down your 24 word mnemonic. It will allow you to recover your xud node key and
-on-chain funds for the initialized wallets listed above, should you forget your password or
-lose your device. Keep it somewhere safe, it is your ONLY backup. Channels are not included.
+Please write down your 24 word mnemonic. It will allow you to recover your xud
+node key and on-chain funds for the initialized wallets listed above should you
+forget your password or lose your device. Off-chain funds are NOT recovered with
+it and are secured separately. Keep it somewhere safe, it is your ONLY backup.
     `);
   } else {
     console.log('xud was initialized without a seed because no wallets could be initialized.');
