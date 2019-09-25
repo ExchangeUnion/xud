@@ -28,7 +28,7 @@ export const builder = {
   },
   quantity: {
     type: 'number',
-    description: 'the quantity to swap. the whole order will be swapped if unspecified',
+    description: 'the quantity to swap; the whole order will be swapped if unspecified',
   },
 };
 

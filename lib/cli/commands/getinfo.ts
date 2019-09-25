@@ -112,7 +112,7 @@ const displayGetInfo = (response: GetInfoResponse.AsObject) => {
 
 export const command = 'getinfo';
 
-export const describe = 'get general info from the xud node';
+export const describe = 'get general info from the local xud node';
 
 export const handler = (argv: Arguments) => {
   loadXudClient(argv).getInfo(new GetInfoRequest(), callback(argv, displayGetInfo));

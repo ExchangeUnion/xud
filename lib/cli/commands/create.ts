@@ -5,7 +5,7 @@ import { callback, loadXudInitClient } from '../command';
 
 export const command = 'create';
 
-export const describe = 'create an xud node';
+export const describe = 'use this to create a new xud instance and set a password';
 
 export const builder = {};
 
