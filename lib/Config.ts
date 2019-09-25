@@ -73,7 +73,7 @@ class Config {
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
-    this.network = this.getDefaultNetwork();
+    this.network = XuNetwork.SimNet;
     this.dbpath = this.getDefaultDbPath();
 
     this.p2p = {
@@ -81,7 +81,7 @@ class Config {
       discover: true,
       discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
-      port: 8885, // X = 88, U = 85 in ASCII
+      port: this.getDefaultP2pPort(),
       addresses: [],
     };
     this.rpc = {
@@ -116,8 +116,7 @@ class Config {
     this.lnd.LTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin',
-        this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon'),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       nomacaroons: false,
@@ -130,6 +129,23 @@ class Config {
     };
   }
 
+  private static readConfigProps = async (configPath: string) => {
+    let configText: string | undefined;
+    try {
+      configText = await fs.readFile(configPath, 'utf8');
+    } catch (err) {}
+
+    let configProps: any;
+    if (configText) {
+      try {
+        configProps = toml.parse(configText);
+      } catch (e) {
+        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
+      }
+    }
+    return configProps;
+  }
+
   /**
    * Loads the xud configuration from an optional file and any command line arguments.
    * @returns a promise that resolves to `true` if a config file was found and loaded, otherwise `false`
@@ -138,53 +154,49 @@ class Config {
     if (args) {
       if (args.xudir) {
         this.xudir = args.xudir;
-        this.logpath = this.getDefaultLogPath();
       }
-      this.network = this.getNetwork(args);
-      this.dbpath = this.getDefaultDbPath();
-      this.updateMacaroonPaths();
+      const argNetwork = this.getNetwork(args);
+      if (argNetwork) {
+        this.network = argNetwork;
+        args.network = argNetwork;
+      }
     }
 
     await this.mkDirIfNotExist(this.xudir);
 
     const configPath = path.join(this.xudir, 'xud.conf');
-    let configText: string | undefined;
-    try {
-      configText = await fs.readFile(configPath, 'utf8');
-    } catch (err) {}
+    const configProps = await Config.readConfigProps(configPath);
 
-    if (configText) {
-      let props;
-      try {
-        props = toml.parse(configText);
-      } catch (e) {
-        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
-      }
-
-      if (props.xudir && (!args || !args.xudir)) {
-        this.xudir = props.xudir;
-        this.logpath = this.getDefaultLogPath();
-        this.dbpath = this.getDefaultDbPath();
-      }
-
-      if (props.network && this.network === this.getDefaultNetwork()) {
-        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(props.network)) {
-          throw new Error(`Invalid network config: ${props.network}`);
+    if (configProps) {
+      // set the network and xudir props up front because they influence default config values
+      if (configProps.network && (!args || !args.network)) {
+        this.network = configProps.network;
+        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)) {
+          throw new Error(`Invalid network config: ${configProps.network}`);
         }
-        this.network = props.network;
-        this.logpath = this.getDefaultLogPath();
-        this.dbpath = this.getDefaultDbPath();
-        this.updateMacaroonPaths();
       }
 
-      if (props.thresholds) {
+      if (configProps.xudir && (!args || !args.xudir)) {
+        this.xudir = configProps.xudir;
+      }
+
+      if (configProps.thresholds) {
         this.orderthresholds = {
           ...this.orderthresholds,
-          ...props.thresholds,
+          ...configProps.thresholds,
         };
       }
+    }
+
+    // update defaults based on the xudir and network from the args or config file
+    this.logpath = this.getDefaultLogPath();
+    this.dbpath = this.getDefaultDbPath();
+    this.p2p.port = this.getDefaultP2pPort();
+    this.setDefaultMacaroonPaths();
+
+    if (configProps) {
       // merge parsed json properties from config file to the default config
-      deepMerge(this, props);
+      deepMerge(this, configProps);
     }
 
     if (args) {
@@ -199,7 +211,7 @@ class Config {
     const logDir = path.dirname(this.logpath);
     await this.mkDirIfNotExist(logDir);
 
-    return !!configText;
+    return !!configProps;
   }
 
   /**
@@ -230,13 +242,13 @@ class Config {
     }
 
     if (selected.length === 0) {
-      return XuNetwork.SimNet;
+      return undefined;
     } else {
       return selected[0] as XuNetwork;
     }
   }
 
-  private updateMacaroonPaths = () => {
+  private setDefaultMacaroonPaths = () => {
     for (const currency in this.lnd) {
       switch (currency) {
         case 'LTC':
@@ -252,6 +264,21 @@ class Config {
     }
   }
 
+  private getDefaultP2pPort = () => {
+    switch (this.network) {
+      case XuNetwork.MainNet:
+        return 8885;  // X = 88, U = 85 in ASCII
+      case XuNetwork.TestNet:
+        return 18885;
+      case XuNetwork.SimNet:
+        return 28885;
+      case XuNetwork.RegTest:
+        return 38885;
+      default:
+        throw new Error('unrecognized network');
+    }
+  }
+
   private getDefaultDbPath = () => {
     return path.join(this.xudir, `xud-${this.network}.db`);
   }
@@ -262,10 +289,6 @@ class Config {
 
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
-  }
-
-  public getDefaultNetwork = (): XuNetwork => {
-    return XuNetwork.SimNet;
   }
 }
 
