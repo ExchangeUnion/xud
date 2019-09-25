@@ -49,6 +49,7 @@ interface GrpcResponse {
 export const callback = (argv: Arguments, formatOutput?: Function, displayJson?: Function) => {
   return (error: Error | null, response: GrpcResponse) => {
     if (error) {
+      process.exitCode = 1;
       console.error(`${error.name}: ${error.message}`);
     } else {
       const responseObj = response.toObject();
