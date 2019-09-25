@@ -1,33 +1,15 @@
-import { Arguments } from 'yargs';
 import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import grpc from 'grpc';
+import { Arguments } from 'yargs';
 import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
-
-function getXudDir() {
-  switch (os.platform()) {
-    case 'win32': {
-      const homeDir = process.env.LOCALAPPDATA!;
-      return path.join(homeDir, 'Xud');
-    }
-    case 'darwin': {
-      const homeDir = process.env.HOME!;
-      return path.join(homeDir, '.xud');
-    }
-    default: {
-      const homeDir = process.env.HOME!;
-      return path.join(homeDir, '.xud');
-    }
-  }
-}
+import { getDefaultCertPath } from './utils';
 
 /**
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
  */
 export const loadXudClient = (argv: Arguments) => {
-  const certPath = argv.tlscertpath ? argv.tlscertpath : path.join(getXudDir(), 'tls.cert');
+  const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
@@ -35,7 +17,7 @@ export const loadXudClient = (argv: Arguments) => {
 };
 
 export const loadXudInitClient = (argv: Arguments) => {
-  const certPath = argv.tlscertpath ? argv.tlscertpath : path.join(getXudDir(), 'tls.cert');
+  const certPath = argv.tlscertpath ? argv.tlscertpath : getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
 
