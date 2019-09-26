@@ -1,11 +1,19 @@
 # seedutil
+
 This utility is used to derive an Ethereum keystore file from [aezeed](https://github.com/lightningnetwork/lnd/tree/master/aezeed) generated mnemonic seed.
 
 ## Build
+
 `npm run compile:seedutil`
 
 ## Usage
-It is recommended to use this tool on the command line ONLY for development purposes.
-`seedutil [twenty four recovery words separated by space] [optional password] [optional keystore path]`
 
-[Tests](/test/jest/SeedUtil.spec.ts)
+It is recommended to use this tool on the command line ONLY for development purposes.
+
+`seedutil [-pass=encryption password] [-path=optional/keystore/path] [-aezeedpass=optional_seed_pass] <twenty four recovery words separated by spaces>`
+
+By default the `keystore` folder will be created in the execution directory and the aezeed password will be `aezeed`.
+
+## Tests
+
+`npm run test:seedutil`

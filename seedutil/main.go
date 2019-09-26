@@ -3,46 +3,49 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha512"
+	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/lightningnetwork/lnd/aezeed"
-	"os"
-	"path/filepath"
 )
 
 var (
 	// defaultPassphrase is the default passphrase that will
-	// be used for decryption
-	defaultPassphrase = []byte("aezeed")
+	// be used for the seed
+	defaultAezeedPassphrase = "aezeed"
 	// masterKey is the master key used along with a random seed used to generate
 	// the master node in the hierarchical tree.
 	masterKey = []byte("Bitcoin seed")
 	// by default we will generate the keystore file into the keystore directory
 	// relative to the execution directory
-	defaultKeyStorePath = filepath.Join(filepath.Dir(os.Args[0]), "keystore")
+	defaultKeyStorePath = filepath.Join(filepath.Dir(os.Args[0]))
 )
 
 func main() {
-	if len(os.Args[1:]) < aezeed.NummnemonicWords {
-		fmt.Fprintf(os.Stderr, "\nerror: expecting %v-word mnemonic seed separated by a space, followed by an optional password", aezeed.NummnemonicWords)
-		os.Exit(1)
-	}
+	password := flag.String("pass", "", "encryption password")
+	keystorePath := flag.String("path", defaultKeyStorePath, "path to create keystore dir")
+	aezeedPassphrase := flag.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
+	flag.Parse()
+	args := flag.Args()
 
-	passphrase := defaultPassphrase
-	if len(os.Args[1:]) > aezeed.NummnemonicWords {
-		// use provided password
-		passphrase = []byte(os.Args[25])
+	if len(args) < aezeed.NummnemonicWords {
+		fmt.Fprintf(os.Stderr, "\nerror: expecting password and %v-word mnemonic seed separated by spaces\n", aezeed.NummnemonicWords)
+		os.Exit(1)
 	}
 
 	// parse seed from args
 	var mnemonic aezeed.Mnemonic
-	copy(mnemonic[:], os.Args[1:25])
+	copy(mnemonic[:], args[0:24])
 
 	// map back to cipher
-	cipherSeed, err := mnemonic.ToCipherSeed(passphrase)
+	aezeedPassphraseBytes := []byte(*aezeedPassphrase)
+	cipherSeed, err := mnemonic.ToCipherSeed(aezeedPassphraseBytes)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "\nerror: invalid seed or password")
+		fmt.Fprintln(os.Stderr, "\nerror: invalid aezeed:", err)
 		os.Exit(1)
 	}
 
@@ -58,19 +61,13 @@ func main() {
 	// perform validations and convert bytes to ecdsa.PrivateKey
 	privateKey, err := crypto.ToECDSA(masterSecretKey)
 	if err != nil {
-		fmt.Fprint(os.Stderr, "\nerror: failed to convert masterSecretKey bytes to ecdsa.PrivateKey")
+		fmt.Fprintln(os.Stderr, "\nerror: failed to convert masterSecretKey bytes to ecdsa.PrivateKey")
 		os.Exit(1)
 	}
 
-	// get directory for saving the keystore file
-	keystorePath := defaultKeyStorePath
-	if len(os.Args[1:]) > aezeed.NummnemonicWords+1 {
-		// use use provided path if provided
-		keystorePath = os.Args[26]
-	}
-	dir, err := filepath.Abs(keystorePath)
+	dir, err := filepath.Abs(filepath.Join(*keystorePath, "keystore"))
 	if err != nil {
-		fmt.Fprint(os.Stderr, "\nerror: failed to get directory for keystore")
+		fmt.Fprintln(os.Stderr, "\nerror: failed to get directory for keystore")
 		os.Exit(1)
 	}
 
@@ -78,10 +75,11 @@ func main() {
 	ks := keystore.NewKeyStore(dir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// import our ecdsa.PrivateKey to our new keystore
-	_, err = ks.ImportECDSA(privateKey, string(passphrase))
+	_, err = ks.ImportECDSA(privateKey, *password)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\nerror: failed to import key to keystore - %v\n", err)
 		os.Exit(1)
 	}
-	fmt.Print("\nKeystore created.")
+
+	fmt.Println("\nKeystore created in", dir)
 }
