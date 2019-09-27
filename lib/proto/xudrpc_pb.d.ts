@@ -543,6 +543,12 @@ export class GetInfoResponse extends jspb.Message {
     getRaiden(): RaidenInfo | undefined;
     setRaiden(value?: RaidenInfo): void;
 
+    getAlias(): string;
+    setAlias(value: string): void;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
     clearPendingSwapHashesList(): void;
     getPendingSwapHashesList(): Array<string>;
     setPendingSwapHashesList(value: Array<string>): void;
@@ -570,6 +576,8 @@ export namespace GetInfoResponse {
 
         lndMap: Array<[string, LndInfo.AsObject]>,
         raiden?: RaidenInfo.AsObject,
+        alias: string,
+        network: string,
         pendingSwapHashesList: Array<string>,
     }
 }
@@ -990,7 +998,7 @@ export namespace Swap {
 
 }
 
-export class LndChannels extends jspb.Message { 
+export class Channels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;
 
@@ -1000,34 +1008,38 @@ export class LndChannels extends jspb.Message {
     getPending(): number;
     setPending(value: number): void;
 
+    getClosed(): number;
+    setClosed(value: number): void;
+
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): LndChannels.AsObject;
-    static toObject(includeInstance: boolean, msg: LndChannels): LndChannels.AsObject;
+    toObject(includeInstance?: boolean): Channels.AsObject;
+    static toObject(includeInstance: boolean, msg: Channels): Channels.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: LndChannels, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): LndChannels;
-    static deserializeBinaryFromReader(message: LndChannels, reader: jspb.BinaryReader): LndChannels;
+    static serializeBinaryToWriter(message: Channels, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Channels;
+    static deserializeBinaryFromReader(message: Channels, reader: jspb.BinaryReader): Channels;
 }
 
-export namespace LndChannels {
+export namespace Channels {
     export type AsObject = {
         active: number,
         inactive: number,
         pending: number,
+        closed: number,
     }
 }
 
 export class LndInfo extends jspb.Message { 
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
 
     hasChannels(): boolean;
     clearChannels(): void;
-    getChannels(): LndChannels | undefined;
-    setChannels(value?: LndChannels): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     clearChainsList(): void;
     getChainsList(): Array<Chain>;
@@ -1061,8 +1073,8 @@ export class LndInfo extends jspb.Message {
 
 export namespace LndInfo {
     export type AsObject = {
-        error: string,
-        channels?: LndChannels.AsObject,
+        status: string,
+        channels?: Channels.AsObject,
         chainsList: Array<Chain.AsObject>,
         blockheight: number,
         urisList: Array<string>,
@@ -1517,17 +1529,23 @@ export namespace PlaceOrderEvent {
 }
 
 export class RaidenInfo extends jspb.Message { 
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
     getAddress(): string;
     setAddress(value: string): void;
 
-    getChannels(): number;
-    setChannels(value: number): void;
+
+    hasChannels(): boolean;
+    clearChannels(): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     getVersion(): string;
     setVersion(value: string): void;
+
+    getChain(): string;
+    setChain(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -1542,10 +1560,11 @@ export class RaidenInfo extends jspb.Message {
 
 export namespace RaidenInfo {
     export type AsObject = {
-        error: string,
+        status: string,
         address: string,
-        channels: number,
+        channels?: Channels.AsObject,
         version: string,
+        chain: string,
     }
 }
 

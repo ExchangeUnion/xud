@@ -111,6 +111,7 @@ describe('Swaps.SwapClientManager', () => {
       disable: false,
       host: 'localhost',
       port: 1234,
+      keystorepath: '',
     };
     config.debug = {
       raidenDirectChannelChecks: true,

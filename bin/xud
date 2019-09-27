@@ -148,6 +148,10 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    'raiden.keystorepath': {
+      describe: 'Path containing keystore dir',
+      type: 'string',
+    },
     'raiden.port': {
       describe: 'Port for raiden REST service',
       type: 'number',

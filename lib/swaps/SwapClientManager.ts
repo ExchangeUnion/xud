@@ -11,6 +11,7 @@ import { SwapClientType } from '../constants/enums';
 import { EventEmitter } from 'events';
 import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
+import seedutil from '../utils/seedutil';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -132,11 +133,12 @@ class SwapClientManager extends EventEmitter {
 
     // loop through swap clients to find locked lnd clients
     const initWalletPromises: Promise<any>[] = [];
-    const createdLndWallets: string[] = [];
+    const initializedLndWallets: string[] = [];
+    let initializedRaiden = false;
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
         const initWalletPromise = swapClient.initWallet(walletPassword, seedMnemonic).then(() => {
-          createdLndWallets.push(swapClient.currency);
+          initializedLndWallets.push(swapClient.currency);
         }).catch((err) => {
           swapClient.logger.debug(`could not initialize wallet: ${err.message}`);
         });
@@ -144,11 +146,26 @@ class SwapClientManager extends EventEmitter {
       }
     }
 
+    if (!this.raidenClient.isDisabled()) {
+      const { keystorepath } = this.config.raiden;
+      // TODO: we are setting the raiden keystore as an empty string until raiden
+      // allows for decrypting the keystore without needing to save the password
+      // to disk in plain text
+      const keystorePromise = seedutil(seedMnemonic, '', keystorepath).then(() => {
+        this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
+        initializedRaiden = true;
+      }).catch((err) => {
+        this.raidenClient.logger.warn(`could not create keystore: ${err}`);
+      });
+      initWalletPromises.push(keystorePromise);
+    }
+
     await Promise.all(initWalletPromises);
 
-    // TODO: create raiden address
-
-    return createdLndWallets;
+    return {
+      initializedLndWallets,
+      initializedRaiden,
+    };
   }
 
   /**
