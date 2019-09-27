@@ -252,7 +252,17 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 		grpc.WithTimeout(time.Second * 20),
 	}
 
+	var tries = 3
 	tlsCreds, err := credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
+	for tries > 0 {
+		if err != nil {
+			time.Sleep(3 * time.Second)
+			fmt.Printf("failed to create TLS from file with error: %v", err)
+			tlsCreds, err = credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
+			tries--
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
