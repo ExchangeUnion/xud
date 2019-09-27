@@ -95,6 +95,7 @@ describe('Swaps.SwapClientManager', () => {
         port: 10009,
         nomacaroons: true,
         macaroonpath: '',
+        cltvdelta: 40,
       },
       LTC: {
         disable: false,
@@ -103,12 +104,14 @@ describe('Swaps.SwapClientManager', () => {
         port: 10009,
         nomacaroons: true,
         macaroonpath: '',
+        cltvdelta: 576,
       },
     };
     config.raiden = {
       disable: false,
       host: 'localhost',
       port: 1234,
+      keystorepath: '',
     };
     config.debug = {
       raidenDirectChannelChecks: true,
@@ -126,7 +129,7 @@ describe('Swaps.SwapClientManager', () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);
-    expect(onListenerMock).toHaveBeenCalledTimes(5);
+    expect(onListenerMock).toHaveBeenCalledTimes(7);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
     expect(swapClientManager.get('WETH')).not.toBeUndefined();
@@ -146,7 +149,7 @@ describe('Swaps.SwapClientManager', () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(2);
-    expect(onListenerMock).toHaveBeenCalledTimes(4);
+    expect(onListenerMock).toHaveBeenCalledTimes(6);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
     await swapClientManager.close();
@@ -160,7 +163,7 @@ describe('Swaps.SwapClientManager', () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(1);
-    expect(onListenerMock).toHaveBeenCalledTimes(2);
+    expect(onListenerMock).toHaveBeenCalledTimes(3);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     await swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(1);

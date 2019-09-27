@@ -13,6 +13,7 @@ require (
 	github.com/ltcsuite/ltcutil v0.0.0-20190507133322-23cdfa9fcc3d
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/roasbeef/btcd v0.0.0-20180418012700-a03db407e40d
 	github.com/roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141
 	github.com/stretchr/testify v1.3.0

@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	goerrors "github.com/go-errors/errors"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type testCase struct {

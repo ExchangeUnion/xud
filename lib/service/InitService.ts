@@ -19,6 +19,10 @@ class InitService extends EventEmitter {
 
   public createNode = async (args: { password: string }) => {
     const { password } = args;
+    if (password.length < 8) {
+      // lnd requires 8+ character passwords, so we must as well
+      throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
+    }
     if (this.nodeKeyExists) {
       throw errors.UNIMPLEMENTED;
     }
@@ -29,6 +33,7 @@ class InitService extends EventEmitter {
     this.pendingCall = true;
     const seed = await this.swapClientManager.genSeed();
     let initializedLndWallets: string[] | undefined;
+    let initializedRaiden = false;
     let nodeKey: NodeKey;
 
     if (seed) {
@@ -44,9 +49,11 @@ class InitService extends EventEmitter {
       nodeKey = new NodeKey(privKey);
 
       // use this seed to init any lnd wallets that are uninitialized
-      initializedLndWallets = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
+      const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
+      initializedLndWallets = initWalletResult.initializedLndWallets;
+      initializedRaiden = initWalletResult.initializedRaiden;
     } else {
-      // we couldn't generate a seed externally, so we must create one locally
+      // we couldn't generate a seed externally, so we must create a nodekey from scratch
       nodeKey = await NodeKey.generate();
     }
 
@@ -54,6 +61,7 @@ class InitService extends EventEmitter {
     this.emit('nodekey', nodeKey);
     return {
       initializedLndWallets,
+      initializedRaiden,
       mnemonic: seed ? seed.cipherSeedMnemonicList : undefined,
     };
   }

@@ -63,19 +63,25 @@ class HttpServer {
         default:
           res.writeHead(404);
           res.end();
+          break;
       }
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(resJson));
     } catch (err) {
-      if (err.code === errorCodes.INVALID_ARGUMENT) {
-        res.writeHead(400);
-        res.end(err.message);
-      } else if (err.code === swapErrorCodes.PAYMENT_HASH_NOT_FOUND) {
-        res.writeHead(404);
-        res.end(err.message);
-      } else {
-        res.writeHead(500);
-        res.end(JSON.stringify(err));
+      switch (err.code) {
+        case swapErrorCodes.INVALID_RESOLVE_REQUEST:
+        case errorCodes.INVALID_ARGUMENT:
+          res.writeHead(400);
+          res.end(err.message);
+          break;
+        case swapErrorCodes.PAYMENT_HASH_NOT_FOUND:
+          res.writeHead(404);
+          res.end(err.message);
+          break;
+        default:
+          res.writeHead(500);
+          res.end(JSON.stringify(err));
+          break;
       }
     }
   }

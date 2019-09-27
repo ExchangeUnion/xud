@@ -23,6 +23,7 @@ import (
 	"github.com/go-errors/errors"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/macaroons"
+	"github.com/phayes/freeport"
 	"github.com/roasbeef/btcd/chaincfg/chainhash"
 	"github.com/roasbeef/btcd/wire"
 )
@@ -30,33 +31,6 @@ import (
 var (
 	// numActiveNodes is the number of active nodes within the test network.
 	numActiveNodes = 0
-
-	// defaultNodePort is the initial p2p port which will be used by the
-	// first created lightning node to listen on for incoming p2p
-	// connections.  Subsequent allocated ports for future Lightning nodes
-	// instances will be monotonically increasing numbers calculated as
-	// such: defaultP2pPort + (3 * harness.nodeNum).
-	// initial port will be calculated from one of the free ports at first call
-	// if fails to find a free port, it will use currently assigned one
-	defaultNodePort = 19555
-
-	// defaultClientPort is the initial rpc port which will be used by the
-	// first created lightning node to listen on for incoming rpc
-	// connections. Subsequent allocated ports for future rpc harness
-	// instances will be monotonically increasing numbers calculated
-	// as such: defaultP2pPort + (3 * harness.nodeNum).
-	// initial port will be calculated from one of the free ports at first call,
-	// if fails to find a free port, it will use currently assigned one
-	defaultClientPort = defaultNodePort + 1
-
-	// defaultRestPort is the initial rest port which will be used by the
-	// first created lightning node to listen on for incoming rest
-	// connections. Subsequent allocated ports for future rpc harness
-	// instances will be monotonically increasing numbers calculated
-	// as such: defaultP2pPort + (3 * harness.nodeNum).
-	// initial port will be calculated from one of the free ports at first call
-	// if fails to find a free port, it will use currently assigned one
-	defaultRestPort = defaultNodePort + 2
 
 	// logOutput is a flag that can be set to append the output from the
 	// seed nodes to log files.
@@ -73,55 +47,6 @@ var (
 	// release of announcements by AuthenticatedGossiper to the network.
 	trickleDelay = 50
 )
-
-// generateListeningPorts returns three ints representing ports to listen on
-// designated for the current lightning network test. If there haven't been any
-// test instances created, the default ports are used. Otherwise, in order to
-// support multiple test nodes running at once, the p2p, rpc, and rest ports
-// are incremented after each initialization.
-func generateListeningPorts() (int, int, int, error) {
-	var p2p, rpc, rest int
-	if numActiveNodes == 0 {
-	    freePorts, err := getFreePorts(3)
-		if err != nil {
-		    fmt.Println(fmt.Errorf("could not find free ports %v", err))
-		    return 0, 0, 0, err
-		} else{
-            defaultNodePort = freePorts[0]
-            defaultClientPort = freePorts[1]
-            defaultRestPort = freePorts[2]
-		}
-
-		p2p = defaultNodePort
-		rpc = defaultClientPort
-		rest = defaultRestPort
-	} else {
-		p2p = defaultNodePort + (3 * numActiveNodes)
-		rpc = defaultClientPort + (3 * numActiveNodes)
-		rest = defaultRestPort + (3 * numActiveNodes)
-	}
-
-	return p2p, rpc, rest, nil
-}
-
-// getFreePorts returns unused TCP ports from the system for given count
-func getFreePorts(count int) ([]int, error) {
-	var ports []int
-	for i := 0; i < count; i++ {
-		addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-		if err != nil {
-			return nil, err
-		}
-
-		l, err := net.ListenTCP("tcp", addr)
-		if err != nil {
-			return nil, err
-		}
-		defer l.Close()
-		ports = append(ports, l.Addr().(*net.TCPAddr).Port)
-	}
-	return ports, nil
-}
 
 type nodeConfig struct {
 	Name      string
@@ -250,8 +175,8 @@ var _ lnrpc.WalletUnlockerClient = (*HarnessNode)(nil)
 
 // newNode creates a new test lightning node instance from the passed config.
 func newNode(cfg nodeConfig) (*HarnessNode, error) {
+	var err error
 	if cfg.BaseDir == "" {
-		var err error
 		cfg.BaseDir, err = ioutil.TempDir("", "lndtest-node")
 		if err != nil {
 			return nil, err
@@ -265,11 +190,17 @@ func newNode(cfg nodeConfig) (*HarnessNode, error) {
 	cfg.ReadMacPath = filepath.Join(cfg.DataDir, "readonly.macaroon")
 	cfg.InvoiceMacPath = filepath.Join(cfg.DataDir, "invoice.macaroon")
 
-    var portError error
-	cfg.P2PPort, cfg.RPCPort, cfg.RESTPort, portError  = generateListeningPorts()
-
-	if portError != nil {
-	    return nil, portError
+	cfg.P2PPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
+	cfg.RPCPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
+	cfg.RESTPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
 	}
 
 	nodeNum := numActiveNodes

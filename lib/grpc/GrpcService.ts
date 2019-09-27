@@ -12,7 +12,7 @@ import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import { LndInfo } from '../lndclient/types';
 import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
-import { TradeInstance, OrderInstance } from '../db/types';
+import { TradeInstance, OrderInstance, CurrencyInstance } from '../db/types';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -227,7 +227,7 @@ class GrpcService {
   /**
    * See [[Service.addCurrency]]
    */
-  public addCurrency: grpc.handleUnaryCall<xudrpc.AddCurrencyRequest, xudrpc.AddCurrencyResponse> = async (call, callback) => {
+  public addCurrency: grpc.handleUnaryCall<xudrpc.Currency, xudrpc.AddCurrencyResponse> = async (call, callback) => {
     try {
       await this.service.addCurrency(call.request.toObject());
       const response = new xudrpc.AddCurrencyResponse();
@@ -267,17 +267,17 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.channelBalance]]
+   * See [[Service.getBalance]]
    */
-  public channelBalance: grpc.handleUnaryCall<xudrpc.ChannelBalanceRequest, xudrpc.ChannelBalanceResponse> = async (call, callback) => {
+  public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (call, callback) => {
     try {
-      const channelBalanceResponse = await this.service.channelBalance(call.request.toObject());
-      const response = new xudrpc.ChannelBalanceResponse();
+      const balanceResponse = await this.service.getBalance(call.request.toObject());
+      const response = new xudrpc.GetBalanceResponse();
       const balancesMap = response.getBalancesMap();
-      channelBalanceResponse.forEach((channelBalance, currency) => {
-        const balance = new xudrpc.ChannelBalance();
-        balance.setBalance(channelBalance.balance);
-        balance.setPendingOpenBalance(channelBalance.pendingOpenBalance);
+      balanceResponse.forEach((balanceObj, currency) => {
+        const balance = new xudrpc.Balance();
+        balance.setBalance(balanceObj.balance);
+        balance.setPendingOpenBalance(balanceObj.pendingOpenBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);
@@ -344,8 +344,8 @@ class GrpcService {
    */
   public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
     try {
-      const swapResult = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(swapResult));
+      const swapSuccess = await this.service.executeSwap(call.request.toObject());
+      callback(null, createSwapSuccess(swapSuccess));
     } catch (err) {
       if (typeof err === 'number') {
         // treat the error as a SwapFailureReason enum
@@ -397,6 +397,8 @@ class GrpcService {
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
+      response.setAlias(getInfoResponse.alias);
+      response.setNetwork(getInfoResponse.network);
 
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
@@ -411,13 +413,14 @@ class GrpcService {
           lnd.setChainsList(chains);
         }
         if (lndInfo.channels) {
-          const channels = new xudrpc.LndChannels();
+          const channels = new xudrpc.Channels();
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
+          channels.setClosed(lndInfo.channels.closed);
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
-        if (lndInfo.error) lnd.setError(lndInfo.error);
+        lnd.setStatus(lndInfo.status);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
@@ -430,10 +433,17 @@ class GrpcService {
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
+        raiden.setStatus(getInfoResponse.raiden.status);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
-        if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
+        if (getInfoResponse.raiden.channels) {
+          const channels = new xudrpc.Channels();
+          channels.setActive(getInfoResponse.raiden.channels.active);
+          // channels.setSettled(getInfoResponse.raiden.channels.settled);
+          channels.setClosed(getInfoResponse.raiden.channels.closed);
+          raiden.setChannels(channels);
+        }
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
+        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
         response.setRaiden(raiden);
       }
 
@@ -499,9 +509,17 @@ class GrpcService {
    */
   public listCurrencies: grpc.handleUnaryCall<xudrpc.ListCurrenciesRequest, xudrpc.ListCurrenciesResponse> = (_, callback) => {
     try {
-      const listCurrenciesResponse = this.service.listCurrencies();
+      const currencies = this.service.listCurrencies();
       const response = new xudrpc.ListCurrenciesResponse();
-      response.setCurrenciesList(listCurrenciesResponse);
+
+      currencies.forEach((currency: CurrencyInstance) => {
+        const resultCurrency = new xudrpc.Currency();
+        resultCurrency.setDecimalPlaces(currency.decimalPlaces);
+        resultCurrency.setCurrency(currency.id);
+        resultCurrency.setTokenAddress(currency.tokenAddress);
+        resultCurrency.setSwapClient(currency.swapClient as number);
+        response.getCurrenciesList().push(resultCurrency);
+      });
 
       callback(null, response);
     } catch (err) {

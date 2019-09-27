@@ -1,18 +1,28 @@
 /**
  * The configurable options for the raiden client.
  */
+
 export type RaidenClientConfig = {
   disable: boolean;
   host: string;
   port: number;
+  keystorepath: string;
 };
 
 /** General information about the state of this raiden client. */
 export type RaidenInfo = {
+  status: string;
   error?: string;
   address?: string;
-  channels?: number;
+  channels?: RaidenChannelCount;
+  chain?: string;
   version?: string;
+};
+
+export type RaidenChannelCount = {
+  active: number,
+  settled: number,
+  closed: number,
 };
 
 /**
@@ -23,6 +33,14 @@ export type OpenChannelPayload = {
   token_address: string;
   total_deposit: number;
   settle_timeout: number;
+};
+
+/**
+ * The raiden version.
+ */
+
+export type RaidenVersion = {
+  version: string;
 };
 
 /**
@@ -64,18 +82,27 @@ export type RaidenResolveRequest = {
   secrethash: string;
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number;
-  /** The maximum number of blocks allowed between the setting of a hashlock and the revealing of the related secret. */
-  reveal_timeout: number;
-  /** The lock expiration for the incoming payment. */
+  /** The lock expiration for the incoming payment (absolute block number). */
   expiration: number;
-  // 'settle_timeout': raiden.config['settle_timeout'],
-  // unused fields on the raiden request listed below, taken from raiden codebase
-  // 'payment_identifier': secret_request_event.payment_identifier,
-  // 'payment_sender': to_hex(secret_request_event.recipient),
-  // 'payment_recipient': to_hex(raiden.address),
+  /** The current height of the chain */
+  chain_height: number;
 };
 
 export type RaidenResolveResponse = {
   /** The preimage in hex format. */
   secret: string,
+};
+
+export type PaymentEvent = {
+  event: string;
+  payment_network_address: string;
+  token_network_address: string
+  identifier: number;
+  amount?: number;
+  target?: string
+  initiator?: string;
+  secret?: string;
+  route?: string[];
+  reason?: string;
+  log_time: string;
 };

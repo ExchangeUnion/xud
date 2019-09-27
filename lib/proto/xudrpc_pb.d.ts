@@ -108,12 +108,12 @@ export namespace UnlockNodeResponse {
     }
 }
 
-export class AddCurrencyRequest extends jspb.Message { 
+export class Currency extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
 
-    getSwapClient(): AddCurrencyRequest.SwapClient;
-    setSwapClient(value: AddCurrencyRequest.SwapClient): void;
+    getSwapClient(): Currency.SwapClient;
+    setSwapClient(value: Currency.SwapClient): void;
 
     getTokenAddress(): string;
     setTokenAddress(value: string): void;
@@ -123,19 +123,19 @@ export class AddCurrencyRequest extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): AddCurrencyRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: AddCurrencyRequest): AddCurrencyRequest.AsObject;
+    toObject(includeInstance?: boolean): Currency.AsObject;
+    static toObject(includeInstance: boolean, msg: Currency): Currency.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: AddCurrencyRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): AddCurrencyRequest;
-    static deserializeBinaryFromReader(message: AddCurrencyRequest, reader: jspb.BinaryReader): AddCurrencyRequest;
+    static serializeBinaryToWriter(message: Currency, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Currency;
+    static deserializeBinaryFromReader(message: Currency, reader: jspb.BinaryReader): Currency;
 }
 
-export namespace AddCurrencyRequest {
+export namespace Currency {
     export type AsObject = {
         currency: string,
-        swapClient: AddCurrencyRequest.SwapClient,
+        swapClient: Currency.SwapClient,
         tokenAddress: string,
         decimalPlaces: number,
     }
@@ -269,7 +269,7 @@ export namespace Chain {
     }
 }
 
-export class ChannelBalance extends jspb.Message { 
+export class Balance extends jspb.Message { 
     getBalance(): number;
     setBalance(value: number): void;
 
@@ -278,63 +278,63 @@ export class ChannelBalance extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalance.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalance): ChannelBalance.AsObject;
+    toObject(includeInstance?: boolean): Balance.AsObject;
+    static toObject(includeInstance: boolean, msg: Balance): Balance.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalance, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalance;
-    static deserializeBinaryFromReader(message: ChannelBalance, reader: jspb.BinaryReader): ChannelBalance;
+    static serializeBinaryToWriter(message: Balance, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Balance;
+    static deserializeBinaryFromReader(message: Balance, reader: jspb.BinaryReader): Balance;
 }
 
-export namespace ChannelBalance {
+export namespace Balance {
     export type AsObject = {
         balance: number,
         pendingOpenBalance: number,
     }
 }
 
-export class ChannelBalanceRequest extends jspb.Message { 
+export class GetBalanceRequest extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalanceRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalanceRequest): ChannelBalanceRequest.AsObject;
+    toObject(includeInstance?: boolean): GetBalanceRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: GetBalanceRequest): GetBalanceRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalanceRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalanceRequest;
-    static deserializeBinaryFromReader(message: ChannelBalanceRequest, reader: jspb.BinaryReader): ChannelBalanceRequest;
+    static serializeBinaryToWriter(message: GetBalanceRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetBalanceRequest;
+    static deserializeBinaryFromReader(message: GetBalanceRequest, reader: jspb.BinaryReader): GetBalanceRequest;
 }
 
-export namespace ChannelBalanceRequest {
+export namespace GetBalanceRequest {
     export type AsObject = {
         currency: string,
     }
 }
 
-export class ChannelBalanceResponse extends jspb.Message { 
+export class GetBalanceResponse extends jspb.Message { 
 
-    getBalancesMap(): jspb.Map<string, ChannelBalance>;
+    getBalancesMap(): jspb.Map<string, Balance>;
     clearBalancesMap(): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ChannelBalanceResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: ChannelBalanceResponse): ChannelBalanceResponse.AsObject;
+    toObject(includeInstance?: boolean): GetBalanceResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: GetBalanceResponse): GetBalanceResponse.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ChannelBalanceResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ChannelBalanceResponse;
-    static deserializeBinaryFromReader(message: ChannelBalanceResponse, reader: jspb.BinaryReader): ChannelBalanceResponse;
+    static serializeBinaryToWriter(message: GetBalanceResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GetBalanceResponse;
+    static deserializeBinaryFromReader(message: GetBalanceResponse, reader: jspb.BinaryReader): GetBalanceResponse;
 }
 
-export namespace ChannelBalanceResponse {
+export namespace GetBalanceResponse {
     export type AsObject = {
 
-        balancesMap: Array<[string, ChannelBalance.AsObject]>,
+        balancesMap: Array<[string, Balance.AsObject]>,
     }
 }
 
@@ -543,6 +543,17 @@ export class GetInfoResponse extends jspb.Message {
     getRaiden(): RaidenInfo | undefined;
     setRaiden(value?: RaidenInfo): void;
 
+    getAlias(): string;
+    setAlias(value: string): void;
+
+    getNetwork(): string;
+    setNetwork(value: string): void;
+
+    clearPendingSwapHashesList(): void;
+    getPendingSwapHashesList(): Array<string>;
+    setPendingSwapHashesList(value: Array<string>): void;
+    addPendingSwapHashes(value: string, index?: number): string;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GetInfoResponse.AsObject;
@@ -565,6 +576,9 @@ export namespace GetInfoResponse {
 
         lndMap: Array<[string, LndInfo.AsObject]>,
         raiden?: RaidenInfo.AsObject,
+        alias: string,
+        network: string,
+        pendingSwapHashesList: Array<string>,
     }
 }
 
@@ -685,9 +699,9 @@ export namespace ListCurrenciesRequest {
 
 export class ListCurrenciesResponse extends jspb.Message { 
     clearCurrenciesList(): void;
-    getCurrenciesList(): Array<string>;
-    setCurrenciesList(value: Array<string>): void;
-    addCurrencies(value: string, index?: number): string;
+    getCurrenciesList(): Array<Currency>;
+    setCurrenciesList(value: Array<Currency>): void;
+    addCurrencies(value?: Currency, index?: number): Currency;
 
 
     serializeBinary(): Uint8Array;
@@ -702,7 +716,7 @@ export class ListCurrenciesResponse extends jspb.Message {
 
 export namespace ListCurrenciesResponse {
     export type AsObject = {
-        currenciesList: Array<string>,
+        currenciesList: Array<Currency.AsObject>,
     }
 }
 
@@ -830,7 +844,7 @@ export namespace ListTradesResponse {
     }
 }
 
-export class LndChannels extends jspb.Message { 
+export class Channels extends jspb.Message { 
     getActive(): number;
     setActive(value: number): void;
 
@@ -840,34 +854,38 @@ export class LndChannels extends jspb.Message {
     getPending(): number;
     setPending(value: number): void;
 
+    getClosed(): number;
+    setClosed(value: number): void;
+
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): LndChannels.AsObject;
-    static toObject(includeInstance: boolean, msg: LndChannels): LndChannels.AsObject;
+    toObject(includeInstance?: boolean): Channels.AsObject;
+    static toObject(includeInstance: boolean, msg: Channels): Channels.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: LndChannels, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): LndChannels;
-    static deserializeBinaryFromReader(message: LndChannels, reader: jspb.BinaryReader): LndChannels;
+    static serializeBinaryToWriter(message: Channels, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Channels;
+    static deserializeBinaryFromReader(message: Channels, reader: jspb.BinaryReader): Channels;
 }
 
-export namespace LndChannels {
+export namespace Channels {
     export type AsObject = {
         active: number,
         inactive: number,
         pending: number,
+        closed: number,
     }
 }
 
 export class LndInfo extends jspb.Message { 
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
 
     hasChannels(): boolean;
     clearChannels(): void;
-    getChannels(): LndChannels | undefined;
-    setChannels(value?: LndChannels): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     clearChainsList(): void;
     getChainsList(): Array<Chain>;
@@ -901,8 +919,8 @@ export class LndInfo extends jspb.Message {
 
 export namespace LndInfo {
     export type AsObject = {
-        error: string,
-        channels?: LndChannels.AsObject,
+        status: string,
+        channels?: Channels.AsObject,
         chainsList: Array<Chain.AsObject>,
         blockheight: number,
         urisList: Array<string>,
@@ -1357,17 +1375,23 @@ export namespace PlaceOrderEvent {
 }
 
 export class RaidenInfo extends jspb.Message { 
-    getError(): string;
-    setError(value: string): void;
+    getStatus(): string;
+    setStatus(value: string): void;
 
     getAddress(): string;
     setAddress(value: string): void;
 
-    getChannels(): number;
-    setChannels(value: number): void;
+
+    hasChannels(): boolean;
+    clearChannels(): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
 
     getVersion(): string;
     setVersion(value: string): void;
+
+    getChain(): string;
+    setChain(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -1382,10 +1406,11 @@ export class RaidenInfo extends jspb.Message {
 
 export namespace RaidenInfo {
     export type AsObject = {
-        error: string,
+        status: string,
         address: string,
-        channels: number,
+        channels?: Channels.AsObject,
         version: string,
+        chain: string,
     }
 }
 

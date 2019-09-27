@@ -15,7 +15,7 @@ before_install:
 
 script:
   - npm run lintNoFix
-  - npm run compile:seedutil
   - npm run test
   - npm run test:sim
-
+  - npm run compile:seedutil
+  - npm run test:seedutil

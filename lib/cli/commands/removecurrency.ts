@@ -8,7 +8,7 @@ export const describe = 'remove a currency';
 
 export const builder = {
   currency: {
-    description: 'The ticker symbol for the currency',
+    description: 'the ticker symbol for the currency',
     type: 'string',
   },
 };

@@ -1,6 +1,6 @@
 import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
-import { ChannelBalanceRequest, ChannelBalanceResponse } from '../../proto/xudrpc_pb';
+import { GetBalanceRequest, GetBalanceResponse } from '../../proto/xudrpc_pb';
 import { satsToCoinsStr } from '../utils';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
@@ -11,11 +11,11 @@ const HEADERS = [
   colors.blue('Pending Balance'),
 ];
 
-const formatChannels = (channels: ChannelBalanceResponse.AsObject) => {
+const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   const formatted: any[] = [];
-  channels.balancesMap.forEach((channel) => {
+  balances.balancesMap.forEach((balance) => {
     const element = [];
-    element.push(channel[0], `${satsToCoinsStr(channel[1].balance)}`, `${satsToCoinsStr(channel[1].pendingOpenBalance)}`);
+    element.push(balance[0], `${satsToCoinsStr(balance[1].balance)}`, `${satsToCoinsStr(balance[1].pendingOpenBalance)}`);
     formatted.push(element);
   });
   return formatted;
@@ -28,17 +28,17 @@ const createTable = () => {
   return table;
 };
 
-const displayChannels = (channels: ChannelBalanceResponse.AsObject) => {
+const displayBalances = (balances: GetBalanceResponse.AsObject) => {
   const table = createTable();
-  const formatted = formatChannels(channels);
-  formatted.forEach(channel => table.push(channel));
-  console.log(colors.underline(colors.bold('\nChannel balance:')));
+  const formatted = formatBalances(balances);
+  formatted.forEach(balance => table.push(balance));
+  console.log(colors.underline(colors.bold('\nBalance:')));
   console.log(table.toString());
 };
 
-export const command = 'channelbalance [currency]';
+export const command = 'getbalance [currency]';
 
-export const describe = 'get total channel balance for a given currency';
+export const describe = 'get total balance for a given currency';
 
 export const builder = {
   currency: {
@@ -48,9 +48,9 @@ export const builder = {
 };
 
 export const handler = (argv: Arguments) => {
-  const request = new ChannelBalanceRequest();
+  const request = new GetBalanceRequest();
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
-  loadXudClient(argv).channelBalance(request, callback(argv, displayChannels));
+  loadXudClient(argv).getBalance(request, callback(argv, displayBalances));
 };

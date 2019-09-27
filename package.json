@@ -11,6 +11,8 @@
   "scripts": {
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "config": "gulp config.create",
+    "postinstall": "npm run precompile",
+    "precompile": "node parseGitCommit.js",
     "compile": "tsc && cross-os postcompile",
     "compile:seedutil": "(cd seedutil && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go build -v)",
     "compile:watch": "tsc -w",
@@ -35,11 +37,13 @@
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
     "test:sim": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestIntegration -v)",
     "test:sim:security": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestSecurity -v)",
-    "test:jest": "jest",
-    "test:seedutil": "jest seedutil",
+    "test:sim:instability": "(npm run compile && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestInstability -v)",
+    "test:jest": "jest --rootDir test/jest",
+    "test:seedutil": "jest --rootDir seedutil",
     "test:jest:watch": "jest --watch",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run compile",
+    "postversion": "npm run compile",
     "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc"
   },
   "cross-os": {
@@ -99,7 +103,8 @@
   "contributors": [
     "Moshe Shababo",
     "Balamurali Pandranki <balamurali@live.com> (https://balamurali.me)",
-    "michael1011"
+    "michael1011",
+    "Karl Ranna <karl@karlranna.com>"
   ],
   "license": "AGPL-3.0",
   "bugs": {
@@ -122,6 +127,7 @@
     "cli-table3": "^0.5.1",
     "colors": "^1.3.3",
     "cross-os": "^1.3.0",
+    "distributions-poisson-quantile": "0.0.0",
     "dotenv": "^5.0.1",
     "express": "^4.16.3",
     "fastpriorityqueue": "^0.6.3",
@@ -146,6 +152,7 @@
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",
     "@types/chai-http": "^3.0.5",
+    "@types/distributions-poisson-quantile": "0.0.0",
     "@types/dotenv": "^4.0.3",
     "@types/express": "^4.16.0",
     "@types/gulp": "^4.0.5",

@@ -25,17 +25,22 @@ import "annotations.proto";
 package xudrpc;
 
 service XudInit {
+  /* Creates an xud identity node key and underlying wallets. The node key and
+   * wallets are derived from a single seed and encrypted using a single
+   * password provided as a parameter to the call. */
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
+  /* Unlocks and decrypts the xud node key and any underlying wallets. */
   rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
 }
 
 message CreateNodeRequest {
   // The password in utf-8 with which to encrypt the new xud node key as well
-  // as underlying client wallets such as lnd.
+  // as any uninitialized underlying wallets.
   string password = 1;
 }
 message CreateNodeResponse {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
@@ -58,7 +63,7 @@ message UnlockNodeResponse {
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
    * new trading pairs. */
-  rpc AddCurrency(AddCurrencyRequest) returns (AddCurrencyResponse) {
+  rpc AddCurrency(Currency) returns (AddCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/addcurrency"
       body: "*"
@@ -85,10 +90,10 @@ service Xud {
     };
   }
 
-  /* Gets the total balance available across all payment channels for one or all currencies. */
-  rpc ChannelBalance(ChannelBalanceRequest) returns (ChannelBalanceResponse) {
+  /* Gets the total balance available across all payment channels and wallets for one or all currencies. */
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse) {
     option (google.api.http) = {
-      get: "/v1/channelbalance"
+      get: "/v1/balance"
     };
   }
 
@@ -278,7 +283,7 @@ enum OrderSide {
   SELL = 1;
 }
 
-message AddCurrencyRequest {
+message Currency {
   // The ticker symbol for this currency such as BTC, LTC, ETH, etc...
   string currency = 1 [json_name = "currency"];
   enum SwapClient {
@@ -296,6 +301,7 @@ message AddCurrencyRequest {
   // used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
+
 message AddCurrencyResponse {}
 
 message AddPairRequest {
@@ -319,21 +325,21 @@ message Chain {
   string network = 2 [json_name = "network"];
 }
 
-message ChannelBalance {
-  // Sum of channel balances denominated in satoshis.
+message Balance {
+  // Total balance denominated in satoshis.
   uint64 balance = 1 [json_name = "balance"];
   // Sum of pending channel balances denominated in satoshis.
   uint64 pending_open_balance = 2 [json_name = "pending_open_balance"];
 }
 
-message ChannelBalanceRequest {
+message GetBalanceRequest {
   // The ticker symbol of the currency to query for, if unspecified then balances for all supported
   // currencies are queried.
   string currency = 1 [json_name = "currency"];
 }
-message ChannelBalanceResponse {
-  // A map between currency ticker symbols and their channel balances.
-  map<string, ChannelBalance> balances = 1 [json_name = "orders"];
+message GetBalanceResponse {
+  // A map between currency ticker symbols and their balances.
+  map<string, Balance> balances = 1 [json_name = "orders"];
 }
 
 message OpenChannelRequest {
@@ -394,6 +400,11 @@ message GetInfoResponse {
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
   RaidenInfo raiden = 8 [json_name = "raiden"];
+  // The alias of this instance of xud.
+  string alias = 9 [json_name = "alias"];
+  // The network of this node.
+  string network = 10 [json_name = "network"];
+  repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
 }
 
 message GetNodeInfoRequest {
@@ -423,8 +434,8 @@ message ListOrdersResponse {
 
 message ListCurrenciesRequest {}
 message ListCurrenciesResponse {
-  // A list of ticker symbols of the supported currencies.
-  repeated string currencies = 1 [json_name = "currencies"];
+  // The list of available currencies in the orderbook.
+  repeated Currency currencies = 1 [json_name = "currencies"];
 }
 
 message ListPairsRequest {}
@@ -442,24 +453,26 @@ message ListPeersResponse {
 message ListTradesRequest {
   // The maximum number of trades to return
   int32 limit = 1 [json_name = "limit"];
-} 
+}
 
 message ListTradesResponse {
   repeated Trade trades = 1 [json_name = "trades"];
 }
 
-message LndChannels {
+message Channels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
   uint32 active = 1 [json_name = "active"];
   // The number of inactive/offline channels for this lnd instance.
   uint32 inactive = 2 [json_name = "inactive"];
   // The number of channels that are pending on-chain confirmation before they can be used.
   uint32 pending = 3 [json_name = "pending"];
+  // The number of channels that have been closed.
+  uint32 closed = 4 [json_name = "closed"];
 }
 
 message LndInfo {
-  string error = 1 [json_name = "error"];
-  LndChannels channels = 2 [json_name = "channels"];
+  string status = 1 [json_name = "status"];
+  Channels channels = 2 [json_name = "channels"];
   repeated Chain chains = 3 [json_name = "chains"];
   uint32 blockheight = 4 [json_name = "blockheight"];
   repeated string uris = 5 [json_name = "uris"];
@@ -546,7 +559,7 @@ message Peer {
   string address = 1 [json_name = "address"];
   // The node pub key to uniquely identify this peer.
   string node_pub_key = 2 [json_name = "node_pub_key"];
-  // A map of ticker symbols to lnd pub keys for this peer 
+  // A map of ticker symbols to lnd pub keys for this peer
   map<string, string> lnd_pub_keys = 3 [json_name = "lnd_pub_keys"];
   // Indicates whether this peer was connected inbound.
   bool inbound = 4 [json_name = "inbound"];
@@ -597,10 +610,11 @@ message PlaceOrderEvent {
 }
 
 message RaidenInfo {
-  string error = 1 [json_name = "error"];
+  string status = 1 [json_name = "status"];
   string address = 2 [json_name = "address"];
-  uint32 channels = 3 [json_name = "channels"];
+  Channels channels = 3 [json_name = "channels"];
   string version = 4 [json_name = "version"];
+  string chain = 5 [json_name = "chain"];
 }
 
 message RemoveCurrencyRequest {

@@ -124,8 +124,9 @@ class Peer extends EventEmitter {
 
   public get label(): string {
     return this.nodePubKey ||
-      this.expectedNodePubKey ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}` :
-      addressUtils.toString(this.address);
+      (this.expectedNodePubKey
+      ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}`
+      : addressUtils.toString(this.address));
   }
 
   public get addresses(): Address[] | undefined {
@@ -696,6 +697,7 @@ class Peer extends EventEmitter {
           this.logger.warn(`Peer (${this.label}): ${err.message}`);
           this.emit('reputation', ReputationEvent.WireProtocolErr);
           await this.close(DisconnectionReason.WireProtocolErr, err.message);
+          break;
       }
     });
   }

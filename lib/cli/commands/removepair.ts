@@ -8,7 +8,7 @@ export const describe = 'remove a trading pair';
 
 export const builder = {
   pair_id: {
-    description: 'The trading pair ticker to remove',
+    description: 'the trading pair ticker to remove',
     type: 'string',
   },
 };
