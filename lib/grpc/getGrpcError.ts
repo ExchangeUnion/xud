@@ -64,6 +64,8 @@ const getGrpcError = (err: any) => {
     case p2pErrorCodes.RESPONSE_TIMEOUT:
       code = status.DEADLINE_EXCEEDED;
       break;
+    case swapErrorCodes.SWAP_CLIENT_WALLET_NOT_CREATED:
+      code = status.INTERNAL;
       break;
   }
 

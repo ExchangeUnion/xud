@@ -320,6 +320,7 @@ class LndClient extends SwapClient {
         this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
         await LndClient.waitForClientReady(this.walletUnlocker);
         await this.setStatus(ClientStatus.WaitingUnlock);
+        this.emit('locked');
 
         if (this.reconnectionTimer) {
           // we don't need scheduled attempts to retry the connection while waiting on the wallet
@@ -383,7 +384,7 @@ class LndClient extends SwapClient {
           }
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
-          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
         }
       } catch (err) {
         if (err.code === grpc.status.UNIMPLEMENTED) {
@@ -398,7 +399,7 @@ class LndClient extends SwapClient {
           }
         } else {
           const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
           await this.disconnect();
         }
       }
