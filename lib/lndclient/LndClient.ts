@@ -2,7 +2,7 @@ import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import SwapClient, { ClientStatus, SwapClientInfo, PaymentState } from '../swaps/SwapClient';
 import errors from './errors';
-import { errors as swapErrors } from '../swaps/errors';
+import swapErrors from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
@@ -149,7 +149,7 @@ class LndClient extends SwapClient {
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -177,7 +177,7 @@ class LndClient extends SwapClient {
   private unaryInvoiceCall = <T, U>(methodName: Exclude<keyof InvoicesClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -197,7 +197,7 @@ class LndClient extends SwapClient {
   private unaryWalletUnlockerCall = <T, U>(methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -220,9 +220,9 @@ class LndClient extends SwapClient {
     let alias: string | undefined;
     let status = 'Ready';
     if (this.isDisabled()) {
-      status = errors.LND_IS_DISABLED.message;
+      status = errors.DISABLED(this.currency).message;
     } else if (!this.isConnected()) {
-      status = errors.LND_IS_UNAVAILABLE(this.status).message;
+      status = errors.UNAVAILABLE(this.currency, this.status).message;
     } else {
       try {
         const getInfoResponse = await this.getInfo();
@@ -239,7 +239,7 @@ class LndClient extends SwapClient {
         version = getInfoResponse.getVersion();
         alias = getInfoResponse.getAlias();
         if (channels.active <= 0) {
-          status = errors.LND_HAS_NO_ACTIVE_CHANNELS().message;
+          status = errors.NO_ACTIVE_CHANNELS(this.currency).message;
         }
       } catch (err) {
         this.logger.error('getinfo error', err);
@@ -311,7 +311,7 @@ class LndClient extends SwapClient {
 
   protected verifyConnection = async () => {
     if (this.isDisabled()) {
-      throw(errors.LND_IS_DISABLED);
+      throw(errors.DISABLED);
     }
 
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
@@ -797,7 +797,7 @@ class LndClient extends SwapClient {
 
   private subscribeSingleInvoice = (rHash: string) => {
     if (!this.invoices) {
-      throw errors.LND_IS_UNAVAILABLE(this.status);
+      throw errors.UNAVAILABLE(this.currency, this.status);
     }
     const request = new lndinvoices.SubscribeSingleInvoiceRequest();
     request.setRHash(hexToUint8Array(rHash));
@@ -821,7 +821,7 @@ class LndClient extends SwapClient {
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
     if (!this.lightning) {
-      throw(errors.LND_IS_UNAVAILABLE(this.status));
+      throw(errors.UNAVAILABLE(this.currency, this.status));
     }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();

@@ -31,7 +31,7 @@ class GrpcServer {
   }
 
   public addXudService = (service: Service) => {
-    this.grpcService = new GrpcService(this.logger, service);
+    this.grpcService = new GrpcService(service);
     this.server.addService(XudService, this.grpcService);
   }
 

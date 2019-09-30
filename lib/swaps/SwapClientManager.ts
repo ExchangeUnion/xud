@@ -4,7 +4,6 @@ import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
 import RaidenClient from '../raidenclient/RaidenClient';
 import { Loggers } from '../Logger';
-import { errors } from './errors';
 import { Currency } from '../orderbook/types';
 import { Models } from '../db/DB';
 import { SwapClientType } from '../constants/enums';
@@ -12,6 +11,7 @@ import { EventEmitter } from 'events';
 import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
 import seedutil from '../utils/seedutil';
+import errors from './errors';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);

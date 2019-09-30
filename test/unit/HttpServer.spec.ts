@@ -7,7 +7,7 @@ import chaiAsPromised = require('chai-as-promised');
 import sinon from 'sinon';
 import Service from '../../lib/service/Service';
 import { ResolveRequest } from '../../lib/swaps/types';
-import { errors } from '../../lib/swaps/errors';
+import errors from '../../lib/swaps/errors';
 
 chai.use(chaiAsPromised);
 chai.use(chaiHttp);

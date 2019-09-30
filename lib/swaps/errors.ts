@@ -37,4 +37,5 @@ const errors = {
   }),
 };
 
-export { errorCodes, errors };
+export { errorCodes };
+export default errors;
