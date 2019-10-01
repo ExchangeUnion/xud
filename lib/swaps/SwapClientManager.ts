@@ -154,8 +154,8 @@ class SwapClientManager extends EventEmitter {
       const keystorePromise = seedutil(seedMnemonic, '', keystorepath).then(() => {
         this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
         initializedRaiden = true;
-      }).catch((err) => {
-        this.raidenClient.logger.warn(`could not create keystore: ${err}`);
+      }).catch(() => {
+        this.raidenClient.logger.warn('could not create keystore');
       });
       initWalletPromises.push(keystorePromise);
     }

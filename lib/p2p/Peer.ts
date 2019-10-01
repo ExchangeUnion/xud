@@ -515,7 +515,7 @@ class Peer extends EventEmitter {
         }
 
         this.logger.debug(
-          `Connection attempt #${retries + 1} to ${this.label}` +
+          `Connection attempt #${retries + 1} to ${this.label} ` +
           `failed: ${err.message}. retrying in ${retryDelay / 1000} sec...`,
         );
 
