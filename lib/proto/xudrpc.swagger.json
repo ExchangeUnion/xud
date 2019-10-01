@@ -1088,6 +1088,10 @@
           "type": "string",
           "format": "uint64",
           "description": "The quantity on hold pending swap execution."
+        },
+        "alias": {
+          "type": "string",
+          "description": "The alias of the peer that created this order."
         }
       }
     },

@@ -966,6 +966,9 @@ export class Order extends jspb.Message {
     getHold(): number;
     setHold(value: number): void;
 
+    getAlias(): string;
+    setAlias(value: string): void;
+
 
     getOwnOrPeerCase(): Order.OwnOrPeerCase;
 
@@ -991,6 +994,7 @@ export namespace Order {
         side: OrderSide,
         isOwnOrder: boolean,
         hold: number,
+        alias: string,
     }
 
     export enum OwnOrPeerCase {

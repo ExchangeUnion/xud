@@ -672,6 +672,7 @@
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
 | hold | [uint64](#uint64) |  | The quantity on hold pending swap execution. |
+| alias | [string](#string) |  | The alias of the peer that created this order. |
 
 
 

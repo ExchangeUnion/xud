@@ -19,10 +19,10 @@ const HEADER = [
 const SECONDARY_HEADER = [
   colors.green('Quantity'),
   colors.green('Price'),
-  colors.green('Own Order'),
+  colors.green('Node'),
   colors.red('Quantity'),
   colors.red('Price'),
-  colors.red('Own Order'),
+  colors.red('Node'),
 ];
 
 const addSide = (orderSide: Order.AsObject[]): string[] => {

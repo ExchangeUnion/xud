@@ -503,6 +503,8 @@ message Order {
   bool is_own_order = 9 [json_name = "is_own_order"];
   // The quantity on hold pending swap execution.
   uint64 hold = 10 [json_name = "hold"];
+  // The alias of the peer that created this order.
+  string alias = 11 [json_name = "alias"];
 }
 
 message Trade {
