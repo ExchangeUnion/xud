@@ -900,6 +900,16 @@ class Swaps extends EventEmitter {
 
     this.logger.debug(`handleResolveRequest starting with hash ${rHash}`);
 
+    // first check if we have recovered this deal from a previous swap attempt
+    const recoveredSwap = this.swapRecovery.recoveredPreimageSwaps.get(rHash);
+    if (recoveredSwap && recoveredSwap.rPreimage) {
+      recoveredSwap.state = SwapState.Recovered;
+      recoveredSwap.save().catch(this.logger.error);
+      this.swapRecovery.recoveredPreimageSwaps.delete(rHash);
+      this.logger.info(`handleResolveRequest returning recovered preimage ${recoveredSwap.rPreimage} for hash ${rHash}`);
+      return recoveredSwap.rPreimage;
+    }
+
     const deal = this.getDeal(rHash);
 
     if (deal) {
