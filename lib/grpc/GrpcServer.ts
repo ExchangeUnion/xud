@@ -19,9 +19,19 @@ class GrpcServer {
   constructor(private logger: Logger) {
     this.server = serverProxy(new grpc.Server());
 
-    this.server.use((ctx: any, next: any) => {
+    this.server.use(async (ctx: any, next: any) => {
       logger.debug(`received call ${ctx.service.path}`);
-      next();
+
+      await next();
+
+      const status = ctx.status || ctx.call.status;
+      if (!status) {
+        logger.debug(`unknown status for call ${ctx.service.path}`);
+      } else if (status.code !== 0) {
+        logger.error(`call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`);
+      } else {
+        logger.trace(`call ${ctx.service.path} succeeded`);
+      }
     });
   }
 
@@ -31,7 +41,7 @@ class GrpcServer {
   }
 
   public addXudService = (service: Service) => {
-    this.grpcService = new GrpcService(this.logger, service);
+    this.grpcService = new GrpcService(service);
     this.server.addService(XudService, this.grpcService);
   }
 

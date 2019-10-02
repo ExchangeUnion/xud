@@ -13,7 +13,7 @@ import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './type
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
-import { errors, errorCodes } from './errors';
+import errors, { errorCodes } from './errors';
 import SwapRecovery from './SwapRecovery';
 import poissonQuantile from 'distributions-poisson-quantile';
 

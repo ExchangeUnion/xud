@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
 import errors from './errors';
-import { errors as swapsErrors } from '../swaps/errors';
+import swapsErrors from '../swaps/errors';
 import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';

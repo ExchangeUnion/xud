@@ -31,31 +31,29 @@ class InitService extends EventEmitter {
     }
 
     this.pendingCall = true;
+    // wait briefly for all lnd instances to be available
+    await this.swapClientManager.waitForLnd();
+
     const seed = await this.swapClientManager.genSeed();
     let initializedLndWallets: string[] | undefined;
     let initializedRaiden = false;
     let nodeKey: NodeKey;
 
-    if (seed) {
-      const seedBytes = typeof seed.encipheredSeed === 'string' ?
-        Buffer.from(seed.encipheredSeed, 'base64') :
-        Buffer.from(seed.encipheredSeed);
-      assert.equal(seedBytes.length, 33);
+    const seedBytes = typeof seed.encipheredSeed === 'string' ?
+      Buffer.from(seed.encipheredSeed, 'base64') :
+      Buffer.from(seed.encipheredSeed);
+    assert.equal(seedBytes.length, 33);
 
-      // the seed is 33 bytes, the first byte of which is the version
-      // so we use the remaining 32 bytes to generate our private key
-      // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-      const privKey = Buffer.from(seedBytes.slice(1));
-      nodeKey = new NodeKey(privKey);
+    // the seed is 33 bytes, the first byte of which is the version
+    // so we use the remaining 32 bytes to generate our private key
+    // TODO: use seedutil tool to derive a child private key from deciphered seed key?
+    const privKey = Buffer.from(seedBytes.slice(1));
+    nodeKey = new NodeKey(privKey);
 
-      // use this seed to init any lnd wallets that are uninitialized
-      const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
-      initializedLndWallets = initWalletResult.initializedLndWallets;
-      initializedRaiden = initWalletResult.initializedRaiden;
-    } else {
-      // we couldn't generate a seed externally, so we must create a nodekey from scratch
-      nodeKey = await NodeKey.generate();
-    }
+    // use this seed to init any lnd wallets that are uninitialized
+    const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
+    initializedLndWallets = initWalletResult.initializedLndWallets;
+    initializedRaiden = initWalletResult.initializedRaiden;
 
     await nodeKey.toFile(this.nodeKeyPath, password);
     this.emit('nodekey', nodeKey);

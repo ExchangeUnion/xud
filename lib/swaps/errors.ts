@@ -8,6 +8,7 @@ const errorCodes = {
   PAYMENT_ERROR: codesPrefix.concat('.4'),
   PAYMENT_REJECTED: codesPrefix.concat('.5'),
   INVALID_RESOLVE_REQUEST: codesPrefix.concat('.6'),
+  SWAP_CLIENT_WALLET_NOT_CREATED: codesPrefix.concat('.7'),
 };
 
 const errors = {
@@ -35,6 +36,11 @@ const errors = {
     message: `invalid resolve request for rHash ${rHash}: ${errorMessage}`,
     code: errorCodes.INVALID_RESOLVE_REQUEST,
   }),
+  SWAP_CLIENT_WALLET_NOT_CREATED: (message: string) => ({
+    message,
+    code: errorCodes.SWAP_CLIENT_WALLET_NOT_CREATED,
+  }),
 };
 
-export { errorCodes, errors };
+export { errorCodes };
+export default errors;

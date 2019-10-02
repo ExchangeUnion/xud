@@ -1,17 +1,18 @@
+import { EventEmitter } from 'events';
 import Config from '../Config';
-import SwapClient from './SwapClient';
+import { SwapClientType } from '../constants/enums';
+import { Models } from '../db/DB';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
-import RaidenClient from '../raidenclient/RaidenClient';
 import { Loggers } from '../Logger';
-import { errors } from './errors';
 import { Currency } from '../orderbook/types';
-import { Models } from '../db/DB';
-import { SwapClientType } from '../constants/enums';
-import { EventEmitter } from 'events';
 import Peer from '../p2p/Peer';
-import { UnitConverter } from '../utils/UnitConverter';
+import RaidenClient from '../raidenclient/RaidenClient';
 import seedutil from '../utils/seedutil';
+import { UnitConverter } from '../utils/UnitConverter';
+import errors from './errors';
+import SwapClient, { ClientStatus } from './SwapClient';
+import lndErrors from '../lndclient/errors';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -38,7 +39,7 @@ interface SwapClientManager {
 }
 
 class SwapClientManager extends EventEmitter {
-  /** A map between currencies and all swap clients */
+  /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
   private walletPassword?: string;
@@ -106,23 +107,62 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
+   * Checks to make sure all enabled lnd instances are available and waits
+   * up to a short time for them to become available in case they are not.
+   * Throws an error if any lnd clients remain unreachable.
+   */
+  public waitForLnd = async () => {
+    const lndClients = this.getLndClientsMap().values();
+    const lndAvailablePromises: Promise<void>[] = [];
+    for (const lndClient of lndClients) {
+      lndAvailablePromises.push(new Promise<void>((resolve, reject) => {
+        if (lndClient.isDisconnected() || lndClient.isNotInitialized()) {
+          const onAvailable = () => {
+            clearTimeout(timer);
+            lndClient.removeListener('locked', onAvailable);
+            lndClient.removeListener('connectionVerified', onAvailable);
+            resolve();
+          };
+          lndClient.once('connectionVerified', onAvailable);
+          lndClient.once('locked', onAvailable);
+          const timer = setTimeout(() => {
+            lndClient.removeListener('connectionVerified', onAvailable);
+            lndClient.removeListener('locked', onAvailable);
+            reject(lndClient.currency);
+          }, SwapClient.RECONNECT_TIME_LIMIT);
+        } else {
+          resolve();
+        }
+      }));
+    }
+
+    try {
+      await Promise.all(lndAvailablePromises);
+    } catch (currency) {
+      throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
+    }
+  }
+
+  /**
    * Generates a cryptographically random 24 word seed mnemonic from an lnd client.
    */
   public genSeed = async () => {
+    const lndClients = this.getLndClientsMap().values();
     // loop through swap clients until we find an lnd client awaiting unlock
-    for (const swapClient of this.swapClients.values()) {
-      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
+    for (const lndClient of lndClients) {
+      if (lndClient.isWaitingUnlock()) {
         try {
-          const seed = await swapClient.genSeed();
+          const seed = await lndClient.genSeed();
           return seed;
         } catch (err) {
-          swapClient.logger.error('could not generate seed', err);
+          lndClient.logger.error('could not generate seed', err);
         }
       }
     }
 
-    // TODO: use seedutil tool to generate a seed
-    return undefined;
+    // TODO: use seedutil tool to generate a seed instead of throwing error
+    // when we can't generate one with lnd
+    throw errors.SWAP_CLIENT_WALLET_NOT_CREATED('could not generate aezeed');
   }
 
   /**
@@ -131,18 +171,23 @@ class SwapClientManager extends EventEmitter {
   public initWallets = async (walletPassword: string, seedMnemonic: string[]) => {
     this.walletPassword = walletPassword;
 
-    // loop through swap clients to find locked lnd clients
+    // loop through swap clients to initialize locked lnd clients
+    const lndClients = this.getLndClientsMap().values();
     const initWalletPromises: Promise<any>[] = [];
     const initializedLndWallets: string[] = [];
     let initializedRaiden = false;
-    for (const swapClient of this.swapClients.values()) {
-      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
-        const initWalletPromise = swapClient.initWallet(walletPassword, seedMnemonic).then(() => {
-          initializedLndWallets.push(swapClient.currency);
-        }).catch((err) => {
-          swapClient.logger.debug(`could not initialize wallet: ${err.message}`);
-        });
-        initWalletPromises.push(initWalletPromise);
+
+    for (const lndClient of lndClients) {
+      if (isLndClient(lndClient)) {
+        if (lndClient.isWaitingUnlock()) {
+          const initWalletPromise = lndClient.initWallet(walletPassword, seedMnemonic).then(() => {
+            initializedLndWallets.push(lndClient.currency);
+          }).catch((err) => {
+            lndClient.logger.error(`could not initialize wallet: ${err.message}`);
+            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${lndClient.currency}: ${err.message}`);
+          });
+          initWalletPromises.push(initWalletPromise);
+        }
       }
     }
 
@@ -154,8 +199,9 @@ class SwapClientManager extends EventEmitter {
       const keystorePromise = seedutil(seedMnemonic, '', keystorepath).then(() => {
         this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
         initializedRaiden = true;
-      }).catch(() => {
-        this.raidenClient.logger.warn('could not create keystore');
+      }).catch((err) => {
+        this.raidenClient.logger.error('could not create keystore');
+        throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not create keystore: ${err}`);
       });
       initWalletPromises.push(keystorePromise);
     }
