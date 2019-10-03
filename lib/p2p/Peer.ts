@@ -935,7 +935,7 @@ class Peer extends EventEmitter {
 
   private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
     if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
-      this.logger.debug(`received disconnecting packet from ${this.label}:${JSON.stringify(packet.body)}`);
+      this.logger.debug(`received disconnecting packet from ${this.label} due to ${DisconnectionReason[packet.body.reason]}`);
       this.recvDisconnectionReason = packet.body.reason;
     } else {
       // protocol violation: packet should be sent once only, with body, with `reason` field
