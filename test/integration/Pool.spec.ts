@@ -78,7 +78,7 @@ describe('P2P Pool Tests', async () => {
 
     expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.true;
 
-    const nodeInstance = await db.models.Node.find({
+    const nodeInstance = await db.models.Node.findOne({
       where: {
         nodePubKey: nodeKeyOne.pubKey,
       },
@@ -116,7 +116,7 @@ describe('P2P Pool Tests', async () => {
 
     await pool['openPeer'](peer, nodeKeyOne.pubKey);
 
-    const nodeInstance = await db.models.Node.find({
+    const nodeInstance = await db.models.Node.findOne({
       where: {
         nodePubKey: nodeKeyOne.pubKey,
       },
