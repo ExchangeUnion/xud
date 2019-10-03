@@ -1,3 +1,4 @@
+import colors from 'colors/safe';
 import os from 'os';
 import path from 'path';
 
@@ -19,6 +20,12 @@ export function getDefaultCertPath() {
     }
   }
 }
+
+export const generateHeaders = (headers: string[]) => {
+  return headers.map((header) => {
+    return colors.blue(header);
+  });
+};
 
 /** Returns a number of coins as an integer number of satoshis. */
 export const coinsToSats = (coinsQuantity: number) => {
