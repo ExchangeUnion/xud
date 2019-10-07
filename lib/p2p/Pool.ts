@@ -466,6 +466,10 @@ class Pool extends EventEmitter {
    * routine is complete
    */
   private openPeer = async (peer: Peer, expectedNodePubKey?: string, retryConnecting = false): Promise<void> => {
+    if (this.disconnecting || !this.connected) {
+      // if we are disconnected or disconnecting, don't open new connections
+      throw errors.POOL_CLOSED;
+    }
     this.bindPeer(peer);
 
     try {

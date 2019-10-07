@@ -49,10 +49,10 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
+  /** Time in milliseconds between attempts to recheck connectivity to the client. */
+  public static readonly RECONNECT_TIME_LIMIT = 5000;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
-  /** Time in milliseconds between attempts to recheck connectivity to the client. */
-  protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;
   /** The maximum amount of time we will wait for the connection to be verified during initialization. */
@@ -126,7 +126,7 @@ abstract class SwapClient extends EventEmitter {
               // if we were still not able to verify the connection, schedule another attempt
               this.reconnectionTimer.refresh();
             }
-          }, SwapClient.RECONNECT_TIMER);
+          }, SwapClient.RECONNECT_TIME_LIMIT);
         }
       }
     }
