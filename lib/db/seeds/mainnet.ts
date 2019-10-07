@@ -3,8 +3,11 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '025fbfe0e92bf0e5e64500ed542d51f4f9d59111a2d3fa142e90567ec417c4a617',
-    addresses: [{ host: 'xud1.exchangeunion.com', port: 8885 }],
+    nodePubKey: '02529a91d073dda641565ef7affccf035905f3d8c88191bdea83a35f37ccce5d64',
+    addresses: [
+      { host: 'xud1.exchangeunion.com', port: 8885 },
+      { host: 'rgz5icb5jdxzmu7r7tbis64q23ioytzd4tqikuyb5kz75w75rbe6veyd.onion', port: 8885 },
+    ],
   },
 ] as db.NodeAttributes[];
 

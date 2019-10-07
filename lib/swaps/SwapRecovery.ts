@@ -1,8 +1,8 @@
-import SwapClientManager from './SwapClientManager';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
 import { SwapDealInstance } from '../db/types';
 import Logger from '../Logger';
-import { SwapPhase, SwapState, SwapFailureReason, SwapRole, SwapClientType } from '../constants/enums';
 import SwapClient, { PaymentState } from './SwapClient';
+import SwapClientManager from './SwapClientManager';
 
 /**
  * A class that's responsible for recovering swap deals that were interrupted due to a system or xud crash,
@@ -11,6 +11,8 @@ import SwapClient, { PaymentState } from './SwapClient';
 class SwapRecovery {
   /** A set of swaps where we have a pending outgoing payment for swaps where we don't know the preimage. */
   public pendingSwaps: Set<SwapDealInstance> = new Set();
+  /** A map of payment hashes to swaps where we have recovered the preimage but not used it to claim payment yet. */
+  public recoveredPreimageSwaps: Map<string, SwapDealInstance> = new Map();
   private pendingSwapsTimer?: NodeJS.Timeout;
   /** The time in milliseconds between checks on the status of pending swaps. */
   private static readonly PENDING_SWAP_RECHECK_INTERVAL = 300000;
@@ -79,13 +81,14 @@ class SwapRecovery {
             try {
               deal.rPreimage = paymentStatus.preimage!;
               if (makerSwapClient.type === SwapClientType.Raiden) {
-                // tslint:disable-next-line: max-line-length
-                this.logger.warn(`cannot claim payment on Raiden for swap ${deal.rHash} using preimage ${deal.rPreimage}, this should be investigated manually`);
+                this.logger.info(`recovered preimage ${deal.rPreimage} for swap ${deal.rHash}, ` +
+                  'waiting for raiden to request secret and claim payment.');
+                this.recoveredPreimageSwaps.set(deal.rHash, deal);
               } else {
                 await makerSwapClient.settleInvoice(deal.rHash, deal.rPreimage);
+                deal.state = SwapState.Recovered;
                 this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
               }
-              deal.state = SwapState.Recovered;
               this.pendingSwaps.delete(deal);
               await deal.save();
               // TODO: update order and trade in database to indicate they were executed

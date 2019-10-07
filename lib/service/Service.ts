@@ -1,20 +1,20 @@
-import Pool from '../p2p/Pool';
-import OrderBook from '../orderbook/OrderBook';
+import { OrderSide, SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
+import OrderBook from '../orderbook/OrderBook';
+import { OrderSidesArrays } from '../orderbook/TradingPair';
+import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
-import errors from './errors';
-import { SwapClientType, OrderSide, SwapRole, SwapState } from '../constants/enums';
+import swapsErrors from '../swaps/errors';
+import SwapClientManager from '../swaps/SwapClientManager';
+import Swaps from '../swaps/Swaps';
+import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
-import { ListSwapsRequest } from '../proto/xudrpc_pb';
-import { SwapDealInstance } from 'lib/db/types';
-import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
-import Swaps from '../swaps/Swaps';
-import SwapClientManager from '../swaps/SwapClientManager';
-import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
-import { errors as swapsErrors } from '../swaps/errors';
 import commitHash from '../Version';
+import errors from './errors';
+import { ListSwapsRequest } from '../proto/xudrpc_pb';
+import { SwapDealInstance } from '../db/types';
 
 /**
  * The components required by the API service layer.
