@@ -5,7 +5,7 @@ import readline from 'readline';
 
 export const command = 'unlock';
 
-export const describe = 'unlock an xud node';
+export const describe = 'unlock local xud node';
 
 export const builder = {};
 
@@ -21,6 +21,10 @@ export const handler = (argv: Arguments) => {
     rl.close();
     const request = new UnlockNodeRequest();
     request.setPassword(password);
-    loadXudInitClient(argv).unlockNode(request, callback(argv));
+    const client = loadXudInitClient(argv);
+    // wait up to 3 seconds for rpc server to listen before call in case xud was just started
+    client.waitForReady(Date.now() + 3000, () => {
+      client.unlockNode(request, callback(argv));
+    });
   });
 };

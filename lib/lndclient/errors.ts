@@ -3,18 +3,23 @@ import { ClientStatus } from '../swaps/SwapClient';
 
 const codesPrefix = errorCodesPrefix.LND;
 const errorCodes = {
-  LND_IS_DISABLED: codesPrefix.concat('.1'),
-  LND_IS_UNAVAILABLE: codesPrefix.concat('.2'),
+  DISABLED: codesPrefix.concat('.1'),
+  UNAVAILABLE: codesPrefix.concat('.2'),
+  NO_ACTIVE_CHANNELS: codesPrefix.concat('.3'),
 };
 
 const errors = {
-  LND_IS_DISABLED: {
-    message: 'lnd is disabled',
-    code: errorCodes.LND_IS_DISABLED,
-  },
-  LND_IS_UNAVAILABLE: (status: ClientStatus) => ({
-    message: `lnd is ${ClientStatus[status]}`,
-    code: errorCodes.LND_IS_UNAVAILABLE,
+  DISABLED: (currency: string) => ({
+    message: `lnd-${currency} is disabled`,
+    code: errorCodes.DISABLED,
+  }),
+  UNAVAILABLE: (currency: string, status: ClientStatus) => ({
+    message: `lnd-${currency} is ${ClientStatus[status]}`,
+    code: errorCodes.UNAVAILABLE,
+  }),
+  NO_ACTIVE_CHANNELS: (currency: string) => ({
+    message: `lnd-${currency} has no active channels`,
+    code: errorCodes.NO_ACTIVE_CHANNELS,
   }),
 };
 

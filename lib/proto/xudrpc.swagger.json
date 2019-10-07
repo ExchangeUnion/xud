@@ -765,6 +765,31 @@
         }
       }
     },
+    "xudrpcChannels": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of active/online channels for this lnd instance that can be used for swaps."
+        },
+        "inactive": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of inactive/offline channels for this lnd instance."
+        },
+        "pending": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of channels that are pending on-chain confirmation before they can be used."
+        },
+        "closed": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The number of channels that have been closed."
+        }
+      }
+    },
     "xudrpcConnectRequest": {
       "type": "object",
       "properties": {
@@ -916,6 +941,14 @@
         "raiden": {
           "$ref": "#/definitions/xudrpcRaidenInfo"
         },
+        "alias": {
+          "type": "string",
+          "description": "The alias of this instance of xud."
+        },
+        "network": {
+          "type": "string",
+          "description": "The network of this node."
+        },
         "pending_swap_hashes": {
           "type": "array",
           "items": {
@@ -1028,34 +1061,14 @@
         }
       }
     },
-    "xudrpcLndChannels": {
-      "type": "object",
-      "properties": {
-        "active": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of active/online channels for this lnd instance that can be used for swaps."
-        },
-        "inactive": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of inactive/offline channels for this lnd instance."
-        },
-        "pending": {
-          "type": "integer",
-          "format": "int64",
-          "description": "The number of channels that are pending on-chain confirmation before they can be used."
-        }
-      }
-    },
     "xudrpcLndInfo": {
       "type": "object",
       "properties": {
-        "error": {
+        "status": {
           "type": "string"
         },
         "channels": {
-          "$ref": "#/definitions/xudrpcLndChannels"
+          "$ref": "#/definitions/xudrpcChannels"
         },
         "chains": {
           "type": "array",
@@ -1342,17 +1355,19 @@
     "xudrpcRaidenInfo": {
       "type": "object",
       "properties": {
-        "error": {
+        "status": {
           "type": "string"
         },
         "address": {
           "type": "string"
         },
         "channels": {
-          "type": "integer",
-          "format": "int64"
+          "$ref": "#/definitions/xudrpcChannels"
         },
         "version": {
+          "type": "string"
+        },
+        "chain": {
           "type": "string"
         }
       }

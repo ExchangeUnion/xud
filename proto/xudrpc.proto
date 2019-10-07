@@ -407,7 +407,11 @@ message GetInfoResponse {
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
   RaidenInfo raiden = 8 [json_name = "raiden"];
-  repeated string pending_swap_hashes = 9 [json_name = "pending_swap_hashes"];
+  // The alias of this instance of xud.
+  string alias = 9 [json_name = "alias"];
+  // The network of this node.
+  string network = 10 [json_name = "network"];
+  repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
 }
 
 message GetNodeInfoRequest {
@@ -480,18 +484,20 @@ message ListOrderHistoryResponse {
   };
 }
 
-message LndChannels {
+message Channels {
   // The number of active/online channels for this lnd instance that can be used for swaps.
   uint32 active = 1 [json_name = "active"];
   // The number of inactive/offline channels for this lnd instance.
   uint32 inactive = 2 [json_name = "inactive"];
   // The number of channels that are pending on-chain confirmation before they can be used.
   uint32 pending = 3 [json_name = "pending"];
+  // The number of channels that have been closed.
+  uint32 closed = 4 [json_name = "closed"];
 }
 
 message LndInfo {
-  string error = 1 [json_name = "error"];
-  LndChannels channels = 2 [json_name = "channels"];
+  string status = 1 [json_name = "status"];
+  Channels channels = 2 [json_name = "channels"];
   repeated Chain chains = 3 [json_name = "chains"];
   uint32 blockheight = 4 [json_name = "blockheight"];
   repeated string uris = 5 [json_name = "uris"];
@@ -631,10 +637,11 @@ message PlaceOrderEvent {
 }
 
 message RaidenInfo {
-  string error = 1 [json_name = "error"];
+  string status = 1 [json_name = "status"];
   string address = 2 [json_name = "address"];
-  uint32 channels = 3 [json_name = "channels"];
+  Channels channels = 3 [json_name = "channels"];
   string version = 4 [json_name = "version"];
+  string chain = 5 [json_name = "chain"];
 }
 
 message RemoveCurrencyRequest {

@@ -1,40 +1,18 @@
 /* tslint:disable no-null-keyword */
-import grpc, { status } from 'grpc';
-import * as xudrpc from '../proto/xudrpc_pb';
-import { errorCodes as serviceErrorCodes } from '../service/errors';
+import grpc from 'grpc';
 import InitService from 'lib/service/InitService';
+import * as xudrpc from '../proto/xudrpc_pb';
+import getGrpcError from './getGrpcError';
 
 class GrpcInitService {
   constructor(private initService: InitService) {}
-
-  private getGrpcError = (err: any) => {
-    // if we recognize this error, use a proper gRPC ServiceError with a descriptive and appropriate code
-    let code: grpc.status | undefined;
-    switch (err.code) {
-      case serviceErrorCodes.PENDING_CALL_CONFLICT:
-        code = status.RESOURCE_EXHAUSTED;
-        break;
-      case serviceErrorCodes.UNIMPLEMENTED:
-        code = status.UNIMPLEMENTED;
-        break;
-    }
-
-    // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
-    const grpcError: grpc.ServiceError = {
-      code: code || status.UNKNOWN,
-      message: err.message,
-      name: err.name,
-    };
-
-    return grpcError;
-  }
 
   /**
    * See [[InitService.createNode]]
    */
   public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (call, callback) => {
     try {
-      const { mnemonic, initializedLndWallets } = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets, initializedRaiden } = await this.initService.createNode(call.request.toObject());
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
@@ -42,10 +20,11 @@ class GrpcInitService {
       if (initializedLndWallets) {
         response.setInitializedLndsList(initializedLndWallets);
       }
+      response.setInitializedRaiden(initializedRaiden);
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
     this.initService.pendingCall = false;
   }
@@ -61,7 +40,7 @@ class GrpcInitService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
     this.initService.pendingCall = false;
   }

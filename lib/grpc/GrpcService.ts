@@ -1,18 +1,13 @@
 /* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { status } from 'grpc';
-import Logger from '../Logger';
-import Service from '../service/Service';
-import * as xudrpc from '../proto/xudrpc_pb';
-import { Order, isOwnOrder, OrderPortion, PlaceOrderResult, PlaceOrderEvent, PlaceOrderEventType } from '../orderbook/types';
-import { errorCodes as orderErrorCodes } from '../orderbook/errors';
-import { errorCodes as serviceErrorCodes } from '../service/errors';
-import { errorCodes as p2pErrorCodes } from '../p2p/errors';
-import { errorCodes as swapErrors } from '../swaps/errors';
-import { errorCodes as lndErrorCodes } from '../lndclient/errors';
-import { LndInfo } from '../lndclient/types';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
 import { SwapFailureReason } from '../constants/enums';
 import { TradeInstance, OrderInstance, SwapDealInstance, CurrencyInstance } from '../db/types';
+import { LndInfo } from '../lndclient/types';
+import { isOwnOrder, Order, OrderPortion, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
+import * as xudrpc from '../proto/xudrpc_pb';
+import Service from '../service/Service';
+import { SwapFailure, SwapSuccess } from '../swaps/types';
+import getGrpcError from './getGrpcError';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
@@ -156,73 +151,7 @@ class GrpcService {
   private streams: Set<grpc.ServerWriteableStream<any>> = new Set<grpc.ServerWriteableStream<any>>();
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
-  constructor(private logger: Logger, private service: Service) {}
-
-  /**
-   * Convert an internal xud error type into a gRPC error.
-   * @param err an error object that should have code and message properties
-   * @return a gRPC error with a gRPC status code
-   */
-  private getGrpcError = (err: any) => {
-    // if we recognize this error, use a proper gRPC ServiceError with a descriptive and appropriate code
-    let code: grpc.status | undefined;
-    switch (err.code) {
-      case serviceErrorCodes.INVALID_ARGUMENT:
-      case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
-      case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
-      case orderErrorCodes.MIN_QUANTITY_VIOLATED:
-      case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
-      case orderErrorCodes.EXCEEDING_LIMIT:
-        code = status.INVALID_ARGUMENT;
-        break;
-      case orderErrorCodes.PAIR_DOES_NOT_EXIST:
-      case p2pErrorCodes.NODE_UNKNOWN:
-      case orderErrorCodes.LOCAL_ID_DOES_NOT_EXIST:
-      case orderErrorCodes.ORDER_NOT_FOUND:
-        code = status.NOT_FOUND;
-        break;
-      case orderErrorCodes.DUPLICATE_ORDER:
-      case p2pErrorCodes.NODE_ALREADY_CONNECTED:
-      case p2pErrorCodes.NODE_ALREADY_BANNED:
-      case p2pErrorCodes.ALREADY_CONNECTING:
-      case orderErrorCodes.CURRENCY_ALREADY_EXISTS:
-      case orderErrorCodes.PAIR_ALREADY_EXISTS:
-        code = status.ALREADY_EXISTS;
-        break;
-      case p2pErrorCodes.NOT_CONNECTED:
-      case p2pErrorCodes.NODE_NOT_BANNED:
-      case p2pErrorCodes.NODE_IS_BANNED:
-      case lndErrorCodes.LND_IS_DISABLED:
-      case orderErrorCodes.CURRENCY_DOES_NOT_EXIST:
-      case orderErrorCodes.CURRENCY_CANNOT_BE_REMOVED:
-      case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
-      case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
-      case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
-      case swapErrors.SWAP_CLIENT_NOT_FOUND:
-        code = status.FAILED_PRECONDITION;
-        break;
-      case lndErrorCodes.LND_IS_UNAVAILABLE:
-      case p2pErrorCodes.COULD_NOT_CONNECT:
-        code = status.UNAVAILABLE;
-        break;
-      case p2pErrorCodes.POOL_CLOSED:
-        code = status.ABORTED;
-        break;
-      case p2pErrorCodes.RESPONSE_TIMEOUT:
-        code = status.DEADLINE_EXCEEDED;
-        break;
-    }
-
-    // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
-    const grpcError: grpc.ServiceError = {
-      code: code || status.UNKNOWN,
-      message: err.message,
-      name: err.name,
-    };
-    this.logger.error(grpcError);
-
-    return grpcError;
-  }
+  constructor(private service: Service) {}
 
   /** Closes and removes all active streaming calls. */
   public closeStreams = () => {
@@ -250,7 +179,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -264,7 +193,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -278,7 +207,7 @@ class GrpcService {
       response.setQuantityOnHold(quantityOnHold);
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -298,7 +227,7 @@ class GrpcService {
       });
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -311,7 +240,7 @@ class GrpcService {
       const response = new xudrpc.OpenChannelResponse();
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -325,7 +254,7 @@ class GrpcService {
       const response = new xudrpc.ConnectResponse();
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -338,7 +267,7 @@ class GrpcService {
       const response = new xudrpc.BanResponse();
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -351,7 +280,7 @@ class GrpcService {
       const response = new xudrpc.UnbanResponse();
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -393,10 +322,9 @@ class GrpcService {
           name: SwapFailureReason[err],
           message: SwapFailureReason[err],
         };
-        this.logger.error(grpcError);
         callback(grpcError, null);
       } else {
-        callback(this.getGrpcError(err), null);
+        callback(getGrpcError(err), null);
       }
     }
   }
@@ -413,6 +341,8 @@ class GrpcService {
       response.setNumPairs(getInfoResponse.numPairs);
       response.setNumPeers(getInfoResponse.numPeers);
       response.setVersion(getInfoResponse.version);
+      response.setAlias(getInfoResponse.alias);
+      response.setNetwork(getInfoResponse.network);
 
       const getLndInfo = ((lndInfo: LndInfo): xudrpc.LndInfo => {
         const lnd = new xudrpc.LndInfo();
@@ -427,13 +357,14 @@ class GrpcService {
           lnd.setChainsList(chains);
         }
         if (lndInfo.channels) {
-          const channels = new xudrpc.LndChannels();
+          const channels = new xudrpc.Channels();
           channels.setActive(lndInfo.channels.active);
           channels.setPending(lndInfo.channels.pending);
+          channels.setClosed(lndInfo.channels.closed);
           if (lndInfo.channels.inactive) channels.setInactive(lndInfo.channels.inactive);
           lnd.setChannels(channels);
         }
-        if (lndInfo.error) lnd.setError(lndInfo.error);
+        lnd.setStatus(lndInfo.status);
         if (lndInfo.uris) lnd.setUrisList(lndInfo.uris);
         if (lndInfo.version) lnd.setVersion(lndInfo.version);
         if (lndInfo.alias) lnd.setAlias(lndInfo.alias);
@@ -446,10 +377,17 @@ class GrpcService {
 
       if (getInfoResponse.raiden) {
         const raiden = new xudrpc.RaidenInfo();
+        raiden.setStatus(getInfoResponse.raiden.status);
         if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) raiden.setChannels(getInfoResponse.raiden.channels);
-        if (getInfoResponse.raiden.error) raiden.setError(getInfoResponse.raiden.error);
+        if (getInfoResponse.raiden.channels) {
+          const channels = new xudrpc.Channels();
+          channels.setActive(getInfoResponse.raiden.channels.active);
+          // channels.setSettled(getInfoResponse.raiden.channels.settled);
+          channels.setClosed(getInfoResponse.raiden.channels.closed);
+          raiden.setChannels(channels);
+        }
         if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
+        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
         response.setRaiden(raiden);
       }
 
@@ -460,7 +398,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -477,7 +415,7 @@ class GrpcService {
       response.setReputationscore(reputationScore);
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -506,7 +444,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -529,7 +467,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -544,7 +482,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -571,7 +509,7 @@ class GrpcService {
       response.setTradesList(tradesList);
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -603,7 +541,7 @@ class GrpcService {
       response.setPeersList(peers);
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -640,7 +578,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -655,7 +593,7 @@ class GrpcService {
 
       call.end();
     } catch (err) {
-      call.emit('error', this.getGrpcError(err));
+      call.emit('error', getGrpcError(err));
     }
   }
 
@@ -667,7 +605,7 @@ class GrpcService {
       const result = await this.service.placeOrder(call.request.toObject());
       callback(null, createPlaceOrderResponse(result));
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -681,7 +619,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -695,7 +633,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -711,7 +649,7 @@ class GrpcService {
 
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 
@@ -721,7 +659,7 @@ class GrpcService {
       const response = new xudrpc.ShutdownResponse();
       callback(null, response);
     } catch (err) {
-      callback(this.getGrpcError(err), null);
+      callback(getGrpcError(err), null);
     }
   }
 

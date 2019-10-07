@@ -2,14 +2,14 @@ import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
 import SwapClient, { ClientStatus, SwapClientInfo, PaymentState } from '../swaps/SwapClient';
 import errors from './errors';
-import { errors as swapErrors } from '../swaps/errors';
+import swapErrors from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs, watch } from 'fs';
-import { SwapState, SwapRole, SwapClientType } from '../constants/enums';
+import { SwapRole, SwapClientType, SwapState } from '../constants/enums';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import { LndClientConfig, LndInfo, ChannelCount, Chain, ClientMethods } from './types';
@@ -143,18 +143,13 @@ class LndClient extends SwapClient {
   }
 
   protected updateCapacity = async () => {
-    try {
-      this.maximumOutboundAmount = (await this.channelBalance()).balance;
-    } catch (e) {
-      // TODO: Mark client as disconnected
-      this.logger.error(`failed to fetch channelbalance: ${e}`);
-    }
+    await this.channelBalance().catch(err => this.logger.error('failed to update maximum outbound capacity', err));
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -182,7 +177,7 @@ class LndClient extends SwapClient {
   private unaryInvoiceCall = <T, U>(methodName: Exclude<keyof InvoicesClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -202,7 +197,7 @@ class LndClient extends SwapClient {
   private unaryWalletUnlockerCall = <T, U>(methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.isDisabled()) {
-        reject(errors.LND_IS_DISABLED);
+        reject(errors.DISABLED);
         return;
       }
       (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
@@ -222,32 +217,38 @@ class LndClient extends SwapClient {
     let blockheight: number | undefined;
     let uris: string[] | undefined;
     let version: string | undefined;
-    let error: string | undefined;
     let alias: string | undefined;
+    let status = 'Ready';
     if (this.isDisabled()) {
-      error = errors.LND_IS_DISABLED.message;
+      status = errors.DISABLED(this.currency).message;
     } else if (!this.isConnected()) {
-      error = errors.LND_IS_UNAVAILABLE(this.status).message;
+      status = errors.UNAVAILABLE(this.currency, this.status).message;
     } else {
       try {
-        const lnd = await this.getInfo();
+        const getInfoResponse = await this.getInfo();
+        const closedChannelsResponse = await this.getClosedChannels();
         channels = {
-          active: lnd.getNumActiveChannels(),
-          pending: lnd.getNumPendingChannels(),
+          active: getInfoResponse.getNumActiveChannels(),
+          inactive: getInfoResponse.getNumInactiveChannels(),
+          pending: getInfoResponse.getNumPendingChannels(),
+          closed: closedChannelsResponse.getChannelsList().length,
         };
-        chains = lnd.getChainsList().map(value => value.toObject());
-        blockheight = lnd.getBlockHeight(),
-        uris = lnd.getUrisList(),
-        version = lnd.getVersion();
-        alias = lnd.getAlias();
+        chains = getInfoResponse.getChainsList().map(value => value.toObject());
+        blockheight = getInfoResponse.getBlockHeight();
+        uris = getInfoResponse.getUrisList();
+        version = getInfoResponse.getVersion();
+        alias = getInfoResponse.getAlias();
+        if (channels.active <= 0) {
+          status = errors.NO_ACTIVE_CHANNELS(this.currency).message;
+        }
       } catch (err) {
         this.logger.error('getinfo error', err);
-        error = err.message;
+        status = err.message;
       }
     }
 
     return {
-      error,
+      status,
       channels,
       chains,
       blockheight,
@@ -310,7 +311,7 @@ class LndClient extends SwapClient {
 
   protected verifyConnection = async () => {
     if (this.isDisabled()) {
-      throw(errors.LND_IS_DISABLED);
+      throw(errors.DISABLED);
     }
 
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
@@ -319,6 +320,7 @@ class LndClient extends SwapClient {
         this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
         await LndClient.waitForClientReady(this.walletUnlocker);
         await this.setStatus(ClientStatus.WaitingUnlock);
+        this.emit('locked');
 
         if (this.reconnectionTimer) {
           // we don't need scheduled attempts to retry the connection while waiting on the wallet
@@ -382,7 +384,7 @@ class LndClient extends SwapClient {
           }
         } else {
           await this.setStatus(ClientStatus.OutOfSync);
-          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
         }
       } catch (err) {
         if (err.code === grpc.status.UNIMPLEMENTED) {
@@ -397,7 +399,7 @@ class LndClient extends SwapClient {
           }
         } else {
           const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIMER} ms`);
+          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
           await this.disconnect();
         }
       }
@@ -410,6 +412,13 @@ class LndClient extends SwapClient {
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
     return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
+  }
+
+  /**
+   * Returns closed channels that this node was a participant in.
+   */
+  public getClosedChannels = (): Promise<lndrpc.ClosedChannelsResponse> => {
+    return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
   }
 
   public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {
@@ -532,13 +541,14 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
   }
 
-  /**
-   * Returns the total balance available across all channels.
-   */
   public channelBalance = async (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
     const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
       'channelBalance', new lndrpc.ChannelBalanceRequest(),
     );
+    if (this.maximumOutboundAmount !== channelBalanceResponse.getBalance()) {
+      this.maximumOutboundAmount = channelBalanceResponse.getBalance();
+      this.logger.debug(`new outbound capacity: ${this.maximumOutboundAmount}`);
+    }
     return channelBalanceResponse.toObject();
   }
 
@@ -788,7 +798,7 @@ class LndClient extends SwapClient {
 
   private subscribeSingleInvoice = (rHash: string) => {
     if (!this.invoices) {
-      throw errors.LND_IS_UNAVAILABLE(this.status);
+      throw errors.UNAVAILABLE(this.currency, this.status);
     }
     const request = new lndinvoices.SubscribeSingleInvoiceRequest();
     request.setRHash(hexToUint8Array(rHash));
@@ -812,7 +822,7 @@ class LndClient extends SwapClient {
    */
   public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
     if (!this.lightning) {
-      throw(errors.LND_IS_UNAVAILABLE(this.status));
+      throw(errors.UNAVAILABLE(this.currency, this.status));
     }
     const request = new lndrpc.CloseChannelRequest();
     const channelPoint = new lndrpc.ChannelPoint();

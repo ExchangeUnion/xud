@@ -49,10 +49,10 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
+  /** Time in milliseconds between attempts to recheck connectivity to the client. */
+  public static readonly RECONNECT_TIME_LIMIT = 5000;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
-  /** Time in milliseconds between attempts to recheck connectivity to the client. */
-  protected static readonly RECONNECT_TIMER = 5000;
 
   private updateCapacityTimer?: NodeJS.Timer;
   /** The maximum amount of time we will wait for the connection to be verified during initialization. */
@@ -67,7 +67,8 @@ abstract class SwapClient extends EventEmitter {
   public abstract get minutesPerBlock(): number;
 
   /**
-   * Returns the total balance available across all channels.
+   * Returns the total balance available across all channels and updates the maximum
+   * outbound capacity.
    * @param currency the currency whose balance to query for, otherwise all/any
    * currencies supported by this client are included in the balance.
    */
@@ -119,9 +120,13 @@ abstract class SwapClient extends EventEmitter {
       }
       if (this.status !== ClientStatus.Disabled) {
         if (!this.reconnectionTimer) {
-          this.reconnectionTimer = setTimeout(this.verifyConnection, SwapClient.RECONNECT_TIMER);
-        } else {
-          this.reconnectionTimer.refresh();
+          this.reconnectionTimer = setTimeout(async () => {
+            await this.verifyConnection();
+            if (!this.isConnected() && this.reconnectionTimer) {
+              // if we were still not able to verify the connection, schedule another attempt
+              this.reconnectionTimer.refresh();
+            }
+          }, SwapClient.RECONNECT_TIME_LIMIT);
         }
       }
     }

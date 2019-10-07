@@ -15,19 +15,19 @@ const displayNodeInfo = (node: GetNodeInfoResponse.AsObject) => {
   console.log(table.toString());
 };
 
-export const command = 'getnodeinfo <node_pub_key>';
+export const command = 'getnodeinfo <node_key>';
 
-export const describe = 'get general information about a node';
+export const describe = 'get general information about a peer';
 
 export const builder = {
-  node_pub_key: {
+  node_key: {
     type: 'string',
-    description: 'nodePubKey of node to get reputation',
+    description: 'the node key of the connected peer to get general information from',
   },
 };
 
 export const handler = (argv: Arguments) => {
   const request = new GetNodeInfoRequest();
-  request.setNodePubKey(argv.node_pub_key);
+  request.setNodePubKey(argv.node_key);
   loadXudClient(argv).getNodeInfo(request, callback(argv, displayNodeInfo));
 };

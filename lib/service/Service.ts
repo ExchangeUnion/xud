@@ -1,18 +1,18 @@
-import Pool from '../p2p/Pool';
-import OrderBook from '../orderbook/OrderBook';
+import { OrderSide, SwapClientType, SwapRole, OrderStatus } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
+import OrderBook from '../orderbook/OrderBook';
+import { OrderSidesArrays } from '../orderbook/TradingPair';
+import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
+import swapsErrors from '../swaps/errors';
+import SwapClientManager from '../swaps/SwapClientManager';
+import Swaps from '../swaps/Swaps';
+import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import errors from './errors';
 import orderbookErrors from '../orderbook/errors';
-import { SwapClientType, OrderSide, SwapRole, OrderStatus } from '../constants/enums';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
-import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
-import Swaps from '../swaps/Swaps';
-import SwapClientManager from '../swaps/SwapClientManager';
-import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { SwapSuccess, SwapFailure, ResolveRequest } from '../swaps/types';
-import { errors as swapsErrors } from '../swaps/errors';
 import commitHash from '../Version';
 import { TradeInstance, SwapDealInstance } from 'lib/db/types';
 
@@ -34,6 +34,8 @@ type XudInfo = {
   version: string;
   nodePubKey: string;
   uris: string[];
+  network: string;
+  alias: string;
   numPeers: number;
   numPairs: number;
   orders: { peer: number, own: number};
@@ -256,6 +258,8 @@ class Service {
 
     let peerOrdersCount = 0;
     let ownOrdersCount = 0;
+    const network = this.pool.getNetwork();
+
     let numPairs = 0;
     for (const pairId of this.orderBook.pairIds) {
       const peerOrders = this.orderBook.getPeersOrders(pairId);
@@ -268,6 +272,7 @@ class Service {
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
     const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
+    raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
 
     return {
       lnd,
@@ -275,6 +280,8 @@ class Service {
       nodePubKey,
       uris,
       numPairs,
+      network,
+      alias: '',
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {

@@ -8,11 +8,11 @@ export const describe = 'add a trading pair';
 
 export const builder = {
   base_currency: {
-    description: 'The currency bought and sold for this trading pair',
+    description: 'the currency bought and sold for this trading pair',
     type: 'string',
   },
   quote_currency: {
-    description: 'The currency used to quote a price',
+    description: 'the currency used to quote a price',
     type: 'string',
   },
 };

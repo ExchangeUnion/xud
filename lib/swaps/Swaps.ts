@@ -13,7 +13,7 @@ import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './type
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
-import { errors, errorCodes } from './errors';
+import errors, { errorCodes } from './errors';
 import SwapRecovery from './SwapRecovery';
 import poissonQuantile from 'distributions-poisson-quantile';
 
@@ -905,6 +905,16 @@ class Swaps extends EventEmitter {
     const { amount, rHash } = resolveRequest;
 
     this.logger.debug(`handleResolveRequest starting with hash ${rHash}`);
+
+    // first check if we have recovered this deal from a previous swap attempt
+    const recoveredSwap = this.swapRecovery.recoveredPreimageSwaps.get(rHash);
+    if (recoveredSwap && recoveredSwap.rPreimage) {
+      recoveredSwap.state = SwapState.Recovered;
+      recoveredSwap.save().catch(this.logger.error);
+      this.swapRecovery.recoveredPreimageSwaps.delete(rHash);
+      this.logger.info(`handleResolveRequest returning recovered preimage ${recoveredSwap.rPreimage} for hash ${rHash}`);
+      return recoveredSwap.rPreimage;
+    }
 
     const deal = this.getDeal(rHash);
 
