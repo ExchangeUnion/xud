@@ -13,6 +13,7 @@ import Logger from '../Logger';
 import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
+import { getAlias } from '../utils/uriUtils';
 import assert from 'assert';
 import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
 import NodeKey from '../nodekey/NodeKey';
@@ -72,6 +73,8 @@ class Pool extends EventEmitter {
   public version: string;
   /** Our node pub key. */
   public nodePubKey: string;
+  /** Alias for this node */
+  public alias: string;
   /** The local handshake data to be sent to newly connected peers. */
   private nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
@@ -108,6 +111,7 @@ class Pool extends EventEmitter {
     this.logger = logger;
     this.nodeKey = nodeKey;
     this.nodePubKey = nodeKey.pubKey;
+    this.alias = getAlias(this.nodePubKey);
     this.version = version;
     this.config = config;
     this.network = new Network(xuNetwork);

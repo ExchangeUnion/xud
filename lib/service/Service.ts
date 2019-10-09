@@ -9,7 +9,7 @@ import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
-import { parseUri, toUri, UriParts } from '../utils/uriUtils';
+import { parseUri, toUri, UriParts, getAlias } from '../utils/uriUtils';
 import { sortOrders } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
@@ -279,7 +279,7 @@ class Service {
       uris,
       numPairs,
       network,
-      alias: '',
+      alias: getAlias(nodePubKey),
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {

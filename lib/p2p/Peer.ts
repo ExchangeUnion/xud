@@ -9,6 +9,7 @@ import Parser from './Parser';
 import * as packets from './packets/types';
 import Logger from '../Logger';
 import { ms } from '../utils/utils';
+import { getAlias } from '../utils/uriUtils';
 import { OutgoingOrder } from '../orderbook/types';
 import { Packet, PacketDirection, PacketType } from './packets';
 import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
@@ -23,6 +24,7 @@ import Framer from './Framer';
 type PeerInfo = {
   address: string,
   nodePubKey?: string,
+  alias?: string,
   inbound: boolean,
   pairs?: string[],
   xudVersion?: string,
@@ -122,11 +124,17 @@ class Peer extends EventEmitter {
     return this._nodePubKey;
   }
 
+  public get alias(): string {
+    return getAlias(this.nodePubKey);
+  }
+
   public get label(): string {
-    return this.nodePubKey ||
-      (this.expectedNodePubKey
+    if (this.nodePubKey) {
+        return this.nodePubKey + " (" + this.alias + ")";
+    }
+    return this.expectedNodePubKey
       ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}`
-      : addressUtils.toString(this.address));
+      : addressUtils.toString(this.address);
   }
 
   public get addresses(): Address[] | undefined {
@@ -152,6 +160,7 @@ class Peer extends EventEmitter {
   public get info(): PeerInfo {
     return {
       address: addressUtils.toString(this.address),
+      alias: this.alias,
       nodePubKey: this.nodePubKey,
       inbound: this.inbound,
       pairs: Array.from(this.activePairs),
@@ -301,7 +310,7 @@ class Peer extends EventEmitter {
 
     if (this.socket) {
       if (reason !== undefined) {
-        this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
+        this.logger.debug(`Peer ${ this.label }: closing socket. reason: ${DisconnectionReason[reason]}`);
         this.sentDisconnectionReason = reason;
         await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
       }
@@ -619,7 +628,7 @@ class Peer extends EventEmitter {
   private fulfillResponseEntry = (packet: Packet): boolean => {
     const { reqId } = packet.header;
     if (!reqId) {
-      this.logger.debug(`Peer (${this.label}) sent a response packet without reqId`);
+      this.logger.debug(`Peer ${this.label} sent a response packet without reqId`);
       // TODO: penalize
       return false;
     }
@@ -627,7 +636,7 @@ class Peer extends EventEmitter {
     const entry = this.responseMap.get(reqId);
 
     if (!entry) {
-      this.logger.debug(`Peer (${this.label}) sent an unsolicited response packet (${reqId})`);
+      this.logger.debug(`Peer ${this.label} sent an unsolicited response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
@@ -638,7 +647,7 @@ class Peer extends EventEmitter {
       (isPacketTypeArray(entry.resType) && entry.resType.includes(packet.type));
 
     if (!isExpectedType) {
-      this.logger.debug(`Peer (${this.label}) sent an unsolicited packet type (${PacketType[packet.type]}) for response packet (${reqId})`);
+      this.logger.debug(`Peer ${this.label} sent an unsolicited packet type (${PacketType[packet.type]}) for response packet (${reqId})`);
       // TODO: penalize
       return false;
     }
@@ -665,9 +674,9 @@ class Peer extends EventEmitter {
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake with ${this.label}`);
       } else if (hadError) {
-        this.logger.warn(`Peer ${this.nodePubKey} socket closed due to error`);
+        this.logger.warn(`Peer ${this.label} socket closed due to error`);
       } else {
-        this.logger.info(`Peer ${this.nodePubKey} socket closed`);
+        this.logger.info(`Peer ${this.label} socket closed`);
       }
       await this.close();
     });
