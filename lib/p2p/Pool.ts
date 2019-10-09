@@ -11,6 +11,7 @@ import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
+import { getAlias } from '../utils/uriUtils';
 import Network from './Network';
 import NodeList, { reputationEventWeight } from './NodeList';
 import P2PRepository from './P2PRepository';
@@ -74,6 +75,8 @@ class Pool extends EventEmitter {
   public version: string;
   /** Our node pub key. */
   public nodePubKey: string;
+  /** Alias for this node */
+  public alias: string;
   /** The local handshake data to be sent to newly connected peers. */
   private nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
@@ -110,6 +113,7 @@ class Pool extends EventEmitter {
     this.logger = logger;
     this.nodeKey = nodeKey;
     this.nodePubKey = nodeKey.pubKey;
+    this.alias = getAlias(this.nodePubKey);
     this.version = version;
     this.config = config;
     this.network = new Network(xuNetwork);
