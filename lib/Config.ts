@@ -91,11 +91,11 @@ class Config {
     this.rpc = {
       disable: false,
       host: 'localhost',
-      port: 8886,
+      port: this.getDefaultRpcPort(),
     };
     this.http = {
       host: 'localhost',
-      port: 8887,
+      port: this.getDefaultHttpPort(),
     };
     this.webproxy = {
       disable: true,
@@ -197,6 +197,8 @@ class Config {
     this.logpath = this.getDefaultLogPath();
     this.dbpath = this.getDefaultDbPath();
     this.p2p.port = this.getDefaultP2pPort();
+    this.rpc.port = this.getDefaultRpcPort();
+    this.http.port = this.getDefaultHttpPort();
     this.setDefaultMacaroonPaths();
 
     if (configProps) {
@@ -279,6 +281,36 @@ class Config {
         return 28885;
       case XuNetwork.RegTest:
         return 38885;
+      default:
+        throw new Error('unrecognized network');
+    }
+  }
+
+  private getDefaultRpcPort = () => {
+    switch (this.network) {
+      case XuNetwork.MainNet:
+        return 8886;
+      case XuNetwork.TestNet:
+        return 18886;
+      case XuNetwork.SimNet:
+        return 28886;
+      case XuNetwork.RegTest:
+        return 38886;
+      default:
+        throw new Error('unrecognized network');
+    }
+  }
+
+  private getDefaultHttpPort = () => {
+    switch (this.network) {
+      case XuNetwork.MainNet:
+        return 8887;
+      case XuNetwork.TestNet:
+        return 18887;
+      case XuNetwork.SimNet:
+        return 28887;
+      case XuNetwork.RegTest:
+        return 38887;
       default:
         throw new Error('unrecognized network');
     }
