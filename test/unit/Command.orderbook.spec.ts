@@ -24,6 +24,7 @@ const createOrders = (
         quantity: randomAmounts ? randomNumber() : quantity,
         localId: id,
         pairId: 'LTC/BTC',
+        alias: '',
         peerPubKey: '123',
         createdAt: Date.now(),
         side: 0,
