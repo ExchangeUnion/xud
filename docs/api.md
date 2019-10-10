@@ -19,7 +19,6 @@
     - [Currency](#xudrpc.Currency)
     - [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest)
     - [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse)
-    - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
     - [GetBalanceRequest](#xudrpc.GetBalanceRequest)
     - [GetBalanceResponse](#xudrpc.GetBalanceResponse)
     - [GetBalanceResponse.BalancesEntry](#xudrpc.GetBalanceResponse.BalancesEntry)
@@ -301,24 +300,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | num_nodes | [uint32](#uint32) |  |  |
-
-
-
-
-
-
-<a name="xudrpc.ExecuteSwapRequest"></a>
-
-### ExecuteSwapRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| order_id | [string](#string) |  | The order id of the maker order. |
-| pair_id | [string](#string) |  | The trading pair of the swap orders. |
-| peer_pub_key | [string](#string) |  | The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly. |
-| quantity | [uint64](#uint64) |  | The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified. |
 
 
 
@@ -981,7 +962,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls. These swap results are also returned in the responses for the respective calls. |
+| include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder calls. These swap results are also returned in the responses for the respective calls. |
 
 
 
@@ -1176,7 +1157,6 @@
 | ListTrades | [ListTradesRequest](#xudrpc.ListTradesRequest) | [ListTradesResponse](#xudrpc.ListTradesResponse) |  |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous non-streaming version of PlaceOrder. |
-| ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Execute a swap on a maker peer order |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |

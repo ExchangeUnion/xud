@@ -422,39 +422,6 @@ export namespace ConnectResponse {
     }
 }
 
-export class ExecuteSwapRequest extends jspb.Message { 
-    getOrderId(): string;
-    setOrderId(value: string): void;
-
-    getPairId(): string;
-    setPairId(value: string): void;
-
-    getPeerPubKey(): string;
-    setPeerPubKey(value: string): void;
-
-    getQuantity(): number;
-    setQuantity(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ExecuteSwapRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ExecuteSwapRequest): ExecuteSwapRequest.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ExecuteSwapRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ExecuteSwapRequest;
-    static deserializeBinaryFromReader(message: ExecuteSwapRequest, reader: jspb.BinaryReader): ExecuteSwapRequest;
-}
-
-export namespace ExecuteSwapRequest {
-    export type AsObject = {
-        orderId: string,
-        pairId: string,
-        peerPubKey: string,
-        quantity: number,
-    }
-}
-
 export class SwapFailure extends jspb.Message { 
     getOrderId(): string;
     setOrderId(value: string): void;

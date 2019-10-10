@@ -193,33 +193,6 @@
         ]
       }
     },
-    "/v1/executeswap": {
-      "post": {
-        "summary": "Execute a swap on a maker peer order",
-        "operationId": "ExecuteSwap",
-        "responses": {
-          "200": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/xudrpcSwapSuccess"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcExecuteSwapRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/info": {
       "get": {
         "summary": "Gets general information about this node.",
@@ -586,7 +559,7 @@
         "parameters": [
           {
             "name": "include_taker",
-            "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
+            "description": "Whether to include the results for swaps initiated via the PlaceOrder calls.\nThese swap results are also returned in the responses for the respective calls.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -613,7 +586,7 @@
         "parameters": [
           {
             "name": "include_taker",
-            "description": "Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.\nThese swap results are also returned in the responses for the respective calls.",
+            "description": "Whether to include the results for swaps initiated via the PlaceOrder calls.\nThese swap results are also returned in the responses for the respective calls.",
             "in": "query",
             "required": false,
             "type": "boolean",
@@ -827,28 +800,6 @@
         "num_nodes": {
           "type": "integer",
           "format": "int64"
-        }
-      }
-    },
-    "xudrpcExecuteSwapRequest": {
-      "type": "object",
-      "properties": {
-        "order_id": {
-          "type": "string",
-          "description": "The order id of the maker order."
-        },
-        "pair_id": {
-          "type": "string",
-          "description": "The trading pair of the swap orders."
-        },
-        "peer_pub_key": {
-          "type": "string",
-          "description": "The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly."
-        },
-        "quantity": {
-          "type": "string",
-          "format": "uint64",
-          "description": "The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified."
         }
       }
     },

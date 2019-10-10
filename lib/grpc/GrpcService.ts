@@ -1,5 +1,5 @@
 /* tslint:disable no-floating-promises no-null-keyword */
-import grpc, { status } from 'grpc';
+import grpc from 'grpc';
 import { SwapFailureReason } from '../constants/enums';
 import { CurrencyInstance, OrderInstance, TradeInstance } from '../db/types';
 import { LndInfo } from '../lndclient/types';
@@ -265,51 +265,6 @@ class GrpcService {
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
-    }
-  }
-
-  /**
-   * See [[Service.executeSwap]]
-   */
-  public executeSwap: grpc.handleUnaryCall<xudrpc.ExecuteSwapRequest, xudrpc.SwapSuccess> = async (call, callback) => {
-    try {
-      const swapSuccess = await this.service.executeSwap(call.request.toObject());
-      callback(null, createSwapSuccess(swapSuccess));
-    } catch (err) {
-      if (typeof err === 'number') {
-        // treat the error as a SwapFailureReason enum
-        let code: status;
-        switch (err) {
-          case SwapFailureReason.DealTimedOut:
-          case SwapFailureReason.SwapTimedOut:
-            code = status.DEADLINE_EXCEEDED;
-            break;
-          case SwapFailureReason.InvalidSwapRequest:
-          case SwapFailureReason.PaymentHashReuse:
-            // these cases suggest something went very wrong with our swap request
-            code = status.INTERNAL;
-            break;
-          case SwapFailureReason.NoRouteFound:
-          case SwapFailureReason.SendPaymentFailure:
-          case SwapFailureReason.SwapClientNotSetup:
-          case SwapFailureReason.OrderOnHold:
-            code = status.FAILED_PRECONDITION;
-            break;
-          case SwapFailureReason.UnexpectedClientError:
-          case SwapFailureReason.UnknownError:
-          default:
-            code = status.UNKNOWN;
-            break;
-        }
-        const grpcError: grpc.ServiceError = {
-          code,
-          name: SwapFailureReason[err],
-          message: SwapFailureReason[err],
-        };
-        callback(grpcError, null);
-      } else {
-        callback(getGrpcError(err), null);
-      }
     }
   }
 

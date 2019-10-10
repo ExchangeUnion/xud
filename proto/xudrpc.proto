@@ -201,15 +201,6 @@ service Xud {
     };
   }
 
-
-  /* Execute a swap on a maker peer order */
-  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapSuccess) {
-    option (google.api.http) = {
-      post: "/v1/executeswap"
-      body: "*"
-    };
-  }
-
   /* Removes a currency from the list of supported currencies. Only currencies that are not in use
    * for any currently supported trading pairs may be removed. Once removed, the currency can no
    * longer be used for any supported trading pairs. */
@@ -359,17 +350,6 @@ message ConnectRequest {
 }
 
 message ConnectResponse {}
-
-message ExecuteSwapRequest {
-  // The order id of the maker order.
-  string order_id = 1 [json_name = "order_id"];
-  // The trading pair of the swap orders.
-  string pair_id = 2 [json_name = "pair_id"];
-  // The node pub key of the peer which owns the maker order. This is optional but helps locate the order more quickly.
-  string peer_pub_key = 3 [json_name = "peer_pub_key"];
-  // The quantity to swap denominated in satoshis. The whole order will be swapped if unspecified.
-  uint64 quantity = 4 [json_name = "quantity"];
-}
 
 message SwapFailure {
   // The global UUID for the order that failed the swap.
@@ -659,7 +639,7 @@ message SubscribeOrdersRequest {
 }
 
 message SubscribeSwapsRequest {
-  // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
+  // Whether to include the results for swaps initiated via the PlaceOrder calls.
   // These swap results are also returned in the responses for the respective calls.
   bool include_taker = 1 [json_name = "include_taker"];
 }
