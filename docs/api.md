@@ -404,6 +404,7 @@
 | alias | [string](#string) |  | The alias of this instance of xud. |
 | network | [string](#string) |  | The network of this node. |
 | pending_swap_hashes | [string](#string) | repeated |  |
+| status | [string](#string) |  | The status of this node. |
 
 
 

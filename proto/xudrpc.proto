@@ -413,6 +413,8 @@ message GetInfoResponse {
   // The network of this node.
   string network = 10 [json_name = "network"];
   repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
+  // The status of this node.
+  string status = 12 [json_name = "status"];
 }
 
 message GetNodeInfoRequest {

@@ -29,6 +29,7 @@ type ServiceComponents = {
 };
 
 type XudInfo = {
+  status: string,
   version: string;
   nodePubKey: string;
   uris: string[];
@@ -303,6 +304,7 @@ class Service {
     const lnd = await this.swapClientManager.getLndClientsInfo();
     const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
     raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
+    const xudStatus = this.determineXudStatus(lnd, raiden);
 
     return {
       lnd,
@@ -311,6 +313,7 @@ class Service {
       uris,
       numPairs,
       network,
+      status: xudStatus,
       alias: '',
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
@@ -509,6 +512,29 @@ class Service {
     argChecks.HAS_RHASH(request);
     argChecks.POSITIVE_AMOUNT(request);
     return this.swaps.handleResolveRequest(request);
+  }
+
+  private determineXudStatus(lnd: Map<string, LndInfo>, raiden: RaidenInfo) {
+    let status = '';
+
+    const peers = this.listPeers();
+    if (!peers || peers.length === 0) {
+      status = 'Not connected to any peers';
+      status += '\n';
+    }
+
+    lnd.forEach((lndInfo, currency) => {
+      if (lndInfo.status !== 'Ready') {
+        status += `LND-${currency}: ${lndInfo.status}`;
+        status += '\n';
+      }
+    });
+
+    if (raiden.status !== 'Ready') {
+      status += `Raiden: ${raiden.status}`;
+    }
+
+    return status.substring(0, status.length - 1) || 'Ready';
   }
 }
 export default Service;

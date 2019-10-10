@@ -938,6 +938,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "status": {
+          "type": "string",
+          "description": "The status of this node."
         }
       }
     },

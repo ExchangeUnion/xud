@@ -35,6 +35,7 @@ const displayGeneral = (info: GetInfoResponse.AsObject) => {
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   table.push(
+    { [colors.blue('Status')]: info.status },
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Node Key')]: info.nodePubKey },
     { [colors.blue('Address')]: address },
