@@ -54,12 +54,21 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
     }
     console.log('-----------------------END XUD SEED----------------------\n');
 
+    let walletInitializedMessage = 'The following wallets were initialized: ';
+
     if (response.initializedLndsList.length) {
-      console.log(`The following lnd wallets were initialized: ${response.initializedLndsList.join(', ')}`);
+      walletInitializedMessage += response.initializedLndsList.join(', ');
     }
+
     if (response.initializedRaiden) {
-      console.log('The keystore for raiden was initialized.');
+      if (!walletInitializedMessage.endsWith(' ')) {
+        walletInitializedMessage += ', ';
+      }
+
+      walletInitializedMessage += 'ERC20(ETH)';
     }
+
+    console.log(walletInitializedMessage);
 
     console.log(`
 Please write down your 24 word mnemonic. It will allow you to recover your xud
