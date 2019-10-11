@@ -208,6 +208,29 @@ class Service {
     await this.pool.unbanNode(args.nodePubKey, args.reconnect);
   }
 
+  public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }) => {
+    if (!this.orderBook.nomatching) {
+      throw errors.NOMATCHING_MODE_IS_REQUIRED();
+    }
+
+    const { orderId, pairId, peerPubKey } = args;
+    const quantity = args.quantity > 0 ? args.quantity : undefined; // passing 0 quantity will work fine, but it's prone to bugs
+
+    const maker = this.orderBook.removePeerOrder(orderId, pairId, peerPubKey, quantity).order;
+    const taker = this.orderBook.stampOwnOrder({
+      pairId,
+      localId: '',
+      price: maker.price,
+      isBuy: !maker.isBuy,
+      quantity: quantity || maker.quantity,
+      hold: 0,
+    });
+
+    const swapSuccess = await this.orderBook.executeSwap(maker, taker);
+    swapSuccess.localId = ''; // we shouldn't return the localId for ExecuteSwap in nomatching mode
+    return swapSuccess;
+  }
+
   /**
    * Gets information about a specified node.
    */
