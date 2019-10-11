@@ -383,7 +383,6 @@ class GrpcService {
     try {
       const getInfoResponse = await this.service.getInfo();
       const response = new xudrpc.GetInfoResponse();
-      response.setStatus(getInfoResponse.status);
       response.setNodePubKey(getInfoResponse.nodePubKey);
       response.setUrisList(getInfoResponse.uris);
       response.setNumPairs(getInfoResponse.numPairs);

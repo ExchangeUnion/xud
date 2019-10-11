@@ -570,9 +570,6 @@ export class GetInfoResponse extends jspb.Message {
     setPendingSwapHashesList(value: Array<string>): void;
     addPendingSwapHashes(value: string, index?: number): string;
 
-    getStatus(): string;
-    setStatus(value: string): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GetInfoResponse.AsObject;
@@ -598,7 +595,6 @@ export namespace GetInfoResponse {
         alias: string,
         network: string,
         pendingSwapHashesList: Array<string>,
-        status: string,
     }
 }
 
