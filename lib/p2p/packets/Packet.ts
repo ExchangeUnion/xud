@@ -110,7 +110,7 @@ abstract class Packet<T = any> implements PacketInterface {
     return createHash('sha256')
       .update(this.toJSON())
       .digest()
-      .readUInt32LE(0, true);
+      .readUInt32LE(0);
   }
 }
 

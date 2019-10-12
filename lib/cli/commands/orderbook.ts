@@ -88,7 +88,7 @@ const displayOrderbook = (orderbook: FormattedOrderbook) => {
   console.log(table.toString());
 };
 
-const displayTables = (orders: ListOrdersResponse.AsObject, argv: Arguments) => {
+const displayTables = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   createOrderbook(orders, argv.precision).forEach(displayOrderbook);
 };
 
@@ -156,7 +156,7 @@ export const builder = {
   },
 };
 
-const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments) => {
+const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   const jsonOrderbooks: OrderbookJson[] = [];
   const quantityInSatoshisPerCoin = (bucket: Bucket) => {
     bucket.quantity = parseFloat(
@@ -177,7 +177,7 @@ const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments) => {
   console.log(JSON.stringify(jsonOrderbooks, undefined, 2));
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);

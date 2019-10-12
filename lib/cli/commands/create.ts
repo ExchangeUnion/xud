@@ -73,7 +73,7 @@ somewhere safe, it is your ONLY backup in case of data loss.
   }
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const rl = readline.createInterface({
     input: process.stdin,
     terminal: true,

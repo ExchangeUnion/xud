@@ -13,7 +13,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new DiscoverNodesRequest();
   request.setPeerPubKey(argv.node_key);
   loadXudClient(argv).discoverNodes(request, callback(argv));

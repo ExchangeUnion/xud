@@ -17,7 +17,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new AddPairRequest();
   request.setBaseCurrency(argv.base_currency.toUpperCase());
   request.setQuoteCurrency(argv.quote_currency.toUpperCase());

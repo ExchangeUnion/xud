@@ -32,7 +32,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new ExecuteSwapRequest();
   request.setOrderId(argv.order_id);
   request.setPairId(argv.pair_id);
