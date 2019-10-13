@@ -13,7 +13,7 @@
     "lib": ["dom","ES2017"],
     "declaration": true,
     "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
 
     /* Additional Checks */
     "noUnusedLocals": true,                   /* Report errors on unused locals. */
