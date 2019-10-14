@@ -173,6 +173,8 @@ class Config {
     const configProps = await Config.readConfigProps(configPath);
 
     if (configProps) {
+      this.validateConfigProps(configProps);
+
       // set the network and xudir props up front because they influence default config values
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
@@ -294,6 +296,36 @@ class Config {
 
   private getDefaultLogLevel = (): string => {
     return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
+  }
+
+  private validateConfigProps(configProps: any) {
+    for (const prop in configProps) {
+      this.checkTypes(configProps, prop, (this as any)[prop]);
+    }
+  }
+
+  private checkTypes(configProps: any, prop: string, expectedVal: any) {
+    if (typeof configProps[prop] !== 'object') {
+      const expectedType = Object.prototype.toString.call(expectedVal);
+      const typeInConfigFile = Object.prototype.toString.call(configProps[prop]);
+      if (expectedType !== typeInConfigFile) {
+        console.log(`${prop} in config file should have a type of ${expectedType}`);
+        process.exit(-1);
+      }
+    } else {
+      for (const [fileKey, fileValue] of Object.entries(configProps[prop])) {
+        const expectedType = Object.prototype.toString.call(expectedVal[fileKey]);
+        const typeInConfigFile = Object.prototype.toString.call(fileValue);
+        if (expectedType !== typeInConfigFile) {
+          console.log(`${prop}[${fileKey}] in config file should have a type of ${expectedType}`);
+          process.exit(-1);
+        }
+
+        if (expectedType === '[object Object]') {
+          this.checkTypes(configProps[prop], fileKey, expectedVal[fileKey]);
+        }
+      }
+    }
   }
 }
 
