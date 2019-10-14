@@ -221,7 +221,7 @@ class LndClient extends SwapClient {
     let status = 'Ready';
     if (this.isDisabled()) {
       status = errors.DISABLED(this.currency).message;
-    } else if (!this.isConnected()) {
+    } else if (this.isDisconnected()) {
       status = errors.UNAVAILABLE(this.currency, this.status).message;
     } else {
       try {
@@ -238,7 +238,10 @@ class LndClient extends SwapClient {
         uris = getInfoResponse.getUrisList();
         version = getInfoResponse.getVersion();
         alias = getInfoResponse.getAlias();
-        if (channels.active <= 0) {
+
+        if (this.isOutOfSync()) {
+          status = errors.UNAVAILABLE(this.currency, this.status).message;
+        } else if (channels.active <= 0) {
           status = errors.NO_ACTIVE_CHANNELS(this.currency).message;
         }
       } catch (err) {
