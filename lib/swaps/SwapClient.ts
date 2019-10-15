@@ -4,12 +4,19 @@ import { SwapDeal, Route } from './types';
 import { SwapClientType } from '../constants/enums';
 
 enum ClientStatus {
+  /** The starting status before a client has initialized. */
   NotInitialized,
   Disabled,
+  /** The server cannot be reached or is not responding properly. */
   Disconnected,
+  /** The server is reachable and operational. */
   ConnectionVerified,
+  /** The server is reachable but is not ready pending completion of blockchain or network sync. */
   OutOfSync,
+  /** The server is reachable but needs to be unlocked before it accepts calls. */
   WaitingUnlock,
+  /** The client could not be initialized due to faulty configuration. */
+  Misconfigured,
 }
 
 type ChannelBalance = {
@@ -135,7 +142,7 @@ abstract class SwapClient extends EventEmitter {
         clearInterval(this.updateCapacityTimer);
         this.updateCapacityTimer = undefined;
       }
-      if (this.status !== ClientStatus.Disabled) {
+      if (this.status !== ClientStatus.Disabled && this.status !== ClientStatus.Misconfigured) {
         if (!this.reconnectionTimer) {
           this.reconnectionTimer = setTimeout(async () => {
             await this.verifyConnection();
@@ -215,6 +222,15 @@ abstract class SwapClient extends EventEmitter {
   }
   public isDisabled(): boolean {
     return this.status === ClientStatus.Disabled;
+  }
+  public isMisconfigured(): boolean {
+    return this.status === ClientStatus.Misconfigured;
+  }
+  /**
+   * Returns `true` if the client is enabled and configured properly.
+   */
+  public isOperational(): boolean {
+    return !this.isDisabled() && !this.isMisconfigured();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;

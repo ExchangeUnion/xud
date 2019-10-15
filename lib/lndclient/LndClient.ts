@@ -101,7 +101,7 @@ class LndClient extends SwapClient {
       this.logger.debug(`loaded tls cert from ${certpath}`);
     } catch (err) {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
-      await this.setStatus(ClientStatus.Disabled);
+      await this.setStatus(ClientStatus.Misconfigured);
       return;
     }
 
@@ -110,11 +110,11 @@ class LndClient extends SwapClient {
       try {
         await this.loadMacaroon();
       } catch (err) {
-        if (!awaitingCreate) {
+        if (!awaitingCreate || err.code !== 'ENOENT') {
           // unless we are waiting for the xud nodekey and lnd wallet to be created
           // we expect the macaroon to exist and disable this client otherwise
-          this.logger.error(`expected macaroon not found at ${macaroonpath}`);
-          await this.setStatus(ClientStatus.Disabled);
+          this.logger.error(`could not load admin macaroon from ${macaroonpath}`);
+          await this.setStatus(ClientStatus.Misconfigured);
           return;
         }
       }
@@ -148,7 +148,7 @@ class LndClient extends SwapClient {
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
+      if (!this.isOperational()) {
         reject(errors.DISABLED);
         return;
       }
@@ -176,7 +176,7 @@ class LndClient extends SwapClient {
 
   private unaryInvoiceCall = <T, U>(methodName: Exclude<keyof InvoicesClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
+      if (!this.isOperational()) {
         reject(errors.DISABLED);
         return;
       }
@@ -196,7 +196,7 @@ class LndClient extends SwapClient {
 
   private unaryWalletUnlockerCall = <T, U>(methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
-      if (this.isDisabled()) {
+      if (!this.isOperational()) {
         reject(errors.DISABLED);
         return;
       }
@@ -219,7 +219,7 @@ class LndClient extends SwapClient {
     let version: string | undefined;
     let alias: string | undefined;
     let status = 'Ready';
-    if (this.isDisabled()) {
+    if (!this.isOperational()) {
       status = errors.DISABLED(this.currency).message;
     } else if (this.isDisconnected()) {
       status = errors.UNAVAILABLE(this.currency, this.status).message;
@@ -313,7 +313,7 @@ class LndClient extends SwapClient {
   }
 
   protected verifyConnection = async () => {
-    if (this.isDisabled()) {
+    if (!this.isOperational()) {
       throw(errors.DISABLED);
     }
 
@@ -871,7 +871,7 @@ class LndClient extends SwapClient {
       this.watchMacaroonResolve = undefined;
     }
 
-    if (!this.isDisabled()) {
+    if (this.isOperational()) {
       await this.setStatus(ClientStatus.Disconnected);
     }
   }

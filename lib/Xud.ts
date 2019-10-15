@@ -164,7 +164,7 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      if (!this.swapClientManager.raidenClient.isDisabled()) {
+      if (this.swapClientManager.raidenClient.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,

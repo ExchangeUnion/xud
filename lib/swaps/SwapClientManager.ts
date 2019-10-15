@@ -42,6 +42,7 @@ class SwapClientManager extends EventEmitter {
   /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
+  public misconfiguredClientLabels: string[] = [];
   private walletPassword?: string;
 
   constructor(
@@ -88,15 +89,21 @@ class SwapClientManager extends EventEmitter {
 
     await Promise.all(initPromises);
 
-    // delete any swap clients that were disabled during initialization
     this.swapClients.forEach((swapClient, currency) => {
       if (swapClient.isDisabled()) {
+        // delete any swap clients that are disabled
         this.swapClients.delete(currency);
+      } else if (swapClient.isMisconfigured()) {
+        // track misconfigured swap clients separately
+        this.swapClients.delete(currency);
+        this.misconfiguredClientLabels.push(`LND-${currency}`);
       }
     });
 
-    // associate swap clients with currencies managed by raiden client
-    if (!this.raidenClient.isDisabled()) {
+    if (this.raidenClient.isMisconfigured()) {
+      this.misconfiguredClientLabels.push('Raiden');
+    } else if (!this.raidenClient.isDisabled()) {
+      // associate swap clients with currencies managed by raiden client
       const currencyInstances = await models.Currency.findAll();
       currencyInstances.forEach((currency) => {
         if (currency.tokenAddress) {
@@ -412,7 +419,7 @@ class SwapClientManager extends EventEmitter {
     // we handle raiden separately because we don't want to attach
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
-    if (!this.raidenClient.isDisabled()) {
+    if (this.raidenClient.isOperational()) {
       this.raidenClient.on('connectionVerified', (swapClientInfo) => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
