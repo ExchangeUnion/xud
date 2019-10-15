@@ -300,13 +300,13 @@ class Peer extends EventEmitter {
     this.opened = false;
 
     if (this.socket) {
-      if (reason !== undefined) {
-        this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
-        this.sentDisconnectionReason = reason;
-        await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
-      }
-
       if (!this.socket.destroyed) {
+        if (reason !== undefined) {
+          this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
+          this.sentDisconnectionReason = reason;
+          await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
+        }
+
         this.socket.destroy();
       }
       delete this.socket;
