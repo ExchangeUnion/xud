@@ -358,13 +358,20 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = async (packet: Packet): Promise<void> => {
-    const data = await this.framer.frame(packet, this.outEncryptionKey);
-    this.sendRaw(data);
+    if (this.socket && !this.socket.destroyed) {
+      const data = await this.framer.frame(packet, this.outEncryptionKey);
+      try {
+        this.socket.write(data);
+        this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
 
-    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
-
-    if (packet.direction === PacketDirection.Request) {
-      this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+        if (packet.direction === PacketDirection.Request) {
+          this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+        }
+      } catch (err) {
+        this.logger.error(`failed sending data to ${this.label}`, err);
+      }
+    } else {
+      this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
     }
   }
 
@@ -435,16 +442,6 @@ class Peer extends EventEmitter {
       return this.nodeState.lndUris[currency];
     }
     return;
-  }
-
-  private sendRaw = (data: Buffer) => {
-    if (this.socket && !this.socket.destroyed) {
-      try {
-        this.socket.write(data);
-      } catch (err) {
-        this.logger.error(`failed sending data to ${this.label}`, err);
-      }
-    }
   }
 
   /**
@@ -589,15 +586,11 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number): PendingResponseEntry | undefined => {
-    if (this.closed) {
-      return undefined;
+  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number) => {
+    if (!this.closed) {
+      const entry = this.getOrAddPendingResponseEntry(reqId, resType);
+      entry.setTimeout(timeout);
     }
-
-    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
-    entry.setTimeout(timeout);
-
-    return entry;
   }
 
   private getOrAddPendingResponseEntry = (reqId: string, resType: ResponseType): PendingResponseEntry => {
