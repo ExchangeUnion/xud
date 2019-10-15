@@ -95,11 +95,42 @@ class LndClient extends SwapClient {
       return;
     }
 
+    let lndCert: Buffer | undefined;
     try {
-      const lndCert = await fs.readFile(certpath);
-      this.credentials = grpc.credentials.createSsl(lndCert);
-      this.logger.debug(`loaded tls cert from ${certpath}`);
+      lndCert = await fs.readFile(certpath);
     } catch (err) {
+      if (awaitingCreate && err.code === 'ENOENT') {
+        // if we have not created the lnd wallet yet and the tls.cert file can
+        // not be found, we will briefly wait for the cert to be created in
+        // case lnd has not been run before and is being started in parallel
+        // with xud
+        const certDir = path.join(certpath, '..');
+        const CERT_TIMEOUT = 3000;
+
+        lndCert = await new Promise((resolve) => {
+          this.logger.debug(`watching ${certDir} for tls.cert to be created`);
+          const timeout = setTimeout(() => {
+            fsWatcher.close();
+            resolve(undefined);
+          }, CERT_TIMEOUT);
+          const fsWatcher = watch(certDir, (event, filename) => {
+            if (event === 'change' && filename === 'tls.cert') {
+              this.logger.debug('tls.cert was created');
+              fsWatcher.close();
+              clearTimeout(timeout);
+              fs.readFile(certpath).then(resolve).catch((err) => {
+                this.logger.error(err);
+                resolve(undefined);
+              });
+            }
+          });
+        });
+      }
+    }
+    if (lndCert) {
+      this.logger.debug(`loaded tls cert from ${certpath}`);
+      this.credentials = grpc.credentials.createSsl(lndCert);
+    } else {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
       await this.setStatus(ClientStatus.Misconfigured);
       return;
@@ -285,8 +316,8 @@ class LndClient extends SwapClient {
         this.watchMacaroonResolve = resolve;
       });
       const macaroonDir = path.join(this.macaroonpath!, '..');
-      const fsWatcher = watch(macaroonDir, (_, filename) => {
-        if (filename === 'admin.macaroon') {
+      const fsWatcher = watch(macaroonDir, (event, filename) => {
+        if (event === 'change' && filename === 'admin.macaroon') {
           this.logger.debug('admin.macaroon was created');
           if (this.watchMacaroonResolve) {
             this.watchMacaroonResolve(true);
