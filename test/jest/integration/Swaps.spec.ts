@@ -279,7 +279,7 @@ describe('Swaps Integration', () => {
         swapRequestBody.takerCltvDelta,
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);
-      const expectedMakerCltvDelta = 1445;
+      const expectedMakerCltvDelta = 1641;
       expect(lndLtc.addInvoice).toHaveBeenCalledWith(
         swapRequestBody.rHash,
         swapRequestBody.proposedQuantity,
