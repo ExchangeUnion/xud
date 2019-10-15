@@ -11,6 +11,7 @@ const errorCodes = {
   SWAP_CLIENT_WALLET_NOT_CREATED: codesPrefix.concat('.7'),
   SWAP_CLIENT_MISCONFIGURED: codesPrefix.concat('.8'),
   UNKNOWN_PAYMENT_ERROR: codesPrefix.concat('.9'),
+  PAYMENT_PENDING: codesPrefix.concat('.10'),
 };
 
 const errors = {
@@ -53,6 +54,10 @@ const errors = {
    */
   UNKNOWN_PAYMENT_ERROR: (message: string) => ({
     message,
+    code: errorCodes.UNKNOWN_PAYMENT_ERROR,
+  }),
+  PAYMENT_PENDING: (rHash: string) => ({
+    message: `a payment for ${rHash} is pending`,
     code: errorCodes.UNKNOWN_PAYMENT_ERROR,
   }),
 };

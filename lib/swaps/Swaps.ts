@@ -923,6 +923,8 @@ class Swaps extends EventEmitter {
       if (!this.validateResolveRequest(deal, resolveRequest)) {
         throw errors.INVALID_RESOLVE_REQUEST(rHash, deal.errorMessage || '');
       }
+    } else if (this.getPendingSwapHashes().includes(rHash)) {
+      throw errors.PAYMENT_PENDING(rHash);
     } else {
       throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }

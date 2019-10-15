@@ -2,31 +2,8 @@ import http from 'http';
 import Service from '../service/Service';
 import HttpService from './HttpService';
 import Logger from '../Logger';
-import errorCodes from '../service/errors';
+import { errorCodes } from '../service/errors';
 import { errorCodes as swapErrorCodes } from '../swaps/errors';
-
-const reqToJson = (req: http.IncomingMessage) => {
-  return new Promise<object>((resolve, reject) => {
-    const body: any[] = [];
-    req.on('data', (chunk) => {
-      body.push(chunk);
-    }).on('end', () => {
-      const bodyStr = Buffer.concat(body).toString();
-      const reqContentLength = parseInt(req.headers['content-length'] || '', 10);
-
-      if (bodyStr.length !== reqContentLength) {
-        reject('invalid content-length header');
-        return;
-      }
-
-      try {
-        resolve(JSON.parse(bodyStr));
-      } catch (err) {
-        reject('cannot parse request json');
-      }
-    });
-  });
-};
 
 class HttpServer {
   private server: http.Server;
@@ -37,6 +14,53 @@ class HttpServer {
     this.httpService = new HttpService(service);
   }
 
+  private resolveRaidenHandler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    let statusCode = 200;
+    let resJson: any;
+    let reqJson: any;
+
+    try {
+      reqJson = await this.reqToJson(req);
+    } catch (err) {
+      statusCode = 400;
+      resJson = { message: JSON.stringify(err), retry: false };
+    }
+
+    if (reqJson) {
+      try {
+        resJson = await this.httpService.resolveHashRaiden(reqJson);
+      } catch (err) {
+        switch (err.code) {
+          case swapErrorCodes.INVALID_RESOLVE_REQUEST:
+          case errorCodes.INVALID_ARGUMENT:
+            statusCode = 400;
+            resJson = { message: err.message, retry: false };
+            break;
+          case swapErrorCodes.PAYMENT_HASH_NOT_FOUND:
+            statusCode = 404;
+            resJson = { message: err.message, retry: false };
+            break;
+          case swapErrorCodes.FINAL_PAYMENT_ERROR:
+          case swapErrorCodes.PAYMENT_REJECTED:
+            statusCode = 500;
+            resJson = { message: err.message, retry: false };
+            break;
+          case swapErrorCodes.UNKNOWN_PAYMENT_ERROR:
+          case swapErrorCodes.PAYMENT_PENDING:
+            statusCode = 503;
+            resJson = { message: err.message, retry: true };
+            break;
+          default:
+            statusCode = 503;
+            resJson = { err, retry: true };
+            break;
+        }
+      }
+    }
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(resJson));
+  }
+
   private requestListener: http.RequestListener = async (req, res) => {
     if (!req.headers['content-length']) {
       res.writeHead(411);
@@ -44,46 +68,40 @@ class HttpServer {
       return;
     }
 
-    let reqJson: any;
-    try {
-      reqJson = await reqToJson(req);
-      this.logger.debug(`http server request json: ${JSON.stringify(reqJson)}`);
-    } catch (err) {
-      res.writeHead(400);
-      res.end(err);
-      return;
+    switch (req.url) {
+      case '/resolveraiden':
+        await this.resolveRaidenHandler(req, res);
+        break;
+      default:
+        res.writeHead(404);
+        res.end();
+        break;
     }
+  }
 
-    let resJson: any;
-    try {
-      switch (req.url) {
-        case '/resolveraiden':
-          resJson = await this.httpService.resolveHashRaiden(reqJson);
-          break;
-        default:
-          res.writeHead(404);
-          res.end();
-          break;
-      }
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(resJson));
-    } catch (err) {
-      switch (err.code) {
-        case swapErrorCodes.INVALID_RESOLVE_REQUEST:
-        case errorCodes.INVALID_ARGUMENT:
-          res.writeHead(400);
-          res.end(err.message);
-          break;
-        case swapErrorCodes.PAYMENT_HASH_NOT_FOUND:
-          res.writeHead(404);
-          res.end(err.message);
-          break;
-        default:
-          res.writeHead(500);
-          res.end(JSON.stringify(err));
-          break;
-      }
-    }
+  private reqToJson = (req: http.IncomingMessage) => {
+    return new Promise<object>((resolve, reject) => {
+      const body: any[] = [];
+      req.on('data', (chunk) => {
+        body.push(chunk);
+      }).on('end', () => {
+        const bodyStr = Buffer.concat(body).toString();
+        const reqContentLength = parseInt(req.headers['content-length'] || '', 10);
+
+        if (bodyStr.length !== reqContentLength) {
+          reject('invalid content-length header');
+          return;
+        }
+
+        try {
+          const reqJson = JSON.parse(bodyStr);
+          this.logger.debug(`http server request json: ${JSON.stringify(reqJson)}`);
+          resolve(reqJson);
+        } catch (err) {
+          reject('cannot parse request json');
+        }
+      });
+    });
   }
 
   /**
