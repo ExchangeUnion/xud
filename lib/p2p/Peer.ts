@@ -246,8 +246,7 @@ class Peer extends EventEmitter {
       expectedNodePubKey?: string,
       /** Whether to retry to connect upon failure. */
       retryConnecting?: boolean,
-    }):
-    Promise<packets.SessionInitPacket> => {
+    }): Promise<packets.SessionInitPacket> => {
     assert(!this.opening);
     assert(!this.opened);
     assert(!this.closed);
@@ -302,7 +301,7 @@ class Peer extends EventEmitter {
     if (this.socket) {
       if (!this.socket.destroyed) {
         if (reason !== undefined) {
-          this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
+          this.logger.debug(`Peer (${this.label}): closing socket. reason: ${DisconnectionReason[reason]}`);
           this.sentDisconnectionReason = reason;
           await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
         }

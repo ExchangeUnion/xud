@@ -822,9 +822,7 @@ class Pool extends EventEmitter {
       this.logger.error(err);
     });
 
-    this.server!.on('connection', async (socket) => {
-      await this.handleSocket(socket);
-    });
+    this.server!.on('connection', this.handleSocket);
   }
 
   private bindPeer = (peer: Peer) => {
