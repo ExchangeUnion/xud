@@ -3,6 +3,7 @@ import { LndClientConfig } from '../../lib/lndclient/types';
 import Logger from '../../lib/Logger';
 import { getValidDeal } from '../utils';
 import { SwapRole } from '../../lib/constants/enums';
+import { ClientStatus } from '../../lib/swaps/SwapClient';
 
 const getSendPaymentSyncResponse = () => {
   return {
@@ -41,6 +42,9 @@ describe('LndClient', () => {
     logger.error = jest.fn();
     logger.info = jest.fn();
     logger.trace = jest.fn();
+
+    lnd = new LndClient({ config, currency, logger });
+    lnd['status'] = ClientStatus.ConnectionVerified;
   });
 
   afterEach(async () => {
@@ -60,7 +64,6 @@ describe('LndClient', () => {
 
     test('it throws when connectPeer fails', async () => {
       expect.assertions(3);
-      lnd = new LndClient({ config, currency, logger });
       lnd['connectPeer'] = jest.fn().mockImplementation(() => {
         throw new Error('connectPeer failed');
       });
@@ -80,7 +83,6 @@ describe('LndClient', () => {
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
-      lnd = new LndClient({ config, currency, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
@@ -104,7 +106,6 @@ describe('LndClient', () => {
 
     test('it does succeed when connecting to already connected peer', async () => {
       expect.assertions(4);
-      lnd = new LndClient({ config, currency, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const alreadyConnected = () => {
         throw new Error('already connected');
@@ -127,7 +128,6 @@ describe('LndClient', () => {
     test('it throws when timeout reached', async () => {
       expect.assertions(3);
       jest.useFakeTimers();
-      lnd = new LndClient({ config, currency, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       const timeOut = () => {
         jest.runAllTimers();
@@ -151,7 +151,6 @@ describe('LndClient', () => {
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
-      lnd = new LndClient({ config, currency, logger });
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
@@ -171,7 +170,6 @@ describe('LndClient', () => {
 
     test('it throws when openchannel fails', async () => {
       expect.assertions(2);
-      lnd = new LndClient({ config, currency, logger });
       lnd['connectPeer'] = jest.fn().mockReturnValue(Promise.resolve());
       lnd['openChannelSync'] = jest.fn().mockImplementation(() => {
         throw new Error('openChannelSync error');
@@ -193,7 +191,6 @@ describe('LndClient', () => {
   describe('sendPayment', () => {
 
     test('it resolves upon maker success', async () => {
-      lnd = new LndClient({ config, currency, logger });
       lnd['sendPaymentSync'] = jest.fn()
         .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
       const deal = getValidDeal();
@@ -210,7 +207,6 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon taker success', async () => {
-      lnd = new LndClient({ config, currency, logger });
       lnd['sendPaymentSync'] = jest.fn()
         .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
       const deal = {
@@ -229,7 +225,6 @@ describe('LndClient', () => {
     });
 
     test('it rejects upon sendPaymentSync error', async () => {
-      lnd = new LndClient({ config, currency, logger });
       lnd['sendPaymentSync'] = jest.fn()
         .mockReturnValue(Promise.resolve(getSendPaymentSyncErrorResponse()));
       await expect(lnd.sendPayment(getValidDeal()))
@@ -237,7 +232,6 @@ describe('LndClient', () => {
     });
 
     test('it resolves upon sendSmallestAmount success', async () => {
-      lnd = new LndClient({ config, currency, logger });
       lnd['sendPaymentSync'] = jest.fn()
         .mockReturnValue(Promise.resolve(getSendPaymentSyncResponse()));
       const buildSendRequestSpy = jest.spyOn(lnd as any, 'buildSendRequest');
@@ -252,7 +246,5 @@ describe('LndClient', () => {
         amount: 1,
       });
     });
-
   });
-
 });

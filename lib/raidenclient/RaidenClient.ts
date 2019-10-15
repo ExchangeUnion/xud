@@ -3,20 +3,13 @@ import http from 'http';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
+import swapErrors from '../swaps/errors';
 import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
-import errors from './errors';
-import {
-  Channel,
-  OpenChannelPayload,
-  PaymentEvent,
-  RaidenChannelCount,
-  RaidenClientConfig,
-  RaidenInfo, RaidenVersion,
-  TokenPaymentRequest,
-  TokenPaymentResponse,
-} from './types';
+import errors, { errorCodes } from './errors';
+import { Channel, OpenChannelPayload, PaymentEvent, RaidenChannelCount, RaidenClientConfig,
+  RaidenInfo, RaidenVersion, TokenPaymentRequest, TokenPaymentResponse } from './types';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -191,14 +184,27 @@ class RaidenClient extends SwapClient {
     if (!tokenAddress) {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
-    const tokenPaymentResponse = await this.tokenPayment({
-      amount,
-      lock_timeout,
-      token_address: tokenAddress,
-      target_address: deal.destination!,
-      secret_hash: deal.rHash,
-    });
-    return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
+    try {
+      const tokenPaymentResponse = await this.tokenPayment({
+        amount,
+        lock_timeout,
+        token_address: tokenAddress,
+        target_address: deal.destination!,
+        secret_hash: deal.rHash,
+      });
+      return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);
+    } catch (err) {
+      switch (err.code) {
+        case 'ECONNRESET':
+        case errorCodes.UNEXPECTED:
+        case errorCodes.TIMEOUT:
+        case errorCodes.SERVER_ERROR:
+        case errorCodes.INVALID_TOKEN_PAYMENT_RESPONSE:
+          throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
+        default:
+          throw swapErrors.FINAL_PAYMENT_ERROR(err.message);
+      }
+    }
   }
 
   private sanitizeTokenPaymentResponse = (response: TokenPaymentResponse) => {

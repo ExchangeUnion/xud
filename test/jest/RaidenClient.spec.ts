@@ -1,14 +1,18 @@
+import { CurrencyInstance } from '../../lib/db/types';
+import Logger from '../../lib/Logger';
+import errors from '../../lib/raidenclient/errors';
 import RaidenClient from '../../lib/raidenclient/RaidenClient';
 import { RaidenClientConfig, TokenPaymentResponse } from '../../lib/raidenclient/types';
-import Logger from '../../lib/Logger';
+import { errorCodes as swapErrorCodes } from '../../lib/swaps/errors';
+import { PaymentState } from '../../lib/swaps/SwapClient';
 import { SwapDeal } from '../../lib/swaps/types';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
-import { CurrencyInstance } from '../../lib/db/types';
 import { getValidDeal } from '../utils';
-import { PaymentState } from '../../lib/swaps/SwapClient';
 
+const token_address = '0x4c354C76d5f73A63a90Be776897DC81Fb6238772';
 const getValidTokenPaymentResponse = () => {
   return {
+    token_address,
     amount: 100000000000000,
     initiator_address: '0x7ed0299Fa1ADA71D10536B866231D447cDFa48b9',
     secret_hash: '0xb8a0243672b503714822b454405de879e2b8300c7579d60295c35607ffd5613e',
@@ -16,7 +20,6 @@ const getValidTokenPaymentResponse = () => {
     identifier: 3820989367401102,
     hashalgo: 'SHA256',
     target_address: '0x2B88992DEd5C96aa7Eaa9CFE1AE52350df7dc5DF',
-    token_address: '0x4c354C76d5f73A63a90Be776897DC81Fb6238772',
   };
 };
 
@@ -104,9 +107,8 @@ describe('RaidenClient', () => {
         .resolves.toMatchSnapshot();
     });
 
-    test('it rejects in case of empty secret response', async () => {
+    test('it rejects with unknown error in case of empty secret response', async () => {
       raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
-      await raiden.init(currencyInstances as CurrencyInstance[]);
       const invalidTokenPaymentResponse: TokenPaymentResponse = {
         ...getValidTokenPaymentResponse(),
         secret: '',
@@ -116,7 +118,16 @@ describe('RaidenClient', () => {
       raiden.tokenAddresses.get = jest.fn().mockReturnValue(invalidTokenPaymentResponse.token_address);
       const deal: SwapDeal = getValidDeal();
       await expect(raiden.sendPayment(deal))
-        .rejects.toMatchSnapshot();
+        .rejects.toHaveProperty('code', swapErrorCodes.UNKNOWN_PAYMENT_ERROR);
+    });
+
+    test('it rejects with final error in case of insufficient balance', async () => {
+      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+      raiden['tokenPayment'] = jest.fn().mockRejectedValue(errors.INSUFFICIENT_BALANCE);
+      raiden.tokenAddresses.get = jest.fn().mockReturnValue(token_address);
+      const deal: SwapDeal = getValidDeal();
+      await expect(raiden.sendPayment(deal))
+        .rejects.toHaveProperty('code', swapErrorCodes.FINAL_PAYMENT_ERROR);
     });
   });
 

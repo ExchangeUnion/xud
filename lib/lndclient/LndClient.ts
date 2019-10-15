@@ -540,20 +540,28 @@ class LndClient extends SwapClient {
   private executeSendRequest = async (
     request: lndrpc.SendRequest,
   ): Promise<string> => {
+    if (!this.isConnected()) {
+      throw swapErrors.FINAL_PAYMENT_ERROR(errors.UNAVAILABLE(this.currency, this.status).message);
+    }
+
     this.logger.trace(`sending payment with ${JSON.stringify(request.toObject())}`);
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
       this.logger.error('got exception from sendPaymentSync', err);
-      throw swapErrors.PAYMENT_ERROR(err.message);
+      if (typeof err.message === 'string' && err.message.includes('chain backend is still syncing')) {
+        throw swapErrors.FINAL_PAYMENT_ERROR(err.message);
+      } else {
+        throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
+      }
     }
     const paymentError = sendPaymentResponse.getPaymentError();
     if (paymentError) {
       if (paymentError.includes('UnknownPaymentHash') || paymentError.includes('IncorrectOrUnknownPaymentDetails')) {
         throw swapErrors.PAYMENT_REJECTED;
       } else {
-        throw swapErrors.PAYMENT_ERROR(paymentError);
+        throw swapErrors.FINAL_PAYMENT_ERROR(paymentError);
       }
     }
     return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
