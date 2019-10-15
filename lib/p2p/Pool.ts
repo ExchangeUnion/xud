@@ -304,7 +304,7 @@ class Pool extends EventEmitter {
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-  private connectNodes = (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
+  private connectNodes = async (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
@@ -321,7 +321,7 @@ class Pool extends EventEmitter {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
-    return Promise.all(connectionPromises);
+    await Promise.all(connectionPromises);
   }
 
   /**
@@ -424,6 +424,8 @@ class Pool extends EventEmitter {
     }
 
     const peer = new Peer(this.logger, address, this.network);
+    this.bindPeer(peer);
+
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -470,7 +472,6 @@ class Pool extends EventEmitter {
       // if we are disconnected or disconnecting, don't open new connections
       throw errors.POOL_CLOSED;
     }
-    this.bindPeer(peer);
 
     try {
       const sessionInit = await peer.beginOpen({
@@ -648,6 +649,7 @@ class Pool extends EventEmitter {
 
   private addInbound = async (socket: Socket) => {
     const peer = Peer.fromInbound(socket, this.logger, this.network);
+    this.bindPeer(peer);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
