@@ -869,17 +869,17 @@ class Pool extends EventEmitter {
       this.pendingOutboundPeers.delete(peer.expectedNodePubKey);
     }
 
-    if (!peer.active) {
-      return;
-    }
-
     if (peer.nodePubKey) {
       this.pendingOutboundPeers.delete(peer.nodePubKey);
       this.peers.delete(peer.nodePubKey);
     }
-    this.emit('peer.close', peer.nodePubKey);
     peer.removeAllListeners();
+
+    if (!peer.active) {
+      return;
+    }
     peer.active = false;
+    this.emit('peer.close', peer.nodePubKey);
 
     const shouldReconnect =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
