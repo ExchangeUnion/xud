@@ -46,6 +46,7 @@ const getGrpcError = (err: any) => {
     case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
     case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
+    case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:
       code = status.FAILED_PRECONDITION;
       break;
     case lndErrorCodes.UNAVAILABLE:

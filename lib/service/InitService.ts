@@ -1,7 +1,8 @@
-import errors from '../service/errors';
 import { EventEmitter } from 'events';
-import SwapClientManager from '../swaps/SwapClientManager';
 import NodeKey from '../nodekey/NodeKey';
+import swapErrors from '../swaps/errors';
+import SwapClientManager from '../swaps/SwapClientManager';
+import errors from './errors';
 import assert = require('assert');
 
 interface InitService {
@@ -25,6 +26,9 @@ class InitService extends EventEmitter {
     }
     if (this.nodeKeyExists) {
       throw errors.UNIMPLEMENTED;
+    }
+    if (this.swapClientManager.misconfiguredClientLabels.length > 0) {
+      throw swapErrors.SWAP_CLIENT_MISCONFIGURED(this.swapClientManager.misconfiguredClientLabels);
     }
     if (this.pendingCall) {
       throw errors.PENDING_CALL_CONFLICT;
