@@ -8588,6 +8588,17 @@
       "integrity": "sha512-FrLwOgm+iXrPV+5zDU6Jqu4gCRXbWEQg2O3SKONsWE4w7AXFRkryS53bpWdaL9cNol+AmR3AEYz6kn+o0fCPnw==",
       "dev": true
     },
+    "keccak": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/keccak/-/keccak-2.0.0.tgz",
+      "integrity": "sha512-rKe/lRr0KGhjoz97cwg+oeT1Rj/Y4cjae6glArioUC8JBF9ROGZctwIaaruM7d7naovME4Q8WcQSO908A8qcyQ==",
+      "requires": {
+        "bindings": "^1.2.1",
+        "inherits": "^2.0.3",
+        "nan": "^2.2.1",
+        "safe-buffer": "^5.1.0"
+      }
+    },
     "kind-of": {
       "version": "6.0.2",
       "resolved": "https://registry.npmjs.org/kind-of/-/kind-of-6.0.2.tgz",
