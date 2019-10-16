@@ -846,14 +846,6 @@ class Pool extends EventEmitter {
       this.emit('peer.nodeStateUpdate', peer);
     });
 
-    peer.on('error', (err) => {
-      // The only situation in which the node should be connected to itself is the
-      // reachability check of the advertised addresses and we don't have to log that
-      if (peer.nodePubKey !== this.nodePubKey) {
-        this.logger.error(`Peer (${peer.label}): error: ${err.message}`);
-      }
-    });
-
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.on('reputation', async (event) => {

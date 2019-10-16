@@ -33,7 +33,6 @@ type PeerInfo = {
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
-  on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   /** Adds a listener to be called when the peer's advertised but inactive pairs should be verified. */
   on(event: 'verifyPairs', listener: () => void): this;
@@ -44,7 +43,6 @@ interface Peer {
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'close'): boolean;
-  emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
   /** Notifies listeners that the peer's advertised but inactive pairs should be verified. */
   emit(event: 'verifyPairs'): boolean;
@@ -576,7 +574,7 @@ class Peer extends EventEmitter {
       if (now > entry.timeout) {
         const request = PacketType[parseInt(packetId, 10)] || packetId;
         const err = errors.RESPONSE_TIMEOUT(request);
-        this.emitError(err.message);
+        this.logger.error(`Peer timed out waiting for response to packet ${packetId}`);
         entry.reject(err);
         await this.close(DisconnectionReason.ResponseStalling, packetId);
       }
@@ -648,8 +646,7 @@ class Peer extends EventEmitter {
     assert(this.socket);
 
     this.socket!.once('error', (err) => {
-      this.emitError(err);
-      // socket close event will be called immediately after the socket error
+      this.logger.error(`Peer (${this.label}) error`, err);
     });
 
     this.socket!.once('close', async (hadError) => {
@@ -737,18 +734,6 @@ class Peer extends EventEmitter {
       }
     } else {
       // TODO: penalize for unsolicited packets
-    }
-  }
-
-  private emitError = (err: Error | string): void => {
-    if (this.closed) {
-      return;
-    }
-
-    if (err instanceof Error) {
-      this.emit('error', err);
-    } else {
-      this.emit('error', new Error(err));
     }
   }
 
