@@ -33,7 +33,6 @@ type PeerInfo = {
 
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
-  on(event: 'error', listener: (err: Error) => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
   /** Adds a listener to be called when the peer's advertised but inactive pairs should be verified. */
   on(event: 'verifyPairs', listener: () => void): this;
@@ -44,7 +43,6 @@ interface Peer {
   emit(event: 'connect'): boolean;
   emit(event: 'reputation', reputationEvent: ReputationEvent): boolean;
   emit(event: 'close'): boolean;
-  emit(event: 'error', err: Error): boolean;
   emit(event: 'packet', packet: Packet): boolean;
   /** Notifies listeners that the peer's advertised but inactive pairs should be verified. */
   emit(event: 'verifyPairs'): boolean;
@@ -246,8 +244,7 @@ class Peer extends EventEmitter {
       expectedNodePubKey?: string,
       /** Whether to retry to connect upon failure. */
       retryConnecting?: boolean,
-    }):
-    Promise<packets.SessionInitPacket> => {
+    }): Promise<packets.SessionInitPacket> => {
     assert(!this.opening);
     assert(!this.opened);
     assert(!this.closed);
@@ -300,13 +297,13 @@ class Peer extends EventEmitter {
     this.opened = false;
 
     if (this.socket) {
-      if (reason !== undefined) {
-        this.logger.debug(`Peer (${ this.label }): closing socket. reason: ${DisconnectionReason[reason]}`);
-        this.sentDisconnectionReason = reason;
-        await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
-      }
-
       if (!this.socket.destroyed) {
+        if (reason !== undefined) {
+          this.logger.debug(`Peer (${this.label}): closing socket. reason: ${DisconnectionReason[reason]}`);
+          this.sentDisconnectionReason = reason;
+          await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
+        }
+
         this.socket.destroy();
       }
       delete this.socket;
@@ -359,13 +356,20 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = async (packet: Packet): Promise<void> => {
-    const data = await this.framer.frame(packet, this.outEncryptionKey);
-    this.sendRaw(data);
+    if (this.socket && !this.socket.destroyed) {
+      const data = await this.framer.frame(packet, this.outEncryptionKey);
+      try {
+        this.socket.write(data);
+        this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
 
-    this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
-
-    if (packet.direction === PacketDirection.Request) {
-      this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+        if (packet.direction === PacketDirection.Request) {
+          this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+        }
+      } catch (err) {
+        this.logger.error(`failed sending data to ${this.label}`, err);
+      }
+    } else {
+      this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
     }
   }
 
@@ -436,16 +440,6 @@ class Peer extends EventEmitter {
       return this.nodeState.lndUris[currency];
     }
     return;
-  }
-
-  private sendRaw = (data: Buffer) => {
-    if (this.socket && !this.socket.destroyed) {
-      try {
-        this.socket.write(data);
-      } catch (err) {
-        this.logger.error(`failed sending data to ${this.label}`, err);
-      }
-    }
   }
 
   /**
@@ -580,7 +574,7 @@ class Peer extends EventEmitter {
       if (now > entry.timeout) {
         const request = PacketType[parseInt(packetId, 10)] || packetId;
         const err = errors.RESPONSE_TIMEOUT(request);
-        this.emitError(err.message);
+        this.logger.error(`Peer timed out waiting for response to packet ${packetId}`);
         entry.reject(err);
         await this.close(DisconnectionReason.ResponseStalling, packetId);
       }
@@ -590,15 +584,11 @@ class Peer extends EventEmitter {
   /**
    * Wait for a packet to be received from peer.
    */
-  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number): PendingResponseEntry | undefined => {
-    if (this.closed) {
-      return undefined;
+  private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number) => {
+    if (!this.closed) {
+      const entry = this.getOrAddPendingResponseEntry(reqId, resType);
+      entry.setTimeout(timeout);
     }
-
-    const entry = this.getOrAddPendingResponseEntry(reqId, resType);
-    entry.setTimeout(timeout);
-
-    return entry;
   }
 
   private getOrAddPendingResponseEntry = (reqId: string, resType: ResponseType): PendingResponseEntry => {
@@ -656,8 +646,7 @@ class Peer extends EventEmitter {
     assert(this.socket);
 
     this.socket!.once('error', (err) => {
-      this.emitError(err);
-      // socket close event will be called immediately after the socket error
+      this.logger.error(`Peer (${this.label}) error`, err);
     });
 
     this.socket!.once('close', async (hadError) => {
@@ -745,18 +734,6 @@ class Peer extends EventEmitter {
       }
     } else {
       // TODO: penalize for unsolicited packets
-    }
-  }
-
-  private emitError = (err: Error | string): void => {
-    if (this.closed) {
-      return;
-    }
-
-    if (err instanceof Error) {
-      this.emit('error', err);
-    } else {
-      this.emit('error', new Error(err));
     }
   }
 

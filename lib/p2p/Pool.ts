@@ -304,7 +304,7 @@ class Pool extends EventEmitter {
    * @param retryConnecting whether to attempt retry connecting, defaults to false
    * @returns a promise that will resolve when all outbound connections resolve
    */
-  private connectNodes = (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
+  private connectNodes = async (nodes: NodeConnectionIterator, allowKnown = true, retryConnecting = false) => {
     const connectionPromises: Promise<void>[] = [];
     nodes.forEach((node) => {
       // check that this node is not ourselves
@@ -321,7 +321,7 @@ class Pool extends EventEmitter {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
-    return Promise.all(connectionPromises);
+    await Promise.all(connectionPromises);
   }
 
   /**
@@ -424,6 +424,8 @@ class Pool extends EventEmitter {
     }
 
     const peer = new Peer(this.logger, address, this.network);
+    this.bindPeer(peer);
+
     this.pendingOutboundPeers.set(nodePubKey, peer);
     await this.openPeer(peer, nodePubKey, retryConnecting);
     return peer;
@@ -470,7 +472,6 @@ class Pool extends EventEmitter {
       // if we are disconnected or disconnecting, don't open new connections
       throw errors.POOL_CLOSED;
     }
-    this.bindPeer(peer);
 
     try {
       const sessionInit = await peer.beginOpen({
@@ -648,6 +649,7 @@ class Pool extends EventEmitter {
 
   private addInbound = async (socket: Socket) => {
     const peer = Peer.fromInbound(socket, this.logger, this.network);
+    this.bindPeer(peer);
     this.pendingInboundPeers.add(peer);
     await this.tryOpenPeer(peer);
     this.pendingInboundPeers.delete(peer);
@@ -820,9 +822,7 @@ class Pool extends EventEmitter {
       this.logger.error(err);
     });
 
-    this.server!.on('connection', async (socket) => {
-      await this.handleSocket(socket);
-    });
+    this.server!.on('connection', this.handleSocket);
   }
 
   private bindPeer = (peer: Peer) => {
@@ -846,14 +846,6 @@ class Pool extends EventEmitter {
       this.emit('peer.nodeStateUpdate', peer);
     });
 
-    peer.on('error', (err) => {
-      // The only situation in which the node should be connected to itself is the
-      // reachability check of the advertised addresses and we don't have to log that
-      if (peer.nodePubKey !== this.nodePubKey) {
-        this.logger.error(`Peer (${peer.label}): error: ${err.message}`);
-      }
-    });
-
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.on('reputation', async (event) => {
@@ -869,17 +861,17 @@ class Pool extends EventEmitter {
       this.pendingOutboundPeers.delete(peer.expectedNodePubKey);
     }
 
-    if (!peer.active) {
-      return;
-    }
-
     if (peer.nodePubKey) {
       this.pendingOutboundPeers.delete(peer.nodePubKey);
       this.peers.delete(peer.nodePubKey);
     }
-    this.emit('peer.close', peer.nodePubKey);
     peer.removeAllListeners();
+
+    if (!peer.active) {
+      return;
+    }
     peer.active = false;
+    this.emit('peer.close', peer.nodePubKey);
 
     const shouldReconnect =
       (peer.sentDisconnectionReason === undefined || peer.sentDisconnectionReason === DisconnectionReason.ResponseStalling) &&
