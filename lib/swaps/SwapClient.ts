@@ -225,6 +225,10 @@ abstract class SwapClient extends EventEmitter {
   public isNotInitialized(): boolean {
     return this.status === ClientStatus.NotInitialized;
   }
+  public isOutOfSync(): boolean {
+    return this.status === ClientStatus.OutOfSync;
+  }
+
   /** Ends all connections, subscriptions, and timers for for this client. */
   public async close() {
     await this.disconnect();
