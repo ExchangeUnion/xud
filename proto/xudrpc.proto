@@ -327,9 +327,15 @@ message Chain {
 
 message Balance {
   // Total balance denominated in satoshis.
-  uint64 balance = 1 [json_name = "balance"];
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // Sum of confirmed channel balances denominated in satoshis.
+  uint64 channel_balance = 2 [json_name = "channel_balance"];
   // Sum of pending channel balances denominated in satoshis.
-  uint64 pending_open_balance = 2 [json_name = "pending_open_balance"];
+  uint64 pending_channel_balance = 3 [json_name = "pending_channel_balance"];
+  // Confirmed wallet balance in satoshis.
+  uint64 wallet_balance = 4 [json_name = "wallet_balance"];
+  // Unconfirmed wallet balance in satoshis.
+  uint64 unconfirmed_wallet_balance = 5 [json_name = "unconfirmed_wallet_balance"];
 }
 
 message GetBalanceRequest {

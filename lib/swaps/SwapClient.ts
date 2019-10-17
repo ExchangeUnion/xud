@@ -19,6 +19,15 @@ type ChannelBalance = {
   pendingOpenBalance: number,
 };
 
+type WalletBalance = {
+  /** The balance of the wallet. */
+  totalBalance: number,
+  /** The confirmed balance of a wallet (with >= 1 confirmations). */
+  confirmedBalance: number,
+  /** The unconfirmed balance of a wallet (with 0 confirmations). */
+  unconfirmedBalance: number,
+};
+
 export type SwapClientInfo = {
   newIdentifier?: string;
   newUris?: string[];
@@ -73,6 +82,14 @@ abstract class SwapClient extends EventEmitter {
    * currencies supported by this client are included in the balance.
    */
   public abstract channelBalance(currency?: string): Promise<ChannelBalance>;
+  /**
+   * Returns total unspent outputs (confirmed and unconfirmed),
+   * all confirmed unspent outputs
+   * and all unconfirmed unspent outputs under control of the wallet).
+   * @param currency the currency whose balance to query for, otherwise all/any
+   * currencies supported by this client are included in the balance.
+   */
+  public abstract walletBalance(currency?: string): Promise<WalletBalance>;
   public abstract maximumOutboundCapacity(currency?: string): number;
   protected abstract updateCapacity(): Promise<void>;
 
@@ -223,4 +240,4 @@ abstract class SwapClient extends EventEmitter {
 }
 
 export default SwapClient;
-export { ClientStatus, ChannelBalance };
+export { ClientStatus, ChannelBalance, WalletBalance };

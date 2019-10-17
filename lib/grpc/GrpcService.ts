@@ -205,8 +205,11 @@ class GrpcService {
       const balancesMap = response.getBalancesMap();
       balanceResponse.forEach((balanceObj, currency) => {
         const balance = new xudrpc.Balance();
-        balance.setBalance(balanceObj.balance);
-        balance.setPendingOpenBalance(balanceObj.pendingOpenBalance);
+        balance.setTotalBalance(balanceObj.totalBalance);
+        balance.setChannelBalance(balanceObj.channelBalance);
+        balance.setPendingChannelBalance(balanceObj.pendingChannelBalance);
+        balance.setWalletBalance(balanceObj.walletBalance);
+        balance.setUnconfirmedWalletBalance(balanceObj.unconfirmedWalletBalance);
         balancesMap.set(currency, balance);
       });
       callback(null, response);

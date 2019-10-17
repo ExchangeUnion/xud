@@ -270,11 +270,20 @@ export namespace Chain {
 }
 
 export class Balance extends jspb.Message { 
-    getBalance(): number;
-    setBalance(value: number): void;
+    getTotalBalance(): number;
+    setTotalBalance(value: number): void;
 
-    getPendingOpenBalance(): number;
-    setPendingOpenBalance(value: number): void;
+    getChannelBalance(): number;
+    setChannelBalance(value: number): void;
+
+    getPendingChannelBalance(): number;
+    setPendingChannelBalance(value: number): void;
+
+    getWalletBalance(): number;
+    setWalletBalance(value: number): void;
+
+    getUnconfirmedWalletBalance(): number;
+    setUnconfirmedWalletBalance(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -289,8 +298,11 @@ export class Balance extends jspb.Message {
 
 export namespace Balance {
     export type AsObject = {
-        balance: number,
-        pendingOpenBalance: number,
+        totalBalance: number,
+        channelBalance: number,
+        pendingChannelBalance: number,
+        walletBalance: number,
+        unconfirmedWalletBalance: number,
     }
 }
 

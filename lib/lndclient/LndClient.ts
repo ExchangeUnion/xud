@@ -537,8 +537,11 @@ class LndClient extends SwapClient {
   /**
    * Returns the total of unspent outputs for the internal lnd wallet.
    */
-  public walletBalance = (): Promise<lndrpc.WalletBalanceResponse> => {
-    return this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>('walletBalance', new lndrpc.WalletBalanceRequest());
+  public walletBalance = async (): Promise<lndrpc.WalletBalanceResponse.AsObject> => {
+    const walletBalanceResponse = await this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>(
+      'walletBalance', new lndrpc.WalletBalanceRequest(),
+    );
+    return walletBalanceResponse.toObject();
   }
 
   public channelBalance = async (): Promise<lndrpc.ChannelBalanceResponse.AsObject> => {
