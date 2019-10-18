@@ -60,7 +60,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new GetBalanceRequest();
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());

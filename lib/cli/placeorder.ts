@@ -30,7 +30,7 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   .example(`$0 ${command} 10 ZRX/GNT market`, `place a market order to ${command} 10 ZRX for GNT`);
 };
 
-export const placeOrderHandler = (argv: Arguments, side: OrderSide) => {
+export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
   const request = new PlaceOrderRequest();
 
   const numericPrice = Number(argv.price);

@@ -39,10 +39,10 @@ class Framer {
       const msg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH + packetRaw.length);
 
       // length
-      msg.writeUInt32LE(packetRaw.length, 0, true);
+      msg.writeUInt32LE(packetRaw.length, 0);
 
       // type
-      msg.writeUInt32LE(packet.type, 4, true);
+      msg.writeUInt32LE(packet.type, 4);
 
       // packet
       packetRaw.copy(msg, 8);
@@ -51,7 +51,7 @@ class Framer {
       const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
 
       // length
-      encryptedMsg.writeUInt32LE(ciphertext.length, 0, true);
+      encryptedMsg.writeUInt32LE(ciphertext.length, 0);
 
       // ciphertext
       ciphertext.copy(encryptedMsg, 4);
@@ -61,13 +61,13 @@ class Framer {
       const msg = Buffer.allocUnsafe(Framer.MSG_HEADER_LENGTH + packetRaw.length);
 
       // network magic value
-      msg.writeUInt32LE(this.network.magic, 0, true);
+      msg.writeUInt32LE(this.network.magic, 0);
 
       // length
-      msg.writeUInt32LE(packetRaw.length, 4, true);
+      msg.writeUInt32LE(packetRaw.length, 4);
 
       // type
-      msg.writeUInt32LE(packet.type, 8, true);
+      msg.writeUInt32LE(packet.type, 8);
 
       // checksum
       msg.writeUInt32LE(packet.checksum(), 12);
@@ -85,7 +85,7 @@ class Framer {
   public unframe = (msg: Buffer, encryptionKey?: Buffer): WireMsg => {
     let wireMsg: WireMsg;
     if (encryptionKey) {
-      const length = msg.readUInt32LE(0, true);
+      const length = msg.readUInt32LE(0);
       const ciphertext = msg.slice(Framer.ENCRYPTED_MSG_HEADER_LENGTH);
 
       if (length !== ciphertext.length) {
@@ -116,7 +116,7 @@ class Framer {
    * Parse the length of a wire msg or an encrypted wire msg
    */
   public parseLength = (data: Buffer, encrypted: boolean): number => {
-    const value = data.readUInt32LE(0, true);
+    const value = data.readUInt32LE(0);
 
     if (encrypted) {
       if (value === this.network.magic) {
@@ -134,7 +134,7 @@ class Framer {
       }
     }
 
-    return data.readUInt32LE(4, true);
+    return data.readUInt32LE(4);
   }
 
   /**
@@ -145,26 +145,26 @@ class Framer {
       assert(msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH, 'invalid msg header length: data is missing');
 
       // length
-      const length = msg.readUInt32LE(0, true);
+      const length = msg.readUInt32LE(0);
 
       // type
-      const type = msg.readUInt32LE(4, true);
+      const type = msg.readUInt32LE(4);
 
       return { length, type };
     } else {
       assert(msg.length >= Framer.MSG_HEADER_LENGTH, 'invalid msg header length: data is missing');
 
       // network magic value
-      const magic = msg.readUInt32LE(0, true);
+      const magic = msg.readUInt32LE(0);
 
       // length
-      const length = msg.readUInt32LE(4, true);
+      const length = msg.readUInt32LE(4);
 
       // type
-      const type = msg.readUInt32LE(8, true);
+      const type = msg.readUInt32LE(8);
 
       // checksum
-      const checksum = msg.readUInt32LE(12, true);
+      const checksum = msg.readUInt32LE(12);
 
       return { magic, type, length, checksum };
     }

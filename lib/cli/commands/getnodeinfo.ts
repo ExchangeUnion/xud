@@ -26,7 +26,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new GetNodeInfoRequest();
   request.setNodePubKey(argv.node_key);
   loadXudClient(argv).getNodeInfo(request, callback(argv, displayNodeInfo));

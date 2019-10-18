@@ -209,7 +209,7 @@ class Config {
       deepMerge(this, args);
     }
 
-    if (!Object.values(Level).includes(this.loglevel)) {
+    if (!Object.values(<any>Level).includes(this.loglevel)) {
       this.loglevel = this.getDefaultLogLevel();
     }
 

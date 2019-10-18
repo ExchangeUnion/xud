@@ -28,7 +28,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
+export const handler = (argv: Arguments<any>) => {
   const request = new Currency();
   request.setCurrency(argv.currency.toUpperCase());
   request.setSwapClient(Number(SwapClientType[argv.swap_client]));

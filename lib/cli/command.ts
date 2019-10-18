@@ -8,7 +8,7 @@ import { getDefaultCertPath } from './utils';
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
  */
-export const loadXudClient = (argv: Arguments) => {
+export const loadXudClient = (argv: Arguments<any>) => {
   const certPath = argv.tlscertpath || getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
@@ -16,7 +16,7 @@ export const loadXudClient = (argv: Arguments) => {
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };
 
-export const loadXudInitClient = (argv: Arguments) => {
+export const loadXudInitClient = (argv: Arguments<any>) => {
   const certPath = argv.tlscertpath || getDefaultCertPath();
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
