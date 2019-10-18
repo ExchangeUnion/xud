@@ -1,20 +1,20 @@
+import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
 import path from 'path';
 import bootstrap from './bootstrap';
-import Logger from './Logger';
 import Config from './Config';
 import DB from './db/DB';
-import OrderBook from './orderbook/OrderBook';
 import GrpcServer from './grpc/GrpcServer';
 import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
-import Pool from './p2p/Pool';
-import NodeKey from './nodekey/NodeKey';
-import Service from './service/Service';
-import { EventEmitter } from 'events';
-import Swaps from './swaps/Swaps';
 import HttpServer from './http/HttpServer';
-import SwapClientManager from './swaps/SwapClientManager';
+import Logger from './Logger';
+import NodeKey from './nodekey/NodeKey';
+import OrderBook from './orderbook/OrderBook';
+import Pool from './p2p/Pool';
 import InitService from './service/InitService';
-import { promises as fs } from 'fs';
+import Service from './service/Service';
+import SwapClientManager from './swaps/SwapClientManager';
+import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
 
 const version: string = require('../package.json').version;
@@ -72,6 +72,28 @@ class Xud extends EventEmitter {
     }
 
     try {
+      if (!this.config.rpc.disable) {
+        // start rpc server first, it will respond with UNAVAILABLE error
+        // indicating xud is starting until xud finishes initializing
+        this.rpcServer = new GrpcServer(loggers.rpc);
+        await this.rpcServer.listen(
+          this.config.rpc.port,
+          this.config.rpc.host,
+          path.join(this.config.xudir, 'tls.cert'),
+          path.join(this.config.xudir, 'tls.key'),
+        );
+
+        if (!this.config.webproxy.disable) {
+          this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
+          await this.grpcAPIProxy.listen(
+            this.config.webproxy.port,
+            this.config.rpc.port,
+            this.config.rpc.host,
+            path.join(this.config.xudir, 'tls.cert'),
+          );
+        }
+      }
+
       this.db = new DB(loggers.db, this.config.dbpath);
       await this.db.init(this.config.network, this.config.initdb);
 
@@ -93,18 +115,11 @@ class Xud extends EventEmitter {
           nodeKey = await NodeKey.generate();
           await nodeKey.toFile(nodeKeyPath);
         }
-      } else {
+      } else if (this.rpcServer) {
+        this.rpcServer.grpcService.locked = true;
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
 
-        const initRpcServer = new GrpcServer(loggers.rpc);
-        initRpcServer.addXudInitService(initService);
-        await initRpcServer.listen(
-          this.config.rpc.port,
-          this.config.rpc.host,
-          path.join(this.config.xudir, 'tls.cert'),
-          path.join(this.config.xudir, 'tls.key'),
-        );
-
+        this.rpcServer.grpcInitService.setInitService(initService);
         this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
         " 'xucli create' if this is the first time starting xud");
         nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
@@ -115,10 +130,15 @@ class Xud extends EventEmitter {
             initService.removeListener('nodekey', resolve);
           });
         });
-        await initRpcServer.close();
         if (!nodeKey) {
           return; // we interrupted before unlocking xud
         }
+        this.rpcServer.grpcService.locked = false;
+      } else {
+        throw new Error('rpc server cannot be disabled when xud is locked');
+      }
+      if (this.rpcServer) {
+        this.rpcServer.grpcInitService.disabled = true;
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
@@ -172,26 +192,10 @@ class Xud extends EventEmitter {
         );
       }
 
-      // start rpc server last
-      if (!this.config.rpc.disable) {
-        this.rpcServer = new GrpcServer(loggers.rpc);
-        this.rpcServer.addXudService(this.service);
-        await this.rpcServer.listen(
-          this.config.rpc.port,
-          this.config.rpc.host,
-          path.join(this.config.xudir, 'tls.cert'),
-          path.join(this.config.xudir, 'tls.key'),
-        );
+      // initialize rpc server last
+      if (this.rpcServer) {
+        this.rpcServer.grpcService.setService(this.service);
 
-        if (!this.config.webproxy.disable) {
-          this.grpcAPIProxy = new GrpcWebProxyServer(loggers.rpc);
-          await this.grpcAPIProxy.listen(
-            this.config.webproxy.port,
-            this.config.rpc.port,
-            this.config.rpc.host,
-            path.join(this.config.xudir, 'tls.cert'),
-          );
-        }
       } else {
         this.logger.info('RPC server is disabled.');
       }

@@ -9,6 +9,7 @@ interface InitService {
   emit(event: 'nodekey', nodeKey: NodeKey): boolean;
 }
 
+/** A class containing the methods available for a locked, uninitialized instance of xud. */
 class InitService extends EventEmitter {
   /** Whether there is a pending `CreateNode` or `UnlockNode` call. */
   public pendingCall = false;

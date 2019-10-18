@@ -1,16 +1,43 @@
 /* tslint:disable no-null-keyword */
-import grpc from 'grpc';
+import grpc, { status } from 'grpc';
 import InitService from 'lib/service/InitService';
 import * as xudrpc from '../proto/xudrpc_pb';
 import getGrpcError from './getGrpcError';
 
 class GrpcInitService {
-  constructor(private initService: InitService) {}
+  public disabled = false;
+  private initService?: InitService;
+
+  constructor() {}
+
+  public setInitService(initService: InitService) {
+    this.initService = initService;
+  }
+
+  /**
+   * Checks whether this service is ready to handle calls and sends an error to the client
+   * caller if not ready.
+   * @returns `true` if the service is ready, otherwise `false`
+   */
+  private isReady = (initService: InitService | undefined, callback: grpc.sendUnaryData<any>)
+    : initService is InitService => {
+    if (!initService) {
+      const err = this.disabled ?
+        { code: status.UNIMPLEMENTED, message: 'xud init service is disabled', name: 'DisabledError' } :
+        { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' };
+      callback(err, null);
+      return false;
+    }
+    return true;
+  }
 
   /**
    * See [[InitService.createNode]]
    */
   public createNode: grpc.handleUnaryCall<xudrpc.CreateNodeRequest, xudrpc.CreateNodeResponse> = async (call, callback) => {
+    if (!this.isReady(this.initService, callback)) {
+      return;
+    }
     try {
       const { mnemonic, initializedLndWallets, initializedRaiden } = await this.initService.createNode(call.request.toObject());
       const response = new xudrpc.CreateNodeResponse();
@@ -33,6 +60,9 @@ class GrpcInitService {
    * See [[InitService.unlockNode]]
    */
   public unlockNode: grpc.handleUnaryCall<xudrpc.UnlockNodeRequest, xudrpc.UnlockNodeResponse> = async (call, callback) => {
+    if (!this.isReady(this.initService, callback)) {
+      return;
+    }
     try {
       const unlockedLndClients = await this.initService.unlockNode(call.request.toObject());
       const response = new xudrpc.UnlockNodeResponse();
