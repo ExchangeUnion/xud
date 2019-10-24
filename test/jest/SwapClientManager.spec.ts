@@ -39,6 +39,8 @@ jest.mock('../../lib/lndclient/LndClient', () => {
       pubKey: mockLndPubKey,
       type: SwapClientType.Lnd,
       isDisabled: () => false,
+      isOperational: () => true,
+      isMisconfigured: () => false,
       getLndInfo: lndInfoMock,
       close: closeMock,
       openChannel: mockLndOpenChannel,
@@ -58,6 +60,8 @@ jest.mock('../../lib/raidenclient/RaidenClient', () => {
       type: SwapClientType.Raiden,
       address: mockRaidenAddress,
       isDisabled: () => mockRaidenClientIsDisabled,
+      isOperational: () => !mockRaidenClientIsDisabled,
+      isMisconfigured: () => false,
       close: closeMock,
       openChannel: mockRaidenOpenChannel,
     };

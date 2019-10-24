@@ -9,6 +9,7 @@ const errorCodes = {
   PAYMENT_REJECTED: codesPrefix.concat('.5'),
   INVALID_RESOLVE_REQUEST: codesPrefix.concat('.6'),
   SWAP_CLIENT_WALLET_NOT_CREATED: codesPrefix.concat('.7'),
+  SWAP_CLIENT_MISCONFIGURED: codesPrefix.concat('.8'),
 };
 
 const errors = {
@@ -39,6 +40,10 @@ const errors = {
   SWAP_CLIENT_WALLET_NOT_CREATED: (message: string) => ({
     message,
     code: errorCodes.SWAP_CLIENT_WALLET_NOT_CREATED,
+  }),
+  SWAP_CLIENT_MISCONFIGURED: (clientLabels: string[]) => ({
+    message: `the following swap clients are misconfigured: ${clientLabels.join(', ')}`,
+    code: errorCodes.SWAP_CLIENT_MISCONFIGURED,
   }),
 };
 
