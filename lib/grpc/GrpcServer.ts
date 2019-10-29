@@ -1,23 +1,27 @@
-import { hostname } from 'os';
-import grpc from 'grpc';
-import { pki, md } from 'node-forge';
 import assert from 'assert';
-import Logger from '../Logger';
-import GrpcService from './GrpcService';
-import Service from '../service/Service';
-import errors from './errors';
-import { XudService, XudInitService } from '../proto/xudrpc_grpc_pb';
 import { promises as fs } from 'fs';
-import serverProxy from './serverProxy';
-import InitService from 'lib/service/InitService';
+import grpc from 'grpc';
+import { md, pki } from 'node-forge';
+import { hostname } from 'os';
+import Logger from '../Logger';
+import { XudInitService, XudService } from '../proto/xudrpc_grpc_pb';
+import errors from './errors';
 import GrpcInitService from './GrpcInitService';
+import GrpcService from './GrpcService';
+import serverProxy from './serverProxy';
 
 class GrpcServer {
+  public grpcService = new GrpcService();
+  public grpcInitService = new GrpcInitService();
   private server: any;
-  private grpcService?: GrpcService;
 
   constructor(private logger: Logger) {
     this.server = serverProxy(new grpc.Server());
+
+    this.grpcInitService = new GrpcInitService();
+    this.grpcService = new GrpcService();
+    this.server.addService(XudInitService, this.grpcInitService);
+    this.server.addService(XudService, this.grpcService);
 
     this.server.use(async (ctx: any, next: any) => {
       logger.debug(`received call ${ctx.service.path}`);
@@ -33,16 +37,6 @@ class GrpcServer {
         logger.trace(`call ${ctx.service.path} succeeded`);
       }
     });
-  }
-
-  public addXudInitService = (initService: InitService) => {
-    const grpcInitService = new GrpcInitService(initService);
-    this.server.addService(XudInitService, grpcInitService);
-  }
-
-  public addXudService = (service: Service) => {
-    this.grpcService = new GrpcService(service);
-    this.server.addService(XudService, this.grpcService);
   }
 
   /**

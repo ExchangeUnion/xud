@@ -1,5 +1,5 @@
 import fs from 'fs';
-import grpc from 'grpc';
+import grpc, { status } from 'grpc';
 import { Arguments } from 'yargs';
 import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
 import { getDefaultCertPath } from './utils';
@@ -29,10 +29,20 @@ interface GrpcResponse {
 }
 
 export const callback = (argv: Arguments, formatOutput?: Function, displayJson?: Function) => {
-  return (error: Error | null, response: GrpcResponse) => {
+  return (error: grpc.ServiceError | null, response: GrpcResponse) => {
     if (error) {
       process.exitCode = 1;
-      console.error(`${error.name}: ${error.message}`);
+      if (error.code === status.UNAVAILABLE) {
+        if (error.message.includes('xud is starting')) {
+          console.error('xud is starting... try again in a few seconds');
+        } else {
+          console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
+        }
+      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud is locked')) {
+        console.error("xud is locked, run 'xucli unlock' or 'xucli create' then try again");
+      } else {
+        console.error(`${error.name}: ${error.message}`);
+      }
     } else {
       const responseObj = response.toObject();
       if (Object.keys(responseObj).length === 0) {

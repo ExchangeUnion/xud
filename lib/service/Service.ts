@@ -70,9 +70,11 @@ const argChecks = {
   },
 };
 
-/** Class containing the available RPC methods for XUD */
+/** A class containing the available RPC methods for an unlocked, running instance of xud. */
 class Service {
   public shutdown: () => void;
+  /** Whether the service is disabled - in other words whether xud is locked. */
+  public disabled = false;
   private orderBook: OrderBook;
   private swapClientManager: SwapClientManager;
   private pool: Pool;
