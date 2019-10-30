@@ -252,7 +252,7 @@ class Swaps extends EventEmitter {
   private persistDeal = async (deal: SwapDeal) => {
     await this.repository.saveSwapDeal(deal);
     if (deal.state !== SwapState.Active) {
-      this.removeDeal(deal);
+      this.deals.delete(deal.rHash);
     }
   }
 
@@ -273,10 +273,6 @@ class Swaps extends EventEmitter {
     this.deals.set(deal.rHash, deal);
     this.usedHashes.add(deal.rHash);
     this.logger.debug(`New deal: ${JSON.stringify(deal)}`);
-  }
-
-  public removeDeal = (deal: SwapDeal) => {
-    this.deals.delete(deal.rHash);
   }
 
   /**
@@ -882,8 +878,19 @@ class Swaps extends EventEmitter {
         deal.rPreimage = await swapClient.sendPayment(deal);
         return deal.rPreimage;
       } catch (err) {
-        this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
-        throw new Error(`Got exception from sendPaymentSync ${err.message}`);
+        if (err.code === errorCodes.UNKNOWN_PAYMENT_ERROR) {
+          // the payment failed but we are unsure of its final status, so we fail
+          // the deal and assign the payment to be checked in swap recovery
+          clearTimeout(this.timeouts.get(deal.rHash));
+          this.timeouts.delete(deal.rHash);
+          this.emit('swap.failed', deal);
+          this.deals.delete(deal.rHash);
+          const swapDealInstance = await this.repository.getSwapDeal(rHash);
+          this.swapRecovery.pendingSwaps.add(swapDealInstance!);
+        } else {
+          this.failDeal(deal, SwapFailureReason.SendPaymentFailure, err.message);
+        }
+        throw err;
       }
     } else {
       // If we are here we are the taker
@@ -916,6 +923,8 @@ class Swaps extends EventEmitter {
       if (!this.validateResolveRequest(deal, resolveRequest)) {
         throw errors.INVALID_RESOLVE_REQUEST(rHash, deal.errorMessage || '');
       }
+    } else if (this.getPendingSwapHashes().includes(rHash)) {
+      throw errors.PAYMENT_PENDING(rHash);
     } else {
       throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
