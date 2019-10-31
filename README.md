@@ -31,13 +31,13 @@ The daemon has been designed to be as developer friendly as possible in order to
 
 This section contains brief instructions for installing `xud` manually, without treating setup of dependencies like `bitcoind` or `lnd`. It is mainly geared towards developers. For all other users, we recommend our streamlined [xud-docker](https://docs.exchangeunion.com/start-trading) setup.
 
-If you already have [Node.js](https://nodejs.org/en/download/) (latest or LTS) installed, you can install `xud` via npm by running
+If you already have [Node.js](https://nodejs.org/en/download/) installed, you can install `xud` via npm by running
 
 ```bash
 sudo npm install xud -g --unsafe-perm
 ```
 
-Detailed instructions for installing `xud` can be found in the [docs for developers](https://docs.exchangeunion.com/development).
+We officially only support the current Node.js LTS, since newer versions frequently break our beloved gRPC. Detailed instructions for installing `xud` can be found in the [docs for developers](https://docs.exchangeunion.com/development).
 
 ## Usage
 
