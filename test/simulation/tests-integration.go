@@ -13,6 +13,14 @@ var integrationTestCases = []*testCase{
 		test: testNetworkInit,
 	},
 	{
+		name: "raiden swap",
+		test: testRaidenSwap,
+	},
+	{
+		name: "order matching and swap",
+		test: testOrderMatchingAndSwap,
+	},
+	{
 		name: "p2p discovery",
 		test: testP2PDiscovery,
 	},
@@ -31,10 +39,6 @@ var integrationTestCases = []*testCase{
 	{
 		name: "order broadcast and invalidation",
 		test: testOrderBroadcastAndInvalidation,
-	},
-	{
-		name: "order matching and swap",
-		test: testOrderMatchingAndSwap,
 	},
 	{
 		name: "multiple hop swap",
@@ -107,7 +111,7 @@ func testP2PIncorrectPubKey(net *xudtest.NetworkHarness, ht *harnessTest) {
 	ht.assert.Error(err)
 	ht.assert.Contains(err.Error(), fmt.Sprintf(
 		"Peer %v disconnected from us due to AuthFailureInvalidTarget",
-		incorrectPubKey + "@" + net.Bob.Cfg.P2PAddr()))
+		incorrectPubKey+"@"+net.Bob.Cfg.P2PAddr()))
 }
 
 // testP2PBanUnban implements:
@@ -130,7 +134,7 @@ func testP2PBanUnban(net *xudtest.NetworkHarness, ht *harnessTest) {
 	ht.assert.Error(err)
 	ht.assert.Contains(err.Error(), fmt.Sprintf(
 		" Peer %v disconnected from us due to Banned",
-		net.Alice.PubKey() + "@" + net.Alice.Cfg.P2PAddr()))
+		net.Alice.PubKey()+"@"+net.Alice.Cfg.P2PAddr()))
 
 	// After Alice unban Bob, connection attempts from both directions should succeed.
 	ht.act.unban(net.Alice, net.Bob)
@@ -185,6 +189,86 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 
 	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
 	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testRaidenSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	fmt.Printf("\nwaiting for raidens to boot...\n")
+	// Query GetInfo until we get a raiden address for Bob
+	infoReq := &xudrpc.GetInfoRequest{}
+	for {
+		time.Sleep(1 * time.Second)
+		res, err := net.Bob.Client.GetInfo(ht.ctx, infoReq)
+		ht.assert.NoError(err)
+		if len(res.Raiden.Address) > 0 {
+			fmt.Printf("\nraiden address found for Bob: %v\n", res.Raiden.Address)
+			break
+		}
+	}
+
+	// Query GetInfo until we get a raiden address for Alice
+	for {
+		time.Sleep(1 * time.Second)
+		res, err := net.Alice.Client.GetInfo(ht.ctx, infoReq)
+		ht.assert.NoError(err)
+		if len(res.Raiden.Address) > 0 {
+			fmt.Printf("\nraiden address found for Alice: %v\n", res.Raiden.Address)
+			break
+		}
+	}
+
+	ht.act.openChannel(net.Bob, net.Alice, "WETH", 7500000)
+	// Verify that the channel is open
+	bobWethBalanceReq := &xudrpc.GetBalanceRequest{Currency: "WETH"}
+	for {
+		time.Sleep(1 * time.Second)
+		bobWethBalanceRes, err := net.Bob.Client.GetBalance(ht.ctx, bobWethBalanceReq)
+		ht.assert.NoError(err)
+		if bobWethBalanceRes.Balances["WETH"].Balance == 7500000 {
+			break
+		}
+	}
+
+	aliceWethBalanceReq := &xudrpc.GetBalanceRequest{Currency: "WETH"}
+	for {
+		time.Sleep(1 * time.Second)
+		aliceWethBalanceRes, err := net.Alice.Client.GetBalance(ht.ctx, aliceWethBalanceReq)
+		ht.assert.NoError(err)
+		if aliceWethBalanceRes.Balances["WETH"].Balance == 0 {
+			break
+		}
+	}
+
+	// Raiden reports the channel as opened, but it takes time for the
+	// peer to join the matrix server room.
+	fmt.Printf("\nwaiting for raiden channel to become active...\n")
+	time.Sleep(90 * time.Second)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    0.02,
+		Quantity: 10000,
+		PairId:   "WETH/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Bob.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)

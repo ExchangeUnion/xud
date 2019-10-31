@@ -73,6 +73,7 @@ docker/xud/xud.db
 # xud-simulation execution temp directory
 test/simulation/temp
 test/simulation/go
+test/simulation/cache
 
 # seedutil go directory and compiled binary
 seedutil/go

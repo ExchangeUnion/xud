@@ -1,0 +1,17 @@
+keystore-path = "<keystore-path>"
+datadir = "<data-directory>"
+network-id = "<network-id>"
+accept-disclaimer = true
+matrix-server = "https://raidentransport.exchangeunion.com"
+environment-type = "development"
+routing-mode = "private"
+gas-price = "10000000000"
+
+address = "<account-address>"
+password-file = "<password-file>"
+
+secret-registry-contract-address = "<secret-registry-address>"
+tokennetwork-registry-contract-address = "<tokennetwork-registry-address>"
+one-to-n-contract-address = "<one-to-n-contract-address>"
+user-deposit-contract-address = "<user-deposit-contract-address>"
+monitoring-service-contract-address = "<monitoring-service-contract-address>"

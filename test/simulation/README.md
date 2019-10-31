@@ -2,21 +2,22 @@
 
 This test suite simulates real usage of `xud` and the second-layer payment channel network clients that it interacts with. It creates chains, generates blocks, and establishes payment channels. All commands to `xud` are issued via the gRPC API. This helps ensure that `xud` integrates with other nodes and software components properly and allows for more complete and realistic testing of `xud`.
 
-## Installation & Usage
+## Install dependencies
+The simulation tests are currently only tested and supported on Ubuntu 18.04, 19.04 & 19.10.
 
-This project uses [go modules](https://github.com/golang/go/wiki/Modules) to manage dependencies.
+```
+sudo apt-get install -y libz3-dev python3.7 python3.7-dev python3.7-venv python3-venv python3-dev jq libssl-dev net-tools git golang-1.12-go
+```
 
-Requirements:
+Add go `golang-1.12-go` to PATH:
+```
+sudo ln -s /usr/lib/go-1.12/bin/go /usr/local/bin/go
+```
 
-* Golang version >= 1.12
-* Git
-
-Installation & Usage:
-
-```bash
-export PATH=$PATH:$PWD/go/bin
-GOPATH=$PWD/go GO111MODULE=on go test -v
-````
+## Usage
+```
+npm run test:sim
+```
 
 ## Simulation Test Cases
 
