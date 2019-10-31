@@ -10,7 +10,7 @@ import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
-import { sortOrders } from '../utils/utils';
+import { sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -98,11 +98,16 @@ class Service {
     argChecks.VALID_SWAP_CLIENT(args);
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
 
+    let address = tokenAddress;
+    if (args.swapClient === SwapClientType.Raiden && address) {
+      address = toEip55Address(address);
+    }
+
     await this.orderBook.addCurrency({
-      tokenAddress,
       swapClient,
       decimalPlaces,
       id: currency,
+      tokenAddress: address,
     });
   }
 

@@ -4,6 +4,8 @@ import { Pair, Order } from '../orderbook/types';
 import { createHash, randomBytes as cryptoRandomBytes } from 'crypto';
 import { promisify } from 'util';
 import moment from 'moment';
+// @ts-ignore
+import createKeccakHash from 'keccak';
 
 /**
  * Gets the external IP of the node.
@@ -207,4 +209,25 @@ export const base64ToHex = (b64: string) => {
 
 export const hexToUint8Array = (hex: string) => {
   return Uint8Array.from(Buffer.from(hex, 'hex'));
+};
+
+/**
+ * Converts input to EIP55 format.
+ * Prints the ith digit in uppercase if it's a letter and the 4*ith bit of the hash of the lowercase hexadecimal address is 1
+ * otherwise prints it in lowercase.
+ * Example: '0xfb6916095ca1df60bb79ce92ce3ea74c37c5d359' is converted to '0xfB6916095ca1df60bB79Ce92cE3Ea74c37c5d359'
+ */
+export const toEip55Address = (address: string) => {
+  const lowercaseAddress = address.toLowerCase().replace('0x', '');
+  const hash = createKeccakHash('keccak256').update(lowercaseAddress).digest('hex');
+  let ret = '0x';
+
+  for (let i = 0; i < lowercaseAddress.length; i += 1) {
+    if (parseInt(hash[i], 16) >= 8) {
+      ret += lowercaseAddress[i].toUpperCase();
+    } else {
+      ret += lowercaseAddress[i];
+    }
+  }
+  return ret;
 };

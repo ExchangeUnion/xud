@@ -135,6 +135,7 @@
     "grpc": "^1.24.0",
     "gulp": "^4.0.2",
     "json-stable-stringify": "^1.0.1",
+    "keccak": "^2.0.0",
     "moment": "^2.24.0",
     "node-forge": "^0.9.1",
     "secp256k1": "^3.7.1",
