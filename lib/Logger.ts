@@ -31,6 +31,7 @@ export enum Context {
   Raiden = 'RAIDEN',
   Swaps = 'SWAPS',
   Http = 'HTTP',
+  Backup = 'BACKUP',
 }
 
 type Loggers = {

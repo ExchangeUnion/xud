@@ -18,9 +18,12 @@ import path from 'path';
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
+  on(event: 'channelBackup', listener: (channelBackup: string) => void): this;
   on(event: 'locked', listener: () => void): this;
+
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
+  emit(event: 'channelBackup', channelBackup: string): boolean;
   emit(event: 'locked'): boolean;
 }
 
@@ -45,6 +48,7 @@ class LndClient extends SwapClient {
   private urisList?: string[];
   /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
   private chainIdentifier?: string;
+  private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
   private initWalletResolve?: (value: boolean) => void;
@@ -829,6 +833,13 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListPaymentsRequest, lndrpc.ListPaymentsResponse>('listPayments', request);
   }
 
+  public exportAllChannelBackup = async () => {
+    const request = new lndrpc.ChanBackupExportRequest();
+    const response = await this.unaryCall<lndrpc.ChanBackupExportRequest, lndrpc.ChanBackupSnapshot>('exportAllChannelBackups', request);
+
+    return response.getMultiChanBackup()!.getMultiChanBackup_asB64();
+  }
+
   private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {
     return this.unaryInvoiceCall<lndinvoices.AddHoldInvoiceRequest, lndinvoices.AddHoldInvoiceResp>('addHoldInvoice', request);
   }
@@ -860,6 +871,29 @@ class LndClient extends SwapClient {
       }
     }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
     this.invoiceSubscriptions.set(rHash, invoiceSubscription);
+  }
+
+  /**
+   * Subscribes to channel backups
+   */
+  public subscribeChannelBackups = () => {
+    if (!this.lightning) {
+      throw errors.UNAVAILABLE(this.currency, this.status);
+    }
+
+    if (this.channelBackupSubscription) {
+      return;
+    }
+
+    const deleteChannelBackupSubscription = () => {
+      this.channelBackupSubscription = undefined;
+    };
+
+    this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
+      .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
+        const multiBackup = backupSnapshot.getMultiChanBackup()!;
+        this.emit('channelBackup', multiBackup.getMultiChanBackup_asB64());
+      }).on('end', deleteChannelBackupSubscription).on('error', deleteChannelBackupSubscription);
   }
 
   /**
