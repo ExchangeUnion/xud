@@ -1,12 +1,18 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 import { createHash } from 'crypto';
+import { EventEmitter } from 'events';
+import fs from 'fs';
+import { getDefaultBackupDir } from '../utils/utils';
+import path from 'path';
 import Config from '../Config';
-import Logger, { Context } from '../Logger';
 import LndClient from '../lndclient/LndClient';
+import Logger, { Context } from '../Logger';
 
-class Backup {
+interface Backup {
+  on(event: 'newBackup', listener: (path: string) => void): this;
+  emit(event: 'newBackup', path: string): boolean;
+}
+
+class Backup extends EventEmitter {
   private logger!: Logger;
   private config = new Config();
 
@@ -18,7 +24,7 @@ class Backup {
   public start = async (args: { [argName: string]: any }) => {
     await this.config.load(args);
 
-    this.backupDir = args.backupdir || this.getDefaultBackupDir();
+    this.backupDir = args.backupdir || getDefaultBackupDir();
 
     this.logger = new Logger({
       context: Context.Backup,
@@ -138,8 +144,8 @@ class Backup {
     }
   }
 
-  private readDatabase = (path: string): { content: string, hash: string } => {
-    const content = fs.readFileSync(path, 'utf8');
+  private readDatabase = (path: string): { content: Buffer, hash: string } => {
+    const content = fs.readFileSync(path);
 
     return {
       content,
@@ -147,12 +153,13 @@ class Backup {
     };
   }
 
-  private writeBackup = (backupPath: string, data: string) => {
+  private writeBackup = (backupPath: string, data: Uint8Array) => {
     try {
       fs.writeFileSync(
         backupPath,
         data,
       );
+      this.emit('newBackup', backupPath);
     } catch (error) {
       this.logger.error(`Could not write backup file: ${error}`);
     }
@@ -166,15 +173,6 @@ class Backup {
     }
 
     return path.join(this.backupDir, clientName);
-  }
-
-  private getDefaultBackupDir = () => {
-    switch (os.platform()) {
-      case 'win32':
-        return path.join(process.env.LOCALAPPDATA!, 'Xud Backup');
-      default:
-        return path.join(process.env.HOME!, '.xud-backup');
-    }
   }
 }
 
