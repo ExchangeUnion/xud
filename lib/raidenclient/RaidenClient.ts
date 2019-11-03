@@ -453,7 +453,7 @@ class RaidenClient extends SwapClient {
 
   public channelBalance = async (currency?: string): Promise<ChannelBalance> => {
     if (!currency) {
-      return { balance: 0, pendingOpenBalance: 0 };
+      return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
     const channels = await this.getChannels(this.tokenAddresses.get(currency));
@@ -469,7 +469,7 @@ class RaidenClient extends SwapClient {
       this.logger.debug(`new outbound capacity for ${currency}: ${balance}`);
     }
 
-    return { balance, pendingOpenBalance: 0 };
+    return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
   }
 
   /**

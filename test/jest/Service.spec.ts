@@ -4,6 +4,7 @@ import Swaps from '../../lib/swaps/Swaps';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Pool from '../../lib/p2p/Pool';
 import Peer from '../../lib/p2p/Peer';
+import SwapClient from '../../lib/swaps/SwapClient';
 
 jest.mock('../../lib/orderbook/OrderBook');
 const mockedOrderbook = <jest.Mock<Orderbook>><any>Orderbook;
@@ -11,6 +12,8 @@ jest.mock('../../lib/swaps/Swaps');
 const mockedSwaps = <jest.Mock<Swaps>><any>Swaps;
 jest.mock('../../lib/swaps/SwapClientManager');
 const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
+jest.mock('../../lib/swaps/SwapClient');
+const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 jest.mock('../../lib/p2p/Pool');
 const mockedPool = <jest.Mock<Pool>><any>Pool;
 jest.mock('../../lib/p2p/Peer');
@@ -90,4 +93,86 @@ describe('Service', () => {
     });
   });
 
+  describe('getBalance', () => {
+    const setup = () => {
+      service = new Service(components);
+      components.swapClientManager.swapClients = new Map();
+      components.swapClientManager.get = jest.fn().mockImplementation((arg) => {
+        return components.swapClientManager.swapClients.get(arg);
+      });
+
+      const btcClient = new mockedSwapClient();
+      btcClient.isConnected = jest.fn().mockImplementation(() => true);
+      btcClient.channelBalance = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ balance: 70000, inactiveBalance: 18817, pendingOpenBalance: 190191 });
+      });
+      btcClient.walletBalance = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ totalBalance: 10000, confirmedBalance: 10000, unconfirmedBalance: 0 });
+      });
+      components.swapClientManager.swapClients.set('BTC', btcClient);
+
+      const ltcClient = new mockedSwapClient();
+      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
+      ltcClient.channelBalance = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ balance: 0, inactiveBalance: 12345, pendingOpenBalance: 0 });
+      });
+      ltcClient.walletBalance = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ totalBalance: 2000, confirmedBalance: 1500, unconfirmedBalance: 500 });
+      });
+      components.swapClientManager.swapClients.set('LTC', ltcClient);
+
+      const bchClient = new mockedSwapClient();
+      bchClient.isConnected = jest.fn().mockImplementation(() => false);
+      components.swapClientManager.swapClients.set('BCH', bchClient);
+    };
+
+    test('returns balance for all connected clients when currency is not specified', async () => {
+      setup();
+      const result = await service.getBalance({ currency: '' });
+      expect(result.size).toEqual(2);
+
+      const btcBalance = result.get('BTC')!;
+      expect(btcBalance).toBeTruthy();
+      expect(btcBalance.channelBalance).toEqual(70000);
+      expect(btcBalance.pendingChannelBalance).toEqual(190191);
+      expect(btcBalance.inactiveChannelBalance).toEqual(18817);
+      expect(btcBalance.walletBalance).toEqual(10000);
+      expect(btcBalance.unconfirmedWalletBalance).toEqual(0);
+      expect(btcBalance.totalBalance).toEqual(289008);
+
+      const ltcBalance = result.get('LTC')!;
+      expect(ltcBalance).toBeTruthy();
+      expect(ltcBalance.channelBalance).toEqual(0);
+      expect(ltcBalance.pendingChannelBalance).toEqual(0);
+      expect(ltcBalance.inactiveChannelBalance).toEqual(12345);
+      expect(ltcBalance.walletBalance).toEqual(1500);
+      expect(ltcBalance.unconfirmedWalletBalance).toEqual(500);
+      expect(ltcBalance.totalBalance).toEqual(14345);
+    });
+
+    test('returns balance for specified currency', async () => {
+      setup();
+      const result = await service.getBalance({ currency: 'BTC' });
+      expect(result.size).toEqual(1);
+
+      const btcBalance = result.get('BTC')!;
+      expect(btcBalance).toBeTruthy();
+      expect(btcBalance.channelBalance).toEqual(70000);
+      expect(btcBalance.pendingChannelBalance).toEqual(190191);
+      expect(btcBalance.inactiveChannelBalance).toEqual(18817);
+      expect(btcBalance.walletBalance).toEqual(10000);
+      expect(btcBalance.unconfirmedWalletBalance).toEqual(0);
+      expect(btcBalance.totalBalance).toEqual(289008);
+    });
+
+    test('throws in case of invalid currency', async () => {
+      setup();
+      await expect(service.getBalance({ currency: 'A' })).rejects.toMatchSnapshot();
+    });
+
+    test('throws when swap client is not found', async () => {
+      setup();
+      await expect(service.getBalance({ currency: 'BBB' })).rejects.toMatchSnapshot();
+    });
+  });
 });
