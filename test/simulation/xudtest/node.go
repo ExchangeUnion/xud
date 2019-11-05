@@ -253,6 +253,16 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 	}
 
 	tlsCreds, err := credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
+	for tries := 3; tries > 0; tries-- {
+		if err == nil {
+		    break;
+		}
+
+		fmt.Printf("Failed to read TLS certificate: %v, remaining tries: %v\n", err, tries-1)
+		time.Sleep(1 * time.Second)
+		tlsCreds, err = credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
+	}
+
 	if err != nil {
 		return nil, err
 	}
