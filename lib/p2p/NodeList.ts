@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
-import P2PRepository from './P2PRepository';
-import { NodeInstance, NodeFactory, ReputationEventInstance } from '../db/types';
-import { Address } from './types';
-import addressUtils from '../utils/addressUtils';
 import { ReputationEvent } from '../constants/enums';
+import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types';
+import addressUtils from '../utils/addressUtils';
+import P2PRepository from './P2PRepository';
+import { Address } from './types';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -95,12 +95,13 @@ class NodeList extends EventEmitter {
   }
 
   /**
-   * Create a Node in the database.
+   * Persists a node to the database and adds it to the node list.
    */
-  public createNode = async (nodeFactory: NodeFactory): Promise<NodeInstance> => {
-    const node = await this.repository.addNode(nodeFactory);
-    this.nodes.set(node.nodePubKey, node);
-    return node;
+  public createNode = async (nodeFactory: NodeFactory) => {
+    const node = await this.repository.addNodeIfNotExists(nodeFactory);
+    if (node) {
+      this.nodes.set(node.nodePubKey, node);
+    }
   }
 
   /**

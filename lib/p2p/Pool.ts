@@ -1,23 +1,23 @@
+import assert from 'assert';
+import { EventEmitter } from 'events';
 import net, { Server, Socket } from 'net';
 import semver from 'semver';
-import { EventEmitter } from 'events';
-import errors, { errorCodes } from './errors';
-import Peer, { PeerInfo } from './Peer';
-import NodeList, { reputationEventWeight } from './NodeList';
-import P2PRepository from './P2PRepository';
-import * as packets from './packets/types';
-import { Packet, PacketType } from './packets';
-import { OutgoingOrder, OrderPortion, IncomingOrder } from '../orderbook/types';
+import { DisconnectionReason, ReputationEvent, XuNetwork } from '../constants/enums';
 import { Models } from '../db/DB';
+import { ReputationEventInstance } from '../db/types';
 import Logger from '../Logger';
-import { NodeState, Address, NodeConnectionInfo, PoolConfig } from './types';
+import NodeKey from '../nodekey/NodeKey';
+import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
-import assert from 'assert';
-import { ReputationEvent, DisconnectionReason, XuNetwork } from '../constants/enums';
-import NodeKey from '../nodekey/NodeKey';
-import { ReputationEventInstance } from '../db/types';
+import errors, { errorCodes } from './errors';
 import Network from './Network';
+import NodeList, { reputationEventWeight } from './NodeList';
+import P2PRepository from './P2PRepository';
+import { Packet, PacketType } from './packets';
+import * as packets from './packets/types';
+import Peer, { PeerInfo } from './Peer';
+import { Address, NodeConnectionInfo, NodeState, PoolConfig } from './types';
 
 const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
 
@@ -30,6 +30,7 @@ interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
+  on(event: 'peer.active', listener: (peerPubKey?: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
   /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
   on(event: 'peer.verifyPairs', listener: (peer: Peer) => void): this;
@@ -44,6 +45,7 @@ interface Pool {
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
+  emit(event: 'peer.active', peerPubKey?: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
   /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
   emit(event: 'peer.verifyPairs', peer: Peer): boolean;
@@ -427,7 +429,11 @@ class Pool extends EventEmitter {
     this.bindPeer(peer);
 
     this.pendingOutboundPeers.set(nodePubKey, peer);
-    await this.openPeer(peer, nodePubKey, retryConnecting);
+    try {
+      await this.openPeer(peer, nodePubKey, retryConnecting);
+    } finally {
+      this.pendingOutboundPeers.delete(nodePubKey);
+    }
     return peer;
   }
 
@@ -486,11 +492,11 @@ class Pool extends EventEmitter {
 
       await peer.completeOpen(this.nodeState, this.nodeKey, this.version, sessionInit);
     } catch (err) {
-      // we don't have nodePubKey for inbound connections, which might fail on handshake
+      const msg = `could not open connection to ${peer.inbound ? 'inbound' : 'outbound'} peer`;
       if (typeof err === 'string') {
-        this.logger.warn(`could not open connection to peer (${peer.label}): ${err}`);
+        this.logger.warn(`${msg} (${peer.label}): ${err}`);
       } else {
-        this.logger.warn(`could not open connection to peer (${peer.label}): ${err.message}`);
+        this.logger.warn(`${msg} (${peer.label}): ${err.message}`);
       }
 
       if (err.code === errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED) {
@@ -501,11 +507,44 @@ class Pool extends EventEmitter {
     }
 
     const peerPubKey = peer.nodePubKey!;
-    this.logger.verbose(`opened connection to ${peerPubKey} at ${addressUtils.toString(peer.address)}`);
-    this.pendingOutboundPeers.delete(peerPubKey);
+
+    // A potential race condition exists here in the case where two peers attempt connections
+    // to each other simultaneously. Handshakes may be completed on both sockets without being
+    // detected in the validatePeer method that is called above after a handshake begins and
+    // the node pub key for the inbound peer is established but before it completes. In this case,
+    // both peers cannot close the "duplicate" connection or else they may wind up closing both
+    // of them. The approach below arbitrarily picks the peer with the higher node pubkey to close
+    // the socket when it encounters a duplicate, while the other peer waits briefly to see if
+    // the already established connection is closed.
+    if (this.peers.has(peerPubKey)) {
+      if (this.nodePubKey > peerPubKey) {
+        await peer.close(DisconnectionReason.AlreadyConnected);
+        throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
+      } else {
+        const stillConnected = await new Promise<boolean>((resolve) => {
+          const timeout = setTimeout(() => resolve(true), Peer.STALL_INTERVAL);
+          this.peers.get(peerPubKey)!.once('close', () => {
+            resolve(false);
+            clearTimeout(timeout);
+          });
+        });
+        if (stillConnected) {
+          await peer.close(DisconnectionReason.AlreadyConnected);
+          throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
+        }
+      }
+    }
+
     this.peers.set(peerPubKey, peer);
     peer.active = true;
+    this.emit('peer.active', peerPubKey);
+    this.logger.verbose(`opened connection to ${peerPubKey} at ${addressUtils.toString(peer.address)}`);
 
+    // begin the process to handle a just opened peer, but return from this method immediately
+    this.handleOpenedPeer(peer).catch(this.logger.error);
+  }
+
+  private handleOpenedPeer = async (peer: Peer) => {
     this.emit('peer.verifyPairs', peer);
 
     // request peer's known nodes only if p2p.discover option is true
@@ -529,11 +568,11 @@ class Pool extends EventEmitter {
       }
     });
 
-    // upserting the node entry
-    if (!this.nodes.has(peerPubKey)) {
+    // creating the node entry
+    if (!this.nodes.has(peer.nodePubKey!)) {
       await this.nodes.createNode({
         addresses,
-        nodePubKey: peerPubKey,
+        nodePubKey: peer.nodePubKey!,
         lastAddress: peer.inbound ? undefined : peer.address,
       });
     } else {
@@ -787,8 +826,8 @@ class Pool extends EventEmitter {
     }
 
     if (this.peers.has(peerPubKey)) {
-      // TODO: Penalize peers that attempt to create duplicate connections to us more then once.
-      // the first time might be due connection retries
+      // TODO: Penalize peers that attempt to create duplicate connections to us more than once.
+      // The first time might be due to connection retries.
       await peer.close(DisconnectionReason.AlreadyConnected);
       throw errors.NODE_ALREADY_CONNECTED(peerPubKey, peer.address);
     }
@@ -857,13 +896,8 @@ class Pool extends EventEmitter {
   }
 
   private handlePeerClose = async (peer: Peer) => {
-    if (!peer.nodePubKey && peer.expectedNodePubKey) {
-      this.pendingOutboundPeers.delete(peer.expectedNodePubKey);
-    }
-
-    if (peer.nodePubKey) {
-      this.pendingOutboundPeers.delete(peer.nodePubKey);
-      this.peers.delete(peer.nodePubKey);
+    if (peer.active) {
+      this.peers.delete(peer.nodePubKey!);
     }
     peer.removeAllListeners();
 

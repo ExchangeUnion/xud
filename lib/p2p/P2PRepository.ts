@@ -1,6 +1,5 @@
-import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
-import { NodeInstance, ReputationEventInstance, ReputationEventFactory, NodeFactory, ReputationEventAttributes, NodeAttributes } from '../db/types';
+import { NodeAttributes, NodeFactory, NodeInstance, ReputationEventAttributes, ReputationEventFactory, ReputationEventInstance } from '../db/types';
 
 class P2PRepository {
 
@@ -26,8 +25,21 @@ class P2PRepository {
     });
   }
 
-  public addNode = (node: NodeFactory): Bluebird<NodeInstance> => {
-    return this.models.Node.create(<NodeAttributes>node);
+  /**
+   * Adds a node to the database if it doesn't already exist.
+   * @returns the created node instance, or undefined if it already existed.
+   */
+  public addNodeIfNotExists = async (node: NodeFactory) => {
+    try {
+      const createdNode = await this.models.Node.create(<NodeAttributes>node);
+      return createdNode;
+    } catch (err) {
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        return undefined;
+      } else {
+        throw err;
+      }
+    }
   }
 
   public addReputationEvent = async (event: ReputationEventFactory) => {

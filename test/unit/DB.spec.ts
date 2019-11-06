@@ -87,7 +87,7 @@ describe('Database', () => {
   });
 
   it('should add a node', async () => {
-    await p2pRepo.addNode({
+    await p2pRepo.addNodeIfNotExists({
       nodePubKey: peerPubKey,
       addresses: [],
     });

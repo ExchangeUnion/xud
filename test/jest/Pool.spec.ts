@@ -1,13 +1,14 @@
-import Pool from '../../lib/p2p/Pool';
-import Logger, { Level } from '../../lib/Logger';
+import { setTimeout } from 'timers';
 import Config from '../../lib/Config';
-import DB from '../../lib/db/DB';
 import { XuNetwork } from '../../lib/constants/enums';
+import DB from '../../lib/db/DB';
+import Logger, { Level } from '../../lib/Logger';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import errors, { errorCodes } from '../../lib/p2p/errors';
-import Peer from '../../lib/p2p/Peer';
-import { Address } from '../../lib/p2p/types';
 import Network from '../../lib/p2p/Network';
+import Peer from '../../lib/p2p/Peer';
+import Pool from '../../lib/p2p/Pool';
+import { Address } from '../../lib/p2p/types';
 import uuid = require('uuid');
 
 describe('P2P Pool', () => {
@@ -18,9 +19,27 @@ describe('P2P Pool', () => {
   let remotePeer: Peer;
   let pool1nodeKey: NodeKey;
   let pool2nodeKey: NodeKey;
-  const logger = Logger.createLoggers(Level.Warn).p2p;
+  let pool1address: Address;
+  let pool2address: Address;
+  const logger1 = Logger.createLoggers(Level.Error, undefined, 1).p2p;
+  const logger2 = Logger.createLoggers(Level.Error, undefined, 2).p2p;
+  const logger3 = Logger.createLoggers(Level.Error, undefined, 3).p2p;
   let poolPort: number;
   let pool2Port: number;
+
+  const awaitInboundPeer = (pool: Pool) => {
+    return new Promise<void>((resolve, reject) => {
+      if (pool['pendingInboundPeers'].size) {
+        pool.on('peer.active', () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+        const timeout = setTimeout(() => reject('timed out waiting for inbound peer'), 500);
+      } else {
+        resolve();
+      }
+    });
+  };
 
   beforeEach(async () => {
     pool1nodeKey = await NodeKey['generate']();
@@ -29,13 +48,13 @@ describe('P2P Pool', () => {
     const config = new Config();
     config.p2p.listen = true;
     config.p2p.discover = false;
-    pool1db = new DB(logger);
+    pool1db = new DB(logger1);
     await pool1db.init(XuNetwork.RegTest);
-    pool2db = new DB(logger);
+    pool2db = new DB(logger2);
     await pool2db.init(XuNetwork.RegTest);
 
     pool = new Pool({
-      logger,
+      logger: logger1,
       config: {
         ...config.p2p,
         port: 0,
@@ -50,7 +69,7 @@ describe('P2P Pool', () => {
     poolPort = pool['listenPort']!;
 
     pool2 = new Pool({
-      logger,
+      logger: logger2,
       config: {
         ...config.p2p,
         port: 0,
@@ -64,8 +83,11 @@ describe('P2P Pool', () => {
     await pool2.init();
     pool2Port = pool2['listenPort']!;
 
+    pool1address = { host: 'localhost', port: poolPort };
+    pool2address = { host: 'localhost', port: pool2Port };
+
     const address: Address = { host: 'localhost', port: poolPort };
-    remotePeer = new Peer(logger, address, new Network(XuNetwork.RegTest));
+    remotePeer = new Peer(logger3, address, new Network(XuNetwork.RegTest));
   });
 
   afterEach(async () => {
@@ -94,6 +116,13 @@ describe('P2P Pool', () => {
     expect(pool.getTokenIdentifier('WETH')).toEqual(wethTokenAddress);
     expect(pool.getTokenIdentifier('DAI')).toEqual(daiTokenAddress);
     expect(pool['nodeState'].raidenAddress).toEqual(raidenAddress);
+  });
+
+  test('should open a connection with a new peer and add to node list', async () => {
+    const createNodeSpy = jest.spyOn(pool['nodes'], 'createNode');
+    await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+
+    expect(createNodeSpy).toHaveBeenCalledWith({ addresses: pool2.addresses, nodePubKey: pool2nodeKey.pubKey, lastAddress: pool2address });
   });
 
   test('should reject connecting to its own addresses', async () => {
@@ -132,7 +161,7 @@ describe('P2P Pool', () => {
       'message', expect.stringContaining('AuthFailureInvalidTarget'));
   });
 
-  test('it accepts inbound peer', async () => {
+  test('it responds to inbound peer by beginning the handshake', async () => {
     const ownNodeState = {
       addresses: [{ host: '1.1.1.1', port: poolPort }, { host: '2.2.2.2', port: poolPort }],
       pairs: [uuid()],
@@ -153,54 +182,61 @@ describe('P2P Pool', () => {
   });
 
   test('it rejects when already connected', async () => {
-    const pool1address: Address = { host: 'localhost', port: poolPort };
-    const pool2address: Address = { host: 'localhost', port: pool2Port };
-    expect(pool['peers'].size).toEqual(0);
-    expect(pool2['peers'].size).toEqual(0);
+    expect(pool.peerCount).toEqual(0);
+    expect(pool2.peerCount).toEqual(0);
+
     await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    await awaitInboundPeer(pool2);
 
     await expect(pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)).rejects
       .toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
-    expect(pool['peers'].size).toEqual(1);
-    expect(pool2['peers'].size).toEqual(1);
+    expect(pool.peerCount).toEqual(1);
+    expect(pool2.peerCount).toEqual(1);
   });
 
   test('it connects exactly once if two peers attempt connections to each other simultaneously', async () => {
-    const pool1address: Address = { host: 'localhost', port: poolPort };
-    const pool2address: Address = { host: 'localhost', port: pool2Port };
-    const poolPromises: Promise<any>[] = [];
-    expect(pool['peers'].size).toEqual(0);
-    expect(pool2['peers'].size).toEqual(0);
+    expect(pool.peerCount).toEqual(0);
+    expect(pool2.peerCount).toEqual(0);
 
-    poolPromises.push(
-      pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false),
-    );
-    poolPromises.push(
-      pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false),
-    );
+    const pool1Promise = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    const pool2Promise = pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false);
 
     try {
-      await Promise.all(poolPromises);
-    } catch (err) {}
-    expect(pool['peers'].size).toEqual(1);
-    expect(pool2['peers'].size).toEqual(1);
+      await pool1Promise;
+      expect(pool.peerCount).toEqual(1);
+    } catch (err) {
+      // if an addOutbound call errors, it should be due to AlreadyConnected
+      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
+    }
+
+    try {
+      await pool2Promise;
+    } catch (err) {
+      // if an addOutbound call errors, it should be due to AlreadyConnected
+      expect(err.code === errorCodes.NODE_ALREADY_CONNECTED || err.message.includes('AlreadyConnected'));
+    }
+
+    if (!pool.peerCount) {
+      await awaitInboundPeer(pool);
+    }
+    if (!pool2.peerCount) {
+      await awaitInboundPeer(pool2);
+    }
+    expect(pool.peerCount).toEqual(1);
+    expect(pool2.peerCount).toEqual(1);
   });
 
   test('it rejects multiple outbound connections to same peer', async () => {
-    const pool2address: Address = { host: 'localhost', port: pool2Port };
-    expect(pool['peers'].size).toEqual(0);
-    expect(pool2['peers'].size).toEqual(0);
+    expect(pool.peerCount).toEqual(0);
+    expect(pool2.peerCount).toEqual(0);
     const firstOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
     const secondOutboundAttempt = pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
-    try {
-      await secondOutboundAttempt;
-    } catch (e) {
-      expect(e.code).toEqual(errorCodes.ALREADY_CONNECTING);
-    }
+
+    await expect(secondOutboundAttempt).rejects.toHaveProperty('code', errorCodes.ALREADY_CONNECTING);
     await firstOutboundAttempt;
+
     expect(pool['pendingOutboundPeers'].size).toEqual(0);
-    expect(pool['peers'].size).toEqual(1);
-    expect(pool2['peers'].size).toEqual(1);
+    expect(pool.peerCount).toEqual(1);
   });
 
 });
