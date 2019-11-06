@@ -4,7 +4,7 @@ import Config from '../../lib/Config';
 import DB from '../../lib/db/DB';
 import { XuNetwork } from '../../lib/constants/enums';
 import NodeKey from '../../lib/nodekey/NodeKey';
-import errors from '../../lib/p2p/errors';
+import errors, { errorCodes } from '../../lib/p2p/errors';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/p2p/types';
 import Network from '../../lib/p2p/Network';
@@ -123,18 +123,13 @@ describe('P2P Pool', () => {
     };
     const ownNodeKey = await NodeKey['generate']();
     const expectedNodePubKey = (await NodeKey['generate']()).pubKey;
-    try {
-      await remotePeer.beginOpen({
-        ownNodeState,
-        ownNodeKey,
-        expectedNodePubKey,
-        ownVersion: '1.0.0-mainnet',
-      });
-    } catch (e) {
-      expect(e.message).toEqual(
-        expect.stringContaining('AuthFailureInvalidTarget'),
-      );
-    }
+    await expect(remotePeer.beginOpen({
+      ownNodeState,
+      ownNodeKey,
+      expectedNodePubKey,
+      ownVersion: '1.0.0-mainnet',
+    })).rejects.toHaveProperty(
+      'message', expect.stringContaining('AuthFailureInvalidTarget'));
   });
 
   test('it accepts inbound peer', async () => {
@@ -160,29 +155,33 @@ describe('P2P Pool', () => {
   test('it rejects when already connected', async () => {
     const pool1address: Address = { host: 'localhost', port: poolPort };
     const pool2address: Address = { host: 'localhost', port: pool2Port };
+    expect(pool['peers'].size).toEqual(0);
+    expect(pool2['peers'].size).toEqual(0);
+    await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+
+    await expect(pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false)).rejects
+      .toHaveProperty('code', errorCodes.NODE_ALREADY_CONNECTED);
+    expect(pool['peers'].size).toEqual(1);
+    expect(pool2['peers'].size).toEqual(1);
+  });
+
+  test('it connects exactly once if two peers attempt connections to each other simultaneously', async () => {
+    const pool1address: Address = { host: 'localhost', port: poolPort };
+    const pool2address: Address = { host: 'localhost', port: pool2Port };
     const poolPromises: Promise<any>[] = [];
     expect(pool['peers'].size).toEqual(0);
     expect(pool2['peers'].size).toEqual(0);
-    pool2['handleSocket'] = jest.fn(async (socket) => {
-      const waitFor = (ms: number) => {
-        return new Promise(resolve => setTimeout(resolve, ms));
-      };
-      await waitFor(100);
-      await pool2['addInbound'](socket);
-    });
+
     poolPromises.push(
       pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false),
     );
     poolPromises.push(
       pool2.addOutbound(pool1address, pool1nodeKey.pubKey, true, false),
     );
+
     try {
       await Promise.all(poolPromises);
-    } catch (e) {
-      expect(e.message).toEqual(
-        expect.stringContaining('AlreadyConnected'),
-      );
-    }
+    } catch (err) {}
     expect(pool['peers'].size).toEqual(1);
     expect(pool2['peers'].size).toEqual(1);
   });
@@ -196,9 +195,7 @@ describe('P2P Pool', () => {
     try {
       await secondOutboundAttempt;
     } catch (e) {
-      expect(e.message).toEqual(
-        expect.stringContaining('existing connection attempt'),
-      );
+      expect(e.code).toEqual(errorCodes.ALREADY_CONNECTING);
     }
     await firstOutboundAttempt;
     expect(pool['pendingOutboundPeers'].size).toEqual(0);
