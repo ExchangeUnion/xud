@@ -64,9 +64,10 @@ class GrpcInitService {
       return;
     }
     try {
-      const unlockedLndClients = await this.initService.unlockNode(call.request.toObject());
+      const unlockNodeResult = await this.initService.unlockNode(call.request.toObject());
       const response = new xudrpc.UnlockNodeResponse();
-      response.setUnlockedLndsList(unlockedLndClients);
+      response.setUnlockedLndsList(unlockNodeResult.unlockedLndClients);
+      response.setLockedLndsList(unlockNodeResult.lockedLndClients);
 
       callback(null, response);
     } catch (err) {
