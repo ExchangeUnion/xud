@@ -707,6 +707,11 @@
           "format": "uint64",
           "description": "Sum of pending channel balances denominated in satoshis."
         },
+        "inactive_channel_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Sum of inactive channel balances denominated in satoshis."
+        },
         "wallet_balance": {
           "type": "string",
           "format": "uint64",

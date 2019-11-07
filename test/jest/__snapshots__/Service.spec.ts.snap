@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Service getBalance throws in case of invalid currency 1`] = `
+Object {
+  "code": "6.1",
+  "message": "currency must consist of 2 to 5 upper case English letters or numbers",
+}
+`;
+
+exports[`Service getBalance throws when swap client is not found 1`] = `
+Object {
+  "code": "7.1",
+  "message": "swapClient for currency BBB not found",
+}
+`;
+
 exports[`Service openChannel throws when failure from swapClientManager 1`] = `
 Object {
   "code": "6.5",

@@ -279,6 +279,9 @@ export class Balance extends jspb.Message {
     getPendingChannelBalance(): number;
     setPendingChannelBalance(value: number): void;
 
+    getInactiveChannelBalance(): number;
+    setInactiveChannelBalance(value: number): void;
+
     getWalletBalance(): number;
     setWalletBalance(value: number): void;
 
@@ -301,6 +304,7 @@ export namespace Balance {
         totalBalance: number,
         channelBalance: number,
         pendingChannelBalance: number,
+        inactiveChannelBalance: number,
         walletBalance: number,
         unconfirmedWalletBalance: number,
     }

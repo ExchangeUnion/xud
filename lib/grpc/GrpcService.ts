@@ -249,6 +249,7 @@ class GrpcService {
         balance.setTotalBalance(balanceObj.totalBalance);
         balance.setChannelBalance(balanceObj.channelBalance);
         balance.setPendingChannelBalance(balanceObj.pendingChannelBalance);
+        balance.setInactiveChannelBalance(balanceObj.inactiveChannelBalance);
         balance.setWalletBalance(balanceObj.walletBalance);
         balance.setUnconfirmedWalletBalance(balanceObj.unconfirmedWalletBalance);
         balancesMap.set(currency, balance);

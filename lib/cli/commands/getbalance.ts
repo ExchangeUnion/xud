@@ -19,7 +19,7 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
     element.push(
       balance[0],
       `${satsToCoinsStr(balance[1].totalBalance)}`,
-      formatBalance(balance[1].channelBalance, balance[1].pendingChannelBalance),
+      formatBalance(balance[1].channelBalance, balance[1].pendingChannelBalance, balance[1].inactiveChannelBalance),
       formatBalance(balance[1].walletBalance, balance[1].unconfirmedWalletBalance),
     );
     formatted.push(element);
@@ -27,11 +27,21 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   return formatted;
 };
 
-const formatBalance = (confirmedBalance: number, unconfirmedBalance: number) => {
+const formatBalance = (confirmedBalance: number, unconfirmedBalance: number, inactiveBalance = 0) => {
   const confirmedBalanceStr = satsToCoinsStr(confirmedBalance);
-  return unconfirmedBalance > 0 ?
-    `${confirmedBalanceStr} (${satsToCoinsStr(unconfirmedBalance)} pending)` :
-    confirmedBalanceStr;
+  const unconfirmedBalanceStr = unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined;
+  const inactiveBalanceStr = inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
+  if (unconfirmedBalanceStr || inactiveBalanceStr) {
+    let str = `${confirmedBalanceStr} (`;
+    if (unconfirmedBalanceStr) {
+      str += inactiveBalanceStr ? `${inactiveBalanceStr} | ${unconfirmedBalanceStr}` : unconfirmedBalanceStr;
+    } else {
+      str += inactiveBalanceStr;
+    }
+    str += ')';
+    return str;
+  }
+  return confirmedBalanceStr;
 };
 
 const createTable = () => {

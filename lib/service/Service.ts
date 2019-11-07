@@ -129,7 +129,7 @@ class Service {
   /** Gets the total lightning network balance for a given currency. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
-    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number }>();
+    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number }>();
     const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
 
     if (currency) {
@@ -159,13 +159,13 @@ class Service {
       await Promise.all(balancePromises);
     }
     const balances = new Map<string, {
-      channelBalance: number, pendingChannelBalance: number,
+      channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
       walletBalance: number, unconfirmedWalletBalance: number,
       totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
       const walletBalance = walletBalances.get(currency) as { confirmedBalance: number, unconfirmedBalance: number };
-      const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance +
+      const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
         walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
       balances.set(
         currency,
@@ -173,6 +173,7 @@ class Service {
           totalBalance,
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
+          inactiveChannelBalance: channelBalance.inactiveBalance,
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
         });
