@@ -1,23 +1,23 @@
 import assert from 'assert';
-import net, { Socket } from 'net';
+import { createECDH, createHash } from 'crypto';
 import { EventEmitter } from 'events';
-import { createHash, createECDH } from 'crypto';
-import secp256k1 from 'secp256k1';
 import stringify from 'json-stable-stringify';
-import { ReputationEvent, DisconnectionReason, SwapClientType } from '../constants/enums';
-import Parser from './Parser';
-import * as packets from './packets/types';
+import net, { Socket } from 'net';
+import secp256k1 from 'secp256k1';
+import { DisconnectionReason, ReputationEvent, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
-import { ms } from '../utils/utils';
-import { OutgoingOrder } from '../orderbook/types';
-import { Packet, PacketDirection, PacketType } from './packets';
-import { ResponseType, isPacketType, isPacketTypeArray } from './packets/Packet';
-import { NodeState, Address, NodeConnectionInfo } from './types';
-import errors, { errorCodes } from './errors';
-import addressUtils from '../utils/addressUtils';
 import NodeKey from '../nodekey/NodeKey';
-import Network from './Network';
+import { OutgoingOrder } from '../orderbook/types';
+import addressUtils from '../utils/addressUtils';
+import { ms } from '../utils/utils';
+import errors, { errorCodes } from './errors';
 import Framer from './Framer';
+import Network from './Network';
+import { Packet, PacketDirection, PacketType } from './packets';
+import { isPacketType, isPacketTypeArray, ResponseType } from './packets/Packet';
+import * as packets from './packets/types';
+import Parser from './Parser';
+import { Address, NodeConnectionInfo, NodeState } from './types';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -70,6 +70,8 @@ class Peer extends EventEmitter {
    * because a peer is using a different raiden token contract address for a currency than we are.
    */
   public disabledCurrencies = new Set<string>();
+  /** Interval to check required responses from peer. */
+  public static readonly STALL_INTERVAL = 5000;
   /** Trading pairs advertised by this peer which we have verified that we can swap. */
   private activePairs = new Set<string>();
   /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
@@ -95,8 +97,6 @@ class Peer extends EventEmitter {
   private outEncryptionKey?: Buffer;
   private readonly network: Network;
   private readonly framer: Framer;
-  /** Interval to check required responses from peer. */
-  private static readonly STALL_INTERVAL = 5000;
   /** Interval for pinging peers. */
   private static readonly PING_INTERVAL = 30000;
   /** Interval for checking if we can reactivate any inactive pairs with peers. */

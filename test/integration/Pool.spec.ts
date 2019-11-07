@@ -1,14 +1,14 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
-import Pool from '../../lib/p2p/Pool';
-import Logger, { Level } from '../../lib/Logger';
-import DB from '../../lib/db/DB';
 import Config from '../../lib/Config';
+import { DisconnectionReason, XuNetwork } from '../../lib/constants/enums';
+import DB from '../../lib/db/DB';
+import Logger, { Level } from '../../lib/Logger';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
+import Pool from '../../lib/p2p/Pool';
 import { Address } from '../../lib/p2p/types';
-import { DisconnectionReason, XuNetwork } from '../../lib/constants/enums';
 
 chai.use(chaiAsPromised);
 
@@ -65,27 +65,12 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should open a connection with a peer', async () => {
-    const currentNodeCount = pool['nodes'].count;
-
     const addresses = [{ host: '123.123.123.123', port: 8885 }];
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
     const openPromise = pool['openPeer'](peer, nodeKeyOne.pubKey);
     expect(openPromise).to.be.fulfilled;
     await openPromise;
-    expect(pool['nodes'].count).to.equal(currentNodeCount + 1);
-    expect(pool['nodes'].has(nodeKeyOne.pubKey)).to.be.true;
-
-    expect(pool['peers'].has(nodeKeyOne.pubKey)).to.be.true;
-
-    const nodeInstance = await db.models.Node.findOne({
-      where: {
-        nodePubKey: nodeKeyOne.pubKey,
-      },
-    });
-    expect(nodeInstance).to.not.be.undefined;
-    expect(nodeInstance!.addresses!).to.have.length(1);
-    expect(nodeInstance!.addresses![0].host).to.equal(addresses[0].host);
   });
 
   it('should close a peer', async () => {
@@ -95,6 +80,7 @@ describe('P2P Pool Tests', async () => {
   });
 
   it('should ban a peer', async () => {
+    await pool['nodes'].createNode({ nodePubKey: nodeKeyOne.pubKey, addresses: [] });
     const banPromise = pool.banNode(nodeKeyOne.pubKey);
     expect(banPromise).to.be.fulfilled;
     await banPromise;
