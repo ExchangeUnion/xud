@@ -88,6 +88,7 @@ describe('API Service', () => {
     const args = {
       pairId,
       includeOwnOrders: true,
+      onlyOwnOrders: false,
       limit: 0,
     };
     const orders = service.listOrders(args);

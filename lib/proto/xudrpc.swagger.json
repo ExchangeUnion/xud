@@ -335,6 +335,14 @@
             "format": "boolean"
           },
           {
+            "name": "only_own_orders",
+            "description": "Whether to return only own orders.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
             "name": "limit",
             "description": "The maximum number of orders to return from each side of the order book.",
             "in": "query",

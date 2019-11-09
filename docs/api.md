@@ -492,6 +492,7 @@
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
 | include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+| only_own_orders | [bool](#bool) |  | Whether to return only own orders. |
 | limit | [uint32](#uint32) |  | The maximum number of orders to return from each side of the order book. |
 
 

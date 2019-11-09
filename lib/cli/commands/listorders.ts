@@ -78,7 +78,7 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id] [include_own_orders] [limit]';
+export const command = 'listorders [pair_id] [include_own_orders] [only_own_orders] [limit]';
 
 export const describe = 'list orders from the order book';
 
@@ -92,6 +92,11 @@ export const builder = {
     type: 'boolean',
     default: true,
   },
+  only_own_orders: {
+    describe: 'whether to return only own orders',
+    type: 'boolean',
+    default: false,
+  },
   limit: {
     describe: 'max number of orders to return',
     type: 'number',
@@ -104,6 +109,7 @@ export const handler = (argv: Arguments<any>) => {
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setIncludeOwnOrders(argv.include_own_orders);
+  request.setOnlyOwnOrders(argv.only_own_orders);
   request.setLimit(argv.limit);
   loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };

@@ -175,4 +175,95 @@ describe('Service', () => {
       await expect(service.getBalance({ currency: 'BBB' })).rejects.toMatchSnapshot();
     });
   });
+
+  describe('listOrders', () => {
+    const pairIds = ['BTC/LTC', 'WETH/BTC'];
+
+    const setup = (peersOrders: any, ownOrders: any) => {
+      Object.defineProperty(components.orderBook, 'pairIds', { value: pairIds });
+      components.orderBook.getPeersOrders = jest.fn().mockImplementation(() => peersOrders);
+      components.orderBook.getOwnOrders = jest.fn().mockImplementation(() => ownOrders);
+      service = new Service(components);
+    };
+
+    const createOrder = (price: number, createdAt: number) => {
+      return {
+        price,
+        createdAt,
+      };
+    };
+
+    test('returns no orders if nothing is listed in the orderbook', () => {
+      const peersOrders = { buyArray: [], sellArray: [] };
+      const ownOrders = { buyArray: [], sellArray: [] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: '', includeOwnOrders: true, onlyOwnOrders: false, limit: 0 });
+      expect(result.size).toEqual(pairIds.length);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(0);
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(0);
+      expect(result.get(pairIds[1])!.buyArray.length).toEqual(0);
+      expect(result.get(pairIds[1])!.sellArray.length).toEqual(0);
+    });
+
+    test('returns both own and peer orders for all trading pairs', () => {
+      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
+      const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: '', includeOwnOrders: true, onlyOwnOrders: false, limit: 0 });
+      expect(result.size).toEqual(pairIds.length);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
+      expect(result.get(pairIds[1])!.buyArray.length).toEqual(2);
+      expect(result.get(pairIds[1])!.sellArray.length).toEqual(3);
+    });
+
+    test('returns both own and peer orders for the specified trading pair', () => {
+      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
+      const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: pairIds[0], includeOwnOrders: true, onlyOwnOrders: false, limit: 0 });
+      expect(result.size).toEqual(1);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
+    });
+
+    test('returns only peer orders', () => {
+      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
+      const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: pairIds[0], includeOwnOrders: false, onlyOwnOrders: false, limit: 0 });
+      expect(result.size).toEqual(1);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(1);
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
+    });
+
+    test('returns only own orders', () => {
+      const peersOrders = { buyArray: [createOrder(1, 123)], sellArray: [createOrder(3, 222), createOrder(1, 999)] };
+      const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: pairIds[0], includeOwnOrders: true, onlyOwnOrders: true, limit: 0 });
+      expect(result.size).toEqual(1);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(1);
+    });
+
+    test('returns limited amount of orders', () => {
+      const peersOrders = { buyArray: [createOrder(1, 111)], sellArray: [createOrder(4, 222), createOrder(5, 999)] };
+      const ownOrders = { buyArray: [createOrder(3, 999), createOrder(2, 123)], sellArray: [createOrder(6, 123)] };
+      setup(peersOrders, ownOrders);
+
+      const result = service.listOrders({ pairId: pairIds[0], includeOwnOrders: true, onlyOwnOrders: false, limit: 2 });
+      expect(result.size).toEqual(1);
+      expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
+      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 1)).toBeTruthy();
+      expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
+      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 6)).toBeTruthy();
+    });
+
+  });
 });
