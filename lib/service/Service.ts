@@ -1,4 +1,4 @@
-import { OrderSide, SwapClientType, SwapRole } from '../constants/enums';
+import { OrderSide, SwapClientType, SwapRole, Owner } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
@@ -358,8 +358,12 @@ class Service {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: number }): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, includeOwnOrders, limit } = args;
+  public listOrders = (
+    args: { pairId: string, owner: Owner | number, limit: number },
+    ): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, owner, limit } = args;
+    const includeOwnOrders = owner === Owner.Both || owner === Owner.Own;
+    const includePeerOrders = owner === Owner.Both || owner === Owner.Peer;
 
     const result = new Map<string, OrderSidesArrays<any>>();
 
@@ -369,9 +373,11 @@ class Service {
         sellArray: [],
       };
 
-      const peerOrders = this.orderBook.getPeersOrders(pairId);
-      orders.buyArray = peerOrders.buyArray;
-      orders.sellArray = peerOrders.sellArray;
+      if (includePeerOrders) {
+        const peerOrders = this.orderBook.getPeersOrders(pairId);
+        orders.buyArray = peerOrders.buyArray;
+        orders.sellArray = peerOrders.sellArray;
+      }
 
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
@@ -386,7 +392,7 @@ class Service {
 
       if (limit > 0) {
         orders.buyArray = orders.buyArray.slice(0, limit);
-        orders.sellArray = orders.buyArray.slice(0, limit);
+        orders.sellArray = orders.sellArray.slice(0, limit);
       }
       return orders;
     };

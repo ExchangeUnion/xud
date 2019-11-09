@@ -456,8 +456,13 @@ message ListCurrenciesResponse {
 message ListOrdersRequest {
   // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
-  // Whether own orders should be included in result or not.
-  bool include_own_orders = 2 [json_name = "include_own_orders"];
+  enum Owner {
+    BOTH = 0;
+    OWN = 1;
+    PEER = 2;
+  }
+  // Whether only own, only peer or both orders should be included in result.
+  Owner owner = 2 [json_name = "owner"];
   // The maximum number of orders to return from each side of the order book.
   uint32 limit = 3 [json_name = "limit"];
 }
