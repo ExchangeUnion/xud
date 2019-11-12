@@ -36,13 +36,15 @@ class OrderbookRepository {
    * @returns the created order instance, or undefined if it already existed
    */
   public addOrderIfNotExists = async (order: db.OrderFactory) => {
-    const count = await this.models.Order.count({
-      where: { id: order.id },
-    });
-    if (count === 0) {
-      return this.models.Order.upsert(order);
-    } else {
-      return undefined;
+    try {
+      const createdOrder = await this.models.Order.create(order);
+      return createdOrder;
+    } catch (err) {
+      if (err.name === 'SequelizeUniqueConstraintError') {
+        return undefined;
+      } else {
+        throw err;
+      }
     }
   }
 

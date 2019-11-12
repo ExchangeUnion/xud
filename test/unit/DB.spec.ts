@@ -135,8 +135,8 @@ describe('Database', () => {
     const sellMarketOrder = createOwnOrder(0, quantity, true);
     await orderBookRepo.addOrderIfNotExists(buyMarketOrder);
     await orderBookRepo.addOrderIfNotExists(sellMarketOrder);
-    const buyOrder = (await db.models.Order.findById(buyMarketOrder.id))!;
-    const sellOrder = (await db.models.Order.findById(sellMarketOrder.id))!;
+    const buyOrder = (await db.models.Order.findByPk(buyMarketOrder.id))!;
+    const sellOrder = (await db.models.Order.findByPk(sellMarketOrder.id))!;
     expect(buyOrder.id).to.equal(buyMarketOrder.id);
     expect(sellOrder.id).to.equal(sellMarketOrder.id);
     expect(buyOrder.price).to.be.null;
