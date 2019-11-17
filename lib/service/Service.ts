@@ -123,7 +123,7 @@ class Service {
     const { orderId, quantity } = args;
     argChecks.HAS_ORDER_ID(args);
 
-    return this.orderBook.removeOwnOrderByLocalId(orderId, quantity);
+    return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
   }
 
   /** Gets the total lightning network balance for a given currency. */
@@ -410,13 +410,17 @@ class Service {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (
-    args: { pairId: string, price: number, quantity: number, orderId: string, side: number },
+    args: { pairId: string, price: number, quantity: number, orderId: string, side: number, replaceOrderId?: string },
     callback?: (e: PlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side } = args;
+    const { pairId, price, quantity, orderId, side, replaceOrderId } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.POSITIVE_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
+
+    if (replaceOrderId) {
+      this.orderBook.removeOwnOrderByLocalId(orderId, false);
+    }
 
     const order = {
       pairId,

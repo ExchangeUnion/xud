@@ -1266,6 +1266,9 @@ export class PlaceOrderRequest extends jspb.Message {
     getSide(): OrderSide;
     setSide(value: OrderSide): void;
 
+    getReplaceOrderId(): string;
+    setReplaceOrderId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): PlaceOrderRequest.AsObject;
@@ -1284,6 +1287,7 @@ export namespace PlaceOrderRequest {
         pairId: string,
         orderId: string,
         side: OrderSide,
+        replaceOrderId: string,
     }
 }
 

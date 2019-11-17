@@ -16,6 +16,7 @@ const errorCodes = {
   INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
   MIN_QUANTITY_VIOLATED: codesPrefix.concat('.13'),
   EXCEEDING_LIMIT: codesPrefix.concat('.14'),
+  QUANTITY_ON_HOLD: codesPrefix.concat('.15'),
 };
 
 const errors = {
@@ -74,6 +75,10 @@ const errors = {
   EXCEEDING_LIMIT: (currency: string, amount: number, limit: number) => ({
     message: `outbound amount ${amount} is exceeding limit of ${limit} set for ${currency}`,
     code: errorCodes.EXCEEDING_LIMIT,
+  }),
+  QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
+    message: `order with local id ${localId} has a quantity of ${holdQuantity} on hold`,
+    code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),
 };
 
