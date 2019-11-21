@@ -1,6 +1,6 @@
 /* tslint:disable no-null-keyword */
 import grpc, { status } from 'grpc';
-import InitService from 'lib/service/InitService';
+import InitService from '../service/InitService';
 import * as xudrpc from '../proto/xudrpc_pb';
 import getGrpcError from './getGrpcError';
 
@@ -44,16 +44,13 @@ class GrpcInitService {
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
       }
-      if (initializedLndWallets) {
-        response.setInitializedLndsList(initializedLndWallets);
-      }
+      response.setInitializedLndsList(initializedLndWallets);
       response.setInitializedRaiden(initializedRaiden);
 
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-    this.initService.pendingCall = false;
   }
 
   /**
@@ -73,7 +70,25 @@ class GrpcInitService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-    this.initService.pendingCall = false;
+  }
+
+  /**
+   * See [[InitService.restoreNode]]
+   */
+  public restoreNode: grpc.handleUnaryCall<xudrpc.RestoreNodeRequest, xudrpc.RestoreNodeResponse> = async (call, callback) => {
+    if (!this.isReady(this.initService, callback)) {
+      return;
+    }
+    try {
+      const { restoredLndWallets, restoredRaiden } = await this.initService.restoreNode(call.request.toObject());
+      const response = new xudrpc.RestoreNodeResponse();
+      response.setRestoredLndsList(restoredLndWallets);
+      response.setRestoredRaiden(restoredRaiden);
+
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
   }
 }
 

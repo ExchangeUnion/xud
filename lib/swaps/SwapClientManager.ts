@@ -2,17 +2,17 @@ import { EventEmitter } from 'events';
 import Config from '../Config';
 import { SwapClientType } from '../constants/enums';
 import { Models } from '../db/DB';
+import lndErrors from '../lndclient/errors';
 import LndClient from '../lndclient/LndClient';
 import { LndInfo } from '../lndclient/types';
 import { Loggers } from '../Logger';
 import { Currency } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import RaidenClient from '../raidenclient/RaidenClient';
-import seedutil from '../utils/seedutil';
+import { keystore } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
-import lndErrors from '../lndclient/errors';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -203,7 +203,7 @@ class SwapClientManager extends EventEmitter {
       // TODO: we are setting the raiden keystore as an empty string until raiden
       // allows for decrypting the keystore without needing to save the password
       // to disk in plain text
-      const keystorePromise = seedutil(seedMnemonic, '', keystorepath).then(() => {
+      const keystorePromise = keystore(seedMnemonic, '', keystorepath).then(() => {
         this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
         initializedRaiden = true;
       }).catch((err) => {

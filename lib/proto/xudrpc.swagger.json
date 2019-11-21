@@ -1425,6 +1425,23 @@
     "xudrpcRemovePairResponse": {
       "type": "object"
     },
+    "xudrpcRestoreNodeResponse": {
+      "type": "object",
+      "properties": {
+        "restored_lnds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The list of lnd clients that were initialized."
+        },
+        "restored_raiden": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether raiden was initialized."
+        }
+      }
+    },
     "xudrpcShutdownRequest": {
       "type": "object"
     },
