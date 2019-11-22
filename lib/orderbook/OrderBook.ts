@@ -620,13 +620,14 @@ class OrderBook extends EventEmitter {
   /**
    * Removes all or part of an order from the order book by its local id. Throws an error if the
    * specified pairId is not supported or if the order to cancel could not be found.
-   * @param allowEventualRemoval whether to allow an eventual async removal of the order in case
-   * some quantity of the order is on hold and cannot not be immediately removed.
+   * @param allowAsyncRemoval whether to allow an eventual async removal of the order in case
+   * some quantity of the order is on hold and cannot be immediately removed. If false, while some quantity of
+   * the order is on hold, an error will be thrown.
    * @param quantityToRemove the quantity to remove from the order, if undefined then the entire
    * order is removed.
    * @returns any quantity of the order that was on hold and could not be immediately removed (if allowed).
    */
-  public removeOwnOrderByLocalId = (localId: string, allowEventualRemoval?: boolean, quantityToRemove?: number) => {
+  public removeOwnOrderByLocalId = (localId: string, allowAsyncRemoval?: boolean, quantityToRemove?: number) => {
     const orderIdentifier = this.localIdMap.get(localId);
     if (!orderIdentifier) {
       throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
@@ -647,7 +648,7 @@ class OrderBook extends EventEmitter {
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
-      if (!allowEventualRemoval) {
+      if (!allowAsyncRemoval) {
         throw errors.QUANTITY_ON_HOLD(localId, order.hold);
       }
 

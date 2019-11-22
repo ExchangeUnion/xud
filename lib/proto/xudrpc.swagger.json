@@ -1323,7 +1323,7 @@
         },
         "replace_order_id": {
           "type": "string",
-          "description": "The local id of a previous order to be replaced (optional)."
+          "description": "The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed (otherwise an error is returned)."
         }
       }
     },

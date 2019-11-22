@@ -818,7 +818,7 @@
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a buy or sell. |
-| replace_order_id | [string](#string) |  | The local id of a previous order to be replaced (optional). |
+| replace_order_id | [string](#string) |  | The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed (otherwise an error is returned). |
 
 
 
