@@ -29,14 +29,13 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
   console.log(basicInfotable.toString(), '\n');
 };
 
-const determineXudStatus = (lndMap: [string, LndInfo.AsObject][], raiden: RaidenInfo.AsObject | undefined) => {
+const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][], raiden: RaidenInfo.AsObject | undefined) => {
   let status = '';
 
-  /*const peers = this.listPeers();
-  if (!peers || peers.length === 0) {
+  if (numPeers === 0) {
     status = 'Not connected to any peers';
     status += '\n';
-  }*/
+  }
 
   lndMap.forEach((asset) => {
     if (asset[1].status !== 'Ready') {
@@ -60,7 +59,7 @@ const displayGeneral = (info: GetInfoResponse.AsObject) => {
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   table.push(
-    { [colors.blue('Status')]: determineXudStatus(info.lndMap, info.raiden) },
+    { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap, info.raiden) },
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Node Key')]: info.nodePubKey },
     { [colors.blue('Address')]: address },
