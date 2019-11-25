@@ -200,7 +200,7 @@ describe('RaidenClient', () => {
         partner_address: peerRaidenAddress,
         token_address: wethTokenAddress,
         total_deposit: units,
-        settle_timeout: 500,
+        settle_timeout: 20660,
       });
     });
   });
