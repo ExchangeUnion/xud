@@ -356,8 +356,8 @@ class Peer extends EventEmitter {
   }
 
   public sendPacket = async (packet: Packet): Promise<void> => {
+    const data = await this.framer.frame(packet, this.outEncryptionKey);
     if (this.socket && !this.socket.destroyed) {
-      const data = await this.framer.frame(packet, this.outEncryptionKey);
       try {
         this.socket.write(data);
         this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);

@@ -39,6 +39,10 @@ type nodeConfig struct {
 	LndLtcCertPath string
 	LndLtcMacPath  string
 
+	RaidenDisable bool
+	RaidenHost    string
+	RaidenPort    int
+
 	P2PPort  int
 	RPCPort  int
 	HTTPPort int
@@ -52,7 +56,7 @@ func (cfg nodeConfig) genArgs() []string {
 	var args []string
 
 	args = append(args, "--initdb=false")
-	args = append(args, "--loglevel=debug")
+	args = append(args, "--loglevel=trace")
 
 	if cfg.NoBalanceChecks {
 		args = append(args, "--nobalancechecks=true")
@@ -78,7 +82,12 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--lnd.LTC.certpath=%v", cfg.LndLtcCertPath))
 	args = append(args, fmt.Sprintf("--lnd.LTC.macaroonpath=%v", cfg.LndLtcMacPath))
 
-	args = append(args, "--raiden.disable")
+	if !cfg.RaidenDisable {
+		args = append(args, fmt.Sprintf("--raiden.host=%v", cfg.RaidenHost))
+		args = append(args, fmt.Sprintf("--raiden.port=%v", cfg.RaidenPort))
+	} else {
+		args = append(args, "--raiden.disable")
+	}
 
 	return args
 }
@@ -143,6 +152,12 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 		return nil, err
 	}
 	cfg.HTTPPort, err = freeport.GetFreePort()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.RaidenHost = "127.0.0.1"
+	cfg.RaidenPort, err = freeport.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
@@ -253,13 +268,13 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 	}
 
 	tlsCreds, err := credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
-	for tries := 3; tries > 0; tries-- {
+	for tries := 5; tries > 0; tries-- {
 		if err == nil {
-		    break;
+			break
 		}
 
 		fmt.Printf("Failed to read TLS certificate: %v, remaining tries: %v\n", err, tries-1)
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		tlsCreds, err = credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
 	}
 

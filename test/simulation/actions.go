@@ -9,6 +9,9 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -40,8 +43,22 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			// Set the node public key.
 			node.SetPubKey(res.NodePubKey)
 
-			// Add pair to the node.
-			a.addPair(node, "LTC", "BTC", xudrpc.Currency_LND)
+			// Get WETH contract address
+			file, err := os.Open("temp/weth-address.txt")
+			a.assert.NoError(err)
+			defer file.Close()
+
+			wethAddressBytes, err := ioutil.ReadAll(file)
+			wethAddress := strings.TrimSpace(string(wethAddressBytes))
+			a.assert.NoError(err)
+
+			// Add currencies
+			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "")
+			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "")
+			a.addCurrency(node, "WETH", xudrpc.Currency_RAIDEN, wethAddress)
+			// Add pairs to the node.
+			a.addPair(node, "LTC", "BTC")
+			a.addPair(node, "WETH", "BTC")
 			break
 		}
 		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
@@ -50,32 +67,32 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 	}
 }
 
-func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteCurrency string,
-	swapClient xudrpc.Currency_SwapClient) {
+func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string) {
+	if len(tokenAddress) > 0 {
+		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress}
+		node.Client.AddCurrency(a.ctx, req)
+	} else {
+		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient}
+		node.Client.AddCurrency(a.ctx, req)
+	}
+}
+
+func (a *actions) addPair(node *xudtest.HarnessNode, baseCurrency string, quoteCurrency string) {
 	// Check the current number of pairs.
-	resInfo, err := node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
+	res, err := node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
 	a.assert.NoError(err)
 
-	prevNumPairs := resInfo.NumPairs
+	prevNumPairs := res.NumPairs
 
-	// Add currencies.
-	reqAddCurr := &xudrpc.Currency{Currency: baseCurrency, SwapClient: swapClient}
-	_, err = node.Client.AddCurrency(a.ctx, reqAddCurr)
+	// Add the pair.
+	req := &xudrpc.AddPairRequest{BaseCurrency: baseCurrency, QuoteCurrency: quoteCurrency}
+	_, err = node.Client.AddPair(a.ctx, req)
 	a.assert.NoError(err)
 
-	reqAddCurr = &xudrpc.Currency{Currency: quoteCurrency, SwapClient: swapClient}
-	_, err = node.Client.AddCurrency(a.ctx, reqAddCurr)
+	// Verify that the pair was added.
+	res, err = node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
 	a.assert.NoError(err)
-
-	// Add pair.
-	reqAddPair := &xudrpc.AddPairRequest{BaseCurrency: baseCurrency, QuoteCurrency: quoteCurrency}
-	_, err = node.Client.AddPair(a.ctx, reqAddPair)
-	a.assert.NoError(err)
-
-	// Verify that pair was added.
-	resGetInfo, err := node.Client.GetInfo(a.ctx, &xudrpc.GetInfoRequest{})
-	a.assert.NoError(err)
-	a.assert.Equal(resGetInfo.NumPairs, prevNumPairs+1)
+	a.assert.Equal(res.NumPairs, prevNumPairs+1)
 }
 
 func (a *actions) connect(srcNode, destNode *xudtest.HarnessNode) {
@@ -87,6 +104,13 @@ func (a *actions) connect(srcNode, destNode *xudtest.HarnessNode) {
 	// connect srcNode to destNode.
 	reqConn := &xudrpc.ConnectRequest{NodeUri: destNodeURI}
 	_, err := srcNode.Client.Connect(a.ctx, reqConn)
+	a.assert.NoError(err)
+}
+
+func (a *actions) openChannel(srcNode, destNode *xudtest.HarnessNode, currency string, amount int64) {
+	// connect srcNode to destNode.
+	reqConn := &xudrpc.OpenChannelRequest{NodePubKey: destNode.PubKey(), Currency: currency, Amount: amount}
+	_, err := srcNode.Client.OpenChannel(a.ctx, reqConn)
 	a.assert.NoError(err)
 }
 

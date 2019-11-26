@@ -24,6 +24,6 @@ require (
 	golang.org/x/tools v0.0.0-20190802220118-1d1727260058 // indirect
 	google.golang.org/appengine v1.4.0
 	google.golang.org/genproto v0.0.0-20190513181449-d00d292a067c
-	google.golang.org/grpc v1.20.1
+	google.golang.org/grpc v1.23.0
 	gopkg.in/macaroon.v2 v2.1.0
 )

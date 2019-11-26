@@ -29,12 +29,37 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
   console.log(basicInfotable.toString(), '\n');
 };
 
+const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][], raiden: RaidenInfo.AsObject | undefined) => {
+  let status = '';
+
+  if (numPeers === 0) {
+    status = 'Not connected to any peers';
+    status += '\n';
+  }
+
+  lndMap.forEach((asset) => {
+    if (asset[1].status !== 'Ready') {
+      status += `LND-${asset[0]}: ${asset[1].status}`;
+      status += '\n';
+    }
+  });
+
+  if (!raiden) {
+    status += 'Raiden: Could not fetch status information';
+  } else if (raiden.status !== 'Ready') {
+    status += `Raiden: ${raiden.status}`;
+  }
+
+  return status.substring(0, status.length - 1) || 'Ready';
+};
+
 const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
   const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   table.push(
+    { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap, info.raiden) },
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Node Key')]: info.nodePubKey },
     { [colors.blue('Address')]: address },
