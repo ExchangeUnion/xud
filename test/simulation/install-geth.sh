@@ -6,7 +6,7 @@ install_geth () {
   echo "installing geth"
   git clone --depth 1 "$GETH_SOURCE" "$GETH_PATH"
   cd "$GETH_PATH"
-  GOPATH=$GO_PATH CI=false GO111MODULE=off go run build/ci.go install ./cmd/geth
+  GOPATH=$GO_PATH CI=false GO111MODULE=on go run build/ci.go install ./cmd/geth
 }
 if [ ! -d "$GETH_PATH" ]; then
   install_geth
