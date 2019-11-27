@@ -592,6 +592,8 @@ message PlaceOrderRequest {
   string order_id = 4 [json_name = "order_id"];
   // Whether the order is a buy or sell.
   OrderSide side = 5 [json_name = "side"];
+  // The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed (otherwise an error is returned).
+  string replace_order_id = 6 [json_name = "replace_order_id"];
 }
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.

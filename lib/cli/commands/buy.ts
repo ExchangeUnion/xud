@@ -2,7 +2,7 @@ import { Arguments, Argv } from 'yargs';
 import { OrderSide } from '../../proto/xudrpc_pb';
 import { placeOrderBuilder, placeOrderHandler } from '../placeorder';
 
-export const command = 'buy <quantity> <pair_id> <price> [order_id] [stream]';
+export const command = 'buy <quantity> <pair_id> <price> [order_id] [stream] [replace_order_id]';
 
 export const describe = 'place a buy order';
 
