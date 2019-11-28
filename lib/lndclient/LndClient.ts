@@ -1,6 +1,6 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance } from '../swaps/SwapClient';
+import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance, TradingLimits } from '../swaps/SwapClient';
 import errors from './errors';
 import swapErrors from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
@@ -51,6 +51,9 @@ class LndClient extends SwapClient {
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private maximumOutboundAmount = 0;
+  private maximumChannelOutboundAmount = 0;
+  private maximumChannelInboundAmount = 0;
+
   private initWalletResolve?: (value: boolean) => void;
   private watchMacaroonResolve?: (value: boolean) => void;
 
@@ -175,6 +178,14 @@ class LndClient extends SwapClient {
 
   public maximumOutboundCapacity = () => {
     return this.maximumOutboundAmount;
+  }
+
+  public maximumChannelOutboundCapacity = () => {
+    return this.maximumChannelOutboundAmount;
+  }
+
+  public maximumChannelInboundCapacity = () => {
+    return this.maximumChannelInboundAmount;
   }
 
   protected updateCapacity = async () => {
@@ -603,6 +614,39 @@ class LndClient extends SwapClient {
     const inactiveBalance = channelBalanceResponse.getBalance() - balance;
 
     return { balance, inactiveBalance, pendingOpenBalance: channelBalanceResponse.getPendingOpenBalance() };
+  }
+
+  public tradingLimits = async (): Promise<TradingLimits> => {
+    const channels = await this.listChannels();
+
+    let maxOutbound = 0;
+    let maxInbound = 0;
+    channels.toObject().channelsList.forEach((channel) => {
+      const outbound = channel.localBalance - channel.localChanReserveSat;
+      if (maxOutbound < outbound) {
+        maxOutbound = outbound;
+      }
+
+      const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+      if (maxInbound < inbound) {
+        maxInbound = inbound;
+      }
+    });
+
+    if (this.maximumChannelOutboundAmount !== maxOutbound) {
+      this.maximumChannelOutboundAmount = maxOutbound;
+      this.logger.debug(`new channel outbound capacity: ${maxOutbound}`);
+    }
+
+    if (this.maximumChannelInboundAmount !== maxInbound) {
+      this.maximumChannelInboundAmount = maxInbound;
+      this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
+    }
+
+    return {
+      maxSell: this.maximumChannelOutboundAmount,
+      maxBuy: this.maximumChannelInboundAmount,
+    };
   }
 
   public getHeight = async () => {

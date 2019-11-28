@@ -261,6 +261,29 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.tradingLimits]]
+   */
+  public tradingLimits: grpc.handleUnaryCall<xudrpc.TradingLimitsRequest, xudrpc.TradingLimitsResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const tradingLimitsResponse = await this.service.tradingLimits(call.request.toObject());
+      const response = new xudrpc.TradingLimitsResponse();
+      const limitsMap = response.getLimitsMap();
+      tradingLimitsResponse.forEach((tradingLimitsObj, currency) => {
+        const tm = new xudrpc.TradingLimits();
+        tm.setMaxsell(tradingLimitsObj.maxSell);
+        tm.setMaxbuy(tradingLimitsObj.maxBuy);
+        limitsMap.set(currency, tm);
+      });
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.openChannel]]
    */
   public openChannel: grpc.handleUnaryCall<xudrpc.OpenChannelRequest, xudrpc.OpenChannelResponse> = async (call, callback) => {

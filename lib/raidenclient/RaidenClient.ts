@@ -4,7 +4,7 @@ import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance } from '../swaps/SwapClient';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance, TradingLimits } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
@@ -56,6 +56,8 @@ class RaidenClient extends SwapClient {
   private disable: boolean;
   private unitConverter: UnitConverter;
   private maximumOutboundAmounts = new Map<string, number>();
+  private maximumChannelOutboundAmounts = new Map<string, number>();
+  private maximumChannelInboundAmounts = new Map<string, number>();
   private directChannelChecks: boolean;
 
   /**
@@ -112,6 +114,14 @@ class RaidenClient extends SwapClient {
 
   public maximumOutboundCapacity = (currency: string): number => {
     return this.maximumOutboundAmounts.get(currency) || 0;
+  }
+
+  public maximumChannelOutboundCapacity = (currency: string): number => {
+    return this.maximumChannelOutboundAmounts.get(currency) || 0;
+  }
+
+  public maximumChannelInboundCapacity = (currency: string): number => {
+    return this.maximumChannelInboundAmounts.get(currency) || 0;
   }
 
   protected updateCapacity = async () => {
@@ -470,6 +480,47 @@ class RaidenClient extends SwapClient {
     }
 
     return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
+  }
+
+  public tradingLimits = async (currency?: string): Promise<TradingLimits> => {
+    if (!currency) {
+      return { maxSell: 0, maxBuy: 0 };
+    }
+
+    const channels = await this.getChannels(this.tokenAddresses.get(currency));
+
+    let maxOutbound = 0;
+    let maxInbound = 0;
+    channels.forEach((channel) => {
+      if (channel.state !== 'open') {
+        return;
+      }
+
+      const outbound = channel.balance;
+      if (maxOutbound < outbound) {
+        maxOutbound = outbound;
+      }
+
+      const inbound = channel.total_deposit - channel.balance;
+      if (maxInbound < inbound) {
+        maxInbound = inbound;
+      }
+    });
+
+    if (this.maximumChannelOutboundAmounts.get(currency) !== maxOutbound) {
+      this.maximumChannelOutboundAmounts.set(currency, maxOutbound);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxOutbound}`);
+    }
+
+    if (this.maximumChannelInboundAmounts.get(currency) !== maxInbound) {
+      this.maximumChannelInboundAmounts.set(currency, maxInbound);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxInbound}`);
+    }
+
+    return {
+      maxSell: this.maximumChannelOutboundAmounts.get(currency)!,
+      maxBuy: this.maximumChannelInboundAmounts.get(currency)!,
+    };
   }
 
   /**

@@ -37,6 +37,13 @@ type WalletBalance = {
   unconfirmedBalance: number,
 };
 
+type TradingLimits = {
+  /** Max outbound capacity for a distinct channel denominated in satoshis. */
+  maxSell: number,
+  /** Max inbound capacity for a distinct channel denominated in satoshis. */
+  maxBuy: number,
+};
+
 export type SwapClientInfo = {
   newIdentifier?: string;
   newUris?: string[];
@@ -99,7 +106,16 @@ abstract class SwapClient extends EventEmitter {
    * currencies supported by this client are included in the balance.
    */
   public abstract walletBalance(currency?: string): Promise<WalletBalance>;
+  /**
+   * Returns and updates the maximum outbound and inbound capacities for a distinct channel.
+   * @param currency the currency whose trading limits to query for, otherwise all/any
+   * currencies supported by this client are included in the trading limits.
+   */
+  public abstract tradingLimits(currency?: string): Promise<TradingLimits>;
+
   public abstract maximumOutboundCapacity(currency?: string): number;
+  public abstract maximumChannelOutboundCapacity(currency?: string): number;
+  public abstract maximumChannelInboundCapacity(currency?: string): number;
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
@@ -262,4 +278,4 @@ abstract class SwapClient extends EventEmitter {
 }
 
 export default SwapClient;
-export { ClientStatus, ChannelBalance, WalletBalance };
+export { ClientStatus, ChannelBalance, WalletBalance, TradingLimits };

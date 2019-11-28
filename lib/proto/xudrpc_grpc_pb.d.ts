@@ -62,6 +62,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     addPair: IXudService_IAddPair;
     removeOrder: IXudService_IRemoveOrder;
     getBalance: IXudService_IGetBalance;
+    tradingLimits: IXudService_ITradingLimits;
     openChannel: IXudService_IOpenChannel;
     connect: IXudService_IConnect;
     ban: IXudService_IBan;
@@ -120,6 +121,15 @@ interface IXudService_IGetBalance extends grpc.MethodDefinition<xudrpc_pb.GetBal
     requestDeserialize: grpc.deserialize<xudrpc_pb.GetBalanceRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.GetBalanceResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.GetBalanceResponse>;
+}
+interface IXudService_ITradingLimits extends grpc.MethodDefinition<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse> {
+    path: string; // "/xudrpc.Xud/TradingLimits"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.TradingLimitsRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.TradingLimitsRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.TradingLimitsResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.TradingLimitsResponse>;
 }
 interface IXudService_IOpenChannel extends grpc.MethodDefinition<xudrpc_pb.OpenChannelRequest, xudrpc_pb.OpenChannelResponse> {
     path: string; // "/xudrpc.Xud/OpenChannel"
@@ -318,6 +328,7 @@ export interface IXudServer {
     addPair: grpc.handleUnaryCall<xudrpc_pb.AddPairRequest, xudrpc_pb.AddPairResponse>;
     removeOrder: grpc.handleUnaryCall<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse>;
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
+    tradingLimits: grpc.handleUnaryCall<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse>;
     openChannel: grpc.handleUnaryCall<xudrpc_pb.OpenChannelRequest, xudrpc_pb.OpenChannelResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
     ban: grpc.handleUnaryCall<xudrpc_pb.BanRequest, xudrpc_pb.BanResponse>;
@@ -354,6 +365,9 @@ export interface IXudClient {
     getBalance(request: xudrpc_pb.GetBalanceRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
     getBalance(request: xudrpc_pb.GetBalanceRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
     getBalance(request: xudrpc_pb.GetBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
+    tradingLimits(request: xudrpc_pb.TradingLimitsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
+    tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
+    tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
@@ -429,6 +443,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public getBalance(request: xudrpc_pb.GetBalanceRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
     public getBalance(request: xudrpc_pb.GetBalanceRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
     public getBalance(request: xudrpc_pb.GetBalanceRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.GetBalanceResponse) => void): grpc.ClientUnaryCall;
+    public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
+    public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
+    public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
