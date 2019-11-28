@@ -152,7 +152,7 @@ export const builder = {
   precision: {
     describe: 'the number of digits following the decimal point',
     type: 'number',
-    default: 5,
+    default: 8,
   },
 };
 
