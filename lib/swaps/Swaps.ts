@@ -927,7 +927,7 @@ class Swaps extends EventEmitter {
       throw errors.PAYMENT_PENDING(rHash);
     } else {
       const dealInstance = await this.repository.getSwapDeal(rHash);
-      if (dealInstance && dealInstance.rPreimage && (dealInstance.state === SwapState.Completed || dealInstance.state === SwapState.Recovered)) {
+      if (dealInstance && dealInstance.rPreimage) {
         return dealInstance.rPreimage;
       }
       throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
