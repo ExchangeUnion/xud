@@ -90,6 +90,11 @@ export class UnlockNodeResponse extends jspb.Message {
     getUnlockedRaiden(): boolean;
     setUnlockedRaiden(value: boolean): void;
 
+    clearLockedLndsList(): void;
+    getLockedLndsList(): Array<string>;
+    setLockedLndsList(value: Array<string>): void;
+    addLockedLnds(value: string, index?: number): string;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): UnlockNodeResponse.AsObject;
@@ -105,6 +110,7 @@ export namespace UnlockNodeResponse {
     export type AsObject = {
         unlockedLndsList: Array<string>,
         unlockedRaiden: boolean,
+        lockedLndsList: Array<string>,
     }
 }
 

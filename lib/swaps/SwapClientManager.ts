@@ -231,15 +231,21 @@ class SwapClientManager extends EventEmitter {
     // loop through swap clients to find locked lnd clients
     const unlockWalletPromises: Promise<any>[] = [];
     const unlockedLndClients: string[] = [];
+    const lockedLndClients: string[] = [];
 
     for (const swapClient of this.swapClients.values()) {
-      if (isLndClient(swapClient) && swapClient.isWaitingUnlock()) {
-        const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
-          unlockedLndClients.push(swapClient.currency);
-        }).catch((err) => {
-          swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
-        });
-        unlockWalletPromises.push(unlockWalletPromise);
+      if (isLndClient(swapClient)) {
+        if (swapClient.isWaitingUnlock()) {
+          const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
+            unlockedLndClients.push(swapClient.currency);
+          }).catch((err) => {
+            lockedLndClients.push(swapClient.currency);
+            swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
+          });
+          unlockWalletPromises.push(unlockWalletPromise);
+        } else if (!swapClient.isDisconnected()) {
+          lockedLndClients.push(swapClient.currency);
+        }
       }
     }
 
@@ -247,7 +253,7 @@ class SwapClientManager extends EventEmitter {
 
     // TODO: unlock raiden
 
-    return unlockedLndClients;
+    return { unlockedLndClients, lockedLndClients };
   }
 
   /**

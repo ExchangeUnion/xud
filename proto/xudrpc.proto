@@ -58,6 +58,8 @@ message UnlockNodeResponse {
   repeated string unlocked_lnds = 1;
   // Whether raiden was unlocked.
   bool unlocked_raiden = 2;
+  // The list of lnd clients that could not be unlocked.
+  repeated string locked_lnds = 3;
 }
 
 service Xud {

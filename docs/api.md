@@ -1109,6 +1109,7 @@
 | ----- | ---- | ----- | ----------- |
 | unlocked_lnds | [string](#string) | repeated | The list of lnd clients that were unlocked. |
 | unlocked_raiden | [bool](#bool) |  | Whether raiden was unlocked. |
+| locked_lnds | [string](#string) | repeated | The list of lnd clients that could not be unlocked. |
 
 
 

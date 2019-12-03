@@ -36,6 +36,7 @@ class InitService extends EventEmitter {
     }
 
     this.pendingCall = true;
+
     // wait briefly for all lnd instances to be available
     await this.swapClientManager.waitForLnd();
 
@@ -79,6 +80,9 @@ class InitService extends EventEmitter {
     }
 
     this.pendingCall = true;
+
+    // wait briefly for all lnd instances to be available
+    await this.swapClientManager.waitForLnd();
 
     const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
     this.emit('nodekey', nodeKey);
