@@ -23,10 +23,12 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   .option('stream', {
     type: 'boolean',
     describe: 'whether to execute in streaming mode',
+    alias: 's',
     default: false,
   })
   .option('replace_order_id', {
     type: 'string',
+    alias: 'r',
     describe: 'the local order id of a previous order to be replaced',
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
