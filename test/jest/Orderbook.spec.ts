@@ -1,15 +1,15 @@
-import Pool from '../../lib/p2p/Pool';
-import Peer from '../../lib/p2p/Peer';
-import Orderbook from '../../lib/orderbook/OrderBook';
-import { OwnOrder } from '../../lib/orderbook/types';
-import Logger from '../../lib/Logger';
 import Config from '../../lib/Config';
+import { SwapClientType, XuNetwork } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
-import Swaps from '../../lib/swaps/Swaps';
-import SwapClientManager from '../../lib/swaps/SwapClientManager';
-import Network from '../../lib/p2p/Network';
-import { XuNetwork, SwapClientType } from '../../lib/constants/enums';
+import Logger from '../../lib/Logger';
 import NodeKey from '../../lib/nodekey/NodeKey';
+import Orderbook from '../../lib/orderbook/OrderBook';
+import { OwnLimitOrder } from '../../lib/orderbook/types';
+import Network from '../../lib/p2p/Network';
+import Peer from '../../lib/p2p/Peer';
+import Pool from '../../lib/p2p/Pool';
+import SwapClientManager from '../../lib/swaps/SwapClientManager';
+import Swaps from '../../lib/swaps/Swaps';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
 jest.mock('../../lib/db/DB', () => {
@@ -20,7 +20,7 @@ jest.mock('../../lib/db/DB', () => {
           findAll: () => {
             return [
               {
-                id: 'LTC/BTC',
+                id: pairId,
                 baseCurrency: 'LTC',
                 quoteCurrency: 'BTC',
               },
@@ -79,6 +79,7 @@ jest.mock('../../lib/nodekey/NodeKey');
 const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
 
 const logger = new Logger({});
+logger.debug = jest.fn();
 const loggers = {
   global: logger,
   db: logger,
@@ -90,6 +91,9 @@ const loggers = {
   swaps: logger,
   http: logger,
 };
+
+const localId = '97945230-8144-11e9-beb7-49ba94e5bd74';
+const pairId = 'LTC/BTC';
 
 describe('OrderBook', () => {
   let pool: Pool;
@@ -113,12 +117,13 @@ describe('OrderBook', () => {
     db = new DB(loggers.db, config.dbpath);
     pool = new Pool({
       config: config.p2p,
-      xuNetwork: config.network,
+      xuNetwork: XuNetwork.SimNet,
       logger: loggers.p2p,
       models: db.models,
       version: '1.0.0',
       nodeKey: new mockedNodeKey(),
     });
+    pool.broadcastOrder = jest.fn();
     unitConverter = new UnitConverter();
     unitConverter.init();
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
@@ -132,7 +137,7 @@ describe('OrderBook', () => {
       models: db.models,
       nomatching: config.nomatching,
       nosanityswaps: config.nosanityswaps,
-      nobalancechecks: config.nobalancechecks,
+      nobalancechecks: true,
     });
     await orderbook.init();
   });
@@ -170,26 +175,22 @@ describe('OrderBook', () => {
     expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
   });
 
-  test('placeOrder insufficient outbound balance does throw when balancechecks disabled', async () => {
+  test('placeOrder insufficient outbound balance does throw when balancechecks enabled', async () => {
     orderbook['nobalancechecks'] = false;
-    await orderbook.init();
-    const quantity = 500000000000;
-    const order: OwnOrder = {
+    const quantity = 10000;
+    const price = 0.01;
+    const order: OwnLimitOrder = {
       quantity,
-      initialQuantity: quantity,
-      pairId: 'LTC/BTC',
-      price: 0.1,
+      pairId,
+      price,
+      localId,
       isBuy: false,
-      localId: '97945230-8144-11e9-beb7-49ba94e5bd74',
-      hold: 0,
-      id: '97945230-8144-11e9-beb7-49ba94e5bd74',
-      createdAt: 1559046721235,
     };
     Swaps['calculateInboundOutboundAmounts'] = () => {
       return {
         inboundCurrency: 'BTC',
-        inboundAmount: 50000000000,
-        inboundUnits: 50000000000,
+        inboundAmount: quantity * price,
+        inboundUnits: quantity * price,
         outboundCurrency: 'LTC',
         outboundAmount: quantity,
         outboundUnits: quantity,
@@ -200,5 +201,39 @@ describe('OrderBook', () => {
     });
     await expect(orderbook.placeLimitOrder(order))
       .rejects.toMatchSnapshot();
+  });
+
+  test('placeLimitOrder adds to order book', async () => {
+    const quantity = 10000;
+    const order: OwnLimitOrder = {
+      quantity,
+      pairId,
+      localId,
+      price: 0.01,
+      isBuy: false,
+    };
+    swaps.isPairSupported = jest.fn().mockReturnValue(true);
+    swaps.swapClientManager.get = jest.fn().mockReturnValue({
+      maximumOutboundCapacity: () => quantity,
+    });
+    await orderbook.placeLimitOrder(order);
+    expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
+  });
+
+  test('placeLimitOrder immediateOrCancel does not add to order book', async () => {
+    const quantity = 10000;
+    const order: OwnLimitOrder = {
+      quantity,
+      pairId,
+      localId,
+      price: 0.01,
+      isBuy: false,
+    };
+    swaps.isPairSupported = jest.fn().mockReturnValue(true);
+    swaps.swapClientManager.get = jest.fn().mockReturnValue({
+      maximumOutboundCapacity: () => quantity,
+    });
+    await orderbook.placeLimitOrder(order, true);
+    expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(`order with local id ${localId} does not exist`);
   });
 });

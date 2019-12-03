@@ -126,8 +126,8 @@ describe('OrderBook', () => {
     expect(firstMatch).to.not.be.undefined;
     expect(secondMatch).to.not.be.undefined;
 
-    const firstMakerOrder = getOwnOrder(<orders.OwnOrder>firstMatch);
-    const secondMakerOrder = getOwnOrder(<orders.OwnOrder>secondMatch);
+    const firstMakerOrder = getOwnOrder(firstMatch);
+    const secondMakerOrder = getOwnOrder(secondMatch);
     expect(firstMakerOrder).to.be.undefined;
     expect(secondMakerOrder).to.not.be.undefined;
     expect(secondMakerOrder!.quantity).to.equal(4);
@@ -138,13 +138,13 @@ describe('OrderBook', () => {
     const result = await orderBook.placeMarketOrder(order);
     const match = result.internalMatches[0];
     expect(result.remainingOrder).to.be.undefined;
-    expect(getOwnOrder(<orders.OwnOrder>match)).to.be.undefined;
+    expect(getOwnOrder(match)).to.be.undefined;
   });
 
   it('should create, partially match, and remove an order', async () => {
     const order: orders.OwnOrder = createOwnOrder(10, 10, true);
     await orderBook.placeLimitOrder(order);
-    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false, hold: 0 };
+    const takerOrder: orders.OwnMarketOrder = { pairId: 'LTC/BTC', localId: uuidv1(), quantity: 5, isBuy: false };
     await orderBook.placeMarketOrder(takerOrder);
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
   });
