@@ -2,28 +2,33 @@ module github.com/ExchangeUnion/xud-simulation
 
 require (
 	github.com/Roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141 // indirect
-	github.com/btcsuite/btcd v0.0.0-20190629003639-c26ffa870fd8
-	github.com/frankban/quicktest v1.2.2 // indirect
+	github.com/boltdb/bolt v1.3.1 // indirect
+	github.com/btcsuite/go-flags v0.0.0-20150116065318-6c288d648c1c // indirect
+	github.com/codahale/chacha20 v0.0.0-20151107025005-ec07b4f69a3f // indirect
+	github.com/codahale/chacha20poly1305 v0.0.0-20151127064032-f8a5c4830182 // indirect
 	github.com/go-errors/errors v1.0.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.3.0 // indirect
+	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
-	github.com/lightningnetwork/lnd v0.6.1-beta
+	github.com/lightningnetwork/lnd v0.8.1-beta
 	github.com/ltcsuite/ltcd v0.0.0-20190507171044-fbadf835b5c0
 	github.com/ltcsuite/ltcutil v0.0.0-20190507133322-23cdfa9fcc3d
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/roasbeef/btcd v0.0.0-20180418012700-a03db407e40d
+	github.com/roasbeef/btcrpcclient v0.0.0-20170622074026-d0f4db8b4dad // indirect
 	github.com/roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141
+	github.com/roasbeef/btcwallet v0.0.0-20180426223453-30affec83c18 // indirect
 	github.com/stretchr/testify v1.3.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80
-	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa // indirect
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools v0.0.0-20190802220118-1d1727260058 // indirect
-	google.golang.org/appengine v1.4.0
 	google.golang.org/genproto v0.0.0-20190513181449-d00d292a067c
 	google.golang.org/grpc v1.23.0
 	gopkg.in/macaroon.v2 v2.1.0
 )
+
+go 1.13
