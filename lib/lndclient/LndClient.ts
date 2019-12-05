@@ -497,9 +497,8 @@ class LndClient extends SwapClient {
         destination: deal.takerPubKey!,
         amount: deal.takerAmount,
         finalCltvDelta: deal.takerCltvDelta,
-        // Enforcing the maximum duration/length of the payment by
-        // specifying the cltvLimit.
-        // TODO: investigate why we need to add 3 blocks - if not lnd says route not found
+        // Enforcing the maximum duration/length of the payment by specifying
+        // the cltvLimit. We add 3 blocks to offset the block padding set by lnd.
         cltvLimit: deal.takerMaxTimeLock! + 3,
       });
     }

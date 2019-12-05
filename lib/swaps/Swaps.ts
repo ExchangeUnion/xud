@@ -596,13 +596,14 @@ class Swaps extends EventEmitter {
       const routeLockDuration = routeTotalTimeLock - height;
       const routeLockHours = Math.round(routeLockDuration * takerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
-      deal.takerMaxTimeLock = routeLockDuration;
+      // Add an additional buffer equal to our final lock to allow for more possible routes.
+      deal.takerMaxTimeLock = routeLockDuration + takerSwapClient.finalLock;
 
       // Here we calculate the minimum lock delta we will expect as maker on the final hop to us on
       // the first leg of the swap. This should ensure a very high probability that the final hop
       // of the payment to us won't expire before our payment to the taker with time leftover to
       // satisfy our finalLock/cltvDelta requirement for the incoming payment swap client.
-      const lockBuffer = Swaps.calculateLockBuffer(routeLockDuration, takerSwapClient.minutesPerBlock, makerSwapClient.minutesPerBlock);
+      const lockBuffer = Swaps.calculateLockBuffer(deal.takerMaxTimeLock, takerSwapClient.minutesPerBlock, makerSwapClient.minutesPerBlock);
       const lockBufferHours = Math.round(lockBuffer * makerSwapClient.minutesPerBlock / 60);
       this.logger.debug(`calculated lock buffer for first leg: ${lockBuffer} ${makerCurrency} blocks (~${lockBufferHours}h)`);
 
