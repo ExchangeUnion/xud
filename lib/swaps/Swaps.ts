@@ -1,4 +1,4 @@
-import { SwapPhase, SwapRole, SwapState, SwapFailureReason, ReputationEvent } from '../constants/enums';
+import { ReputationEvent, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
 import Peer from '../p2p/Peer';
 import { Models } from '../db/DB';
 import * as packets from '../p2p/packets/types';
@@ -9,7 +9,7 @@ import SwapRepository from './SwapRepository';
 import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
 import { SwapDealInstance } from '../db/types';
-import { SwapDeal, SwapSuccess, SanitySwap, ResolveRequest, Route } from './types';
+import { ResolveRequest, Route, SanitySwap, SwapDeal, SwapSuccess } from './types';
 import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
 import { PacketType } from '../p2p/packets';
 import SwapClientManager from './SwapClientManager';
@@ -926,6 +926,10 @@ class Swaps extends EventEmitter {
     } else if (this.getPendingSwapHashes().includes(rHash)) {
       throw errors.PAYMENT_PENDING(rHash);
     } else {
+      const dealInstance = await this.repository.getSwapDeal(rHash);
+      if (dealInstance && dealInstance.rPreimage) {
+        return dealInstance.rPreimage;
+      }
       throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
 
