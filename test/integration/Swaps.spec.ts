@@ -185,13 +185,13 @@ describe('Swaps.Integration', () => {
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(invalidMakerOrder, validTakerOrder()))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
       const invalidTakerOrder = {
         ...validTakerOrder(),
         pairId: INVALID_PAIR_ID,
       };
       expect(swaps.executeSwap(validMakerOrder(), invalidTakerOrder))
-        .to.eventually.be.rejected.and.equal(SwapFailureReason.SwapClientNotSetup);
+        .to.eventually.be.rejected.and.equal(SwapFailureReason.InvalidOrders);
     });
 
     it('will reject if unable to retrieve routes', async () => {

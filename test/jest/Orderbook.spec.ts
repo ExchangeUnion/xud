@@ -212,7 +212,6 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.isPairSupported = jest.fn().mockReturnValue(true);
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       maximumOutboundCapacity: () => quantity,
     });
@@ -229,7 +228,6 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.isPairSupported = jest.fn().mockReturnValue(true);
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       maximumOutboundCapacity: () => quantity,
     });
