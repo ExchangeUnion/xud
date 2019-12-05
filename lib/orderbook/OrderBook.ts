@@ -132,6 +132,7 @@ class OrderBook extends EventEmitter {
     const { minQuantity } = this.thresholds;
     return order.quantity >= minQuantity;
   }
+
   /**
    * Checks that a currency advertised by a peer is known to us, has a swap client identifier,
    * and that their token identifier matches ours.
@@ -583,7 +584,8 @@ class OrderBook extends EventEmitter {
 
     this.emit('ownOrder.added', order);
 
-    this.broadcastOrder(order);
+    const outgoingOrder = OrderBook.createOutgoingOrder(order);
+    this.pool.broadcastOrder(outgoingOrder);
     return true;
   }
 
@@ -806,52 +808,62 @@ class OrderBook extends EventEmitter {
       return !peer.disabledCurrencies.has(baseCurrency) && !peer.disabledCurrencies.has(quoteCurrency);
     });
 
-    if (this.nosanityswaps) {
-      // we have disabled sanity checks, so assume all pairs should be activated
-      pairIdsToVerify.forEach(peer.activatePair);
-      return;
-    }
-
     // identify the unique currencies we need to verify for specified trading pairs
-    const currenciesToVerify = new Set<string>();
+    /** A map between currencies we are verifying and whether the currency is swappable. */
+    const currenciesToVerify = new Map<string, boolean>();
     pairIdsToVerify.forEach((pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
-      if (!peer.verifiedCurrencies.has(baseCurrency)) {
-        currenciesToVerify.add(baseCurrency);
+      if (!peer.isCurrencyActive(baseCurrency)) {
+        currenciesToVerify.set(baseCurrency, true);
       }
-      if (!peer.verifiedCurrencies.has(quoteCurrency)) {
-        currenciesToVerify.add(quoteCurrency);
-      }
-    });
-
-    const sanitySwapPromises: Promise<void>[] = [];
-
-    // Set a time limit for all sanity swaps to complete.
-    const sanitySwapTimeout = setTimeoutPromise(OrderBook.MAX_SANITY_SWAP_TIME, false);
-
-    currenciesToVerify.forEach((currency) => {
-      if (this.currencyInstances.has(currency)) {
-        // perform sanity swaps for each of the currencies that we support
-        const sanitySwapPromise = new Promise<void>(async (resolve) => {
-          // success resolves to true if the sanity swap succeeds before the timeout
-          const success = await Promise.race([this.swaps.executeSanitySwap(currency, peer), sanitySwapTimeout]);
-          if (success) {
-            peer.verifiedCurrencies.add(currency);
-          }
-          resolve();
-        });
-        sanitySwapPromises.push(sanitySwapPromise);
+      if (!peer.isCurrencyActive(quoteCurrency)) {
+        currenciesToVerify.set(quoteCurrency, true);
       }
     });
 
-    // wait for all sanity swaps to finish or timeout
-    await Promise.all(sanitySwapPromises);
+    currenciesToVerify.forEach((_, currency) => {
+      if (!this.swaps.swapClientManager.hasRouteToPeer(currency, peer)) {
+        currenciesToVerify.set(currency, false);
+      }
+    });
 
-    // activate pairs that have had both currencies verified
+    if (!this.nosanityswaps) {
+      const sanitySwapPromises: Promise<void>[] = [];
+
+      // Set a time limit for all sanity swaps to complete.
+      const sanitySwapTimeout = setTimeoutPromise(OrderBook.MAX_SANITY_SWAP_TIME, false);
+
+      currenciesToVerify.forEach((swappable, currency) => {
+        if (swappable && this.currencyInstances.has(currency)) {
+          // perform sanity swaps for each of the currencies that we support
+          const sanitySwapPromise = new Promise<void>(async (resolve) => {
+            // success resolves to true if the sanity swap succeeds before the timeout
+            const success = await Promise.race([this.swaps.executeSanitySwap(currency, peer), sanitySwapTimeout]);
+            if (!success) {
+              currenciesToVerify.set(currency, false);
+            }
+            resolve();
+          });
+          sanitySwapPromises.push(sanitySwapPromise);
+        }
+      });
+
+      // wait for all sanity swaps to finish or timeout
+      await Promise.all(sanitySwapPromises);
+    }
+
+    // activate verified currencies
+    currenciesToVerify.forEach((swappable, currency) => {
+      if (swappable) {
+        peer.activateCurrency(currency);
+      }
+    });
+
+    // activate pairs that have both currencies active
     const activationPromises: Promise<void>[] = [];
-    pairIdsToVerify.forEach(async (pairId) => {
+    pairIdsToVerify.forEach((pairId) => {
       const [baseCurrency, quoteCurrency] = pairId.split('/');
-      if (peer.verifiedCurrencies.has(baseCurrency) && peer.verifiedCurrencies.has(quoteCurrency)) {
+      if (peer.isCurrencyActive(baseCurrency) && peer.isCurrencyActive(quoteCurrency)) {
         activationPromises.push(peer.activatePair(pairId));
       }
     });
@@ -874,16 +886,6 @@ class OrderBook extends EventEmitter {
       }
     });
     await peer.sendOrders(outgoingOrders, reqId);
-  }
-
-  /**
-   * Create an outgoing order and broadcast it to all peers.
-   */
-  private broadcastOrder = (order: OwnOrder) => {
-    if (this.swaps && this.swaps.isPairSupported(order.pairId)) {
-      const outgoingOrder = OrderBook.createOutgoingOrder(order);
-      this.pool.broadcastOrder(outgoingOrder);
-    }
   }
 
   public stampOwnOrder = (order: OwnLimitOrder): OwnOrder  => {

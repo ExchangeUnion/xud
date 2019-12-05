@@ -1080,7 +1080,7 @@ class Swaps extends EventEmitter {
         // something is wrong with swaps for this currency with this peer
         if (failedCurrency) {
           try {
-            this.pool.getPeer(deal.peerPubKey).disableCurrency(failedCurrency);
+            this.pool.getPeer(deal.peerPubKey).deactivateCurrency(failedCurrency);
           } catch (err) {
             this.logger.debug(`could not disable currency ${failedCurrency} for peer ${deal.peerPubKey}`);
           }

@@ -74,8 +74,6 @@ class Peer extends EventEmitter {
   public active = false;
   /** Timer to periodically call getNodes #402 */
   public discoverTimer?: NodeJS.Timer;
-  /** Currencies that we have verified we can swap with this peer. */
-  public verifiedCurrencies = new Set<string>();
   /**
    * Currencies that we cannot swap because we are missing a swap client identifier or because the
    * peer's token identifier for this currency does not match ours - for example this may happen
@@ -87,6 +85,8 @@ class Peer extends EventEmitter {
   private status = PeerStatus.New;
   /** Trading pairs advertised by this peer which we have verified that we can swap. */
   private activePairs = new Set<string>();
+  /** Currencies that we have verified we can swap with this peer. */
+  private activeCurrencies = new Set<string>();
   private socket?: Socket;
   private readonly parser: Parser;
   /** Timer to retry connection to peer after the previous attempt failed. */
@@ -388,17 +388,25 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  public disableCurrency = (currency: string) => {
-    if (!this.disabledCurrencies.has(currency)) {
-      this.disabledCurrencies.add(currency);
-      this.verifiedCurrencies.delete(currency);
+  public deactivateCurrency = (currency: string) => {
+    if (this.activeCurrencies.has(currency)) {
+      this.activeCurrencies.delete(currency);
       this.activePairs.forEach((activePairId) => {
         const [baseCurrency, quoteCurrency] = activePairId.split('/');
         if (baseCurrency === currency || quoteCurrency === currency) {
           this.deactivatePair(activePairId);
         }
       });
-      this.logger.debug(`disabled ${currency} for peer ${this.label}`);
+      this.logger.debug(`deactivated ${currency} for peer ${this.label}`);
+    }
+  }
+
+  public activateCurrency = (currency: string) => this.activeCurrencies.add(currency);
+
+  public disableCurrency = (currency: string) => {
+    if (!this.disabledCurrencies.has(currency)) {
+      this.disabledCurrencies.add(currency);
+      this.deactivateCurrency(currency);
     }
   }
 
@@ -434,6 +442,8 @@ class Peer extends EventEmitter {
   }
 
   public isPairActive = (pairId: string) => this.activePairs.has(pairId);
+
+  public isCurrencyActive = (currency: string) => this.activeCurrencies.has(currency);
 
   /**
    * Gets lnd client's listening uris for the provided currency.
