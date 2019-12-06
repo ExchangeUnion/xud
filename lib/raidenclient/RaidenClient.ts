@@ -489,32 +489,35 @@ class RaidenClient extends SwapClient {
 
     const channels = await this.getChannels(this.tokenAddresses.get(currency));
 
-    let maxOutbound = 0;
-    let maxInbound = 0;
+    let maxOutboundUnits = 0;
+    let maxInboundUnits = 0;
     channels.forEach((channel) => {
       if (channel.state !== 'open') {
         return;
       }
 
-      const outbound = channel.balance;
-      if (maxOutbound < outbound) {
-        maxOutbound = outbound;
+      const outboundUnits = channel.balance;
+      if (maxOutboundUnits < outboundUnits) {
+        maxOutboundUnits = outboundUnits;
       }
 
-      const inbound = channel.total_deposit - channel.balance;
-      if (maxInbound < inbound) {
-        maxInbound = inbound;
+      const inboundUnits = channel.total_deposit - channel.balance;
+      if (maxInboundUnits < inboundUnits) {
+        maxInboundUnits = inboundUnits;
       }
     });
 
-    if (this.maximumChannelOutboundAmounts.get(currency) !== maxOutbound) {
-      this.maximumChannelOutboundAmounts.set(currency, maxOutbound);
-      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxOutbound}`);
+    const maxOutboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxOutboundUnits });
+    const maxInboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxInboundUnits });
+
+    if (this.maximumChannelOutboundAmounts.get(currency) !== maxOutboundAmount) {
+      this.maximumChannelOutboundAmounts.set(currency, maxOutboundAmount);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxOutboundAmount}`);
     }
 
-    if (this.maximumChannelInboundAmounts.get(currency) !== maxInbound) {
-      this.maximumChannelInboundAmounts.set(currency, maxInbound);
-      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxInbound}`);
+    if (this.maximumChannelInboundAmounts.get(currency) !== maxInboundAmount) {
+      this.maximumChannelInboundAmounts.set(currency, maxInboundAmount);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxInboundAmount}`);
     }
 
     return {
