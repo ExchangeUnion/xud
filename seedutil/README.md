@@ -4,6 +4,8 @@ This utility is used to derive an Ethereum keystore file from [aezeed](https://g
 
 ## Build
 
+Go 1.12 or greater must be installed and added to your `PATH` to build the seedutil tool from source.
+
 `npm run compile:seedutil`
 
 ## Usage
