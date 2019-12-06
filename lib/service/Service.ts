@@ -201,8 +201,8 @@ class Service {
       const promises: Promise<any>[] = [];
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
-          promises.push(swapClient.tradingLimits(currency).then((tl) => {
-            tradingLimitsMap.set(currency, tl);
+          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+            tradingLimitsMap.set(currency, tradingLimits);
           }));
         }
       });

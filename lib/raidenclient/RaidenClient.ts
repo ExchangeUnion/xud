@@ -55,9 +55,9 @@ class RaidenClient extends SwapClient {
   private host: string;
   private disable: boolean;
   private unitConverter: UnitConverter;
-  private maximumOutboundAmounts = new Map<string, number>();
-  private maximumChannelOutboundAmounts = new Map<string, number>();
-  private maximumChannelInboundAmounts = new Map<string, number>();
+  private totalOutboundAmounts = new Map<string, number>();
+  private maxChannelOutboundAmounts = new Map<string, number>();
+  private maxChannelInboundAmounts = new Map<string, number>();
   private directChannelChecks: boolean;
 
   /**
@@ -112,16 +112,16 @@ class RaidenClient extends SwapClient {
     });
   }
 
-  public maximumOutboundCapacity = (currency: string): number => {
-    return this.maximumOutboundAmounts.get(currency) || 0;
+  public totalOutboundAmount = (currency: string): number => {
+    return this.totalOutboundAmounts.get(currency) || 0;
   }
 
-  public maximumChannelOutboundCapacity = (currency: string): number => {
-    return this.maximumChannelOutboundAmounts.get(currency) || 0;
+  public maxChannelOutboundAmount = (currency: string): number => {
+    return this.maxChannelOutboundAmounts.get(currency) || 0;
   }
 
-  public maximumChannelInboundCapacity = (currency: string): number => {
-    return this.maximumChannelInboundAmounts.get(currency) || 0;
+  public maxChannelInboundAmount = (currency: string): number => {
+    return this.maxChannelInboundAmounts.get(currency) || 0;
   }
 
   protected updateCapacity = async () => {
@@ -474,9 +474,9 @@ class RaidenClient extends SwapClient {
       currency,
       units,
     });
-    if (this.maximumOutboundAmounts.get(currency) !== balance) {
-      this.maximumOutboundAmounts.set(currency, balance);
-      this.logger.debug(`new outbound capacity for ${currency}: ${balance}`);
+    if (this.totalOutboundAmounts.get(currency) !== balance) {
+      this.totalOutboundAmounts.set(currency, balance);
+      this.logger.debug(`new outbound amount for ${currency}: ${balance}`);
     }
 
     return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
@@ -510,19 +510,19 @@ class RaidenClient extends SwapClient {
     const maxOutboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxOutboundUnits });
     const maxInboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxInboundUnits });
 
-    if (this.maximumChannelOutboundAmounts.get(currency) !== maxOutboundAmount) {
-      this.maximumChannelOutboundAmounts.set(currency, maxOutboundAmount);
+    if (this.maxChannelOutboundAmounts.get(currency) !== maxOutboundAmount) {
+      this.maxChannelOutboundAmounts.set(currency, maxOutboundAmount);
       this.logger.debug(`new channel outbound capacity for ${currency}: ${maxOutboundAmount}`);
     }
 
-    if (this.maximumChannelInboundAmounts.get(currency) !== maxInboundAmount) {
-      this.maximumChannelInboundAmounts.set(currency, maxInboundAmount);
+    if (this.maxChannelInboundAmounts.get(currency) !== maxInboundAmount) {
+      this.maxChannelInboundAmounts.set(currency, maxInboundAmount);
       this.logger.debug(`new channel outbound capacity for ${currency}: ${maxInboundAmount}`);
     }
 
     return {
-      maxSell: this.maximumChannelOutboundAmounts.get(currency)!,
-      maxBuy: this.maximumChannelInboundAmounts.get(currency)!,
+      maxSell: this.maxChannelOutboundAmounts.get(currency)!,
+      maxBuy: this.maxChannelInboundAmounts.get(currency)!,
     };
   }
 

@@ -398,9 +398,9 @@ class OrderBook extends EventEmitter {
       }
 
       // check if sufficient outbound channel capacity exists
-      const maximumOutboundAmount = outboundSwapClient.maximumOutboundCapacity(outboundCurrency);
-      if (outboundAmount > maximumOutboundAmount) {
-        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, maximumOutboundAmount);
+      const totalOutboundAmount = outboundSwapClient.totalOutboundAmount(outboundCurrency);
+      if (outboundAmount > totalOutboundAmount) {
+        throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
       }
     }
 

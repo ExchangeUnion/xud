@@ -50,9 +50,9 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
-  private maximumOutboundAmount = 0;
-  private maximumChannelOutboundAmount = 0;
-  private maximumChannelInboundAmount = 0;
+  private _totalOutboundAmount = 0;
+  private _maxChannelOutboundAmount = 0;
+  private _maxChannelInboundAmount = 0;
 
   private initWalletResolve?: (value: boolean) => void;
   private watchMacaroonResolve?: (value: boolean) => void;
@@ -176,16 +176,16 @@ class LndClient extends SwapClient {
     return this.chainIdentifier;
   }
 
-  public maximumOutboundCapacity = () => {
-    return this.maximumOutboundAmount;
+  public totalOutboundAmount = () => {
+    return this._totalOutboundAmount;
   }
 
-  public maximumChannelOutboundCapacity = () => {
-    return this.maximumChannelOutboundAmount;
+  public maxChannelOutboundAmount = () => {
+    return this._maxChannelOutboundAmount;
   }
 
-  public maximumChannelInboundCapacity = () => {
-    return this.maximumChannelInboundAmount;
+  public maxChannelInboundAmount = () => {
+    return this._maxChannelInboundAmount;
   }
 
   protected updateCapacity = async () => {
@@ -605,9 +605,9 @@ class LndClient extends SwapClient {
     const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
       'channelBalance', new lndrpc.ChannelBalanceRequest(),
     );
-    if (this.maximumOutboundAmount !== channelBalanceResponse.getBalance()) {
-      this.maximumOutboundAmount = channelBalanceResponse.getBalance();
-      this.logger.debug(`new outbound capacity: ${this.maximumOutboundAmount}`);
+    if (this._totalOutboundAmount !== channelBalanceResponse.getBalance()) {
+      this._totalOutboundAmount = channelBalanceResponse.getBalance();
+      this.logger.debug(`new outbound capacity: ${this._totalOutboundAmount}`);
     }
     const channels = await this.listChannels();
     const balance = channels.toObject().channelsList.reduce((sum, channel) => sum + (channel.active ? channel.localBalance : 0), 0);
@@ -633,19 +633,19 @@ class LndClient extends SwapClient {
       }
     });
 
-    if (this.maximumChannelOutboundAmount !== maxOutbound) {
-      this.maximumChannelOutboundAmount = maxOutbound;
+    if (this._maxChannelOutboundAmount !== maxOutbound) {
+      this._maxChannelOutboundAmount = maxOutbound;
       this.logger.debug(`new channel outbound capacity: ${maxOutbound}`);
     }
 
-    if (this.maximumChannelInboundAmount !== maxInbound) {
-      this.maximumChannelInboundAmount = maxInbound;
+    if (this._maxChannelInboundAmount !== maxInbound) {
+      this._maxChannelInboundAmount = maxInbound;
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
     }
 
     return {
-      maxSell: this.maximumChannelOutboundAmount,
-      maxBuy: this.maximumChannelInboundAmount,
+      maxSell: this._maxChannelOutboundAmount,
+      maxBuy: this._maxChannelInboundAmount,
     };
   }
 

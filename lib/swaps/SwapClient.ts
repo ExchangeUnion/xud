@@ -113,9 +113,9 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract tradingLimits(currency?: string): Promise<TradingLimits>;
 
-  public abstract maximumOutboundCapacity(currency?: string): number;
-  public abstract maximumChannelOutboundCapacity(currency?: string): number;
-  public abstract maximumChannelInboundCapacity(currency?: string): number;
+  public abstract totalOutboundAmount(currency?: string): number;
+  public abstract maxChannelOutboundAmount(currency?: string): number;
+  public abstract maxChannelInboundAmount(currency?: string): number;
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
