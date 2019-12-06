@@ -132,7 +132,7 @@ class RaidenClient extends SwapClient {
       }
       await Promise.all(channelBalancePromises);
     } catch (e) {
-      this.logger.error('failed to update maximum outbound capacity', e);
+      this.logger.error('failed to update total outbound capacity', e);
     }
   }
 

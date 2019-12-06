@@ -189,7 +189,7 @@ class LndClient extends SwapClient {
   }
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(err => this.logger.error('failed to update maximum outbound capacity', err));
+    await this.channelBalance().catch(err => this.logger.error('failed to update total outbound capacity', err));
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
@@ -607,7 +607,7 @@ class LndClient extends SwapClient {
     );
     if (this._totalOutboundAmount !== channelBalanceResponse.getBalance()) {
       this._totalOutboundAmount = channelBalanceResponse.getBalance();
-      this.logger.debug(`new outbound capacity: ${this._totalOutboundAmount}`);
+      this.logger.debug(`new total outbound capacity: ${this._totalOutboundAmount}`);
     }
     const channels = await this.listChannels();
     const balance = channels.toObject().channelsList.reduce((sum, channel) => sum + (channel.active ? channel.localBalance : 0), 0);
