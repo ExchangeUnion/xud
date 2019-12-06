@@ -185,15 +185,15 @@ class Service {
   /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for a given currency. */
   public tradingLimits = async (args: { currency: string }) => {
     const { currency } = args;
-    const tradingLimits = new Map<string, TradingLimits>();
+    const tradingLimitsMap = new Map<string, TradingLimits>();
 
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
       const swapClient = this.swapClientManager.get(currency.toUpperCase());
       if (swapClient) {
-        const tl = await swapClient.tradingLimits(currency);
-        tradingLimits.set(currency, tl);
+        const tradingLimits = await swapClient.tradingLimits(currency);
+        tradingLimitsMap.set(currency, tradingLimits);
       } else {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
@@ -202,14 +202,14 @@ class Service {
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
           promises.push(swapClient.tradingLimits(currency).then((tl) => {
-            tradingLimits.set(currency, tl);
+            tradingLimitsMap.set(currency, tl);
           }));
         }
       });
       await Promise.all(promises);
     }
 
-    return tradingLimits;
+    return tradingLimitsMap;
   }
 
   /**
