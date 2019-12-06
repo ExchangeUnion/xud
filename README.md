@@ -8,11 +8,19 @@
 
 ![xud logo](logo.png)
 
-The Exchange Union Daemon (`xud`) is one of the open-source node implementations powering [OpenDEX](https://opendex.network/), a decentralized exchange (DEX) built on the [Lightning](https://lightning.network/) and [Raiden](https://raiden.network/) network.
+The Exchange Union Daemon ([`xud`](https://github.com/ExchangeUnion/xud)) is the reference node implementation powering [OpenDEX](https://opendex.network), a decentralized exchange (DEX) built on top of the [Lightning](https://lightning.network/) and [Raiden](https://raiden.network/) network. `xud` brings individual traders, market makers and exchanges onto OpenDEX to form a single global trading network and liquidity pool.
 
 Get started trading 👉 [here](https://docs.exchangeunion.com/start-trading/user-guide) 👈
 
-`xud` implements the [OpenDEX protocol](https://opendex.network/read/bold-00) to bring individuals and exchanges onto a single global trading network and liquidity pool. This gives users a choice to either trade directly on the network by running OpenDEX-compatible software like `xud`, managing private keys and software stack, *or* to conveniently trade via a trusted exchange. Exchanges benefit from access to the network's aggregated liquidity and can provide deeper order books and new trading pairs to their users. `xud` encompasses the following components:
+## OpenDEX Network Specification Compliance
+`xud` implements the [OpenDEX protocol](https://opendex.network) and fully conforms to its so-called [BOLD](https://opendex.network/read/bold-00) specifications. BOLD stands for:
+Basis of L3 DEX. The naming is intentionally derived from [BOLT](https://github.com/lightningnetwork/lightning-rfc), the Lightning Network specifications and role model of OpenDEX. The specifications are currently being drafted by several implementers based around the world, including the developers of `xud`. The BOLDs, as well as `xud`s implementation of it is still a work-in-progress. The current status of `xud`'s BOLD compliance is:
+  - [X] [BOLD #1: Message Format](https://opendex.network/read/01-message-format)
+  - [X] [BOLD #2: Peer Protocol](https://opendex.network/read/02-peer-protocol)
+  - [X] [BOLD #3: Trade Protocol](https://opendex.network/read/03-trade-protocol)
+  - [X] [BOLD #4: Swap Protocol](https://opendex.network/read/04-swap-protocol)
+
+`xud` encompasses the following components:
 
 * Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
 * Decentralized order book to locally aggregate orders from the known network.
