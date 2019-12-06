@@ -476,7 +476,7 @@ class RaidenClient extends SwapClient {
     });
     if (this.totalOutboundAmounts.get(currency) !== balance) {
       this.totalOutboundAmounts.set(currency, balance);
-      this.logger.debug(`new outbound amount for ${currency}: ${balance}`);
+      this.logger.debug(`new total outbound capacity for ${currency}: ${balance}`);
     }
 
     return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
