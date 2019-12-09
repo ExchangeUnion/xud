@@ -42,6 +42,7 @@ describe('LndClient', () => {
     logger.error = jest.fn();
     logger.info = jest.fn();
     logger.trace = jest.fn();
+    logger.debug = jest.fn();
 
     lnd = new LndClient({ config, currency, logger });
     lnd['status'] = ClientStatus.ConnectionVerified;
@@ -245,6 +246,35 @@ describe('LndClient', () => {
         finalCltvDelta: lnd.finalLock,
         amount: 1,
       });
+    });
+  });
+
+  describe('tradingLimits', () => {
+
+    test('fetch and persist trading limits', async () => {
+      expect.assertions(5);
+
+      lnd['listChannels'] = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          toObject: () => {
+            return {
+              channelsList: [
+                { localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
+                { localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
+                { localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
+              ],
+            };
+          },
+        });
+      });
+
+      const tradingLimits = await lnd.tradingLimits();
+      expect(tradingLimits.maxSell).toEqual(98);
+      expect(tradingLimits.maxBuy).toEqual(295);
+
+      expect(lnd['listChannels']).toHaveBeenCalledTimes(1);
+      expect(lnd.maxChannelOutboundAmount()).toEqual(98);
+      expect(lnd.maxChannelInboundAmount()).toEqual(295);
     });
   });
 });

@@ -316,6 +316,31 @@ export namespace Balance {
     }
 }
 
+export class TradingLimits extends jspb.Message { 
+    getMaxsell(): number;
+    setMaxsell(value: number): void;
+
+    getMaxbuy(): number;
+    setMaxbuy(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradingLimits.AsObject;
+    static toObject(includeInstance: boolean, msg: TradingLimits): TradingLimits.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradingLimits, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradingLimits;
+    static deserializeBinaryFromReader(message: TradingLimits, reader: jspb.BinaryReader): TradingLimits;
+}
+
+export namespace TradingLimits {
+    export type AsObject = {
+        maxsell: number,
+        maxbuy: number,
+    }
+}
+
 export class GetBalanceRequest extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
@@ -357,6 +382,50 @@ export namespace GetBalanceResponse {
     export type AsObject = {
 
         balancesMap: Array<[string, Balance.AsObject]>,
+    }
+}
+
+export class TradingLimitsRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradingLimitsRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: TradingLimitsRequest): TradingLimitsRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradingLimitsRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradingLimitsRequest;
+    static deserializeBinaryFromReader(message: TradingLimitsRequest, reader: jspb.BinaryReader): TradingLimitsRequest;
+}
+
+export namespace TradingLimitsRequest {
+    export type AsObject = {
+        currency: string,
+    }
+}
+
+export class TradingLimitsResponse extends jspb.Message { 
+
+    getLimitsMap(): jspb.Map<string, TradingLimits>;
+    clearLimitsMap(): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradingLimitsResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: TradingLimitsResponse): TradingLimitsResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradingLimitsResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradingLimitsResponse;
+    static deserializeBinaryFromReader(message: TradingLimitsResponse, reader: jspb.BinaryReader): TradingLimitsResponse;
+}
+
+export namespace TradingLimitsResponse {
+    export type AsObject = {
+
+        limitsMap: Array<[string, TradingLimits.AsObject]>,
     }
 }
 

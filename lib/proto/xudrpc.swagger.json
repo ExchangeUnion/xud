@@ -71,20 +71,20 @@
     },
     "/v1/balance": {
       "get": {
-        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.",
-        "operationId": "GetBalance",
+        "summary": "Gets the trading limits for one or all currencies.",
+        "operationId": "TradingLimits",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/xudrpcGetBalanceResponse"
+              "$ref": "#/definitions/xudrpcTradingLimitsResponse"
             }
           }
         },
         "parameters": [
           {
             "name": "currency",
-            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
+            "description": "The ticker symbol of the currency to query for, if unspecified then trading limits for all supported\ncurrencies are queried.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -1541,6 +1541,33 @@
         "pair_id": {
           "type": "string",
           "description": "The trading pair for this trade."
+        }
+      }
+    },
+    "xudrpcTradingLimits": {
+      "type": "object",
+      "properties": {
+        "MaxSell": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Max outbound capacity for a distinct channel denominated in satoshis."
+        },
+        "MaxBuy": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Max inbound capacity for a distinct channel denominated in satoshis."
+        }
+      }
+    },
+    "xudrpcTradingLimitsResponse": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/xudrpcTradingLimits"
+          },
+          "description": "A map between currency ticker symbols and their trading limits."
         }
       }
     },

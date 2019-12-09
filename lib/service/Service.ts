@@ -7,6 +7,7 @@ import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
 import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
+import { TradingLimits } from '../swaps/SwapClient';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
@@ -179,6 +180,36 @@ class Service {
         });
     });
     return balances;
+  }
+
+  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for a given currency. */
+  public tradingLimits = async (args: { currency: string }) => {
+    const { currency } = args;
+    const tradingLimitsMap = new Map<string, TradingLimits>();
+
+    if (currency) {
+      argChecks.VALID_CURRENCY(args);
+
+      const swapClient = this.swapClientManager.get(currency.toUpperCase());
+      if (swapClient) {
+        const tradingLimits = await swapClient.tradingLimits(currency);
+        tradingLimitsMap.set(currency, tradingLimits);
+      } else {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
+      }
+    } else {
+      const promises: Promise<any>[] = [];
+      this.swapClientManager.swapClients.forEach((swapClient, currency) => {
+        if (swapClient.isConnected()) {
+          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+            tradingLimitsMap.set(currency, tradingLimits);
+          }));
+        }
+      });
+      await Promise.all(promises);
+    }
+
+    return tradingLimitsMap;
   }
 
   /**

@@ -99,6 +99,13 @@ service Xud {
     };
   }
 
+  /* Gets the trading limits for one or all currencies. */
+  rpc TradingLimits(TradingLimitsRequest) returns (TradingLimitsResponse) {
+      option (google.api.http) = {
+      get: "/v1/tradinglimits"
+    };
+  }
+
   /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency. */
   rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
     option (google.api.http) = {
@@ -342,6 +349,13 @@ message Balance {
   uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
 }
 
+message TradingLimits {
+    // Max outbound capacity for a distinct channel denominated in satoshis.
+    uint64 MaxSell = 1 [json_name = "max_sell"];
+    // Max inbound capacity for a distinct channel denominated in satoshis.
+    uint64 MaxBuy = 2 [json_name = "max_buy"];
+}
+
 message GetBalanceRequest {
   // The ticker symbol of the currency to query for, if unspecified then balances for all supported
   // currencies are queried.
@@ -350,6 +364,16 @@ message GetBalanceRequest {
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
   map<string, Balance> balances = 1 [json_name = "orders"];
+}
+
+message TradingLimitsRequest {
+    // The ticker symbol of the currency to query for, if unspecified then trading limits for all supported
+    // currencies are queried.
+    string currency = 1 [json_name = "currency"];
+}
+message TradingLimitsResponse {
+    // A map between currency ticker symbols and their trading limits.
+    map<string, TradingLimits> limits = 1 [json_name = "limits"];
 }
 
 message OpenChannelRequest {

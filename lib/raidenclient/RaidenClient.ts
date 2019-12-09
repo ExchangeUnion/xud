@@ -4,7 +4,7 @@ import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance } from '../swaps/SwapClient';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, WalletBalance, TradingLimits } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
@@ -55,7 +55,9 @@ class RaidenClient extends SwapClient {
   private host: string;
   private disable: boolean;
   private unitConverter: UnitConverter;
-  private maximumOutboundAmounts = new Map<string, number>();
+  private totalOutboundAmounts = new Map<string, number>();
+  private maxChannelOutboundAmounts = new Map<string, number>();
+  private maxChannelInboundAmounts = new Map<string, number>();
   private directChannelChecks: boolean;
 
   /**
@@ -110,8 +112,16 @@ class RaidenClient extends SwapClient {
     });
   }
 
-  public maximumOutboundCapacity = (currency: string): number => {
-    return this.maximumOutboundAmounts.get(currency) || 0;
+  public totalOutboundAmount = (currency: string): number => {
+    return this.totalOutboundAmounts.get(currency) || 0;
+  }
+
+  public maxChannelOutboundAmount = (currency: string): number => {
+    return this.maxChannelOutboundAmounts.get(currency) || 0;
+  }
+
+  public maxChannelInboundAmount = (currency: string): number => {
+    return this.maxChannelInboundAmounts.get(currency) || 0;
   }
 
   protected updateCapacity = async () => {
@@ -122,7 +132,7 @@ class RaidenClient extends SwapClient {
       }
       await Promise.all(channelBalancePromises);
     } catch (e) {
-      this.logger.error('failed to update maximum outbound capacity', e);
+      this.logger.error('failed to update total outbound capacity', e);
     }
   }
 
@@ -464,12 +474,56 @@ class RaidenClient extends SwapClient {
       currency,
       units,
     });
-    if (this.maximumOutboundAmounts.get(currency) !== balance) {
-      this.maximumOutboundAmounts.set(currency, balance);
-      this.logger.debug(`new outbound capacity for ${currency}: ${balance}`);
+    if (this.totalOutboundAmounts.get(currency) !== balance) {
+      this.totalOutboundAmounts.set(currency, balance);
+      this.logger.debug(`new total outbound capacity for ${currency}: ${balance}`);
     }
 
     return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
+  }
+
+  public tradingLimits = async (currency?: string): Promise<TradingLimits> => {
+    if (!currency) {
+      return { maxSell: 0, maxBuy: 0 };
+    }
+
+    const channels = await this.getChannels(this.tokenAddresses.get(currency));
+
+    let maxOutboundUnits = 0;
+    let maxInboundUnits = 0;
+    channels.forEach((channel) => {
+      if (channel.state !== 'open') {
+        return;
+      }
+
+      const outboundUnits = channel.balance;
+      if (maxOutboundUnits < outboundUnits) {
+        maxOutboundUnits = outboundUnits;
+      }
+
+      const inboundUnits = channel.total_deposit - channel.balance;
+      if (maxInboundUnits < inboundUnits) {
+        maxInboundUnits = inboundUnits;
+      }
+    });
+
+    const maxOutboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxOutboundUnits });
+    const maxInboundAmount = this.unitConverter.unitsToAmount({ currency, units: maxInboundUnits });
+
+    if (this.maxChannelOutboundAmounts.get(currency) !== maxOutboundAmount) {
+      this.maxChannelOutboundAmounts.set(currency, maxOutboundAmount);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxOutboundAmount}`);
+    }
+
+    if (this.maxChannelInboundAmounts.get(currency) !== maxInboundAmount) {
+      this.maxChannelInboundAmounts.set(currency, maxInboundAmount);
+      this.logger.debug(`new channel outbound capacity for ${currency}: ${maxInboundAmount}`);
+    }
+
+    return {
+      maxSell: this.maxChannelOutboundAmounts.get(currency)!,
+      maxBuy: this.maxChannelInboundAmounts.get(currency)!,
+    };
   }
 
   /**

@@ -1,6 +1,6 @@
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import Logger from '../Logger';
-import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance } from '../swaps/SwapClient';
+import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance, TradingLimits } from '../swaps/SwapClient';
 import errors from './errors';
 import swapErrors from '../swaps/errors';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
@@ -50,7 +50,10 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
-  private maximumOutboundAmount = 0;
+  private _totalOutboundAmount = 0;
+  private _maxChannelOutboundAmount = 0;
+  private _maxChannelInboundAmount = 0;
+
   private initWalletResolve?: (value: boolean) => void;
   private watchMacaroonResolve?: (value: boolean) => void;
 
@@ -173,12 +176,20 @@ class LndClient extends SwapClient {
     return this.chainIdentifier;
   }
 
-  public maximumOutboundCapacity = () => {
-    return this.maximumOutboundAmount;
+  public totalOutboundAmount = () => {
+    return this._totalOutboundAmount;
+  }
+
+  public maxChannelOutboundAmount = () => {
+    return this._maxChannelOutboundAmount;
+  }
+
+  public maxChannelInboundAmount = () => {
+    return this._maxChannelInboundAmount;
   }
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(err => this.logger.error('failed to update maximum outbound capacity', err));
+    await this.channelBalance().catch(err => this.logger.error('failed to update total outbound capacity', err));
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
@@ -593,15 +604,48 @@ class LndClient extends SwapClient {
     const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
       'channelBalance', new lndrpc.ChannelBalanceRequest(),
     );
-    if (this.maximumOutboundAmount !== channelBalanceResponse.getBalance()) {
-      this.maximumOutboundAmount = channelBalanceResponse.getBalance();
-      this.logger.debug(`new outbound capacity: ${this.maximumOutboundAmount}`);
+    if (this._totalOutboundAmount !== channelBalanceResponse.getBalance()) {
+      this._totalOutboundAmount = channelBalanceResponse.getBalance();
+      this.logger.debug(`new total outbound capacity: ${this._totalOutboundAmount}`);
     }
     const channels = await this.listChannels();
     const balance = channels.toObject().channelsList.reduce((sum, channel) => sum + (channel.active ? channel.localBalance : 0), 0);
     const inactiveBalance = channelBalanceResponse.getBalance() - balance;
 
     return { balance, inactiveBalance, pendingOpenBalance: channelBalanceResponse.getPendingOpenBalance() };
+  }
+
+  public tradingLimits = async (): Promise<TradingLimits> => {
+    const channels = await this.listChannels();
+
+    let maxOutbound = 0;
+    let maxInbound = 0;
+    channels.toObject().channelsList.forEach((channel) => {
+      const outbound = channel.localBalance - channel.localChanReserveSat;
+      if (maxOutbound < outbound) {
+        maxOutbound = outbound;
+      }
+
+      const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+      if (maxInbound < inbound) {
+        maxInbound = inbound;
+      }
+    });
+
+    if (this._maxChannelOutboundAmount !== maxOutbound) {
+      this._maxChannelOutboundAmount = maxOutbound;
+      this.logger.debug(`new channel outbound capacity: ${maxOutbound}`);
+    }
+
+    if (this._maxChannelInboundAmount !== maxInbound) {
+      this._maxChannelInboundAmount = maxInbound;
+      this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
+    }
+
+    return {
+      maxSell: this._maxChannelOutboundAmount,
+      maxBuy: this._maxChannelInboundAmount,
+    };
   }
 
   public getHeight = async () => {

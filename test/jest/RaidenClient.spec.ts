@@ -244,6 +244,55 @@ describe('RaidenClient', () => {
     });
   });
 
+  describe('tradingLimits', () => {
+
+    test('fetch and persist trading limits', async () => {
+      expect.assertions(8);
+      raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
+
+      const mockTokenAddresses = new Map<string, string>();
+      mockTokenAddresses.set('WETH', wethTokenAddress);
+      raiden.tokenAddresses = mockTokenAddresses;
+
+      raiden['getChannels'] = jest.fn().mockImplementation((token_address?: string) => {
+        if (token_address !== wethTokenAddress) {
+          return Promise.reject(errors.UNEXPECTED);
+        }
+        return Promise.resolve([
+          {
+            state: 'open',
+            balance: unitConverter.amountToUnits({ currency: 'WETH', amount: 100 }),
+            total_deposit: unitConverter.amountToUnits({ currency: 'WETH', amount: 120 }),
+          },
+          {
+            state: 'open',
+            balance: unitConverter.amountToUnits({ currency: 'WETH', amount: 80 }),
+            total_deposit: unitConverter.amountToUnits({ currency: 'WETH', amount: 200 }),
+          },
+          {
+            state: 'closed',
+            balance: unitConverter.amountToUnits({ currency: 'WETH', amount: 300 }),
+            total_deposit: unitConverter.amountToUnits({ currency: 'WETH', amount: 600 }),
+          },
+        ]);
+      });
+
+      let tradingLimits = await raiden.tradingLimits();
+      expect(tradingLimits.maxSell).toEqual(0);
+      expect(tradingLimits.maxBuy).toEqual(0);
+
+      await expect(raiden.tradingLimits('A')).rejects.toEqual(errors.UNEXPECTED);
+
+      tradingLimits = await raiden.tradingLimits('WETH');
+      expect(tradingLimits.maxSell).toEqual(100);
+      expect(tradingLimits.maxBuy).toEqual(120);
+
+      expect(raiden['getChannels']).toHaveBeenCalledTimes(2);
+      expect(raiden.maxChannelOutboundAmount('WETH')).toEqual(100);
+      expect(raiden.maxChannelInboundAmount('WETH')).toEqual(120);
+    });
+  });
+
   test('channelBalance calculates the total balance of open channels for a currency', async () => {
     raiden = new RaidenClient({ unitConverter, config, directChannelChecks: true, logger: raidenLogger });
     await raiden.init(currencyInstances as CurrencyInstance[]);

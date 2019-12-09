@@ -175,4 +175,69 @@ describe('Service', () => {
       await expect(service.getBalance({ currency: 'BBB' })).rejects.toMatchSnapshot();
     });
   });
+
+  describe('tradingLimits', () => {
+    const setup = () => {
+      service = new Service(components);
+      components.swapClientManager.swapClients = new Map();
+      components.swapClientManager.get = jest.fn().mockImplementation((arg) => {
+        return components.swapClientManager.swapClients.get(arg);
+      });
+
+      const btcClient = new mockedSwapClient();
+      btcClient.isConnected = jest.fn().mockImplementation(() => true);
+      btcClient.tradingLimits = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ maxSell: 2000, maxBuy: 1500 });
+      });
+      components.swapClientManager.swapClients.set('BTC', btcClient);
+
+      const ltcClient = new mockedSwapClient();
+      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
+      ltcClient.tradingLimits = jest.fn().mockImplementation(() => {
+        return Promise.resolve({ maxSell: 7000, maxBuy: 5500 });
+      });
+      components.swapClientManager.swapClients.set('LTC', ltcClient);
+
+      const bchClient = new mockedSwapClient();
+      bchClient.isConnected = jest.fn().mockImplementation(() => false);
+      components.swapClientManager.swapClients.set('BCH', bchClient);
+    };
+
+    test('returns trading limits for all connected clients when currency is not specified', async () => {
+      setup();
+      const result = await service.tradingLimits({ currency: '' });
+      expect(result.size).toEqual(2);
+
+      const btcTradingLimits = result.get('BTC')!;
+      expect(btcTradingLimits).toBeTruthy();
+      expect(btcTradingLimits.maxSell).toEqual(2000);
+      expect(btcTradingLimits.maxBuy).toEqual(1500);
+
+      const ltcTradingLimits = result.get('LTC')!;
+      expect(ltcTradingLimits).toBeTruthy();
+      expect(ltcTradingLimits.maxSell).toEqual(7000);
+      expect(ltcTradingLimits.maxBuy).toEqual(5500);
+    });
+
+    test('returns trading limits for specified currency', async () => {
+      setup();
+      const result = await service.tradingLimits({ currency: 'BTC' });
+      expect(result.size).toEqual(1);
+
+      const btcTradingLimits = result.get('BTC')!;
+      expect(btcTradingLimits).toBeTruthy();
+      expect(btcTradingLimits.maxSell).toEqual(2000);
+      expect(btcTradingLimits.maxBuy).toEqual(1500);
+    });
+
+    test('throws in case of invalid currency', async () => {
+      setup();
+      await expect(service.tradingLimits({ currency: 'A' })).rejects.toMatchSnapshot();
+    });
+
+    test('throws when swap client is not found', async () => {
+      setup();
+      await expect(service.tradingLimits({ currency: 'BBB' })).rejects.toMatchSnapshot();
+    });
+  });
 });
