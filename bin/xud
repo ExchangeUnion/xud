@@ -47,6 +47,11 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    maxlimits: {
+      describe: 'Whether to use max channel sizes as trading limits',
+      type: 'boolean',
+      default: undefined,
+    },
     noencrypt: {
       describe: 'Whether to disable nodekey encryption',
       type: 'boolean',

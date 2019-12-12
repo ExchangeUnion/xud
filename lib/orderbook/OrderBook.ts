@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import limits from '../constants/limits';
+import { limits, maxLimits } from '../constants/limits';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
 import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
 import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
@@ -76,6 +76,7 @@ class OrderBook extends EventEmitter {
   private logger: Logger;
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
+  private maxlimits: boolean;
   private pool: Pool;
   private swaps: Swaps;
 
@@ -93,7 +94,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, maxlimits = false }:
   {
     logger: Logger,
     models: Models,
@@ -103,6 +104,7 @@ class OrderBook extends EventEmitter {
     nosanityswaps: boolean,
     nobalancechecks: boolean,
     nomatching?: boolean,
+    maxlimits?: boolean,
   }) {
     super();
 
@@ -112,6 +114,7 @@ class OrderBook extends EventEmitter {
     this.nomatching = nomatching;
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
+    this.maxlimits = maxlimits;
     this.thresholds = thresholds;
 
     this.repository = new OrderBookRepository(models);
@@ -404,17 +407,26 @@ class OrderBook extends EventEmitter {
       }
     }
 
-    if (this.pool.getNetwork() === XuNetwork.MainNet) {
-      // check if order abides by limits
-      const outboundCurrencyLimit = limits[outboundCurrency];
-      if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
-        throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
-      }
+    // check if order abides by limits
+    let outboundCurrencyLimit: number;
+    let inboundCurrencyLimit: number;
 
-      const inboundCurrencyLimit = limits[inboundCurrency];
-      if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
-        throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
-      }
+    if (this.pool.getNetwork() === XuNetwork.MainNet && !this.maxlimits) {
+      // if we're on mainnet and we haven't specified that we're using maximum limits
+      // then use the hardcoded mainnet order size limits
+      outboundCurrencyLimit = limits[outboundCurrency];
+      inboundCurrencyLimit = limits[inboundCurrency];
+    } else {
+      // otherwise use the maximum channel sizes as order size limits
+      outboundCurrencyLimit = maxLimits[outboundCurrency];
+      inboundCurrencyLimit = maxLimits[inboundCurrency];
+    }
+
+    if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
+      throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
+    }
+    if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
+      throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.

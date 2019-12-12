@@ -166,6 +166,7 @@ class Xud extends EventEmitter {
         swaps: this.swaps,
         nosanityswaps: this.config.nosanityswaps,
         nobalancechecks: this.config.nobalancechecks,
+        maxlimits: this.config.maxlimits,
       });
       initPromises.push(this.orderBook.init());
 
