@@ -319,7 +319,8 @@ class OrderBook extends EventEmitter {
     return pair.destroy();
   }
 
-  public placeLimitOrder = async (order: OwnLimitOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
+  public placeLimitOrder = async (order: OwnLimitOrder, immediateOrCancel = false,
+    onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
@@ -333,7 +334,7 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    return this.placeOrder(stampedOrder, false, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
+    return this.placeOrder(stampedOrder, immediateOrCancel, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
   }
 
   public placeMarketOrder = async (order: OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
@@ -531,9 +532,13 @@ class OrderBook extends EventEmitter {
     // failed swaps will be added to the remaining order which may be added to the order book.
     await Promise.all(matchPromises);
 
-    if (remainingOrder && !discardRemaining) {
-      this.addOwnOrder(remainingOrder);
-      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
+    if (remainingOrder) {
+      if (discardRemaining) {
+        remainingOrder = undefined;
+      } else {
+        this.addOwnOrder(remainingOrder);
+        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
+      }
     }
 
     return {
@@ -629,6 +634,16 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
+  public getOwnOrderByLocalId = (localId: string) => {
+    const orderIdentifier = this.localIdMap.get(localId);
+    if (!orderIdentifier) {
+      throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
+    }
+
+    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    return order;
+  }
+
   /**
    * Removes all or part of an order from the order book by its local id. Throws an error if the
    * specified pairId is not supported or if the order to cancel could not be found.
@@ -640,12 +655,7 @@ class OrderBook extends EventEmitter {
    * @returns any quantity of the order that was on hold and could not be immediately removed (if allowed).
    */
   public removeOwnOrderByLocalId = (localId: string, allowAsyncRemoval?: boolean, quantityToRemove?: number) => {
-    const orderIdentifier = this.localIdMap.get(localId);
-    if (!orderIdentifier) {
-      throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
-    }
-
-    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
 
@@ -656,7 +666,7 @@ class OrderBook extends EventEmitter {
 
     const removableQuantity = order.quantity - order.hold;
     if (remainingQuantityToRemove <= removableQuantity) {
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, remainingQuantityToRemove);
+      this.removeOwnOrder(order.id, order.pairId, remainingQuantityToRemove);
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
@@ -664,20 +674,20 @@ class OrderBook extends EventEmitter {
         throw errors.QUANTITY_ON_HOLD(localId, order.hold);
       }
 
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, removableQuantity);
+      this.removeOwnOrder(order.id, order.pairId, removableQuantity);
       remainingQuantityToRemove -= removableQuantity;
 
       const failedHandler = (deal: SwapDeal) => {
-        if (deal.orderId === orderIdentifier.id) {
+        if (deal.orderId === order.id) {
           // remove the portion that failed now that it's not on hold
           const quantityToRemove = Math.min(deal.quantity!, remainingQuantityToRemove);
-          this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, quantityToRemove);
+          this.removeOwnOrder(order.id, order.pairId, quantityToRemove);
           cleanup(quantityToRemove);
         }
       };
 
       const paidHandler = (result: SwapSuccess) => {
-        if (result.orderId === orderIdentifier.id) {
+        if (result.orderId === order.id) {
           const quantityToRemove = Math.min(result.quantity, remainingQuantityToRemove);
           cleanup(quantityToRemove);
         }
@@ -885,7 +895,7 @@ class OrderBook extends EventEmitter {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
+    return { ...order, id, initialQuantity: order.quantity, hold: 0, createdAt: ms() };
   }
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {

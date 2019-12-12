@@ -2,7 +2,7 @@ import { OrderSide, SwapClientType, SwapRole } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { Order, OrderPortion, PlaceOrderEvent } from '../orderbook/types';
+import { Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
 import swapsErrors from '../swaps/errors';
@@ -286,7 +286,6 @@ class Service {
       price: maker.price,
       isBuy: !maker.isBuy,
       quantity: quantity || maker.quantity,
-      hold: 0,
     });
 
     const swapSuccess = await this.orderBook.executeSwap(maker, taker);
@@ -441,10 +440,11 @@ class Service {
    * If price is zero or unspecified a market order will get added.
    */
   public placeOrder = async (
-    args: { pairId: string, price: number, quantity: number, orderId: string, side: number, replaceOrderId?: string },
+    args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
+      replaceOrderId?: string, immediateOrCancel: boolean },
     callback?: (e: PlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side, replaceOrderId } = args;
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.POSITIVE_QUANTITY(args);
     argChecks.HAS_PAIR_ID(args);
@@ -453,16 +453,16 @@ class Service {
       this.orderBook.removeOwnOrderByLocalId(orderId, false);
     }
 
-    const order = {
+    const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
       price,
       quantity,
       isBuy: side === OrderSide.Buy,
       localId: orderId,
-      hold: 0,
     };
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, callback) : await this.orderBook.placeMarketOrder(order, callback);
+    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, callback) :
+      await this.orderBook.placeMarketOrder(order, callback);
   }
 
   /** Removes a currency. */

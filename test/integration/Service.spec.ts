@@ -19,6 +19,7 @@ describe('API Service', () => {
     price: 100,
     quantity: 1,
     side: OrderSide.Buy,
+    immediateOrCancel: false,
   };
 
   before(async () => {

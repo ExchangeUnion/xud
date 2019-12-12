@@ -1398,6 +1398,9 @@ export class PlaceOrderRequest extends jspb.Message {
     getReplaceOrderId(): string;
     setReplaceOrderId(value: string): void;
 
+    getImmediateOrCancel(): boolean;
+    setImmediateOrCancel(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): PlaceOrderRequest.AsObject;
@@ -1417,6 +1420,7 @@ export namespace PlaceOrderRequest {
         orderId: string,
         side: OrderSide,
         replaceOrderId: string,
+        immediateOrCancel: boolean,
     }
 }
 
