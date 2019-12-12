@@ -120,8 +120,7 @@ class Xud extends EventEmitter {
         const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
 
         this.rpcServer.grpcInitService.setInitService(initService);
-        this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
-        " 'xucli create' if this is the first time starting xud");
+        this.logger.info("Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'");
         nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
           this.on('shutdown', () => {

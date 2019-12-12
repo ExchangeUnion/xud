@@ -1,46 +1,14 @@
-import { accessSync, watch } from 'fs';
-import path from 'path';
 import readline from 'readline';
 import { Arguments } from 'yargs';
 import { CreateNodeRequest, CreateNodeResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudInitClient } from '../command';
-import { getDefaultCertPath } from '../utils';
+import { getDefaultCertPath, waitForCert } from '../utils';
 
 export const command = 'create';
 
-export const describe = 'use this to create a new xud instance and set a password';
+export const describe = 'create a new xud instance and set a password';
 
 export const builder = {};
-
-const waitForCert = (certPath: string) => {
-  return new Promise<void>((resolve, reject) => {
-    try {
-      accessSync(certPath);
-      resolve();
-    } catch (err) {
-      if (err.code === 'ENOENT') {
-        // wait up to 5 seconds for the tls.cert file to be created in case
-        // this is the first time xud has been run
-        const certDir = path.dirname(certPath);
-        const certFilename = path.basename(certPath);
-        const fsWatcher = watch(certDir, (event, filename) => {
-          if (event === 'change' && filename === certFilename) {
-            clearTimeout(timeout);
-            fsWatcher.close();
-            resolve();
-          }
-        });
-        const timeout = setTimeout(() => {
-          fsWatcher.close();
-          reject(`timed out waiting for cert to be created at ${certPath}`);
-        }, 5000);
-      } else {
-        // we handle errors due to file not existing, otherwise reject
-        reject(err);
-      }
-    }
-  });
-};
 
 const formatOutput = (response: CreateNodeResponse.AsObject) => {
   if (response.seedMnemonicList.length === 24) {

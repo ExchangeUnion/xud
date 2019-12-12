@@ -59,6 +59,8 @@
     - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
+    - [RestoreNodeRequest](#xudrpc.RestoreNodeRequest)
+    - [RestoreNodeResponse](#xudrpc.RestoreNodeResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
@@ -947,6 +949,38 @@
 
 
 
+<a name="xudrpc.RestoreNodeRequest"></a>
+
+### RestoreNodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
+| password | [string](#string) |  | The password in utf-8 with which to encrypt the restored xud node key as well as any restored underlying wallets. |
+
+
+
+
+
+
+<a name="xudrpc.RestoreNodeResponse"></a>
+
+### RestoreNodeResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| restored_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+
+
+
+
+
+
 <a name="xudrpc.ShutdownRequest"></a>
 
 ### ShutdownRequest
@@ -1268,6 +1302,7 @@
 | ----------- | ------------ | ------------- | ------------|
 | CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. |
 | UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. |
+| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. |
 
  
 

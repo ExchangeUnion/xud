@@ -114,6 +114,60 @@ export namespace UnlockNodeResponse {
     }
 }
 
+export class RestoreNodeRequest extends jspb.Message { 
+    clearSeedMnemonicList(): void;
+    getSeedMnemonicList(): Array<string>;
+    setSeedMnemonicList(value: Array<string>): void;
+    addSeedMnemonic(value: string, index?: number): string;
+
+    getPassword(): string;
+    setPassword(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RestoreNodeRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: RestoreNodeRequest): RestoreNodeRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RestoreNodeRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RestoreNodeRequest;
+    static deserializeBinaryFromReader(message: RestoreNodeRequest, reader: jspb.BinaryReader): RestoreNodeRequest;
+}
+
+export namespace RestoreNodeRequest {
+    export type AsObject = {
+        seedMnemonicList: Array<string>,
+        password: string,
+    }
+}
+
+export class RestoreNodeResponse extends jspb.Message { 
+    clearRestoredLndsList(): void;
+    getRestoredLndsList(): Array<string>;
+    setRestoredLndsList(value: Array<string>): void;
+    addRestoredLnds(value: string, index?: number): string;
+
+    getRestoredRaiden(): boolean;
+    setRestoredRaiden(value: boolean): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RestoreNodeResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: RestoreNodeResponse): RestoreNodeResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RestoreNodeResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RestoreNodeResponse;
+    static deserializeBinaryFromReader(message: RestoreNodeResponse, reader: jspb.BinaryReader): RestoreNodeResponse;
+}
+
+export namespace RestoreNodeResponse {
+    export type AsObject = {
+        restoredLndsList: Array<string>,
+        restoredRaiden: boolean,
+    }
+}
+
 export class Currency extends jspb.Message { 
     getCurrency(): string;
     setCurrency(value: string): void;
