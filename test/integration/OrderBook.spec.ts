@@ -150,7 +150,7 @@ describe('OrderBook', () => {
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
-    const order: orders.OwnOrder = createOwnOrder(100, 10, false);
+    const order: orders.OwnOrder = createOwnOrder(0.01, 10, false);
 
     await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
 
@@ -167,13 +167,13 @@ describe('OrderBook', () => {
 
   it('should place order with quantity higher than min quantity', async () => {
     orderBook['thresholds'] = { minQuantity : 10000 };
-    const order: orders.OwnOrder = createOwnOrder(100, 1000000, false);
+    const order: orders.OwnOrder = createOwnOrder(0.01, 1000000, false);
 
     await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
   });
 
   it('should throw error if the order quantity exceeds min quantity', async () => {
-    const order: orders.OwnOrder = createOwnOrder(100, 100, false);
+    const order: orders.OwnOrder = createOwnOrder(0.01, 100, false);
 
     await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
@@ -217,37 +217,37 @@ describe('nomatching OrderBook', () => {
   });
 
   it('should should not accept market orders', () => {
-    const order = createOwnOrder(100, 10, true);
+    const order = createOwnOrder(0.01, 10, true);
     expect(orderBook.placeMarketOrder(order)).to.be.rejected;
   });
 
   it('should accept but not match limit orders', async () => {
-    const buyOrder = createOwnOrder(100, 10, true);
+    const buyOrder = createOwnOrder(0.01, 10, true);
     const buyOrderResult = await orderBook.placeLimitOrder(buyOrder);
     expect(buyOrderResult.remainingOrder!.localId).to.be.equal(buyOrder.localId);
     expect(buyOrderResult.remainingOrder!.quantity).to.be.equal(buyOrder.quantity);
 
-    const sellOrder = createOwnOrder(100, 10, false);
+    const sellOrder = createOwnOrder(0.01, 10, false);
     const sellOrderResult = await orderBook.placeLimitOrder(sellOrder);
     expect(sellOrderResult.remainingOrder!.localId).to.be.equal(sellOrder.localId);
     expect(sellOrderResult.remainingOrder!.quantity).to.be.equal(sellOrder.quantity);
   });
 
   it('should not place the same order twice', async () => {
-    const order = createOwnOrder(100, 10, true);
+    const order = createOwnOrder(0.01, 10, true);
     await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
     await expect(orderBook.placeLimitOrder(order)).to.be.rejected;
   });
 
   it('should not remove the same order twice', async () => {
-    const order = createOwnOrder(100, 10, true);
+    const order = createOwnOrder(0.01, 10, true);
     await expect(orderBook.placeLimitOrder(order)).to.be.fulfilled;
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
   });
 
   it('should allow own order partial removal, but should not find the order localId after it was fully removed', async () => {
-    const order = createOwnOrder(100, 10, true);
+    const order = createOwnOrder(0.01, 10, true);
     const { remainingOrder } = await orderBook.placeLimitOrder(order);
 
     orderBook['removeOwnOrder'](remainingOrder!.id, order.pairId, remainingOrder!.quantity - 1);
@@ -257,7 +257,7 @@ describe('nomatching OrderBook', () => {
   });
 
   it('should allow own order partial removal, but should not find the order id after it was fully removed', async () => {
-    const order = createOwnOrder(100, 10, true);
+    const order = createOwnOrder(0.01, 10, true);
     const { remainingOrder } = await orderBook.placeLimitOrder(order);
 
     orderBook['removeOwnOrder'](remainingOrder!.id, order.pairId, remainingOrder!.quantity - 1);
