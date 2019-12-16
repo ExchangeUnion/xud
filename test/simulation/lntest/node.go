@@ -46,6 +46,10 @@ var (
 	// trickleDelay is the amount of time in milliseconds between each
 	// release of announcements by AuthenticatedGossiper to the network.
 	trickleDelay = 50
+
+	// The maximum CLTV delta from the current height
+	// that should be used to set the timelock for the final hop.
+	maxCltvExpiry = 5000
 )
 
 type nodeConfig struct {
@@ -124,6 +128,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, fmt.Sprintf("--invoicemacaroonpath=%v", cfg.InvoiceMacPath))
 	args = append(args, fmt.Sprintf("--externalip=%s", cfg.P2PAddr()))
 	args = append(args, fmt.Sprintf("--trickledelay=%v", trickleDelay))
+	args = append(args, fmt.Sprintf("--max-cltv-expiry=%v", maxCltvExpiry))
 
 	if !cfg.HasSeed {
 		args = append(args, "--noseedbackup")
