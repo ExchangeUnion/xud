@@ -248,7 +248,7 @@ func testRaidenSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	// Raiden reports the channel as opened, but it takes time for the
 	// peer to join the matrix server room.
 	fmt.Printf("\nwaiting for raiden channel to become active...\n")
-	time.Sleep(90 * time.Second)
+	time.Sleep(180 * time.Second)
 
 	// Place an order on Alice.
 	req := &xudrpc.PlaceOrderRequest{

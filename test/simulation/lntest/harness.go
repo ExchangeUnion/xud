@@ -188,7 +188,7 @@ func (n *NetworkHarness) SetUp(lndArgs []string) error {
 	// each.
 	ctxb := context.Background()
 	addrReq := &lnrpc.NewAddressRequest{
-		Type: lnrpc.AddressType_WITNESS_PUBKEY_HASH,
+		Type: lnrpc.AddressType_NESTED_PUBKEY_HASH,
 	}
 	clients := []lnrpc.LightningClient{n.Alice, n.Bob, n.Carol}
 	for _, client := range clients {

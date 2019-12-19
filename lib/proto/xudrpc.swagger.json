@@ -71,20 +71,20 @@
     },
     "/v1/balance": {
       "get": {
-        "summary": "Gets the trading limits for one or all currencies.",
-        "operationId": "TradingLimits",
+        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.",
+        "operationId": "GetBalance",
         "responses": {
           "200": {
             "description": "",
             "schema": {
-              "$ref": "#/definitions/xudrpcTradingLimitsResponse"
+              "$ref": "#/definitions/xudrpcGetBalanceResponse"
             }
           }
         },
         "parameters": [
           {
             "name": "currency",
-            "description": "The ticker symbol of the currency to query for, if unspecified then trading limits for all supported\ncurrencies are queried.",
+            "description": "The ticker symbol of the currency to query for, if unspecified then balances for all supported\ncurrencies are queried.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -618,6 +618,32 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/tradinglimits": {
+      "get": {
+        "summary": "Gets the trading limits for one or all currencies.",
+        "operationId": "TradingLimits",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/xudrpcTradingLimitsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "currency",
+            "description": "The ticker symbol of the currency to query for, if unspecified then trading limits for all supported\ncurrencies are queried.",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
