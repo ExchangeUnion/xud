@@ -95,6 +95,10 @@ export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
         console.log('no matches found');
       }
     });
+    subscription.on('error', (err) => {
+      process.exitCode = 1;
+      console.error(err.message);
+    });
   } else {
     loadXudClient(argv).placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
   }

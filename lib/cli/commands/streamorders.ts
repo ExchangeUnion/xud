@@ -51,7 +51,7 @@ const streamOrders = (argv: Arguments<any>) =>  {
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
   ordersSubscription.on('end', reconnect.bind(undefined, argv));
   ordersSubscription.on('error', (err: Error) => {
-    console.log(`Unexpected error occured: ${JSON.stringify(err)}, trying to reconnect`);
+    console.warn(`Unexpected error occured: ${err.message}, trying to reconnect`);
     ensureConnection(argv);
   });
 
