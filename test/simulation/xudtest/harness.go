@@ -151,7 +151,12 @@ func (n *NetworkHarness) Start() error {
 
 // SetUp creates the xud nodes to be used for this harness.
 func (n *NetworkHarness) SetUp(noBalanceChecks bool) error {
-	xudPath, err := filepath.Abs("../../")
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	xudPath := filepath.Join(wd, "./temp/xud")
 	if err != nil {
 		return err
 	}

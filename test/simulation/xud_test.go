@@ -33,26 +33,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	log.Println("installing dependencies...")
-	output, err := execScript("./install.sh")
-	if err != nil {
-		log.Fatalf("installation failure: %v", err)
-	}
-	log.Printf("installation output: %v", output)
-
-	log.Println("starting geth...")
-	_, err = execScript("./start-geth.sh")
-	if err != nil {
-		log.Fatalf("failed to start geth: %v", err)
-	}
-
-	log.Println("setting up ethereum chain...")
-	output, err = execScript("./install-ethereum.sh")
-	if err != nil {
-		log.Fatalf("failed to setup ethereum chain: %v", err)
-	}
-	log.Printf("ethereum chain setup output: %v", output)
-
 	cfg = loadConfig()
 
 	res := m.Run()
