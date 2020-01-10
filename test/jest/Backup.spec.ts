@@ -88,8 +88,6 @@ describe('Backup', () => {
   });
 
   test('should write LND backups on new event', () => {
-    expect(onListenerMock).toBeCalledTimes(2);
-
     channelBackupCallback(backups.lnd.event);
 
     expect(

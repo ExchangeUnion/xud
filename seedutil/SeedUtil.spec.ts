@@ -46,6 +46,7 @@ const ERRORS = {
   MISSING_ENCRYPTION_PASSWORD: 'expecting encryption password',
   INVALID_AEZEED: 'invalid aezeed',
   KEYSTORE_FILE_ALREADY_EXISTS: 'account already exists',
+  INVALID_PASSPHRASE: 'invalid passphrase',
 };
 
 const PASSWORD = 'wasspord';
@@ -98,6 +99,35 @@ describe('SeedUtil encipher', () => {
 
   test('it succeeds with 24 words, no aezeed password', async () => {
     const cmd = `./seedutil/seedutil encipher ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+});
+
+describe('SeedUtil decipher', () => {
+  test('it errors with no arguments', async () => {
+    await expect(executeCommand('./seedutil/seedutil decipher'))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 23 words', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 24 words and invalid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_PASSPHRASE);
+  });
+
+  test('it succeeds with 24 words, valid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+
+  test('it succeeds with 24 words, no aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
     await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
   });
 });

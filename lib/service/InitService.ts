@@ -2,9 +2,8 @@ import { EventEmitter } from 'events';
 import NodeKey from '../nodekey/NodeKey';
 import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
+import { decipher } from '../utils/seedutil';
 import errors from './errors';
-import assert = require('assert');
-import { encipher } from '../utils/seedutil';
 
 interface InitService {
   once(event: 'nodekey', listener: (nodeKey: NodeKey) => void): this;
@@ -27,18 +26,13 @@ class InitService extends EventEmitter {
     await this.prepareCall();
 
     try {
-      const seed = await this.swapClientManager.genSeed();
+      const seedMnemonic = await this.swapClientManager.genSeed();
 
-      const seedBytes = typeof seed.encipheredSeed === 'string' ?
-        Buffer.from(seed.encipheredSeed, 'base64') :
-        Buffer.from(seed.encipheredSeed);
-      assert.equal(seedBytes.length, 33);
-
-      // the seed is 33 bytes, the first byte of which is the version
-      // so we use the remaining 32 bytes to generate our private key
+      // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
+      // to generate an xud nodekey from the same seed used for wallets
       // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-      const privKey = Buffer.from(seedBytes.slice(1));
-      const nodeKey = new NodeKey(privKey);
+      const decipheredSeed = await decipher(seedMnemonic);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
       // use this seed to init any lnd wallets that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
@@ -50,7 +44,7 @@ class InitService extends EventEmitter {
       return {
         initializedLndWallets,
         initializedRaiden,
-        mnemonic: seed ? seed.cipherSeedMnemonicList : undefined,
+        mnemonic: seedMnemonic,
       };
     } finally {
       this.pendingCall = false;
@@ -85,13 +79,8 @@ class InitService extends EventEmitter {
     await this.prepareCall();
 
     try {
-      const seedBytes = await encipher(seedMnemonicList);
-
-      // the seed is 33 bytes, the first byte of which is the version
-      // so we use the remaining 32 bytes to generate our private key
-      // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-      const privKey = Buffer.from(seedBytes.slice(1));
-      const nodeKey = new NodeKey(privKey);
+      const decipheredSeed = await decipher(seedMnemonicList);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
       // use this seed to restore any lnd wallets that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets(password, seedMnemonicList);

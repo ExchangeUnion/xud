@@ -774,11 +774,11 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
-  public genSeed = async (): Promise<lndrpc.GenSeedResponse.AsObject> => {
+  public genSeed = async () => {
     const genSeedResponse = await this.unaryWalletUnlockerCall<lndrpc.GenSeedRequest, lndrpc.GenSeedResponse>(
       'genSeed', new lndrpc.GenSeedRequest(),
     );
-    return genSeedResponse.toObject();
+    return genSeedResponse.getCipherSeedMnemonicList();
   }
 
   public initWallet = async (walletPassword: string, seedMnemonic: string[]): Promise<lndrpc.InitWalletResponse.AsObject> => {

@@ -26,16 +26,20 @@ var (
 	defaultKeyStorePath = filepath.Join(filepath.Dir(os.Args[0]))
 )
 
-func parseSeed(args []string, aezeedPassphrase *string) *aezeed.CipherSeed {
-	if len(args) < aezeed.NummnemonicWords {
+func parseMnemonic(words []string) aezeed.Mnemonic{
+	if len(words) < aezeed.NummnemonicWords {
 		fmt.Fprintf(os.Stderr, "\nerror: expecting %v-word mnemonic seed separated by spaces\n", aezeed.NummnemonicWords)
 		os.Exit(1)
 	}
 
 	// parse seed from args
 	var mnemonic aezeed.Mnemonic
-	copy(mnemonic[:], args[0:24])
+	copy(mnemonic[:], words[0:24])
 
+	return mnemonic
+}
+
+func mnemonicToCipherSeed(mnemonic aezeed.Mnemonic, aezeedPassphrase *string) *aezeed.CipherSeed {
 	// map back to cipher
 	aezeedPassphraseBytes := []byte(*aezeedPassphrase)
 	cipherSeed, err := mnemonic.ToCipherSeed(aezeedPassphraseBytes)
@@ -50,9 +54,10 @@ func parseSeed(args []string, aezeedPassphrase *string) *aezeed.CipherSeed {
 func main() {
 	keystoreCommand := flag.NewFlagSet("keystore", flag.ExitOnError)
 	encipherCommand := flag.NewFlagSet("encipher", flag.ExitOnError)
+	mnemonicCommand := flag.NewFlagSet("mnemonic", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
-		fmt.Println("keystore or encipher subcommand is required")
+		fmt.Println("subcommand is required")
 		os.Exit(1)
 	}
 
@@ -65,7 +70,8 @@ func main() {
 		keystoreCommand.Parse(os.Args[2:])
 		args = keystoreCommand.Args()
 
-		cipherSeed := parseSeed(args, aezeedPassphrase)
+		mnemonic := parseMnemonic(args)
+		cipherSeed := mnemonicToCipherSeed(mnemonic, aezeedPassphrase)
 
 		// derive 64-byte key from cipherSeed's 16 bytes of entropy
 		hmac512 := hmac.New(sha512.New, masterKey)
@@ -105,11 +111,24 @@ func main() {
 		encipherCommand.Parse(os.Args[2:])
 		args = encipherCommand.Args()
 
-		cipherSeed := parseSeed(args, aezeedPassphrase)
+		mnemonic := parseMnemonic(args)
+		cipherSeed := mnemonicToCipherSeed(mnemonic, aezeedPassphrase)
+
 		encipheredSeed, _ := cipherSeed.Encipher([]byte(*aezeedPassphrase))
-		enciphedSeedArr := make([]byte, 33)
-		copy(enciphedSeedArr[:], encipheredSeed[:])
-		fmt.Println(hex.EncodeToString(enciphedSeedArr))
+		fmt.Println(hex.EncodeToString(encipheredSeed[:]))
+	case "decipher":
+		aezeedPassphrase := mnemonicCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
+		mnemonicCommand.Parse(os.Args[2:])
+		args = mnemonicCommand.Args()
+
+		mnemonic := parseMnemonic(args)
+		decipheredSeed, err := mnemonic.Decipher([]byte(*aezeedPassphrase))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Println(hex.EncodeToString(decipheredSeed[:]))
 	default:
 		flag.PrintDefaults()
 		os.Exit(1)

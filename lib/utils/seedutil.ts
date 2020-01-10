@@ -38,4 +38,15 @@ async function encipher(mnemonic: string[]) {
   return Buffer.from(encipheredSeed, 'hex');
 }
 
-export { keystore, encipher };
+async function decipher(mnemonic: string[]) {
+  const { stdout, stderr } = await exec(`./seedutil/seedutil decipher ${mnemonic.join(' ')}`);
+
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  const decipheredSeed = stdout.trim();
+  return Buffer.from(decipheredSeed, 'hex');
+}
+
+export { keystore, encipher, decipher };

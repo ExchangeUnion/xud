@@ -1,5 +1,15 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`SeedUtil decipher it succeeds with 24 words, no aezeed password 1`] = `
+"000f4b8aab5f566c2dc3be2675a537fedcb9ad
+"
+`;
+
+exports[`SeedUtil decipher it succeeds with 24 words, valid aezeed password 1`] = `
+"000ecd52fdfc072182654f163f5f0f9a621d72
+"
+`;
+
 exports[`SeedUtil encipher it succeeds with 24 words, no aezeed password 1`] = `
 "00738860374692022c462027a35aaaef3c3289aa0a057e2600000000002cad2e2b
 "
