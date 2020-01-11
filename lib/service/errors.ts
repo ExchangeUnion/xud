@@ -7,6 +7,7 @@ const errorCodes = {
   UNIMPLEMENTED: codesPrefix.concat('.3'),
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
+  ALIAS_CONFLICT: codesPrefix.concat('.6'),
 };
 
 const errors = {
@@ -29,6 +30,10 @@ const errors = {
   OPEN_CHANNEL_FAILURE: (currency: string, nodePubKey: string, amount: number, message: string) => ({
     message: `failed to open channel with nodePubKey: ${nodePubKey}, currency: ${currency}, amount: ${amount}, message: ${message}`,
     code: errorCodes.OPEN_CHANNEL_FAILURE,
+  }),
+  ALIAS_CONFLICT: (alias: string) => ({
+    message: `alias ${alias} refers to more than one node`,
+    code: errorCodes.ALIAS_CONFLICT,
   }),
 };
 

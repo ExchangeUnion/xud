@@ -47,7 +47,7 @@ const argChecks = {
   HAS_HOST: ({ host }: { host: string }) => { if (host === '') throw errors.INVALID_ARGUMENT('host must be specified'); },
   HAS_ORDER_ID: ({ orderId }: { orderId: string }) => { if (orderId === '') throw errors.INVALID_ARGUMENT('orderId must be specified'); },
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
-    if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
+    if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey or alias must be specified');
   },
   HAS_PEER_PUB_KEY: ({ peerPubKey }: { peerPubKey: string }) => {
     if (peerPubKey === '') throw errors.INVALID_ARGUMENT('peerPubKey must be specified');
@@ -197,7 +197,14 @@ class Service {
    */
   public ban = async (args: { nodePubKey: string}) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.banNode(args.nodePubKey);
+    var key = args.nodePubKey;
+    if (key.length !== 66) {
+      let tmp = await this.resolveAlias(key);
+      if (tmp) {
+        key = tmp;
+      }
+    }
+    await this.pool.banNode(key);
   }
 
   /*
@@ -236,7 +243,14 @@ class Service {
    */
   public getNodeInfo = async (args: { nodePubKey: string }) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    const info = await this.pool.getNodeReputation(args.nodePubKey);
+    var key = args.nodePubKey;  
+    if (key.length !== 66) {
+      let tmp = await this.resolveAlias(key);
+      if (tmp) {
+        key = tmp;
+      }
+    }
+    const info = await this.pool.getNodeReputation(key);
     return info;
   }
 
@@ -417,9 +431,14 @@ class Service {
   /** Discover nodes from a specific peer and apply new connections */
   public discoverNodes = async (args: { peerPubKey: string }) => {
     argChecks.HAS_PEER_PUB_KEY(args);
-    const { peerPubKey } = args;
-
-    return this.pool.discoverNodes(peerPubKey);
+    var key = args.peerPubKey;
+    if (key.length !== 66) {
+      let tmp = await this.resolveAlias(key);
+      if (tmp) {
+        key = tmp;
+      }
+    }
+    return this.pool.discoverNodes(key);
   }
 
   /*
@@ -477,6 +496,22 @@ class Service {
     argChecks.HAS_RHASH(request);
     argChecks.POSITIVE_AMOUNT(request);
     return this.swaps.handleResolveRequest(request);
+  }
+  /**
+   * Resolves alias to node's public key
+   */
+  private resolveAlias = async (alias: string) => {
+    const plist = await this.listPeers();
+    let keys: string[] = [];
+    for (var i = 0; i < plist.length; i++) {
+      if (plist[i].alias === alias) {
+        keys.push(plist[i].nodePubKey!);
+      }
+    }
+    if (keys.length > 1) {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+    return keys[0];
   }
 }
 export default Service;
