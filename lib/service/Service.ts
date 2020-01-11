@@ -242,8 +242,16 @@ class Service {
     argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+    // resolve if key is an alias
+    var key = args.nodePubKey;
+    if (key.length !== 66) {
+      let tmp = await this.resolveAlias(key);
+      if (tmp) {
+        key = tmp;
+      }
+    }
     try {
-      const peer = this.pool.getPeer(nodePubKey);
+      const peer = this.pool.getPeer(key);
       await this.swapClientManager.openChannel({
         peer,
         amount,
