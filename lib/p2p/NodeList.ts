@@ -4,6 +4,7 @@ import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types'
 import addressUtils from '../utils/addressUtils';
 import P2PRepository from './P2PRepository';
 import { Address } from './types';
+import { getAlias } from '../utils/uriUtils'
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -49,6 +50,19 @@ class NodeList extends EventEmitter {
 
   public forEach = (callback: (node: NodeInstance) => void) => {
     this.nodes.forEach(callback);
+  }
+  
+  /**
+   * Return all public keys with a given alias.
+   */
+  public getPubKeys = (alias: string): Array<string> => {
+    let keys: string[] = [];
+    for (const pubKey of this.bannedNodes.keys()) {
+      if (getAlias(pubKey) === alias) {
+        keys.push(pubKey);
+      }
+    }
+    return keys;
   }
 
   /**

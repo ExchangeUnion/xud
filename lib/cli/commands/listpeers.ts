@@ -47,7 +47,7 @@ const formatLndPubKeys = (lndKeys: string[][]) => {
 const formatPeers = (peers: ListPeersResponse.AsObject) => {
   const formattedPeers: string[][] = [];
   peers.peersList.forEach((peer: Peer.AsObject) => {
-      const alias = getAlias(peer.nodePubKey); /* TODO CLI not receiving alias from API. Need to recompile protocol buffer files? */
+      const alias = getAlias(peer.nodePubKey);
 
   const address = `${peer.nodePubKey}
 @${peer.address}` ;

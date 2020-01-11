@@ -608,6 +608,15 @@ class Pool extends EventEmitter {
   }
 
   public unbanNode = async (nodePubKey: string, reconnect: boolean): Promise<void> => {
+    // resolve if is an alias
+    if (nodePubKey.length !== 66) {
+      let keys: string[] = this.nodes.getPubKeys(nodePubKey);
+      if (keys.length > 1) {
+        throw errors.ALIAS_CONFLICT(nodePubKey);
+      }
+      nodePubKey = keys[0];
+    }
+
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
