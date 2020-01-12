@@ -6,7 +6,11 @@ import net, { Socket } from 'net';
 import secp256k1 from 'secp256k1';
 import { DisconnectionReason, ReputationEvent, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
+<<<<<<< HEAD
 import NodeKey from '../nodekey/NodeKey';
+=======
+import { ms } from '../utils/utils';
+>>>>>>> 3d47487a15054a901ece68ab32dc26cd1e9813c8
 import { getAlias } from '../utils/uriUtils';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
