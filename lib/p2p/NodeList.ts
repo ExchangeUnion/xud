@@ -58,7 +58,7 @@ class NodeList extends EventEmitter {
   public getPubKeys = (alias: string): Array<string> => {
     let keys: string[] = [];
     for (const pubKey of this.bannedNodes.keys()) {
-      if (getAlias(pubKey) === alias) {
+      if (getAlias(pubKey).toLowerCase() === alias.toLowerCase()) {
         keys.push(pubKey);
       }
     }
