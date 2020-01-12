@@ -512,8 +512,10 @@ class Service {
     const plist = await this.listPeers();
     let keys: string[] = [];
     for (var i = 0; i < plist.length; i++) {
-      if (plist[i].alias === alias) {
-        keys.push(plist[i].nodePubKey!);
+      if (plist[i].alias) {
+        if (plist[i].alias!.toLowerCase() === alias.toLowerCase()) {
+          keys.push(plist[i].nodePubKey!);
+        }
       }
     }
     if (keys.length > 1) {
