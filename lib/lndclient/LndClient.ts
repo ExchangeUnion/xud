@@ -19,11 +19,13 @@ interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
+  on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
 
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
   emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
+  emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
 }
 
@@ -949,15 +951,11 @@ class LndClient extends SwapClient {
       return;
     }
 
-    const deleteChannelBackupSubscription = () => {
-      this.channelBackupSubscription = undefined;
-    };
-
     this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
       .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
         const multiBackup = backupSnapshot.getMultiChanBackup()!;
         this.emit('channelBackup', multiBackup.getMultiChanBackup_asU8());
-      }).on('end', deleteChannelBackupSubscription).on('error', deleteChannelBackupSubscription);
+      }).on('end', this.disconnect).on('error', this.disconnect);
   }
 
   /**
@@ -991,6 +989,10 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = async () => {
+    if (this.channelBackupSubscription) {
+      this.channelBackupSubscription = undefined;
+      this.emit('channelBackupEnd');
+    }
     if (this.lightning) {
       this.lightning.close();
       this.lightning = undefined;

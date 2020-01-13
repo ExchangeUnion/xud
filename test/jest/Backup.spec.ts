@@ -35,9 +35,12 @@ const backups = {
 let channelBackupCallback: any;
 
 const onListenerMock = jest.fn((event, callback) => {
-  expect(event).toEqual('channelBackup');
 
-  channelBackupCallback = callback;
+  if (event === 'channelBackup') {
+    channelBackupCallback = callback;
+  } else {
+    expect(event).toEqual('channelBackupEnd');
+  }
 });
 
 jest.mock('../../lib/lndclient/LndClient', () => {
@@ -76,6 +79,10 @@ describe('Backup', () => {
         dbpath: raidenDatabasePath,
       },
     });
+  });
+
+  afterAll(async () => {
+    await backup.stop();
   });
 
   test('should write LND backups on startup', () => {
