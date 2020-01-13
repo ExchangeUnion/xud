@@ -8,17 +8,13 @@ import { createCipheriv, createDecipheriv, createHash } from 'crypto';
  * and can sign messages to prove their veracity.
  */
 class NodeKey {
-  /**
-   * The public key in hex string format.
-   */
-  public readonly pubKey: string;
-
   private static ENCRYPTION_IV_LENGTH = 16;
 
-  constructor(public readonly privKey: Buffer) {
-    const pubKey = secp256k1.publicKeyCreate(privKey);
-    this.pubKey = pubKey.toString('hex');
-  }
+  /**
+   * @param privKey The 32 byte private key
+   * @param pubKey The public key in hex string format.
+   */
+  constructor(public readonly privKey: Buffer, public readonly pubKey: string) { }
 
   /**
    * Generates a random NodeKey.
@@ -29,7 +25,27 @@ class NodeKey {
       privKey = await randomBytes(32);
     } while (!secp256k1.privateKeyVerify(privKey));
 
-    return new NodeKey(privKey);
+    return NodeKey.fromBytes(privKey);
+  }
+
+  /**
+   * Converts a buffer of bytes to a NodeKey. Uses the first 32 bytes from the buffer to generate
+   * the private key. If the buffer has fewer than 32 bytes, the buffer is right-padded with zeros.
+   */
+  public static fromBytes = (bytes: Buffer): NodeKey => {
+    let privKey: Buffer;
+    if (bytes.byteLength === 32) {
+      privKey = bytes;
+    } else if (bytes.byteLength < 32) {
+      privKey = Buffer.concat([bytes, Buffer.alloc(32 - bytes.byteLength)]);
+    } else {
+      privKey = bytes.slice(0, 32);
+    }
+
+    const pubKeyBytes = secp256k1.publicKeyCreate(privKey);
+    const pubKey = pubKeyBytes.toString('hex');
+
+    return new NodeKey(privKey, pubKey);
   }
 
   private static getCipherKey = (password: string) => {
@@ -58,7 +74,7 @@ class NodeKey {
       privKey = fileBuffer;
     }
     if (secp256k1.privateKeyVerify(privKey)) {
-      return new NodeKey(privKey);
+      return NodeKey.fromBytes(privKey);
     } else {
       throw new Error(`${path} does not contain a valid ECDSA private key`);
     }

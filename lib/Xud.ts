@@ -117,7 +117,7 @@ class Xud extends EventEmitter {
         }
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
-        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
+        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
 
         this.rpcServer.grpcInitService.setInitService(initService);
         this.logger.info("Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'");

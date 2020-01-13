@@ -1,3 +1,4 @@
+import { promises as fs } from 'fs';
 import { EventEmitter } from 'events';
 import Config from '../Config';
 import { SwapClientType } from '../constants/enums';
@@ -175,7 +176,14 @@ class SwapClientManager extends EventEmitter {
   /**
    * Initializes wallets with seed and password.
    */
-  public initWallets = async (walletPassword: string, seedMnemonic: string[]) => {
+  public initWallets = async ({ walletPassword, seedMnemonic, restore, lndBackups, raidenDatabase, raidenDatabasePath }: {
+    walletPassword: string,
+    seedMnemonic: string[],
+    restore?: boolean,
+    lndBackups?: Map<string, Uint8Array>,
+    raidenDatabase?: Uint8Array,
+    raidenDatabasePath?: string,
+  }) => {
     this.walletPassword = walletPassword;
 
     // loop through swap clients to initialize locked lnd clients
@@ -187,7 +195,12 @@ class SwapClientManager extends EventEmitter {
     for (const lndClient of lndClients) {
       if (isLndClient(lndClient)) {
         if (lndClient.isWaitingUnlock()) {
-          const initWalletPromise = lndClient.initWallet(walletPassword, seedMnemonic).then(() => {
+          const initWalletPromise = lndClient.initWallet(
+            walletPassword,
+            seedMnemonic,
+            restore,
+            lndBackups ? lndBackups.get(lndClient.currency) : undefined,
+          ).then(() => {
             initializedLndWallets.push(lndClient.currency);
           }).catch((err) => {
             lndClient.logger.error(`could not initialize wallet: ${err.message}`);
@@ -203,6 +216,13 @@ class SwapClientManager extends EventEmitter {
       // TODO: we are setting the raiden keystore as an empty string until raiden
       // allows for decrypting the keystore without needing to save the password
       // to disk in plain text
+
+      if (raidenDatabase && raidenDatabase.byteLength && raidenDatabasePath) {
+        initWalletPromises.push(fs.writeFile(raidenDatabasePath, raidenDatabase).then(() => {
+          this.loggers.raiden.info(`restored raiden database to ${raidenDatabasePath}`);
+        }));
+      }
+
       const keystorePromise = keystore(seedMnemonic, '', keystorepath).then(() => {
         this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
         initializedRaiden = true;

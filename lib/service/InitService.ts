@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
 import NodeKey from '../nodekey/NodeKey';
 import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
+import { decipher } from '../utils/seedutil';
 import errors from './errors';
-import assert = require('assert');
-import { encipher } from '../utils/seedutil';
 
 interface InitService {
   once(event: 'nodekey', listener: (nodeKey: NodeKey) => void): this;
@@ -16,7 +16,12 @@ class InitService extends EventEmitter {
   /** Whether there is a pending `CreateNode` or `UnlockNode` call. */
   private pendingCall = false;
 
-  constructor(private swapClientManager: SwapClientManager, private nodeKeyPath: string, private nodeKeyExists: boolean) {
+  constructor(
+    private swapClientManager: SwapClientManager,
+    private nodeKeyPath: string,
+    private nodeKeyExists: boolean,
+    private databasePath: string,
+  ) {
     super();
   }
 
@@ -27,21 +32,16 @@ class InitService extends EventEmitter {
     await this.prepareCall();
 
     try {
-      const seed = await this.swapClientManager.genSeed();
+      const seedMnemonic = await this.swapClientManager.genSeed();
 
-      const seedBytes = typeof seed.encipheredSeed === 'string' ?
-        Buffer.from(seed.encipheredSeed, 'base64') :
-        Buffer.from(seed.encipheredSeed);
-      assert.equal(seedBytes.length, 33);
-
-      // the seed is 33 bytes, the first byte of which is the version
-      // so we use the remaining 32 bytes to generate our private key
+      // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
+      // to generate an xud nodekey from the same seed used for wallets
       // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-      const privKey = Buffer.from(seedBytes.slice(1));
-      const nodeKey = new NodeKey(privKey);
+      const decipheredSeed = await decipher(seedMnemonic);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
       // use this seed to init any lnd wallets that are uninitialized
-      const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
+      const initWalletResult = await this.swapClientManager.initWallets({ seedMnemonic, walletPassword: password });
       const initializedLndWallets = initWalletResult.initializedLndWallets;
       const initializedRaiden = initWalletResult.initializedRaiden;
 
@@ -50,7 +50,7 @@ class InitService extends EventEmitter {
       return {
         initializedLndWallets,
         initializedRaiden,
-        mnemonic: seed ? seed.cipherSeedMnemonicList : undefined,
+        mnemonic: seedMnemonic,
       };
     } finally {
       this.pendingCall = false;
@@ -75,8 +75,23 @@ class InitService extends EventEmitter {
     }
   }
 
-  public restoreNode = async (args: { password: string, seedMnemonicList: string[] }) => {
-    const { password, seedMnemonicList } = args;
+  public restoreNode = async (args: {
+    password: string,
+    xudDatabase: Uint8Array,
+    lndBackupsMap: Map<string, Uint8Array>,
+    raidenDatabase: Uint8Array,
+    seedMnemonicList: string[],
+    raidenDatabasePath: string,
+  }) => {
+    const {
+      password,
+      xudDatabase,
+      lndBackupsMap,
+      raidenDatabase,
+      seedMnemonicList,
+      raidenDatabasePath,
+    } = args;
+
     if (seedMnemonicList.length !== 24) {
       throw errors.INVALID_ARGUMENT('mnemonic must be exactly 24 words');
     }
@@ -85,19 +100,24 @@ class InitService extends EventEmitter {
     await this.prepareCall();
 
     try {
-      const seedBytes = await encipher(seedMnemonicList);
+      const decipheredSeed = await decipher(seedMnemonicList);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
-      // the seed is 33 bytes, the first byte of which is the version
-      // so we use the remaining 32 bytes to generate our private key
-      // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-      const privKey = Buffer.from(seedBytes.slice(1));
-      const nodeKey = new NodeKey(privKey);
-
-      // use this seed to restore any lnd wallets that are uninitialized
-      const initWalletResult = await this.swapClientManager.initWallets(password, seedMnemonicList);
+      // use the seed and database backups to restore any lnd wallets that are uninitialized
+      const initWalletResult = await this.swapClientManager.initWallets({
+        raidenDatabasePath,
+        raidenDatabase,
+        lndBackups: lndBackupsMap,
+        walletPassword: password,
+        seedMnemonic: seedMnemonicList,
+        restore: true,
+      });
       const restoredLndWallets = initWalletResult.initializedLndWallets;
       const restoredRaiden = initWalletResult.initializedRaiden;
 
+      if (xudDatabase.byteLength) {
+        await fs.writeFile(this.databasePath, xudDatabase);
+      }
       await nodeKey.toFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
       return {
@@ -130,7 +150,12 @@ class InitService extends EventEmitter {
     this.pendingCall = true;
 
     // wait briefly for all lnd instances to be available
-    await this.swapClientManager.waitForLnd();
+    try {
+      await this.swapClientManager.waitForLnd();
+    } catch (err) {
+      this.pendingCall = false; // end pending call if there's an error while waiting for lnd
+      throw err;
+    }
   }
 }
 

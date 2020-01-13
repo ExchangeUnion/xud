@@ -124,6 +124,23 @@ export class RestoreNodeRequest extends jspb.Message {
     setPassword(value: string): void;
 
 
+    getLndBackupsMap(): jspb.Map<string, Uint8Array | string>;
+    clearLndBackupsMap(): void;
+
+    getRaidenDatabase(): Uint8Array | string;
+    getRaidenDatabase_asU8(): Uint8Array;
+    getRaidenDatabase_asB64(): string;
+    setRaidenDatabase(value: Uint8Array | string): void;
+
+    getRaidenDatabasePath(): string;
+    setRaidenDatabasePath(value: string): void;
+
+    getXudDatabase(): Uint8Array | string;
+    getXudDatabase_asU8(): Uint8Array;
+    getXudDatabase_asB64(): string;
+    setXudDatabase(value: Uint8Array | string): void;
+
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RestoreNodeRequest.AsObject;
     static toObject(includeInstance: boolean, msg: RestoreNodeRequest): RestoreNodeRequest.AsObject;
@@ -138,6 +155,11 @@ export namespace RestoreNodeRequest {
     export type AsObject = {
         seedMnemonicList: Array<string>,
         password: string,
+
+        lndBackupsMap: Array<[string, Uint8Array | string]>,
+        raidenDatabase: Uint8Array | string,
+        raidenDatabasePath: string,
+        xudDatabase: Uint8Array | string,
     }
 }
 
