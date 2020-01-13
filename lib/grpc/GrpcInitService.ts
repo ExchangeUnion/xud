@@ -80,7 +80,20 @@ class GrpcInitService {
       return;
     }
     try {
-      const { restoredLndWallets, restoredRaiden } = await this.initService.restoreNode(call.request.toObject());
+      const password = call.request.getPassword();
+      const lndBackupsMap = call.request.getLndBackupsMap();
+      const raidenDatabase = call.request.getRaidenDatabase_asU8();
+      const seedMnemonicList = call.request.getSeedMnemonicList();
+      const raidenDatabasePath = call.request.getRaidenDatabasePath();
+      const xudDatabase = call.request.getXudDatabase_asU8();
+      const { restoredLndWallets, restoredRaiden } = await this.initService.restoreNode({
+        password,
+        seedMnemonicList,
+        raidenDatabasePath,
+        xudDatabase,
+        raidenDatabase,
+        lndBackupsMap,
+      });
       const response = new xudrpc.RestoreNodeResponse();
       response.setRestoredLndsList(restoredLndWallets);
       response.setRestoredRaiden(restoredRaiden);

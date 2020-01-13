@@ -71,6 +71,17 @@ message RestoreNodeRequest {
   // The password in utf-8 with which to encrypt the restored xud node key as well
   // as any restored underlying wallets.
   string password = 2;
+
+  // A map between the currency of the LND and its multi channel SCB
+  map<string, bytes> lnd_backups = 3;
+
+  // The Raiden database backup
+  bytes raiden_database = 4;
+  // Path to where the Raiden database backup should be written
+  string raiden_database_path = 5;
+
+  // The XUD database backup
+  bytes xud_database = 6;
 }
 message RestoreNodeResponse {
   // The list of lnd clients that were initialized.

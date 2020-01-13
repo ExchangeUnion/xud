@@ -18,12 +18,12 @@ import path from 'path';
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
-  on(event: 'channelBackup', listener: (channelBackup: string) => void): this;
+  on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'locked', listener: () => void): this;
 
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
-  emit(event: 'channelBackup', channelBackup: string): boolean;
+  emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
   emit(event: 'locked'): boolean;
 }
 
@@ -781,10 +781,21 @@ class LndClient extends SwapClient {
     return genSeedResponse.getCipherSeedMnemonicList();
   }
 
-  public initWallet = async (walletPassword: string, seedMnemonic: string[]): Promise<lndrpc.InitWalletResponse.AsObject> => {
+  public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
+    Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
     request.setCipherSeedMnemonicList(seedMnemonic);
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
+    if (restore) {
+      request.setRecoveryWindow(2500);
+    }
+    if (backup && backup.byteLength) {
+      const snapshot = new lndrpc.ChanBackupSnapshot();
+      const multiChanBackup = new lndrpc.MultiChanBackup();
+      multiChanBackup.setMultiChanBackup(backup);
+      snapshot.setMultiChanBackup(multiChanBackup);
+      request.setChannelBackups(snapshot);
+    }
     const initWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>(
       'initWallet', request,
     );
@@ -880,11 +891,17 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListPaymentsRequest, lndrpc.ListPaymentsResponse>('listPayments', request);
   }
 
+  public restoreChannelBackup = (multiChannelBackup: Uint8Array) => {
+    const request = new lndrpc.RestoreChanBackupRequest();
+    request.setMultiChanBackup(multiChannelBackup);
+    return this.unaryCall<lndrpc.RestoreChanBackupRequest, lndrpc.RestoreBackupResponse>('restoreChannelBackups', request);
+  }
+
   public exportAllChannelBackup = async () => {
     const request = new lndrpc.ChanBackupExportRequest();
     const response = await this.unaryCall<lndrpc.ChanBackupExportRequest, lndrpc.ChanBackupSnapshot>('exportAllChannelBackups', request);
 
-    return response.getMultiChanBackup()!.getMultiChanBackup_asB64();
+    return response.getMultiChanBackup()!.getMultiChanBackup_asU8();
   }
 
   private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {
@@ -939,7 +956,7 @@ class LndClient extends SwapClient {
     this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
       .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
         const multiBackup = backupSnapshot.getMultiChanBackup()!;
-        this.emit('channelBackup', multiBackup.getMultiChanBackup_asB64());
+        this.emit('channelBackup', multiBackup.getMultiChanBackup_asU8());
       }).on('end', deleteChannelBackupSubscription).on('error', deleteChannelBackupSubscription);
   }
 

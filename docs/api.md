@@ -60,6 +60,7 @@
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
     - [RestoreNodeRequest](#xudrpc.RestoreNodeRequest)
+    - [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry)
     - [RestoreNodeResponse](#xudrpc.RestoreNodeResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
@@ -960,6 +961,26 @@
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | password | [string](#string) |  | The password in utf-8 with which to encrypt the restored xud node key as well as any restored underlying wallets. |
+| lnd_backups | [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry) | repeated | A map between the currency of the LND and its multi channel SCB |
+| raiden_database | [bytes](#bytes) |  | The Raiden database backup |
+| raiden_database_path | [string](#string) |  | Path to where the Raiden database backup should be written |
+| xud_database | [bytes](#bytes) |  | The XUD database backup |
+
+
+
+
+
+
+<a name="xudrpc.RestoreNodeRequest.LndBackupsEntry"></a>
+
+### RestoreNodeRequest.LndBackupsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
 
 
 
