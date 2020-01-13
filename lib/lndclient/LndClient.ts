@@ -190,8 +190,29 @@ class LndClient extends SwapClient {
     return this._maxChannelInboundAmount;
   }
 
+  /** Lnd specific procedure to mark the client as locked. */
+  private lock = async () => {
+    this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+    if (this.lightning) {
+      this.lightning.close();
+    }
+    this.lightning = undefined;
+
+    if (!this.isWaitingUnlock()) {
+      await this.setStatus(ClientStatus.WaitingUnlock);
+      this.emit('locked');
+    }
+  }
+
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(err => this.logger.error('failed to update total outbound capacity', err));
+    await this.channelBalance().catch(async (err) => {
+      if (err.code === grpc.status.UNIMPLEMENTED) {
+        // if ChannelBalance is unimplemented, it means this lnd instance is online but locked
+        await this.lock();
+      } else {
+        this.logger.error('failed to update total outbound capacity', err);
+      }
+    });
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
@@ -440,14 +461,7 @@ class LndClient extends SwapClient {
       } catch (err) {
         if (err.code === grpc.status.UNIMPLEMENTED) {
           // if GetInfo is unimplemented, it means this lnd instance is online but locked
-          this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
-          this.lightning.close();
-          this.lightning = undefined;
-
-          if (!this.isWaitingUnlock()) {
-            await this.setStatus(ClientStatus.WaitingUnlock);
-            this.emit('locked');
-          }
+          await this.lock();
         } else {
           const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
           this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);

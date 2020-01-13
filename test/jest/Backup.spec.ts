@@ -46,6 +46,7 @@ const onListenerMock = jest.fn((event, callback) => {
 jest.mock('../../lib/lndclient/LndClient', () => {
   return jest.fn().mockImplementation(() => {
     return {
+      isConnected: () => true,
       on: onListenerMock,
       currency: 'BTC',
       init: () => Promise.resolve(),
