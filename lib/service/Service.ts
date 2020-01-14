@@ -243,9 +243,9 @@ class Service {
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     // resolve if key is an alias
-    var key = args.nodePubKey;
+    let key = args.nodePubKey;
     if (key.length !== 66) {
-      let tmp = await this.resolveAlias(key);
+      const tmp = await this.resolveAlias(key);
       if (tmp) {
         key = tmp;
       }
@@ -268,9 +268,9 @@ class Service {
    */
   public ban = async (args: { nodePubKey: string }) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    var key = args.nodePubKey;
+    let key = args.nodePubKey;
     if (key.length !== 66) {
-      let tmp = await this.resolveAlias(key);
+      const tmp = await this.resolveAlias(key);
       if (tmp) {
         key = tmp;
       }
@@ -313,9 +313,9 @@ class Service {
    */
   public getNodeInfo = async (args: { nodePubKey: string }) => {
     argChecks.HAS_NODE_PUB_KEY(args);
-    var key = args.nodePubKey;  
+    let key = args.nodePubKey;
     if (key.length !== 66) {
-      let tmp = await this.resolveAlias(key);
+      const tmp = await this.resolveAlias(key);
       if (tmp) {
         key = tmp;
       }
@@ -506,9 +506,9 @@ class Service {
   /** Discover nodes from a specific peer and apply new connections */
   public discoverNodes = async (args: { peerPubKey: string }) => {
     argChecks.HAS_PEER_PUB_KEY(args);
-    var key = args.peerPubKey;
+    let key = args.peerPubKey;
     if (key.length !== 66) {
-      let tmp = await this.resolveAlias(key);
+      const tmp = await this.resolveAlias(key);
       if (tmp) {
         key = tmp;
       }
@@ -576,12 +576,12 @@ class Service {
    * Resolves alias to node's public key
    */
   private resolveAlias = async (alias: string) => {
-    const plist = await this.listPeers();
-    let keys: string[] = [];
-    for (var i = 0; i < plist.length; i++) {
-      if (plist[i].alias) {
-        if (plist[i].alias!.toLowerCase() === alias.toLowerCase()) {
-          keys.push(plist[i].nodePubKey!);
+    const plist = this.listPeers();
+    const keys: string[] = [];
+    for (let peer of plist) {
+      if (peer.alias) {
+        if (peer.alias!.toLowerCase() === alias.toLowerCase()) {
+          keys.push(peer.nodePubKey!);
         }
       }
     }

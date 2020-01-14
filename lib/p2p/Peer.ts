@@ -127,7 +127,7 @@ class Peer extends EventEmitter {
 
   public get label(): string {
     if (this.nodePubKey) {
-        return this.nodePubKey + " (" + this.alias + ")";
+      return `${this.nodePubKey} (${this.alias})`;
     }
     return this.expectedNodePubKey
       ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}`

@@ -35,16 +35,16 @@ export const parseUri = (uri: string): UriParts => {
   };
 };
 
-export const getAlias = (pubkey? : string): string => {
-    const getWord = (substring: string): string => {
-        let asNumber = parseInt(substring, 16);
-        let index = asNumber % wordlist.length;
-        return wordlist[index];
-    }
+export const getAlias = (pubkey?: string): string => {
+  const getWord = (substring: string): string => {
+    const asNumber = parseInt(substring, 16);
+    const index = asNumber % wordlist.length;
+    return wordlist[index];
+  };
   if (pubkey) {
-    let a = getWord(pubkey.slice(0,33));
-    let b = getWord(pubkey.slice(33));
-      return a + b;
+    const a = getWord(pubkey.slice(0, 33));
+    const b = getWord(pubkey.slice(33));
+    return a + b;
   }
   return '';
 };
