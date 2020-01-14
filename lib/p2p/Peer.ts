@@ -10,7 +10,6 @@ import NodeKey from '../nodekey/NodeKey';
 import { getAlias } from '../utils/uriUtils';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
-import { ms } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import Framer from './Framer';
 import Network from './Network';
