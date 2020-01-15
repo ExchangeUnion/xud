@@ -20,6 +20,9 @@ class Backup extends EventEmitter {
 
   private fileWatchers: fs.FSWatcher[] = [];
   private lndClients: LndClient[] = [];
+  private checkLndTimer: ReturnType<typeof setInterval> | undefined;
+  // The time in milliseconds between attempts to check connection to lnd
+  private static readonly LND_CHECK_INTERVAL = 1000;
 
   public start = async (args: { [argName: string]: any }) => {
     await this.config.load(args);
@@ -63,6 +66,9 @@ class Backup extends EventEmitter {
   }
 
   public stop = async () => {
+    if (this.checkLndTimer) {
+      clearInterval(this.checkLndTimer);
+    }
     this.fileWatchers.forEach((watcher) => {
       watcher.close();
     });
@@ -89,6 +95,18 @@ class Backup extends EventEmitter {
 
         await lndClient.init();
 
+        this.logger.info(`Waiting for lnd-${lndClient.currency}`);
+        await new Promise((resolve) => {
+          this.checkLndTimer = setInterval(async () => {
+            if (lndClient.isConnected()) {
+              if (this.checkLndTimer) {
+                clearInterval(this.checkLndTimer);
+              }
+              resolve();
+            }
+          }, Backup.LND_CHECK_INTERVAL);
+        });
+
         const backupPath = this.getBackupPath('lnd', lndClient.currency);
 
         this.logger.verbose(`Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`);
@@ -110,6 +128,21 @@ class Backup extends EventEmitter {
     lndClient.on('channelBackup', (channelBackup) => {
       this.logger.debug(`New ${lndClient.currency} channel backup`);
       this.writeBackup(backupPath, channelBackup);
+    });
+    lndClient.on('channelBackupEnd', () => {
+      this.logger.warn(`Lost subscription to ${lndClient.currency} channel backups - attempting to restore`);
+      // attempt to re-subscribe to lnd backups
+      this.checkLndTimer = setInterval(() => {
+        // when lnd is connected
+        if (lndClient.isConnected()) {
+          lndClient.subscribeChannelBackups();
+          this.logger.info(`Subscription to ${lndClient.currency} channel backups restored`);
+          // cleanup
+          if (this.checkLndTimer) {
+            clearInterval(this.checkLndTimer);
+          }
+        }
+      }, Backup.LND_CHECK_INTERVAL);
     });
   }
 

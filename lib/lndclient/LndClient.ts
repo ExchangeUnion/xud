@@ -19,11 +19,13 @@ interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
+  on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
 
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
   emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
+  emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
 }
 
@@ -188,8 +190,29 @@ class LndClient extends SwapClient {
     return this._maxChannelInboundAmount;
   }
 
+  /** Lnd specific procedure to mark the client as locked. */
+  private lock = async () => {
+    this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+    if (this.lightning) {
+      this.lightning.close();
+    }
+    this.lightning = undefined;
+
+    if (!this.isWaitingUnlock()) {
+      await this.setStatus(ClientStatus.WaitingUnlock);
+      this.emit('locked');
+    }
+  }
+
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(err => this.logger.error('failed to update total outbound capacity', err));
+    await this.channelBalance().catch(async (err) => {
+      if (err.code === grpc.status.UNIMPLEMENTED) {
+        // if ChannelBalance is unimplemented, it means this lnd instance is online but locked
+        await this.lock();
+      } else {
+        this.logger.error('failed to update total outbound capacity', err);
+      }
+    });
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
@@ -438,14 +461,7 @@ class LndClient extends SwapClient {
       } catch (err) {
         if (err.code === grpc.status.UNIMPLEMENTED) {
           // if GetInfo is unimplemented, it means this lnd instance is online but locked
-          this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
-          this.lightning.close();
-          this.lightning = undefined;
-
-          if (!this.isWaitingUnlock()) {
-            await this.setStatus(ClientStatus.WaitingUnlock);
-            this.emit('locked');
-          }
+          await this.lock();
         } else {
           const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
           this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
@@ -949,15 +965,11 @@ class LndClient extends SwapClient {
       return;
     }
 
-    const deleteChannelBackupSubscription = () => {
-      this.channelBackupSubscription = undefined;
-    };
-
     this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
       .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
         const multiBackup = backupSnapshot.getMultiChanBackup()!;
         this.emit('channelBackup', multiBackup.getMultiChanBackup_asU8());
-      }).on('end', deleteChannelBackupSubscription).on('error', deleteChannelBackupSubscription);
+      }).on('end', this.disconnect).on('error', this.disconnect);
   }
 
   /**
@@ -991,6 +1003,10 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = async () => {
+    if (this.channelBackupSubscription) {
+      this.channelBackupSubscription = undefined;
+      this.emit('channelBackupEnd');
+    }
     if (this.lightning) {
       this.lightning.close();
       this.lightning = undefined;
