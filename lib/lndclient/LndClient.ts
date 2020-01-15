@@ -141,6 +141,21 @@ class LndClient extends SwapClient {
       this.credentials = grpc.credentials.createSsl(lndCert);
     } else {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
+      setTimeout(async () => {
+        try {
+          await this.setStatus(ClientStatus.NotInitialized);
+          if (this.reconnectionTimer) {
+            // we don't need scheduled attempts to retry the connection while retrying to initialize
+            clearTimeout(this.reconnectionTimer);
+            this.reconnectionTimer = undefined;
+          }
+          await this.init(awaitingCreate);
+
+        } catch (e) {
+          // ignore the errors
+        }
+        // TODO: use constant for timeout
+      }, 3000);
       await this.setStatus(ClientStatus.Misconfigured);
       return;
     }

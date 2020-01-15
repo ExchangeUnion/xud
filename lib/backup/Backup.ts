@@ -93,7 +93,8 @@ class Backup extends EventEmitter {
 
         this.lndClients.push(lndClient);
 
-        await lndClient.init();
+        // TODO: dynamic awaitingCreate
+        await lndClient.init(true);
 
         this.logger.info(`Waiting for lnd-${lndClient.currency}`);
         await new Promise((resolve) => {
