@@ -627,7 +627,7 @@ class Pool extends EventEmitter {
       const node = await this.repository.getNode(key);
       if (node) {
         const Node: NodeConnectionInfo = {
-          key,
+          nodePubKey: key,
           addresses: node.addresses,
           lastAddress: node.lastAddress,
         };

@@ -8,6 +8,7 @@ import { DisconnectionReason, ReputationEvent, SwapClientType } from '../constan
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { getAlias } from '../utils/uriUtils';
+import { ms } from '../utils/utils';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import errors, { errorCodes } from './errors';

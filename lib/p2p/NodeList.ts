@@ -55,7 +55,7 @@ class NodeList extends EventEmitter {
   /**
    * Return all public keys with a given alias.
    */
-  public getPubKeys = (alias: string): Array<string> => {
+  public getPubKeys = (alias: string): string[] => {
     const keys: string[] = [];
     for (const pubKey of this.bannedNodes.keys()) {
       if (getAlias(pubKey).toLowerCase() === alias.toLowerCase()) {

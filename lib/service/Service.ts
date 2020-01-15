@@ -578,7 +578,7 @@ class Service {
   private resolveAlias = async (alias: string) => {
     const plist = this.listPeers();
     const keys: string[] = [];
-    for (let peer of plist) {
+    for (const peer of plist) {
       if (peer.alias) {
         if (peer.alias!.toLowerCase() === alias.toLowerCase()) {
           keys.push(peer.nodePubKey!);
