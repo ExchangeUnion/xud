@@ -52,6 +52,7 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private initRetryTimeout?: NodeJS.Timeout;
   private _totalOutboundAmount = 0;
   private _maxChannelOutboundAmount = 0;
   private _maxChannelInboundAmount = 0;
@@ -98,6 +99,12 @@ class LndClient extends SwapClient {
    * @param awaitingCreate whether xud is waiting for its node key to be created
    */
   public init = async (awaitingCreate = false) => {
+    if (!this.isNotInitialized() && !this.isMisconfigured) {
+      // we only initialize from NotInitialized or Misconfigured status
+      this.logger.warn(`can not init in ${this.status} status`);
+      return;
+    }
+
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
       await this.setStatus(ClientStatus.Disabled);
@@ -142,6 +149,7 @@ class LndClient extends SwapClient {
     } else {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
       await this.setStatus(ClientStatus.Misconfigured);
+      this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
       return;
     }
 
@@ -155,6 +163,7 @@ class LndClient extends SwapClient {
           // we expect the macaroon to exist and disable this client otherwise
           this.logger.error(`could not load admin macaroon from ${macaroonpath}`);
           await this.setStatus(ClientStatus.Misconfigured);
+          this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
           return;
         }
       }
@@ -163,6 +172,11 @@ class LndClient extends SwapClient {
     }
 
     this.uri = `${host}:${port}`;
+    await this.setStatus(ClientStatus.Initialized);
+    if (this.initRetryTimeout) {
+      clearTimeout(this.initRetryTimeout);
+      this.initRetryTimeout = undefined;
+    }
     await this.verifyConnectionWithTimeout();
   }
 
@@ -715,7 +729,7 @@ class LndClient extends SwapClient {
     const CONNECT_TIMEOUT = 4000;
     for (const uri of splitListeningUris) {
       const { peerPubKey, address } = uri;
-      let timeout;
+      let timeout: NodeJS.Timeout | undefined;
       try {
         timeout = setTimeout(() => {
           throw new Error('connectPeer has timed out');
@@ -1022,6 +1036,10 @@ class LndClient extends SwapClient {
     if (this.watchMacaroonResolve) {
       this.watchMacaroonResolve(false);
       this.watchMacaroonResolve = undefined;
+    }
+    if (this.initRetryTimeout) {
+      clearTimeout(this.initRetryTimeout);
+      this.initRetryTimeout = undefined;
     }
 
     if (this.isOperational()) {
