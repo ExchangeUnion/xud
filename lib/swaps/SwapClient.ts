@@ -6,6 +6,9 @@ import { SwapClientType } from '../constants/enums';
 enum ClientStatus {
   /** The starting status before a client has initialized. */
   NotInitialized,
+  /** The client has been initialized but has not attempted to connect to the server yet. */
+  Initialized,
+  /** The client is permanently disabled. */
   Disabled,
   /** The server cannot be reached or is not responding properly. */
   Disconnected,
@@ -160,7 +163,7 @@ abstract class SwapClient extends EventEmitter {
         clearInterval(this.updateCapacityTimer);
         this.updateCapacityTimer = undefined;
       }
-      if (this.status !== ClientStatus.Disabled && this.status !== ClientStatus.Misconfigured) {
+      if (this.status === ClientStatus.Disconnected || this.status === ClientStatus.OutOfSync || this.status === ClientStatus.WaitingUnlock) {
         if (!this.reconnectionTimer) {
           this.reconnectionTimer = setTimeout(async () => {
             await this.verifyConnection();
