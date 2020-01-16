@@ -1017,7 +1017,14 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = async () => {
+    if (this.isOperational()) {
+      await this.setStatus(ClientStatus.Disconnected);
+    }
+
     if (this.channelBackupSubscription) {
+      // we emit channelBackupEnd event after all the disconnect related
+      // cleanup has been completed
+      this.channelBackupSubscription.cancel();
       this.channelBackupSubscription = undefined;
       this.emit('channelBackupEnd');
     }
@@ -1040,10 +1047,6 @@ class LndClient extends SwapClient {
     if (this.initRetryTimeout) {
       clearTimeout(this.initRetryTimeout);
       this.initRetryTimeout = undefined;
-    }
-
-    if (this.isOperational()) {
-      await this.setStatus(ClientStatus.Disconnected);
     }
   }
 }
