@@ -43,7 +43,7 @@ class SwapClientManager extends EventEmitter {
   /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
-  public misconfiguredClientLabels: string[] = [];
+  public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
 
   constructor(
@@ -97,12 +97,12 @@ class SwapClientManager extends EventEmitter {
       } else if (swapClient.isMisconfigured()) {
         // track misconfigured swap clients separately
         this.swapClients.delete(currency);
-        this.misconfiguredClientLabels.push(`LND-${currency}`);
+        this.misconfiguredClients.add(swapClient);
       }
     });
 
     if (this.raidenClient.isMisconfigured()) {
-      this.misconfiguredClientLabels.push('Raiden');
+      this.misconfiguredClients.add(this.raidenClient);
     } else if (!this.raidenClient.isDisabled()) {
       // associate swap clients with currencies managed by raiden client
       const currencyInstances = await models.Currency.findAll();
@@ -131,8 +131,8 @@ class SwapClientManager extends EventEmitter {
             lndClient.removeListener('connectionVerified', onAvailable);
             resolve();
           };
-          lndClient.once('connectionVerified', onAvailable);
-          lndClient.once('locked', onAvailable);
+          lndClient.on('connectionVerified', onAvailable);
+          lndClient.on('locked', onAvailable);
           const timer = setTimeout(() => {
             lndClient.removeListener('connectionVerified', onAvailable);
             lndClient.removeListener('locked', onAvailable);
@@ -370,6 +370,12 @@ class SwapClientManager extends EventEmitter {
     const closePromises: Promise<void>[] = [];
     let raidenClosed = false;
     for (const swapClient of this.swapClients.values()) {
+      closePromises.push(swapClient.close());
+      if (isRaidenClient(swapClient)) {
+        raidenClosed = true;
+      }
+    }
+    for (const swapClient of this.misconfiguredClients) {
       closePromises.push(swapClient.close());
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;

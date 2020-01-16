@@ -65,7 +65,9 @@ export type PaymentStatus = {
 
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  once(event: 'initialized', listener: () => void): this;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+  emit(event: 'initialized'): boolean;
 }
 
 /**
@@ -93,6 +95,8 @@ abstract class SwapClient extends EventEmitter {
   }
 
   public abstract get minutesPerBlock(): number;
+
+  public abstract get label(): string;
 
   /**
    * Returns the total balance available across all channels and updates the maximum

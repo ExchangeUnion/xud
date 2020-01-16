@@ -81,6 +81,10 @@ class RaidenClient extends SwapClient {
     return 0.25; // 15 seconds per block target
   }
 
+  public get label() {
+    return 'Raiden';
+  }
+
   /**
    * Derives an integer identifier using the first 4 bytes of a provided payment hash in hex.
    * @param rHash a payment hash in hex
@@ -98,6 +102,9 @@ class RaidenClient extends SwapClient {
       return;
     }
     this.setTokenAddresses(currencyInstances);
+
+    await this.setStatus(ClientStatus.Initialized);
+    this.emit('initialized');
     await this.verifyConnectionWithTimeout();
   }
 
