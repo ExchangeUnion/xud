@@ -17,7 +17,8 @@ const displaySwapSuccess = (swap: SwapSuccess.AsObject) => {
 
 export const command = 'executeswap <pair_id> <order_id> [quantity]';
 
-export const describe = 'execute a swap on a peer order (nomatching mode only)';
+// export const describe = 'execute a swap on a peer order (nomatching mode only)';
+export const describe = undefined;
 
 export const builder = {
   order_id: {
