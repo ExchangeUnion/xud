@@ -1,19 +1,19 @@
-import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
-import Logger from '../Logger';
-import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance, TradingLimits } from '../swaps/SwapClient';
-import errors from './errors';
-import swapErrors from '../swaps/errors';
-import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
-import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
-import * as lndrpc from '../proto/lndrpc_pb';
-import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs, watch } from 'fs';
-import { SwapRole, SwapClientType, SwapState } from '../constants/enums';
+import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
+import path from 'path';
+import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import Logger from '../Logger';
+import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
+import * as lndinvoices from '../proto/lndinvoices_pb';
+import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
+import * as lndrpc from '../proto/lndrpc_pb';
+import swapErrors from '../swaps/errors';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
-import { LndClientConfig, LndInfo, ChannelCount, Chain, ClientMethods } from './types';
-import path from 'path';
+import errors from './errors';
+import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
@@ -235,7 +235,11 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.lightning) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.lightning[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
@@ -263,7 +267,11 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.invoices) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.invoices[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
@@ -283,7 +291,11 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.walletUnlocker) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.walletUnlocker[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
