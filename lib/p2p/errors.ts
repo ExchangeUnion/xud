@@ -1,7 +1,7 @@
+import { XuNetwork } from '../constants/enums';
 import errorCodesPrefix from '../constants/errorCodesPrefix';
 import addressUtils from '../utils/addressUtils';
 import { Address } from './types';
-import { XuNetwork } from '../constants/enums';
 
 const codesPrefix = errorCodesPrefix.P2P;
 const errorCodes = {
@@ -33,6 +33,7 @@ const errorCodes = {
   NODE_TOR_ADDRESS: codesPrefix.concat('.25'),
   ALIAS_CONFLICT: codesPrefix.concat('.26'),
   UNKNOWN_ALIAS: codesPrefix.concat('.27'),
+  BANNED_BY_NODE: codesPrefix.concat('.28'),
 };
 
 const errors = {
@@ -155,6 +156,10 @@ const errors = {
   ALIAS_NOT_FOUND: (alias: string) => ({
     message: `node with alias ${alias} not found`,
     code: errorCodes.UNKNOWN_ALIAS,
+  }),
+  BANNED_BY_NODE: (nodePubKey: string) => ({
+    message: `could not connect to node ${nodePubKey} because it has banned us`,
+    code: errorCodes.BANNED_BY_NODE,
   }),
 };
 
