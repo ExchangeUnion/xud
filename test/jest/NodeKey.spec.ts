@@ -1,5 +1,6 @@
-import NodeKey from '../../lib/nodekey/NodeKey';
 import secp256k1 from 'secp256k1';
+import NodeKey from '../../lib/nodekey/NodeKey';
+import { randomBytes } from '../../lib/utils/utils';
 import { getTempDir } from '../utils';
 
 function validateNodeKey(nodeKey: NodeKey) {
@@ -40,16 +41,22 @@ describe('NodeKey', () => {
   });
 
   test('it should create a valid nodekey from a 32 byte buffer', async () => {
-    const nodeKey = NodeKey.fromBytes(Buffer.allocUnsafe(32));
+    // we can't use allocUnsafe here because creating a nodekey from 32 bytes of zeros will fail
+    // instead we generate 32 random bytes that ~never will be all 0s, unlike allocUnsafe
+    const nodeKey = NodeKey.fromBytes(await randomBytes(32));
     validateNodeKey(nodeKey);
   });
 
-  test('it should create a valid nodekey from a greater than 32 byte buffer', async () => {
+  test('it should error when creating a nodekey from a 32 zeroed bytes', () => {
+    expect(() => NodeKey.fromBytes(Buffer.alloc(32))).toThrowError('private was invalid, try again');
+  });
+
+  test('it should create a valid nodekey from a greater than 32 byte buffer', () => {
     const nodeKey = NodeKey.fromBytes(Buffer.allocUnsafe(42));
     validateNodeKey(nodeKey);
   });
 
-  test('it should create a valid nodekey from a lesser than 32 byte buffer', async () => {
+  test('it should create a valid nodekey from a lesser than 32 byte buffer', () => {
     const nodeKey = NodeKey.fromBytes(Buffer.allocUnsafe(22));
     validateNodeKey(nodeKey);
   });
