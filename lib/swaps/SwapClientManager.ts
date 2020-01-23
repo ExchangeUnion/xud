@@ -263,7 +263,8 @@ class SwapClientManager extends EventEmitter {
             swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
           });
           unlockWalletPromises.push(unlockWalletPromise);
-        } else if (!swapClient.isDisconnected()) {
+        } else if (swapClient.isDisconnected() || swapClient.isMisconfigured() || swapClient.isNotInitialized()) {
+          // if the swap client is not connected, we treat it as locked since lnd will likely be locked when it comes online
           lockedLndClients.push(swapClient.currency);
         }
       }
