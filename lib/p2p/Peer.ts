@@ -64,9 +64,10 @@ interface Peer {
 
 /** Represents a remote peer and manages a TCP socket and incoming/outgoing communication with that peer. */
 class Peer extends EventEmitter {
-  // TODO: properties documentation
   public inbound!: boolean;
+  /** The reason this peer disconnected from us. */
   public recvDisconnectionReason?: DisconnectionReason;
+  /** The reason we told this peer we disconnected from it. */
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
   /** Whether the peer is included in the p2p pool list of peers and will receive broadcasted packets. */
@@ -94,6 +95,7 @@ class Peer extends EventEmitter {
   private pingTimer?: NodeJS.Timer;
   private checkPairsTimer?: NodeJS.Timer;
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
+  /** The epoch time in ms when we connected to this peer. */
   private connectTime!: number;
   private connectionRetriesRevoked = false;
   /** The version of xud this peer is using. */
