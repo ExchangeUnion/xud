@@ -51,6 +51,14 @@ class P2PRepository {
   public addNodes = async (nodes: NodeCreationAttributes[]) => {
     return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
   }
+
+  public updateBannedBy = async (nodePubKey: string, bannedBy: boolean) => {
+    return this.models.Node.update({ bannedBy }, {
+      where: {
+        nodePubKey,
+      },
+    });
+  }
 }
 
 export default P2PRepository;

@@ -80,6 +80,7 @@ export type NodeCreationAttributes = NodeConnectionInfo;
 export type NodeAttributes = NodeCreationAttributes & {
   id: number;
   banned: boolean;
+  bannedBy: boolean;
   addressesText: string;
   lastAddressText: string;
   lastAddress: Address;

@@ -7,6 +7,7 @@ export default function Node(sequelize: Sequelize) {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     nodePubKey: { type: DataTypes.STRING, unique: true, allowNull: false },
     addressesText: { type: DataTypes.TEXT, allowNull: false },
+    bannedBy: { type: DataTypes.BOOLEAN, allowNull: true },
     addresses: {
       type: DataTypes.VIRTUAL,
       get(this: NodeInstance) {

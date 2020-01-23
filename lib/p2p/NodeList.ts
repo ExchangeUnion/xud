@@ -64,6 +64,26 @@ class NodeList extends EventEmitter {
   }
 
   /**
+   * Checks if we are banned by this node
+   */
+  public isBannedBy = (nodePubKey: string): boolean => {
+    return this.nodes.get(nodePubKey)?.bannedBy ?? false;
+  }
+
+  /**
+   * Adds or removes a node to the set of nodes that have banned us.
+   */
+  public setBannedBy = async (nodePubKey: string, bannedBy = true) => {
+    const node = this.nodes.get(nodePubKey);
+    if (!node) {
+      throw errors.NODE_NOT_FOUND(nodePubKey);
+    }
+    node.bannedBy = bannedBy;
+
+    await this.repository.updateBannedBy(nodePubKey, bannedBy);
+  }
+
+  /**
    * Check if a node with a given nodePubKey exists.
    */
   public has = (nodePubKey: string): boolean => {
@@ -72,6 +92,10 @@ class NodeList extends EventEmitter {
 
   public forEach = (callback: (node: NodeInstance) => void) => {
     this.nodes.forEach(callback);
+  }
+
+  public getNode(nodePubKey: string): NodeInstance | undefined {
+    return this.nodes.get(nodePubKey);
   }
 
   /**

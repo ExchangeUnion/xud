@@ -340,8 +340,11 @@ class Pool extends EventEmitter {
       // if allowKnown is false, allow nodes that we don't aware of
       const isAllowed = allowKnown || !this.nodes.has(node.nodePubKey);
 
+      // Check if we are banned by the node.
+      const notBannedBy = !this.nodes.isBannedBy(node.nodePubKey);
+
       // determine whether we should attempt to connect
-      if (isNotUs && hasAddresses && isAllowed) {
+      if (isNotUs && hasAddresses && isAllowed && notBannedBy) {
         connectionPromises.push(this.tryConnectNode(node, retryConnecting));
       }
     });
@@ -600,16 +603,25 @@ class Pool extends EventEmitter {
       }
     });
 
+    const peerPubKey = peer.nodePubKey!;
+
     // creating the node entry
-    if (!this.nodes.has(peer.nodePubKey!)) {
+    if (!this.nodes.has(peerPubKey)) {
       await this.nodes.createNode({
         addresses,
-        nodePubKey: peer.nodePubKey!,
+        nodePubKey: peerPubKey,
         lastAddress: peer.inbound ? undefined : peer.address,
       });
     } else {
       // the node is known, update its listening addresses
-      await this.nodes.updateAddresses(peer.nodePubKey!, addresses, peer.inbound ? undefined : peer.address);
+      await this.nodes.updateAddresses(peerPubKey, addresses, peer.inbound ? undefined : peer.address);
+    }
+
+    // Check if peer has previously banned us, if so set `bannedBy` to false
+    const node = this.nodes.getNode(peerPubKey);
+    if (node && node.bannedBy) {
+      await this.nodes.setBannedBy(peerPubKey, false);
+      this.logger.info(`Peer: ${peerPubKey} has unbanned us`);
     }
   }
 
@@ -943,6 +955,12 @@ class Pool extends EventEmitter {
 
     peer.once('close', () => this.handlePeerClose(peer));
 
+    peer.on('bannedBy', async (nodePubKey: string) => {
+      // set peer as banning us
+      await this.nodes.setBannedBy(nodePubKey);
+      this.logger.info(`Peer: ${nodePubKey} has banned us`);
+    });
+
     peer.on('reputation', async (event) => {
       if (peer.nodePubKey) {
         await this.addReputationEvent(peer.nodePubKey, event);
@@ -971,7 +989,7 @@ class Pool extends EventEmitter {
 
     if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
       this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.label}`);
-      const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
+      const node = { addresses, bannedBy: false, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);
     }
   }
