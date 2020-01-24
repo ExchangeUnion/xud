@@ -230,4 +230,23 @@ describe('P2P Pool', () => {
     expect(pool.peerCount).toEqual(1);
   });
 
+  it('bans and unbans a peer', async () => {
+    await pool['nodes'].createNode({ nodePubKey: pool2nodeKey.pubKey, addresses: [] });
+    await pool.banNode(pool2nodeKey.pubKey);
+    const bannedNodeReputationPromise = pool.getNodeReputation(pool2nodeKey.pubKey);
+    expect(bannedNodeReputationPromise.banned).toEqual(true);
+
+    await pool.unbanNode(pool2nodeKey.pubKey, false);
+    const unbannedNodeReputationPromise = pool.getNodeReputation(pool2nodeKey.pubKey);
+    expect(unbannedNodeReputationPromise.banned).toEqual(false);
+  });
+
+  it('sets bannedBy to true if a node has banned us', async () => {
+    await pool['nodes'].createNode({ nodePubKey: pool2nodeKey.pubKey, addresses: [] });
+    const peer = await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
+    peer.emit('bannedBy', pool2nodeKey.pubKey);
+
+    const node = pool['nodes']['nodes'].get(pool2nodeKey.pubKey)!;
+    expect(node.bannedBy).toEqual(true);
+  });
 });
