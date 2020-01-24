@@ -293,6 +293,9 @@ class Pool extends EventEmitter {
       }
       return;
     });
+    this.nodes.on('node.unban', (nodePubKey: string) => {
+      this.logger.info(`node ${nodePubKey} was unbanned`);
+    });
   }
 
   private verifyReachability = () => {
