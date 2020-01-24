@@ -278,6 +278,7 @@ class Pool extends EventEmitter {
       await this.loadingNodesPromise;
     }
     await Promise.all([this.unlisten(), this.closePendingConnections(), this.closePeers()]);
+    this.nodes.removeAllListeners();
     this.connected = false;
     this.disconnecting = false;
   }
