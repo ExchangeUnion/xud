@@ -13,7 +13,7 @@ const errorCodes = {
   CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: codesPrefix.concat('.6'),
   CONNECTION_RETRIES_REVOKED: codesPrefix.concat('.7'),
   COULD_NOT_CONNECT: codesPrefix.concat('.7'),
-  NODE_UNKNOWN: codesPrefix.concat('.8'),
+  NODE_NOT_FOUND: codesPrefix.concat('.8'),
   NODE_ALREADY_BANNED: codesPrefix.concat('.9'),
   NODE_NOT_BANNED: codesPrefix.concat('.10'),
   NODE_IS_BANNED: codesPrefix.concat('.11'),
@@ -83,7 +83,7 @@ const errors = {
   }),
   NODE_NOT_FOUND: (nodePubKey: string) => ({
     message: `node with pub key ${nodePubKey} not found`,
-    code: errorCodes.NODE_UNKNOWN,
+    code: errorCodes.NODE_NOT_FOUND,
   }),
   NODE_ALREADY_BANNED: (nodePubKey: string) => ({
     message: `node ${nodePubKey} has already been banned`,

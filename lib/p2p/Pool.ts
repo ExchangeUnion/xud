@@ -19,11 +19,6 @@ import * as packets from './packets/types';
 import Peer, { PeerInfo } from './Peer';
 import { Address, NodeConnectionInfo, NodeState, PoolConfig } from './types';
 
-type NodeReputationInfo = {
-  reputationScore: ReputationEvent;
-  banned?: boolean;
-};
-
 interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
@@ -412,20 +407,9 @@ class Pool extends EventEmitter {
   /**
    * Gets a node's reputation score and whether it is banned
    * @param nodePubKey The node pub key of the node for which to get reputation information
-   * @return true if the specified node exists and the event was added, false otherwise
    */
-  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
-    const node = this.nodes.get(nodePubKey);
-    if (node) {
-      const { reputationScore, banned } = node;
-      return {
-        reputationScore,
-        banned,
-      };
-    } else {
-      this.logger.warn(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) not found`);
-      throw errors.NODE_NOT_FOUND(nodePubKey);
-    }
+  public getNodeReputation = (nodePubKey: string) => {
+    return this.nodes.getNodeReputation(nodePubKey);
   }
 
   /**
@@ -649,32 +633,18 @@ class Pool extends EventEmitter {
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
     } else {
-      const banned = await this.nodes.ban(nodePubKey);
-      if (!banned) {
-        throw errors.NODE_NOT_FOUND(nodePubKey);
-      }
+      await this.nodes.ban(nodePubKey);
     }
   }
 
   public unbanNode = async (nodePubKey: string, reconnect: boolean): Promise<void> => {
     if (this.nodes.isBanned(nodePubKey)) {
-      const unbanned = await this.nodes.unBan(nodePubKey);
-      if (!unbanned) {
-        throw errors.NODE_NOT_FOUND(nodePubKey);
-      }
+      await this.nodes.unBan(nodePubKey);
 
-      const node = this.nodes.get(nodePubKey);
-      if (node) {
-        const Node: NodeConnectionInfo = {
-          nodePubKey,
-          addresses: node.addresses,
-          lastAddress: node.lastAddress,
-        };
+      if (reconnect) {
+        const nodeConnectionInfo = this.nodes.getNodeConnectionInfo(nodePubKey);
 
-        this.logger.info(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) was unbanned`);
-        if (reconnect) {
-          await this.tryConnectNode(Node, false);
-        }
+        await this.tryConnectNode(nodeConnectionInfo, false);
       }
     } else {
       throw errors.NODE_NOT_BANNED(nodePubKey);
