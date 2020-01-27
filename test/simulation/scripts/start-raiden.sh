@@ -1,6 +1,5 @@
 #!/bin/bash
-set -ex
-source .env
+
 RAIDEN_DATA_DIR=$1
 RAIDEN_PORT=$2
 RESOLVER_PORT=$3

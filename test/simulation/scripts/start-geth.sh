@@ -1,6 +1,5 @@
 #!/bin/bash
-set -ex
-source .env
+
 OVERRIDE_GETH_PORT=$1
 if [ -z "$OVERRIDE_GETH_PORT" ]; then
   GETH_PORT=0

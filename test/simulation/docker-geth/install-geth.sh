@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e
-source .env
 
 install_geth () {
   echo "installing geth"

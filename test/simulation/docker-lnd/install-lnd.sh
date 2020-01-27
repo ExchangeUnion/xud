@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e
-source .env
 
 delete_dir() {
 	if ! rm -rf  $1 >/dev/null 2>&1; then
@@ -25,9 +23,6 @@ else
       echo "deleting lnd directory"
       delete_dir ${LND_PATH}
     fi
-
-    echo "getting btcd..."
-    GOPATH=${GO_PATH} go get -u github.com/btcsuite/btcd
 
     echo "starting lnd clone..."
     if ! git clone -b ${LND_TAG} --depth 1 https://github.com/lightningnetwork/lnd ${LND_PATH} > /dev/null 2>&1; then

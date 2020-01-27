@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e
-source .env
 
 if [ -d "$GETH_DATA_DIR" ]; then
   rm -Rf "$GETH_DATA_DIR"

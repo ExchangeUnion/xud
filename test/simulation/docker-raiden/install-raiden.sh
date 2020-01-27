@@ -1,6 +1,5 @@
 #!/bin/bash
-set -e
-source .env
+
 install_raiden () {
   echo "installing raiden"
   git clone --depth 1 "$RAIDEN_REPOSITORY" -b "$RAIDEN_BRANCH" "$RAIDEN_PATH"

@@ -33,6 +33,19 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	log.Println("starting geth...")
+	_, err := execScript("./scripts/start-geth.sh")
+	if err != nil {
+		log.Fatalf("failed to start geth: %v", err)
+	}
+
+	log.Println("setting up ethereum chain...")
+	output, err := execScript("./scripts/install-ethereum.sh")
+	if err != nil {
+		log.Fatalf("failed to setup ethereum chain: %v", err)
+	}
+	log.Printf("ethereum chain setup output: %v", output)
+
 	cfg = loadConfig()
 
 	res := m.Run()
@@ -376,7 +389,7 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		log.Fatal(err)
 	}
 	gethPortStr := strconv.Itoa(gethPort)
-	gethCmd := exec.Command("./start-geth.sh", gethPortStr)
+	gethCmd := exec.Command("/geth-vol/start-geth.sh", gethPortStr)
 	startGethErr := gethCmd.Start()
 	if startGethErr != nil {
 		log.Fatal(startGethErr)
@@ -386,19 +399,19 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	// TODO: more reliable way to check when geth is up and running
 	time.Sleep(5 * time.Second)
 
-	autominerCmd := exec.Command("./start-autominer.sh")
+	autominerCmd := exec.Command("/geth-vol/start-autominer.sh")
 	startAutominerErr := autominerCmd.Start()
 	if startAutominerErr != nil {
 		log.Fatal(startAutominerErr)
 	}
 
-	raidenBobCmd := exec.Command("./start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
+	raidenBobCmd := exec.Command("/raiden-vol/start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
 	startRaidenBobErr := raidenBobCmd.Start()
 	if startRaidenBobErr != nil {
 		log.Fatal(startRaidenBobErr)
 	}
 
-	raidenAliceCmd := exec.Command("./start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
+	raidenAliceCmd := exec.Command("/raiden-vol/start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
 	startRaidenAliceErr := raidenAliceCmd.Start()
 	if startRaidenAliceErr != nil {
 		log.Fatal(startRaidenAliceErr)

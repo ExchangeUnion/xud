@@ -1,6 +1,4 @@
 #!/bin/bash
-set -e
-source .env
 
 install_ethereum_utils () {
   echo "installing ethereum utils"

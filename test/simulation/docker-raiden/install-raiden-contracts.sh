@@ -1,6 +1,5 @@
 #!/bin/bash
-set -e
-source .env
+
 install_contracts () {
   echo "installing raiden-contracts"
   git clone --depth 1 "$RAIDEN_CONTRACTS_REPOSITORY" -b "$RAIDEN_CONTRACTS_BRANCH" "$RAIDEN_CONTRACTS_PATH"

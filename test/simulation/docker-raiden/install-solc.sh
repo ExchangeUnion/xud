@@ -1,6 +1,5 @@
 #!/bin/bash
-set -ex
-source .env
+
 install_solc () {
   echo "installing solc"
   mkdir -p "$SOLC_PATH"

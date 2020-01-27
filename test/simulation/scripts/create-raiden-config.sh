@@ -1,6 +1,5 @@
 #!/bin/bash
-set -ex
-source .env
+
 RAIDEN_ADDRESS=$1
 RAIDEN_DATA_DIR=$2
 RAIDEN_CONF_FILE="$RAIDEN_DATA_DIR/config.toml"
