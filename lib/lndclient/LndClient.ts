@@ -206,11 +206,13 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to mark the client as locked. */
   private lock = async () => {
-    this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+    if (!this.walletUnlocker) {
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+    }
     if (this.lightning) {
       this.lightning.close();
+      this.lightning = undefined;
     }
-    this.lightning = undefined;
 
     if (!this.isWaitingUnlock()) {
       await this.setStatus(ClientStatus.WaitingUnlock);
@@ -220,12 +222,7 @@ class LndClient extends SwapClient {
 
   protected updateCapacity = async () => {
     await this.channelBalance().catch(async (err) => {
-      if (err.code === grpc.status.UNIMPLEMENTED) {
-        // if ChannelBalance is unimplemented, it means this lnd instance is online but locked
-        await this.lock();
-      } else {
-        this.logger.error('failed to update total outbound capacity', err);
-      }
+      this.logger.error('failed to update total outbound capacity', err);
     });
   }
 
@@ -239,6 +236,8 @@ class LndClient extends SwapClient {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
+          } else if (err.code === grpc.status.UNIMPLEMENTED) {
+            this.lock().catch(this.logger.error);
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -267,6 +266,8 @@ class LndClient extends SwapClient {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
+          } else if (err.code === grpc.status.UNIMPLEMENTED) {
+            this.lock().catch(this.logger.error);
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -473,14 +474,8 @@ class LndClient extends SwapClient {
           this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
         }
       } catch (err) {
-        if (err.code === grpc.status.UNIMPLEMENTED) {
-          // if GetInfo is unimplemented, it means this lnd instance is online but locked
-          await this.lock();
-        } else {
-          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
-          await this.disconnect();
-        }
+        const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+        this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
       }
     }
   }
