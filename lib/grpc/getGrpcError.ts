@@ -56,7 +56,8 @@ const getGrpcError = (err: any) => {
     case serviceErrorCodes.PENDING_CALL_CONFLICT:
       code = status.RESOURCE_EXHAUSTED;
       break;
-    case serviceErrorCodes.UNIMPLEMENTED:
+    case serviceErrorCodes.NODE_ALREADY_EXISTS:
+    case serviceErrorCodes.NODE_DOES_NOT_EXIST:
       code = status.UNIMPLEMENTED;
       break;
     case p2pErrorCodes.POOL_CLOSED:

@@ -39,7 +39,13 @@ export const callback = (argv: Arguments, formatOutput?: Function, displayJson?:
           console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
         }
       } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud is locked')) {
-        console.error("xud is locked, run 'xucli unlock' or 'xucli create' then try again");
+        console.error("xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again");
+      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud node cannot be created because it already exists')) {
+        console.error("an xud node already exists, try unlocking it with 'xucli unlock'");
+      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud node cannot be unlocked because it does not exist')) {
+        console.error("no xud node exists to unlock, try creating one with 'xucli create' or 'xucli restore'");
+      } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud init service is disabled')) {
+        console.error("xud is running and unlocked, try checking its status with 'xucli getinfo'");
       } else {
         console.error(`${error.name}: ${error.message}`);
       }

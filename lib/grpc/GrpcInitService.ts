@@ -5,13 +5,19 @@ import * as xudrpc from '../proto/xudrpc_pb';
 import getGrpcError from './getGrpcError';
 
 class GrpcInitService {
-  public disabled = false;
+  private disabled = false;
   private initService?: InitService;
 
   constructor() {}
 
-  public setInitService(initService: InitService) {
+  public setInitService = (initService: InitService) => {
     this.initService = initService;
+  }
+
+  /** Disables the grpc initialization service once xud has been intialized. */
+  public disable = () => {
+    this.disabled = true;
+    this.initService = undefined;
   }
 
   /**

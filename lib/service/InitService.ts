@@ -61,7 +61,7 @@ class InitService extends EventEmitter {
     const { password } = args;
 
     if (!this.nodeKeyExists) {
-      throw errors.UNIMPLEMENTED;
+      throw errors.NODE_DOES_NOT_EXIST;
     }
     await this.prepareCall();
 
@@ -131,7 +131,7 @@ class InitService extends EventEmitter {
 
   private newWalletValidation = (password: string) => {
     if (this.nodeKeyExists) {
-      throw errors.UNIMPLEMENTED;
+      throw errors.NODE_ALREADY_EXISTS;
     }
     if (password.length < 8) {
       // lnd requires 8+ character passwords, so we must as well

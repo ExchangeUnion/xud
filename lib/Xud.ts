@@ -137,7 +137,7 @@ class Xud extends EventEmitter {
         throw new Error('rpc server cannot be disabled when xud is locked');
       }
       if (this.rpcServer) {
-        this.rpcServer.grpcInitService.disabled = true;
+        this.rpcServer.grpcInitService.disable();
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
