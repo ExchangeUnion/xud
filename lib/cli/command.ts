@@ -32,12 +32,10 @@ export const callback = (argv: Arguments, formatOutput?: Function, displayJson?:
   return (error: grpc.ServiceError | null, response: GrpcResponse) => {
     if (error) {
       process.exitCode = 1;
-      if (error.code === status.UNAVAILABLE) {
-        if (error.message.includes('xud is starting')) {
-          console.error('xud is starting... try again in a few seconds');
-        } else {
-          console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
-        }
+      if (error.code === status.UNAVAILABLE && error.message.includes('xud is starting')) {
+        console.error('xud is starting... try again in a few seconds');
+      } else if (error.details === 'failed to connect to all addresses') {
+        console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
       } else if (error.code === status.UNIMPLEMENTED && error.message.includes('xud is locked')) {
         console.error("xud is locked, run 'xucli unlock' or 'xucli create' then try again");
       } else {
