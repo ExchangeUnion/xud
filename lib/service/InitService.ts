@@ -70,6 +70,12 @@ class InitService extends EventEmitter {
       this.emit('nodekey', nodeKey);
 
       return this.swapClientManager.unlockWallets(password);
+    } catch (err) {
+      if (err.code === 'ERR_OSSL_EVP_BAD_DECRYPT') {
+        throw errors.INVALID_ARGUMENT('password is incorrect');
+      } else {
+        throw err;
+      }
     } finally {
       this.pendingCall = false;
     }
