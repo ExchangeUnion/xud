@@ -9,5 +9,11 @@ import Sequelize from 'sequelize';
  */
 const migrations: ((sequelize: Sequelize.Sequelize) => Promise<void>)[] = [];
 
+migrations[0] = async (sequelize: Sequelize.Sequelize) => {
+  await sequelize.getQueryInterface().addColumn('nodes', 'bannedBy', {
+    type: Sequelize.BOOLEAN,
+    allowNull: true,
+  });
+};
 
 export default migrations;
