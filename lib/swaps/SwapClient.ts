@@ -125,9 +125,10 @@ abstract class SwapClient extends EventEmitter {
     // don't wait longer than the allotted time for the connection to
     // be verified to prevent initialization from hanging
     return new Promise<void>((resolve, reject) => {
-      const verifyTimeout = setTimeout(() => {
+      const verifyTimeout = setTimeout(async () => {
         // we could not verify the connection within the allotted time
         this.logger.info(`could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`);
+        await this.setStatus(ClientStatus.Disconnected);
         resolve();
       }, SwapClient.INITIALIZATION_TIME_LIMIT);
       this.verifyConnection().then(() => {
