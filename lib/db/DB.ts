@@ -17,6 +17,7 @@ type Models = {
   ReputationEvent: ModelCtor<db.ReputationEventInstance>;
   Order: ModelCtor<db.OrderInstance>;
   Trade: ModelCtor<db.TradeInstance>;
+  Password: ModelCtor<db.PasswordInstance>;
 };
 
 function loadModels(sequelize: Sequelize): Models {
@@ -28,6 +29,7 @@ function loadModels(sequelize: Sequelize): Models {
     ReputationEvent: Models.ReputationEvent(sequelize),
     SwapDeal: Models.SwapDeal(sequelize),
     Trade: Models.Trade(sequelize),
+    Password: Models.Password(sequelize),
   };
 
   models.Currency.hasMany(models.Pair, {
@@ -176,11 +178,12 @@ class DB {
       }
     }
 
-    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
+    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade, Password } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
+      Password.sync(),
     ]);
 
     // Pair is dependent on Currency, ReputationEvent is dependent on Node

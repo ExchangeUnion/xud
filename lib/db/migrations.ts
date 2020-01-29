@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import Sequelize, { DataTypes } from 'sequelize';
 
 /**
  * An ordered array of functions that will migrate the database from one
@@ -9,5 +9,14 @@ import Sequelize from 'sequelize';
  */
 const migrations: ((sequelize: Sequelize.Sequelize) => Promise<void>)[] = [];
 
+migrations[0] = async (sequelize: Sequelize.Sequelize) => {
+  await sequelize.getQueryInterface().createTable('passwords', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    encryptedPassword: { type: DataTypes.STRING, allowNull: false },
+    currency: { type: DataTypes.STRING(5), allowNull: true },
+    swapClient: { type: DataTypes.TINYINT, allowNull: false },
+    createdAt: { type: DataTypes.BIGINT, allowNull: false },
+  });
+};
 
 export default migrations;
