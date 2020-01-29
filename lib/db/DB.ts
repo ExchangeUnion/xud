@@ -1,11 +1,13 @@
 import { promises as fs } from 'fs';
-import { derivePairId } from '../utils/utils';
 import { ModelCtor, Sequelize } from 'sequelize';
 import { XuNetwork } from '../constants/enums';
 import { defaultCurrencies, defaultNodes, defaultPairs } from '../db/seeds';
 import Logger from '../Logger';
+import { derivePairId } from '../utils/utils';
+import migrations from './migrations';
 import * as Models from './models';
 import * as db from './types';
+import assert from 'assert';
 
 type Models = {
   Currency: ModelCtor<db.CurrencyInstance>;
@@ -119,6 +121,8 @@ class DB {
   public sequelize: Sequelize;
   public models: Models;
 
+  private static VERSION = 1;
+
   /**
    * @param storage the file path for the sqlite database file, if ':memory:' or not specified the db is stored in memory
    */
@@ -137,7 +141,8 @@ class DB {
    * @param initDb whether to intialize a new database with default values if no database exists
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
-    const shouldInitDb = initDb && await this.isNewDb();
+    const isNewDb = await this.isNewDb();
+    const shouldInitDb = initDb && isNewDb;
 
     try {
       await this.sequelize.authenticate();
@@ -146,12 +151,39 @@ class DB {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
+
+    if (isNewDb) {
+      await this.sequelize.query(`PRAGMA user_version=${DB.VERSION};`);
+    }
+
+    // version is useful for tracking migrations & upgrades to the xud database when
+    // the database schema is modified or restructured
+    let version: number;
+    const userVersionPragma = (await this.sequelize.query('PRAGMA user_version;'));
+    assert(Array.isArray(userVersionPragma) && Array.isArray(userVersionPragma[0]));
+    const userVersion = userVersionPragma[0][0].user_version;
+    assert(typeof userVersion === 'number');
+    version = userVersion;
+    this.logger.trace(`db version is ${version}`);
+
+    if (version <= DB.VERSION) {
+      // if our db is not the latest version, we call each migration procedure necessary
+      // to bring us from our current version up to the latest version.
+      for (let n = version; n < DB.VERSION; n += 1) {
+        this.logger.info(`migrating db from version ${n} to version ${n + 1}`);
+        await migrations[n](this.sequelize);
+        await this.sequelize.query(`PRAGMA user_version=${n + 1};`);
+        this.logger.info(`migration to version ${n + 1} complete`);
+      }
+    }
+
     const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
     await Promise.all([
       Node.sync(),
       Currency.sync(),
     ]);
+
     // Pair is dependent on Currency, ReputationEvent is dependent on Node
     await Promise.all([
       Pair.sync(),
