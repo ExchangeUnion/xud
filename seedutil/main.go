@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -26,7 +28,7 @@ var (
 	defaultKeyStorePath = filepath.Join(filepath.Dir(os.Args[0]))
 )
 
-func parseMnemonic(words []string) aezeed.Mnemonic{
+func parseMnemonic(words []string) aezeed.Mnemonic {
 	if len(words) < aezeed.NummnemonicWords {
 		fmt.Fprintf(os.Stderr, "\nerror: expecting %v-word mnemonic seed separated by spaces\n", aezeed.NummnemonicWords)
 		os.Exit(1)
@@ -54,7 +56,8 @@ func mnemonicToCipherSeed(mnemonic aezeed.Mnemonic, aezeedPassphrase *string) *a
 func main() {
 	keystoreCommand := flag.NewFlagSet("keystore", flag.ExitOnError)
 	encipherCommand := flag.NewFlagSet("encipher", flag.ExitOnError)
-	mnemonicCommand := flag.NewFlagSet("mnemonic", flag.ExitOnError)
+	decipherCommand := flag.NewFlagSet("decipher", flag.ExitOnError)
+	generateCommand := flag.NewFlagSet("generate", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
 		fmt.Println("subcommand is required")
@@ -117,9 +120,9 @@ func main() {
 		encipheredSeed, _ := cipherSeed.Encipher([]byte(*aezeedPassphrase))
 		fmt.Println(hex.EncodeToString(encipheredSeed[:]))
 	case "decipher":
-		aezeedPassphrase := mnemonicCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
-		mnemonicCommand.Parse(os.Args[2:])
-		args = mnemonicCommand.Args()
+		aezeedPassphrase := decipherCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
+		decipherCommand.Parse(os.Args[2:])
+		args = decipherCommand.Args()
 
 		mnemonic := parseMnemonic(args)
 		decipheredSeed, err := mnemonic.Decipher([]byte(*aezeedPassphrase))
@@ -129,6 +132,23 @@ func main() {
 		}
 
 		fmt.Println(hex.EncodeToString(decipheredSeed[:]))
+	case "generate":
+		aezeedPassphrase := generateCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
+		generateCommand.Parse(os.Args[2:])
+
+		cipherSeed, err := aezeed.New(0, nil, time.Now())
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		mnemonic, err := cipherSeed.ToMnemonic([]byte(*aezeedPassphrase))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Println(strings.Join([]string(mnemonic[:]), " "))
 	default:
 		flag.PrintDefaults()
 		os.Exit(1)

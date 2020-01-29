@@ -132,6 +132,17 @@ describe('SeedUtil decipher', () => {
   });
 });
 
+describe('SeedUtil generate', () => {
+  test('it prints a 24 word mnemonic which can be deciphered', async () => {
+    const cmd = './seedutil/seedutil generate';
+    const mnemonic = await executeCommand(cmd);
+    expect(mnemonic.split(' ')).toHaveLength(24);
+
+    const cmd2 = `./seedutil/seedutil decipher ${mnemonic}`;
+    await executeCommand(cmd2);
+  });
+});
+
 describe('SeedUtil keystore', () => {
   beforeEach(async () => {
     await deleteDir(DEFAULT_KEYSTORE_PATH);

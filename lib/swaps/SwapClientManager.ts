@@ -1,5 +1,5 @@
-import { promises as fs } from 'fs';
 import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
 import Config from '../Config';
 import { SwapClientType } from '../constants/enums';
 import { Models } from '../db/DB';
@@ -149,28 +149,6 @@ class SwapClientManager extends EventEmitter {
     } catch (currency) {
       throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
     }
-  }
-
-  /**
-   * Generates a cryptographically random 24 word seed mnemonic from an lnd client.
-   */
-  public genSeed = async () => {
-    const lndClients = this.getLndClientsMap().values();
-    // loop through swap clients until we find an lnd client awaiting unlock
-    for (const lndClient of lndClients) {
-      if (lndClient.isWaitingUnlock()) {
-        try {
-          const seed = await lndClient.genSeed();
-          return seed;
-        } catch (err) {
-          lndClient.logger.error('could not generate seed', err);
-        }
-      }
-    }
-
-    // TODO: use seedutil tool to generate a seed instead of throwing error
-    // when we can't generate one with lnd
-    throw errors.SWAP_CLIENT_WALLET_NOT_CREATED('could not generate aezeed');
   }
 
   /**

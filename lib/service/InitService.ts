@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import NodeKey from '../nodekey/NodeKey';
 import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
-import { decipher } from '../utils/seedutil';
+import { decipher, generate } from '../utils/seedutil';
 import errors from './errors';
 
 interface InitService {
@@ -32,7 +32,7 @@ class InitService extends EventEmitter {
     await this.prepareCall();
 
     try {
-      const seedMnemonic = await this.swapClientManager.genSeed();
+      const seedMnemonic = await generate();
 
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
       // to generate an xud nodekey from the same seed used for wallets
