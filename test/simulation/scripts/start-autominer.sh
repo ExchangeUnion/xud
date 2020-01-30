@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 # shellcheck source=/dev/null
 python3.7 -m venv "$ETH_UTILS_VENV_PATH"

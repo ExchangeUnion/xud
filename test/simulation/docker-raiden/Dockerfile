@@ -2,7 +2,7 @@ FROM golang:1.11
 RUN apt-get update --allow-releaseinfo-change --fix-missing && apt-get upgrade -y && apt-get clean
 RUN apt-get install -y curl python3.7 python3.7-dev python3.7-distutils python3-venv python3.7-venv
 
-ENV WD=/app
+ENV WD=/raiden-vol
 WORKDIR $WD
 
 ENV TEMP_PATH=${WD}/temp

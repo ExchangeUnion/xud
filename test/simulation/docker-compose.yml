@@ -15,7 +15,7 @@ services:
   raiden:
     build: ./docker-raiden
     volumes:
-      - raiden-vol:/app
+      - raiden-vol:/raiden-vol
   gomod:
     build:
       context: .

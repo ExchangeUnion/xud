@@ -44,7 +44,7 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			node.SetPubKey(res.NodePubKey)
 
 			// Get WETH contract address
-			file, err := os.Open("temp/weth-address.txt")
+			file, err := os.Open("./temp/weth-address.txt")
 			a.assert.NoError(err)
 			defer file.Close()
 

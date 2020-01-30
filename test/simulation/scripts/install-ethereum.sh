@@ -1,25 +1,24 @@
 #!/bin/bash
+set -ex
 
-echo "creating ethereum account..."
-./create-ethereum-account.sh "$TREASURY_ACCOUNT_PATH"
+$SCRIPTS_PATH/create-ethereum-account.sh "$TREASURY_ACCOUNT_PATH"
+
 RAIDEN_ADDRESS_BOB="0x$(< "$TREASURY_ACCOUNT_PATH" jq -r .address)"
-./generate-ethereum-blocks.sh 500 $RAIDEN_ADDRESS_BOB
+$SCRIPTS_PATH/generate-ethereum-blocks.sh 500 $RAIDEN_ADDRESS_BOB
 
-echo "starting autominer..."
-./start-autominer.sh
+# TODO: check why calling 'start-autominer.sh' from here is blocking when called from go test
 
-echo "deploying contracts..."
-./deploy-contracts.sh
+$SCRIPTS_PATH/deploy-contracts.sh
 
-
-echo "creating raiden config..."
 # raiden bob
-EIP55_RAIDEN_ADDRESS_BOB="$(exec ./address-to-eip55.sh "$RAIDEN_ADDRESS_BOB")"
-./create-raiden-config.sh "$EIP55_RAIDEN_ADDRESS_BOB" "$RAIDEN_DATA_DIR_BOB"
+EIP55_RAIDEN_ADDRESS_BOB="$(exec $SCRIPTS_PATH/address-to-eip55.sh "$RAIDEN_ADDRESS_BOB")"
+
+$SCRIPTS_PATH/create-raiden-config.sh "$EIP55_RAIDEN_ADDRESS_BOB" "$RAIDEN_DATA_DIR_BOB"
 # raiden alice
-./create-ethereum-account.sh "$ALICE_ACCOUNT_PATH"
+$SCRIPTS_PATH/create-ethereum-account.sh "$ALICE_ACCOUNT_PATH"
 RAIDEN_ADDRESS_ALICE="0x$(< "$ALICE_ACCOUNT_PATH" jq -r .address)"
-./generate-ethereum-blocks.sh 500 $RAIDEN_ADDRESS_ALICE
-EIP55_RAIDEN_ADDRESS_ALICE=$(exec ./address-to-eip55.sh "$RAIDEN_ADDRESS_ALICE")
-./create-raiden-config.sh "$EIP55_RAIDEN_ADDRESS_ALICE" "$RAIDEN_DATA_DIR_ALICE"
-./cleanup-processes.sh
+$SCRIPTS_PATH/generate-ethereum-blocks.sh 500 $RAIDEN_ADDRESS_ALICE
+
+EIP55_RAIDEN_ADDRESS_ALICE=$(exec $SCRIPTS_PATH/address-to-eip55.sh "$RAIDEN_ADDRESS_ALICE")
+$SCRIPTS_PATH/create-raiden-config.sh "$EIP55_RAIDEN_ADDRESS_ALICE" "$RAIDEN_DATA_DIR_ALICE"
+

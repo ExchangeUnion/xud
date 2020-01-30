@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 BLOCKS_TO_GENERATE=$1
 ETHERBASE=$2

@@ -9,7 +9,7 @@ install_raiden () {
   source venv/bin/activate
   pip install --upgrade pip
   pip install --upgrade -r requirements.txt
-  python setup.py develop
+  python3.7 setup.py develop
   deactivate
 }
 if [ ! -d "$RAIDEN_PATH" ]; then

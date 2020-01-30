@@ -39,12 +39,25 @@ func TestMain(m *testing.M) {
 		log.Fatalf("failed to start geth: %v", err)
 	}
 
+	log.Println("starting geth autominer...")
+	autominerCmd := exec.Command("./scripts/start-autominer.sh")
+	startAutominerErr := autominerCmd.Start()
+	if startAutominerErr != nil {
+		log.Fatal(startAutominerErr)
+	}
+
 	log.Println("setting up ethereum chain...")
 	output, err := execScript("./scripts/install-ethereum.sh")
 	if err != nil {
 		log.Fatalf("failed to setup ethereum chain: %v", err)
 	}
 	log.Printf("ethereum chain setup output: %v", output)
+
+	cleanupCmd := exec.Command("./scripts/cleanup-processes.sh")
+	if err := cleanupCmd.Run(); err != nil {
+		fmt.Printf("cleanup failure: %v", err)
+	}
+	log.Printf("cleanup processes complete")
 
 	cfg = loadConfig()
 
@@ -389,7 +402,7 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		log.Fatal(err)
 	}
 	gethPortStr := strconv.Itoa(gethPort)
-	gethCmd := exec.Command("/geth-vol/start-geth.sh", gethPortStr)
+	gethCmd := exec.Command("./scripts/start-geth.sh", gethPortStr)
 	startGethErr := gethCmd.Start()
 	if startGethErr != nil {
 		log.Fatal(startGethErr)
@@ -399,19 +412,19 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	// TODO: more reliable way to check when geth is up and running
 	time.Sleep(5 * time.Second)
 
-	autominerCmd := exec.Command("/geth-vol/start-autominer.sh")
+	autominerCmd := exec.Command("./scripts/start-autominer.sh")
 	startAutominerErr := autominerCmd.Start()
 	if startAutominerErr != nil {
 		log.Fatal(startAutominerErr)
 	}
 
-	raidenBobCmd := exec.Command("/raiden-vol/start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
+	raidenBobCmd := exec.Command("./scripts/start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
 	startRaidenBobErr := raidenBobCmd.Start()
 	if startRaidenBobErr != nil {
 		log.Fatal(startRaidenBobErr)
 	}
 
-	raidenAliceCmd := exec.Command("/raiden-vol/start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
+	raidenAliceCmd := exec.Command("./scripts/start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
 	startRaidenAliceErr := raidenAliceCmd.Start()
 	if startRaidenAliceErr != nil {
 		log.Fatal(startRaidenAliceErr)
@@ -453,7 +466,7 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 			log.Printf("xud network harness teared down")
 		}
 		log.Printf("cleaning up processes...")
-		cleanupCmd := exec.Command("./cleanup-processes.sh")
+		cleanupCmd := exec.Command("./scripts/cleanup-processes.sh")
 		err := cleanupCmd.Run()
 		if err != nil {
 			fmt.Printf("cleanup failure: %v", err)

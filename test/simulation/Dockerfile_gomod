@@ -1,9 +1,9 @@
 FROM golang:1.11
 
-WORKDIR /app
+ENV WD=/app
+WORKDIR $WD
 
 COPY go.mod .
 COPY go.sum .
-RUN go mod download
 
-#RUN GO111MODULE=on go get -d
+RUN GO111MODULE=on go get -d

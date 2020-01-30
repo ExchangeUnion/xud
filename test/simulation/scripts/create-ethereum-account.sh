@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 NEW_ACCOUNT_PATH=$1
 CREATED_ACCOUNT=$($GETH_BINARY_PATH --datadir "$GETH_DATA_DIR" --networkid "$GETH_NETWORK_ID" --exec "loadScript(\"/geth-vol/utils/create-account.js\")" attach | grep "account:" | awk '{print $2}')

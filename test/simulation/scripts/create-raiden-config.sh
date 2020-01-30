@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 RAIDEN_ADDRESS=$1
 RAIDEN_DATA_DIR=$2
