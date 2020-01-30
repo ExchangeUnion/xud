@@ -1,14 +1,47 @@
+import assert from 'assert';
+import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import toml from 'toml';
-import { deepMerge } from './utils/utils';
-import { promises as fs } from 'fs';
-import { LndClientConfig } from './lndclient/types';
-import { RaidenClientConfig } from './raidenclient/types';
-import { Level } from './Logger';
 import { XuNetwork } from './constants/enums';
-import { PoolConfig } from './p2p/types';
+import { LndClientConfig } from './lndclient/types';
+import { Level } from './Logger';
 import { OrderBookThresholds } from './orderbook/types';
+import { PoolConfig } from './p2p/types';
+import { RaidenClientConfig } from './raidenclient/types';
+import { deepMerge } from './utils/utils';
+
+const propAssertions = {
+  port: (val: number) => assert(val >= 0 && val <= 65535, 'port must be between 0 and 65535'),
+  cltvdelta: (val: number) => assert(val > 0, 'cltvdelta must be a positive number'),
+  discoverminutes: (val: number) => assert(val > 0, 'discoverminutes must be a positive number'),
+  minQuantity: (val: number) => assert(val >= 0, 'minQuantity must be 0 or a positive number'),
+};
+
+function validateConfig(propVal: any, defaultVal: any, propKey?: string, prefix?: string) {
+  const actualType = typeof propVal;
+  const expectedType = typeof defaultVal;
+  if (actualType === 'undefined') {
+    return; // this is an unspecified property that will use the default value
+  }
+  if (expectedType === 'undefined') {
+    return; // this is a superfluous property that we ignore for now
+  }
+  assert.equal(actualType, expectedType, `${prefix || ''}${propKey} is type ${actualType} but should be ${expectedType}`);
+
+  if (actualType === 'object') {
+    // if this is an object, we recurse
+    for (const nestedPropKey in propVal) {
+      const nestedPrefix = propKey ? `${prefix || ''}${propKey}.` : undefined;
+      validateConfig(propVal[nestedPropKey], defaultVal[nestedPropKey], nestedPropKey, nestedPrefix);
+    }
+  } else {
+    if (propKey && propKey in propAssertions) {
+      // shortcoming in typescript 3.6.4 `in` keyword type guard requires manual cast to any below
+      (propAssertions as any)[propKey](propVal);
+    }
+  }
+}
 
 class Config {
   public p2p: PoolConfig;
@@ -176,6 +209,8 @@ class Config {
     const configProps = await Config.readConfigProps(configPath);
 
     if (configProps) {
+      validateConfig(configProps, this);
+
       // set the network and xudir props up front because they influence default config values
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
@@ -208,6 +243,8 @@ class Config {
     }
 
     if (args) {
+      validateConfig(args, this);
+
       // override our config file with command line arguments
       deepMerge(this, args);
     }
