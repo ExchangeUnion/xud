@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { exec as childProcessExec } from 'child_process';
 import { promisify } from 'util';
 
@@ -49,4 +50,16 @@ async function decipher(mnemonic: string[]) {
   return Buffer.from(decipheredSeed, 'hex');
 }
 
-export { keystore, encipher, decipher };
+async function generate() {
+  const { stdout, stderr } = await exec('./seedutil/seedutil generate');
+
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  const mnemonic = stdout.trim().split(' ');
+  assert.equal(mnemonic.length, 24, 'seedutil did not generate mnemonic of exactly 24 words');
+  return mnemonic;
+}
+
+export { keystore, encipher, decipher, generate };
