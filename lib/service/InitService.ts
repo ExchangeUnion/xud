@@ -137,8 +137,12 @@ class InitService extends EventEmitter {
       // lnd requires 8+ character passwords, so we must as well
       throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
     }
-    if (this.swapClientManager.misconfiguredClientLabels.length > 0) {
-      throw swapErrors.SWAP_CLIENT_MISCONFIGURED(this.swapClientManager.misconfiguredClientLabels);
+    if (this.swapClientManager.misconfiguredClients.size > 0) {
+      const misconfiguredClientLabels: string[] = [];
+      this.swapClientManager.misconfiguredClients.forEach((client) => {
+        misconfiguredClientLabels.push(client.label);
+      });
+      throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);
     }
   }
 

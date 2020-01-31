@@ -22,11 +22,14 @@ interface LndClient {
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
 
+  once(event: 'initialized', listener: () => void): this;
+
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
   emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
+  emit(event: 'initialized'): boolean;
 }
 
 const MAXFEE = 0.03;
@@ -92,6 +95,10 @@ class LndClient extends SwapClient {
 
   public get minutesPerBlock() {
     return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
+  }
+
+  public get label() {
+    return `LND-${this.currency}`;
   }
 
   /**
@@ -173,6 +180,7 @@ class LndClient extends SwapClient {
 
     this.uri = `${host}:${port}`;
     await this.setStatus(ClientStatus.Initialized);
+    this.emit('initialized');
     if (this.initRetryTimeout) {
       clearTimeout(this.initRetryTimeout);
       this.initRetryTimeout = undefined;
