@@ -31,6 +31,17 @@ type PeerInfo = {
   raidenAddress?: string,
 };
 
+enum PeerStatus {
+  /** The peer was just created and we have not begun the handshake yet. */
+  New,
+  /** We have begun the handshake procedure with the peer. */
+  Opening,
+  /** We have received and authenticated a [[SessionInitPacket]] from the peer. */
+  Open,
+  /** We have closed this peer and its respective socket connection. */
+  Closed,
+}
+
 interface Peer {
   on(event: 'packet', listener: (packet: Packet) => void): this;
   on(event: 'reputation', listener: (event: ReputationEvent) => void): this;
@@ -53,9 +64,10 @@ interface Peer {
 
 /** Represents a remote peer and manages a TCP socket and incoming/outgoing communication with that peer. */
 class Peer extends EventEmitter {
-  // TODO: properties documentation
   public inbound!: boolean;
+  /** The reason this peer disconnected from us. */
   public recvDisconnectionReason?: DisconnectionReason;
+  /** The reason we told this peer we disconnected from it. */
   public sentDisconnectionReason?: DisconnectionReason;
   public expectedNodePubKey?: string;
   /** Whether the peer is included in the p2p pool list of peers and will receive broadcasted packets. */
@@ -72,20 +84,18 @@ class Peer extends EventEmitter {
   public disabledCurrencies = new Set<string>();
   /** Interval to check required responses from peer. */
   public static readonly STALL_INTERVAL = 5000;
+  private status = PeerStatus.New;
   /** Trading pairs advertised by this peer which we have verified that we can swap. */
   private activePairs = new Set<string>();
-  /** Whether we have received and authenticated a [[SessionInitPacket]] from the peer. */
-  private opened = false;
-  private opening = false;
   private socket?: Socket;
   private readonly parser: Parser;
-  private closed = false;
   /** Timer to retry connection to peer after the previous attempt failed. */
   private retryConnectionTimer?: NodeJS.Timer;
   private stallTimer?: NodeJS.Timer;
   private pingTimer?: NodeJS.Timer;
   private checkPairsTimer?: NodeJS.Timer;
   private readonly responseMap: Map<string, PendingResponseEntry> = new Map();
+  /** The epoch time in ms when we connected to this peer. */
   private connectTime!: number;
   private connectionRetriesRevoked = false;
   /** The version of xud this peer is using. */
@@ -245,13 +255,11 @@ class Peer extends EventEmitter {
       /** Whether to retry to connect upon failure. */
       retryConnecting?: boolean,
     }): Promise<packets.SessionInitPacket> => {
-    assert(!this.opening);
-    assert(!this.opened);
-    assert(!this.closed);
+    assert(this.status === PeerStatus.New);
     assert(this.inbound || expectedNodePubKey);
     assert(!retryConnecting || !this.inbound);
 
-    this.opening = true;
+    this.status = PeerStatus.Opening;
     this.expectedNodePubKey = expectedNodePubKey;
 
     await this.initConnection(retryConnecting);
@@ -269,14 +277,11 @@ class Peer extends EventEmitter {
    * @param sessionInit the session init packet we received when beginning the handshake
    */
   public completeOpen = async (ownNodeState: NodeState, ownNodeKey: NodeKey, ownVersion: string, sessionInit: packets.SessionInitPacket) => {
-    assert(this.opening);
-    assert(!this.opened);
-    assert(!this.closed);
-
-    this.opening = false;
-    this.opened = true;
+    assert(this.status === PeerStatus.Opening);
 
     await this.completeHandshake(ownNodeState, ownNodeKey, ownVersion, sessionInit);
+
+    this.status = PeerStatus.Open;
 
     // Setup the ping interval
     this.pingTimer = setInterval(this.sendPing, Peer.PING_INTERVAL);
@@ -289,12 +294,11 @@ class Peer extends EventEmitter {
    * Close a peer by ensuring the socket is destroyed and terminating all timers.
    */
   public close = async (reason?: DisconnectionReason, reasonPayload?: string): Promise<void> => {
-    if (this.closed) {
+    if (this.status === PeerStatus.Closed) {
       return;
     }
 
-    this.closed = true;
-    this.opened = false;
+    this.status = PeerStatus.Closed;
 
     if (this.socket) {
       if (!this.socket.destroyed) {
@@ -531,7 +535,7 @@ class Peer extends EventEmitter {
   }
 
   private initStall = (): void => {
-    assert(!this.closed);
+    assert(this.status !== PeerStatus.Closed);
     assert(!this.stallTimer);
 
     this.stallTimer = setInterval(this.checkTimeout, Peer.STALL_INTERVAL);
@@ -585,7 +589,7 @@ class Peer extends EventEmitter {
    * Wait for a packet to be received from peer.
    */
   private addResponseTimeout = (reqId: string, resType: ResponseType, timeout: number) => {
-    if (!this.closed) {
+    if (this.status !== PeerStatus.Closed) {
       const entry = this.getOrAddPendingResponseEntry(reqId, resType);
       entry.setTimeout(timeout);
     }
@@ -670,7 +674,7 @@ class Peer extends EventEmitter {
     parser.on('packet', this.handlePacket);
 
     parser.on('error', async (err: {message: string, code: string}) => {
-      if (this.closed) {
+      if (this.status === PeerStatus.Closed) {
         return;
       }
 
@@ -693,7 +697,10 @@ class Peer extends EventEmitter {
 
   /** Checks if a given packet is solicited and fulfills the pending response entry if it's a response. */
   private isPacketSolicited = async (packet: Packet): Promise<boolean> => {
-    if (!this.opened && packet.type !== PacketType.SessionInit && packet.type !== PacketType.SessionAck && packet.type !== PacketType.Disconnecting) {
+    if (this.status !== PeerStatus.Open
+        && packet.type !== PacketType.SessionInit
+        && packet.type !== PacketType.SessionAck
+        && packet.type !== PacketType.Disconnecting) {
       // until the connection is opened, we only accept SessionInit, SessionAck, and Disconnecting packets
       return false;
     }
