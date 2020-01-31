@@ -4,9 +4,10 @@ const codesPrefix = errorCodesPrefix.SERVICE;
 const errorCodes = {
   INVALID_ARGUMENT: codesPrefix.concat('.1'),
   NOMATCHING_MODE_IS_REQUIRED: codesPrefix.concat('.2'),
-  UNIMPLEMENTED: codesPrefix.concat('.3'),
+  NODE_ALREADY_EXISTS: codesPrefix.concat('.3'),
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
+  NODE_DOES_NOT_EXIST: codesPrefix.concat('.6'),
 };
 
 const errors = {
@@ -18,9 +19,9 @@ const errors = {
     message: 'nomatching mode is required',
     code: errorCodes.NOMATCHING_MODE_IS_REQUIRED,
   }),
-  UNIMPLEMENTED: {
-    message: 'call is not supported by the current state of xud',
-    code: errorCodes.UNIMPLEMENTED,
+  NODE_ALREADY_EXISTS: {
+    message: 'xud node cannot be created because it already exists',
+    code: errorCodes.NODE_ALREADY_EXISTS,
   },
   PENDING_CALL_CONFLICT: {
     message: 'a pending call is ongoing that conflicts with this call',
@@ -30,6 +31,10 @@ const errors = {
     message: `failed to open channel with nodePubKey: ${nodePubKey}, currency: ${currency}, amount: ${amount}, message: ${message}`,
     code: errorCodes.OPEN_CHANNEL_FAILURE,
   }),
+  NODE_DOES_NOT_EXIST: {
+    message: 'xud node cannot be unlocked because it does not exist',
+    code: errorCodes.NODE_DOES_NOT_EXIST,
+  },
 };
 
 export { errorCodes };
