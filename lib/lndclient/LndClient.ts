@@ -819,13 +819,6 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
-  public genSeed = async () => {
-    const genSeedResponse = await this.unaryWalletUnlockerCall<lndrpc.GenSeedRequest, lndrpc.GenSeedResponse>(
-      'genSeed', new lndrpc.GenSeedRequest(),
-    );
-    return genSeedResponse.getCipherSeedMnemonicList();
-  }
-
   public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
     Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
