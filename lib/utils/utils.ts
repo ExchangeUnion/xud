@@ -9,6 +9,8 @@ import { promisify } from 'util';
 import { Order, Pair } from '../orderbook/types';
 import p2pErrors from '../p2p/errors';
 
+const MAX_DECIMAL_PLACES = 12;
+
 /**
  * Gets the external IP of the node.
  */
@@ -103,6 +105,12 @@ export const groupBy = (arr: object[], keyGetter: (item: any) => string | number
     }
   });
   return ret;
+};
+
+/** Returns true if number has more than MAX_DECIMAL_PLACES, false otherwise. */
+export const checkDecimalPlaces = (digits: number) => {
+  const fixed = Number(digits.toFixed(MAX_DECIMAL_PLACES));
+  return fixed < digits;
 };
 
 /**

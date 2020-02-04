@@ -2,11 +2,13 @@ import { Arguments, Argv } from 'yargs';
 import { Order, OrderSide, PlaceOrderEvent, PlaceOrderRequest, PlaceOrderResponse, SwapFailure, SwapSuccess } from '../proto/xudrpc_pb';
 import { callback, loadXudClient } from './command';
 import { coinsToSats, satsToCoinsStr } from './utils';
+import { checkDecimalPlaces } from '../utils/utils';
 
 export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   const command = side === OrderSide.BUY ? 'buy' : 'sell';
   argv.option('quantity', {
     type: 'number',
+    describe: 'the quantity to trade',
   })
   .option('pair_id', {
     type: 'string',
@@ -59,6 +61,12 @@ export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
     }
   } else if (priceStr !== ('mkt') && priceStr !== ('market')) {
     console.log('price must be numeric for limit orders or "mkt"/"market" for market orders');
+    return;
+  }
+
+  if (checkDecimalPlaces(numericPrice)) {
+    process.exitCode = 1;
+    console.error('price cannot have more than 12 decimal places');
     return;
   }
 
