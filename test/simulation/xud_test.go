@@ -46,8 +46,16 @@ func TestMain(m *testing.M) {
 		log.Fatal(startAutominerErr)
 	}
 
+	log.Println("deploying raiden contracts...")
+	output, err := execScript("./scripts/deploy-contracts.sh")
+	if err != nil {
+		log.Fatalf("failed to deploy raiden contracts: %v", err)
+	}
+	log.Printf("deploy raiden contracts output: %v", output)
+	log.Println("deploying raiden contracts finished")
+
 	log.Println("setting up ethereum chain...")
-	output, err := execScript("./scripts/install-ethereum.sh")
+	output, err = execScript("./scripts/install-ethereum.sh")
 	if err != nil {
 		log.Fatalf("failed to setup ethereum chain: %v", err)
 	}
