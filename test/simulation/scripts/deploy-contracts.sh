@@ -20,6 +20,14 @@ python3.7 -m venv venv
 source "venv/bin/activate"
 
 echo "##### 1"
+echo $GETH_PROVIDER
+echo $TREASURY_ACCOUNT_PATH
+echo $PASSWORD_FILE
+
+ls -la $TREASURY_ACCOUNT_PATH
+ls -la $PASSWORD_FILE
+
+echo "##### 11"
 
 python3.7 -m raiden_contracts.deploy raiden --rpc-provider "$GETH_PROVIDER" --private-key "$TREASURY_ACCOUNT_PATH" --gas-price 10 --gas-limit 6000000 --max-token-networks 10 --password "$PASSWORD_FILE"
 

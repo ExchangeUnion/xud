@@ -8,7 +8,7 @@ $SCRIPTS_PATH/generate-ethereum-blocks.sh 500 $RAIDEN_ADDRESS_BOB
 
 # TODO: check why calling 'start-autominer.sh' from here is blocking when called from go test
 
-# $SCRIPTS_PATH/deploy-contracts.sh
+$SCRIPTS_PATH/deploy-contracts.sh
 
 # raiden bob
 EIP55_RAIDEN_ADDRESS_BOB="$(exec $SCRIPTS_PATH/address-to-eip55.sh "$RAIDEN_ADDRESS_BOB")"
