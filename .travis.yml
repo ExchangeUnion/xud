@@ -37,7 +37,7 @@ jobs:
       script:
         - npm run test:sim:build
         - npm run test:sim:run
-    - name: test:sim
+    - name: seedutil
       script:
         - npm run compile:seedutil
         - npm run test:seedutil
