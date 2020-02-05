@@ -25,9 +25,19 @@ addons:
   apt:
     update: true
 
-script:
-  - npm run lintNoFix
-  - npm run test
-  - npm run test:sim:build && npm run test:sim:run
-  - npm run compile:seedutil
-  - npm run test:seedutil
+jobs:
+  include:
+    - name: lintNoFix
+      script:
+        - npm run lintNoFix
+    - name: test
+      script:
+        - npm run test
+    - name: test:sim
+      script:
+        - npm run test:sim:build
+        - npm run test:sim:run
+    - name: test:sim
+      script:
+        - npm run compile:seedutil
+        - npm run test:seedutil
