@@ -41,7 +41,10 @@ func TestIntegration(t *testing.T) {
 	// and so the capacity checks would only trigger after 60 sec.
 	// We can solve this by making the capacity checks interval configurable.
 	xudNetwork, teardown := launchNetwork(true)
-	defer teardown()
+	defer func() {
+		time.Sleep(5 * time.Second)
+		teardown()
+	}()
 
 	ht := newHarnessTest(context.Background(), t)
 	t.Logf("Running %v integration tests", len(integrationTestCases))
