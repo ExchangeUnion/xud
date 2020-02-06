@@ -8,14 +8,6 @@ services:
     build: ./docker-lnd
     volumes:
       - lnd-vol:/app
-  geth:
-    build: ./docker-geth
-    volumes:
-      - geth-vol:/app
-  raiden:
-    build: ./docker-raiden
-    volumes:
-      - raiden-vol:/raiden-vol
   gomod:
     build:
       context: .
@@ -27,20 +19,13 @@ services:
     depends_on:
       - btcd
       - lnd
-      - geth
-      - raiden
       - gomod
     volumes:
       - btcd-vol:/btcd-vol
       - lnd-vol:/lnd-vol
-      - geth-vol:/geth-vol
-      - raiden-vol:/raiden-vol
       - gomod-vol:/gomod-vol
- #   command: go test -v
 volumes:
   btcd-vol:
   lnd-vol:
-  geth-vol:
-  raiden-vol:
   gomod-vol:
 

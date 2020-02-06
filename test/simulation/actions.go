@@ -9,9 +9,6 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
-	"os"
-	"strings"
 	"time"
 )
 
@@ -43,22 +40,13 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			// Set the node public key.
 			node.SetPubKey(res.NodePubKey)
 
-			// Get WETH contract address
-			file, err := os.Open("./temp/weth-address.txt")
-			a.assert.NoError(err)
-			defer file.Close()
-
-			wethAddressBytes, err := ioutil.ReadAll(file)
-			wethAddress := strings.TrimSpace(string(wethAddressBytes))
-			a.assert.NoError(err)
-
 			// Add currencies
 			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "")
 			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "")
-			a.addCurrency(node, "WETH", xudrpc.Currency_RAIDEN, wethAddress)
+
 			// Add pairs to the node.
 			a.addPair(node, "LTC", "BTC")
-			a.addPair(node, "WETH", "BTC")
+
 			break
 		}
 		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")

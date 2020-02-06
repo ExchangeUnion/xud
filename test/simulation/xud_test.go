@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -18,14 +17,12 @@ import (
 	ltctest "github.com/ltcsuite/ltcd/integration/rpctest"
 	ltcclient "github.com/ltcsuite/ltcd/rpcclient"
 	"github.com/ltcsuite/ltcutil"
-	"github.com/phayes/freeport"
 	btcchaincfg "github.com/roasbeef/btcd/chaincfg"
 	btcchainhash "github.com/roasbeef/btcd/chaincfg/chainhash"
 	btctest "github.com/roasbeef/btcd/integration/rpctest"
 	btcclient "github.com/roasbeef/btcd/rpcclient"
 	"github.com/roasbeef/btcutil"
 	"golang.org/x/net/context"
-	"strconv"
 )
 
 var (
@@ -33,40 +30,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	log.Println("starting geth...")
-	_, err := execScript("./scripts/start-geth.sh")
-	if err != nil {
-		log.Fatalf("failed to start geth: %v", err)
-	}
-
-	log.Println("starting geth autominer...")
-	autominerCmd := exec.Command("./scripts/start-autominer.sh")
-	startAutominerErr := autominerCmd.Start()
-	if startAutominerErr != nil {
-		log.Fatal(startAutominerErr)
-	}
-
-	//log.Println("deploying raiden contracts...")
-	//output, err := execScript("./scripts/deploy-contracts.sh")
-	//if err != nil {
-	//	log.Fatalf("failed to deploy raiden contracts: %v", err)
-	//}
-	//log.Printf("deploy raiden contracts output: %v", output)
-	//log.Println("deploying raiden contracts finished")
-
-	log.Println("setting up ethereum chain...")
-	output, err := execScript("./scripts/install-ethereum.sh")
-	if err != nil {
-		log.Fatalf("failed to setup ethereum chain: %v", err)
-	}
-	log.Printf("ethereum chain setup output: %v", output)
-
-	cleanupCmd := exec.Command("./scripts/cleanup-processes.sh")
-	if err := cleanupCmd.Run(); err != nil {
-		fmt.Printf("cleanup failure: %v", err)
-	}
-	log.Printf("cleanup processes complete")
-
 	cfg = loadConfig()
 
 	res := m.Run()
@@ -403,41 +366,6 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		log.Fatalf("lnd-btc: unable to set up test network: %v", err)
 	}
 
-	// Launch Ethereum network
-	log.Printf("ethereum: launching network...")
-	gethPort, err := freeport.GetFreePort()
-	if err != nil {
-		log.Fatal(err)
-	}
-	gethPortStr := strconv.Itoa(gethPort)
-	gethCmd := exec.Command("./scripts/start-geth.sh", gethPortStr)
-	startGethErr := gethCmd.Start()
-	if startGethErr != nil {
-		log.Fatal(startGethErr)
-	}
-
-	// wait for geth to boot
-	// TODO: more reliable way to check when geth is up and running
-	time.Sleep(5 * time.Second)
-
-	autominerCmd := exec.Command("./scripts/start-autominer.sh")
-	startAutominerErr := autominerCmd.Start()
-	if startAutominerErr != nil {
-		log.Fatal(startAutominerErr)
-	}
-
-	raidenBobCmd := exec.Command("./scripts/start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
-	startRaidenBobErr := raidenBobCmd.Start()
-	if startRaidenBobErr != nil {
-		log.Fatal(startRaidenBobErr)
-	}
-
-	raidenAliceCmd := exec.Command("./scripts/start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
-	startRaidenAliceErr := raidenAliceCmd.Start()
-	if startRaidenAliceErr != nil {
-		log.Fatal(startRaidenAliceErr)
-	}
-
 	// Launch XUD network.
 	xudHarness.SetLnd(lndBtcNetworkHarness, "BTC")
 	xudHarness.SetLnd(lndLtcNetworkHarness, "LTC")
@@ -473,26 +401,7 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		} else {
 			log.Printf("xud network harness teared down")
 		}
-		log.Printf("cleaning up processes...")
-		cleanupCmd := exec.Command("./scripts/cleanup-processes.sh")
-		err := cleanupCmd.Run()
-		if err != nil {
-			fmt.Printf("cleanup failure: %v", err)
-		}
-		log.Printf("cleanup complete")
 	}
 
 	return xudHarness, teardown
-}
-
-func execScript(command string) (string, error) {
-	cmd := exec.Command(command)
-
-	data, err := cmd.Output()
-	if err != nil {
-		// The program has exited with an exit code != 0
-		return "", fmt.Errorf("execScript error: %v", string(data))
-	}
-
-	return string(data), nil
 }
