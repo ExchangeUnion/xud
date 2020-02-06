@@ -1,11 +1,13 @@
-import http from 'http';
-import p2pErrors from '../p2p/errors';
-import { Pair, Order } from '../orderbook/types';
 import { createHash, randomBytes as cryptoRandomBytes } from 'crypto';
-import { promisify } from 'util';
-import moment from 'moment';
+import http from 'http';
 // @ts-ignore
 import createKeccakHash from 'keccak';
+import moment from 'moment';
+import os from 'os';
+import path from 'path';
+import { promisify } from 'util';
+import { Order, Pair } from '../orderbook/types';
+import p2pErrors from '../p2p/errors';
 
 /**
  * Gets the external IP of the node.
@@ -230,4 +232,13 @@ export const toEip55Address = (address: string) => {
     }
   }
   return ret;
+};
+
+export const getDefaultBackupDir = () => {
+  switch (os.platform()) {
+    case 'win32':
+      return path.join(process.env.LOCALAPPDATA!, 'Xud Backup');
+    default:
+      return path.join(process.env.HOME!, '.xud-backup');
+  }
 };

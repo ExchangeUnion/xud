@@ -59,6 +59,9 @@
     - [RemoveOrderResponse](#xudrpc.RemoveOrderResponse)
     - [RemovePairRequest](#xudrpc.RemovePairRequest)
     - [RemovePairResponse](#xudrpc.RemovePairResponse)
+    - [RestoreNodeRequest](#xudrpc.RestoreNodeRequest)
+    - [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry)
+    - [RestoreNodeResponse](#xudrpc.RestoreNodeResponse)
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
@@ -822,7 +825,8 @@
 | pair_id | [string](#string) |  | The trading pair that the order is for. |
 | order_id | [string](#string) |  | The local id to assign to the order. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether the order is a buy or sell. |
-| replace_order_id | [string](#string) |  | The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed (otherwise an error is returned). |
+| replace_order_id | [string](#string) |  | The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed, otherwise an error is returned. |
+| immediate_or_cancel | [bool](#bool) |  | Whether the order must be filled immediately and not allowed to enter the order book. |
 
 
 
@@ -941,6 +945,58 @@
 
 ### RemovePairResponse
 
+
+
+
+
+
+
+<a name="xudrpc.RestoreNodeRequest"></a>
+
+### RestoreNodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
+| password | [string](#string) |  | The password in utf-8 with which to encrypt the restored xud node key as well as any restored underlying wallets. |
+| lnd_backups | [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry) | repeated | A map between the currency of the LND and its multi channel SCB |
+| raiden_database | [bytes](#bytes) |  | The Raiden database backup |
+| raiden_database_path | [string](#string) |  | Path to where the Raiden database backup should be written |
+| xud_database | [bytes](#bytes) |  | The XUD database backup |
+
+
+
+
+
+
+<a name="xudrpc.RestoreNodeRequest.LndBackupsEntry"></a>
+
+### RestoreNodeRequest.LndBackupsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="xudrpc.RestoreNodeResponse"></a>
+
+### RestoreNodeResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| restored_raiden | [bool](#bool) |  | Whether raiden was initialized. |
 
 
 
@@ -1268,6 +1324,7 @@
 | ----------- | ------------ | ------------- | ------------|
 | CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. |
 | UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. |
+| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. |
 
  
 

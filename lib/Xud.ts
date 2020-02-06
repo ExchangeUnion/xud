@@ -117,11 +117,10 @@ class Xud extends EventEmitter {
         }
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
-        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists);
+        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
 
         this.rpcServer.grpcInitService.setInitService(initService);
-        this.logger.info("Node key is encrypted, unlock using 'xucli unlock' or set password using" +
-        " 'xucli create' if this is the first time starting xud");
+        this.logger.info("Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'");
         nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
           initService.once('nodekey', resolve);
           this.on('shutdown', () => {
@@ -138,7 +137,7 @@ class Xud extends EventEmitter {
         throw new Error('rpc server cannot be disabled when xud is locked');
       }
       if (this.rpcServer) {
-        this.rpcServer.grpcInitService.disabled = true;
+        this.rpcServer.grpcInitService.disable();
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
@@ -166,6 +165,7 @@ class Xud extends EventEmitter {
         swaps: this.swaps,
         nosanityswaps: this.config.nosanityswaps,
         nobalancechecks: this.config.nobalancechecks,
+        maxlimits: this.config.maxlimits,
       });
       initPromises.push(this.orderBook.init());
 

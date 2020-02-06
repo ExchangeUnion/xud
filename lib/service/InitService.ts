@@ -1,9 +1,10 @@
 import { EventEmitter } from 'events';
+import { promises as fs } from 'fs';
 import NodeKey from '../nodekey/NodeKey';
 import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
+import { decipher, generate } from '../utils/seedutil';
 import errors from './errors';
-import assert = require('assert');
 
 interface InitService {
   once(event: 'nodekey', listener: (nodeKey: NodeKey) => void): this;
@@ -13,68 +14,145 @@ interface InitService {
 /** A class containing the methods available for a locked, uninitialized instance of xud. */
 class InitService extends EventEmitter {
   /** Whether there is a pending `CreateNode` or `UnlockNode` call. */
-  public pendingCall = false;
+  private pendingCall = false;
 
-  constructor(private swapClientManager: SwapClientManager, private nodeKeyPath: string, private nodeKeyExists: boolean) {
+  constructor(
+    private swapClientManager: SwapClientManager,
+    private nodeKeyPath: string,
+    private nodeKeyExists: boolean,
+    private databasePath: string,
+  ) {
     super();
   }
 
   public createNode = async (args: { password: string }) => {
     const { password } = args;
-    if (password.length < 8) {
-      // lnd requires 8+ character passwords, so we must as well
-      throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
+
+    this.newWalletValidation(password);
+    await this.prepareCall();
+
+    try {
+      const seedMnemonic = await generate();
+
+      // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
+      // to generate an xud nodekey from the same seed used for wallets
+      // TODO: use seedutil tool to derive a child private key from deciphered seed key?
+      const decipheredSeed = await decipher(seedMnemonic);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+
+      // use this seed to init any lnd wallets that are uninitialized
+      const initWalletResult = await this.swapClientManager.initWallets({ seedMnemonic, walletPassword: password });
+      const initializedLndWallets = initWalletResult.initializedLndWallets;
+      const initializedRaiden = initWalletResult.initializedRaiden;
+
+      await nodeKey.toFile(this.nodeKeyPath, password);
+      this.emit('nodekey', nodeKey);
+      return {
+        initializedLndWallets,
+        initializedRaiden,
+        mnemonic: seedMnemonic,
+      };
+    } finally {
+      this.pendingCall = false;
     }
-    if (this.nodeKeyExists) {
-      throw errors.UNIMPLEMENTED;
-    }
-    if (this.swapClientManager.misconfiguredClientLabels.length > 0) {
-      throw swapErrors.SWAP_CLIENT_MISCONFIGURED(this.swapClientManager.misconfiguredClientLabels);
-    }
-    if (this.pendingCall) {
-      throw errors.PENDING_CALL_CONFLICT;
-    }
-
-    this.pendingCall = true;
-
-    // wait briefly for all lnd instances to be available
-    await this.swapClientManager.waitForLnd();
-
-    const seed = await this.swapClientManager.genSeed();
-    let initializedLndWallets: string[] | undefined;
-    let initializedRaiden = false;
-    let nodeKey: NodeKey;
-
-    const seedBytes = typeof seed.encipheredSeed === 'string' ?
-      Buffer.from(seed.encipheredSeed, 'base64') :
-      Buffer.from(seed.encipheredSeed);
-    assert.equal(seedBytes.length, 33);
-
-    // the seed is 33 bytes, the first byte of which is the version
-    // so we use the remaining 32 bytes to generate our private key
-    // TODO: use seedutil tool to derive a child private key from deciphered seed key?
-    const privKey = Buffer.from(seedBytes.slice(1));
-    nodeKey = new NodeKey(privKey);
-
-    // use this seed to init any lnd wallets that are uninitialized
-    const initWalletResult = await this.swapClientManager.initWallets(password, seed.cipherSeedMnemonicList);
-    initializedLndWallets = initWalletResult.initializedLndWallets;
-    initializedRaiden = initWalletResult.initializedRaiden;
-
-    await nodeKey.toFile(this.nodeKeyPath, password);
-    this.emit('nodekey', nodeKey);
-    return {
-      initializedLndWallets,
-      initializedRaiden,
-      mnemonic: seed ? seed.cipherSeedMnemonicList : undefined,
-    };
   }
 
   public unlockNode = async (args: { password: string }) => {
     const { password } = args;
+
     if (!this.nodeKeyExists) {
-      throw errors.UNIMPLEMENTED;
+      throw errors.NODE_DOES_NOT_EXIST;
     }
+    await this.prepareCall();
+
+    try {
+      const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
+      this.emit('nodekey', nodeKey);
+
+      return this.swapClientManager.unlockWallets(password);
+    } catch (err) {
+      if (err.code === 'ERR_OSSL_EVP_BAD_DECRYPT') {
+        throw errors.INVALID_ARGUMENT('password is incorrect');
+      } else {
+        throw err;
+      }
+    } finally {
+      this.pendingCall = false;
+    }
+  }
+
+  public restoreNode = async (args: {
+    password: string,
+    xudDatabase: Uint8Array,
+    lndBackupsMap: Map<string, Uint8Array>,
+    raidenDatabase: Uint8Array,
+    seedMnemonicList: string[],
+    raidenDatabasePath: string,
+  }) => {
+    const {
+      password,
+      xudDatabase,
+      lndBackupsMap,
+      raidenDatabase,
+      seedMnemonicList,
+      raidenDatabasePath,
+    } = args;
+
+    if (seedMnemonicList.length !== 24) {
+      throw errors.INVALID_ARGUMENT('mnemonic must be exactly 24 words');
+    }
+
+    this.newWalletValidation(password);
+    await this.prepareCall();
+
+    try {
+      const decipheredSeed = await decipher(seedMnemonicList);
+      const nodeKey = NodeKey.fromBytes(decipheredSeed);
+
+      // use the seed and database backups to restore any lnd wallets that are uninitialized
+      const initWalletResult = await this.swapClientManager.initWallets({
+        raidenDatabasePath,
+        raidenDatabase,
+        lndBackups: lndBackupsMap,
+        walletPassword: password,
+        seedMnemonic: seedMnemonicList,
+        restore: true,
+      });
+      const restoredLndWallets = initWalletResult.initializedLndWallets;
+      const restoredRaiden = initWalletResult.initializedRaiden;
+
+      if (xudDatabase.byteLength) {
+        await fs.writeFile(this.databasePath, xudDatabase);
+      }
+      await nodeKey.toFile(this.nodeKeyPath, password);
+      this.emit('nodekey', nodeKey);
+      return {
+        restoredLndWallets,
+        restoredRaiden,
+      };
+    } finally {
+      this.pendingCall = false;
+    }
+  }
+
+  private newWalletValidation = (password: string) => {
+    if (this.nodeKeyExists) {
+      throw errors.NODE_ALREADY_EXISTS;
+    }
+    if (password.length < 8) {
+      // lnd requires 8+ character passwords, so we must as well
+      throw errors.INVALID_ARGUMENT('password must be at least 8 characters');
+    }
+    if (this.swapClientManager.misconfiguredClients.size > 0) {
+      const misconfiguredClientLabels: string[] = [];
+      this.swapClientManager.misconfiguredClients.forEach((client) => {
+        misconfiguredClientLabels.push(client.label);
+      });
+      throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);
+    }
+  }
+
+  private prepareCall = async () => {
     if (this.pendingCall) {
       throw errors.PENDING_CALL_CONFLICT;
     }
@@ -82,12 +160,12 @@ class InitService extends EventEmitter {
     this.pendingCall = true;
 
     // wait briefly for all lnd instances to be available
-    await this.swapClientManager.waitForLnd();
-
-    const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
-    this.emit('nodekey', nodeKey);
-
-    return this.swapClientManager.unlockWallets(password);
+    try {
+      await this.swapClientManager.waitForLnd();
+    } catch (err) {
+      this.pendingCall = false; // end pending call if there's an error while waiting for lnd
+      throw err;
+    }
   }
 }
 

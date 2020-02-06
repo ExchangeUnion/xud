@@ -42,10 +42,11 @@ const deleteDir = async (path: string) => {
 
 const SUCCESS_KEYSTORE_CREATED = 'Keystore created';
 const ERRORS = {
-  INVALID_ARGS_LENGTH: 'expecting password and 24-word mnemonic seed separated by spaces',
+  INVALID_ARGS_LENGTH: 'expecting 24-word mnemonic seed separated by spaces',
   MISSING_ENCRYPTION_PASSWORD: 'expecting encryption password',
   INVALID_AEZEED: 'invalid aezeed',
   KEYSTORE_FILE_ALREADY_EXISTS: 'account already exists',
+  INVALID_PASSPHRASE: 'invalid passphrase',
 };
 
 const PASSWORD = 'wasspord';
@@ -73,30 +74,99 @@ const VALID_SEED_NO_PASS = {
 
 const DEFAULT_KEYSTORE_PATH = `${process.cwd()}/seedutil/keystore`;
 
-describe('SeedUtil', () => {
-  beforeEach(async () => {
-    await deleteDir(DEFAULT_KEYSTORE_PATH);
-  });
-
+describe('SeedUtil encipher', () => {
   test('it errors with no arguments', async () => {
-    await expect(executeCommand('./seedutil/seedutil'))
+    await expect(executeCommand('./seedutil/seedutil encipher'))
       .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
   });
 
   test('it errors with 23 words', async () => {
-    const cmd = `./seedutil/seedutil ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+    const cmd = `./seedutil/seedutil encipher ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
     await expect(executeCommand(cmd))
       .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
   });
 
   test('it errors with 24 words and invalid aezeed password', async () => {
-    const cmd = `./seedutil/seedutil ${VALID_SEED.seedWords.join(' ')}`;
+    const cmd = `./seedutil/seedutil encipher ${VALID_SEED.seedWords.join(' ')}`;
     await expect(executeCommand(cmd))
       .rejects.toThrow(ERRORS.INVALID_AEZEED);
   });
 
   test('it succeeds with 24 words, valid aezeed password', async () => {
-    const cmd = `./seedutil/seedutil  -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
+    const cmd = `./seedutil/seedutil encipher -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+
+  test('it succeeds with 24 words, no aezeed password', async () => {
+    const cmd = `./seedutil/seedutil encipher ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+});
+
+describe('SeedUtil decipher', () => {
+  test('it errors with no arguments', async () => {
+    await expect(executeCommand('./seedutil/seedutil decipher'))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 23 words', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 24 words and invalid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_PASSPHRASE);
+  });
+
+  test('it succeeds with 24 words, valid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+
+  test('it succeeds with 24 words, no aezeed password', async () => {
+    const cmd = `./seedutil/seedutil decipher ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd)).resolves.toMatchSnapshot();
+  });
+});
+
+describe('SeedUtil generate', () => {
+  test('it prints a 24 word mnemonic which can be deciphered', async () => {
+    const cmd = './seedutil/seedutil generate';
+    const mnemonic = await executeCommand(cmd);
+    expect(mnemonic.split(' ')).toHaveLength(24);
+
+    const cmd2 = `./seedutil/seedutil decipher ${mnemonic}`;
+    await executeCommand(cmd2);
+  });
+});
+
+describe('SeedUtil keystore', () => {
+  beforeEach(async () => {
+    await deleteDir(DEFAULT_KEYSTORE_PATH);
+  });
+
+  test('it errors with no arguments', async () => {
+    await expect(executeCommand('./seedutil/seedutil keystore'))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 23 words', async () => {
+    const cmd = `./seedutil/seedutil keystore ${VALID_SEED.seedWords.slice(0, 23).join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_ARGS_LENGTH);
+  });
+
+  test('it errors with 24 words and invalid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil keystore ${VALID_SEED.seedWords.join(' ')}`;
+    await expect(executeCommand(cmd))
+      .rejects.toThrow(ERRORS.INVALID_AEZEED);
+  });
+
+  test('it succeeds with 24 words, valid aezeed password', async () => {
+    const cmd = `./seedutil/seedutil keystore -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
     await expect(executeCommand(cmd))
       .resolves.toMatch(SUCCESS_KEYSTORE_CREATED);
     // Read our keystore file
@@ -113,7 +183,7 @@ describe('SeedUtil', () => {
   });
 
   test('it succeeds with 24 words, no aezeed password', async () => {
-    const cmd = `./seedutil/seedutil ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    const cmd = `./seedutil/seedutil keystore ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
     await expect(executeCommand(cmd))
       .resolves.toMatch(SUCCESS_KEYSTORE_CREATED);
     // Read our keystore file
@@ -126,7 +196,7 @@ describe('SeedUtil', () => {
   });
 
   test('it succeeds with 24 word and encryption password', async () => {
-    const cmd = `./seedutil/seedutil -pass=${PASSWORD} ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
+    const cmd = `./seedutil/seedutil keystore -pass=${PASSWORD} ${VALID_SEED_NO_PASS.seedWords.join(' ')}`;
     await expect(executeCommand(cmd))
       .resolves.toMatch(SUCCESS_KEYSTORE_CREATED);
     // Read our keystore file
@@ -140,7 +210,7 @@ describe('SeedUtil', () => {
 
   test('it allows custom keystore save path', async () => {
     const CUSTOM_PATH = `${process.cwd()}/seedutil/custom`;
-    const cmd = `./seedutil/seedutil -path=${CUSTOM_PATH} -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
+    const cmd = `./seedutil/seedutil keystore -path=${CUSTOM_PATH} -aezeedpass=${VALID_SEED.seedPassword} ${VALID_SEED.seedWords.join(' ')}`;
     await expect(executeCommand(cmd))
       .resolves.toMatch(SUCCESS_KEYSTORE_CREATED);
     // cleanup custom path

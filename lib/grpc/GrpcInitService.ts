@@ -1,17 +1,23 @@
 /* tslint:disable no-null-keyword */
 import grpc, { status } from 'grpc';
-import InitService from 'lib/service/InitService';
+import InitService from '../service/InitService';
 import * as xudrpc from '../proto/xudrpc_pb';
 import getGrpcError from './getGrpcError';
 
 class GrpcInitService {
-  public disabled = false;
+  private disabled = false;
   private initService?: InitService;
 
   constructor() {}
 
-  public setInitService(initService: InitService) {
+  public setInitService = (initService: InitService) => {
     this.initService = initService;
+  }
+
+  /** Disables the grpc initialization service once xud has been intialized. */
+  public disable = () => {
+    this.disabled = true;
+    this.initService = undefined;
   }
 
   /**
@@ -44,16 +50,13 @@ class GrpcInitService {
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
       }
-      if (initializedLndWallets) {
-        response.setInitializedLndsList(initializedLndWallets);
-      }
+      response.setInitializedLndsList(initializedLndWallets);
       response.setInitializedRaiden(initializedRaiden);
 
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-    this.initService.pendingCall = false;
   }
 
   /**
@@ -73,7 +76,38 @@ class GrpcInitService {
     } catch (err) {
       callback(getGrpcError(err), null);
     }
-    this.initService.pendingCall = false;
+  }
+
+  /**
+   * See [[InitService.restoreNode]]
+   */
+  public restoreNode: grpc.handleUnaryCall<xudrpc.RestoreNodeRequest, xudrpc.RestoreNodeResponse> = async (call, callback) => {
+    if (!this.isReady(this.initService, callback)) {
+      return;
+    }
+    try {
+      const password = call.request.getPassword();
+      const lndBackupsMap = call.request.getLndBackupsMap();
+      const raidenDatabase = call.request.getRaidenDatabase_asU8();
+      const seedMnemonicList = call.request.getSeedMnemonicList();
+      const raidenDatabasePath = call.request.getRaidenDatabasePath();
+      const xudDatabase = call.request.getXudDatabase_asU8();
+      const { restoredLndWallets, restoredRaiden } = await this.initService.restoreNode({
+        password,
+        seedMnemonicList,
+        raidenDatabasePath,
+        xudDatabase,
+        raidenDatabase,
+        lndBackupsMap,
+      });
+      const response = new xudrpc.RestoreNodeResponse();
+      response.setRestoredLndsList(restoredLndWallets);
+      response.setRestoredRaiden(restoredRaiden);
+
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
   }
 }
 

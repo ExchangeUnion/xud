@@ -19,6 +19,7 @@ describe('API Service', () => {
     price: 100,
     quantity: 1,
     side: OrderSide.Buy,
+    immediateOrCancel: false,
   };
 
   before(async () => {
@@ -41,10 +42,10 @@ describe('API Service', () => {
       },
       lnd: {
         LTC: {
-          disable: false,
+          disable: true,
         },
         BTC: {
-          disable: false,
+          disable: true,
         },
       },
       raiden: {

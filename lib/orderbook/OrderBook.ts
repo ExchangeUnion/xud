@@ -11,7 +11,7 @@ import Logger from '../Logger';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
-import limits from '../constants/limits';
+import { limits, maxLimits } from '../constants/limits';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
 import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
 import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
@@ -76,6 +76,7 @@ class OrderBook extends EventEmitter {
   private logger: Logger;
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
+  private maxlimits: boolean;
   private pool: Pool;
   private swaps: Swaps;
 
@@ -93,7 +94,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, maxlimits = false }:
   {
     logger: Logger,
     models: Models,
@@ -103,6 +104,7 @@ class OrderBook extends EventEmitter {
     nosanityswaps: boolean,
     nobalancechecks: boolean,
     nomatching?: boolean,
+    maxlimits?: boolean,
   }) {
     super();
 
@@ -112,6 +114,7 @@ class OrderBook extends EventEmitter {
     this.nomatching = nomatching;
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
+    this.maxlimits = maxlimits;
     this.thresholds = thresholds;
 
     this.repository = new OrderBookRepository(models);
@@ -316,7 +319,8 @@ class OrderBook extends EventEmitter {
     return pair.destroy();
   }
 
-  public placeLimitOrder = async (order: OwnLimitOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
+  public placeLimitOrder = async (order: OwnLimitOrder, immediateOrCancel = false,
+    onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
@@ -330,7 +334,7 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    return this.placeOrder(stampedOrder, false, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
+    return this.placeOrder(stampedOrder, immediateOrCancel, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
   }
 
   public placeMarketOrder = async (order: OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
@@ -404,17 +408,26 @@ class OrderBook extends EventEmitter {
       }
     }
 
-    if (this.pool.getNetwork() === XuNetwork.MainNet) {
-      // check if order abides by limits
-      const outboundCurrencyLimit = limits[outboundCurrency];
-      if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
-        throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
-      }
+    // check if order abides by limits
+    let outboundCurrencyLimit: number;
+    let inboundCurrencyLimit: number;
 
-      const inboundCurrencyLimit = limits[inboundCurrency];
-      if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
-        throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
-      }
+    if (this.pool.getNetwork() === XuNetwork.MainNet && !this.maxlimits) {
+      // if we're on mainnet and we haven't specified that we're using maximum limits
+      // then use the hardcoded mainnet order size limits
+      outboundCurrencyLimit = limits[outboundCurrency];
+      inboundCurrencyLimit = limits[inboundCurrency];
+    } else {
+      // otherwise use the maximum channel sizes as order size limits
+      outboundCurrencyLimit = maxLimits[outboundCurrency];
+      inboundCurrencyLimit = maxLimits[inboundCurrency];
+    }
+
+    if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
+      throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
+    }
+    if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
+      throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.
@@ -519,9 +532,13 @@ class OrderBook extends EventEmitter {
     // failed swaps will be added to the remaining order which may be added to the order book.
     await Promise.all(matchPromises);
 
-    if (remainingOrder && !discardRemaining) {
-      this.addOwnOrder(remainingOrder);
-      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
+    if (remainingOrder) {
+      if (discardRemaining) {
+        remainingOrder = undefined;
+      } else {
+        this.addOwnOrder(remainingOrder);
+        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
+      }
     }
 
     return {
@@ -617,6 +634,16 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
+  public getOwnOrderByLocalId = (localId: string) => {
+    const orderIdentifier = this.localIdMap.get(localId);
+    if (!orderIdentifier) {
+      throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
+    }
+
+    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    return order;
+  }
+
   /**
    * Removes all or part of an order from the order book by its local id. Throws an error if the
    * specified pairId is not supported or if the order to cancel could not be found.
@@ -628,12 +655,7 @@ class OrderBook extends EventEmitter {
    * @returns any quantity of the order that was on hold and could not be immediately removed (if allowed).
    */
   public removeOwnOrderByLocalId = (localId: string, allowAsyncRemoval?: boolean, quantityToRemove?: number) => {
-    const orderIdentifier = this.localIdMap.get(localId);
-    if (!orderIdentifier) {
-      throw errors.LOCAL_ID_DOES_NOT_EXIST(localId);
-    }
-
-    const order = this.getOwnOrder(orderIdentifier.id, orderIdentifier.pairId);
+    const order = this.getOwnOrderByLocalId(localId);
 
     let remainingQuantityToRemove = quantityToRemove || order.quantity;
 
@@ -644,7 +666,7 @@ class OrderBook extends EventEmitter {
 
     const removableQuantity = order.quantity - order.hold;
     if (remainingQuantityToRemove <= removableQuantity) {
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, remainingQuantityToRemove);
+      this.removeOwnOrder(order.id, order.pairId, remainingQuantityToRemove);
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
@@ -652,20 +674,20 @@ class OrderBook extends EventEmitter {
         throw errors.QUANTITY_ON_HOLD(localId, order.hold);
       }
 
-      this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, removableQuantity);
+      this.removeOwnOrder(order.id, order.pairId, removableQuantity);
       remainingQuantityToRemove -= removableQuantity;
 
       const failedHandler = (deal: SwapDeal) => {
-        if (deal.orderId === orderIdentifier.id) {
+        if (deal.orderId === order.id) {
           // remove the portion that failed now that it's not on hold
           const quantityToRemove = Math.min(deal.quantity!, remainingQuantityToRemove);
-          this.removeOwnOrder(orderIdentifier.id, orderIdentifier.pairId, quantityToRemove);
+          this.removeOwnOrder(order.id, order.pairId, quantityToRemove);
           cleanup(quantityToRemove);
         }
       };
 
       const paidHandler = (result: SwapSuccess) => {
-        if (result.orderId === orderIdentifier.id) {
+        if (result.orderId === order.id) {
           const quantityToRemove = Math.min(result.quantity, remainingQuantityToRemove);
           cleanup(quantityToRemove);
         }
@@ -873,7 +895,7 @@ class OrderBook extends EventEmitter {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
-    return { ...order, id, initialQuantity: order.quantity, createdAt: ms() };
+    return { ...order, id, initialQuantity: order.quantity, hold: 0, createdAt: ms() };
   }
 
   private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {

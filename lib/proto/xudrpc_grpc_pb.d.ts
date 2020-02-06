@@ -10,6 +10,7 @@ import * as annotations_pb from "./annotations_pb";
 interface IXudInitService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {
     createNode: IXudInitService_ICreateNode;
     unlockNode: IXudInitService_IUnlockNode;
+    restoreNode: IXudInitService_IRestoreNode;
 }
 
 interface IXudInitService_ICreateNode extends grpc.MethodDefinition<xudrpc_pb.CreateNodeRequest, xudrpc_pb.CreateNodeResponse> {
@@ -30,12 +31,22 @@ interface IXudInitService_IUnlockNode extends grpc.MethodDefinition<xudrpc_pb.Un
     responseSerialize: grpc.serialize<xudrpc_pb.UnlockNodeResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.UnlockNodeResponse>;
 }
+interface IXudInitService_IRestoreNode extends grpc.MethodDefinition<xudrpc_pb.RestoreNodeRequest, xudrpc_pb.RestoreNodeResponse> {
+    path: string; // "/xudrpc.XudInit/RestoreNode"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.RestoreNodeRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.RestoreNodeRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.RestoreNodeResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.RestoreNodeResponse>;
+}
 
 export const XudInitService: IXudInitService;
 
 export interface IXudInitServer {
     createNode: grpc.handleUnaryCall<xudrpc_pb.CreateNodeRequest, xudrpc_pb.CreateNodeResponse>;
     unlockNode: grpc.handleUnaryCall<xudrpc_pb.UnlockNodeRequest, xudrpc_pb.UnlockNodeResponse>;
+    restoreNode: grpc.handleUnaryCall<xudrpc_pb.RestoreNodeRequest, xudrpc_pb.RestoreNodeResponse>;
 }
 
 export interface IXudInitClient {
@@ -45,6 +56,9 @@ export interface IXudInitClient {
     unlockNode(request: xudrpc_pb.UnlockNodeRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
     unlockNode(request: xudrpc_pb.UnlockNodeRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
     unlockNode(request: xudrpc_pb.UnlockNodeRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
+    restoreNode(request: xudrpc_pb.RestoreNodeRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
+    restoreNode(request: xudrpc_pb.RestoreNodeRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
+    restoreNode(request: xudrpc_pb.RestoreNodeRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class XudInitClient extends grpc.Client implements IXudInitClient {
@@ -55,6 +69,9 @@ export class XudInitClient extends grpc.Client implements IXudInitClient {
     public unlockNode(request: xudrpc_pb.UnlockNodeRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
     public unlockNode(request: xudrpc_pb.UnlockNodeRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
     public unlockNode(request: xudrpc_pb.UnlockNodeRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnlockNodeResponse) => void): grpc.ClientUnaryCall;
+    public restoreNode(request: xudrpc_pb.RestoreNodeRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
+    public restoreNode(request: xudrpc_pb.RestoreNodeRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
+    public restoreNode(request: xudrpc_pb.RestoreNodeRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RestoreNodeResponse) => void): grpc.ClientUnaryCall;
 }
 
 interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplementation> {

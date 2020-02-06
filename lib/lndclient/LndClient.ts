@@ -1,30 +1,35 @@
-import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
-import Logger from '../Logger';
-import SwapClient, { ClientStatus, SwapClientInfo, PaymentState, ChannelBalance, TradingLimits } from '../swaps/SwapClient';
-import errors from './errors';
-import swapErrors from '../swaps/errors';
-import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
-import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
-import * as lndrpc from '../proto/lndrpc_pb';
-import * as lndinvoices from '../proto/lndinvoices_pb';
 import assert from 'assert';
 import { promises as fs, watch } from 'fs';
-import { SwapRole, SwapClientType, SwapState } from '../constants/enums';
+import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
+import path from 'path';
+import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
+import Logger from '../Logger';
+import { InvoicesClient } from '../proto/lndinvoices_grpc_pb';
+import * as lndinvoices from '../proto/lndinvoices_pb';
+import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
+import * as lndrpc from '../proto/lndrpc_pb';
+import swapErrors from '../swaps/errors';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
-import { LndClientConfig, LndInfo, ChannelCount, Chain, ClientMethods } from './types';
-import path from 'path';
+import errors from './errors';
+import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
-  on(event: 'channelBackup', listener: (channelBackup: string) => void): this;
+  on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
+  on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
+
+  once(event: 'initialized', listener: () => void): this;
 
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
-  emit(event: 'channelBackup', channelBackup: string): boolean;
+  emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
+  emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
+  emit(event: 'initialized'): boolean;
 }
 
 const MAXFEE = 0.03;
@@ -50,6 +55,7 @@ class LndClient extends SwapClient {
   private chainIdentifier?: string;
   private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private initRetryTimeout?: NodeJS.Timeout;
   private _totalOutboundAmount = 0;
   private _maxChannelOutboundAmount = 0;
   private _maxChannelInboundAmount = 0;
@@ -91,11 +97,21 @@ class LndClient extends SwapClient {
     return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
   }
 
+  public get label() {
+    return `LND-${this.currency}`;
+  }
+
   /**
    * Initializes the client for calls to lnd and verifies that we can connect to it.
    * @param awaitingCreate whether xud is waiting for its node key to be created
    */
   public init = async (awaitingCreate = false) => {
+    if (!this.isNotInitialized() && !this.isMisconfigured) {
+      // we only initialize from NotInitialized or Misconfigured status
+      this.logger.warn(`can not init in ${this.status} status`);
+      return;
+    }
+
     const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
     if (disable) {
       await this.setStatus(ClientStatus.Disabled);
@@ -140,6 +156,7 @@ class LndClient extends SwapClient {
     } else {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
       await this.setStatus(ClientStatus.Misconfigured);
+      this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
       return;
     }
 
@@ -153,6 +170,7 @@ class LndClient extends SwapClient {
           // we expect the macaroon to exist and disable this client otherwise
           this.logger.error(`could not load admin macaroon from ${macaroonpath}`);
           await this.setStatus(ClientStatus.Misconfigured);
+          this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
           return;
         }
       }
@@ -161,6 +179,12 @@ class LndClient extends SwapClient {
     }
 
     this.uri = `${host}:${port}`;
+    await this.setStatus(ClientStatus.Initialized);
+    this.emit('initialized');
+    if (this.initRetryTimeout) {
+      clearTimeout(this.initRetryTimeout);
+      this.initRetryTimeout = undefined;
+    }
     await this.verifyConnectionWithTimeout();
   }
 
@@ -188,8 +212,26 @@ class LndClient extends SwapClient {
     return this._maxChannelInboundAmount;
   }
 
+  /** Lnd specific procedure to mark the client as locked. */
+  private lock = async () => {
+    if (!this.walletUnlocker) {
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+    }
+    if (this.lightning) {
+      this.lightning.close();
+      this.lightning = undefined;
+    }
+
+    if (!this.isWaitingUnlock()) {
+      await this.setStatus(ClientStatus.WaitingUnlock);
+      this.emit('locked');
+    }
+  }
+
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(err => this.logger.error('failed to update total outbound capacity', err));
+    await this.channelBalance().catch(async (err) => {
+      this.logger.error('failed to update total outbound capacity', err);
+    });
   }
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
@@ -198,10 +240,16 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.lightning![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.lightning) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.lightning[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
+          } else if (err.code === grpc.status.UNIMPLEMENTED) {
+            this.lock().catch(this.logger.error);
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -226,10 +274,16 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.invoices![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.invoices) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.invoices[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
             this.disconnect().catch(this.logger.error);
+          } else if (err.code === grpc.status.UNIMPLEMENTED) {
+            this.lock().catch(this.logger.error);
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -246,7 +300,11 @@ class LndClient extends SwapClient {
         reject(errors.DISABLED);
         return;
       }
-      (this.walletUnlocker![methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
+      if (!this.walletUnlocker) {
+        reject(errors.UNAVAILABLE(this.currency, this.status));
+        return;
+      }
+      (this.walletUnlocker[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -436,21 +494,8 @@ class LndClient extends SwapClient {
           this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
         }
       } catch (err) {
-        if (err.code === grpc.status.UNIMPLEMENTED) {
-          // if GetInfo is unimplemented, it means this lnd instance is online but locked
-          this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
-          this.lightning.close();
-          this.lightning = undefined;
-
-          if (!this.isWaitingUnlock()) {
-            await this.setStatus(ClientStatus.WaitingUnlock);
-            this.emit('locked');
-          }
-        } else {
-          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-          this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
-          await this.disconnect();
-        }
+        const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+        this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
       }
     }
   }
@@ -699,7 +744,7 @@ class LndClient extends SwapClient {
     const CONNECT_TIMEOUT = 4000;
     for (const uri of splitListeningUris) {
       const { peerPubKey, address } = uri;
-      let timeout;
+      let timeout: NodeJS.Timeout | undefined;
       try {
         timeout = setTimeout(() => {
           throw new Error('connectPeer has timed out');
@@ -774,17 +819,21 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
   }
 
-  public genSeed = async (): Promise<lndrpc.GenSeedResponse.AsObject> => {
-    const genSeedResponse = await this.unaryWalletUnlockerCall<lndrpc.GenSeedRequest, lndrpc.GenSeedResponse>(
-      'genSeed', new lndrpc.GenSeedRequest(),
-    );
-    return genSeedResponse.toObject();
-  }
-
-  public initWallet = async (walletPassword: string, seedMnemonic: string[]): Promise<lndrpc.InitWalletResponse.AsObject> => {
+  public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
+    Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
     request.setCipherSeedMnemonicList(seedMnemonic);
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
+    if (restore) {
+      request.setRecoveryWindow(2500);
+    }
+    if (backup && backup.byteLength) {
+      const snapshot = new lndrpc.ChanBackupSnapshot();
+      const multiChanBackup = new lndrpc.MultiChanBackup();
+      multiChanBackup.setMultiChanBackup(backup);
+      snapshot.setMultiChanBackup(multiChanBackup);
+      request.setChannelBackups(snapshot);
+    }
     const initWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>(
       'initWallet', request,
     );
@@ -880,11 +929,17 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ListPaymentsRequest, lndrpc.ListPaymentsResponse>('listPayments', request);
   }
 
+  public restoreChannelBackup = (multiChannelBackup: Uint8Array) => {
+    const request = new lndrpc.RestoreChanBackupRequest();
+    request.setMultiChanBackup(multiChannelBackup);
+    return this.unaryCall<lndrpc.RestoreChanBackupRequest, lndrpc.RestoreBackupResponse>('restoreChannelBackups', request);
+  }
+
   public exportAllChannelBackup = async () => {
     const request = new lndrpc.ChanBackupExportRequest();
     const response = await this.unaryCall<lndrpc.ChanBackupExportRequest, lndrpc.ChanBackupSnapshot>('exportAllChannelBackups', request);
 
-    return response.getMultiChanBackup()!.getMultiChanBackup_asB64();
+    return response.getMultiChanBackup()!.getMultiChanBackup_asU8();
   }
 
   private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {
@@ -932,15 +987,11 @@ class LndClient extends SwapClient {
       return;
     }
 
-    const deleteChannelBackupSubscription = () => {
-      this.channelBackupSubscription = undefined;
-    };
-
     this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
       .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
         const multiBackup = backupSnapshot.getMultiChanBackup()!;
-        this.emit('channelBackup', multiBackup.getMultiChanBackup_asB64());
-      }).on('end', deleteChannelBackupSubscription).on('error', deleteChannelBackupSubscription);
+        this.emit('channelBackup', multiBackup.getMultiChanBackup_asU8());
+      }).on('end', this.disconnect).on('error', this.disconnect);
   }
 
   /**
@@ -974,6 +1025,17 @@ class LndClient extends SwapClient {
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = async () => {
+    if (this.isOperational()) {
+      await this.setStatus(ClientStatus.Disconnected);
+    }
+
+    if (this.channelBackupSubscription) {
+      // we emit channelBackupEnd event after all the disconnect related
+      // cleanup has been completed
+      this.channelBackupSubscription.cancel();
+      this.channelBackupSubscription = undefined;
+      this.emit('channelBackupEnd');
+    }
     if (this.lightning) {
       this.lightning.close();
       this.lightning = undefined;
@@ -990,9 +1052,9 @@ class LndClient extends SwapClient {
       this.watchMacaroonResolve(false);
       this.watchMacaroonResolve = undefined;
     }
-
-    if (this.isOperational()) {
-      await this.setStatus(ClientStatus.Disconnected);
+    if (this.initRetryTimeout) {
+      clearTimeout(this.initRetryTimeout);
+      this.initRetryTimeout = undefined;
     }
   }
 }

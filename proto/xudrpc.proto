@@ -32,6 +32,9 @@ service XudInit {
 
   /* Unlocks and decrypts the xud node key and any underlying wallets. */
   rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
+
+  /* Restores an xud instance and underlying wallets from a seed. */
+  rpc RestoreNode(RestoreNodeRequest) returns (RestoreNodeResponse) { }
 }
 
 message CreateNodeRequest {
@@ -60,6 +63,31 @@ message UnlockNodeResponse {
   bool unlocked_raiden = 2;
   // The list of lnd clients that could not be unlocked.
   repeated string locked_lnds = 3;
+}
+
+message RestoreNodeRequest {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
+  repeated string seed_mnemonic = 1;
+  // The password in utf-8 with which to encrypt the restored xud node key as well
+  // as any restored underlying wallets.
+  string password = 2;
+
+  // A map between the currency of the LND and its multi channel SCB
+  map<string, bytes> lnd_backups = 3;
+
+  // The Raiden database backup
+  bytes raiden_database = 4;
+  // Path to where the Raiden database backup should be written
+  string raiden_database_path = 5;
+
+  // The XUD database backup
+  bytes xud_database = 6;
+}
+message RestoreNodeResponse {
+  // The list of lnd clients that were initialized.
+  repeated string restored_lnds = 1;
+  // Whether raiden was initialized.
+  bool restored_raiden = 2;
 }
 
 service Xud {
@@ -618,8 +646,11 @@ message PlaceOrderRequest {
   string order_id = 4 [json_name = "order_id"];
   // Whether the order is a buy or sell.
   OrderSide side = 5 [json_name = "side"];
-  // The local id of an existing order to be replaced. If provided, the order must be successfully found and removed before the new order is placed (otherwise an error is returned).
+  // The local id of an existing order to be replaced. If provided, the order must be successfully
+  // found and removed before the new order is placed, otherwise an error is returned.
   string replace_order_id = 6 [json_name = "replace_order_id"];
+  // Whether the order must be filled immediately and not allowed to enter the order book.
+  bool immediate_or_cancel = 7 [json_name = "immediate_or_cancel"];
 }
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.
