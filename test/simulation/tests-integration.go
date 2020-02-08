@@ -13,10 +13,6 @@ var integrationTestCases = []*testCase{
 		test: testNetworkInit,
 	},
 	{
-		name: "raiden swap",
-		test: testRaidenSwap,
-	},
-	{
 		name: "order matching and swap",
 		test: testOrderMatchingAndSwap,
 	},

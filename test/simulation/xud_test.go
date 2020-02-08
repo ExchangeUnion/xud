@@ -18,14 +18,12 @@ import (
 	ltctest "github.com/ltcsuite/ltcd/integration/rpctest"
 	ltcclient "github.com/ltcsuite/ltcd/rpcclient"
 	"github.com/ltcsuite/ltcutil"
-	"github.com/phayes/freeport"
 	btcchaincfg "github.com/roasbeef/btcd/chaincfg"
 	btcchainhash "github.com/roasbeef/btcd/chaincfg/chainhash"
 	btctest "github.com/roasbeef/btcd/integration/rpctest"
 	btcclient "github.com/roasbeef/btcd/rpcclient"
 	"github.com/roasbeef/btcutil"
 	"golang.org/x/net/context"
-	"strconv"
 )
 
 var (
@@ -39,19 +37,6 @@ func TestMain(m *testing.M) {
 		log.Fatalf("installation failure: %v", err)
 	}
 	log.Printf("installation output: %v", output)
-
-	log.Println("starting geth...")
-	_, err = execScript("./start-geth.sh")
-	if err != nil {
-		log.Fatalf("failed to start geth: %v", err)
-	}
-
-	log.Println("setting up ethereum chain...")
-	output, err = execScript("./install-ethereum.sh")
-	if err != nil {
-		log.Fatalf("failed to setup ethereum chain: %v", err)
-	}
-	log.Printf("ethereum chain setup output: %v", output)
 
 	cfg = loadConfig()
 
@@ -387,41 +372,6 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	log.Printf("lnd-btc: launching network...")
 	if err = lndBtcNetworkHarness.SetUp(nil); err != nil {
 		log.Fatalf("lnd-btc: unable to set up test network: %v", err)
-	}
-
-	// Launch Ethereum network
-	log.Printf("ethereum: launching network...")
-	gethPort, err := freeport.GetFreePort()
-	if err != nil {
-		log.Fatal(err)
-	}
-	gethPortStr := strconv.Itoa(gethPort)
-	gethCmd := exec.Command("./start-geth.sh", gethPortStr)
-	startGethErr := gethCmd.Start()
-	if startGethErr != nil {
-		log.Fatal(startGethErr)
-	}
-
-	// wait for geth to boot
-	// TODO: more reliable way to check when geth is up and running
-	time.Sleep(5 * time.Second)
-
-	autominerCmd := exec.Command("./start-autominer.sh")
-	startAutominerErr := autominerCmd.Start()
-	if startAutominerErr != nil {
-		log.Fatal(startAutominerErr)
-	}
-
-	raidenBobCmd := exec.Command("./start-raiden-bob.sh", strconv.Itoa(xudHarness.Bob.Cfg.RaidenPort), strconv.Itoa(xudHarness.Bob.Cfg.HTTPPort), gethPortStr)
-	startRaidenBobErr := raidenBobCmd.Start()
-	if startRaidenBobErr != nil {
-		log.Fatal(startRaidenBobErr)
-	}
-
-	raidenAliceCmd := exec.Command("./start-raiden-alice.sh", strconv.Itoa(xudHarness.Alice.Cfg.RaidenPort), strconv.Itoa(xudHarness.Alice.Cfg.HTTPPort), gethPortStr)
-	startRaidenAliceErr := raidenAliceCmd.Start()
-	if startRaidenAliceErr != nil {
-		log.Fatal(startRaidenAliceErr)
 	}
 
 	// Launch XUD network.
