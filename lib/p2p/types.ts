@@ -44,6 +44,8 @@ export type PoolConfig = {
   /** Which port to listen on. If 0, a random unused port will be used. */
   port: number;
 
+  /** Whether to allow connections to tor nodes. */
+  tor: boolean;
   /**
    * An array of IP addresses or host names which can be used to connect to this server.
    * It will be advertised with peers for them to try to connect to the server in the future.

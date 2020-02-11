@@ -17,6 +17,7 @@ const getGrpcError = (err: any) => {
     case serviceErrorCodes.INVALID_ARGUMENT:
     case p2pErrorCodes.ATTEMPTED_CONNECTION_TO_SELF:
     case p2pErrorCodes.UNEXPECTED_NODE_PUB_KEY:
+    case p2pErrorCodes.NODE_TOR_ADDRESS:
     case orderErrorCodes.MIN_QUANTITY_VIOLATED:
     case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
     case orderErrorCodes.EXCEEDING_LIMIT:

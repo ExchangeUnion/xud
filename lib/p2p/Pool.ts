@@ -408,6 +408,11 @@ class Pool extends EventEmitter {
       throw errors.ATTEMPTED_CONNECTION_TO_SELF;
     }
 
+    // check if we allow connections to tor addresses
+    if (!this.config.tor && address.host.indexOf('.onion') !== -1) {
+      throw errors.NODE_TOR_ADDRESS(nodePubKey, address);
+    }
+
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_IS_BANNED(nodePubKey);
     }

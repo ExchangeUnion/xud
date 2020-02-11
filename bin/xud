@@ -148,6 +148,12 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'p',
     },
+    'p2p.tor': {
+      describe: 'Allow connections to tor nodes',
+      type: 'boolean',
+      default: undefined,
+      alias: 't',
+    },
     'raiden.disable': {
       describe: 'Disable raiden integration',
       type: 'boolean',
