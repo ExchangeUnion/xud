@@ -17,7 +17,7 @@
   "paths": {
     "/v1/addcurrency": {
       "post": {
-        "summary": "Adds a currency to the list of supported currencies. Once added, the currency may be used for\nnew trading pairs.",
+        "summary": "Adds a currency to the list of supported currencies. Once added, the currency may be used for\nnew trading pairs.\nshell: xucli addcurrency \u003ccurrency\u003e \u003cswap_client\u003e [decimal_places] [token_address]",
         "operationId": "AddCurrency",
         "responses": {
           "200": {
@@ -44,7 +44,7 @@
     },
     "/v1/addpair": {
       "post": {
-        "summary": "Adds a trading pair to the list of supported trading pairs. The newly supported pair is\nadvertised to peers so they may begin sending orders for it.",
+        "summary": "Adds a trading pair to the list of supported trading pairs. The newly supported pair is\nadvertised to peers so they may begin sending orders for it.\nshell: xucli addpair \u003cbase_currency\u003e \u003cquote_currency\u003e",
         "operationId": "AddPair",
         "responses": {
           "200": {
@@ -71,7 +71,7 @@
     },
     "/v1/balance": {
       "get": {
-        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.",
+        "summary": "Gets the total balance available across all payment channels and wallets for one or all currencies.\nshell: xucli getbalance [currency]",
         "operationId": "GetBalance",
         "responses": {
           "200": {
@@ -97,7 +97,7 @@
     },
     "/v1/ban": {
       "post": {
-        "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.",
+        "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.\nshell: xucli ban \u003cnode_key\u003e",
         "operationId": "Ban",
         "responses": {
           "200": {
@@ -124,7 +124,7 @@
     },
     "/v1/connect": {
       "post": {
-        "summary": "Attempts to connect to a node. Once connected, the node is added to the list of peers and\nbecomes available for swaps and trading. A handshake exchanges information about the peer's\nsupported trading and swap clients. Orders will be shared with the peer upon connection and\nupon new order placements.",
+        "summary": "Attempts to connect to a node. Once connected, the node is added to the list of peers and\nbecomes available for swaps and trading. A handshake exchanges information about the peer's\nsupported trading and swap clients. Orders will be shared with the peer upon connection and\nupon new order placements.\nshell: xucli connect \u003cnode_uri\u003e",
         "operationId": "Connect",
         "responses": {
           "200": {
@@ -151,7 +151,7 @@
     },
     "/v1/currencies": {
       "get": {
-        "summary": "Gets a list of this node's supported currencies.",
+        "summary": "Gets a list of this node's supported currencies.\nshell: xucli listcurrencies",
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
@@ -195,7 +195,7 @@
     },
     "/v1/executeswap": {
       "post": {
-        "summary": "Execute a swap on a maker peer order",
+        "summary": "Executes a swap on a maker peer order.",
         "operationId": "ExecuteSwap",
         "responses": {
           "200": {
@@ -222,7 +222,7 @@
     },
     "/v1/info": {
       "get": {
-        "summary": "Gets general information about this node.",
+        "summary": "Gets general information about this node.\nshell: xucli getinfo",
         "operationId": "GetInfo",
         "responses": {
           "200": {
@@ -239,6 +239,7 @@
     },
     "/v1/listtrades": {
       "post": {
+        "summary": "Gets a list of completed trades.\nshell: xucli listtrades [limit]",
         "operationId": "ListTrades",
         "responses": {
           "200": {
@@ -265,7 +266,7 @@
     },
     "/v1/nodeinfo": {
       "get": {
-        "summary": "Gets general information about a node.",
+        "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_key\u003e",
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
@@ -291,7 +292,7 @@
     },
     "/v1/openchannel": {
       "post": {
-        "summary": "Opens a payment channel to a peer with the given node pub key for the specified amount and currency.",
+        "summary": "Opens a payment channel to a peer with the given node pub key for the specified amount and currency.\nshell: xucli openchannel \u003cnode_key\u003e \u003ccurrency\u003e \u003camount\u003e",
         "operationId": "OpenChannel",
         "responses": {
           "200": {
@@ -308,7 +309,7 @@
     },
     "/v1/orders": {
       "get": {
-        "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.",
+        "summary": "Gets orders from the order book. This call returns the state of the order book at a given point\nin time, although it is not guaranteed to still be vaild by the time a response is received\nand processed by a client. It accepts an optional trading pair id parameter. If specified, only\norders for that particular trading pair are returned. Otherwise, all orders are returned. Orders\nare separated into buys and sells for each trading pair, but unsorted.\nshell: xucli listorders [pair_id] [include_own_orders] [limit]",
         "operationId": "ListOrders",
         "responses": {
           "200": {
@@ -350,7 +351,7 @@
     },
     "/v1/pairs": {
       "get": {
-        "summary": "Gets a list of this nodes suported trading pairs.",
+        "summary": "Gets a list of this nodes suported trading pairs.\nshell: xucli listpairs",
         "operationId": "ListPairs",
         "responses": {
           "200": {
@@ -367,7 +368,7 @@
     },
     "/v1/peers": {
       "get": {
-        "summary": "Gets a list of connected peers.",
+        "summary": "Gets a list of connected peers.\nshell: xucli listpeers",
         "operationId": "ListPeers",
         "responses": {
           "200": {
@@ -411,7 +412,7 @@
     },
     "/v1/placeordersync": {
       "post": {
-        "summary": "The synchronous non-streaming version of PlaceOrder.",
+        "summary": "The synchronous, non-streaming version of PlaceOrder.\nshell: xucli buy \u003cquantity\u003e \u003cpair_id\u003e \u003cprice\u003e [order_id] [stream]\nshell: xucli sell \u003cquantity\u003e \u003cpair_id\u003e \u003cprice\u003e [order_id] [stream]",
         "operationId": "PlaceOrderSync",
         "responses": {
           "200": {
@@ -438,7 +439,7 @@
     },
     "/v1/removecurrency": {
       "post": {
-        "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed. Once removed, the currency can no\nlonger be used for any supported trading pairs.",
+        "summary": "Removes a currency from the list of supported currencies. Only currencies that are not in use\nfor any currently supported trading pairs may be removed. Once removed, the currency can no\nlonger be used for any supported trading pairs.\nshell: xucli removecurrency \u003ccurrency\u003e",
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
@@ -465,7 +466,7 @@
     },
     "/v1/removeorder": {
       "post": {
-        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid. Any portion of the order that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.",
+        "summary": "Removes an order from the order book by its local id. This should be called when an order is\ncanceled or filled outside of xud. Removed orders become immediately unavailable for swaps,\nand peers are notified that the order is no longer valid. Any portion of the order that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.\nshell: xucli removeorder \u003corder_id\u003e [quantity]",
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
@@ -492,7 +493,7 @@
     },
     "/v1/removepair": {
       "post": {
-        "summary": "Removes a trading pair from the list of currently supported trading pair. This call will\neffectively cancel any standing orders for that trading pair. Peers are informed when a pair\nis no longer supported so that they will know to stop sending orders for it.",
+        "summary": "Removes a trading pair from the list of currently supported trading pair. This call will\neffectively cancel any standing orders for that trading pair. Peers are informed when a pair\nis no longer supported so that they will know to stop sending orders for it.\nshell: xucli removepair \u003cpair_id\u003e",
         "operationId": "RemovePair",
         "responses": {
           "200": {
@@ -519,7 +520,7 @@
     },
     "/v1/shutdown": {
       "post": {
-        "summary": "Begin gracefully shutting down xud.",
+        "summary": "Begin gracefully shutting down xud.\nshell: xucli shutdown",
         "operationId": "Shutdown",
         "responses": {
           "200": {
@@ -627,7 +628,7 @@
     },
     "/v1/tradinglimits": {
       "get": {
-        "summary": "Gets the trading limits for one or all currencies.",
+        "summary": "Gets the trading limits for one or all currencies.\nshell: xucli tradinglimits [currency]",
         "operationId": "TradingLimits",
         "responses": {
           "200": {
@@ -653,7 +654,7 @@
     },
     "/v1/unban": {
       "post": {
-        "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.",
+        "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.\nshell: xucli unban \u003cnode_key\u003e [reconnect]",
         "operationId": "Unban",
         "responses": {
           "200": {

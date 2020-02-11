@@ -24,75 +24,28 @@ import "annotations.proto";
 
 package xudrpc;
 
+/* A service for interacting with a locked or uninitalized xud node. */
 service XudInit {
   /* Creates an xud identity node key and underlying wallets. The node key and
    * wallets are derived from a single seed and encrypted using a single
-   * password provided as a parameter to the call. */
+   * password provided as a parameter to the call. 
+   * shell: xucli create */
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
-  /* Unlocks and decrypts the xud node key and any underlying wallets. */
-  rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
-
-  /* Restores an xud instance and underlying wallets from a seed. */
+  /* Restores an xud instance and underlying wallets from a seed.
+   * shell: xucli restore [backup_directory] [raiden_database_path] */
   rpc RestoreNode(RestoreNodeRequest) returns (RestoreNodeResponse) { }
+
+  /* Unlocks and decrypts the xud node key and any underlying wallets.
+   * shell: xucli unlock */
+  rpc UnlockNode(UnlockNodeRequest) returns (UnlockNodeResponse) { }
 }
 
-message CreateNodeRequest {
-  // The password in utf-8 with which to encrypt the new xud node key as well
-  // as any uninitialized underlying wallets.
-  string password = 1;
-}
-message CreateNodeResponse {
-  // The 24 word mnemonic to recover the xud identity key and underlying wallets
-  repeated string seed_mnemonic = 1;
-  // The list of lnd clients that were initialized.
-  repeated string initialized_lnds = 2;
-  // Whether raiden was initialized.
-  bool initialized_raiden = 3;
-}
-
-message UnlockNodeRequest {
-  // The password in utf-8 with which to unlock an existing xud node key as
-  // well as underlying client wallets such as lnd.
-  string password = 1;
-}
-message UnlockNodeResponse {
-  // The list of lnd clients that were unlocked.
-  repeated string unlocked_lnds = 1;
-  // Whether raiden was unlocked.
-  bool unlocked_raiden = 2;
-  // The list of lnd clients that could not be unlocked.
-  repeated string locked_lnds = 3;
-}
-
-message RestoreNodeRequest {
-  // The 24 word mnemonic to recover the xud identity key and underlying wallets
-  repeated string seed_mnemonic = 1;
-  // The password in utf-8 with which to encrypt the restored xud node key as well
-  // as any restored underlying wallets.
-  string password = 2;
-
-  // A map between the currency of the LND and its multi channel SCB
-  map<string, bytes> lnd_backups = 3;
-
-  // The Raiden database backup
-  bytes raiden_database = 4;
-  // Path to where the Raiden database backup should be written
-  string raiden_database_path = 5;
-
-  // The XUD database backup
-  bytes xud_database = 6;
-}
-message RestoreNodeResponse {
-  // The list of lnd clients that were initialized.
-  repeated string restored_lnds = 1;
-  // Whether raiden was initialized.
-  bool restored_raiden = 2;
-}
-
+/* The primary service for interacting with a running xud node. */
 service Xud {
   /* Adds a currency to the list of supported currencies. Once added, the currency may be used for
-   * new trading pairs. */
+   * new trading pairs.
+   * shell: xucli addcurrency <currency> <swap_client> [decimal_places] [token_address] */
   rpc AddCurrency(Currency) returns (AddCurrencyResponse) {
     option (google.api.http) = {
       post: "/v1/addcurrency"
@@ -101,7 +54,8 @@ service Xud {
   }
 
   /* Adds a trading pair to the list of supported trading pairs. The newly supported pair is
-   * advertised to peers so they may begin sending orders for it. */
+   * advertised to peers so they may begin sending orders for it.
+   * shell: xucli addpair <base_currency> <quote_currency> */
   rpc AddPair(AddPairRequest) returns (AddPairResponse) {
     option (google.api.http) = {
       post: "/v1/addpair"
@@ -109,51 +63,9 @@ service Xud {
     };
   }
 
-  /* Removes an order from the order book by its local id. This should be called when an order is
-   * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
-   * and peers are notified that the order is no longer valid. Any portion of the order that is
-   * on hold due to ongoing swaps will not be removed until after the swap attempts complete. */
-  rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
-    option (google.api.http) = {
-      post: "/v1/removeorder"
-      body: "*"
-    };
-  }
-
-  /* Gets the total balance available across all payment channels and wallets for one or all currencies. */
-  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse) {
-    option (google.api.http) = {
-      get: "/v1/balance"
-    };
-  }
-
-  /* Gets the trading limits for one or all currencies. */
-  rpc TradingLimits(TradingLimitsRequest) returns (TradingLimitsResponse) {
-      option (google.api.http) = {
-      get: "/v1/tradinglimits"
-    };
-  }
-
-  /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency. */
-  rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
-    option (google.api.http) = {
-      post: "/v1/openchannel"
-    };
-  }
-
-  /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
-   * becomes available for swaps and trading. A handshake exchanges information about the peer's
-   * supported trading and swap clients. Orders will be shared with the peer upon connection and
-   * upon new order placements.*/
-  rpc Connect(ConnectRequest) returns (ConnectResponse) {
-    option (google.api.http) = {
-      post: "/v1/connect"
-      body: "*"
-    };
-  }
-
   /* Bans a node and immediately disconnects from it. This can be used to prevent any connections
-   * to a specific node.*/
+   * to a specific node.
+   * shell: xucli ban <node_key> */
   rpc Ban(BanRequest) returns (BanResponse) {
     option (google.api.http) = {
       post: "/v1/ban"
@@ -161,108 +73,14 @@ service Xud {
     };
   }
 
-  /* Removes a ban from a node manually and, optionally, attempts to connect to it. */
-  rpc Unban(UnbanRequest) returns (UnbanResponse) {
+  /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
+   * becomes available for swaps and trading. A handshake exchanges information about the peer's
+   * supported trading and swap clients. Orders will be shared with the peer upon connection and
+   * upon new order placements.
+   * shell: xucli connect <node_uri> */
+  rpc Connect(ConnectRequest) returns (ConnectResponse) {
     option (google.api.http) = {
-      post: "/v1/unban"
-      body: "*"
-    };
-  }
-
-  /* Gets general information about this node. */
-  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
-    option (google.api.http) = {
-      get: "/v1/info"
-    };
-  }
-
-  /* Gets general information about a node. */
-  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
-    option (google.api.http) = {
-      get: "/v1/nodeinfo"
-    };
-  }
-  /* Gets orders from the order book. This call returns the state of the order book at a given point
-   * in time, although it is not guaranteed to still be vaild by the time a response is received
-   * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
-   * orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders
-   * are separated into buys and sells for each trading pair, but unsorted. */
-  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
-    option (google.api.http) = {
-      get: "/v1/orders"
-    };
-  }
-
-  /* Gets a list of this node's supported currencies. */
-  rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
-    option (google.api.http) = {
-      get: "/v1/currencies"
-    };
-  }
-
-  /* Gets a list of this nodes suported trading pairs. */
-  rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
-    option (google.api.http) = {
-      get: "/v1/pairs"
-    };
-  }
-
-  /* Gets a list of connected peers. */
-  rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
-    option (google.api.http) = {
-      get: "/v1/peers"
-    };
-  }
-
-  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse) {
-    option (google.api.http) = {
-      post: "/v1/listtrades"
-      body: "*"
-    };
-  }
-
-  /* Adds an order to the order book.
-   * If price is zero or unspecified a market order will get added. */
-  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
-    option (google.api.http) = {
-      post: "/v1/placeorder"
-      body: "*"
-    };
-  }
-
-  /* The synchronous non-streaming version of PlaceOrder. */
-  rpc PlaceOrderSync(PlaceOrderRequest) returns (PlaceOrderResponse) {
-    option (google.api.http) = {
-      post: "/v1/placeordersync"
-      body: "*"
-    };
-  }
-
-
-  /* Execute a swap on a maker peer order */
-  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapSuccess) {
-    option (google.api.http) = {
-      post: "/v1/executeswap"
-      body: "*"
-    };
-  }
-
-  /* Removes a currency from the list of supported currencies. Only currencies that are not in use
-   * for any currently supported trading pairs may be removed. Once removed, the currency can no
-   * longer be used for any supported trading pairs. */
-  rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
-    option (google.api.http) = {
-      post: "/v1/removecurrency"
-      body: "*"
-    };
-  }
-
-  /* Removes a trading pair from the list of currently supported trading pair. This call will
-   * effectively cancel any standing orders for that trading pair. Peers are informed when a pair
-   * is no longer supported so that they will know to stop sending orders for it. */
-  rpc RemovePair(RemovePairRequest) returns (RemovePairResponse) {
-    option (google.api.http) = {
-      post: "/v1/removepair"
+      post: "/v1/connect"
       body: "*"
     };
   }
@@ -275,7 +93,146 @@ service Xud {
     };
   }
 
-  /* Begin gracefully shutting down xud. */
+  /* Gets the total balance available across all payment channels and wallets for one or all currencies.
+   * shell: xucli getbalance [currency] */
+  rpc GetBalance(GetBalanceRequest) returns (GetBalanceResponse) {
+    option (google.api.http) = {
+      get: "/v1/balance"
+    };
+  }
+
+  /* Gets general information about this node.
+   * shell: xucli getinfo */
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/info"
+    };
+  }
+
+  /* Gets general information about a node.
+   * shell: xucli getnodeinfo <node_key> */
+  rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/nodeinfo"
+    };
+  }
+  /* Gets orders from the order book. This call returns the state of the order book at a given point
+   * in time, although it is not guaranteed to still be vaild by the time a response is received
+   * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
+   * orders for that particular trading pair are returned. Otherwise, all orders are returned. Orders
+   * are separated into buys and sells for each trading pair, but unsorted.
+   * shell: xucli listorders [pair_id] [include_own_orders] [limit] */
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersResponse) {
+    option (google.api.http) = {
+      get: "/v1/orders"
+    };
+  }
+
+  /* Gets a list of this node's supported currencies.
+   * shell: xucli listcurrencies */
+  rpc ListCurrencies(ListCurrenciesRequest) returns (ListCurrenciesResponse) {
+    option (google.api.http) = {
+      get: "/v1/currencies"
+    };
+  }
+
+  /* Gets a list of this nodes suported trading pairs.
+   * shell: xucli listpairs */
+  rpc ListPairs(ListPairsRequest) returns (ListPairsResponse) {
+    option (google.api.http) = {
+      get: "/v1/pairs"
+    };
+  }
+
+  /* Gets a list of connected peers.
+   * shell: xucli listpeers */
+  rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
+    option (google.api.http) = {
+      get: "/v1/peers"
+    };
+  }
+
+  /* Gets a list of completed trades.
+   * shell: xucli listtrades [limit] */
+  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse) {
+    option (google.api.http) = {
+      post: "/v1/listtrades"
+      body: "*"
+    };
+  }
+
+  /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency.
+   * shell: xucli openchannel <node_key> <currency> <amount> */
+  rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
+    option (google.api.http) = {
+      post: "/v1/openchannel"
+    };
+  }
+
+  /* Adds an order to the order book.
+   * If price is zero or unspecified a market order will get added. */
+  rpc PlaceOrder(PlaceOrderRequest) returns (stream PlaceOrderEvent) {
+    option (google.api.http) = {
+      post: "/v1/placeorder"
+      body: "*"
+    };
+  }
+
+  /* The synchronous, non-streaming version of PlaceOrder.
+   * shell: xucli buy <quantity> <pair_id> <price> [order_id] [stream]
+   * shell: xucli sell <quantity> <pair_id> <price> [order_id] [stream] */
+  rpc PlaceOrderSync(PlaceOrderRequest) returns (PlaceOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/placeordersync"
+      body: "*"
+    };
+  }
+
+
+  /* Executes a swap on a maker peer order. */
+  rpc ExecuteSwap(ExecuteSwapRequest) returns (SwapSuccess) {
+    option (google.api.http) = {
+      post: "/v1/executeswap"
+      body: "*"
+    };
+  }
+
+  /* Removes a currency from the list of supported currencies. Only currencies that are not in use
+   * for any currently supported trading pairs may be removed. Once removed, the currency can no
+   * longer be used for any supported trading pairs.
+   * shell: xucli removecurrency <currency> */
+  rpc RemoveCurrency(RemoveCurrencyRequest) returns (RemoveCurrencyResponse) {
+    option (google.api.http) = {
+      post: "/v1/removecurrency"
+      body: "*"
+    };
+  }
+
+  /* Removes an order from the order book by its local id. This should be called when an order is
+   * canceled or filled outside of xud. Removed orders become immediately unavailable for swaps,
+   * and peers are notified that the order is no longer valid. Any portion of the order that is
+   * on hold due to ongoing swaps will not be removed until after the swap attempts complete.
+   * shell: xucli removeorder <order_id> [quantity] */
+   rpc RemoveOrder(RemoveOrderRequest) returns (RemoveOrderResponse) {
+    option (google.api.http) = {
+      post: "/v1/removeorder"
+      body: "*"
+    };
+  }
+
+  /* Removes a trading pair from the list of currently supported trading pair. This call will
+   * effectively cancel any standing orders for that trading pair. Peers are informed when a pair
+   * is no longer supported so that they will know to stop sending orders for it.
+   * shell: xucli removepair <pair_id> */
+  rpc RemovePair(RemovePairRequest) returns (RemovePairResponse) {
+    option (google.api.http) = {
+      post: "/v1/removepair"
+      body: "*"
+    };
+  }
+
+  /* Begin gracefully shutting down xud.
+   * shell: xucli shutdown */
   rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {
     option (google.api.http) = {
       post: "/v1/shutdown"
@@ -313,11 +270,98 @@ service Xud {
       get: "/v1/subscribeswapfailures"
     };
   }
+
+  /* Gets the trading limits for one or all currencies.
+   * shell: xucli tradinglimits [currency] */
+  rpc TradingLimits(TradingLimitsRequest) returns (TradingLimitsResponse) {
+      option (google.api.http) = {
+      get: "/v1/tradinglimits"
+    };
+  }
+
+  /* Removes a ban from a node manually and, optionally, attempts to connect to it.
+   * shell: xucli unban <node_key> [reconnect] */
+  rpc Unban(UnbanRequest) returns (UnbanResponse) {
+    option (google.api.http) = {
+      post: "/v1/unban"
+      body: "*"
+    };
+  }
 }
 
 enum OrderSide {
   BUY = 0;
   SELL = 1;
+}
+
+message AddCurrencyResponse {}
+
+message AddPairRequest {
+  // The base currency that is bought and sold for this trading pair.
+  string base_currency = 1 [json_name = "base_currency"];
+  // The currency used to quote a price for the base currency.
+  string quote_currency = 2 [json_name = "quote_currency"];
+}
+message AddPairResponse {}
+
+message Balance {
+  // Total balance denominated in satoshis.
+  uint64 total_balance = 1 [json_name = "total_balance"];
+  // Sum of confirmed channel balances denominated in satoshis.
+  uint64 channel_balance = 2 [json_name = "channel_balance"];
+  // Sum of pending channel balances denominated in satoshis.
+  uint64 pending_channel_balance = 3 [json_name = "pending_channel_balance"];
+  // Sum of inactive channel balances denominated in satoshis.
+  uint64 inactive_channel_balance = 4 [json_name = "inactive_channel_balance"];
+  // Confirmed wallet balance in satoshis.
+  uint64 wallet_balance = 5 [json_name = "wallet_balance"];
+  // Unconfirmed wallet balance in satoshis.
+  uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
+}
+
+message BanRequest {
+  // The node pub key of the node to ban.
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+}
+message BanResponse {}
+
+message Chain {
+  // The blockchain the swap client is on (eg bitcoin, litecoin)
+  string chain = 1 [json_name = "chain"];
+  // The network the swap client is on (eg regtest, testnet, mainnet)
+  string network = 2 [json_name = "network"];
+}
+
+message Channels {
+  // The number of active/online channels for this lnd instance that can be used for swaps.
+  uint32 active = 1 [json_name = "active"];
+  // The number of inactive/offline channels for this lnd instance.
+  uint32 inactive = 2 [json_name = "inactive"];
+  // The number of channels that are pending on-chain confirmation before they can be used.
+  uint32 pending = 3 [json_name = "pending"];
+  // The number of channels that have been closed.
+  uint32 closed = 4 [json_name = "closed"];
+}
+
+message ConnectRequest {
+  // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
+  string node_uri = 1 [json_name = "node_uri"];
+}
+
+message ConnectResponse {}
+
+message CreateNodeRequest {
+  // The password in utf-8 with which to encrypt the new xud node key as well
+  // as any uninitialized underlying wallets.
+  string password = 1;
+}
+message CreateNodeResponse {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
+  repeated string seed_mnemonic = 1;
+  // The list of lnd clients that were initialized.
+  repeated string initialized_lnds = 2;
+  // Whether raiden was initialized.
+  bool initialized_raiden = 3;
 }
 
 message Currency {
@@ -339,88 +383,13 @@ message Currency {
   uint32 decimal_places = 4 [json_name = "decimal_places"];
 }
 
-message AddCurrencyResponse {}
-
-message AddPairRequest {
-  // The base currency that is bought and sold for this trading pair.
-  string base_currency = 1 [json_name = "base_currency"];
-  // The currency used to quote a price for the base currency.
-  string quote_currency = 2 [json_name = "quote_currency"];
+message DiscoverNodesRequest {
+  // The node pub key of the peer to discover nodes from.
+  string peer_pub_key = 1 [json_name = "peer_pub_key"];
 }
-message AddPairResponse {}
-
-message BanRequest {
-  // The node pub key of the node to ban.
-  string node_pub_key = 1 [json_name = "node_pub_key"];
+message DiscoverNodesResponse {
+  uint32 num_nodes = 1 [json_name = "num_nodes"];
 }
-message BanResponse {}
-
-message Chain {
-  // The blockchain the swap client is on (eg bitcoin, litecoin)
-  string chain = 1 [json_name = "chain"];
-  // The network the swap client is on (eg regtest, testnet, mainnet)
-  string network = 2 [json_name = "network"];
-}
-
-message Balance {
-  // Total balance denominated in satoshis.
-  uint64 total_balance = 1 [json_name = "total_balance"];
-  // Sum of confirmed channel balances denominated in satoshis.
-  uint64 channel_balance = 2 [json_name = "channel_balance"];
-  // Sum of pending channel balances denominated in satoshis.
-  uint64 pending_channel_balance = 3 [json_name = "pending_channel_balance"];
-  // Sum of inactive channel balances denominated in satoshis.
-  uint64 inactive_channel_balance = 4 [json_name = "inactive_channel_balance"];
-  // Confirmed wallet balance in satoshis.
-  uint64 wallet_balance = 5 [json_name = "wallet_balance"];
-  // Unconfirmed wallet balance in satoshis.
-  uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
-}
-
-message TradingLimits {
-    // Max outbound capacity for a distinct channel denominated in satoshis.
-    uint64 MaxSell = 1 [json_name = "max_sell"];
-    // Max inbound capacity for a distinct channel denominated in satoshis.
-    uint64 MaxBuy = 2 [json_name = "max_buy"];
-}
-
-message GetBalanceRequest {
-  // The ticker symbol of the currency to query for, if unspecified then balances for all supported
-  // currencies are queried.
-  string currency = 1 [json_name = "currency"];
-}
-message GetBalanceResponse {
-  // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
-}
-
-message TradingLimitsRequest {
-    // The ticker symbol of the currency to query for, if unspecified then trading limits for all supported
-    // currencies are queried.
-    string currency = 1 [json_name = "currency"];
-}
-message TradingLimitsResponse {
-    // A map between currency ticker symbols and their trading limits.
-    map<string, TradingLimits> limits = 1 [json_name = "limits"];
-}
-
-message OpenChannelRequest {
-  // The node pub key of the peer with which to open channel with.
-  string node_pub_key = 1 [json_name = "peer_pub_key"];
-  // The ticker symbol of the currency to open the channel for.
-  string currency = 2 [json_name = "currency"];
-  // The amount of the channel denominated in satoshis.
-  int64 amount = 3 [json_name = "amount"];
-}
-
-message OpenChannelResponse {}
-
-message ConnectRequest {
-  // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
-  string node_uri = 1 [json_name = "node_uri"];
-}
-
-message ConnectResponse {}
 
 message ExecuteSwapRequest {
   // The order id of the maker order.
@@ -433,17 +402,14 @@ message ExecuteSwapRequest {
   uint64 quantity = 4 [json_name = "quantity"];
 }
 
-message SwapFailure {
-  // The global UUID for the order that failed the swap.
-  string order_id = 1 [json_name = "order_id"];
-  // The trading pair that the swap is for.
-  string pair_id = 2 [json_name = "pair_id"];
-  // The order quantity that was attempted to be swapped.
-  uint64 quantity = 3 [json_name = "quantity"];
-  // The node pub key of the peer that we attempted to swap with.
-  string peer_pub_key = 4 [json_name = "peer_pub_key"];
-  // The reason why the swap failed.
-  string failure_reason = 5 [json_name = "failure_reason"];
+message GetBalanceRequest {
+  // The ticker symbol of the currency to query for, if unspecified then balances for all supported
+  // currencies are queried.
+  string currency = 1 [json_name = "currency"];
+}
+message GetBalanceResponse {
+  // A map between currency ticker symbols and their balances.
+  map<string, Balance> balances = 1 [json_name = "orders"];
 }
 
 message GetInfoRequest {}
@@ -481,6 +447,12 @@ message GetNodeInfoResponse {
   bool banned = 2 [json_name = "banned"];
 }
 
+message ListCurrenciesRequest {}
+message ListCurrenciesResponse {
+  // The list of available currencies in the orderbook.
+  repeated Currency currencies = 1 [json_name = "currencies"];
+}
+
 message ListOrdersRequest {
   // The trading pair for which to retrieve orders.
   string pair_id = 1 [json_name = "pair_id"];
@@ -492,12 +464,6 @@ message ListOrdersRequest {
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
   map<string, Orders> orders = 1 [json_name = "orders"];
-}
-
-message ListCurrenciesRequest {}
-message ListCurrenciesResponse {
-  // The list of available currencies in the orderbook.
-  repeated Currency currencies = 1 [json_name = "currencies"];
 }
 
 message ListPairsRequest {}
@@ -521,17 +487,6 @@ message ListTradesResponse {
   repeated Trade trades = 1 [json_name = "trades"];
 }
 
-message Channels {
-  // The number of active/online channels for this lnd instance that can be used for swaps.
-  uint32 active = 1 [json_name = "active"];
-  // The number of inactive/offline channels for this lnd instance.
-  uint32 inactive = 2 [json_name = "inactive"];
-  // The number of channels that are pending on-chain confirmation before they can be used.
-  uint32 pending = 3 [json_name = "pending"];
-  // The number of channels that have been closed.
-  uint32 closed = 4 [json_name = "closed"];
-}
-
 message LndInfo {
   string status = 1 [json_name = "status"];
   Channels channels = 2 [json_name = "channels"];
@@ -541,6 +496,17 @@ message LndInfo {
   string version = 6 [json_name = "version"];
   string alias = 7 [json_name = "alias"];
 }
+
+message OpenChannelRequest {
+  // The node pub key of the peer with which to open channel with.
+  string node_pub_key = 1 [json_name = "peer_pub_key"];
+  // The ticker symbol of the currency to open the channel for.
+  string currency = 2 [json_name = "currency"];
+  // The amount of the channel denominated in satoshis.
+  int64 amount = 3 [json_name = "amount"];
+}
+
+message OpenChannelResponse {}
 
 message Order {
   // The price of the order.
@@ -565,28 +531,6 @@ message Order {
   bool is_own_order = 9 [json_name = "is_own_order"];
   // The quantity on hold pending swap execution.
   uint64 hold = 10 [json_name = "hold"];
-}
-
-message Trade {
-  // The maker order involved in this trade.
-  Order maker_order = 1 [json_name = "maker_order"];
-  // The taker order involved in this trade.
-  Order taker_order = 2 [json_name = "taker_order_id"];
-  // The payment hash involved in this trade.
-  string r_hash = 3 [json_name = "r_hash"];
-  // The quantity transacted in this trade.
-  int64 quantity = 4 [json_name = "quantity"];
-  // The trading pair for this trade.
-  string pair_id = 5 [json_name = "pair_id"];
-}
-
-message OrderUpdate {
-  oneof order_update {
-    // An order that was added to the order book.
-    Order order = 1 [json_name = "order"];
-    // An order (or portion thereof) that was removed from the order book.
-    OrderRemoval order_removal = 2 [json_name = "order_removal"];
-  }
 }
 
 message OrderRemoval {
@@ -614,6 +558,15 @@ message OrdersCount {
   uint32 peer = 1 [json_name = "peer"];
   // The number of orders belonging to our local xud node.
   uint32 own = 2 [json_name = "own"];
+}
+
+message OrderUpdate {
+  oneof order_update {
+    // An order that was added to the order book.
+    Order order = 1 [json_name = "order"];
+    // An order (or portion thereof) that was removed from the order book.
+    OrderRemoval order_removal = 2 [json_name = "order_removal"];
+  }
 }
 
 message Peer {
@@ -709,12 +662,29 @@ message RemovePairRequest {
 }
 message RemovePairResponse {}
 
-message DiscoverNodesRequest {
-  // The node pub key of the peer to discover nodes from.
-  string peer_pub_key = 1 [json_name = "peer_pub_key"];
+message RestoreNodeRequest {
+  // The 24 word mnemonic to recover the xud identity key and underlying wallets
+  repeated string seed_mnemonic = 1;
+  // The password in utf-8 with which to encrypt the restored xud node key as well
+  // as any restored underlying wallets.
+  string password = 2;
+
+  // A map between the currency of the LND and its multi channel SCB
+  map<string, bytes> lnd_backups = 3;
+
+  // The Raiden database backup
+  bytes raiden_database = 4;
+  // Path to where the Raiden database backup should be written
+  string raiden_database_path = 5;
+
+  // The XUD database backup
+  bytes xud_database = 6;
 }
-message DiscoverNodesResponse {
-  uint32 num_nodes = 1 [json_name = "num_nodes"];
+message RestoreNodeResponse {
+  // The list of lnd clients that were initialized.
+  repeated string restored_lnds = 1;
+  // Whether raiden was initialized.
+  bool restored_raiden = 2;
 }
 
 message ShutdownRequest {}
@@ -729,6 +699,19 @@ message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
   // These swap results are also returned in the responses for the respective calls.
   bool include_taker = 1 [json_name = "include_taker"];
+}
+
+message SwapFailure {
+  // The global UUID for the order that failed the swap.
+  string order_id = 1 [json_name = "order_id"];
+  // The trading pair that the swap is for.
+  string pair_id = 2 [json_name = "pair_id"];
+  // The order quantity that was attempted to be swapped.
+  uint64 quantity = 3 [json_name = "quantity"];
+  // The node pub key of the peer that we attempted to swap with.
+  string peer_pub_key = 4 [json_name = "peer_pub_key"];
+  // The reason why the swap failed.
+  string failure_reason = 5 [json_name = "failure_reason"];
 }
 
 message SwapSuccess {
@@ -764,6 +747,36 @@ message SwapSuccess {
   double price = 15 [json_name = "price"];
 }
 
+message TradingLimits {
+  // Max outbound capacity for a distinct channel denominated in satoshis.
+  uint64 MaxSell = 1 [json_name = "max_sell"];
+  // Max inbound capacity for a distinct channel denominated in satoshis.
+  uint64 MaxBuy = 2 [json_name = "max_buy"];
+}
+
+message Trade {
+  // The maker order involved in this trade.
+  Order maker_order = 1 [json_name = "maker_order"];
+  // The taker order involved in this trade.
+  Order taker_order = 2 [json_name = "taker_order_id"];
+  // The payment hash involved in this trade.
+  string r_hash = 3 [json_name = "r_hash"];
+  // The quantity transacted in this trade.
+  int64 quantity = 4 [json_name = "quantity"];
+  // The trading pair for this trade.
+  string pair_id = 5 [json_name = "pair_id"];
+}
+
+message TradingLimitsRequest {
+    // The ticker symbol of the currency to query for, if unspecified then trading limits for all supported
+    // currencies are queried.
+    string currency = 1 [json_name = "currency"];
+}
+message TradingLimitsResponse {
+    // A map between currency ticker symbols and their trading limits.
+    map<string, TradingLimits> limits = 1 [json_name = "limits"];
+}
+
 message UnbanRequest {
   // The node pub key of the peer to unban.
   string node_pub_key = 1 [json_name = "node_pub_key"];
@@ -771,3 +784,17 @@ message UnbanRequest {
   bool reconnect = 2  [json_name = "reconnect"];
 }
 message UnbanResponse {}
+
+message UnlockNodeRequest {
+  // The password in utf-8 with which to unlock an existing xud node key as
+  // well as underlying client wallets such as lnd.
+  string password = 1;
+}
+message UnlockNodeResponse {
+  // The list of lnd clients that were unlocked.
+  repeated string unlocked_lnds = 1;
+  // Whether raiden was unlocked.
+  bool unlocked_raiden = 2;
+  // The list of lnd clients that could not be unlocked.
+  repeated string locked_lnds = 3;
+}
