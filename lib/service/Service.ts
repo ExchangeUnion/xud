@@ -11,7 +11,7 @@ import { TradingLimits } from '../swaps/SwapClient';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
-import { sortOrders, toEip55Address } from '../utils/utils';
+import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -58,6 +58,9 @@ const argChecks = {
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
   POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
+  PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
+    if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
+  },
   VALID_CURRENCY: ({ currency }: { currency: string }) => {
     if (currency.length < 2 || currency.length > 5 || !currency.match(/^[A-Z0-9]+$/)) {
       throw errors.INVALID_ARGUMENT('currency must consist of 2 to 5 upper case English letters or numbers');
@@ -447,6 +450,7 @@ class Service {
     const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.POSITIVE_QUANTITY(args);
+    argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
 
     if (replaceOrderId) {
