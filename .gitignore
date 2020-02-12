@@ -74,6 +74,9 @@ docker/xud/xud.db
 seedutil/go
 seedutil/seedutil
 
+# temp simulation test directory
+test/simulation/temp
+
 # Version file generated in build process
 lib/Version.ts
 
