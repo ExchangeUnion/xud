@@ -76,3 +76,5 @@ seedutil/seedutil
 
 # Version file generated in build process
 lib/Version.ts
+
+xudrpc.md
