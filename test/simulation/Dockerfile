@@ -17,6 +17,7 @@ RUN curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | ba
 
 ENV WD=/app
 WORKDIR $WD
+
 COPY . .
 
-RUN cd temp && cd xud && . $NVM_DIR/nvm.sh && npm i
+RUN cd temp/xud && . $NVM_DIR/nvm.sh && npm i
