@@ -20,4 +20,8 @@ WORKDIR $WD
 
 COPY . .
 
+# run npm install
 RUN cd temp/xud && . $NVM_DIR/nvm.sh && npm i
+
+# run the container cmd after doing source on nvm.sh (in order to get `node` executable on $PATH).
+ENTRYPOINT ["/bin/bash", "-c", ". $NVM_DIR/nvm.sh && \"$@\"", "-s"]
