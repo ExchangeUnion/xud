@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -238,6 +239,25 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	// Create XUD network instance without launching it.
 	log.Printf("xud: creating network")
+
+	output, err := execScript("node -v")
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	log.Printf(output)
+
+	output, err = execScript("npm -v")
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	log.Printf(output)
+
+	output, err = execScript("env")
+	if err != nil {
+		log.Printf(err.Error())
+	}
+	log.Printf(output)
+
 	xudHarness, err := xudtest.NewNetworkHarness()
 	if err != nil {
 		log.Fatalf("unable to create xud network harness: %v", err)
@@ -407,4 +427,16 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	}
 
 	return xudHarness, teardown
+}
+
+func execScript(command string) (string, error) {
+	cmd := exec.Command(command)
+
+	data, err := cmd.Output()
+	if err != nil {
+		// The program has exited with an exit code != 0
+		return "", fmt.Errorf("execScript error: %v", string(data))
+	}
+
+	return string(data), nil
 }
