@@ -1,0 +1,31 @@
+version: '3'
+services:
+  btcd:
+    build: ./docker-btcd
+    volumes:
+      - btcd-vol:/app
+  lnd:
+    build: ./docker-lnd
+    volumes:
+      - lnd-vol:/app
+  gomod:
+    build:
+      context: .
+      dockerfile: ./Dockerfile_gomod
+    volumes:
+      - gomod-vol:/app
+  test:
+    build: .
+    depends_on:
+      - btcd
+      - lnd
+      - gomod
+    volumes:
+      - btcd-vol:/btcd-vol
+      - lnd-vol:/lnd-vol
+      - gomod-vol:/gomod-vol
+volumes:
+  btcd-vol:
+  lnd-vol:
+  gomod-vol:
+

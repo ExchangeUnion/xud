@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -31,13 +30,6 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	log.Println("installing dependencies...")
-	output, err := execScript("./install.sh")
-	if err != nil {
-		log.Fatalf("installation failure: %v", err)
-	}
-	log.Printf("installation output: %v", output)
-
 	cfg = loadConfig()
 
 	res := m.Run()
@@ -49,7 +41,10 @@ func TestIntegration(t *testing.T) {
 	// and so the capacity checks would only trigger after 60 sec.
 	// We can solve this by making the capacity checks interval configurable.
 	xudNetwork, teardown := launchNetwork(true)
-	defer teardown()
+	defer func() {
+		time.Sleep(5 * time.Second)
+		teardown()
+	}()
 
 	ht := newHarnessTest(context.Background(), t)
 	t.Logf("Running %v integration tests", len(integrationTestCases))
@@ -409,26 +404,7 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		} else {
 			log.Printf("xud network harness teared down")
 		}
-		log.Printf("cleaning up processes...")
-		cleanupCmd := exec.Command("./cleanup-processes.sh")
-		err := cleanupCmd.Run()
-		if err != nil {
-			fmt.Printf("cleanup failure: %v", err)
-		}
-		log.Printf("cleanup complete")
 	}
 
 	return xudHarness, teardown
-}
-
-func execScript(command string) (string, error) {
-	cmd := exec.Command(command)
-
-	data, err := cmd.Output()
-	if err != nil {
-		// The program has exited with an exit code != 0
-		return "", fmt.Errorf("execScript error: %v", string(data))
-	}
-
-	return string(data), nil
 }

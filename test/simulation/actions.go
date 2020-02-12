@@ -43,8 +43,10 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			// Add currencies
 			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "")
 			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "")
+
 			// Add pairs to the node.
 			a.addPair(node, "LTC", "BTC")
+
 			break
 		}
 		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
