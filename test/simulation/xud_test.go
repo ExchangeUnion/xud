@@ -238,7 +238,6 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	// Create XUD network instance without launching it.
 	log.Printf("xud: creating network")
-
 	xudHarness, err := xudtest.NewNetworkHarness()
 	if err != nil {
 		log.Fatalf("unable to create xud network harness: %v", err)
