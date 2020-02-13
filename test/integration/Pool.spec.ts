@@ -8,7 +8,9 @@ import Logger, { Level } from '../../lib/Logger';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import Peer from '../../lib/p2p/Peer';
 import Pool from '../../lib/p2p/Pool';
+import errors from '../../lib/p2p/errors';
 import { Address } from '../../lib/p2p/types';
+import addressUtils from '../../lib/utils/addressUtils';
 
 chai.use(chaiAsPromised);
 
@@ -86,6 +88,12 @@ describe('P2P Pool Tests', async () => {
     await banPromise;
     const nodeReputationPromise = await pool.getNodeReputation(nodeKeyOne.pubKey);
     expect(nodeReputationPromise.banned).to.be.true;
+  });
+
+  it('should throw error when connecting to tor node with tor disabled', async () => {
+    const address = addressUtils.fromString('3g2upl4pq6kufc4m.onion');
+    const addPromise = pool.addOutbound(address, nodeKeyOne.pubKey, false, false);
+    await expect(addPromise).to.be.rejectedWith(errors.NODE_TOR_ADDRESS(nodeKeyOne.pubKey, address).message);
   });
 
   it('should unban a peer', async () => {
