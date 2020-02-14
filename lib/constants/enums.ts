@@ -135,6 +135,8 @@ export enum SwapFailureReason {
   RemoteError = 13,
   /** The swap failed because of a system or xud crash while the swap was being executed. */
   Crash = 14,
+  /** A swap was attempted between an invalid matching of orders */
+  InvalidOrders = 15,
 }
 
 export enum DisconnectionReason {

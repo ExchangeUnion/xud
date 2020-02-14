@@ -403,6 +403,27 @@ class SwapClientManager extends EventEmitter {
     await swapClient.openChannel({ peerIdentifier, units, currency });
   }
 
+  public hasRouteToPeer = (currency: string, peer: Peer) => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      return false;
+    }
+    let hasRoute = false;
+    if (isRaidenClient(swapClient)) {
+      // temporary check to ensure we have a direct channel
+      if (peer.raidenAddress && swapClient.getRoute(1, peer.raidenAddress, currency)) {
+        // a route found means we have a direct channel
+        hasRoute = true;
+      }
+    } else if (isLndClient(swapClient)) {
+      // lnd doesn't currently have a way to see if any route exists, regardless of balance
+      // for example, if we have a direct channel to peer but no balance in the channel and
+      // no other routes, QueryRoutes will return nothing as of lnd v0.8.1
+      hasRoute = true;
+    }
+    return hasRoute;
+  }
+
   private bind = () => {
     for (const [currency, swapClient] of this.swapClients.entries()) {
       if (isLndClient(swapClient)) {

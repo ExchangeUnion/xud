@@ -44,6 +44,7 @@ jest.mock('../../lib/db/DB', () => {
 });
 const advertisedPairs = ['LTC/BTC', 'WETH/BTC'];
 const mockActivatePair = jest.fn();
+const mockActivateCurrency = jest.fn();
 const mockGetIdentifier = jest.fn(() => 'pubkeyoraddress');
 const tokenIdentifiers: any = {
   BTC: 'bitcoin-regtest',
@@ -52,11 +53,17 @@ const tokenIdentifiers: any = {
 const mockPeerGetTokenIdentifer = jest.fn((currency: string) => tokenIdentifiers[currency]);
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
+    let currencyActive = false;
     return {
       advertisedPairs,
       activatePair: mockActivatePair,
+      activateCurrency: (currency: string) => {
+        mockActivateCurrency(currency);
+        currencyActive = true;
+      },
       disabledCurrencies: new Map(),
       isPairActive: () => false,
+      isCurrencyActive: () => currencyActive,
       getTokenIdentifier: mockPeerGetTokenIdentifer,
       getIdentifier: mockGetIdentifier,
     };
@@ -73,7 +80,14 @@ jest.mock('../../lib/p2p/Pool', () => {
   });
 });
 jest.mock('../../lib/swaps/Swaps');
-jest.mock('../../lib/swaps/SwapClientManager');
+jest.mock('../../lib/swaps/SwapClientManager', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      // temporary mock while raiden direct channel checks are required
+      hasRouteToPeer: jest.fn().mockReturnValue(true),
+    };
+  });
+});
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/nodekey/NodeKey');
 const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
@@ -149,9 +163,13 @@ describe('OrderBook', () => {
   test('nosanityswaps enabled adds pairs and requests orders', async () => {
     orderbook['nosanityswaps'] = true;
     await orderbook['verifyPeerPairs'](peer);
+    expect(mockActivateCurrency).toHaveBeenCalledTimes(3);
+    expect(mockActivateCurrency).toHaveBeenCalledWith('BTC');
+    expect(mockActivateCurrency).toHaveBeenCalledWith('LTC');
+    expect(mockActivateCurrency).toHaveBeenCalledWith('WETH');
     expect(mockActivatePair).toHaveBeenCalledTimes(2);
-    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[0], expect.any(Number), expect.anything());
-    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[1], expect.any(Number), expect.anything());
+    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[0]);
+    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[1]);
   });
 
   test('isPeerCurrencySupported returns true for a known currency with matching identifiers', async () => {
@@ -212,7 +230,6 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.isPairSupported = jest.fn().mockReturnValue(true);
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       maximumOutboundCapacity: () => quantity,
     });
@@ -229,7 +246,6 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.isPairSupported = jest.fn().mockReturnValue(true);
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       maximumOutboundCapacity: () => quantity,
     });

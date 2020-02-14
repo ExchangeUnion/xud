@@ -30,7 +30,6 @@ const getMockPool = (sandbox: sinon.SinonSandbox) => {
 
 const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
   const swaps = sandbox.createStubInstance(Swaps) as any;
-  swaps.isPairSupported = () => true;
   const lndBTC = sandbox.createStubInstance(LndClient) as any;
   const lndLTC = sandbox.createStubInstance(LndClient) as any;
   swaps.swapClientManager = sandbox.createStubInstance(SwapClientManager) as any;
