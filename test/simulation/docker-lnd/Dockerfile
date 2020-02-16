@@ -5,7 +5,7 @@ WORKDIR $WD
 
 ENV GO_PATH=${WD}/go
 ENV LND_PATH=${GO_PATH}/src/github.com/lightningnetwork/lnd
-ENV LND_TAG="v0.8.2-beta"
+ENV LND_TAG="v0.9.0-beta"
 
 COPY . .
 
