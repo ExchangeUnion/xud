@@ -46,6 +46,10 @@ export type PoolConfig = {
 
   /** Whether to allow connections to tor nodes. */
   tor: boolean;
+
+  /** The port that Tor's exposed SOCKS5 proxy is listening on. */
+  torport: number;
+
   /**
    * An array of IP addresses or host names which can be used to connect to this server.
    * It will be advertised with peers for them to try to connect to the server in the future.

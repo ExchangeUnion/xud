@@ -157,6 +157,7 @@ describe('P2P Pool', () => {
       ownNodeKey,
       expectedNodePubKey,
       ownVersion: '1.0.0-mainnet',
+      torport: 0,
     })).rejects.toHaveProperty(
       'message', expect.stringContaining('AuthFailureInvalidTarget'));
   });
@@ -177,6 +178,7 @@ describe('P2P Pool', () => {
       ownNodeKey,
       expectedNodePubKey,
       ownVersion: '1.0.0-mainnet',
+      torport: 0,
     });
     expect(sessionInitPacket).toBeTruthy();
   });

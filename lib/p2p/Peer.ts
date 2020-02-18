@@ -18,6 +18,7 @@ import { isPacketType, isPacketTypeArray, ResponseType } from './packets/Packet'
 import * as packets from './packets/types';
 import Parser from './Parser';
 import { Address, NodeConnectionInfo, NodeState } from './types';
+import { SocksClient, SocksClientOptions } from 'socks';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -242,7 +243,15 @@ class Peer extends EventEmitter {
    * Prepares a peer for use by establishing a socket connection and beginning the handshake.
    * @returns the session init packet from beginning the handshake
    */
-  public beginOpen = async ({ ownNodeState, ownNodeKey, ownVersion, expectedNodePubKey, retryConnecting = false }:
+  public beginOpen = async (
+    {
+      ownNodeState,
+      ownNodeKey,
+      ownVersion,
+      expectedNodePubKey,
+      retryConnecting = false,
+      torport,
+    }:
     {
       /** Our node state data to send to the peer. */
       ownNodeState: NodeState,
@@ -254,6 +263,8 @@ class Peer extends EventEmitter {
       expectedNodePubKey?: string,
       /** Whether to retry to connect upon failure. */
       retryConnecting?: boolean,
+      /** Port that Tor's exposed SOCKS5 proxy is listening on. */
+      torport: number,
     }): Promise<packets.SessionInitPacket> => {
     assert(this.status === PeerStatus.New);
     assert(this.inbound || expectedNodePubKey);
@@ -262,7 +273,7 @@ class Peer extends EventEmitter {
     this.status = PeerStatus.Opening;
     this.expectedNodePubKey = expectedNodePubKey;
 
-    await this.initConnection(retryConnecting);
+    await this.initConnection(retryConnecting, torport);
     this.initStall();
 
     return this.beginHandshake(ownNodeState, ownNodeKey, ownVersion);
@@ -450,7 +461,7 @@ class Peer extends EventEmitter {
    * Ensure we are connected (for inbound connections) or listen for the `connect` socket event (for outbound connections)
    * and set the [[connectTime]] timestamp. If an outbound connection attempt errors or times out, throw an error.
    */
-  private initConnection = async (retry = false) => {
+  private initConnection = async (retry = false, torport: number) => {
     if (this.connected) {
       // in case of an inbound peer, we will already be connected
       assert(this.socket);
@@ -464,14 +475,46 @@ class Peer extends EventEmitter {
       const startTime = Date.now();
       let retryDelay = Peer.CONNECTION_RETRIES_MIN_DELAY;
       let retries = 0;
-
-      this.socket = net.connect(this.address.port, this.address.host);
       this.inbound = false;
       this.connectionRetriesRevoked = false;
 
+      const connectViaProxy = () => {
+        const proxyOptions: SocksClientOptions = {
+          proxy: {
+            host: 'localhost',
+            port: torport,
+            type: 5, // Proxy version
+          },
+          command: 'connect',
+          destination: {
+            host: this.address.host,
+            port: this.address.port,
+          },
+        };
+        SocksClient.createConnection(proxyOptions)
+          .then((info) => {
+            // a raw net.Socket that is established to the destination host through the given proxy server
+            this.socket = info.socket;
+            onConnect();
+          })
+          .catch(onError);
+      };
+
+      const connect = () => {
+        if (torport) {
+          connectViaProxy();
+        } else {
+          this.socket = net.connect(this.address.port, this.address.host);
+          this.socket.once('connect', onConnect);
+          this.socket.once('error', onError);
+        }
+      };
+
       const cleanup = () => {
-        this.socket!.removeListener('error', onError);
-        this.socket!.removeListener('connect', onConnect);
+        if (this.socket) {
+          this.socket.removeListener('error', onError);
+          this.socket.removeListener('connect', onConnect);
+        }
         if (this.retryConnectionTimer) {
           clearTimeout(this.retryConnectionTimer);
           this.retryConnectionTimer = undefined;
@@ -520,17 +563,11 @@ class Peer extends EventEmitter {
         this.retryConnectionTimer = setTimeout(() => {
           retryDelay = Math.min(Peer.CONNECTION_RETRIES_MAX_DELAY, retryDelay * 2);
           retries = retries + 1;
-          this.socket!.connect(this.address);
-          bind();
+          connect();
         }, retryDelay);
       };
 
-      const bind = () => {
-        this.socket!.once('connect', onConnect);
-        this.socket!.once('error', onError);
-      };
-
-      bind();
+      connect();
     });
   }
 
