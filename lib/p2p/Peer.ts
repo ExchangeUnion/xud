@@ -313,7 +313,7 @@ class Peer extends EventEmitter {
     if (this.socket) {
       if (!this.socket.destroyed) {
         if (reason !== undefined) {
-          this.logger.debug(`Peer (${this.label}): closing socket. reason: ${DisconnectionReason[reason]}`);
+          this.logger.debug(`Peer ${this.label}: closing socket. reason: ${DisconnectionReason[reason]}`);
           this.sentDisconnectionReason = reason;
           await this.sendPacket(new packets.DisconnectingPacket({ reason, payload: reasonPayload }));
         }
@@ -975,12 +975,12 @@ class Peer extends EventEmitter {
 
   private setOutEncryption = (key: Buffer) => {
     this.outEncryptionKey = key;
-    this.logger.debug(`Peer (${this.label}) session out-encryption enabled`);
+    this.logger.debug(`Peer ${this.label} session out-encryption enabled`);
   }
 
   private setInEncryption = (key: Buffer) => {
     this.parser.setEncryptionKey(key);
-    this.logger.debug(`Peer (${this.label}) session in-encryption enabled`);
+    this.logger.debug(`Peer ${this.label} session in-encryption enabled`);
   }
 }
 
