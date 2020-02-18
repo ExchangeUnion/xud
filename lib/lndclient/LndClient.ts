@@ -224,8 +224,9 @@ class LndClient extends SwapClient {
 
     if (!this.isWaitingUnlock()) {
       await this.setStatus(ClientStatus.WaitingUnlock);
-      this.emit('locked');
     }
+
+    this.emit('locked');
   }
 
   protected updateCapacity = async () => {
@@ -306,8 +307,13 @@ class LndClient extends SwapClient {
       }
       (this.walletUnlocker[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
-          this.logger.trace(`error on ${methodName}: ${err.message}`);
-          reject(err);
+          if (err.code === grpc.status.UNIMPLEMENTED) {
+            this.logger.debug(`lnd already unlocked before ${methodName} call`);
+            resolve();
+          } else {
+            this.logger.debug(`error on ${methodName}: ${err.message}`);
+            reject(err);
+          }
         } else {
           resolve(response);
         }
@@ -844,14 +850,13 @@ class LndClient extends SwapClient {
     return initWalletResponse.toObject();
   }
 
-  public unlockWallet = async (walletPassword: string): Promise<lndrpc.UnlockWalletResponse.AsObject> => {
+  public unlockWallet = async (walletPassword: string): Promise<void> => {
     const request = new lndrpc.UnlockWalletRequest();
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
-    const unlockWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
+    await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
       'unlockWallet', request,
     );
     this.logger.info('wallet unlocked');
-    return unlockWalletResponse.toObject();
   }
 
   public addInvoice = async (rHash: string, units: number, expiry = this.finalLock) => {
