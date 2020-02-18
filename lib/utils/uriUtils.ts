@@ -1,4 +1,5 @@
 import assert = require('assert');
+import { wordlist } from '../constants/wordlist';
 
 export type UriParts = {
   nodePubKey: string;
@@ -32,4 +33,18 @@ export const parseUri = (uri: string): UriParts => {
     nodePubKey: split[0],
     host: split[1],
   };
+};
+
+export const getAlias = (pubkey?: string): string => {
+  const getWord = (substring: string): string => {
+    const asNumber = parseInt(substring, 16);
+    const index = asNumber % wordlist.length;
+    return wordlist[index];
+  };
+  if (pubkey) {
+    const a = getWord(pubkey.slice(0, 33));
+    const b = getWord(pubkey.slice(33));
+    return a + b;
+  }
+  return '';
 };

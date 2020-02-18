@@ -164,9 +164,9 @@ describe('API Service', () => {
   });
 
   it('should fail to ban a node that does not exist', async () => {
-    const nodePubKey = 'doesNotExist';
-    const banNodePromise = service.ban({ nodePubKey });
-    await expect(banNodePromise).to.be.rejectedWith(`node ${nodePubKey} is unknown`);
+    const nodeIdentifier = 'doesNotExist';
+    const banNodePromise = service.ban({ nodeIdentifier });
+    await expect(banNodePromise).to.be.rejectedWith(`node ${nodeIdentifier} is unknown`);
   });
 
   it('should shutdown', async () => {

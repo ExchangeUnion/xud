@@ -31,6 +31,7 @@ const errorCodes = {
   FRAMER_INVALID_MSG_LENGTH: codesPrefix.concat('.23'),
   POOL_CLOSED: codesPrefix.concat('.24'),
   NODE_TOR_ADDRESS: codesPrefix.concat('.25'),
+  ALIAS_CONFLICT: codesPrefix.concat('.26'),
 };
 
 const errors = {
@@ -146,6 +147,10 @@ const errors = {
     message: 'p2p pool is closed and not accepting new peers',
     code: errorCodes.POOL_CLOSED,
   },
+  ALIAS_CONFLICT: (alias: string) => ({
+    message: `alias ${alias} refers to more than one node`,
+    code: errorCodes.ALIAS_CONFLICT,
+  }),
 };
 
 export { errorCodes };

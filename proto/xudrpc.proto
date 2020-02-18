@@ -321,7 +321,7 @@ message Balance {
 
 message BanRequest {
   // The node pub key of the node to ban.
-  string node_pub_key = 1 [json_name = "node_pub_key"];
+  string node_identifier = 1 [json_name = "node_identifier"];
 }
 message BanResponse {}
 
@@ -385,7 +385,7 @@ message Currency {
 
 message DiscoverNodesRequest {
   // The node pub key of the peer to discover nodes from.
-  string peer_pub_key = 1 [json_name = "peer_pub_key"];
+  string node_identifier = 1 [json_name = "node_identifier"];
 }
 message DiscoverNodesResponse {
   uint32 num_nodes = 1 [json_name = "num_nodes"];
@@ -437,7 +437,7 @@ message GetInfoResponse {
 
 message GetNodeInfoRequest {
   // The node pub key of the node for which to get information.
-  string node_pub_key = 1 [json_name = "node_pub_key"];
+  string node_identifier = 1 [json_name = "node_identifier"];
 }
 message GetNodeInfoResponse {
   // The node's reputation score. Points are subtracted for unexpected or potentially malicious
@@ -499,7 +499,7 @@ message LndInfo {
 
 message OpenChannelRequest {
   // The node pub key of the peer with which to open channel with.
-  string node_pub_key = 1 [json_name = "peer_pub_key"];
+  string node_identifier = 1 [json_name = "node_identifier"];
   // The ticker symbol of the currency to open the channel for.
   string currency = 2 [json_name = "currency"];
   // The amount of the channel denominated in satoshis.
@@ -779,7 +779,7 @@ message TradingLimitsResponse {
 
 message UnbanRequest {
   // The node pub key of the peer to unban.
-  string node_pub_key = 1 [json_name = "node_pub_key"];
+  string node_identifier = 1 [json_name = "node_identifier"];
   // Whether to attempt to connect to the peer after it is unbanned.
   bool reconnect = 2  [json_name = "reconnect"];
 }

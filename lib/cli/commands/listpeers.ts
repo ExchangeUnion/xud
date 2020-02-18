@@ -4,6 +4,7 @@ import { Arguments } from 'yargs';
 import { ListPeersRequest, ListPeersResponse, Peer } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { generateHeaders } from '../utils';
+import { getAlias } from '../../utils/uriUtils';
 
 const HEADERS = [
   'Peer',
@@ -46,12 +47,13 @@ const formatLndPubKeys = (lndKeys: string[][]) => {
 const formatPeers = (peers: ListPeersResponse.AsObject) => {
   const formattedPeers: string[][] = [];
   peers.peersList.forEach((peer: Peer.AsObject) => {
+    const alias = getAlias(peer.nodePubKey);
 
     const address = `${peer.nodePubKey}
 @${peer.address}` ;
 
     const details = [
-      `Alias:
+      `Alias: ${alias}
 
 Address ([node_key]@[host]:[port]):
 ${address}`,

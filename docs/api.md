@@ -162,7 +162,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  | The node pub key of the node to ban. |
+| node_identifier | [string](#string) |  | The node pub key of the node to ban. |
 
 
 
@@ -296,7 +296,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| peer_pub_key | [string](#string) |  | The node pub key of the peer to discover nodes from. |
+| node_identifier | [string](#string) |  | The node pub key of the peer to discover nodes from. |
 
 
 
@@ -441,7 +441,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  | The node pub key of the node for which to get information. |
+| node_identifier | [string](#string) |  | The node pub key of the node for which to get information. |
 
 
 
@@ -646,7 +646,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  | The node pub key of the peer with which to open channel with. |
+| node_identifier | [string](#string) |  | The node pub key of the peer with which to open channel with. |
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
 | amount | [int64](#int64) |  | The amount of the channel denominated in satoshis. |
 
@@ -1188,7 +1188,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| node_pub_key | [string](#string) |  | The node pub key of the peer to unban. |
+| node_identifier | [string](#string) |  | The node pub key of the peer to unban. |
 | reconnect | [bool](#bool) |  | Whether to attempt to connect to the peer after it is unbanned. |
 
 
@@ -1323,8 +1323,8 @@ A service for interacting with a locked or uninitalized xud node.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. shell: xucli create |
-| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. shell: xucli unlock |
 | RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. shell: xucli restore [backup_directory] [raiden_database_path] |
+| UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. shell: xucli unlock |
 
  
 

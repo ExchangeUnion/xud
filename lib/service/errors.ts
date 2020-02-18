@@ -8,6 +8,7 @@ const errorCodes = {
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
   NODE_DOES_NOT_EXIST: codesPrefix.concat('.6'),
+  ALIAS_CONFLICT: codesPrefix.concat('.7'),
 };
 
 const errors = {
@@ -35,6 +36,10 @@ const errors = {
     message: 'xud node cannot be unlocked because it does not exist',
     code: errorCodes.NODE_DOES_NOT_EXIST,
   },
+  ALIAS_CONFLICT: (alias: string) => ({
+    message: `alias ${alias} refers to more than one node`,
+    code: errorCodes.ALIAS_CONFLICT,
+  }),
 };
 
 export { errorCodes };

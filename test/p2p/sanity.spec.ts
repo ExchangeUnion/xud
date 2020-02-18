@@ -157,7 +157,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to a node that has banned us', async () => {
-    await nodeTwo.service.ban({ nodePubKey: nodeOnePubKey });
+    await nodeTwo.service.ban({ nodeIdentifier: nodeOnePubKey });
     await expect(nodeOne.service.connect({ nodeUri: nodeTwoUri, retryConnecting: false }))
       .to.be.rejectedWith(`Peer ${nodeTwoPubKey}@localhost:${nodeTwoPort} disconnected from us due to Banned`);
   });

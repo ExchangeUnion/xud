@@ -11,6 +11,7 @@ import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
+import { getAlias } from '../utils/uriUtils';
 import Network from './Network';
 import NodeList, { reputationEventWeight } from './NodeList';
 import P2PRepository from './P2PRepository';
@@ -74,6 +75,8 @@ class Pool extends EventEmitter {
   public version: string;
   /** Our node pub key. */
   public nodePubKey: string;
+  /** Alias for this node */
+  public alias: string;
   /** The local handshake data to be sent to newly connected peers. */
   private nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
@@ -110,6 +113,7 @@ class Pool extends EventEmitter {
     this.logger = logger;
     this.nodeKey = nodeKey;
     this.nodePubKey = nodeKey.pubKey;
+    this.alias = getAlias(this.nodePubKey);
     this.version = version;
     this.config = config;
     this.network = new Network(xuNetwork);
@@ -382,7 +386,12 @@ class Pool extends EventEmitter {
    * @param nodePubKey The node pub key of the node for which to get reputation information
    * @return true if the specified node exists and the event was added, false otherwise
    */
-  public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
+  public getNodeReputation = async (nodeIdentifier: string): Promise<NodeReputationInfo> => {
+    let nodePubKey = nodeIdentifier;
+    if (nodeIdentifier.length !== 66) {
+      const tmp = this.resolveAlias(nodeIdentifier);
+      if (tmp) { nodePubKey = tmp; }
+    }
     const node = await this.repository.getNode(nodePubKey);
     if (node) {
       const { reputationScore, banned } = node;
@@ -596,45 +605,64 @@ class Pool extends EventEmitter {
     }
   }
 
-  public banNode = async (nodePubKey: string): Promise<void> => {
+  public banNode = async (nodeIdentifier: string): Promise<void> => {
+    let nodePubKey = nodeIdentifier;
+    if (nodeIdentifier.length !== 66) {
+      const tmp = this.resolveAlias(nodeIdentifier);
+      if (tmp) { nodePubKey = tmp; }
+    }
     if (this.nodes.isBanned(nodePubKey)) {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
     } else {
       const banned = await this.nodes.ban(nodePubKey);
-
       if (!banned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
     }
   }
 
-  public unbanNode = async (nodePubKey: string, reconnect: boolean): Promise<void> => {
-    if (this.nodes.isBanned(nodePubKey)) {
-      const unbanned = await this.nodes.unBan(nodePubKey);
+  public unbanNode = async (nodeIdentifier: string, reconnect: boolean): Promise<void> => {
+    // resolve if is an alias
+    let key = nodeIdentifier;
+    if (nodeIdentifier.length !== 66) {
+      const keys: string[] = this.nodes.getBannedPubKeys(nodeIdentifier);
+      if (keys.length > 1) {
+        throw errors.ALIAS_CONFLICT(nodeIdentifier);
+      }
+      key = keys[0];
+    }
+
+    if (this.nodes.isBanned(key)) {
+      const unbanned = await this.nodes.unBan(key);
       if (!unbanned) {
-        throw errors.NODE_UNKNOWN(nodePubKey);
+        throw errors.NODE_UNKNOWN(key);
       }
 
-      const node = await this.repository.getNode(nodePubKey);
+      const node = await this.repository.getNode(key);
       if (node) {
         const Node: NodeConnectionInfo = {
-          nodePubKey,
+          nodePubKey: key,
           addresses: node.addresses,
           lastAddress: node.lastAddress,
         };
 
-        this.logger.info(`node ${nodePubKey} was unbanned`);
+        this.logger.info(`node ${key} was unbanned`);
         if (reconnect) {
           await this.tryConnectNode(Node, false);
         }
       }
     } else {
-      throw errors.NODE_NOT_BANNED(nodePubKey);
+      throw errors.NODE_NOT_BANNED(key);
     }
   }
 
-  public discoverNodes = async (peerPubKey: string): Promise<number> => {
-    const peer = this.peers.get(peerPubKey);
+  public discoverNodes = async (peerIdentifier: string): Promise<number> => {
+    let peerPubKey = peerIdentifier;
+    if (peerIdentifier.length !== 66) {
+      const tmp = this.resolveAlias(peerIdentifier);
+      if (tmp) { peerPubKey = tmp; }
+    }
+    const peer = this.peers.get(peerIdentifier);
     if (!peer) {
       throw errors.NOT_CONNECTED(peerPubKey);
     }
@@ -656,13 +684,18 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Gets a peer by its node pub key. Throws a [[NOT_CONNECTED]] error if the pub key does not
+   * Gets a peer by its node pub key or alias. Throws a [[NOT_CONNECTED]] error if the supplied identifier does not
    * match any currently connected peer.
    */
-  public getPeer = (nodePubKey: string) => {
+  public getPeer = (peerIdentifier: string) => {
+    let nodePubKey = peerIdentifier;
+    if (peerIdentifier.length !== 66) {
+      const tmp = this.resolveAlias(nodePubKey);
+      if (tmp) { nodePubKey = tmp; }
+    }
     const peer = this.peers.get(nodePubKey);
     if (!peer) {
-      throw errors.NOT_CONNECTED(nodePubKey);
+      throw errors.NOT_CONNECTED(peerIdentifier);
     }
     return peer;
   }
@@ -986,6 +1019,35 @@ class Pool extends EventEmitter {
         resolve();
       }
     });
+  }
+
+  /**
+   * Resolves alias to node's public key
+   */
+  private resolveAlias = (alias: string) => {
+    const plist = this.listPeers();
+    const keys: string[] = [];
+    for (const peer of plist) {
+      if (peer.alias) {
+        if (peer.alias.toLowerCase() === alias.toLowerCase()) {
+          keys.push(peer.nodePubKey!);
+        }
+      }
+    }
+    if (keys.length === 1) {
+      return keys[0];
+    }
+    if (keys.length > 1) {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+    const banned: string[] = this.nodes.getBannedPubKeys(alias);
+    if (banned.length === 1) {
+      return banned[0];
+    }
+    if (banned.length > 1) {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+    return undefined;
   }
 }
 

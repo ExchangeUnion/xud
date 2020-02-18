@@ -20,7 +20,7 @@ export const builder = {
 
 export const handler = (argv: Arguments<any>) => {
   const request = new UnbanRequest();
-  request.setNodePubKey(argv.node_key);
+  request.setNodeIdentifier(argv.node_key);
   request.setReconnect(argv.reconnect);
   loadXudClient(argv).unban(request, callback(argv));
 };
