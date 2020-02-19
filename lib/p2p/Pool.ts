@@ -284,6 +284,7 @@ class Pool extends EventEmitter {
           ownNodeKey: this.nodeKey,
           ownVersion: this.version,
           expectedNodePubKey: this.nodePubKey,
+          torport: this.config.torport,
         });
         await peer.close();
         assert.fail();
@@ -491,6 +492,7 @@ class Pool extends EventEmitter {
         ownNodeState: this.nodeState,
         ownNodeKey: this.nodeKey,
         ownVersion: this.version,
+        torport: this.config.torport,
       });
 
       await this.validatePeer(peer);

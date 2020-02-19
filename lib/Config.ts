@@ -85,6 +85,7 @@ class Config {
       listen: true,
       discover: true,
       tor: false,
+      torport: 0, // 0 = disabled
       discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
       port: this.getDefaultP2pPort(),

@@ -154,6 +154,10 @@ const { argv } = require('yargs')
       default: undefined,
       alias: 't',
     },
+    'p2p.torport': {
+      describe: 'Port that Tor\'s exposed SOCKS5 proxy is listening on.',
+      type: 'number',
+    },
     'raiden.disable': {
       describe: 'Disable raiden integration',
       type: 'boolean',
