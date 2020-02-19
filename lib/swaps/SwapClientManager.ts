@@ -411,7 +411,7 @@ class SwapClientManager extends EventEmitter {
     let hasRoute = false;
     if (isRaidenClient(swapClient)) {
       // temporary check to ensure we have a direct channel
-      if (peer.raidenAddress && swapClient.getRoute(1, peer.raidenAddress, currency)) {
+      if (peer.raidenAddress && swapClient.isConnected() && swapClient.getRoute(1, peer.raidenAddress, currency)) {
         // a route found means we have a direct channel
         hasRoute = true;
       }
