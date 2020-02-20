@@ -85,6 +85,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
     return {
       // temporary mock while raiden direct channel checks are required
       hasRouteToPeer: jest.fn().mockReturnValue(true),
+      isConnected: jest.fn().mockReturnValue(true),
     };
   });
 });
