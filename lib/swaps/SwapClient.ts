@@ -210,6 +210,13 @@ abstract class SwapClient extends EventEmitter {
   public abstract async getRoute(units: number, destination: string, currency: string, finalCltvDelta?: number): Promise<Route | undefined>;
 
   /**
+   * Checks whether it is possible to route a payment to a node. This does not test or guarantee
+   * that a payment can be routed successfully, only whether it is possible to do so currently
+   * given the state of the network and graph - without creating new channels or edges.
+   */
+  public abstract async canRouteToNode(destination: string, currency?: string): Promise<boolean>;
+
+  /**
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
    */
   public abstract async addInvoice(rHash: string, units: number, expiry?: number): Promise<void>;

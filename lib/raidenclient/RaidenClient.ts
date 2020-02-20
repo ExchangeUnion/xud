@@ -331,6 +331,11 @@ class RaidenClient extends SwapClient {
     }
   }
 
+  public canRouteToNode = async (destination: string, currency: string) => {
+    const route = await this.getRoute(1, destination, currency);
+    return route !== undefined;
+  }
+
   public getHeight = async () => {
     return 1; // raiden's API does not tell us the height
   }
