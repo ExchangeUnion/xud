@@ -51,13 +51,13 @@ describe('NodeKey', () => {
     expect(() => NodeKey.fromBytes(Buffer.alloc(32))).toThrowError('private was invalid, try again');
   });
 
-  test('it should create a valid nodekey from a greater than 32 byte buffer', () => {
-    const nodeKey = NodeKey.fromBytes(Buffer.allocUnsafe(42));
+  test('it should create a valid nodekey from a greater than 32 byte buffer', async () => {
+    const nodeKey = NodeKey.fromBytes(await randomBytes(42));
     validateNodeKey(nodeKey);
   });
 
-  test('it should create a valid nodekey from a lesser than 32 byte buffer', () => {
-    const nodeKey = NodeKey.fromBytes(Buffer.allocUnsafe(22));
+  test('it should create a valid nodekey from a lesser than 32 byte buffer', async () => {
+    const nodeKey = NodeKey.fromBytes(await randomBytes(22));
     validateNodeKey(nodeKey);
   });
 });
