@@ -6,7 +6,7 @@ export default () => {
 
   /** Rethrow unhandled promise rejection, to crash process of an unwrapped instance */
   process.on('unhandledRejection', (err) => {
-    console.log(err);
+    console.error(err);
     throw err;
   });
 };
