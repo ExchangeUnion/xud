@@ -2,30 +2,31 @@
 export enum SwapClientType {
   Lnd,
   Raiden,
+  Connext
 }
 
 export enum OrderingDirection {
-  Desc = 'DESC',
-  Asc = 'ASC',
+  Desc = "DESC",
+  Asc = "ASC"
 }
 
 export enum OrderSide {
   Buy,
-  Sell,
+  Sell
 }
 
 export enum XuNetwork {
   // real coins.
-  MainNet = 'mainnet',
+  MainNet = "mainnet",
 
   // pre-defined testnet per currency (e.g. bitcoin: testnet3, litecoin: testnet4).
-  TestNet = 'testnet',
+  TestNet = "testnet",
 
   // coins are minted by Exchange Union.
-  SimNet = 'simnet',
+  SimNet = "simnet",
 
   // coins are minted privately. Seed nodes are not configurable.
-  RegTest = 'regtest',
+  RegTest = "regtest"
 }
 
 /**
@@ -36,7 +37,7 @@ export const xuNetworkMagicVals = {
   [XuNetwork.MainNet]: 0xd9b4bef9,
   [XuNetwork.TestNet]: 0x0709110b,
   [XuNetwork.SimNet]: 0x12141c16,
-  [XuNetwork.RegTest]: 0xdab5bffa,
+  [XuNetwork.RegTest]: 0xdab5bffa
 };
 
 /**
@@ -46,12 +47,12 @@ export const magicValsXuNetwork = {
   [xuNetworkMagicVals[XuNetwork.MainNet]]: XuNetwork.MainNet,
   [xuNetworkMagicVals[XuNetwork.TestNet]]: XuNetwork.TestNet,
   [xuNetworkMagicVals[XuNetwork.SimNet]]: XuNetwork.SimNet,
-  [xuNetworkMagicVals[XuNetwork.RegTest]]: XuNetwork.RegTest,
+  [xuNetworkMagicVals[XuNetwork.RegTest]]: XuNetwork.RegTest
 };
 
 export enum SwapRole {
   Taker = 0,
-  Maker = 1,
+  Maker = 1
 }
 
 export enum SwapPhase {
@@ -74,7 +75,7 @@ export enum SwapPhase {
    */
   PaymentReceived = 4,
   /** The swap has been formally completed and both sides have confirmed they've received payment. */
-  SwapCompleted = 5,
+  SwapCompleted = 5
 }
 
 export enum SwapState {
@@ -86,7 +87,7 @@ export enum SwapState {
    * crashing late in the swap process, after htlcs for both legs of the swap are set up but
    * before the swap is formally complete.
    */
-  Recovered = 3,
+  Recovered = 3
 }
 
 export enum ReputationEvent {
@@ -101,7 +102,7 @@ export enum ReputationEvent {
   /** When a swap is accepted and then fails due to exceeding time limits. */
   SwapTimeout = 7,
   /** When a swap fails due to unexpected or possibly malicious behavior. */
-  SwapMisbehavior = 8,
+  SwapMisbehavior = 8
 }
 
 export enum SwapFailureReason {
@@ -136,7 +137,7 @@ export enum SwapFailureReason {
   /** The swap failed because of a system or xud crash while the swap was being executed. */
   Crash = 14,
   /** A swap was attempted between an invalid matching of orders */
-  InvalidOrders = 15,
+  InvalidOrders = 15
 }
 
 export enum DisconnectionReason {
@@ -152,5 +153,5 @@ export enum DisconnectionReason {
   MalformedVersion = 10,
   AuthFailureInvalidTarget = 11,
   AuthFailureInvalidSignature = 12,
-  WireProtocolErr = 13,
+  WireProtocolErr = 13
 }
