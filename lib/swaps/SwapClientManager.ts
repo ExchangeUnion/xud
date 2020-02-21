@@ -265,6 +265,15 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
+   * Returns whether the swap client for a specified currency is connected.
+   * @returns `true` if a swap client exists and is connected, otherwise `false`
+   */
+  public isConnected = (currency: string) => {
+    const swapClient = this.swapClients.get(currency);
+    return swapClient !== undefined && swapClient.isConnected();
+  }
+
+  /**
    * Adds a new swap client and currency association.
    * @param currency a currency that should be linked with a swap client.
    * @returns Nothing upon success, throws otherwise.

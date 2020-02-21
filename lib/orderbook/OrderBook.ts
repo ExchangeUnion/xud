@@ -793,7 +793,7 @@ class OrderBook extends EventEmitter {
 
   /**
    * Verifies the advertised trading pairs of a peer. Checks that the peer has advertised
-   * lnd pub keys for both the base and quote currencies for each pair, and also attempts a
+   * lnd pub keys for both the base and quote currencies for each pair, and optionally attempts a
    * "sanity swap" for each currency which is a 1 satoshi for 1 satoshi swap of a given currency
    * that demonstrates that we can both accept and receive payments for this peer.
    * @param pairIds the list of trading pair ids to verify
@@ -805,7 +805,11 @@ class OrderBook extends EventEmitter {
         return false; // don't verify a pair that is already active
       }
       const [baseCurrency, quoteCurrency] = pairId.split('/');
-      return !peer.disabledCurrencies.has(baseCurrency) && !peer.disabledCurrencies.has(quoteCurrency);
+      const peerCurrenciesEnabled = !peer.disabledCurrencies.has(baseCurrency)
+        && !peer.disabledCurrencies.has(quoteCurrency);
+      const ownCurrenciesConnected = this.swaps.swapClientManager.isConnected(baseCurrency)
+        && this.swaps.swapClientManager.isConnected(quoteCurrency);
+      return peerCurrenciesEnabled && ownCurrenciesConnected;
     });
 
     // identify the unique currencies we need to verify for specified trading pairs
