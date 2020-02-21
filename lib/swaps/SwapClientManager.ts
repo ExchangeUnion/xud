@@ -14,6 +14,7 @@ import { keystore } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
+import ConnextClient from 'lib/connextclient/ConnextClient';
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -43,6 +44,7 @@ class SwapClientManager extends EventEmitter {
   /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient: RaidenClient;
+  public connextClient: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
 
@@ -58,6 +60,12 @@ class SwapClientManager extends EventEmitter {
       config: config.raiden,
       logger: loggers.raiden,
       directChannelChecks: config.debug.raidenDirectChannelChecks,
+    });
+
+    this.connextClient = new ConnextClient({
+      unitConverter,
+      config: config.connext,
+      logger: loggers.connext,
     });
   }
 
@@ -209,6 +217,11 @@ class SwapClientManager extends EventEmitter {
         throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not create keystore: ${err}`);
       });
       initWalletPromises.push(keystorePromise);
+    }
+
+    if (!this.connextClient.isDisabled()) {
+      const initWalletPromise = this.connextClient.initWallet(seedMnemonic)
+      initWalletPromises.push(initWalletPromise);
     }
 
     await Promise.all(initWalletPromises);
@@ -377,7 +390,7 @@ class SwapClientManager extends EventEmitter {
    */
   public openChannel = async (
     { peer, amount, currency }:
-    { peer: Peer, amount: number, currency: string },
+      { peer: Peer, amount: number, currency: string },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {

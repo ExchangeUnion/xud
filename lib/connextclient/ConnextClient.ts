@@ -1,5 +1,10 @@
 import assert from 'assert';
 import http from 'http';
+
+import * as connext from '@connext/client';
+import { ConnextStore, FileStorage } from '@connext/store';
+import { IConnextClient } from '@connext/types';
+
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
@@ -13,6 +18,7 @@ import SwapClient, {
 } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
+import { ConnextWallet } from './ConnextWallet'
 import errors, { errorCodes } from './errors';
 import {
   Channel,
@@ -28,34 +34,6 @@ import {
 
 type ConnextErrorResponse = { errors: string };
 
-type PendingTransfer = {
-  initiator: string;
-  locked_amount: string;
-  payment_identifier: string;
-  role: string;
-  target: string;
-  token_address: string;
-  transferred_amount: string;
-};
-
-/**
- * A utility function to parse the payload from an http response.
- */
-async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
-  res.setEncoding('utf8');
-  return new Promise<T>((resolve, reject) => {
-    let body = '';
-    res.on('data', (chunk) => {
-      body += chunk;
-    });
-    res.on('end', () => {
-      resolve(JSON.parse(body));
-    });
-    res.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
 
 /**
  * A class representing a client to interact with connext.
@@ -66,14 +44,17 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  private port: number;
-  private host: string;
   private disable: boolean;
+  private ethProviderUrl: string;
+  private nodeUrl: string;
   private unitConverter: UnitConverter;
+
   private totalOutboundAmounts = new Map<string, number>();
   private maxChannelOutboundAmounts = new Map<string, number>();
   private maxChannelInboundAmounts = new Map<string, number>();
-  private directChannelChecks: boolean;
+
+  private channel: IConnextClient | undefined;
+  private wallet: ConnextWallet | undefined;
 
   /**
    * Creates a connext client.
@@ -82,21 +63,18 @@ class ConnextClient extends SwapClient {
     config,
     logger,
     unitConverter,
-    directChannelChecks = false,
   }: {
+    unitConverter: UnitConverter;
     config: ConnextClientConfig;
     logger: Logger;
-    unitConverter: UnitConverter;
-    directChannelChecks: boolean;
   }) {
     super(logger);
-    const { disable, host, port } = config;
+    const { disable, ethProviderUrl, nodeUrl } = config;
 
-    this.port = port;
-    this.host = host;
     this.disable = disable;
+    this.ethProviderUrl = ethProviderUrl;
+    this.nodeUrl = nodeUrl;
     this.unitConverter = unitConverter;
-    this.directChannelChecks = directChannelChecks;
   }
 
   public get minutesPerBlock() {
@@ -123,13 +101,33 @@ class ConnextClient extends SwapClient {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
-    this.setTokenAddresses(currencyInstances);
+    if (this.wallet) {
+      this.setTokenAddresses(currencyInstances);
 
-    await this.setStatus(ClientStatus.Initialized);
-    this.emit('initialized');
-    await this.verifyConnectionWithTimeout();
+      const wallet = this.wallet;
+
+      this.channel = await connext.connect({
+        nodeUrl: this.nodeUrl,
+        ethProviderUrl: this.ethProviderUrl,
+        xpub: wallet.xpub,
+        keyGen: (index: string) => wallet.keyGen(index),
+        store: new ConnextStore(new FileStorage()),
+      })
+
+      await this.setStatus(ClientStatus.Initialized);
+      this.emit('initialized');
+      await this.verifyConnectionWithTimeout();
+    } else {
+      throw new Error('Connext client requires wallet to be initiatied')
+    }
   }
-
+  /**
+   * Initiates wallet for the Connext client
+   */
+  public initWallet = async (seedMnemonic: string[]) => {
+    const mnemonic = seedMnemonic.join(' ');
+    this.wallet = new ConnextWallet(mnemonic);
+  }
   /**
    * Associate connext with currencies that have a token address
    */
@@ -166,25 +164,19 @@ class ConnextClient extends SwapClient {
   }
 
   protected verifyConnection = async () => {
-    this.logger.info(
-      `trying to verify connection to connext with uri: ${this.host}:${this.port}`,
-    );
+    this.logger.info('trying to verify connection to connext');
     try {
-      const address = await this.getAddress();
-
-      /** The new connext address value if different from the one we had previously. */
-      let newAddress: string | undefined;
-      if (this.address !== address) {
-        newAddress = address;
-        this.address = newAddress;
-        this.logger.debug(`address is ${newAddress}`);
+      if (!this.channel) {
+        throw new Error('No Connext client has been initiated')
       }
 
-      this.emit('connectionVerified', { newIdentifier: newAddress });
+      await this.channel.isAvailable();
+
+      this.emit('connectionVerified', { newIdentifier: this.channel.publicIdentifier });
       await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
-        `could not verify connection to connext at ${this.host}:${this.port}, retrying in ${ConnextClient.RECONNECT_TIME_LIMIT} ms`,
+        `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_TIME_LIMIT} ms`,
         err,
       );
       await this.disconnect();
@@ -341,48 +333,9 @@ class ConnextClient extends SwapClient {
     return parseResponseBody<PaymentEvent[]>(res);
   }
 
-  public getRoute = async (
-    units: number,
-    destination: string,
-    currency: string,
-  ) => {
-    // a query routes call is not currently provided by connext
-
-    /** A placeholder route value that assumes a fixed lock time of 100 Connext's blocks. */
-    const placeholderRoute = {
-      getTotalTimeLock: () => 101,
-    };
-
-    if (this.directChannelChecks) {
-      // temporary check for a direct channel in connext
-      const tokenAddress = this.tokenAddresses.get(currency);
-      const channels = await this.getChannels(tokenAddress);
-      for (const channel of channels) {
-        if (
-          channel.partner_address &&
-          channel.partner_address === destination
-        ) {
-          const balance = channel.balance;
-          if (balance >= units) {
-            this.logger.debug(
-              `found a direct channel for ${currency} to ${destination} with ${balance} balance`,
-            );
-            return placeholderRoute;
-          } else {
-            this.logger.warn(
-              `direct channel found for ${currency} to ${destination} with balance of ${balance} is insufficient for ${units})`,
-            );
-            return undefined; // we have a direct channel but it doesn't have enough balance, return no route
-          }
-        }
-      }
-      this.logger.warn(
-        `no direct channel found for ${currency} to ${destination}`,
-      );
-      return undefined; // no direct channels, return no route
-    } else {
-      return placeholderRoute;
-    }
+  public getRoute = async () => {
+    // not implemented since connext doesnt use routes
+    return undefined;
   }
 
   public getHeight = async () => {
@@ -707,11 +660,7 @@ class ConnextClient extends SwapClient {
    * Gets the account address for the connext node.
    */
   private getAddress = async (): Promise<string> => {
-    const endpoint = 'address';
-    const res = await this.sendRequest(endpoint, 'GET');
-
-    const body = await parseResponseBody<{ our_address: string }>(res);
-    return body.our_address;
+    return this.wallet.xpub;
   }
 
   /** Connext client specific cleanup. */

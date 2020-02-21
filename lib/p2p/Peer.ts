@@ -134,8 +134,8 @@ class Peer extends EventEmitter {
   public get label(): string {
     return this.nodePubKey ||
       (this.expectedNodePubKey
-      ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}`
-      : addressUtils.toString(this.address));
+        ? `${this.expectedNodePubKey}@${addressUtils.toString(this.address)}`
+        : addressUtils.toString(this.address));
   }
 
   public get addresses(): Address[] | undefined {
@@ -216,6 +216,9 @@ class Peer extends EventEmitter {
     if (clientType === SwapClientType.Raiden) {
       return this.nodeState.raidenAddress;
     }
+    if (clientType === SwapClientType.Connext) {
+      return this.nodeState.connextAddress;
+    }
     return;
   }
 
@@ -252,20 +255,20 @@ class Peer extends EventEmitter {
       retryConnecting = false,
       torport,
     }:
-    {
-      /** Our node state data to send to the peer. */
-      ownNodeState: NodeState,
-      /** Our identity node key. */
-      ownNodeKey: NodeKey,
-      /** The version of xud we are running. */
-      ownVersion: string
-      /** The expected nodePubKey of the node we are opening a connection with. */
-      expectedNodePubKey?: string,
-      /** Whether to retry to connect upon failure. */
-      retryConnecting?: boolean,
-      /** Port that Tor's exposed SOCKS5 proxy is listening on. */
-      torport: number,
-    }): Promise<packets.SessionInitPacket> => {
+      {
+        /** Our node state data to send to the peer. */
+        ownNodeState: NodeState,
+        /** Our identity node key. */
+        ownNodeKey: NodeKey,
+        /** The version of xud we are running. */
+        ownVersion: string
+        /** The expected nodePubKey of the node we are opening a connection with. */
+        expectedNodePubKey?: string,
+        /** Whether to retry to connect upon failure. */
+        retryConnecting?: boolean,
+        /** Port that Tor's exposed SOCKS5 proxy is listening on. */
+        torport: number,
+      }): Promise<packets.SessionInitPacket> => {
     assert(this.status === PeerStatus.New);
     assert(this.inbound || expectedNodePubKey);
     assert(!retryConnecting || !this.inbound);
@@ -720,7 +723,7 @@ class Peer extends EventEmitter {
   private bindParser = (parser: Parser): void => {
     parser.on('packet', this.handlePacket);
 
-    parser.on('error', async (err: {message: string, code: string}) => {
+    parser.on('error', async (err: { message: string, code: string }) => {
       if (this.status === PeerStatus.Closed) {
         return;
       }
@@ -745,9 +748,9 @@ class Peer extends EventEmitter {
   /** Checks if a given packet is solicited and fulfills the pending response entry if it's a response. */
   private isPacketSolicited = async (packet: Packet): Promise<boolean> => {
     if (this.status !== PeerStatus.Open
-        && packet.type !== PacketType.SessionInit
-        && packet.type !== PacketType.SessionAck
-        && packet.type !== PacketType.Disconnecting) {
+      && packet.type !== PacketType.SessionInit
+      && packet.type !== PacketType.SessionAck
+      && packet.type !== PacketType.Disconnecting) {
       // until the connection is opened, we only accept SessionInit, SessionAck, and Disconnecting packets
       return false;
     }
@@ -920,7 +923,7 @@ class Peer extends EventEmitter {
   }
 
   public sendGetNodes = async (): Promise<packets.GetNodesPacket> => {
-    const packet =  new packets.GetNodesPacket();
+    const packet = new packets.GetNodesPacket();
     await this.sendPacket(packet);
     return packet;
   }
@@ -936,7 +939,7 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  private handlePing = async (packet: packets.PingPacket): Promise<void>  => {
+  private handlePing = async (packet: packets.PingPacket): Promise<void> => {
     await this.sendPong(packet.header.id);
   }
 
@@ -964,7 +967,7 @@ class Peer extends EventEmitter {
     return new packets.SessionInitPacket(body);
   }
 
-  private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
+  private handleDisconnecting = (packet: packets.DisconnectingPacket): void => {
     if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
       this.logger.debug(`received disconnecting packet from ${this.label} due to ${DisconnectionReason[packet.body.reason]}`);
       this.recvDisconnectionReason = packet.body.reason;
@@ -1019,7 +1022,7 @@ class PendingResponseEntry {
   /** An array of callbacks to be called synchronously when entry resolve. */
   public callbacks: Function[] = [];
 
-  constructor(public resType: ResponseType) {}
+  constructor(public resType: ResponseType) { }
 
   public addJob = (resolve: Function, reject: Function) => {
     this.jobs.push(new Job(resolve, reject));
@@ -1057,7 +1060,7 @@ class PendingResponseEntry {
 
 /** A pair of functions for resolving or rejecting a task. */
 class Job {
-  constructor(public resolve: Function, public reject: Function) {}
+  constructor(public resolve: Function, public reject: Function) { }
 }
 
 export default Peer;

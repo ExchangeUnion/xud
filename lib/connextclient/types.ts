@@ -4,8 +4,8 @@
 
 export type ConnextClientConfig = {
   disable: boolean;
-  host: string;
-  port: number;
+  ethProviderUrl: string;
+  nodeUrl: string; // ws:// or nats:// urls are supported
 };
 
 /** General information about the state of this connext client. */
