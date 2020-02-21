@@ -376,8 +376,8 @@ class Service {
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-        orders.buyArray = [...orders.buyArray, ...ownOrders.buyArray];
-        orders.sellArray = [...orders.sellArray, ...ownOrders.sellArray];
+        orders.buyArray = orders.buyArray.concat(ownOrders.buyArray);
+        orders.sellArray = orders.sellArray.concat(ownOrders.sellArray);
       }
 
       // sort all orders
