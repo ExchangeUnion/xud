@@ -1,15 +1,15 @@
-import winston from "winston";
-import colors from "colors/safe";
+import winston from 'winston';
+import colors from 'colors/safe';
 
-import { getTsString } from "./utils/utils";
+import { getTsString } from './utils/utils';
 
 enum Level {
-  Error = "error",
-  Warn = "warn",
-  Info = "info",
-  Verbose = "verbose",
-  Debug = "debug",
-  Trace = "trace"
+  Error = 'error',
+  Warn = 'warn',
+  Info = 'info',
+  Verbose = 'verbose',
+  Debug = 'debug',
+  Trace = 'trace',
 }
 
 const LevelPriorities = {
@@ -18,21 +18,21 @@ const LevelPriorities = {
   info: 2,
   verbose: 3,
   debug: 4,
-  trace: 5
+  trace: 5,
 };
 
 export enum Context {
-  Global = "GLOBAL",
-  DB = "DB",
-  RPC = "RPC",
-  P2P = "P2P",
-  OrderBook = "ORDERBOOK",
-  Lnd = "LND",
-  Raiden = "RAIDEN",
-  Connext = "CONNEXT",
-  Swaps = "SWAPS",
-  Http = "HTTP",
-  Backup = "BACKUP"
+  Global = 'GLOBAL',
+  DB = 'DB',
+  RPC = 'RPC',
+  P2P = 'P2P',
+  OrderBook = 'ORDERBOOK',
+  Lnd = 'LND',
+  Raiden = 'RAIDEN',
+  Connext = 'CONNEXT',
+  Swaps = 'SWAPS',
+  Http = 'HTTP',
+  Backup = 'BACKUP',
 }
 
 type Loggers = {
@@ -66,7 +66,7 @@ class Logger {
     subcontext,
     instanceId = 0,
     disabled,
-    dateFormat
+    dateFormat,
   }: {
     instanceId?: number;
     level?: string;
@@ -89,8 +89,8 @@ class Logger {
     const transports: any[] = [
       new winston.transports.Console({
         level: this.level,
-        format: this.getLogFormat(true, dateFormat)
-      })
+        format: this.getLogFormat(true, dateFormat),
+      }),
     ];
 
     if (filename) {
@@ -99,22 +99,22 @@ class Logger {
         new winston.transports.File({
           filename,
           level: this.level,
-          format: this.getLogFormat(false, dateFormat)
-        })
+          format: this.getLogFormat(false, dateFormat),
+        }),
       );
     }
 
     this.logger = winston.createLogger({
       transports,
-      levels: LevelPriorities
+      levels: LevelPriorities,
     });
   }
 
   public static createLoggers = (
     level: string,
-    filename = "",
+    filename = '',
     instanceId = 0,
-    dateFormat?: string
+    dateFormat?: string,
   ): Loggers => {
     const object = { instanceId, level, filename, dateFormat };
     return {
@@ -127,9 +127,9 @@ class Logger {
       raiden: new Logger({ ...object, context: Context.Raiden }),
       connext: new Logger({ ...object, context: Context.Connext }),
       swaps: new Logger({ ...object, context: Context.Swaps }),
-      http: new Logger({ ...object, context: Context.Http })
+      http: new Logger({ ...object, context: Context.Http }),
     };
-  };
+  }
 
   public createSubLogger = (subcontext: string) => {
     return new Logger({
@@ -139,9 +139,9 @@ class Logger {
       filename: this.filename,
       context: this.context,
       disabled: this.logger === undefined,
-      dateFormat: this.dateFormat
+      dateFormat: this.dateFormat,
     });
-  };
+  }
 
   private getLogFormat = (colorize: boolean, dateFormat?: string) => {
     const { format } = winston;
@@ -153,44 +153,44 @@ class Logger {
       return format.printf(
         info =>
           `${getTsString(dateFormat)} [${context}][${this.instanceId}] ` +
-          `${this.getLevel(info.level, colorize)}: ${info.message}`
+          `${this.getLevel(info.level, colorize)}: ${info.message}`,
       );
     } else {
       return format.printf(
         info =>
           `${getTsString(dateFormat)} [${context}] ${this.getLevel(
             info.level,
-            colorize
-          )}: ${info.message}`
+            colorize,
+          )}: ${info.message}`,
       );
     }
-  };
+  }
 
   private getLevel = (level: string, colorize: boolean): string => {
     if (colorize) {
       switch (level) {
-        case "error":
+        case 'error':
           return colors.red(level);
-        case "warn":
+        case 'warn':
           return colors.yellow(level);
-        case "info":
+        case 'info':
           return colors.green(level);
-        case "verbose":
+        case 'verbose':
           return colors.cyan(level);
-        case "debug":
+        case 'debug':
           return colors.blue(level);
-        case "trace":
+        case 'trace':
           return colors.magenta(level);
       }
     }
     return level;
-  };
+  }
 
   private log = (level: string, msg: string) => {
     if (this.logger) {
       this.logger.log(level, msg);
     }
-  };
+  }
 
   public error = (msg: Error | string, err?: any) => {
     let errMsg: string;
@@ -200,7 +200,7 @@ class Logger {
     } else {
       errMsg = msg;
       if (err) {
-        errMsg += ": ";
+        errMsg += ': ';
         if (err instanceof Error) {
           errMsg += err.stack ? err.stack : `${err.name} - ${err.message}`;
         } else if (err.code && err.message) {
@@ -212,27 +212,27 @@ class Logger {
     }
 
     this.log(Level.Error, errMsg);
-  };
+  }
 
   public warn = (msg: string) => {
     this.log(Level.Warn, msg);
-  };
+  }
 
   public info = (msg: string) => {
     this.log(Level.Info, msg);
-  };
+  }
 
   public verbose = (msg: string) => {
     this.log(Level.Verbose, msg);
-  };
+  }
 
   public debug = (msg: string) => {
     this.log(Level.Debug, msg);
-  };
+  }
 
   public trace = (msg: string) => {
     this.log(Level.Trace, msg);
-  };
+  }
 }
 
 export default Logger;

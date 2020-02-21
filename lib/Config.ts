@@ -1,15 +1,15 @@
-import os from "os";
-import path from "path";
-import toml from "toml";
-import { deepMerge } from "./utils/utils";
-import { promises as fs } from "fs";
-import { LndClientConfig } from "./lndclient/types";
-import { RaidenClientConfig } from "./raidenclient/types";
-import { ConnextClientConfig } from "./connextclient/types";
-import { Level } from "./Logger";
-import { XuNetwork } from "./constants/enums";
-import { PoolConfig } from "./p2p/types";
-import { OrderBookThresholds } from "./orderbook/types";
+import os from 'os';
+import path from 'path';
+import toml from 'toml';
+import { deepMerge } from './utils/utils';
+import { promises as fs } from 'fs';
+import { LndClientConfig } from './lndclient/types';
+import { RaidenClientConfig } from './raidenclient/types';
+import { ConnextClientConfig } from './connextclient/types';
+import { Level } from './Logger';
+import { XuNetwork } from './constants/enums';
+import { PoolConfig } from './p2p/types';
+import { OrderBookThresholds } from './orderbook/types';
 
 class Config {
   public p2p: PoolConfig;
@@ -53,33 +53,33 @@ class Config {
     let lndDefaultDatadir: string;
     let raidenDefaultKeystorePath: string;
     switch (platform) {
-      case "win32": {
+      case 'win32': {
         // windows
         const homeDir = process.env.LOCALAPPDATA!;
-        this.xudir = path.join(homeDir, "Xud");
-        lndDefaultDatadir = path.join(homeDir, "Lnd");
-        raidenDefaultKeystorePath = path.join(homeDir, "Ethereum");
+        this.xudir = path.join(homeDir, 'Xud');
+        lndDefaultDatadir = path.join(homeDir, 'Lnd');
+        raidenDefaultKeystorePath = path.join(homeDir, 'Ethereum');
         break;
       }
-      case "darwin": {
+      case 'darwin': {
         // mac
         const homeDir = process.env.HOME!;
-        this.xudir = path.join(homeDir, ".xud");
+        this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(
           homeDir,
-          "Library",
-          "Application Support",
-          "Lnd"
+          'Library',
+          'Application Support',
+          'Lnd',
         );
-        raidenDefaultKeystorePath = path.join(homeDir, "Library", "Ethereum");
+        raidenDefaultKeystorePath = path.join(homeDir, 'Library', 'Ethereum');
         break;
       }
       default: {
         // linux
         const homeDir = process.env.HOME!;
-        this.xudir = path.join(homeDir, ".xud");
-        lndDefaultDatadir = path.join(homeDir, ".lnd");
-        raidenDefaultKeystorePath = path.join(homeDir, ".ethereum");
+        this.xudir = path.join(homeDir, '.xud');
+        lndDefaultDatadir = path.join(homeDir, '.lnd');
+        raidenDefaultKeystorePath = path.join(homeDir, '.ethereum');
         break;
       }
     }
@@ -87,7 +87,7 @@ class Config {
     // default configuration
     this.loglevel = this.getDefaultLogLevel();
     this.logpath = this.getDefaultLogPath();
-    this.logdateformat = "DD/MM/YYYY HH:mm:ss.SSS";
+    this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = XuNetwork.SimNet;
     this.dbpath = this.getDefaultDbPath();
 
@@ -99,77 +99,77 @@ class Config {
       discoverminutes: 60 * 12, // 12 hours
       detectexternalip: false,
       port: this.getDefaultP2pPort(),
-      addresses: []
+      addresses: [],
     };
     this.rpc = {
       disable: false,
-      host: "localhost",
-      port: 8886
+      host: 'localhost',
+      port: 8886,
     };
     this.http = {
-      host: "localhost",
-      port: 8887
+      host: 'localhost',
+      port: 8887,
     };
     this.webproxy = {
       disable: true,
-      port: 8080
+      port: 8080,
     };
     this.debug = {
-      raidenDirectChannelChecks: true
+      raidenDirectChannelChecks: true,
     };
     // TODO: add dynamic max/min price limits
     this.orderthresholds = {
-      minQuantity: 0 // 0 = disabled
+      minQuantity: 0, // 0 = disabled
     };
     this.lnd.BTC = {
       disable: false,
-      certpath: path.join(lndDefaultDatadir, "tls.cert"),
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(
         lndDefaultDatadir,
-        "data",
-        "chain",
-        "bitcoin",
+        'data',
+        'chain',
+        'bitcoin',
         this.network,
-        "admin.macaroon"
+        'admin.macaroon',
       ),
-      host: "localhost",
+      host: 'localhost',
       port: 10009,
       nomacaroons: false,
-      cltvdelta: 40
+      cltvdelta: 40,
     };
     this.lnd.LTC = {
       disable: false,
-      certpath: path.join(lndDefaultDatadir, "tls.cert"),
+      certpath: path.join(lndDefaultDatadir, 'tls.cert'),
       macaroonpath: path.join(
         lndDefaultDatadir,
-        "data",
-        "chain",
-        "litecoin",
+        'data',
+        'chain',
+        'litecoin',
         this.network,
-        "admin.macaroon"
+        'admin.macaroon',
       ),
-      host: "localhost",
+      host: 'localhost',
       port: 10010,
       nomacaroons: false,
-      cltvdelta: 576
+      cltvdelta: 576,
     };
     this.raiden = {
       disable: false,
-      host: "localhost",
+      host: 'localhost',
       port: 5001,
-      keystorepath: raidenDefaultKeystorePath
+      keystorepath: raidenDefaultKeystorePath,
     };
     this.connext = {
       disable: false,
-      host: "localhost",
-      port: 5001
+      host: 'localhost',
+      port: 5001,
     };
   }
 
   private static readConfigProps = async (configPath: string) => {
     let configText: string | undefined;
     try {
-      configText = await fs.readFile(configPath, "utf8");
+      configText = await fs.readFile(configPath, 'utf8');
     } catch (err) {}
 
     let configProps: any;
@@ -178,12 +178,12 @@ class Config {
         configProps = toml.parse(configText);
       } catch (e) {
         throw new Error(
-          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`
+          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`,
         );
       }
     }
     return configProps;
-  };
+  }
 
   /**
    * Loads the xud configuration from an optional file and any command line arguments.
@@ -203,7 +203,7 @@ class Config {
 
     await this.mkDirIfNotExist(this.xudir);
 
-    const configPath = path.join(this.xudir, "xud.conf");
+    const configPath = path.join(this.xudir, 'xud.conf');
     const configProps = await Config.readConfigProps(configPath);
 
     if (configProps) {
@@ -215,7 +215,7 @@ class Config {
             XuNetwork.MainNet,
             XuNetwork.TestNet,
             XuNetwork.SimNet,
-            XuNetwork.RegTest
+            XuNetwork.RegTest,
           ].includes(configProps.network)
         ) {
           throw new Error(`Invalid network config: ${configProps.network}`);
@@ -229,7 +229,7 @@ class Config {
       if (configProps.thresholds) {
         this.orderthresholds = {
           ...this.orderthresholds,
-          ...configProps.thresholds
+          ...configProps.thresholds,
         };
       }
     }
@@ -258,7 +258,7 @@ class Config {
     await this.mkDirIfNotExist(logDir);
 
     return !!configProps;
-  };
+  }
 
   /**
    * Creates a directory if it does not exist, otherwise does nothing.
@@ -267,24 +267,24 @@ class Config {
     try {
       await fs.mkdir(dirPath);
     } catch (err) {
-      if (err.code !== "EEXIST") {
+      if (err.code !== 'EEXIST') {
         // ignore the error if the directory already exists, otherwise throw
         throw err;
       }
     }
-  };
+  }
 
   private getNetwork = (args: { [argName: string]: any }) => {
     const networks: { [val: string]: boolean } = {
       [XuNetwork.MainNet]: args.mainnet,
       [XuNetwork.TestNet]: args.testnet,
       [XuNetwork.SimNet]: args.simnet,
-      [XuNetwork.RegTest]: args.regtest
+      [XuNetwork.RegTest]: args.regtest,
     };
 
     const selected = Object.keys(networks).filter(key => networks[key]);
     if (selected.length > 1) {
-      throw Error("only one network selection is allowed");
+      throw Error('only one network selection is allowed');
     }
 
     if (selected.length === 0) {
@@ -292,34 +292,34 @@ class Config {
     } else {
       return selected[0] as XuNetwork;
     }
-  };
+  }
 
   private setDefaultMacaroonPaths = () => {
     for (const currency in this.lnd) {
       switch (currency) {
-        case "LTC":
+        case 'LTC':
           // litecoin uses a specific folder name for testnet
           this.lnd.LTC!.macaroonpath = path.join(
             this.lnd.LTC!.macaroonpath,
-            "..",
-            "..",
-            this.network === XuNetwork.TestNet ? "testnet4" : this.network,
-            "admin.macaroon"
+            '..',
+            '..',
+            this.network === XuNetwork.TestNet ? 'testnet4' : this.network,
+            'admin.macaroon',
           );
           break;
         default:
           // by default we want to update the network folder name to the selected network
           this.lnd[currency]!.macaroonpath = path.join(
             this.lnd[currency]!.macaroonpath,
-            "..",
-            "..",
+            '..',
+            '..',
             this.network,
-            "admin.macaroon"
+            'admin.macaroon',
           );
           break;
       }
     }
-  };
+  }
 
   private getDefaultP2pPort = () => {
     switch (this.network) {
@@ -332,21 +332,21 @@ class Config {
       case XuNetwork.RegTest:
         return 38885;
       default:
-        throw new Error("unrecognized network");
+        throw new Error('unrecognized network');
     }
-  };
+  }
 
   private getDefaultDbPath = () => {
     return path.join(this.xudir, `xud-${this.network}.db`);
-  };
+  }
 
   private getDefaultLogPath = (): string => {
-    return path.resolve(this.xudir, "logs", "xud.log");
-  };
+    return path.resolve(this.xudir, 'logs', 'xud.log');
+  }
 
   private getDefaultLogLevel = (): string => {
-    return process.env.NODE_ENV === "production" ? Level.Info : Level.Debug;
-  };
+    return process.env.NODE_ENV === 'production' ? Level.Info : Level.Debug;
+  }
 }
 
 export default Config;
