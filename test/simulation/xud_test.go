@@ -47,7 +47,7 @@ func TestIntegration(t *testing.T) {
 	}()
 
 	ht := newHarnessTest(context.Background(), t)
-	t.Logf("Running %v integration tests", len(integrationTestCases))
+	log.Printf("Running %v integration tests", len(integrationTestCases))
 
 	// Open channels from both directions on each chain.
 	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
@@ -127,7 +127,7 @@ func TestInstability(t *testing.T) {
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 	ht := newHarnessTest(context.Background(), t)
-	t.Logf("Running %v instability tests", len(instabilityTestCases))
+	log.Printf("Running %v instability tests", len(instabilityTestCases))
 
 	// Open channels from both directions on each chain.
 	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
@@ -137,7 +137,7 @@ func TestInstability(t *testing.T) {
 
 	for _, testCase := range instabilityTestCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 			defer cancel()
 			ht := newHarnessTest(ctx, t1)
 			ht.RunTestCase(testCase, xudNetwork)
@@ -160,7 +160,7 @@ func TestSecurity(t *testing.T) {
 	defer teardown()
 
 	ht := newHarnessTest(context.Background(), t)
-	t.Logf("Running %v security tests", len(securityTestCases))
+	log.Printf("Running %v security tests", len(securityTestCases))
 
 	// For each test: open channels, save the balance, execute the test,
 	// compare the balance and close the channels cooperatively.
@@ -219,7 +219,7 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 
-	t.Logf("Running %v unsettled-channels security tests", len(unsettledChannelsSecurityTests))
+	log.Printf("Running %v unsettled-channels security tests", len(unsettledChannelsSecurityTests))
 
 	for _, testCase := range unsettledChannelsSecurityTests {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
@@ -376,6 +376,9 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	if err := xudHarness.Start(); err != nil {
 		log.Fatalf("cannot start xud network: %v", err)
 	}
+
+	// Wait a bit to avoid calls to xud nodes while still initializing.
+	time.Sleep(3 * time.Second)
 
 	teardown := func() {
 		if err := lndBtcNetworkHarness.TearDownAll(); err != nil {
