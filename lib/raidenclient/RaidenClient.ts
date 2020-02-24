@@ -53,7 +53,6 @@ class RaidenClient extends SwapClient {
   public tokenAddresses = new Map<string, string>();
   private port: number;
   private host: string;
-  private disable: boolean;
   private unitConverter: UnitConverter;
   private totalOutboundAmounts = new Map<string, number>();
   private maxChannelOutboundAmounts = new Map<string, number>();
@@ -64,15 +63,21 @@ class RaidenClient extends SwapClient {
    * Creates a raiden client.
    */
   constructor(
-    { config, logger, unitConverter, directChannelChecks = false }:
-    { config: RaidenClientConfig, logger: Logger, unitConverter: UnitConverter, directChannelChecks: boolean },
+    { config, logger, unitConverter, currencyInstances, directChannelChecks = false }:
+    {
+      config: RaidenClientConfig,
+      logger: Logger,
+      unitConverter: UnitConverter,
+      currencyInstances: CurrencyInstance[],
+      directChannelChecks?: boolean,
+    },
   ) {
-    super(logger);
-    const { disable, host, port } = config;
+    super(logger, config.disable);
+    const { host, port } = config;
 
+    this.setTokenAddresses(currencyInstances);
     this.port = port;
     this.host = host;
-    this.disable = disable;
     this.unitConverter = unitConverter;
     this.directChannelChecks = directChannelChecks;
   }
@@ -93,20 +98,7 @@ class RaidenClient extends SwapClient {
     return parseInt(rHash.substr(0, 8), 16);
   }
 
-  /**
-   * Checks for connectivity and gets our Raiden account address
-   */
-  public init = async (currencyInstances: CurrencyInstance[]) => {
-    if (this.disable) {
-      await this.setStatus(ClientStatus.Disabled);
-      return;
-    }
-    this.setTokenAddresses(currencyInstances);
-
-    await this.setStatus(ClientStatus.Initialized);
-    this.emit('initialized');
-    await this.verifyConnectionWithTimeout();
-  }
+  public initSpecific = async () => {};
 
   /**
    * Associate raiden with currencies that have a token address
@@ -144,6 +136,10 @@ class RaidenClient extends SwapClient {
   }
 
   protected verifyConnection = async () => {
+    if (!this.isOperational()) {
+      throw(errors.RAIDEN_IS_DISABLED);
+    }
+
     this.logger.info(`trying to verify connection to raiden with uri: ${this.host}:${this.port}`);
     try {
       const address = await this.getAddress();
@@ -156,14 +152,13 @@ class RaidenClient extends SwapClient {
         this.logger.debug(`address is ${newAddress}`);
       }
 
-      this.emit('connectionVerified', { newIdentifier: newAddress });
-      await this.setStatus(ClientStatus.ConnectionVerified);
+      await this.setConnected(newAddress);
     } catch (err) {
       this.logger.error(
-        `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_TIME_LIMIT} ms`,
+        `could not verify connection to raiden at ${this.host}:${this.port}, retrying in ${RaidenClient.RECONNECT_INTERVAL} ms`,
         err,
       );
-      await this.disconnect();
+      this.disconnect();
     }
   }
 
@@ -425,7 +420,7 @@ class RaidenClient extends SwapClient {
 
       req.on('error', (err: any) => {
         if (err.code === 'ECONNREFUSED') {
-          this.disconnect().catch(this.logger.error);
+          this.disconnect();
         }
         this.logger.error(err);
         reject(err);
@@ -620,8 +615,8 @@ class RaidenClient extends SwapClient {
   }
 
   /** Raiden client specific cleanup. */
-  protected disconnect = async () => {
-    await this.setStatus(ClientStatus.Disconnected);
+  protected disconnect = () => {
+    this.setStatus(ClientStatus.Disconnected);
   }
 }
 

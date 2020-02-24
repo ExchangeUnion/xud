@@ -156,7 +156,7 @@ class Swaps extends EventEmitter {
         });
       }
     });
-    if (this.swapClientManager.raidenClient.address) {
+    if (this.swapClientManager.raidenClient?.address) {
       this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
     }
 
@@ -791,7 +791,7 @@ class Swaps extends EventEmitter {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         expectedCurrency = deal.makerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.makerCurrency);
+        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
         const lockExpirationDelta = expiration - chain_height;
@@ -819,7 +819,7 @@ class Swaps extends EventEmitter {
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
         expectedCurrency = deal.takerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient.tokenAddresses.get(deal.takerCurrency);
+        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.takerCurrency);
         source = 'Maker';
         destination = 'Taker';
         break;

@@ -102,10 +102,9 @@ class Xud extends EventEmitter {
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
       const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
-      const awaitingCreate = !nodeKeyExists && !this.config.noencrypt;
 
       this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models, awaitingCreate);
+      await this.swapClientManager.init(this.db.models);
 
       let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
@@ -184,7 +183,7 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      if (this.swapClientManager.raidenClient.isOperational()) {
+      if (this.swapClientManager.raidenClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,
@@ -217,7 +216,7 @@ class Xud extends EventEmitter {
     const closePromises: Promise<void>[] = [];
 
     if (this.swapClientManager) {
-      closePromises.push(this.swapClientManager.close());
+      this.swapClientManager.close();
     }
     if (this.httpServer) {
       closePromises.push(this.httpServer.close());
