@@ -198,7 +198,7 @@
     "tslint-config-airbnb": "^5.11.2",
     "tslint-no-circular-imports": "^0.7.0",
     "typedoc": "^0.15.0",
-    "typescript": "^3.6.4"
+    "typescript": "^3.8.2"
   },
   "engines": {
     "node": ">=10.2.0"
