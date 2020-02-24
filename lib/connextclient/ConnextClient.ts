@@ -101,6 +101,9 @@ class ConnextClient extends SwapClient {
       await this.setStatus(ClientStatus.Disabled);
       return;
     }
+    if (!this.wallet) {
+      throw errors.CONNNEXT_WALLET_NOT_INITIATED;
+    }
     if (this.wallet) {
       this.setTokenAddresses(currencyInstances);
 
@@ -118,7 +121,6 @@ class ConnextClient extends SwapClient {
       this.emit('initialized');
       await this.verifyConnectionWithTimeout();
     } else {
-      throw new Error('Connext client requires wallet to be initiatied')
     }
   }
   /**
@@ -167,7 +169,7 @@ class ConnextClient extends SwapClient {
     this.logger.info('trying to verify connection to connext');
     try {
       if (!this.channel) {
-        throw new Error('No Connext client has been initiated')
+        throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
       }
 
       await this.channel.isAvailable();
@@ -246,8 +248,8 @@ class ConnextClient extends SwapClient {
 
   private sanitizeTokenPaymentResponse = (response: TokenPaymentResponse) => {
     if (response.secret) {
-      // remove '0x'
-      return response.secret.slice(2);
+      const res = {}
+      return res;
     } else {
       throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
     }
@@ -313,8 +315,8 @@ class ConnextClient extends SwapClient {
         endpoint += `/${destination}`;
       }
     }
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<PendingTransfer[]>(res);
+    const res = this.channel?.isAvailable()
+    return res;
   }
 
   private getPaymentEvents = async (
@@ -329,8 +331,8 @@ class ConnextClient extends SwapClient {
         endpoint += `/${destination}`;
       }
     }
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<PaymentEvent[]>(res);
+    const res = this.channel?.isAvailable()
+    return res;
   }
 
   public getRoute = async () => {
@@ -461,8 +463,8 @@ class ConnextClient extends SwapClient {
    */
   public getVersion = async (): Promise<ConnextVersion> => {
     const endpoint = 'version';
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<ConnextVersion>(res);
+    const res = this.channel?.isAvailable()
+    return res;
   }
 
   /**
@@ -475,8 +477,8 @@ class ConnextClient extends SwapClient {
     channel_address: string,
   ): Promise<Channel> => {
     const endpoint = `channels/${token_address}/${channel_address}`;
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<Channel>(res);
+    const res = this.channel?.isAvailable()
+    return res;
   }
 
   /**
@@ -485,82 +487,35 @@ class ConnextClient extends SwapClient {
    */
   public getChannels = async (token_address?: string): Promise<Channel[]> => {
     const endpoint = token_address ? `channels/${token_address}` : 'channels';
-    const res = await this.sendRequest(endpoint, 'GET');
-    return parseResponseBody<[Channel]>(res);
+    const res = this.channel?.isAvailable()
+    return res;
   }
 
   public channelBalance = async (
     currency?: string,
   ): Promise<ChannelBalance> => {
+    if (!this.channel) {
+      throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
+    }
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const channels = await this.getChannels(this.tokenAddresses.get(currency));
-    const units = channels
-      .filter(channel => channel.state === 'opened')
-      .map(channel => channel.balance)
-      .reduce((sum, acc) => sum + acc, 0);
-    const balance = this.unitConverter.unitsToAmount({
-      currency,
-      units,
-    });
-    if (this.totalOutboundAmounts.get(currency) !== balance) {
-      this.totalOutboundAmounts.set(currency, balance);
-      this.logger.debug(
-        `new total outbound capacity for ${currency}: ${balance}`,
-      );
-    }
+    const freeBalance = await this.channel.getFreeBalance(currency)
 
-    return { balance, pendingOpenBalance: 0, inactiveBalance: 0 };
+    return {
+      balance: freeBalance[this.channel.multisigAddress].toNumber(),
+      pendingOpenBalance: 0,
+      inactiveBalance: 0,
+    }
   }
 
   public tradingLimits = async (currency?: string): Promise<TradingLimits> => {
+    if (!this.channel) {
+      throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
+    }
     if (!currency) {
       return { maxSell: 0, maxBuy: 0 };
-    }
-
-    const channels = await this.getChannels(this.tokenAddresses.get(currency));
-
-    let maxOutboundUnits = 0;
-    let maxInboundUnits = 0;
-    channels.forEach((channel) => {
-      if (channel.state !== 'open') {
-        return;
-      }
-
-      const outboundUnits = channel.balance;
-      if (maxOutboundUnits < outboundUnits) {
-        maxOutboundUnits = outboundUnits;
-      }
-
-      const inboundUnits = channel.total_deposit - channel.balance;
-      if (maxInboundUnits < inboundUnits) {
-        maxInboundUnits = inboundUnits;
-      }
-    });
-
-    const maxOutboundAmount = this.unitConverter.unitsToAmount({
-      currency,
-      units: maxOutboundUnits,
-    });
-    const maxInboundAmount = this.unitConverter.unitsToAmount({
-      currency,
-      units: maxInboundUnits,
-    });
-
-    if (this.maxChannelOutboundAmounts.get(currency) !== maxOutboundAmount) {
-      this.maxChannelOutboundAmounts.set(currency, maxOutboundAmount);
-      this.logger.debug(
-        `new channel outbound capacity for ${currency}: ${maxOutboundAmount}`,
-      );
-    }
-
-    if (this.maxChannelInboundAmounts.get(currency) !== maxInboundAmount) {
-      this.maxChannelInboundAmounts.set(currency, maxInboundAmount);
-      this.logger.debug(
-        `new channel outbound capacity for ${currency}: ${maxInboundAmount}`,
-      );
     }
 
     return {
@@ -608,8 +563,8 @@ class ConnextClient extends SwapClient {
     payload: OpenChannelPayload,
   ): Promise<string> => {
     const endpoint = 'channels';
-    const res = await this.sendRequest(endpoint, 'PUT', payload);
-
+    const res = this.channel?.isAvailable()
+    return res;
     const body = await parseResponseBody<{ channel_address: string }>(res);
     return body.channel_address;
   }
@@ -638,8 +593,8 @@ class ConnextClient extends SwapClient {
       payload.secret_hash = `0x${payload.secret_hash}`;
     }
 
-    const res = await this.sendRequest(endpoint, 'POST', payload);
-    const body = await parseResponseBody<TokenPaymentResponse>(res);
+    const res = this.channel?.isAvailable()
+    return res;
     return body;
   }
 

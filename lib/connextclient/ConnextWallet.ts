@@ -10,7 +10,7 @@ export class ConnextWallet {
   public xpub: string;
 
   constructor(mnemonic: string) {
-    this.mnemonic = mnemonic
+    this.mnemonic = mnemonic;
     this.hdNode = fromExtendedKey(
       fromMnemonic(this.mnemonic).extendedKey,
     ).derivePath(CF_PATH);
