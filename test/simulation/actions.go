@@ -58,10 +58,12 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string) {
 	if len(tokenAddress) > 0 {
 		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress}
-		node.Client.AddCurrency(a.ctx, req)
+		_, err := node.Client.AddCurrency(a.ctx, req)
+		a.assert.NoError(err)
 	} else {
 		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient}
-		node.Client.AddCurrency(a.ctx, req)
+		_, err := node.Client.AddCurrency(a.ctx, req)
+		a.assert.NoError(err)
 	}
 }
 

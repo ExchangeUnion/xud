@@ -60,11 +60,14 @@ func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 		PairId:   aliceOrderReq.PairId,
 		Side:     xudrpc.OrderSide_SELL,
 	}
+
 	_, err = net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
+	ht.assert.NoError(err)
 
 	<-net.Alice.ProcessExit
 
-	net.Alice.Start(nil)
+	err = net.Alice.Start(nil)
+	ht.assert.NoError(err)
 
 	// Brief delay to allow for swap to be recovered consistently
 	time.Sleep(1 * time.Second)

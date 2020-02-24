@@ -138,6 +138,7 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 		DataDir:         dataDir,
 		XUDPath:         xudPath,
 		NoBalanceChecks: noBalanceChecks,
+		RaidenDisable:   true,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
