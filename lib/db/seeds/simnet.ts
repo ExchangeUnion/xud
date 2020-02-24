@@ -20,14 +20,20 @@ const currencies = [
   { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   { id: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   {
+    id: 'ETH',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0x0000000000000000000000000000000000000000',
+  },
+  {
     id: 'WETH',
-    swapClient: SwapClientType.Raiden,
+    swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
     tokenAddress: '0x892F91dc428Fc3Dc0a57eC46C8245F2511b8a542',
   },
   {
     id: 'DAI',
-    swapClient: SwapClientType.Raiden,
+    swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
     tokenAddress: '0x4115652c9025d99512e9026B8F11C3E265bfecD7',
   },
@@ -35,6 +41,7 @@ const currencies = [
 
 const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
+  { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
   { baseCurrency: 'WETH', quoteCurrency: 'BTC' },
   { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
