@@ -44,10 +44,6 @@ class ConnextClient extends SwapClient {
   private nodeUrl: string;
   private unitConverter: UnitConverter;
 
-  private totalOutboundAmounts = new Map<string, number>();
-  private maxChannelOutboundAmounts = new Map<string, number>();
-  private maxChannelInboundAmounts = new Map<string, number>();
-
   private channel: IConnextClient | undefined;
   private wallet: ConnextWallet | undefined;
 
@@ -78,14 +74,6 @@ class ConnextClient extends SwapClient {
 
   public get label() {
     return 'Connext';
-  }
-
-  /**
-   * Derives an integer identifier using the first 4 bytes of a provided payment hash in hex.
-   * @param rHash a payment hash in hex
-   */
-  private static getIdentifier(rHash: string) {
-    return parseInt(rHash.substr(0, 8), 16);
   }
 
   /**
@@ -122,8 +110,7 @@ class ConnextClient extends SwapClient {
    * Initiates wallet for the Connext client
    */
   public initWallet = async (seedMnemonic: string[]) => {
-    const mnemonic = seedMnemonic.join(' ');
-    this.wallet = new ConnextWallet(mnemonic);
+    this.wallet = new ConnextWallet(seedMnemonic.join(' '));
   }
   /**
    * Associate connext with currencies that have a token address
@@ -137,15 +124,15 @@ class ConnextClient extends SwapClient {
   }
 
   public totalOutboundAmount = (currency: string): number => {
-    return this.totalOutboundAmounts.get(currency) || 0;
+    return 10 ** 10;
   }
 
   public maxChannelOutboundAmount = (currency: string): number => {
-    return this.maxChannelOutboundAmounts.get(currency) || 0;
+    return 10 ** 10;
   }
 
   public maxChannelInboundAmount = (currency: string): number => {
-    return this.maxChannelInboundAmounts.get(currency) || 0;
+    return 10 ** 10;
   }
 
   protected updateCapacity = async () => {
@@ -267,7 +254,8 @@ class ConnextClient extends SwapClient {
     currency?: string,
     destination?: string,
   ) => {
-    const identifier = ConnextClient.getIdentifier(rHash);
+    // TODO: change identifier
+    const identifier = 0;
 
     // first check if the payment is pending
     const pendingTransfers = await this.getPendingTransfers(
@@ -420,10 +408,16 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const freeBalance = await this.channel.getFreeBalance(currency);
+    const tokenAddress = this.tokenAddresses.get(currency);
 
+    const freeBalance = await this.channel.getFreeBalance(tokenAddress);
+
+    const balance = this.unitConverter.unitsToAmount({
+      currency,
+      units: freeBalance[this.channel.multisigAddress].toNumber(),
+    });
     return {
-      balance: freeBalance[this.channel.multisigAddress].toNumber(),
+      balance,
       pendingOpenBalance: 0,
       inactiveBalance: 0,
     };
@@ -438,8 +432,8 @@ class ConnextClient extends SwapClient {
     }
 
     return {
-      maxSell: this.maxChannelOutboundAmounts.get(currency)!,
-      maxBuy: this.maxChannelInboundAmounts.get(currency)!,
+      maxSell: 10 ** 10,
+      maxBuy: 10 ** 10,
     };
   }
 
@@ -484,8 +478,6 @@ class ConnextClient extends SwapClient {
     const endpoint = 'channels';
     const res = this.channel?.isAvailable();
     return (res as any);
-    const body = await parseResponseBody<{ channel_address: string }>(res);
-    return body.channel_address;
   }
 
   /**
@@ -527,13 +519,6 @@ class ConnextClient extends SwapClient {
   ): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
     await this.channel?.isAvailable();
-  }
-
-  /**
-   * Gets the account address for the connext node.
-   */
-  private getAddress = async (): Promise<string> => {
-    return this.wallet.xpub;
   }
 
   /** Connext client specific cleanup. */
