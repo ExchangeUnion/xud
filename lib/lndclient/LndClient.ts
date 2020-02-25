@@ -818,6 +818,14 @@ class LndClient extends SwapClient {
     return route;
   }
 
+  public canRouteToNode = async (_destination: string) => {
+    // lnd doesn't currently have a way to see if any route exists, regardless of balance
+    // for example, if we have a direct channel to peer but no balance in the channel and
+    // no other routes, QueryRoutes will return nothing as of lnd v0.8.1.
+    // For now we err on the side of leniency and assume a route may exist.
+    return true;
+  }
+
   /**
    * Lists all routes to destination.
    */

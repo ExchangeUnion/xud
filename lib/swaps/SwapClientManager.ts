@@ -412,25 +412,28 @@ class SwapClientManager extends EventEmitter {
     await swapClient.openChannel({ peerIdentifier, units, currency });
   }
 
-  public hasRouteToPeer = (currency: string, peer: Peer) => {
+  /**
+   * Checks whether it is possible to route a payment to a peer for a given currency. This does not
+   * guarantee or test that a payment can be routed successfully, only determiens whether it is
+   * possible to do so currently given the state of the specified currency's network and graph.
+   */
+  public canRouteToPeer = async (peer: Peer, currency: string) => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       return false;
     }
-    let hasRoute = false;
-    if (isRaidenClient(swapClient)) {
-      // temporary check to ensure we have a direct channel
-      if (peer.raidenAddress && swapClient.isConnected() && swapClient.getRoute(1, peer.raidenAddress, currency)) {
-        // a route found means we have a direct channel
-        hasRoute = true;
-      }
-    } else if (isLndClient(swapClient)) {
-      // lnd doesn't currently have a way to see if any route exists, regardless of balance
-      // for example, if we have a direct channel to peer but no balance in the channel and
-      // no other routes, QueryRoutes will return nothing as of lnd v0.8.1
-      hasRoute = true;
+    const destination = peer.getIdentifier(swapClient.type, currency);
+    if (!destination) {
+      return false;
     }
-    return hasRoute;
+
+    let canRoute: boolean;
+    try {
+      canRoute = await swapClient.canRouteToNode(destination, currency);
+    } catch {
+      canRoute = false; // if swap client calls are failing, we infer that we can't route payments
+    }
+    return canRoute;
   }
 
   private bind = () => {

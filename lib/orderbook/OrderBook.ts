@@ -825,8 +825,10 @@ class OrderBook extends EventEmitter {
       }
     });
 
-    currenciesToVerify.forEach((_, currency) => {
-      if (!this.swaps.swapClientManager.hasRouteToPeer(currency, peer)) {
+    currenciesToVerify.forEach(async (_, currency) => {
+      const canRoute = await this.swaps.swapClientManager.canRouteToPeer(peer, currency);
+      if (!canRoute) {
+        // don't attempt to verify if we can use a currency if a route to peer is impossible
         currenciesToVerify.set(currency, false);
       }
     });
