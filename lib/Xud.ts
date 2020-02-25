@@ -16,6 +16,7 @@ import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
+import { AssertionError } from 'assert';
 
 const version: string = require('../package.json').version;
 
@@ -64,7 +65,18 @@ class Xud extends EventEmitter {
    * @param args optional arguments to override configuration parameters.
    */
   public start = async (args?: { [argName: string]: any }) => {
-    const configFileLoaded = await this.config.load(args);
+    let configFileLoaded: boolean;
+    try {
+      configFileLoaded = await this.config.load(args);
+    } catch (err) {
+      if (err instanceof AssertionError) {
+        console.error(err.message);
+        process.exit(1);
+      } else {
+        throw err;
+      }
+    }
+
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
     this.logger = loggers.global;
     if (configFileLoaded) {
