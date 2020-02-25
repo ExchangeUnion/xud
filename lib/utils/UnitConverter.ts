@@ -3,6 +3,7 @@ class UnitConverter {
   private UNITS_PER_CURRENCY: { [key: string]: number } = {
     BTC: 1,
     LTC: 1,
+    ETH: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
   };
@@ -13,7 +14,7 @@ class UnitConverter {
 
   public amountToUnits = (
     { currency, amount }:
-    { currency: string, amount: number },
+      { currency: string, amount: number },
   ): number => {
     const unitsPerCurrency = this.UNITS_PER_CURRENCY[currency];
     if (!unitsPerCurrency) {
@@ -24,7 +25,7 @@ class UnitConverter {
 
   public unitsToAmount = (
     { currency, units }:
-    { currency: string, units: number },
+      { currency: string, units: number },
   ): number => {
     const unitsPerCurrency = this.UNITS_PER_CURRENCY[currency];
     if (!unitsPerCurrency) {
