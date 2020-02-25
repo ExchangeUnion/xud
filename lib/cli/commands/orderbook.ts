@@ -4,6 +4,7 @@ import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { satsToCoinsStr } from '../utils';
+import { Owner } from '../../constants/enums';
 
 type FormattedOrderbook = {
   pairId: string,
@@ -181,6 +182,6 @@ export const handler = (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
-  request.setIncludeOwnOrders(true);
+  request.setOwner(Number(Owner.Both));
   loadXudClient(argv).listOrders(request, callback(argv, displayTables, displayJson));
 };

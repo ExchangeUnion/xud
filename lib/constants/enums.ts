@@ -14,6 +14,12 @@ export enum OrderSide {
   Sell,
 }
 
+export enum Owner {
+  Both,
+  Own,
+  Peer,
+}
+
 export enum XuNetwork {
   // real coins.
   MainNet = 'mainnet',

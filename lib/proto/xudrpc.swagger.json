@@ -328,12 +328,17 @@
             "type": "string"
           },
           {
-            "name": "include_own_orders",
-            "description": "Whether own orders should be included in result or not.",
+            "name": "owner",
+            "description": "Whether only own, only peer or both orders should be included in result.",
             "in": "query",
             "required": false,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "string",
+            "enum": [
+              "BOTH",
+              "OWN",
+              "PEER"
+            ],
+            "default": "BOTH"
           },
           {
             "name": "limit",

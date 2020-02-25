@@ -4,6 +4,7 @@ import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
 import { satsToCoinsStr } from '../utils';
+import { Owner } from '../../constants/enums';
 
 type FormattedTradingPairOrders = {
   pairId: string,
@@ -78,7 +79,7 @@ const displayTables = (orders: ListOrdersResponse.AsObject) => {
   formatOrders(orders).forEach(displayOrdersTable);
 };
 
-export const command = 'listorders [pair_id] [include_own_orders] [limit]';
+export const command = 'listorders [pair_id] [owner] [limit]';
 
 export const describe = 'list orders from the order book';
 
@@ -87,10 +88,11 @@ export const builder = {
     describe: 'trading pair for which to retrieve orders',
     type: 'string',
   },
-  include_own_orders: {
-    describe: 'whether to include own orders',
-    type: 'boolean',
-    default: true,
+  owner: {
+    describe: 'whether to include own, peer or both orders',
+    type: 'string',
+    choices: ['Both', 'Own', 'Peer'],
+    default: 'Both',
   },
   limit: {
     describe: 'max number of orders to return',
@@ -103,7 +105,7 @@ export const handler = (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
-  request.setIncludeOwnOrders(argv.include_own_orders);
+  request.setOwner(Number(Owner[argv.owner]));
   request.setLimit(argv.limit);
   loadXudClient(argv).listOrders(request, callback(argv, displayTables));
 };
