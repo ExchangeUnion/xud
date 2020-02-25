@@ -30,6 +30,8 @@ import {
   TokenPaymentResponse,
 } from './types';
 
+const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
+
 /**
  * A class representing a client to interact with connext.
  */
@@ -124,15 +126,15 @@ class ConnextClient extends SwapClient {
   }
 
   public totalOutboundAmount = (currency: string): number => {
-    return 10 ** 10;
+    return MAX_AMOUNT;
   }
 
   public maxChannelOutboundAmount = (currency: string): number => {
-    return 10 ** 10;
+    return MAX_AMOUNT;
   }
 
   public maxChannelInboundAmount = (currency: string): number => {
-    return 10 ** 10;
+    return MAX_AMOUNT;
   }
 
   protected updateCapacity = async () => {
@@ -432,8 +434,8 @@ class ConnextClient extends SwapClient {
     }
 
     return {
-      maxSell: 10 ** 10,
-      maxBuy: 10 ** 10,
+      maxSell: MAX_AMOUNT,
+      maxBuy: MAX_AMOUNT,
     };
   }
 
