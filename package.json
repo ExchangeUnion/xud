@@ -37,7 +37,7 @@
     "test:p2p": "mocha --timeout 10000 -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha --timeout 10000 -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
-    "test:sim:build": "(npm run compile:dev && mkdir -p test/simulation/temp/xud && cp -a dist test/simulation/temp/xud && cp -a bin test/simulation/temp/xud && cp package.json test/simulation/temp/xud && cd test/simulation && ./docker-build.sh)",
+    "test:sim:build": "(npm run compile:dev && mkdir -p test/simulation/docker-xud/xud && cp -a dist test/simulation/docker-xud/xud && cp -a bin test/simulation/docker-xud/xud && cp package.json test/simulation/docker-xud/xud && cd test/simulation && ./docker-build.sh)",
     "test:sim:clean": "(cd test/simulation && ./docker-clean.sh)",
     "test:sim": "(cd test/simulation && ./docker-run.sh TestIntegration)",
     "test:sim:run:instability": "(cd test/simulation && ./docker-run.sh TestInstability)",
