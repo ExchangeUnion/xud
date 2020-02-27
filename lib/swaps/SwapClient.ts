@@ -80,7 +80,7 @@ abstract class SwapClient extends EventEmitter {
   public abstract readonly finalLock: number;
   public abstract readonly type: SwapClientType;
   /** Time in milliseconds between attempts to recheck connectivity to the client. */
-  public static readonly RECONNECT_TIME_LIMIT = 5000;
+  public static readonly RECONNECT_INTERVAL = 5000;
   protected status: ClientStatus = ClientStatus.NotInitialized;
   protected reconnectionTimer?: NodeJS.Timer;
 
@@ -90,7 +90,7 @@ abstract class SwapClient extends EventEmitter {
   /** Time in milliseconds between updating the maximum outbound capacity. */
   private static CAPACITY_REFRESH_INTERVAL = 3000;
 
-  constructor(public logger: Logger) {
+  constructor(public logger: Logger, protected disable: boolean) {
     super();
   }
 
@@ -129,10 +129,10 @@ abstract class SwapClient extends EventEmitter {
     // don't wait longer than the allotted time for the connection to
     // be verified to prevent initialization from hanging
     return new Promise<void>((resolve, reject) => {
-      const verifyTimeout = setTimeout(async () => {
+      const verifyTimeout = setTimeout(() => {
         // we could not verify the connection within the allotted time
         this.logger.info(`could not verify connection within initialization time limit of ${SwapClient.INITIALIZATION_TIME_LIMIT}`);
-        await this.setStatus(ClientStatus.Disconnected);
+        this.setStatus(ClientStatus.Disconnected);
         resolve();
       }, SwapClient.INITIALIZATION_TIME_LIMIT);
       this.verifyConnection().then(() => {
@@ -142,43 +142,74 @@ abstract class SwapClient extends EventEmitter {
     });
   }
 
-  protected setStatus = async (status: ClientStatus): Promise<void> => {
+  public init = async () => {
+    // up front checks before initializing client
+    if (this.disable) {
+      this.setStatus(ClientStatus.Disabled);
+      return;
+    }
+
+    if (!this.isNotInitialized() && !this.isMisconfigured()) {
+      // we only initialize from NotInitialized or Misconfigured status
+      this.logger.warn(`can not init in ${this.status} status`);
+      return;
+    }
+    // client specific initialization
+    await this.initSpecific();
+
+    // final steps to complete initialization
+    this.setStatus(ClientStatus.Initialized);
+    this.setTimers();
+    this.emit('initialized');
+    await this.verifyConnectionWithTimeout();
+  }
+
+  protected abstract async initSpecific(): Promise<void>;
+
+  protected setConnected = async (newIdentifier?: string, newUris?: string[]) => {
+    await this.updateCapacity();
+    this.setStatus(ClientStatus.ConnectionVerified);
+    this.emit('connectionVerified', {
+      newIdentifier,
+      newUris,
+    });
+
+  }
+
+  protected setStatus = (status: ClientStatus): void => {
     if (this.status === status) {
       return;
     }
 
     this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
     this.status = status;
-    await this.setTimers();
   }
 
-  private setTimers = async () => {
-    if (this.status === ClientStatus.ConnectionVerified) {
-      if (!this.updateCapacityTimer) {
-        await this.updateCapacity();
-        this.updateCapacityTimer = setInterval(this.updateCapacity, SwapClient.CAPACITY_REFRESH_INTERVAL);
-      }
+  private updateCapacityTimerCallback = async () => {
+    if (this.isConnected()) {
+      await this.updateCapacity();
+    }
+  }
 
-      if (this.reconnectionTimer) {
-        clearTimeout(this.reconnectionTimer);
-        this.reconnectionTimer = undefined;
+  private reconnectionTimerCallback = async () => {
+    if (this.status === ClientStatus.Disconnected || this.status === ClientStatus.OutOfSync || this.status === ClientStatus.WaitingUnlock) {
+      try {
+        await this.verifyConnection();
+      } catch (err) {
+        this.logger.debug(`reconnectionTimer errored with ${err}`);
       }
-    } else {
-      if (this.updateCapacityTimer) {
-        clearInterval(this.updateCapacityTimer);
-        this.updateCapacityTimer = undefined;
-      }
-      if (this.status === ClientStatus.Disconnected || this.status === ClientStatus.OutOfSync || this.status === ClientStatus.WaitingUnlock) {
-        if (!this.reconnectionTimer) {
-          this.reconnectionTimer = setTimeout(async () => {
-            await this.verifyConnection();
-            if (!this.isConnected() && this.reconnectionTimer) {
-              // if we were still not able to verify the connection, schedule another attempt
-              this.reconnectionTimer.refresh();
-            }
-          }, SwapClient.RECONNECT_TIME_LIMIT);
-        }
-      }
+    }
+    if (this.reconnectionTimer) {
+      this.reconnectionTimer.refresh();
+    }
+  }
+
+  private setTimers = () => {
+    if (!this.updateCapacityTimer) {
+      this.updateCapacityTimer = setInterval(this.updateCapacityTimerCallback, SwapClient.CAPACITY_REFRESH_INTERVAL);
+    }
+    if (!this.reconnectionTimer) {
+      this.reconnectionTimer = setTimeout(this.reconnectionTimerCallback, SwapClient.RECONNECT_INTERVAL);
     }
   }
 
@@ -279,17 +310,19 @@ abstract class SwapClient extends EventEmitter {
   }
 
   /** Ends all connections, subscriptions, and timers for for this client. */
-  public async close() {
-    await this.disconnect();
+  public close() {
+    this.disconnect();
     if (this.reconnectionTimer) {
       clearTimeout(this.reconnectionTimer);
+      this.reconnectionTimer = undefined;
     }
     if (this.updateCapacityTimer) {
       clearInterval(this.updateCapacityTimer);
+      this.updateCapacityTimer = undefined;
     }
     this.removeAllListeners();
   }
-  protected abstract async disconnect(): Promise<void>;
+  protected abstract disconnect(): void;
 }
 
 export default SwapClient;

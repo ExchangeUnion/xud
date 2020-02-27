@@ -334,8 +334,10 @@ class Service {
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
-    const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
-    raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
+    const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
+    if (raiden) {
+      raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
+    }
 
     return {
       lnd,

@@ -61,7 +61,7 @@ class Backup extends EventEmitter {
     this.logger.info('Started backup daemon');
   }
 
-  public stop = async () => {
+  public stop = () => {
     if (this.checkLndTimer) {
       clearInterval(this.checkLndTimer);
     }
@@ -70,7 +70,7 @@ class Backup extends EventEmitter {
     });
 
     for (const lndClient of this.lndClients) {
-      await lndClient.close();
+      lndClient.close();
     }
   }
 

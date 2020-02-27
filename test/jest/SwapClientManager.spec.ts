@@ -1,9 +1,9 @@
-import Logger from '../../lib/Logger';
-import DB from '../../lib/db/DB';
-import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
+import DB from '../../lib/db/DB';
+import Logger from '../../lib/Logger';
 import Peer from '../../lib/p2p/Peer';
+import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
 jest.mock('../../lib/db/DB', () => {
@@ -50,9 +50,9 @@ jest.mock('../../lib/lndclient/LndClient', () => {
 const mockRaidenAddress = 1234567890;
 let mockRaidenClientIsDisabled = false;
 const mockRaidenOpenChannel = jest.fn();
+const tokenAddresses = new Map<string, string>();
 jest.mock('../../lib/raidenclient/RaidenClient', () => {
   return jest.fn().mockImplementation(() => {
-    const tokenAddresses = new Map<string, string>();
     return {
       tokenAddresses,
       on: onListenerMock,
@@ -123,6 +123,7 @@ describe('Swaps.SwapClientManager', () => {
     db = new DB(loggers.db, config.dbpath);
     unitConverter = new UnitConverter();
     unitConverter.init();
+    tokenAddresses.set('WETH', '0x1234');
   });
 
   afterEach(() => {
@@ -156,7 +157,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(onListenerMock).toHaveBeenCalledTimes(6);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
     expect(swapClientManager.get('LTC')).not.toBeUndefined();
-    await swapClientManager.close();
+    swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(2);
   });
 
@@ -169,7 +170,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(swapClientManager['swapClients'].size).toEqual(1);
     expect(onListenerMock).toHaveBeenCalledTimes(3);
     expect(swapClientManager.get('BTC')).not.toBeUndefined();
-    await swapClientManager.close();
+    swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(1);
   });
 
@@ -183,7 +184,7 @@ describe('Swaps.SwapClientManager', () => {
     expect(onListenerMock).toHaveBeenCalledTimes(0);
     expect(swapClientManager.get('BTC')).toBeUndefined();
     expect(swapClientManager.get('WETH')).toBeUndefined();
-    await swapClientManager.close();
+    swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(0);
   });
 
@@ -193,7 +194,7 @@ describe('Swaps.SwapClientManager', () => {
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
     await swapClientManager.init(db.models);
     expect(swapClientManager['swapClients'].size).toEqual(3);
-    await swapClientManager.close();
+    swapClientManager.close();
     expect(closeMock).toHaveBeenCalledTimes(3);
   });
 
@@ -274,6 +275,7 @@ describe('Swaps.SwapClientManager', () => {
     });
 
     test('it opens a channel using raiden', async () => {
+      mockRaidenClientIsDisabled = false;
       const currency = 'WETH';
       const amount = 5000000;
       const expectedUnits = 50000000000000000;
