@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "minCompatibleVersion": "1.0.0-alpha.3",
-  "version": "1.0.0-beta",
+  "version": "1.0.0-beta.1",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -197,7 +197,7 @@
     "tslint": "^5.20.0",
     "tslint-config-airbnb": "^5.11.2",
     "tslint-no-circular-imports": "^0.7.0",
-    "typedoc": "^0.15.0",
+    "typedoc": "^0.16.10",
     "typescript": "^3.8.2"
   },
   "engines": {
