@@ -772,6 +772,7 @@
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [uint32](#uint32) |  | The time in seconds that we have been connected to this peer. |
 | raiden_address | [string](#string) |  | The raiden address for this peer |
+| alias | [string](#string) |  | The alias for this peer&#39;s public key |
 
 
 

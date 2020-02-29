@@ -133,8 +133,8 @@ class Peer extends EventEmitter {
     return this._nodePubKey;
   }
 
-  public get alias(): string {
-    return this._alias || '';
+  public get alias(): string | undefined {
+    return this._alias;
   }
 
   /* The label is used to describe the node in logs and error messages only */
@@ -810,14 +810,14 @@ class Peer extends EventEmitter {
 
     // finally set this peer's node state to the node state in the init packet body
     this.nodeState = body.nodeState;
-    this.set_identifiers(body.nodePubKey);
+    this.setIdentifiers(body.nodePubKey);
     this._version = body.version;
   }
 
   /**
    * Sets public key and alias for this node together so that they are always in sync
    */
-  private set_identifiers(nodePubKey: string) {
+  public setIdentifiers(nodePubKey: string) {
     this._nodePubKey = nodePubKey;
     this._alias = getAlias(nodePubKey);
   }

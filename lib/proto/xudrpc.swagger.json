@@ -1262,6 +1262,10 @@
         "raiden_address": {
           "type": "string",
           "title": "The raiden address for this peer"
+        },
+        "alias": {
+          "type": "string",
+          "title": "The alias for this peer's public key"
         }
       }
     },
