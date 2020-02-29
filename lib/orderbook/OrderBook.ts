@@ -9,7 +9,7 @@ import Pool from '../p2p/Pool';
 import Peer from '../p2p/Peer';
 import Logger from '../Logger';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
-import { getAlias } from '../utils/uriUtils';
+import { getAlias } from '../utils/aliasUtils';
 import { Models } from '../db/DB';
 import Swaps from '../swaps/Swaps';
 import { limits, maxLimits } from '../constants/limits';
@@ -769,8 +769,7 @@ class OrderBook extends EventEmitter {
     for (const pairId of this.pairInstances.keys()) {
       this.removePeerPair(peerPubKey, pairId);
     }
-    const alias = getAlias(peerPubKey);
-    this.logger.debug(`removed all orders for peer ${peerPubKey} (${alias})`);
+    this.logger.debug(`removed all orders for peer ${peerPubKey} (${getAlias(peerPubKey)})`);
   }
 
   private removePeerPair = (peerPubKey: string, pairId: string) => {
@@ -907,8 +906,7 @@ class OrderBook extends EventEmitter {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
       this.emit('peerOrder.invalidation', removeResult.order);
     } catch {
-      const alias = getAlias(peerPubKey);
-      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${alias})`);
+      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${getAlias(peerPubKey)})`);
       // TODO: Penalize peer
     }
   }

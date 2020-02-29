@@ -9,8 +9,8 @@ import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
-import { getAlias } from '../utils/uriUtils';
 import { ms } from '../utils/utils';
+import { getAlias } from '../utils/aliasUtils';
 import errors, { errorCodes } from './errors';
 import Framer from './Framer';
 import Network from './Network';
@@ -104,6 +104,7 @@ class Peer extends EventEmitter {
   private _version?: string;
   /** The node pub key of this peer. */
   private _nodePubKey?: string;
+  private _alias?: string;
   private nodeState?: NodeState;
   private sessionInitPacket?: packets.SessionInitPacket;
   private outEncryptionKey?: Buffer;
@@ -133,7 +134,7 @@ class Peer extends EventEmitter {
   }
 
   public get alias(): string {
-    return getAlias(this.nodePubKey);
+    return this._alias || '';
   }
 
   /* The label is used to describe the node in logs and error messages only */
@@ -809,8 +810,16 @@ class Peer extends EventEmitter {
 
     // finally set this peer's node state to the node state in the init packet body
     this.nodeState = body.nodeState;
-    this._nodePubKey = body.nodePubKey;
+    this.set_identifiers(body.nodePubKey);
     this._version = body.version;
+  }
+
+  /**
+   * Sets public key and alias for this node together so that they are always in sync
+   */
+  private set_identifiers(nodePubKey: string) {
+    this._nodePubKey = nodePubKey;
+    this._alias = getAlias(nodePubKey);
   }
 
   /**

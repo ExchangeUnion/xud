@@ -320,7 +320,7 @@ message Balance {
 }
 
 message BanRequest {
-  // The node pub key of the node to ban.
+  // The node pub key or alias of the node to ban.
   string node_identifier = 1 [json_name = "node_identifier"];
 }
 message BanResponse {}
@@ -384,7 +384,7 @@ message Currency {
 }
 
 message DiscoverNodesRequest {
-  // The node pub key of the peer to discover nodes from.
+  // The node pub key or alias of the peer to discover nodes from.
   string node_identifier = 1 [json_name = "node_identifier"];
 }
 message DiscoverNodesResponse {
@@ -436,7 +436,7 @@ message GetInfoResponse {
 }
 
 message GetNodeInfoRequest {
-  // The node pub key of the node for which to get information.
+  // The node pub key or alias of the node for which to get information.
   string node_identifier = 1 [json_name = "node_identifier"];
 }
 message GetNodeInfoResponse {
@@ -498,7 +498,7 @@ message LndInfo {
 }
 
 message OpenChannelRequest {
-  // The node pub key of the peer with which to open channel with.
+  // The node pub key or alias of the peer with which to open channel with.
   string node_identifier = 1 [json_name = "node_identifier"];
   // The ticker symbol of the currency to open the channel for.
   string currency = 2 [json_name = "currency"];
@@ -778,7 +778,7 @@ message TradingLimitsResponse {
 }
 
 message UnbanRequest {
-  // The node pub key of the peer to unban.
+  // The node pub key or alias of the peer to unban.
   string node_identifier = 1 [json_name = "node_identifier"];
   // Whether to attempt to connect to the peer after it is unbanned.
   bool reconnect = 2  [json_name = "reconnect"];

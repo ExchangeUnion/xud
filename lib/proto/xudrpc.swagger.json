@@ -279,7 +279,7 @@
         "parameters": [
           {
             "name": "node_identifier",
-            "description": "The node pub key of the node for which to get information.",
+            "description": "The node pub key or alias of the node for which to get information.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -756,7 +756,7 @@
       "properties": {
         "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the node to ban."
+          "description": "The node pub key or alias of the node to ban."
         }
       }
     },
@@ -864,7 +864,7 @@
       "properties": {
         "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the peer to discover nodes from."
+          "description": "The node pub key or alias of the peer to discover nodes from."
         }
       }
     },
@@ -1588,7 +1588,7 @@
       "properties": {
         "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the peer to unban."
+          "description": "The node pub key or alias of the peer to unban."
         },
         "reconnect": {
           "type": "boolean",

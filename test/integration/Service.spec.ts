@@ -163,10 +163,10 @@ describe('API Service', () => {
     await expect(Promise.all(removeCurrencyPromises)).to.be.fulfilled;
   });
 
-  it('should fail to ban a node that does not exist', async () => {
+  it('should fail to ban an alias that does not exist', async () => {
     const nodeIdentifier = 'doesNotExist';
     const banNodePromise = service.ban({ nodeIdentifier });
-    await expect(banNodePromise).to.be.rejectedWith(`node ${nodeIdentifier} is unknown`);
+    await expect(banNodePromise).to.be.rejectedWith(`alias ${nodeIdentifier} is unknown`);
   });
 
   it('should shutdown', async () => {

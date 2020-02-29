@@ -32,6 +32,7 @@ const errorCodes = {
   POOL_CLOSED: codesPrefix.concat('.24'),
   NODE_TOR_ADDRESS: codesPrefix.concat('.25'),
   ALIAS_CONFLICT: codesPrefix.concat('.26'),
+  UNKNOWN_ALIAS: codesPrefix.concat('.27'),
 };
 
 const errors = {
@@ -40,11 +41,11 @@ const errors = {
     code: errorCodes.NODE_ALREADY_CONNECTED,
   }),
   NOT_CONNECTED: (nodePubKey: string) => ({
-    message: `node (${nodePubKey}) is not connected`,
+    message: `node ${nodePubKey} is not connected`,
     code: errorCodes.NOT_CONNECTED,
   }),
   NODE_TOR_ADDRESS: (nodePubKey: string, address: Address) => ({
-    message: `can't connect to node (${nodePubKey}) at tor address ${addressUtils.toString(address)} because tor is disabled`,
+    message: `can't connect to node ${nodePubKey} at tor address ${addressUtils.toString(address)} because tor is disabled`,
     code: errorCodes.NODE_TOR_ADDRESS,
   }),
   UNEXPECTED_NODE_PUB_KEY: (nodePubKey: string, expectedNodePubKey: string, address: string) => ({
@@ -104,11 +105,11 @@ const errors = {
     code: errorCodes.RESPONSE_TIMEOUT,
   }),
   AUTH_FAILURE_INVALID_TARGET: (nodePubKey: string, target: string) => ({
-    message: `could not authenticate peer (${nodePubKey}): invalid target (${target})`,
+    message: `could not authenticate peer ${nodePubKey}: invalid target (${target})`,
     code: errorCodes.AUTH_FAILURE_INVALID_TARGET,
   }),
   AUTH_FAILURE_INVALID_SIGNATURE: (nodePubKey: string) => ({
-    message: `could not authenticate peer (${nodePubKey}): invalid signature`,
+    message: `could not authenticate peer ${nodePubKey}: invalid signature`,
     code: errorCodes.AUTH_FAILURE_INVALID_SIGNATURE,
   }),
   PARSER_INVALID_PACKET: (packet: string) => ({
@@ -150,6 +151,10 @@ const errors = {
   ALIAS_CONFLICT: (alias: string) => ({
     message: `alias ${alias} refers to more than one node`,
     code: errorCodes.ALIAS_CONFLICT,
+  }),
+  UNKNOWN_ALIAS: (alias: string) => ({
+    message: `alias ${alias} is unknown`,
+    code: errorCodes.UNKNOWN_ALIAS,
   }),
 };
 

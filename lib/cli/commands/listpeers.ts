@@ -4,7 +4,7 @@ import { Arguments } from 'yargs';
 import { ListPeersRequest, ListPeersResponse, Peer } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { generateHeaders } from '../utils';
-import { getAlias } from '../../utils/uriUtils';
+import { getAlias } from '../../utils/aliasUtils';
 
 const HEADERS = [
   'Peer',

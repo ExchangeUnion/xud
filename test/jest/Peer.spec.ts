@@ -4,7 +4,7 @@ import Network from '../../lib/p2p/Network';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/p2p/types';
 import addressUtils from '../../lib/utils/addressUtils';
-import { getAlias } from '../../lib/utils/uriUtils';
+import { getAlias } from '../../lib/utils/aliasUtils';
 
 describe('Peer', () => {
   const logger = Logger.createLoggers(Level.Warn).p2p;
