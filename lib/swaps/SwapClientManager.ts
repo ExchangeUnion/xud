@@ -54,12 +54,6 @@ class SwapClientManager extends EventEmitter {
     private unitConverter: UnitConverter,
   ) {
     super();
-
-    this.connextClient = new ConnextClient({
-      unitConverter,
-      config: config.connext,
-      logger: loggers.connext,
-    });
   }
 
   /**
@@ -94,6 +88,17 @@ class SwapClientManager extends EventEmitter {
         directChannelChecks: this.config.debug.raidenDirectChannelChecks,
       });
       initPromises.push(this.raidenClient.init());
+    }
+
+    if (!this.config.connext.disable) {
+      // setup Connext
+      const currencyInstances = await models.Currency.findAll();
+      this.connextClient = new ConnextClient({
+        currencyInstances,
+        unitConverter: this.unitConverter,
+        config: this.config.connext,
+        logger: this.loggers.connext,
+      });
     }
 
     // bind event listeners before all swap clients have initialized

@@ -27,13 +27,13 @@ const currencies = [
   },
   {
     id: 'WETH',
-    swapClient: SwapClientType.Connext,
+    swapClient: SwapClientType.Raiden, // needs to be configurable to support Connext
     decimalPlaces: 18,
     tokenAddress: '0x892F91dc428Fc3Dc0a57eC46C8245F2511b8a542',
   },
   {
     id: 'DAI',
-    swapClient: SwapClientType.Connext,
+    swapClient: SwapClientType.Raiden, // needs to be configurable to support Connext
     decimalPlaces: 18,
     tokenAddress: '0x4115652c9025d99512e9026B8F11C3E265bfecD7',
   },
