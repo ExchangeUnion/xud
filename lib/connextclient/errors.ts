@@ -13,8 +13,8 @@ const errorCodes = {
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.8'),
   CONNEXT_IS_UNAVAILABLE: codesPrefix.concat('.9'),
   CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.10'),
-  CONNNEXT_CHANNEL_NOT_INITIATED: codesPrefix.concat('.11'),
-  CONNNEXT_WALLET_NOT_INITIATED: codesPrefix.concat('.12')
+  CONNEXT_CHANNEL_NOT_INITIATED: codesPrefix.concat('.11'),
+  CONNEXT_WALLET_NOT_INITIATED: codesPrefix.concat('.12'),
 };
 
 const errors = {
@@ -30,13 +30,13 @@ const errors = {
     message: 'connext has no active channels',
     code: errorCodes.CONNEXT_HAS_NO_ACTIVE_CHANNELS,
   }),
-  CONNNEXT_CHANNEL_NOT_INITIATED: {
+  CONNEXT_CHANNEL_NOT_INITIATED: {
     message: 'connext channel is not initiated',
-    code: errorCodes.CONNNEXT_CHANNEL_NOT_INITIATED,
+    code: errorCodes.CONNEXT_CHANNEL_NOT_INITIATED,
   },
-  CONNNEXT_WALLET_NOT_INITIATED: {
+  CONNEXT_WALLET_NOT_INITIATED: {
     message: 'connext wallet is not initiated',
-    code: errorCodes.CONNNEXT_WALLET_NOT_INITIATED,
+    code: errorCodes.CONNEXT_WALLET_NOT_INITIATED,
   },
   INSUFFICIENT_BALANCE: {
     message: 'insufficient balance to perform request',

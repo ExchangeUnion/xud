@@ -1,4 +1,4 @@
-import assert from 'assert';
+import assert, { throws } from 'assert';
 
 import * as connext from '@connext/client';
 import { ConnextStore, FileStorage } from '@connext/store';
@@ -87,7 +87,7 @@ class ConnextClient extends SwapClient {
       return;
     }
     if (!this.wallet) {
-      throw errors.CONNNEXT_WALLET_NOT_INITIATED;
+      throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     if (this.wallet) {
       this.setTokenAddresses(currencyInstances);
@@ -149,16 +149,27 @@ class ConnextClient extends SwapClient {
     }
   }
 
+  protected checkConnextChannel(): void {
+    if (!this.channel) {
+      throw errors.CONNEXT_CHANNEL_NOT_INITIATED;
+    }
+  }
+
+  protected getConnextChannel(): IConnextClient {
+    if (!this.channel) {
+      throw errors.CONNEXT_CHANNEL_NOT_INITIATED;
+    }
+    return this.channel;
+  }
+
   protected verifyConnection = async () => {
     this.logger.info('trying to verify connection to connext');
     try {
-      if (!this.channel) {
-        throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
-      }
+      const channel = this.getConnextChannel();
 
-      await this.channel.isAvailable();
+      await channel.isAvailable();
 
-      this.emit('connectionVerified', { newIdentifier: this.channel.publicIdentifier });
+      this.emit('connectionVerified', { newIdentifier: channel.publicIdentifier });
       await this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -403,20 +414,18 @@ class ConnextClient extends SwapClient {
   public channelBalance = async (
     currency?: string,
   ): Promise<ChannelBalance> => {
-    if (!this.channel) {
-      throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
-    }
+    const channel = this.getConnextChannel();
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
     const tokenAddress = this.tokenAddresses.get(currency);
 
-    const freeBalance = await this.channel.getFreeBalance(tokenAddress);
+    const freeBalance = await channel.getFreeBalance(tokenAddress);
 
     const balance = this.unitConverter.unitsToAmount({
       currency,
-      units: freeBalance[this.channel.multisigAddress].toNumber(),
+      units: freeBalance[channel.multisigAddress].toNumber(),
     });
     return {
       balance,
@@ -426,9 +435,8 @@ class ConnextClient extends SwapClient {
   }
 
   public tradingLimits = async (currency?: string): Promise<TradingLimits> => {
-    if (!this.channel) {
-      throw errors.CONNNEXT_CHANNEL_NOT_INITIATED;
-    }
+    this.checkConnextChannel();
+
     if (!currency) {
       return { maxSell: 0, maxBuy: 0 };
     }
@@ -462,12 +470,7 @@ class ConnextClient extends SwapClient {
     if (!tokenAddress) {
       throw errors.TOKEN_ADDRESS_NOT_FOUND;
     }
-    await this.openChannelRequest({
-      partner_address: peerAddress,
-      token_address: tokenAddress,
-      total_deposit: units,
-      settle_timeout: 20660,
-    });
+    await this.channel?.multisigAddress;
   }
 
   /**
