@@ -16,6 +16,7 @@ import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
+import { AssertionError } from 'assert';
 
 const version: string = require('../package.json').version;
 
@@ -64,7 +65,18 @@ class Xud extends EventEmitter {
    * @param args optional arguments to override configuration parameters.
    */
   public start = async (args?: { [argName: string]: any }) => {
-    const configFileLoaded = await this.config.load(args);
+    let configFileLoaded: boolean;
+    try {
+      configFileLoaded = await this.config.load(args);
+    } catch (err) {
+      if (err instanceof AssertionError) {
+        console.error(err.message);
+        process.exit(1);
+      } else {
+        throw err;
+      }
+    }
+
     const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
     this.logger = loggers.global;
     if (configFileLoaded) {
@@ -102,10 +114,9 @@ class Xud extends EventEmitter {
 
       const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
       const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
-      const awaitingCreate = !nodeKeyExists && !this.config.noencrypt;
 
       this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
-      await this.swapClientManager.init(this.db.models, awaitingCreate);
+      await this.swapClientManager.init(this.db.models);
 
       let nodeKey: NodeKey | undefined;
       if (this.config.noencrypt) {
@@ -184,7 +195,7 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      if (this.swapClientManager.raidenClient.isOperational()) {
+      if (this.swapClientManager.raidenClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,
@@ -217,7 +228,7 @@ class Xud extends EventEmitter {
     const closePromises: Promise<void>[] = [];
 
     if (this.swapClientManager) {
-      closePromises.push(this.swapClientManager.close());
+      this.swapClientManager.close();
     }
     if (this.httpServer) {
       closePromises.push(this.httpServer.close());

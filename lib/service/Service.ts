@@ -1,4 +1,4 @@
-import { OrderSide, SwapClientType, SwapRole } from '../constants/enums';
+import { OrderSide, SwapClientType, SwapRole, Owner } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
 import { OrderSidesArrays } from '../orderbook/TradingPair';
@@ -334,8 +334,10 @@ class Service {
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
-    const raiden = await this.swapClientManager.raidenClient.getRaidenInfo();
-    raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
+    const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
+    if (raiden) {
+      raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
+    }
 
     return {
       lnd,
@@ -358,8 +360,12 @@ class Service {
   /**
    * Get a map between pair ids and its orders from the order book.
    */
-  public listOrders = (args: { pairId: string, includeOwnOrders: boolean, limit: number }): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, includeOwnOrders, limit } = args;
+  public listOrders = (
+    args: { pairId: string, owner: Owner | number, limit: number },
+    ): Map<string, OrderSidesArrays<any>> => {
+    const { pairId, owner, limit } = args;
+    const includeOwnOrders = owner === Owner.Both || owner === Owner.Own;
+    const includePeerOrders = owner === Owner.Both || owner === Owner.Peer;
 
     const result = new Map<string, OrderSidesArrays<any>>();
 
@@ -369,15 +375,17 @@ class Service {
         sellArray: [],
       };
 
-      const peerOrders = this.orderBook.getPeersOrders(pairId);
-      orders.buyArray = peerOrders.buyArray;
-      orders.sellArray = peerOrders.sellArray;
+      if (includePeerOrders) {
+        const peerOrders = this.orderBook.getPeersOrders(pairId);
+        orders.buyArray = peerOrders.buyArray;
+        orders.sellArray = peerOrders.sellArray;
+      }
 
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-        orders.buyArray = [...orders.buyArray, ...ownOrders.buyArray];
-        orders.sellArray = [...orders.sellArray, ...ownOrders.sellArray];
+        orders.buyArray = orders.buyArray.concat(ownOrders.buyArray);
+        orders.sellArray = orders.sellArray.concat(ownOrders.sellArray);
       }
 
       // sort all orders
@@ -386,7 +394,7 @@ class Service {
 
       if (limit > 0) {
         orders.buyArray = orders.buyArray.slice(0, limit);
-        orders.sellArray = orders.buyArray.slice(0, limit);
+        orders.sellArray = orders.sellArray.slice(0, limit);
       }
       return orders;
     };

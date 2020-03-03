@@ -43,6 +43,7 @@ class LndClient extends SwapClient {
   private lightning?: LightningClient;
   private walletUnlocker?: WalletUnlockerClient;
   private invoices?: InvoicesClient;
+  /** The path to the lnd admin macaroon, will be undefined if `nomacaroons` is enabled */
   private macaroonpath?: string;
   private meta = new grpc.Metadata();
   private uri!: string;
@@ -75,7 +76,7 @@ class LndClient extends SwapClient {
     { config, logger, currency }:
     { config: LndClientConfig, logger: Logger, currency: string },
   ) {
-    super(logger);
+    super(logger, config.disable);
     this.config = config;
     this.currency = currency;
     this.finalLock = config.cltvdelta;
@@ -105,24 +106,14 @@ class LndClient extends SwapClient {
    * Initializes the client for calls to lnd and verifies that we can connect to it.
    * @param awaitingCreate whether xud is waiting for its node key to be created
    */
-  public init = async (awaitingCreate = false) => {
-    if (!this.isNotInitialized() && !this.isMisconfigured) {
-      // we only initialize from NotInitialized or Misconfigured status
-      this.logger.warn(`can not init in ${this.status} status`);
-      return;
-    }
-
-    const { disable, certpath, macaroonpath, nomacaroons, host, port } = this.config;
-    if (disable) {
-      await this.setStatus(ClientStatus.Disabled);
-      return;
-    }
+  public initSpecific = async () => {
+    const { certpath, macaroonpath, nomacaroons, host, port } = this.config;
 
     let lndCert: Buffer | undefined;
     try {
       lndCert = await fs.readFile(certpath);
     } catch (err) {
-      if (awaitingCreate && err.code === 'ENOENT') {
+      if (err.code === 'ENOENT') {
         // if we have not created the lnd wallet yet and the tls.cert file can
         // not be found, we will briefly wait for the cert to be created in
         // case lnd has not been run before and is being started in parallel
@@ -155,8 +146,8 @@ class LndClient extends SwapClient {
       this.credentials = grpc.credentials.createSsl(lndCert);
     } else {
       this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
-      await this.setStatus(ClientStatus.Misconfigured);
-      this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
+      this.setStatus(ClientStatus.Misconfigured);
+      this.initRetryTimeout = setTimeout(this.init, LndClient.RECONNECT_INTERVAL);
       return;
     }
 
@@ -165,27 +156,17 @@ class LndClient extends SwapClient {
       try {
         await this.loadMacaroon();
       } catch (err) {
-        if (!awaitingCreate || err.code !== 'ENOENT') {
-          // unless we are waiting for the xud nodekey and lnd wallet to be created
-          // we expect the macaroon to exist and disable this client otherwise
-          this.logger.error(`could not load admin macaroon from ${macaroonpath}`);
-          await this.setStatus(ClientStatus.Misconfigured);
-          this.initRetryTimeout = global.setTimeout(this.init, 5000, awaitingCreate);
-          return;
-        }
+        this.logger.warn(`could not load macaroon at ${macaroonpath}`);
       }
     } else {
       this.logger.info('macaroons are disabled');
     }
 
     this.uri = `${host}:${port}`;
-    await this.setStatus(ClientStatus.Initialized);
-    this.emit('initialized');
     if (this.initRetryTimeout) {
       clearTimeout(this.initRetryTimeout);
       this.initRetryTimeout = undefined;
     }
-    await this.verifyConnectionWithTimeout();
   }
 
   public get pubKey() {
@@ -213,7 +194,7 @@ class LndClient extends SwapClient {
   }
 
   /** Lnd specific procedure to mark the client as locked. */
-  private lock = async () => {
+  private lock = () => {
     if (!this.walletUnlocker) {
       this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
     }
@@ -223,7 +204,7 @@ class LndClient extends SwapClient {
     }
 
     if (!this.isWaitingUnlock()) {
-      await this.setStatus(ClientStatus.WaitingUnlock);
+      this.setStatus(ClientStatus.WaitingUnlock);
     }
 
     this.emit('locked');
@@ -248,9 +229,9 @@ class LndClient extends SwapClient {
       (this.lightning[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
-            this.disconnect().catch(this.logger.error);
+            this.disconnect();
           } else if (err.code === grpc.status.UNIMPLEMENTED) {
-            this.lock().catch(this.logger.error);
+            this.lock();
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -282,9 +263,9 @@ class LndClient extends SwapClient {
       (this.invoices[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
           if (err.code === grpc.status.UNAVAILABLE) {
-            this.disconnect().catch(this.logger.error);
+            this.disconnect();
           } else if (err.code === grpc.status.UNIMPLEMENTED) {
-            this.lock().catch(this.logger.error);
+            this.lock();
           }
           this.logger.trace(`error on ${methodName}: ${err.message}`);
           reject(err);
@@ -307,6 +288,9 @@ class LndClient extends SwapClient {
       }
       (this.walletUnlocker[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
         if (err) {
+          if (err.code === grpc.status.UNAVAILABLE) {
+            this.disconnect();
+          }
           if (err.code === grpc.status.UNIMPLEMENTED) {
             this.logger.debug(`lnd already unlocked before ${methodName} call`);
             resolve();
@@ -416,7 +400,7 @@ class LndClient extends SwapClient {
           this.verifyConnection().catch(this.logger.error);
         } catch (err) {
           this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
-          await this.setStatus(ClientStatus.Disabled);
+          this.setStatus(ClientStatus.Disabled);
         }
       }
     }
@@ -426,83 +410,70 @@ class LndClient extends SwapClient {
     if (!this.isOperational()) {
       throw(errors.DISABLED);
     }
-
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
       // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
       if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
         this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
         await LndClient.waitForClientReady(this.walletUnlocker);
-        await this.setStatus(ClientStatus.WaitingUnlock);
-        this.emit('locked');
-
-        if (this.reconnectionTimer) {
-          // we don't need scheduled attempts to retry the connection while waiting on the wallet
-          clearTimeout(this.reconnectionTimer);
-          this.reconnectionTimer = undefined;
-        }
+        this.lock();
 
         this.awaitWalletInit().catch(this.logger.error);
       }
       return;
     }
 
-    if (!this.isConnected()) {
-      this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
-      this.lightning = new LightningClient(this.uri, this.credentials);
+    this.logger.info(`trying to verify connection to lnd at ${this.uri}`);
+    this.lightning = new LightningClient(this.uri, this.credentials);
 
-      try {
-        await LndClient.waitForClientReady(this.lightning);
+    try {
+      await LndClient.waitForClientReady(this.lightning);
 
-        const getInfoResponse = await this.getInfo();
-        if (getInfoResponse.getSyncedToChain()) {
-          // mark connection as active
-          await this.setStatus(ClientStatus.ConnectionVerified);
-
-          /** The new lnd pub key value if different from the one we had previously. */
-          let newPubKey: string | undefined;
-          let newUris: string[] = [];
-          if (this.identityPubKey !== getInfoResponse.getIdentityPubkey()) {
-            newPubKey = getInfoResponse.getIdentityPubkey();
-            this.logger.debug(`pubkey is ${newPubKey}`);
-            this.identityPubKey = newPubKey;
-            newUris = getInfoResponse.getUrisList();
-            if (newUris.length) {
-              this.logger.debug(`uris are ${newUris}`);
-            } else {
-              this.logger.debug('no uris advertised');
-            }
-            this.urisList = newUris;
+      const getInfoResponse = await this.getInfo();
+      if (getInfoResponse.getSyncedToChain()) {
+        // check if the lnd pub key value is different from the one we had previously.
+        let newPubKey: string | undefined;
+        let newUris: string[] = [];
+        if (this.identityPubKey !== getInfoResponse.getIdentityPubkey()) {
+          newPubKey = getInfoResponse.getIdentityPubkey();
+          this.logger.debug(`pubkey is ${newPubKey}`);
+          this.identityPubKey = newPubKey;
+          newUris = getInfoResponse.getUrisList();
+          if (newUris.length) {
+            this.logger.debug(`uris are ${newUris}`);
+          } else {
+            this.logger.debug('no uris advertised');
           }
-          const chain = getInfoResponse.getChainsList()[0];
-          const chainIdentifier = `${chain.getChain()}-${chain.getNetwork()}`;
-          if (!this.chainIdentifier) {
-            this.chainIdentifier = chainIdentifier;
-            this.logger.debug(`chain is ${chainIdentifier}`);
-          } else if (this.chainIdentifier !== chainIdentifier) {
-            // we switched chains for this lnd client while xud was running which is not supported
-            this.logger.error(`chain switched from ${this.chainIdentifier} to ${chainIdentifier}`);
-            await this.setStatus(ClientStatus.Disabled);
-          }
-          this.emit('connectionVerified', {
-            newUris,
-            newIdentifier: newPubKey,
-          });
-
-          this.invoices = new InvoicesClient(this.uri, this.credentials);
-
-          if (this.walletUnlocker) {
-            // WalletUnlocker service is disabled when the main Lightning service is available
-            this.walletUnlocker.close();
-            this.walletUnlocker = undefined;
-          }
-        } else {
-          await this.setStatus(ClientStatus.OutOfSync);
-          this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
+          this.urisList = newUris;
         }
-      } catch (err) {
-        const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-        this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_TIME_LIMIT} ms`);
+
+        // check if the chain this lnd instance uses has changed
+        const chain = getInfoResponse.getChainsList()[0];
+        const chainIdentifier = `${chain.getChain()}-${chain.getNetwork()}`;
+        if (!this.chainIdentifier) {
+          this.chainIdentifier = chainIdentifier;
+          this.logger.debug(`chain is ${chainIdentifier}`);
+        } else if (this.chainIdentifier !== chainIdentifier) {
+          // we switched chains for this lnd client while xud was running which is not supported
+          this.logger.error(`chain switched from ${this.chainIdentifier} to ${chainIdentifier}`);
+          this.setStatus(ClientStatus.Misconfigured);
+        }
+
+        this.invoices = new InvoicesClient(this.uri, this.credentials);
+
+        if (this.walletUnlocker) {
+          // WalletUnlocker service is disabled when the main Lightning service is available
+          this.walletUnlocker.close();
+          this.walletUnlocker = undefined;
+        }
+
+        await this.setConnected(newPubKey, newUris);
+      } else {
+        this.setStatus(ClientStatus.OutOfSync);
+        this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_INTERVAL} ms`);
       }
+    } catch (err) {
+      const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+      this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_INTERVAL} ms`);
     }
   }
 
@@ -818,6 +789,14 @@ class LndClient extends SwapClient {
     return route;
   }
 
+  public canRouteToNode = async (_destination: string) => {
+    // lnd doesn't currently have a way to see if any route exists, regardless of balance
+    // for example, if we have a direct channel to peer but no balance in the channel and
+    // no other routes, QueryRoutes will return nothing as of lnd v0.8.1.
+    // For now we err on the side of leniency and assume a route may exist.
+    return true;
+  }
+
   /**
    * Lists all routes to destination.
    */
@@ -1029,9 +1008,9 @@ class LndClient extends SwapClient {
   }
 
   /** Lnd specific procedure to disconnect from the server. */
-  protected disconnect = async () => {
+  protected disconnect = () => {
     if (this.isOperational()) {
-      await this.setStatus(ClientStatus.Disconnected);
+      this.setStatus(ClientStatus.Disconnected);
     }
 
     if (this.channelBackupSubscription) {

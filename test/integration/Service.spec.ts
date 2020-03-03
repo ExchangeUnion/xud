@@ -2,7 +2,7 @@ import chai, { expect } from 'chai';
 import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
-import { SwapClientType, OrderSide } from '../../lib/constants/enums';
+import { SwapClientType, OrderSide, Owner } from '../../lib/constants/enums';
 import { getTempDir } from '../utils';
 
 chai.use(chaiAsPromised);
@@ -88,7 +88,7 @@ describe('API Service', () => {
   it('should get orders', async () => {
     const args = {
       pairId,
-      includeOwnOrders: true,
+      owner: Owner.Both,
       limit: 0,
     };
     const orders = service.listOrders(args);

@@ -21,7 +21,6 @@ import { ConnextWallet } from './ConnextWallet';
 import errors, { errorCodes } from './errors';
 import {
   Channel,
-  OpenChannelPayload,
   ConnextChannelCount,
   ConnextClientConfig,
   ConnextInfo,
@@ -41,9 +40,7 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  private disable: boolean;
-  private ethProviderUrl: string;
-  private nodeUrl: string;
+  private network: string;
   private unitConverter: UnitConverter;
 
   private channel: IConnextClient | undefined;
@@ -56,18 +53,18 @@ class ConnextClient extends SwapClient {
     config,
     logger,
     unitConverter,
+    currencyInstances,
   }: {
     unitConverter: UnitConverter;
     config: ConnextClientConfig;
+    currencyInstances: CurrencyInstance[],
     logger: Logger;
   }) {
-    super(logger);
-    const { disable, ethProviderUrl, nodeUrl } = config;
+    super(logger, config.disable);
 
-    this.disable = disable;
-    this.ethProviderUrl = ethProviderUrl;
-    this.nodeUrl = nodeUrl;
+    this.network = config.network;
     this.unitConverter = unitConverter;
+    this.setTokenAddresses(currencyInstances);
   }
 
   public get minutesPerBlock() {
@@ -81,21 +78,15 @@ class ConnextClient extends SwapClient {
   /**
    * Checks for connectivity and gets our Connext account address
    */
-  public init = async (currencyInstances: CurrencyInstance[]) => {
-    if (this.disable) {
-      await this.setStatus(ClientStatus.Disabled);
-      return;
-    }
+  public initSpecific = async () => {
     if (!this.wallet) {
       throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     if (this.wallet) {
-      this.setTokenAddresses(currencyInstances);
       await this.initConnext();
-      await this.setStatus(ClientStatus.Initialized);
+      this.setStatus(ClientStatus.Initialized);
       this.emit('initialized');
       await this.verifyConnectionWithTimeout();
-    } else {
     }
   }
   /**
@@ -110,9 +101,7 @@ class ConnextClient extends SwapClient {
       throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     const wallet = this.wallet;
-    const channel = await connext.connect({
-      nodeUrl: this.nodeUrl,
-      ethProviderUrl: this.ethProviderUrl,
+    const channel = await connext.connect(this.network, {
       xpub: wallet.xpub,
       keyGen: (index: string) => wallet.keyGen(index),
       store: new ConnextStore(new FileStorage()),
@@ -181,10 +170,10 @@ class ConnextClient extends SwapClient {
       await channel.isAvailable();
 
       this.emit('connectionVerified', { newIdentifier: channel.publicIdentifier });
-      await this.setStatus(ClientStatus.ConnectionVerified);
+      this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
-        `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_TIME_LIMIT} ms`,
+        `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
         err,
       );
       await this.disconnect();
@@ -325,6 +314,10 @@ class ConnextClient extends SwapClient {
   public getRoute = async () => {
     // not implemented since connext doesnt use routes
     return undefined;
+  }
+
+  public canRouteToNode = async () => {
+    return true;
   }
 
   public getHeight = async () => {
@@ -507,7 +500,7 @@ class ConnextClient extends SwapClient {
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
-    await this.setStatus(ClientStatus.Disconnected);
+    this.setStatus(ClientStatus.Disconnected);
   }
 }
 

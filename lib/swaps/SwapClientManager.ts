@@ -43,8 +43,8 @@ interface SwapClientManager {
 class SwapClientManager extends EventEmitter {
   /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
-  public raidenClient: RaidenClient;
-  public connextClient: ConnextClient;
+  public raidenClient?: RaidenClient;
+  public connextClient?: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
 
@@ -54,13 +54,6 @@ class SwapClientManager extends EventEmitter {
     private unitConverter: UnitConverter,
   ) {
     super();
-
-    this.raidenClient = new RaidenClient({
-      unitConverter,
-      config: config.raiden,
-      logger: loggers.raiden,
-      directChannelChecks: config.debug.raidenDirectChannelChecks,
-    });
 
     this.connextClient = new ConnextClient({
       unitConverter,
@@ -74,7 +67,7 @@ class SwapClientManager extends EventEmitter {
    * and waits for the swap clients to initialize.
    * @returns A promise that resolves upon successful initialization, rejects otherwise.
    */
-  public init = async (models: Models, awaitingCreate = false): Promise<void> => {
+  public init = async (models: Models): Promise<void> => {
     const initPromises = [];
     // setup configured LND clients and initialize them
     for (const currency in this.config.lnd) {
@@ -86,12 +79,22 @@ class SwapClientManager extends EventEmitter {
           logger: this.loggers.lnd.createSubLogger(currency),
         });
         this.swapClients.set(currency, lndClient);
-        initPromises.push(lndClient.init(awaitingCreate));
+        initPromises.push(lndClient.init());
       }
     }
-    // setup Raiden
-    const currencyInstances = await models.Currency.findAll();
-    initPromises.push(this.raidenClient.init(currencyInstances));
+
+    if (!this.config.raiden.disable) {
+      // setup Raiden
+      const currencyInstances = await models.Currency.findAll();
+      this.raidenClient = new RaidenClient({
+        currencyInstances,
+        unitConverter: this.unitConverter,
+        config: this.config.raiden,
+        logger: this.loggers.raiden,
+        directChannelChecks: this.config.debug.raidenDirectChannelChecks,
+      });
+      initPromises.push(this.raidenClient.init());
+    }
 
     // bind event listeners before all swap clients have initialized
     this.bind();
@@ -109,16 +112,15 @@ class SwapClientManager extends EventEmitter {
       }
     });
 
-    if (this.raidenClient.isMisconfigured()) {
-      this.misconfiguredClients.add(this.raidenClient);
-    } else if (!this.raidenClient.isDisabled()) {
-      // associate swap clients with currencies managed by raiden client
-      const currencyInstances = await models.Currency.findAll();
-      currencyInstances.forEach((currency) => {
-        if (currency.tokenAddress) {
-          this.swapClients.set(currency.id, this.raidenClient);
+    if (this.raidenClient) {
+      if (this.raidenClient.isMisconfigured()) {
+        this.misconfiguredClients.add(this.raidenClient);
+      } else if (!this.raidenClient.isDisabled()) {
+        // associate swap clients with currencies managed by raiden client
+        for (const currency of this.raidenClient.tokenAddresses.keys()) {
+          this.swapClients.set(currency, this.raidenClient);
         }
-      });
+      }
     }
   }
 
@@ -145,7 +147,7 @@ class SwapClientManager extends EventEmitter {
             lndClient.removeListener('connectionVerified', onAvailable);
             lndClient.removeListener('locked', onAvailable);
             reject(lndClient.currency);
-          }, SwapClient.RECONNECT_TIME_LIMIT);
+          }, SwapClient.RECONNECT_INTERVAL);
         } else {
           resolve();
         }
@@ -197,7 +199,7 @@ class SwapClientManager extends EventEmitter {
       }
     }
 
-    if (!this.raidenClient.isDisabled()) {
+    if (this.raidenClient) {
       const { keystorepath } = this.config.raiden;
       // TODO: we are setting the raiden keystore as an empty string until raiden
       // allows for decrypting the keystore without needing to save the password
@@ -210,17 +212,17 @@ class SwapClientManager extends EventEmitter {
       }
 
       const keystorePromise = keystore(seedMnemonic, '', keystorepath).then(() => {
-        this.raidenClient.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
+        this.raidenClient!.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
         initializedRaiden = true;
       }).catch((err) => {
-        this.raidenClient.logger.error('could not create keystore');
+        this.raidenClient!.logger.error('could not create keystore');
         throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not create keystore: ${err}`);
       });
       initWalletPromises.push(keystorePromise);
     }
 
-    if (!this.connextClient.isDisabled()) {
-      const initWalletPromise = this.connextClient.initWallet(seedMnemonic)
+    if (this.connextClient) {
+      const initWalletPromise = this.connextClient.initWallet(seedMnemonic);
       initWalletPromises.push(initWalletPromise);
     }
 
@@ -278,12 +280,21 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
+   * Returns whether the swap client for a specified currency is connected.
+   * @returns `true` if a swap client exists and is connected, otherwise `false`
+   */
+  public isConnected = (currency: string) => {
+    const swapClient = this.swapClients.get(currency);
+    return swapClient !== undefined && swapClient.isConnected();
+  }
+
+  /**
    * Adds a new swap client and currency association.
    * @param currency a currency that should be linked with a swap client.
    * @returns Nothing upon success, throws otherwise.
    */
   public add = (currency: Currency): void => {
-    if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress && this.raidenClient) {
       this.swapClients.set(currency.id, this.raidenClient);
       this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
       this.emit('raidenUpdate', this.raidenClient.tokenAddresses, this.raidenClient.address);
@@ -313,7 +324,7 @@ class SwapClientManager extends EventEmitter {
     const swapClient = this.get(currency);
     this.swapClients.delete(currency);
     if (swapClient && isRaidenClient(swapClient)) {
-      this.raidenClient.tokenAddresses.delete(currency);
+      this.raidenClient?.tokenAddresses.delete(currency);
     }
   }
 
@@ -358,27 +369,25 @@ class SwapClientManager extends EventEmitter {
    * Closes all swap client instances gracefully.
    * @returns Nothing upon success, throws otherwise.
    */
-  public close = async (): Promise<void> => {
-    const closePromises: Promise<void>[] = [];
+  public close = (): void => {
     let raidenClosed = false;
     for (const swapClient of this.swapClients.values()) {
-      closePromises.push(swapClient.close());
+      swapClient.close();
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
     }
     for (const swapClient of this.misconfiguredClients) {
-      closePromises.push(swapClient.close());
+      swapClient.close();
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
     }
     // we make sure to close raiden client because it
     // might not be associated with any currency
-    if (!this.raidenClient.isDisabled() && !raidenClosed) {
-      closePromises.push(this.raidenClient.close());
+    if (this.raidenClient && !this.raidenClient.isDisabled() && !raidenClosed) {
+      this.raidenClient.close();
     }
-    await Promise.all(closePromises);
   }
 
   /**
@@ -416,25 +425,28 @@ class SwapClientManager extends EventEmitter {
     await swapClient.openChannel({ peerIdentifier, units, currency });
   }
 
-  public hasRouteToPeer = (currency: string, peer: Peer) => {
+  /**
+   * Checks whether it is possible to route a payment to a peer for a given currency. This does not
+   * guarantee or test that a payment can be routed successfully, only determiens whether it is
+   * possible to do so currently given the state of the specified currency's network and graph.
+   */
+  public canRouteToPeer = async (peer: Peer, currency: string) => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       return false;
     }
-    let hasRoute = false;
-    if (isRaidenClient(swapClient)) {
-      // temporary check to ensure we have a direct channel
-      if (peer.raidenAddress && swapClient.isConnected() && swapClient.getRoute(1, peer.raidenAddress, currency)) {
-        // a route found means we have a direct channel
-        hasRoute = true;
-      }
-    } else if (isLndClient(swapClient)) {
-      // lnd doesn't currently have a way to see if any route exists, regardless of balance
-      // for example, if we have a direct channel to peer but no balance in the channel and
-      // no other routes, QueryRoutes will return nothing as of lnd v0.8.1
-      hasRoute = true;
+    const destination = peer.getIdentifier(swapClient.type, currency);
+    if (!destination) {
+      return false;
     }
-    return hasRoute;
+
+    let canRoute: boolean;
+    try {
+      canRoute = await swapClient.canRouteToNode(destination, currency);
+    } catch {
+      canRoute = false; // if swap client calls are failing, we infer that we can't route payments
+    }
+    return canRoute;
   }
 
   private bind = () => {
@@ -464,11 +476,11 @@ class SwapClientManager extends EventEmitter {
     // we handle raiden separately because we don't want to attach
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
-    if (this.raidenClient.isOperational()) {
+    if (this.raidenClient?.isOperational()) {
       this.raidenClient.on('connectionVerified', (swapClientInfo) => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
-          this.emit('raidenUpdate', this.raidenClient.tokenAddresses, newIdentifier);
+          this.emit('raidenUpdate', this.raidenClient!.tokenAddresses, newIdentifier);
         }
       });
     }

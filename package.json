@@ -1,7 +1,7 @@
 {
   "name": "xud",
   "minCompatibleVersion": "1.0.0-alpha.3",
-  "version": "1.0.0-beta",
+  "version": "1.0.0-beta.1",
   "description": "Exchange Union Daemon",
   "main": "lib/Xud.js",
   "bin": {
@@ -37,11 +37,11 @@
     "test:p2p": "mocha --timeout 10000 -r ts-node/register test/p2p/*",
     "test:p2p:watch": "mocha --timeout 10000 -r ts-node/register test/p2p/*  --watch --watch-extensions ts",
     "test:crypto": "mocha --timeout 10000 -r ts-node/register test/crypto/*",
-    "test:sim": "(cd test/simulation && ./docker-run.sh)",
-    "test:sim:build": "(npm run compile:dev && mkdir -p test/simulation/temp/xud && cp -a dist test/simulation/temp/xud && cp -a bin test/simulation/temp/xud && cp package.json test/simulation/temp/xud && cd test/simulation && ./docker-build.sh)",
+    "test:sim:build": "(npm run compile:dev && mkdir -p test/simulation/docker-xud/xud && cp -a dist test/simulation/docker-xud/xud && cp -a bin test/simulation/docker-xud/xud && cp package.json test/simulation/docker-xud/xud && cd test/simulation && ./docker-build.sh)",
     "test:sim:clean": "(cd test/simulation && ./docker-clean.sh)",
-    "test:sim:security": "(npm run compile:dev && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestSecurity -v)",
-    "test:sim:instability": "(npm run compile:dev && cd test/simulation && export PATH=\"$PWD/go/bin:$PATH\" && GOPATH=$PWD/go GO111MODULE=on go test -run=TestInstability -v)",
+    "test:sim": "(cd test/simulation && ./docker-run.sh TestIntegration)",
+    "test:sim:run:instability": "(cd test/simulation && ./docker-run.sh TestInstability)",
+    "test:sim:run:security": "(cd test/simulation && ./docker-run.sh TestSecurity)",
     "test:sim:logs": "cd test/simulation && ./logs.sh",
     "test:jest": "jest --rootDir test/jest",
     "test:seedutil": "jest --rootDir seedutil",
@@ -198,8 +198,8 @@
     "tslint": "^5.20.0",
     "tslint-config-airbnb": "^5.11.2",
     "tslint-no-circular-imports": "^0.7.0",
-    "typedoc": "^0.15.0",
-    "typescript": "^3.6.4"
+    "typedoc": "^0.16.10",
+    "typescript": "^3.8.2"
   },
   "engines": {
     "node": ">=10.2.0"

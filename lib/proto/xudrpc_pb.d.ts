@@ -632,8 +632,8 @@ export class ListOrdersRequest extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
-    getIncludeOwnOrders(): boolean;
-    setIncludeOwnOrders(value: boolean): void;
+    getOwner(): ListOrdersRequest.Owner;
+    setOwner(value: ListOrdersRequest.Owner): void;
 
     getLimit(): number;
     setLimit(value: number): void;
@@ -652,9 +652,16 @@ export class ListOrdersRequest extends jspb.Message {
 export namespace ListOrdersRequest {
     export type AsObject = {
         pairId: string,
-        includeOwnOrders: boolean,
+        owner: ListOrdersRequest.Owner,
         limit: number,
     }
+
+    export enum Owner {
+    BOTH = 0,
+    OWN = 1,
+    PEER = 2,
+    }
+
 }
 
 export class ListOrdersResponse extends jspb.Message { 

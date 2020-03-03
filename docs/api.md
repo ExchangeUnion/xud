@@ -79,6 +79,7 @@
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
   
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
+    - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
@@ -498,7 +499,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
-| include_own_orders | [bool](#bool) |  | Whether own orders should be included in result or not. |
+| owner | [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner) |  | Whether only own, only peer or both orders should be included in result. |
 | limit | [uint32](#uint32) |  | The maximum number of orders to return from each side of the order book. |
 
 
@@ -1249,6 +1250,19 @@
 | ---- | ------ | ----------- |
 | LND | 0 |  |
 | RAIDEN | 1 |  |
+
+
+
+<a name="xudrpc.ListOrdersRequest.Owner"></a>
+
+### ListOrdersRequest.Owner
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| BOTH | 0 |  |
+| OWN | 1 |  |
+| PEER | 2 |  |
 
 
 
