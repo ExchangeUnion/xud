@@ -4,7 +4,9 @@
 
 export type ConnextClientConfig = {
   disable: boolean;
-  network: string;
+  network?: string;
+  ethProviderUrl?: string;
+  nodeUrl?: string;
 };
 
 /** General information about the state of this connext client. */
