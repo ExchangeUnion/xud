@@ -1,19 +1,19 @@
 import { CF_PATH } from '@connext/types';
 import ethers from 'ethers';
 
-const { fromExtendedKey, fromMnemonic } = ethers.utils.HDNode;
+const { fromMnemonic } = ethers.utils.HDNode;
+
+type HDNode = ethers.utils.HDNode.HDNode;
 
 export class ConnextWallet {
   public mainIndex = '0';
   public mnemonic: string;
-  public hdNode: any;
+  public hdNode: HDNode;
   public xpub: string;
 
   constructor(mnemonic: string) {
     this.mnemonic = mnemonic;
-    this.hdNode = fromExtendedKey(
-      fromMnemonic(this.mnemonic).extendedKey,
-    ).derivePath(CF_PATH);
+    this.hdNode = fromMnemonic(this.mnemonic).derivePath(CF_PATH);
     this.xpub = this.hdNode.neuter().extendedKey;
   }
 
