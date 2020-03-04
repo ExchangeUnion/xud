@@ -1,4 +1,4 @@
-import assert, { throws } from 'assert';
+import assert from 'assert';
 
 import * as connext from '@connext/client';
 import { ConnextStore, FileStorage } from '@connext/store';
@@ -45,7 +45,7 @@ class ConnextClient extends SwapClient {
   private nodeUrl: string;
   private unitConverter: UnitConverter;
 
-  private channel: IConnextClient | undefined;
+  private client: IConnextClient | undefined;
   private wallet: ConnextWallet | undefined;
 
   /**
@@ -87,7 +87,7 @@ class ConnextClient extends SwapClient {
       throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     if (this.wallet) {
-      await this.initConnext();
+      await this.initConnextClient();
       this.setStatus(ClientStatus.Initialized);
       this.emit('initialized');
       await this.verifyConnectionWithTimeout();
@@ -100,20 +100,20 @@ class ConnextClient extends SwapClient {
     this.wallet = new ConnextWallet(seedMnemonic.join(' '));
   }
 
-  public initConnext = async () => {
+  public initConnextClient = async () => {
     if (!this.wallet) {
       throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     const wallet = this.wallet;
-    const channel = await connext.connect(this.network, {
+    const client = await connext.connect(this.network, {
       ethProviderUrl: this.ethProviderUrl,
       nodeUrl: this.nodeUrl,
       xpub: wallet.xpub,
       keyGen: (index: string) => wallet.keyGen(index),
       store: new ConnextStore(new FileStorage()),
     });
-    this.channel = channel;
-    return channel;
+    this.client = client;
+    return client;
   }
   /**
    * Associate connext with currencies that have a token address
@@ -153,11 +153,11 @@ class ConnextClient extends SwapClient {
     }
   }
 
-  protected getConnextChannel(): IConnextClient {
-    if (!this.channel) {
-      throw errors.CONNEXT_CHANNEL_NOT_INITIATED;
+  protected getConnextClient(): IConnextClient {
+    if (!this.client) {
+      throw errors.CONNEXT_CLIENT_NOT_INITIATED;
     }
-    return this.channel;
+    return this.client;
   }
 
   protected getTokenAddress(currency: string): string {
@@ -171,11 +171,11 @@ class ConnextClient extends SwapClient {
   protected verifyConnection = async () => {
     this.logger.info('trying to verify connection to connext');
     try {
-      const channel = this.getConnextChannel();
+      const client = this.getConnextClient();
 
-      await channel.isAvailable();
+      await client.isAvailable();
 
-      this.emit('connectionVerified', { newIdentifier: channel.publicIdentifier });
+      this.emit('connectionVerified', { newIdentifier: client.publicIdentifier });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -290,31 +290,18 @@ class ConnextClient extends SwapClient {
     // if there is no pending payment or event found, we assume that the payment was never attempted by connext
     return { state: PaymentState.Failed };
   }
-
   private getPendingTransfers = async (
     currency?: string,
     destination?: string,
   ) => {
-    // const channel = this.getConnextChannel();
-    // TODO: ndeed to expose from node api
-    const res = this.channel?.isAvailable();
-    return (res as any);
+    return ({} as any);
   }
 
   private getPaymentEvents = async (
     currency?: string,
     destination?: string,
   ) => {
-    let endpoint = 'payments';
-    if (currency) {
-      const tokenAddress = this.getTokenAddress(currency);
-      endpoint += `/${tokenAddress}`;
-      if (destination) {
-        endpoint += `/${destination}`;
-      }
-    }
-    const res = this.channel?.isAvailable();
-    return (res as any);
+    return ({} as any);
   }
 
   public getRoute = async () => {
@@ -372,23 +359,19 @@ class ConnextClient extends SwapClient {
    * Gets the connext version.
    */
   public getVersion = async (): Promise<ConnextVersion> => {
-    const endpoint = 'version';
-    const res = this.channel?.isAvailable();
-    return (res as any);
+    return ({} as any);
   }
 
   /**
-   * Gets info about a given connext payment channel.
-   * @param token_address the token address for the network to which the channel belongs
-   * @param channel_address the address of the channel to query
+   * Gets info about a given connext payment client.
+   * @param token_address the token address for the network to which the client belongs
+   * @param channel_address the address of the client to query
    */
   public getChannel = async (
     token_address: string,
     channel_address: string,
   ): Promise<Channel> => {
-    const endpoint = `channels/${token_address}/${channel_address}`;
-    const res = this.channel?.isAvailable();
-    return (res as any);
+    return ({} as any);
   }
 
   /**
@@ -396,26 +379,24 @@ class ConnextClient extends SwapClient {
    * @param token_address an optional parameter to specify channels belonging to the specified token network
    */
   public getChannels = async (token_address?: string): Promise<Channel[]> => {
-    const endpoint = token_address ? `channels/${token_address}` : 'channels';
-    const res = this.channel?.isAvailable();
-    return (res as any);
+    return ({} as any);
   }
 
   public channelBalance = async (
     currency?: string,
   ): Promise<ChannelBalance> => {
-    const channel = this.getConnextChannel();
+    const client = this.getConnextClient();
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
     const tokenAddress = this.getTokenAddress(currency);
 
-    const freeBalance = await channel.getFreeBalance(tokenAddress);
+    const freeBalance = await client.getFreeBalance(tokenAddress);
 
     const pendingOpenBalance = this.unitConverter.unitsToAmount({
       currency,
-      units: freeBalance[channel.multisigAddress].toNumber(),
+      units: freeBalance[client.multisigAddress].toNumber(),
     });
 
     const inactiveBalance = 0;
@@ -444,17 +425,17 @@ class ConnextClient extends SwapClient {
     return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
   }
   /**
-   * Creates a payment channel.
+   * Creates a payment client.
    */
   public openChannel = async (): Promise<void> => {
-    if (!this.channel) {
-      await this.initConnext();
+    if (!this.client) {
+      await this.initConnextClient();
     }
   }
 
   /**
-   * Closes a payment channel.
-   * @param channel_address the address of the channel to close
+   * Closes a payment client.
+   * @param channel_address the address of the client to close
    */
   public closeChannel = async (): Promise<void> => {
     // not relevant for connext
@@ -470,8 +451,8 @@ class ConnextClient extends SwapClient {
   private executePaymentTransfer = async (
     payload: TokenPaymentRequest,
   ): Promise<string> => {
-    const channel = this.getConnextChannel();
-    const transfer = await channel.transfer({
+    const client = this.getConnextClient();
+    const transfer = await client.transfer({
       recipient: payload.target_address,
       amount: `${payload.amount}`,
       meta: { secret_hash: payload.secret_hash },
@@ -492,16 +473,15 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Deposits more of a token to an existing channel.
-   * @param channel_address the address of the channel to deposit to
-   * @param balance the amount to deposit to the channel
+   * Deposits more of a token to an existing client.
+   * @param channel_address the address of the client to deposit to
+   * @param balance the amount to deposit to the client
    */
   public depositToChannel = async (
     channel_address: string,
     balance: number,
   ): Promise<void> => {
-    const endpoint = `channels/${channel_address}`;
-    await this.channel?.isAvailable();
+    return ({} as any);
   }
 
   /** Connext client specific cleanup. */
