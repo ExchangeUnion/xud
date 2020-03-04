@@ -40,7 +40,6 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  private network: string;
   private ethProviderUrl: string;
   private nodeUrl: string;
   private unitConverter: UnitConverter;
@@ -64,9 +63,8 @@ class ConnextClient extends SwapClient {
   }) {
     super(logger, config.disable);
 
-    this.network = config.network || '';
-    this.ethProviderUrl = config.ethProviderUrl || '';
-    this.nodeUrl = config.nodeUrl || '';
+    this.ethProviderUrl = config.ethProviderUrl;
+    this.nodeUrl = config.nodeUrl;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
   }
@@ -105,7 +103,7 @@ class ConnextClient extends SwapClient {
       throw errors.CONNEXT_WALLET_NOT_INITIATED;
     }
     const wallet = this.wallet;
-    const client = await connext.connect(this.network, {
+    const client = await connext.connect({
       ethProviderUrl: this.ethProviderUrl,
       nodeUrl: this.nodeUrl,
       xpub: wallet.xpub,

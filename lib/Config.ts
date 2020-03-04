@@ -194,7 +194,9 @@ class Config {
     };
     this.connext = {
       disable: false,
-      network: 'mainnet',
+      // TODO: update ethProviderUrl and nodeUrl to match hosted infra
+      ethProviderUrl: '',
+      nodeUrl: '',
     };
   }
 
