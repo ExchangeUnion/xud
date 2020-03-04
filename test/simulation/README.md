@@ -4,7 +4,7 @@ This test suite simulates real usage of `xud` and the second-layer payment chann
 
 --- 
 
-The simulation tests only dependencies are Docker & Docker Compose.
+The simulation tests only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
 
 ## Usage (via `xud` npm scripts)
 
