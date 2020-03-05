@@ -34,7 +34,7 @@ const ensureConnection = (argv: Arguments, printError?: boolean) => {
   });
 };
 
-const streamOrders = (argv: Arguments<any>) =>  {
+const streamOrders = (argv: Arguments<any>) => {
   const xudClient = loadXudClient(argv);
   const ordersReqeust = new xudrpc.SubscribeOrdersRequest();
   ordersReqeust.setExisting(argv.existing);

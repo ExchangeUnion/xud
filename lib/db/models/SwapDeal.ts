@@ -33,7 +33,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     completeTime: { type: DataTypes.BIGINT, allowNull: true },
   };
 
-  const options: Sequelize.DefineOptions<db.SwapDealInstance>  = {
+  const options: Sequelize.DefineOptions<db.SwapDealInstance> = {
     tableName: 'swapdeals',
     timestamps: false,
   };

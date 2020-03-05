@@ -9,7 +9,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     quantity: { type: DataTypes.BIGINT, allowNull: false },
   };
 
-  const options: Sequelize.DefineOptions<db.TradeInstance>  = {
+  const options: Sequelize.DefineOptions<db.TradeInstance> = {
     tableName: 'trades',
     timestamps: true,
     updatedAt: false,
