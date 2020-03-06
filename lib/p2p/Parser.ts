@@ -1,10 +1,10 @@
 /* tslint:disable brace-style */
 import { EventEmitter } from 'events';
+import errors from './errors';
+import Framer, { WireMsgHeader } from './Framer';
 import { PacketType } from './packets';
 import Packet, { isPacket } from './packets/Packet';
 import * as packetTypes from './packets/types';
-import Framer, { WireMsgHeader }   from './Framer';
-import errors from './errors';
 
 interface Parser {
   on(event: 'packet', packet: (order: Packet) => void): this;
@@ -67,7 +67,7 @@ class Parser extends EventEmitter {
 
     // starting to read a new message
     else {
-      const length =  this.parseLength(chunk);
+      const length = this.parseLength(chunk);
       if (!length) {
         return;
       }

@@ -190,7 +190,7 @@ class Pool extends EventEmitter {
       externalIp = await getExternalIp();
       this.logger.info(`retrieved external IP: ${externalIp}`);
 
-      const externalIpExists = this.nodeState.addresses.some((address) =>  { return address.host === externalIp; });
+      const externalIpExists = this.nodeState.addresses.some((address) => { return address.host === externalIp; });
       if (!externalIpExists) {
         this.nodeState.addresses.push({
           host: externalIp,

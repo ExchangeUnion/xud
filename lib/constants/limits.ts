@@ -1,5 +1,5 @@
 /** Mainnet order size limits denominated in satoshis. */
-export const limits: { [currency: string]: number }  = {
+export const limits: { [currency: string]: number } = {
   BTC: 100000,
   LTC: 15000000,
   WETH: 5000000,

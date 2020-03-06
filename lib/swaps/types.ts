@@ -93,7 +93,7 @@ export type Route = {
 };
 
 /** Tracks the state of a pending swap of 1 satoshi for 1 satoshi of a specified currency. */
-export type SanitySwap =  Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & {
+export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & {
   /** The currency for the swap. */
   currency: string;
 };
