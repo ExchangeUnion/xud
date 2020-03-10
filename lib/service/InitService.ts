@@ -5,6 +5,7 @@ import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { decipher, generate } from '../utils/seedutil';
 import errors from './errors';
+import { SwapClientType } from '../constants/enums';
 
 interface InitService {
   once(event: 'nodekey', listener: (nodeKey: NodeKey) => void): this;
@@ -36,12 +37,14 @@ class InitService extends EventEmitter {
 
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
       // to generate an xud nodekey from the same seed used for wallets
-      // TODO: use seedutil tool to derive a child private key from deciphered seed key?
       const decipheredSeed = await decipher(seedMnemonic);
       const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
       // use this seed to init any lnd wallets that are uninitialized
-      const initWalletResult = await this.swapClientManager.initWallets({ seedMnemonic, walletPassword: password });
+      const initWalletResult = await this.swapClientManager.initWallets({
+        seedMnemonic,
+        walletPassword: password,
+      });
       const initializedLndWallets = initWalletResult.initializedLndWallets;
       const initializedRaiden = initWalletResult.initializedRaiden;
 
@@ -69,7 +72,10 @@ class InitService extends EventEmitter {
       const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
 
-      return this.swapClientManager.unlockWallets(password);
+      return this.swapClientManager.unlockWallets({
+        walletPassword: password,
+        connextSeed: nodeKey.childSeed(SwapClientType.Connext),
+      });
     } catch (err) {
       if (err.code === 'ERR_OSSL_EVP_BAD_DECRYPT') {
         throw errors.INVALID_ARGUMENT('password is incorrect');
@@ -109,7 +115,8 @@ class InitService extends EventEmitter {
       const decipheredSeed = await decipher(seedMnemonicList);
       const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
-      // use the seed and database backups to restore any lnd wallets that are uninitialized
+      // use the seed and database backups to restore any swap clients' wallets
+      // that are uninitialized
       const initWalletResult = await this.swapClientManager.initWallets({
         raidenDatabasePath,
         raidenDatabase,

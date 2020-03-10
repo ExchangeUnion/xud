@@ -2,6 +2,7 @@
 export enum SwapClientType {
   Lnd,
   Raiden,
+  Connext,
 }
 
 export enum OrderingDirection {
