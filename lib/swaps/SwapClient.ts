@@ -18,6 +18,8 @@ enum ClientStatus {
   OutOfSync,
   /** The server is reachable but needs to be unlocked before it accepts calls. */
   WaitingUnlock,
+  /** The server has been unlocked, but its status has not been verified yet. */
+  Unlocked,
   /** The client could not be initialized due to faulty configuration. */
   Misconfigured,
 }
@@ -192,7 +194,11 @@ abstract class SwapClient extends EventEmitter {
   }
 
   private reconnectionTimerCallback = async () => {
-    if (this.status === ClientStatus.Disconnected || this.status === ClientStatus.OutOfSync || this.status === ClientStatus.WaitingUnlock) {
+    if (this.status === ClientStatus.Disconnected
+        || this.status === ClientStatus.OutOfSync
+        || this.status === ClientStatus.WaitingUnlock
+        || this.status === ClientStatus.Unlocked
+      ) {
       try {
         await this.verifyConnection();
       } catch (err) {

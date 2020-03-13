@@ -210,6 +210,22 @@ class LndClient extends SwapClient {
     this.emit('locked');
   }
 
+  /** Lnd specific procedure to mark the client as unlocked. */
+  private setUnlocked = () => {
+    // we should close and unreference the wallet unlocker service when we set the status to Unlocked
+    if (this.walletUnlocker) {
+      this.walletUnlocker.close();
+      this.walletUnlocker = undefined;
+    }
+
+    if (this.isWaitingUnlock()) {
+      this.setStatus(ClientStatus.Unlocked);
+    } else {
+      // we should not be calling this method we were in the WaitingUnlock status
+      this.logger.warn(`tried to set client status to WaitingUnlock from status ${this.status}`);
+    }
+  }
+
   protected updateCapacity = async () => {
     await this.channelBalance().catch(async (err) => {
       this.logger.error('failed to update total outbound capacity', err);
@@ -363,16 +379,15 @@ class LndClient extends SwapClient {
     // we are waiting for lnd to be initialized by xud and for the lnd macaroons to be created
     this.logger.info('waiting for wallet to be initialized...');
 
+    /**
+     * A promise that resolves to `true` when the lnd wallet is created via an InitWallet call,
+     * resolves to `false` if we close the client before the lnd wallet is created.
+     */
     const isWalletInitialized = await new Promise<boolean>((resolve) => {
       this.initWalletResolve = resolve;
     });
 
     if (isWalletInitialized) {
-      if (this.walletUnlocker) {
-        this.walletUnlocker.close();
-        this.walletUnlocker = undefined;
-      }
-
       // admin.macaroon will not necessarily be created by the time lnd responds to a successful
       // InitWallet call, so we watch the folder that we expect it to be in for it to be created
       const watchMacaroonPromise = new Promise<boolean>((resolve) => {
@@ -825,6 +840,8 @@ class LndClient extends SwapClient {
     if (this.initWalletResolve) {
       this.initWalletResolve(true);
     }
+    this.setUnlocked();
+
     this.logger.info('wallet initialized');
     return initWalletResponse.toObject();
   }
@@ -835,6 +852,7 @@ class LndClient extends SwapClient {
     await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
       'unlockWallet', request,
     );
+    this.setUnlocked();
     this.logger.info('wallet unlocked');
   }
 
