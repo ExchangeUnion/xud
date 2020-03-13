@@ -44,6 +44,7 @@ class Swaps extends EventEmitter {
     BTC: 1,
     LTC: 1,
     ETH: 10 ** 10,
+    USDT: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
   };
