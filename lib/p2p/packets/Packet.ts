@@ -117,7 +117,7 @@ abstract class Packet<T = any> implements PacketInterface {
 function isPacket(val: any): val is Packet {
   const p = (<Packet>val);
   return (
-    p.toRaw !== undefined  && typeof p.toRaw === 'function'
+    p.toRaw !== undefined && typeof p.toRaw === 'function'
     && p.serialize !== undefined && typeof p.serialize === 'function'
     && p.type !== undefined && typeof p.type === 'number'
     && p.direction !== undefined && typeof p.direction === 'number'

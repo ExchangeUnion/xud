@@ -920,7 +920,7 @@ class Peer extends EventEmitter {
   }
 
   public sendGetNodes = async (): Promise<packets.GetNodesPacket> => {
-    const packet =  new packets.GetNodesPacket();
+    const packet = new packets.GetNodesPacket();
     await this.sendPacket(packet);
     return packet;
   }
@@ -936,7 +936,7 @@ class Peer extends EventEmitter {
     await this.sendPacket(packet);
   }
 
-  private handlePing = async (packet: packets.PingPacket): Promise<void>  => {
+  private handlePing = async (packet: packets.PingPacket): Promise<void> => {
     await this.sendPong(packet.header.id);
   }
 
@@ -964,7 +964,7 @@ class Peer extends EventEmitter {
     return new packets.SessionInitPacket(body);
   }
 
-  private handleDisconnecting = (packet: packets.DisconnectingPacket): void  => {
+  private handleDisconnecting = (packet: packets.DisconnectingPacket): void => {
     if (!this.recvDisconnectionReason && packet.body && packet.body.reason !== undefined) {
       this.logger.debug(`received disconnecting packet from ${this.label} due to ${DisconnectionReason[packet.body.reason]}`);
       this.recvDisconnectionReason = packet.body.reason;

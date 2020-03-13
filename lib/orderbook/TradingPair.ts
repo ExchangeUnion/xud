@@ -276,7 +276,7 @@ class TradingPair {
   }
 
   public getOwnOrder = (orderId: string): OwnOrder => {
-    const order =  this.getOrder(orderId, this.ownOrders);
+    const order = this.getOrder(orderId, this.ownOrders);
     if (!order) {
       throw errors.ORDER_NOT_FOUND(orderId);
     }

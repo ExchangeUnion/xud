@@ -6,7 +6,6 @@
     "max-line-length": [true, 150],
     "no-else-after-return": false,
     "function-name": false,
-    "no-unused-variable": false, // TODO: rule disabled during early development stages, should be reenabled later
     "align": false,
     "typedef-whitespace": [
       true, {
@@ -68,6 +67,8 @@
     ],
     "one-line": [true, "check-catch", "check-finally", "check-open-brace", "check-whitespace"],
     "no-switch-case-fall-through": true,
-    "switch-final-break": [true, "always"]
+    "switch-final-break": [true, "always"],
+    "no-extra-semi": true,
+    "no-multi-spaces": true
   }
 }
