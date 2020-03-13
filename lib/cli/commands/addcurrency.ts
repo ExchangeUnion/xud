@@ -3,8 +3,7 @@ import { callback, loadXudClient } from '../command';
 import { Currency } from '../../proto/xudrpc_pb';
 import { SwapClientType } from '../../constants/enums';
 
-export const command =
-  'addcurrency <currency> <swap_client> [decimal_places] [token_address]';
+export const command = 'addcurrency <currency> <swap_client> [decimal_places] [token_address]';
 
 export const describe = 'add a currency';
 
@@ -19,8 +18,7 @@ export const builder = {
     choices: ['Lnd', 'Raiden', 'Connext'],
   },
   decimal_places: {
-    description:
-      'the places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
+    description: 'the places to the right of the decimal point of the smallest subunit (e.g. satoshi)',
     default: 8,
     type: 'number',
   },
