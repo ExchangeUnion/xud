@@ -362,11 +362,11 @@ class ConnextClient extends SwapClient {
   /**
    * Gets info about a given connext payment client.
    * @param tokenAddress the token address for the network to which the client belongs
-   * @param channel_address the address of the client to query
+   * @param multisigAddress the address of the client to query
    */
   public getChannel = async (
     tokenAddress: string,
-    channel_address: string,
+    multisigAddress: string,
   ): Promise<any> => {
     return ({} as any);
   }
@@ -418,7 +418,7 @@ class ConnextClient extends SwapClient {
   /**
    * Returns the balances available in wallet for a specified currency.
    */
-  public walletBalance = async (_currency?: string): Promise<WalletBalance> => {
+  public walletBalance = async (currency?: string): Promise<WalletBalance> => {
     return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
   }
   /**
@@ -432,7 +432,7 @@ class ConnextClient extends SwapClient {
 
   /**
    * Closes a payment client.
-   * @param channel_address the address of the client to close
+   * @param multisigAddress the address of the client to close
    */
   public closeChannel = async (): Promise<void> => {
     // not relevant for connext
@@ -471,11 +471,11 @@ class ConnextClient extends SwapClient {
 
   /**
    * Deposits more of a token to an existing client.
-   * @param channel_address the address of the client to deposit to
+   * @param multisigAddress the address of the client to deposit to
    * @param balance the amount to deposit to the client
    */
   public depositToChannel = async (
-    channel_address: string,
+    multisigAddress: string,
     balance: number,
   ): Promise<void> => {
     return ({} as any);
