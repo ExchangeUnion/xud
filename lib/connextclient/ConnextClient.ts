@@ -20,7 +20,6 @@ import { UnitConverter } from '../utils/UnitConverter';
 import { ConnextWallet } from './ConnextWallet';
 import errors, { errorCodes } from './errors';
 import {
-  Channel,
   ConnextChannelCount,
   ConnextClientConfig,
   ConnextInfo,
@@ -192,10 +191,10 @@ class ConnextClient extends SwapClient {
     const tokenAddress = this.getTokenAddress(currency);
 
     const secret = await this.executePaymentTransfer({
-      token_address: tokenAddress,
-      target_address: destination,
+      tokenAddress,
+      targetAddress: destination,
       amount: 1,
-      secret_hash: rHash,
+      secretHash: rHash,
     });
     return secret;
   }
@@ -205,7 +204,7 @@ class ConnextClient extends SwapClient {
     assert(deal.destination);
     let amount: number;
     let tokenAddress: string;
-    let lock_timeout: number | undefined;
+    let lockTimeout: number | undefined;
     if (deal.role === SwapRole.Maker) {
       // we are the maker paying the taker
       amount = deal.takerUnits;
@@ -214,16 +213,16 @@ class ConnextClient extends SwapClient {
       // we are the taker paying the maker
       amount = deal.makerUnits;
       tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-      lock_timeout = deal.makerCltvDelta!;
+      lockTimeout = deal.makerCltvDelta!;
     }
 
     try {
       const secret = await this.executePaymentTransfer({
         amount,
-        lock_timeout,
-        token_address: tokenAddress,
-        target_address: deal.destination!,
-        secret_hash: deal.rHash,
+        lockTimeout,
+        tokenAddress,
+        targetAddress: deal.destination!,
+        secretHash: deal.rHash,
       });
       return secret;
     } catch (err) {
@@ -266,7 +265,7 @@ class ConnextClient extends SwapClient {
       destination,
     );
     for (const pendingTransfer of pendingTransfers) {
-      if (identifier === Number(pendingTransfer.payment_identifier)) {
+      if (identifier === Number(pendingTransfer.paymentId)) {
         return { state: PaymentState.Pending };
       }
     }
@@ -362,21 +361,21 @@ class ConnextClient extends SwapClient {
 
   /**
    * Gets info about a given connext payment client.
-   * @param token_address the token address for the network to which the client belongs
+   * @param tokenAddress the token address for the network to which the client belongs
    * @param channel_address the address of the client to query
    */
   public getChannel = async (
-    token_address: string,
+    tokenAddress: string,
     channel_address: string,
-  ): Promise<Channel> => {
+  ): Promise<any> => {
     return ({} as any);
   }
 
   /**
    * Gets info about all non-settled channels.
-   * @param token_address an optional parameter to specify channels belonging to the specified token network
+   * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
    */
-  public getChannels = async (token_address?: string): Promise<Channel[]> => {
+  public getChannels = async (tokenAddress?: string): Promise<any[]> => {
     return ({} as any);
   }
 
@@ -441,20 +440,20 @@ class ConnextClient extends SwapClient {
 
   /**
    * Sends a token payment through the Connext network.
-   * @param target_address recipient of the payment
-   * @param token_address contract address of the token
+   * @param targetAddress recipient of the payment
+   * @param tokenAddress contract address of the token
    * @param amount
-   * @param secret_hash optional; provide your own secret hash
+   * @param secretHash optional; provide your own secret hash
    */
   private executePaymentTransfer = async (
     payload: TokenPaymentRequest,
   ): Promise<string> => {
     const client = this.getConnextClient();
     const transfer = await client.transfer({
-      recipient: payload.target_address,
+      recipient: payload.targetAddress,
       amount: `${payload.amount}`,
-      meta: { secret_hash: payload.secret_hash },
-      assetId: payload.token_address,
+      meta: { secretHash: payload.secretHash },
+      assetId: payload.tokenAddress,
     });
 
     const response: TokenPaymentResponse = {
