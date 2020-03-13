@@ -141,9 +141,10 @@ class Logger {
 
     const context = this.subcontext ? `${this.context}-${this.subcontext}` : this.context;
     if (this.instanceId > 0) {
-      return format.printf(info =>`${getTsString(dateFormat)} [${context}][${this.instanceId}] ` + `${this.getLevel(info.level, colorize)}: ${info.message}`);
+      return format.printf(info => `${getTsString(dateFormat)} [${context}][${this.instanceId}] ` +
+        `${this.getLevel(info.level, colorize)}: ${info.message}`);
     } else {
-      return format.printf(info =>`${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
+      return format.printf(info => `${getTsString(dateFormat)} [${context}] ${this.getLevel(info.level, colorize)}: ${info.message}`);
     }
   }
 
