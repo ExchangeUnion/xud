@@ -82,7 +82,7 @@ class ConnextClient extends SwapClient {
    */
   public initSpecific = async () => {
     if (!this.wallet) {
-      throw errors.CONNEXT_WALLET_NOT_INITIATED;
+      throw errors.CONNEXT_WALLET_NOT_INITIALIZED;
     }
     if (this.wallet) {
       await this.initConnextClient();
@@ -100,7 +100,7 @@ class ConnextClient extends SwapClient {
 
   public initConnextClient = async () => {
     if (!this.wallet) {
-      throw errors.CONNEXT_WALLET_NOT_INITIATED;
+      throw errors.CONNEXT_WALLET_NOT_INITIALIZED;
     }
     const wallet = this.wallet;
     const client = await connext.connect({
@@ -153,7 +153,7 @@ class ConnextClient extends SwapClient {
 
   protected getConnextClient(): IConnextClient {
     if (!this.client) {
-      throw errors.CONNEXT_CLIENT_NOT_INITIATED;
+      throw errors.CONNEXT_CLIENT_NOT_INITIALIZED;
     }
     return this.client;
   }
