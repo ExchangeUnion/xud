@@ -210,20 +210,23 @@ class Peer extends EventEmitter {
     return advertisedCurrencies;
   }
 
+  public getLndPubKey(currency?: string): string | undefined {
+    if (!this.nodeState || !currency) {
+      return undefined;
+    }
+    return this.nodeState.lndPubKeys[currency];
+  }
+
   public getIdentifier = (clientType: SwapClientType, currency?: string): string | undefined => {
     if (!this.nodeState) {
       return undefined;
     }
-    if (clientType === SwapClientType.Lnd && currency) {
-      return this.nodeState.lndPubKeys[currency];
+    switch (clientType) {
+      case SwapClientType.Lnd: return this.getLndPubKey(currency);
+      case SwapClientType.Raiden: return this.raidenAddress;
+      case SwapClientType.Connext: return this.connextAddress;
+      default: return;
     }
-    if (clientType === SwapClientType.Raiden) {
-      return this.nodeState.raidenAddress;
-    }
-    if (clientType === SwapClientType.Connext) {
-      return this.nodeState.connextAddress;
-    }
-    return;
   }
 
   public getTokenIdentifier = (currency: string): string | undefined => {
