@@ -245,7 +245,7 @@ class Swaps extends EventEmitter {
    */
   private sendErrorToPeer = async (
     { peer, rHash, failureReason = SwapFailureReason.UnknownError, errorMessage, reqId }:
-      { peer: Peer, rHash: string, failureReason?: SwapFailureReason, errorMessage?: string, reqId?: string },
+    { peer: Peer, rHash: string, failureReason?: SwapFailureReason, errorMessage?: string, reqId?: string },
   ) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
@@ -781,7 +781,7 @@ class Swaps extends EventEmitter {
    * the expected amount.
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
-  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest) => {
+  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
     const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
     const peer = this.pool.getPeer(deal.peerPubKey);
     let expectedAmount: number;
@@ -1076,7 +1076,7 @@ class Swaps extends EventEmitter {
       case SwapFailureReason.SwapTimedOut:
         // additional penalty as timeouts cause costly delays and possibly stuck HTLC outputs
         void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapTimeout);
-      /* falls through */
+        /* falls through */
       case SwapFailureReason.SendPaymentFailure:
       case SwapFailureReason.NoRouteFound:
         // something is wrong with swaps for this currency with this peer
@@ -1153,7 +1153,7 @@ class Swaps extends EventEmitter {
       case SwapPhase.SendingPayment:
         assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||
           deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAccepted,
-          'SendingPayment can only be set after SwapRequested (taker) or SwapAccepted (maker)');
+            'SendingPayment can only be set after SwapRequested (taker) or SwapAccepted (maker)');
         deal.executeTime = Date.now();
         break;
       case SwapPhase.PaymentReceived:

@@ -15,7 +15,7 @@ class UnitConverter {
 
   public amountToUnits = (
     { currency, amount }:
-      { currency: string, amount: number },
+    { currency: string, amount: number },
   ): number => {
     const unitsPerCurrency = this.UNITS_PER_CURRENCY[currency];
     if (!unitsPerCurrency) {
@@ -26,7 +26,7 @@ class UnitConverter {
 
   public unitsToAmount = (
     { currency, units }:
-      { currency: string, units: number },
+    { currency: string, units: number },
   ): number => {
     const unitsPerCurrency = this.UNITS_PER_CURRENCY[currency];
     if (!unitsPerCurrency) {
