@@ -51,13 +51,13 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
-  public rpc: { disable: boolean; host: string; port: number };
-  public http: { host: string; port: number };
+  public rpc: { disable: boolean, host: string, port: number };
+  public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
   public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
-  public webproxy: { port: number; disable: boolean };
+  public webproxy: { port: number, disable: boolean };
   public debug: { raidenDirectChannelChecks: boolean };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
@@ -86,29 +86,21 @@ class Config {
     let lndDefaultDatadir: string;
     let raidenDefaultKeystorePath: string;
     switch (platform) {
-      case 'win32': {
-        // windows
+      case 'win32': { // windows
         const homeDir = process.env.LOCALAPPDATA!;
         this.xudir = path.join(homeDir, 'Xud');
         lndDefaultDatadir = path.join(homeDir, 'Lnd');
         raidenDefaultKeystorePath = path.join(homeDir, 'Ethereum');
         break;
       }
-      case 'darwin': {
-        // mac
+      case 'darwin': { // mac
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
-        lndDefaultDatadir = path.join(
-          homeDir,
-          'Library',
-          'Application Support',
-          'Lnd',
-        );
+        lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
         raidenDefaultKeystorePath = path.join(homeDir, 'Library', 'Ethereum');
         break;
       }
-      default: {
-        // linux
+      default: { // linux
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, '.lnd');
@@ -157,14 +149,7 @@ class Config {
     this.lnd.BTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(
-        lndDefaultDatadir,
-        'data',
-        'chain',
-        'bitcoin',
-        this.network,
-        'admin.macaroon',
-      ),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'bitcoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10009,
       nomacaroons: false,
@@ -173,14 +158,7 @@ class Config {
     this.lnd.LTC = {
       disable: false,
       certpath: path.join(lndDefaultDatadir, 'tls.cert'),
-      macaroonpath: path.join(
-        lndDefaultDatadir,
-        'data',
-        'chain',
-        'litecoin',
-        this.network,
-        'admin.macaroon',
-      ),
+      macaroonpath: path.join(lndDefaultDatadir, 'data', 'chain', 'litecoin', this.network, 'admin.macaroon'),
       host: 'localhost',
       port: 10010,
       nomacaroons: false,
@@ -204,16 +182,14 @@ class Config {
     let configText: string | undefined;
     try {
       configText = await fs.readFile(configPath, 'utf8');
-    } catch (err) { }
+    } catch (err) {}
 
     let configProps: any;
     if (configText) {
       try {
         configProps = toml.parse(configText);
       } catch (e) {
-        throw new Error(
-          `Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`,
-        );
+        throw new Error(`Error parsing config file at ${configPath} on line ${e.line}, column ${e.column}: ${e.message}`);
       }
     }
     return configProps;
@@ -246,13 +222,7 @@ class Config {
       // set the network and xudir props up front because they influence default config values
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
-        if (
-          ![
-            XuNetwork.MainNet,
-            XuNetwork.TestNet,
-            XuNetwork.SimNet,
-            XuNetwork.RegTest,
-          ].includes(configProps.network)
+        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)
         ) {
           throw new Error(`Invalid network config: ${configProps.network}`);
         }
@@ -337,23 +307,11 @@ class Config {
       switch (currency) {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
-          this.lnd.LTC!.macaroonpath = path.join(
-            this.lnd.LTC!.macaroonpath,
-            '..',
-            '..',
-            this.network === XuNetwork.TestNet ? 'testnet4' : this.network,
-            'admin.macaroon',
-          );
+          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..', this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
           break;
         default:
           // by default we want to update the network folder name to the selected network
-          this.lnd[currency]!.macaroonpath = path.join(
-            this.lnd[currency]!.macaroonpath,
-            '..',
-            '..',
-            this.network,
-            'admin.macaroon',
-          );
+          this.lnd[currency]!.macaroonpath = path.join(this.lnd[currency]!.macaroonpath, '..', '..', this.network, 'admin.macaroon');
           break;
       }
     }
@@ -362,7 +320,7 @@ class Config {
   private getDefaultP2pPort = () => {
     switch (this.network) {
       case XuNetwork.MainNet:
-        return 8885; // X = 88, U = 85 in ASCII
+        return 8885;  // X = 88, U = 85 in ASCII
       case XuNetwork.TestNet:
         return 18885;
       case XuNetwork.SimNet:
