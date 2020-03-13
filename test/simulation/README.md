@@ -2,24 +2,42 @@
 
 This test suite simulates real usage of `xud` and the second-layer payment channel network clients that it interacts with. It creates chains, generates blocks, and establishes payment channels. All commands to `xud` are issued via the gRPC API. This helps ensure that `xud` integrates with other nodes and software components properly and allows for more complete and realistic testing of `xud`.
 
-## Install dependencies
+--- 
 
-The simulation tests are currently only tested and supported on Ubuntu 18.04, 19.04 & 19.10.
+The simulation tests’ only dependencies are [Docker](https://docs.docker.com/install/) & [Docker Compose](https://docs.docker.com/compose/install/).
+
+## Usage (via `xud` npm scripts)
+
+Run the tests after building all images:
 
 ```bash
-sudo apt-get install -y libz3-dev python3.7 python3.7-dev python3.7-venv python3-venv python3-dev jq libssl-dev net-tools git golang-1.13-go
+$ npm run test:sim:build
+$ npm run test:sim:run
 ```
 
-Add go `golang-1.13-go` to PATH:
+Whenever test code is being refactored, one must build the `test` image before re-running the tests so that changes could take effect:
 
 ```bash
-sudo ln -s /usr/lib/go-1.13/bin/go /usr/local/bin/go
+$ npm run test:sim:build:test
+$ npm run test:sim:run
+```
+--- 
+
+The `test:sim:run` script mentioned above runs only the Integration tests suite.
+
+For running the Security tests suite:
+```bash
+$ npm run test:sim:run:security
 ```
 
-## Usage
-
+For running the Instability tests suite:
+ ```bash
+ $ npm run test:sim:run:instability
+ ```
+ ---
+Upon every test run, `xud` nodes logs are being directed to `temp/logs`. For printing them unto console:
 ```bash
-npm run test:sim
+$ npm run test:sim:logs
 ```
 
 ## Simulation Test Cases
