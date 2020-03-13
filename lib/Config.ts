@@ -222,8 +222,7 @@ class Config {
       // set the network and xudir props up front because they influence default config values
       if (configProps.network && (!args || !args.network)) {
         this.network = configProps.network;
-        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)
-        ) {
+        if (![XuNetwork.MainNet, XuNetwork.TestNet, XuNetwork.SimNet, XuNetwork.RegTest].includes(configProps.network)) {
           throw new Error(`Invalid network config: ${configProps.network}`);
         }
       }
@@ -307,7 +306,8 @@ class Config {
       switch (currency) {
         case 'LTC':
           // litecoin uses a specific folder name for testnet
-          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..', this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
+          this.lnd.LTC!.macaroonpath = path.join(this.lnd.LTC!.macaroonpath, '..', '..',
+            this.network === XuNetwork.TestNet ? 'testnet4' : this.network, 'admin.macaroon');
           break;
         default:
           // by default we want to update the network folder name to the selected network

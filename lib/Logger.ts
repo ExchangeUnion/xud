@@ -36,16 +36,16 @@ export enum Context {
 }
 
 type Loggers = {
-  global: Logger;
-  db: Logger;
-  rpc: Logger;
-  p2p: Logger;
-  orderbook: Logger;
-  lnd: Logger;
-  raiden: Logger;
-  connext: Logger;
-  swaps: Logger;
-  http: Logger;
+  global: Logger,
+  db: Logger,
+  rpc: Logger,
+  p2p: Logger,
+  orderbook: Logger,
+  lnd: Logger,
+  raiden: Logger,
+  connext: Logger,
+  swaps: Logger,
+  http: Logger,
 };
 
 class Logger {
