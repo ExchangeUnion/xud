@@ -1,9 +1,5 @@
 import assert from 'assert';
-
-import * as connext from '@connext/client';
-import { ConnextStore, FileStorage } from '@connext/store';
-import { IConnextClient } from '@connext/types';
-
+import http from 'http';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
 import Logger from '../Logger';
@@ -17,9 +13,13 @@ import SwapClient, {
 } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
-import { ConnextWallet } from './ConnextWallet';
 import errors, { errorCodes } from './errors';
 import {
+  ConnextErrorResponse,
+  ConnextInitWalletResponse,
+  ConnextInitClientResponse,
+  ConnextBalanceResponse,
+  ConnextTransferResponse,
   ConnextChannelCount,
   ConnextClientConfig,
   ConnextInfo,
@@ -28,7 +28,29 @@ import {
   TokenPaymentResponse,
 } from './types';
 
+
+
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
+
+/**
+ * A utility function to parse the payload from an http response.
+ */
+ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
+  res.setEncoding('utf8');
+  return new Promise<T>((resolve, reject) => {
+    let body = '';
+    res.on('data', (chunk) => {
+      body += chunk;
+    });
+    res.on('end', () => {
+      resolve(JSON.parse(body));
+    });
+    res.on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
 
 /**
  * A class representing a client to interact with connext.
@@ -39,12 +61,9 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  private ethProviderUrl: string;
-  private nodeUrl: string;
+  private port: number;
+  private host: string;
   private unitConverter: UnitConverter;
-
-  private client: IConnextClient | undefined;
-  private wallet: ConnextWallet | undefined;
 
   /**
    * Creates a connext client.
@@ -62,8 +81,8 @@ class ConnextClient extends SwapClient {
   }) {
     super(logger, config.disable);
 
-    this.ethProviderUrl = config.ethProviderUrl;
-    this.nodeUrl = config.nodeUrl;
+    this.port = config.port;
+    this.host = config.host;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
   }
@@ -80,37 +99,22 @@ class ConnextClient extends SwapClient {
    * Checks for connectivity and gets our Connext account address
    */
   public initSpecific = async () => {
-    if (!this.wallet) {
-      throw errors.CONNEXT_WALLET_NOT_INITIALIZED;
-    }
-    if (this.wallet) {
-      await this.initConnextClient();
-      this.setStatus(ClientStatus.Initialized);
-      this.emit('initialized');
-      await this.verifyConnectionWithTimeout();
-    }
+    await this.initConnextClient();
+    this.setStatus(ClientStatus.Initialized);
+    this.emit('initialized');
+    await this.verifyConnectionWithTimeout();
   }
   /**
    * Initiates wallet for the Connext client
    */
   public initWallet = async (seedMnemonic: string[]) => {
-    this.wallet = new ConnextWallet(seedMnemonic.join(' '));
+    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic.join(' ')});
+    return parseResponseBody<ConnextInitWalletResponse>(res);
   }
 
   public initConnextClient = async () => {
-    if (!this.wallet) {
-      throw errors.CONNEXT_WALLET_NOT_INITIALIZED;
-    }
-    const wallet = this.wallet;
-    const client = await connext.connect({
-      ethProviderUrl: this.ethProviderUrl,
-      nodeUrl: this.nodeUrl,
-      xpub: wallet.xpub,
-      keyGen: (index: string) => wallet.keyGen(index),
-      store: new ConnextStore(new FileStorage()),
-    });
-    this.client = client;
-    return client;
+    const res = await this.sendRequest('/connect', 'POST');
+    return parseResponseBody<ConnextInitClientResponse>(res);
   }
   /**
    * Associate connext with currencies that have a token address
@@ -150,15 +154,8 @@ class ConnextClient extends SwapClient {
     }
   }
 
-  protected getConnextClient(): IConnextClient {
-    if (!this.client) {
-      throw errors.CONNEXT_CLIENT_NOT_INITIALIZED;
-    }
-    return this.client;
-  }
-
   protected getTokenAddress(currency: string): string {
-    const tokenAdress = this.tokenAddresses.get(currency);
+    const tokenAdress = this.tokenAddresses .get(currency);
     if (!tokenAdress) {
       throw errors.TOKEN_ADDRESS_NOT_FOUND;
     }
@@ -168,11 +165,10 @@ class ConnextClient extends SwapClient {
   protected verifyConnection = async () => {
     this.logger.info('trying to verify connection to connext');
     try {
-      const client = this.getConnextClient();
+      await this.sendRequest('/health', 'GET');
 
-      await client.isAvailable();
-
-      this.emit('connectionVerified', { newIdentifier: client.publicIdentifier });
+      // TODO: get SwapClientInfo
+      this.emit('connectionVerified', { newIdentifier: '' });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(
@@ -382,22 +378,20 @@ class ConnextClient extends SwapClient {
   public channelBalance = async (
     currency?: string,
   ): Promise<ChannelBalance> => {
-    const client = this.getConnextClient();
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
     const tokenAddress = this.getTokenAddress(currency);
 
-    const freeBalance = await client.getFreeBalance(tokenAddress);
+    const res = await this.sendRequest('/mnemonic', 'POST', { assetId: tokenAddress });
+    const { freeBalance } = await parseResponseBody<ConnextBalanceResponse>(res);
 
     const pendingOpenBalance = this.unitConverter.unitsToAmount({
       currency,
-      units: freeBalance[client.multisigAddress].toNumber(),
+      units: Number(freeBalance),
     });
-
     const inactiveBalance = 0;
-
     const balance = pendingOpenBalance + inactiveBalance;
 
     return {
@@ -425,9 +419,7 @@ class ConnextClient extends SwapClient {
    * Creates a payment client.
    */
   public openChannel = async (): Promise<void> => {
-    if (!this.client) {
-      await this.initConnextClient();
-    }
+    await this.initConnextClient();
   }
 
   /**
@@ -448,20 +440,19 @@ class ConnextClient extends SwapClient {
   private executePaymentTransfer = async (
     payload: TokenPaymentRequest,
   ): Promise<string> => {
-    const client = this.getConnextClient();
-    const transfer = await client.transfer({
-      recipient: payload.targetAddress,
+    const res = await this.sendRequest('/hashlock-transfer', 'POST', {
       amount: `${payload.amount}`,
-      meta: { secretHash: payload.secretHash },
+      preImage: payload.secretHash,
       assetId: payload.tokenAddress,
     });
+    const { preImage } = await parseResponseBody<ConnextTransferResponse>(res);
 
     const response: TokenPaymentResponse = {
       ...payload,
-      secret: transfer.paymentId,
+      secret: preImage,
     };
 
-    if (response.secret) {
+    if (response.secret && response.secret.startsWith('0x')) {
       // remove '0x'
       return response.secret.slice(2);
     } else {
@@ -485,6 +476,75 @@ class ConnextClient extends SwapClient {
   protected disconnect = async () => {
     this.setStatus(ClientStatus.Disconnected);
   }
+
+  /**
+   * Sends a request to the Connext REST API.
+   * @param endpoint the URL endpoint
+   * @param method an HTTP request method
+   * @param payload the request payload
+   */
+   private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
+    return new Promise((resolve, reject) => {
+      const options: http.RequestOptions = {
+        method,
+        hostname: this.host,
+        port: this.port,
+        path: `/api/v1/${endpoint}`,
+      };
+
+      let payloadStr: string | undefined;
+      if (payload) {
+        payloadStr = JSON.stringify(payload);
+        options.headers = {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(payloadStr),
+        };
+      }
+
+      this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
+      const req = http.request(options, async (res) => {
+        switch (res.statusCode) {
+          case 200:
+          case 201:
+          case 204:
+            resolve(res);
+            break;
+          case 402:
+            reject(errors.INSUFFICIENT_BALANCE);
+            break;
+          case 408:
+            reject(errors.TIMEOUT);
+            break;
+          case 409:
+            const body = await parseResponseBody<ConnextErrorResponse>(res);
+            reject(body.message);
+            break;
+          case 500:
+            this.logger.error(`raiden server error ${res.statusCode}: ${res.statusMessage}`);
+            reject(errors.SERVER_ERROR);
+            break;
+          default:
+            this.logger.error(`unexpected raiden status ${res.statusCode}: ${res.statusMessage}`);
+            reject(errors.UNEXPECTED);
+            break;
+        }
+      });
+
+      req.on('error', async (err: any) => {
+        if (err.code === 'ECONNREFUSED') {
+          await this.disconnect();
+        }
+        this.logger.error(err);
+        reject(err);
+      });
+
+      if (payloadStr) {
+        req.write(payloadStr);
+      }
+      req.end();
+    });
+  }
+
 }
 
 export default ConnextClient;

@@ -4,8 +4,8 @@
 
 export type ConnextClientConfig = {
   disable: boolean;
-  ethProviderUrl: string;
-  nodeUrl: string;
+  host: string;
+  port: number;
 };
 
 /** General information about the state of this connext client. */
@@ -51,4 +51,39 @@ export type TokenPaymentRequest = {
   lockTimeout?: number;
 };
 
+/**
+ * The response for errors.
+ */
+export type ConnextErrorResponse = { message: string };
 
+
+/**
+ * The response for initWallet call.
+ */
+export type ConnextInitWalletResponse = { success: boolean };
+
+/**
+ * The response for initConnextClient call.
+ */
+export type ConnextInitClientResponse = {
+  freeBalanceAddress: string,
+  multisigAddress: string,
+  natsClusterId: string,
+  natsToken: string,
+  nodeUrl: string,
+  signerAddress: string,
+  userPublicIdentifier: string,
+};
+
+/**
+ * The response for channelBalance call.
+ */
+export type ConnextBalanceResponse = { freeBalance: string };
+
+/**
+ * The response for hashLockTransfer call.
+ */
+export type ConnextTransferResponse = {
+  appId: string;
+  preImage: string;
+};
