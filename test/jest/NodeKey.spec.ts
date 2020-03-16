@@ -2,6 +2,7 @@ import secp256k1 from 'secp256k1';
 import NodeKey from '../../lib/nodekey/NodeKey';
 import { randomBytes } from '../../lib/utils/utils';
 import { getTempDir } from '../utils';
+import { SwapClientType } from '../../lib/constants/enums';
 
 function validateNodeKey(nodeKey: NodeKey) {
   expect(nodeKey.pubKey).toHaveLength(66);
@@ -59,5 +60,21 @@ describe('NodeKey', () => {
   test('it should create a valid nodekey from a lesser than 32 byte buffer', async () => {
     const nodeKey = NodeKey.fromBytes(await randomBytes(22));
     validateNodeKey(nodeKey);
+  });
+
+  test('it should derive a child seed from private key', async () => {
+    const nodeKey = NodeKey.fromBytes(
+      Buffer.from([
+        0x60, 0x6c, 0x9b, 0xfe,
+        0x90, 0x76, 0xdd, 0x00,
+        0x9b, 0x7a, 0xbb, 0x5b,
+        0xa0, 0x82 , 0x4d, 0x14,
+        0xb1, 0x18, 0x49, 0x8c,
+        0x4c, 0x5e,
+      ]),
+    );
+    expect(
+      nodeKey.childSeed(SwapClientType.Connext),
+    ).toMatchSnapshot();
   });
 });

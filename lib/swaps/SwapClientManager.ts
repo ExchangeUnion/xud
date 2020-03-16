@@ -225,7 +225,10 @@ class SwapClientManager extends EventEmitter {
    * Unlocks wallets with a password.
    * @returns an array of currencies for each lnd client that was unlocked
    */
-  public unlockWallets = async (walletPassword: string) => {
+  public unlockWallets = async ({ walletPassword }: {
+    walletPassword: string,
+    connextSeed: string,
+  }) => {
     this.walletPassword = walletPassword;
 
     // loop through swap clients to find locked lnd clients
@@ -253,6 +256,7 @@ class SwapClientManager extends EventEmitter {
     await Promise.all(unlockWalletPromises);
 
     // TODO: unlock raiden
+    // TODO(connext): unlock Connext using connextSeed
 
     return { unlockedLndClients, lockedLndClients };
   }
@@ -457,6 +461,7 @@ class SwapClientManager extends EventEmitter {
           if (this.walletPassword) {
             swapClient.unlockWallet(this.walletPassword).catch(swapClient.logger.error);
           }
+          // TODO(connext): unlock ConnextClient when it's implemented
         });
       }
     }
