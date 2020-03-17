@@ -87,3 +87,10 @@ export type ConnextTransferResponse = {
   appId: string;
   preImage: string;
 };
+
+/**
+ * The response for hashLockTransfer call.
+ */
+ export type ConnextTransferStatus = {
+  success: boolean;
+};

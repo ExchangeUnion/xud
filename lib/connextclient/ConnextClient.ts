@@ -26,6 +26,7 @@ import {
   ConnextVersion,
   TokenPaymentRequest,
   TokenPaymentResponse,
+  ConnextTransferStatus,
 } from './types';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
@@ -245,54 +246,14 @@ class ConnextClient extends SwapClient {
     // not implemented, connext does not use invoices
   }
 
-  public lookupPayment = async (
-    rHash: string,
-    currency?: string,
-    destination?: string,
-  ) => {
-    // TODO: change identifier
-    const identifier = 0;
+  public lookupPayment = async (rHash: string) => {
+    const res = await this.sendRequest(`/hashlock-status/${rHash}`, 'GET');
+    const { success } = await parseResponseBody<ConnextTransferStatus>(res);
 
-    // first check if the payment is pending
-    const pendingTransfers = await this.getPendingTransfers(
-      currency,
-      destination,
-    );
-    for (const pendingTransfer of pendingTransfers) {
-      if (identifier === Number(pendingTransfer.paymentId)) {
-        return { state: PaymentState.Pending };
-      }
+    if (success) {
+      return { state: PaymentState.Succeeded };
     }
-
-    // if the payment isn't pending, check if it has succeeded or failed
-    const paymentEvents = await this.getPaymentEvents(currency, destination);
-    for (const paymentEvent of paymentEvents) {
-      if (paymentEvent.identifier === identifier) {
-        const success = paymentEvent.event === 'EventPaymentSentSuccess';
-        if (success) {
-          const preimage = paymentEvent.secret;
-          return { preimage, state: PaymentState.Succeeded };
-        } else {
-          return { state: PaymentState.Failed };
-        }
-      }
-    }
-
-    // if there is no pending payment or event found, we assume that the payment was never attempted by connext
     return { state: PaymentState.Failed };
-  }
-  private getPendingTransfers = async (
-    currency?: string,
-    destination?: string,
-  ) => {
-    return ({} as any);
-  }
-
-  private getPaymentEvents = async (
-    currency?: string,
-    destination?: string,
-  ) => {
-    return ({} as any);
   }
 
   public getRoute = async () => {
@@ -382,7 +343,7 @@ class ConnextClient extends SwapClient {
 
     const tokenAddress = this.getTokenAddress(currency);
 
-    const res = await this.sendRequest('/mnemonic', 'POST', { assetId: tokenAddress });
+    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
     const { freeBalance } = await parseResponseBody<ConnextBalanceResponse>(res);
 
     const pendingOpenBalance = this.unitConverter.unitsToAmount({
