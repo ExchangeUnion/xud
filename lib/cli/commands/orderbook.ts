@@ -1,10 +1,10 @@
-import { Arguments } from 'yargs';
-import { callback, loadXudClient  } from '../command';
-import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { satsToCoinsStr } from '../utils';
+import { Arguments } from 'yargs';
 import { Owner } from '../../constants/enums';
+import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
+import { callback, loadXudClient } from '../command';
+import { satsToCoinsStr } from '../utils';
 
 type FormattedOrderbook = {
   pairId: string,

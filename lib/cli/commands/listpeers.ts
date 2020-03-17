@@ -38,7 +38,7 @@ const formatLndPubKeys = (lndKeys: string[][]) => {
   let str = '';
   lndKeys.forEach((client) => {
     /* eslint disable-next-line */
-    str =  `${str}${str ? '\n' : ''}${client[0]} lnd key: ${trimPubKey(client[1])}`;
+    str = `${str}${str ? '\n' : ''}${client[0]} lnd key: ${trimPubKey(client[1])}`;
   });
   return str;
 };

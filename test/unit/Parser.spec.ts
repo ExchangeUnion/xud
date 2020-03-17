@@ -416,7 +416,7 @@ describe('Parser', () => {
       parser.feed(Buffer.allocUnsafe(10));
     });
 
-    it('should not buffer when max buffer size exceeds',  (done) => {
+    it('should not buffer when max buffer size exceeds', (done) => {
       parser = new Parser(framer, Framer.MSG_HEADER_LENGTH, 10);
 
       wait()

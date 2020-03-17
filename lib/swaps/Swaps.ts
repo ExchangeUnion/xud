@@ -781,7 +781,7 @@ class Swaps extends EventEmitter {
    * the expected amount.
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
-  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest)  => {
+  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest) => {
     const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
     const peer = this.pool.getPeer(deal.peerPubKey);
     let expectedAmount: number;

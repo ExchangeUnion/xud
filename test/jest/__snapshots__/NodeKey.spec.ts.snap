@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`NodeKey it should derive a child seed from private key 1`] = `"crouch cause bicycle tomato choice city produce ocean canyon rare laugh sudden close angle cage item special jeans either heavy skill bracket lift butter"`;

@@ -23,7 +23,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     createdAt: { type: DataTypes.BIGINT, allowNull: false },
   };
 
-  const options: Sequelize.DefineOptions<db.OrderInstance>  = {
+  const options: Sequelize.DefineOptions<db.OrderInstance> = {
     tableName: 'orders',
     timestamps: false,
   };

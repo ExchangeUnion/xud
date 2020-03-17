@@ -3,7 +3,7 @@ import Xud from '../../lib/Xud';
 import { getTempDir, getUnusedPort } from '../utils';
 
 console.log = jest.fn();
-describe('WebProxy',  () => {
+describe('WebProxy', () => {
   let xud: Xud;
   let config: any;
 

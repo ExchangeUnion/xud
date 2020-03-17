@@ -46,7 +46,7 @@ class Xud extends EventEmitter {
   /**
    * Create an Exchange Union daemon.
    */
-  constructor()  {
+  constructor() {
     super();
 
     this.config = new Config();

@@ -1,9 +1,9 @@
-import { errorCodes as orderErrorCodes } from '../orderbook/errors';
-import { errorCodes as serviceErrorCodes } from '../service/errors';
-import { errorCodes as p2pErrorCodes } from '../p2p/errors';
-import { errorCodes as swapErrorCodes } from '../swaps/errors';
+import grpc, { status } from 'grpc';
 import { errorCodes as lndErrorCodes } from '../lndclient/errors';
-import grpc, { status }  from 'grpc';
+import { errorCodes as orderErrorCodes } from '../orderbook/errors';
+import { errorCodes as p2pErrorCodes } from '../p2p/errors';
+import { errorCodes as serviceErrorCodes } from '../service/errors';
+import { errorCodes as swapErrorCodes } from '../swaps/errors';
 
 /**
  * Convert an internal xud error type into a gRPC error.

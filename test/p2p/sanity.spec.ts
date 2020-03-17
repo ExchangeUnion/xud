@@ -103,7 +103,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an unexpected node pub key', async () => {
-    const randomPubKey =  (await NodeKey['generate']()).pubKey;
+    const randomPubKey = (await NodeKey['generate']()).pubKey;
     const host = 'localhost';
     const port = nodeTwoPort;
     const nodeUri = toUri({ host, port, nodePubKey: randomPubKey });
@@ -115,7 +115,7 @@ describe('P2P Sanity Tests', () => {
   });
 
   it('should fail when connecting to an invalid node pub key', async () => {
-    const invalidPubKey =  '0123456789';
+    const invalidPubKey = '0123456789';
     const host = 'localhost';
     const port = nodeTwoPort;
     const nodeUri = toUri({ host, port, nodePubKey: invalidPubKey });
@@ -144,7 +144,7 @@ describe('P2P Sanity Tests', () => {
     const nodePubKey = 'notarealnodepubkey';
     const host = 'localhost';
     const port = unusedPort;
-    const nodeUri =  toUri({ host, port, nodePubKey });
+    const nodeUri = toUri({ host, port, nodePubKey });
     const connectPromise = nodeOne.service.connect({ nodeUri, retryConnecting: true });
 
     setImmediate(() => {

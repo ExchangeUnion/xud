@@ -2,6 +2,8 @@ import secp256k1 from 'secp256k1';
 import { randomBytes } from '../utils/utils';
 import { promises as fs } from 'fs';
 import { createCipheriv, createDecipheriv, createHash } from 'crypto';
+import { entropyToMnemonic } from 'bip39';
+import { SwapClientType } from '../constants/enums';
 
 /**
  * A class representing an ECDSA public/private key pair that identifies an XU node on the network
@@ -112,6 +114,19 @@ class NodeKey {
     }
     await fs.writeFile(path, buf);
   }
+
+  /**
+   * Derives a child seed from the private key for the swap client
+   * @param swapClient the swap client to create the seed for
+   */
+  public childSeed = (swapClient: SwapClientType) => {
+    const privKeyHex = this.privKey.toString('hex');
+    const childSeedEntropy = createHash('sha256')
+      .update(`${privKeyHex}-${swapClient}`)
+      .digest();
+    return entropyToMnemonic(childSeedEntropy);
+  }
+
 }
 
 export default NodeKey;

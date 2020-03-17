@@ -14,7 +14,7 @@ const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   basicInfotable.push(
-    { [colors.blue('Version')]: info.version || ''   },
+    { [colors.blue('Version')]: info.version || '' },
     { [colors.blue('Address')]: address },
     { [colors.blue('Alias')] : info.alias || '' },
     { [colors.blue('Channels')] :
@@ -87,7 +87,7 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
  | Pending: 0\
  | Closed: ${info.channels ? info.channels['closed'] : 0}`,
     },
-    { [colors.blue('Network')] : info.chain  },
+    { [colors.blue('Network')] : info.chain },
   );
 
   console.log(colors.underline(colors.bold('\nRaiden info:')));
