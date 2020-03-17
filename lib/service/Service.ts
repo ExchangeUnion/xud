@@ -305,7 +305,7 @@ class Service {
    */
   public getNodeInfo = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const nodePubKey = isAlias(args.nodeIdentifier) ? await this.pool.getNodeByAlias(args.nodeIdentifier) : args.nodeIdentifier;
     const info = await this.pool.getNodeReputation(nodePubKey);
     return info;
   }

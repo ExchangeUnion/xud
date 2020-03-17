@@ -988,28 +988,47 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Resolves alias to node's public key
+   * Resolves alias to a connected node's public key
    */
   public resolveAlias = (alias: string) => {
     if (alias === '') {
       throw errors.UNKNOWN_ALIAS;
     }
-    const plist = this.listPeers();
-    let keys: string[] = [];
-    for (const peer of plist) {
+    let pubkeys: string[] = [];
+    this.peers.forEach((peer) => {
       if (peer.alias) {
         if (peer.alias.toLowerCase() === alias.toLowerCase()) {
-          keys.push(peer.nodePubKey!);
+          pubkeys.push(peer.nodePubKey!);
         }
       }
-    }
-    keys = keys.concat(this.nodes.getBannedPubKeys(alias));
-    if (keys.length === 1) {
-      return keys[0];
-    } else if (keys.length > 1) {
-      throw errors.ALIAS_CONFLICT(alias);
-    } else {
+    });
+    pubkeys = pubkeys.concat(this.nodes.getBannedPubKeys(alias));
+    if (pubkeys.length === 1) {
+      return pubkeys[0];
+    } else if (pubkeys.length === 0) {
       throw errors.UNKNOWN_ALIAS(alias);
+    } else {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+  }
+
+  /**
+   * Resolves alias of a possibly non-connected node
+   */
+  public getNodeByAlias = async (alias: string) => {
+    const nlist = await this.repository.getNodes();
+    const pubkeys: string[] = [];
+    for (const entry of nlist) {
+      if (getAlias(entry.nodePubKey).toLowerCase() === alias.toLowerCase()) {
+        pubkeys.push(entry.nodePubKey);
+      }
+    }
+    if (pubkeys.length === 1) {
+      return pubkeys[0];
+    } else if (pubkeys.length === 0) {
+      throw errors.UNKNOWN_ALIAS(alias);
+    } else {
+      throw errors.ALIAS_CONFLICT(alias);
     }
   }
 }

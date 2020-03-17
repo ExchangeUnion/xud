@@ -614,6 +614,7 @@ class GrpcService {
         grpcPeer.setAddress(peer.address);
         grpcPeer.setInbound(peer.inbound);
         grpcPeer.setNodePubKey(peer.nodePubKey || '');
+        grpcPeer.setAlias(peer.alias || '');
         if (peer.lndPubKeys) {
           const map = grpcPeer.getLndPubKeysMap();
           for (const key in peer.lndPubKeys) {

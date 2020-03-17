@@ -1,9 +1,10 @@
 import { wordlist } from '../constants/wordlist';
+import errors from '../service/errors';
 
 export const getAlias = (pubkey: string): string => {
   const getWord = (substring: string): string | undefined => {
     const asNumber = parseInt(substring, 16);
-    if (asNumber) {
+    if (!isNaN(asNumber)) {
       const index = asNumber % wordlist.length;
       return wordlist[index];
     }
@@ -16,7 +17,7 @@ export const getAlias = (pubkey: string): string => {
       return a + b;
     }
   }
-  return '';
+  throw errors.INVALID_ARGUMENT('Not a valid public key');
 };
 
 export const isAlias = (nodeIdentifier: string): boolean => {

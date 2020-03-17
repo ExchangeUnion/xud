@@ -815,7 +815,7 @@ class Peer extends EventEmitter {
   }
 
   /**
-   * Sets public key and alias for this node together so that they are always in sync
+   * Sets public key and alias for this node together so that they are always in sync.
    */
   public setIdentifiers(nodePubKey: string) {
     this._nodePubKey = nodePubKey;
