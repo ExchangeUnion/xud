@@ -56,7 +56,6 @@ export type TokenPaymentRequest = {
  */
 export type ConnextErrorResponse = { message: string };
 
-
 /**
  * The response for initWallet call.
  */
@@ -91,6 +90,6 @@ export type ConnextTransferResponse = {
 /**
  * The response for hashLockTransfer call.
  */
- export type ConnextTransferStatus = {
+export type ConnextTransferStatus = {
   success: boolean;
 };

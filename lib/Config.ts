@@ -174,7 +174,7 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 5040,
-    }
+    };
   }
 
   private static readConfigProps = async (configPath: string) => {

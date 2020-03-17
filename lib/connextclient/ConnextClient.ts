@@ -50,7 +50,6 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
   });
 }
 
-
 /**
  * A class representing a client to interact with connext.
  */
@@ -107,7 +106,7 @@ class ConnextClient extends SwapClient {
    * Initiates wallet for the Connext client
    */
   public initWallet = async (seedMnemonic: string[]) => {
-    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic.join(' ')});
+    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic.join(' ') });
     return parseResponseBody<ConnextInitWalletResponse>(res);
   }
 
@@ -442,7 +441,7 @@ class ConnextClient extends SwapClient {
    * @param method an HTTP request method
    * @param payload the request payload
    */
-   private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
+  private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
     return new Promise((resolve, reject) => {
       const options: http.RequestOptions = {
         method,
@@ -479,11 +478,11 @@ class ConnextClient extends SwapClient {
             reject(body.message);
             break;
           case 500:
-            this.logger.error(`raiden server error ${res.statusCode}: ${res.statusMessage}`);
+            this.logger.error(`connext server error ${res.statusCode}: ${res.statusMessage}`);
             reject(errors.SERVER_ERROR);
             break;
           default:
-            this.logger.error(`unexpected raiden status ${res.statusCode}: ${res.statusMessage}`);
+            this.logger.error(`unexpected connext status ${res.statusCode}: ${res.statusMessage}`);
             reject(errors.UNEXPECTED);
             break;
         }
@@ -503,7 +502,6 @@ class ConnextClient extends SwapClient {
       req.end();
     });
   }
-
 }
 
 export default ConnextClient;
