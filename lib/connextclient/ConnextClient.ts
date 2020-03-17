@@ -153,7 +153,7 @@ class ConnextClient extends SwapClient {
   }
 
   protected getTokenAddress(currency: string): string {
-    const tokenAdress = this.tokenAddresses .get(currency);
+    const tokenAdress = this.tokenAddresses.get(currency);
     if (!tokenAdress) {
       throw errors.TOKEN_ADDRESS_NOT_FOUND;
     }
