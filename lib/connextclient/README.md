@@ -5,17 +5,8 @@ These instructions will guide you on setting up Connext compatible with developm
 ## Prerequisites
 
 - Linux, preferably [Ubuntu 17.04 or greater](https://wiki.ubuntu.com/Releases).
-- [Python 3.6.3](https://www.python.org/downloads/release/python-363/) (included in newer versions of Ubuntu).
+- Node, preferably [13.7 or greater](https://nodejs.org/en/)
 - _If installing Go Ethereum from source_ - [Go 1.7 or greater](https://golang.org/doc/install), preferably the latest version.
-
-## Dependencies
-
-Run the following commands to ensure you have the required dependencies.
-
-```bash
-sudo apt-get update
-sudo apt-get install build-essential automake pkg-config libtool libffi-dev libgmp-dev libssl-dev
-```
 
 ## Go Ethereum
 
@@ -45,19 +36,6 @@ From within the console, create an account.
 personal.newAccount()
 ```
 
-## Solidity Compiler
-
-Install `solc` v0.4.18 from source.
-
-```bash
-git clone --recursive https://github.com/ethereum/solidity.git
-cd solidity
-git checkout tags/v0.4.18
-git submodule update --init --recursive
-./scripts/install_deps.sh
-./scripts/build.sh
-```
-
 ## Connext
 
 ### Installing Connext
@@ -65,40 +43,23 @@ git submodule update --init --recursive
 Install v0.3.0 from source with a virtual python environment.
 
 ```bash
-git clone https://github.com/connext-network/connext.git
-cd connext
-git checkout tags/v0.3.0
-virtualenv rdnenv
-source rdnenv/bin/activate
-pip3 install --upgrade -r requirements-dev.txt
-python3 setup.py develop
-```
-
-If the `virtualenv` command fails, ensure you have it installed and retry.
-
-```bash
-pip3 install virtualenv
+git clone https://github.com/ConnextProject/rest-api-client
+cd rest-api-client
+npm install
+npm run start
 ```
 
 ### Running Connext
 
-Make sure to run `source rdnenv/bin/activate` in any terminal before starting Connext.
+Create environment variables file and point to the Etheruem and Connext node
 
 ```bash
-connext --keystore-path  ~/.ethereum/testnet/keystore
+CONNEXT_ETH_PROVIDER_URL="INSERT_URL"
+CONNEXT_NODE_URL="INSERT_URL"
 ```
 
-_Note:_ If you encounter the error below, it can be resolved by changing `from gevent.wsgi import WSGIServer` to `from gevent.pywsgi import WSGIServer` in `connext/api/rest.py`.
+Then run the REST API server
 
 ```bash
-Traceback (most recent call last):
-  File "/home/walli/connext/rdnenv/bin/connext", line 11, in <module>
-    load_entry_point('connext', 'console_scripts', 'connext')()
-  File "/home/walli/connext/connext/__main__.py", line 7, in main
-    from connext.ui.cli import run
-  File "/home/walli/connext/connext/ui/cli.py", line 23, in <module>
-    from connext.api.rest import APIServer, RestAPI
-  File "/home/walli/connext/connext/api/rest.py", line 13, in <module>
-    from gevent.wsgi import WSGIServer
-ModuleNotFoundError: No module named 'gevent.wsgi'
+npm run start
 ```
