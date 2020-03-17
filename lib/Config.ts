@@ -172,10 +172,9 @@ class Config {
     };
     this.connext = {
       disable: false,
-      // TODO: update ethProviderUrl and nodeUrl to match hosted infra
-      ethProviderUrl: '',
-      nodeUrl: '',
-    };
+      host: 'localhost',
+      port: 5040,
+    }
   }
 
   private static readConfigProps = async (configPath: string) => {

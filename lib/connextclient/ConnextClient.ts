@@ -28,14 +28,12 @@ import {
   TokenPaymentResponse,
 } from './types';
 
-
-
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
 /**
  * A utility function to parse the payload from an http response.
  */
- async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
+async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
   res.setEncoding('utf8');
   return new Promise<T>((resolve, reject) => {
     let body = '';
