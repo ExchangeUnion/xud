@@ -105,7 +105,7 @@ class RaidenClient extends SwapClient {
    */
   private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
     currencyInstances.forEach((currency) => {
-      if (currency.tokenAddress) {
+      if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress) {
         this.tokenAddresses.set(currency.id, currency.tokenAddress);
       }
     });
