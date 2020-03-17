@@ -1,11 +1,12 @@
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
+import { SwapClientType } from '../constants/enums';
+import { errorCodes as lndErrorCodes } from '../lndclient/errors';
 import NodeKey from '../nodekey/NodeKey';
 import swapErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { decipher, generate } from '../utils/seedutil';
 import errors from './errors';
-import { SwapClientType } from '../constants/enums';
 
 interface InitService {
   once(event: 'nodekey', listener: (nodeKey: NodeKey) => void): this;
@@ -30,9 +31,9 @@ class InitService extends EventEmitter {
     const { password } = args;
 
     this.newWalletValidation(password);
-    await this.prepareCall();
 
     try {
+      await this.prepareCall();
       const seedMnemonic = await generate();
 
       // we use the deciphered seed (without the salt and extra fields that make up the enciphered seed)
@@ -66,9 +67,10 @@ class InitService extends EventEmitter {
     if (!this.nodeKeyExists) {
       throw errors.NODE_DOES_NOT_EXIST;
     }
-    await this.prepareCall();
 
     try {
+      await this.prepareCall(true);
+
       const nodeKey = await NodeKey.fromFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
 
@@ -109,9 +111,10 @@ class InitService extends EventEmitter {
     }
 
     this.newWalletValidation(password);
-    await this.prepareCall();
 
     try {
+      await this.prepareCall();
+
       const decipheredSeed = await decipher(seedMnemonicList);
       const nodeKey = NodeKey.fromBytes(decipheredSeed);
 
@@ -159,7 +162,7 @@ class InitService extends EventEmitter {
     }
   }
 
-  private prepareCall = async () => {
+  private prepareCall = async (ignoreUnavailableClients = false) => {
     if (this.pendingCall) {
       throw errors.PENDING_CALL_CONFLICT;
     }
@@ -170,8 +173,9 @@ class InitService extends EventEmitter {
     try {
       await this.swapClientManager.waitForLnd();
     } catch (err) {
-      this.pendingCall = false; // end pending call if there's an error while waiting for lnd
-      throw err;
+      if (!ignoreUnavailableClients || err.code !== lndErrorCodes.UNAVAILABLE) {
+        throw err;
+      }
     }
   }
 }
