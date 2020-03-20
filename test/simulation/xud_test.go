@@ -251,7 +251,7 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(20*time.Minute))
 			ht := newHarnessTest(ctx, cancel, t1)
-			ht.teardown()
+			defer ht.teardown()
 
 			ht.RunTestCase(testCase, xudNetwork)
 		})
