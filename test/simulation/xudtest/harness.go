@@ -1,12 +1,14 @@
 package xudtest
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 )
@@ -46,7 +48,11 @@ func NewNetworkHarness() (*NetworkHarness, error) {
 	return &n, nil
 }
 
-func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars []string) (*HarnessNode, error) {
+type CtxSetter interface {
+	SetCtx(ctx context.Context, cancel context.CancelFunc)
+}
+
+func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, branch string, envVars []string) (*HarnessNode, error) {
 	err := node.shutdown(true, true)
 	if err != nil {
 		return nil, err
@@ -58,9 +64,12 @@ func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars 
 		return nil, err
 	}
 
+	t := time.Now()
+
 	xudPath := filepath.Join(wd, "./temp", branch)
 	if _, err := os.Stat(xudPath); os.IsNotExist(err) {
 		log.Printf("custom xud not found at %v, installing...", xudPath)
+
 		_, err := exec.Command("git", "clone", "-b", branch, "https://github.com/ExchangeUnion/xud", xudPath).Output()
 		if err != nil {
 			return nil, fmt.Errorf("custom xud git clone failure: %v", err)
@@ -103,6 +112,13 @@ func (n *NetworkHarness) SetCustomXud(node *HarnessNode, branch string, envVars 
 		}
 	}()
 	wg.Wait()
+
+	// Adjust the ctx deadline so that time spent here
+	// won't consume the timeout duration.
+	d := time.Since(t)
+	deadline, _ := ctx.Deadline()
+	ctx, cancel := context.WithDeadline(context.Background(), deadline.Add(d))
+	ctxSetter.SetCtx(ctx, cancel)
 
 	return customNode, nil
 }
