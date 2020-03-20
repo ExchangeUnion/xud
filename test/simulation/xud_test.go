@@ -377,9 +377,6 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		log.Fatalf("cannot start xud network: %v", err)
 	}
 
-	// Wait a bit to avoid calls to xud nodes while still initializing.
-	time.Sleep(3 * time.Second)
-
 	teardown := func() {
 		if err := lndBtcNetworkHarness.TearDownAll(); err != nil {
 			log.Fatalf("lnd-btc: cannot tear down network harness: %v", err)

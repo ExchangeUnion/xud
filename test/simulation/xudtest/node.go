@@ -245,6 +245,29 @@ func (hn *HarnessNode) Start(errorChan chan<- *XudError) error {
 
 	hn.Client = xudrpc.NewXudClient(conn)
 
+	if err := hn.WaitReady(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (hn *HarnessNode) WaitReady() error {
+	isReady := func() bool {
+		_, err := hn.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		return err == nil
+	}
+
+	// Wait until xud node finish initializing, up to 20 sec.
+	timeout := time.After(20 * time.Second)
+	for !isReady() {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for xud to be ready")
+		case <-time.After(1 * time.Second):
+		}
+	}
+
 	return nil
 }
 
