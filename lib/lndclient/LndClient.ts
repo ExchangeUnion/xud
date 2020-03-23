@@ -33,6 +33,7 @@ interface LndClient {
 }
 
 const MAXFEE = 0.03;
+const BASE_MAX_CLIENT_WAIT_TIME = 6000;
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
@@ -42,6 +43,8 @@ class LndClient extends SwapClient {
   public currency: string;
   private lightning?: LightningClient;
   private walletUnlocker?: WalletUnlockerClient;
+  /** The maximum time to wait for a client to be ready for making grpc calls, can be used for exponential backoff. */
+  private maxClientWaitTime = BASE_MAX_CLIENT_WAIT_TIME;
   private invoices?: InvoicesClient;
   /** The path to the lnd admin macaroon, will be undefined if `nomacaroons` is enabled */
   private macaroonpath?: string;
@@ -82,12 +85,17 @@ class LndClient extends SwapClient {
     this.finalLock = config.cltvdelta;
   }
 
-  private static waitForClientReady = (client: grpc.Client) => {
+  private waitForClientReady = (client: grpc.Client) => {
     return new Promise((resolve, reject) => {
-      client.waitForReady(Number.POSITIVE_INFINITY, (err) => {
+      client.waitForReady(Date.now() + this.maxClientWaitTime, (err) => {
         if (err) {
+          if (err.message === 'Failed to connect before the deadline') {
+            this.maxClientWaitTime *= 10; // exponentially backoff the max wait time if we reach the deadline
+            resolve();
+          }
           reject(err);
         } else {
+          this.maxClientWaitTime = BASE_MAX_CLIENT_WAIT_TIME; // reset our max wait time
           resolve();
         }
       });
@@ -429,7 +437,7 @@ class LndClient extends SwapClient {
       // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
       if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
         this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
-        await LndClient.waitForClientReady(this.walletUnlocker);
+        await this.waitForClientReady(this.walletUnlocker);
         this.lock();
 
         this.awaitWalletInit().catch(this.logger.error);
@@ -441,7 +449,7 @@ class LndClient extends SwapClient {
     this.lightning = new LightningClient(this.uri, this.credentials);
 
     try {
-      await LndClient.waitForClientReady(this.lightning);
+      await this.waitForClientReady(this.lightning);
 
       const getInfoResponse = await this.getInfo();
       if (getInfoResponse.getSyncedToChain()) {
