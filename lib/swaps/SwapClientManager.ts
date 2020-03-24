@@ -77,7 +77,11 @@ class SwapClientManager extends EventEmitter {
 
     if (!this.config.raiden.disable) {
       // setup Raiden
-      const currencyInstances = await models.Currency.findAll();
+      const currencyInstances = await models.Currency.findAll({
+        where: {
+          swapClient: SwapClientType.Raiden,
+        },
+      });
       this.raidenClient = new RaidenClient({
         currencyInstances,
         unitConverter: this.unitConverter,
