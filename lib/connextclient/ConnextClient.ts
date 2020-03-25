@@ -252,12 +252,11 @@ class ConnextClient extends SwapClient {
 
     switch (status) {
       case 'PENDING':
-      case 'REDEEMED':
         return { state: PaymentState.Pending };
-      case 'UNLOCKED':
       case 'COMPLETED':
         return { state: PaymentState.Succeeded };
       case 'EXPIRED':
+      case 'FAILED':
         return { state: PaymentState.Failed };
       default:
         return { state: PaymentState.Failed };
