@@ -17,7 +17,7 @@ import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
   ConnextInitWalletResponse,
-  ConnextInitClientResponse,
+  ConnextChannelConfig,
   ConnextBalanceResponse,
   ConnextTransferResponse,
   ConnextChannelCount,
@@ -102,6 +102,7 @@ class ConnextClient extends SwapClient {
     this.emit('initialized');
     await this.verifyConnectionWithTimeout();
   }
+
   /**
    * Initiates wallet for the Connext client
    */
@@ -112,7 +113,7 @@ class ConnextClient extends SwapClient {
 
   public initConnextClient = async () => {
     const res = await this.sendRequest('/connect', 'POST');
-    return parseResponseBody<ConnextInitClientResponse>(res);
+    return parseResponseBody<ConnextChannelConfig>(res);
   }
   /**
    * Associate connext with currencies that have a token address
@@ -179,16 +180,16 @@ class ConnextClient extends SwapClient {
 
   public sendSmallestAmount = async (
     rHash: string,
-    destination: string,
+    _destination: string,
     currency: string,
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
 
-    const secret = await this.executePaymentTransfer({
-      tokenAddress,
-      targetAddress: destination,
-      amount: 1,
-      secretHash: rHash,
+    const secret = await this.executeHashLockTransfer({
+      amount: '1',
+      assetId: tokenAddress,
+      lockHash: rHash,
+      timelock: this.finalLock,
     });
     return secret;
   }
@@ -199,25 +200,25 @@ class ConnextClient extends SwapClient {
     let amount: number;
     let tokenAddress: string;
     let lockTimeout: number | undefined;
-    if (deal.role === SwapRole.Maker) {
-      // we are the maker paying the taker
-      amount = deal.takerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
-    } else {
-      // we are the taker paying the maker
-      amount = deal.makerUnits;
-      tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-      lockTimeout = deal.makerCltvDelta!;
-    }
-
     try {
-      const secret = await this.executePaymentTransfer({
-        amount,
-        lockTimeout,
-        tokenAddress,
-        targetAddress: deal.destination!,
-        secretHash: deal.rHash,
-      });
+      let secret;
+      if (deal.role === SwapRole.Maker && deal.rPreimage) {
+        // we are the maker paying the taker
+        amount = deal.takerUnits;
+        tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
+        secret = await this.executeHashLockResolve(deal.rPreimage);
+      } else {
+        // we are the taker paying the maker
+        amount = deal.makerUnits;
+        tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
+        lockTimeout = deal.makerCltvDelta!;
+        secret = await this.executeHashLockTransfer({
+          amount: `${amount}`,
+          assetId: tokenAddress,
+          lockHash: deal.rHash,
+          timelock: lockTimeout,
+        });
+      }
       return secret;
     } catch (err) {
       switch (err.code) {
@@ -247,12 +248,20 @@ class ConnextClient extends SwapClient {
 
   public lookupPayment = async (rHash: string) => {
     const res = await this.sendRequest(`/hashlock-status/${rHash}`, 'GET');
-    const { success } = await parseResponseBody<ConnextTransferStatus>(res);
+    const { status } = await parseResponseBody<ConnextTransferStatus>(res);
 
-    if (success) {
-      return { state: PaymentState.Succeeded };
+    switch (status) {
+      case 'PENDING':
+      case 'REDEEMED':
+        return { state: PaymentState.Pending };
+      case 'UNLOCKED':
+      case 'COMPLETED':
+        return { state: PaymentState.Succeeded };
+      case 'EXPIRED':
+        return { state: PaymentState.Failed };
+      default:
+        return { state: PaymentState.Failed };
     }
-    return { state: PaymentState.Failed };
   }
 
   public getRoute = async () => {
@@ -284,9 +293,9 @@ class ConnextClient extends SwapClient {
         version = (await this.getVersion()).version;
         const connextChannels = await this.getChannels();
         channels = {
-          active: connextChannels.filter(c => c.state === 'opened').length,
-          settled: connextChannels.filter(c => c.state === 'settled').length,
-          closed: connextChannels.filter(c => c.state === 'closed').length,
+          active: connextChannels.length,
+          settled: 0,
+          closed: 0,
         };
         address = this.address;
         if (channels.active <= 0) {
@@ -318,19 +327,19 @@ class ConnextClient extends SwapClient {
    * @param tokenAddress the token address for the network to which the client belongs
    * @param multisigAddress the address of the client to query
    */
-  public getChannel = async (
-    tokenAddress: string,
-    multisigAddress: string,
-  ): Promise<any> => {
-    return ({} as any);
+  public getChannel = async (): Promise<ConnextChannelConfig> => {
+    const res = await this.sendRequest('/config', 'GET');
+    const channel = await parseResponseBody<ConnextChannelConfig>(res);
+    return channel;
   }
 
   /**
    * Gets info about all non-settled channels.
    * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
    */
-  public getChannels = async (tokenAddress?: string): Promise<any[]> => {
-    return ({} as any);
+  public getChannels = async (): Promise<ConnextChannelConfig[]> => {
+    const channel = await this.getChannel();
+    return [channel];
   }
 
   public channelBalance = async (
@@ -370,7 +379,7 @@ class ConnextClient extends SwapClient {
   /**
    * Returns the balances available in wallet for a specified currency.
    */
-  public walletBalance = async (currency?: string): Promise<WalletBalance> => {
+  public walletBalance = async (): Promise<WalletBalance> => {
     return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
   }
   /**
@@ -389,20 +398,14 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Sends a token payment through the Connext network.
+   * Create a HashLock Transfer on the Connext network.
    * @param targetAddress recipient of the payment
    * @param tokenAddress contract address of the token
    * @param amount
-   * @param secretHash optional; provide your own secret hash
+   * @param lockHash
    */
-  private executePaymentTransfer = async (
-    payload: TokenPaymentRequest,
-  ): Promise<string> => {
-    const res = await this.sendRequest('/hashlock-transfer', 'POST', {
-      amount: `${payload.amount}`,
-      preImage: payload.secretHash,
-      assetId: payload.tokenAddress,
-    });
+  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
+    const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { preImage } = await parseResponseBody<ConnextTransferResponse>(res);
 
     const response: TokenPaymentResponse = {
@@ -419,15 +422,36 @@ class ConnextClient extends SwapClient {
   }
 
   /**
+   * Resolve a HashLock Transfer on the Connext network.
+   * @param targetAddress recipient of the payment
+   * @param tokenAddress contract address of the token
+   * @param amount
+   * @param lockHash
+   */
+  private executeHashLockResolve = async (preImage: string): Promise<string> => {
+    await this.sendRequest('/hashlock-resolve', 'POST', { preImage });
+
+    if (preImage && preImage.startsWith('0x')) {
+      // remove '0x'
+      return preImage.slice(2);
+    } else {
+      throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
+    }
+  }
+
+  /**
    * Deposits more of a token to an existing client.
    * @param multisigAddress the address of the client to deposit to
    * @param balance the amount to deposit to the client
    */
   public depositToChannel = async (
-    multisigAddress: string,
-    balance: number,
+    assetId: string,
+    amount: number,
   ): Promise<void> => {
-    return ({} as any);
+    await this.sendRequest('/hashlock-transfer', 'POST', {
+      amount,
+      assetId,
+    });
   }
 
   /** Connext client specific cleanup. */

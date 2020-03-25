@@ -2,6 +2,8 @@
  * The configurable options for the connext client.
  */
 
+import { PaymentState } from 'lib/swaps/SwapClient';
+
 export type ConnextClientConfig = {
   disable: boolean;
   host: string;
@@ -43,12 +45,10 @@ export type TokenPaymentResponse = TokenPaymentRequest & {
  * The payload for tokenPayment call.
  */
 export type TokenPaymentRequest = {
-  tokenAddress: string;
-  targetAddress: string;
-  amount: number;
-  secretHash: string;
-  identifier?: number;
-  lockTimeout?: number;
+  assetId: string;
+  amount: string;
+  lockHash: string;
+  timelock?: number;
 };
 
 /**
@@ -62,9 +62,9 @@ export type ConnextErrorResponse = { message: string };
 export type ConnextInitWalletResponse = { success: boolean };
 
 /**
- * The response for initConnextClient call.
+ * The response for initChannel call.
  */
-export type ConnextInitClientResponse = {
+export type ConnextChannelConfig = {
   freeBalanceAddress: string,
   multisigAddress: string,
   natsClusterId: string,
@@ -91,5 +91,10 @@ export type ConnextTransferResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
-  success: boolean;
+  status: string;
+};
+
+export type PaymentHistoryItem = {
+  rHash: string;
+  status: PaymentState;
 };
