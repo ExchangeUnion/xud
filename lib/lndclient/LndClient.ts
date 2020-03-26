@@ -433,6 +433,10 @@ class LndClient extends SwapClient {
     if (!this.isOperational()) {
       throw(errors.DISABLED);
     }
+    if (this.isWaitingUnlock()) {
+      return; // temporary workaround to prevent unexplained lnd crashes after unlock
+    }
+
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
       // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
       if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
