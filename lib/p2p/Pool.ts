@@ -120,6 +120,7 @@ class Pool extends EventEmitter {
       addresses: [],
       pairs: [],
       raidenAddress: '',
+      connextAddress: '',
       lndPubKeys: {},
       lndUris: {},
       tokenIdentifiers: {},
