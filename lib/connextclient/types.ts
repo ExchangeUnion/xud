@@ -91,7 +91,13 @@ export type ConnextTransferResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
+  senderPublicIdentifier: string;
+  receiverPublicIdentifier?: string;
+  assetId: string;
+  amount: string;
+  lockHash: string;
   status: string;
+  meta?: any;
 };
 
 export type PaymentHistoryItem = {

@@ -10,11 +10,12 @@ const errorCodes = {
   SERVER_ERROR: codesPrefix.concat('.5'),
   UNEXPECTED: codesPrefix.concat('.6'),
   TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
-  INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.8'),
-  CONNEXT_IS_UNAVAILABLE: codesPrefix.concat('.9'),
-  CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.10'),
-  CONNEXT_CLIENT_NOT_INITIALIZED: codesPrefix.concat('.11'),
-  CONNEXT_WALLET_NOT_INITIALIZED: codesPrefix.concat('.12'),
+  PAYMENT_NOT_FOUND: codesPrefix.concat('.8'),
+  INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.9'),
+  CONNEXT_IS_UNAVAILABLE: codesPrefix.concat('.10'),
+  CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.11'),
+  CONNEXT_CLIENT_NOT_INITIALIZED: codesPrefix.concat('.12'),
+  CONNEXT_WALLET_NOT_INITIALIZED: codesPrefix.concat('.13'),
 };
 
 const errors = {
@@ -66,6 +67,10 @@ const errors = {
   TOKEN_ADDRESS_NOT_FOUND: {
     message: 'connext token address not found',
     code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
+  },
+  PAYMENT_NOT_FOUND: {
+    message: 'connext payment not found',
+    code: errorCodes.PAYMENT_NOT_FOUND,
   },
   INVALID_TOKEN_PAYMENT_RESPONSE: {
     message: 'connext TokenPaymentResponse is invalid',

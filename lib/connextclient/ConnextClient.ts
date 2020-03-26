@@ -246,20 +246,29 @@ class ConnextClient extends SwapClient {
     // not implemented, connext does not use invoices
   }
 
-  public lookupPayment = async (rHash: string) => {
-    const res = await this.sendRequest(`/hashlock-status/${rHash}`, 'GET');
+  private async getHashLockStatus(lockHash: string) {
+    const res = await this.sendRequest(`/hashlock-status/${lockHash}`, 'GET');
     const { status } = await parseResponseBody<ConnextTransferStatus>(res);
+    return status;
+  }
 
-    switch (status) {
-      case 'PENDING':
-        return { state: PaymentState.Pending };
-      case 'COMPLETED':
-        return { state: PaymentState.Succeeded };
-      case 'EXPIRED':
-      case 'FAILED':
-        return { state: PaymentState.Failed };
-      default:
-        return { state: PaymentState.Failed };
+  public lookupPayment = async (rHash: string) => {
+    try {
+      const status = await this.getHashLockStatus(rHash);
+
+      switch (status) {
+        case 'PENDING':
+          return { state: PaymentState.Pending };
+        case 'COMPLETED':
+          return { state: PaymentState.Succeeded };
+        case 'EXPIRED':
+        case 'FAILED':
+          return { state: PaymentState.Failed };
+        default:
+          return { state: PaymentState.Failed };
+      }
+    } catch (e) {
+      throw errors.PAYMENT_NOT_FOUND;
     }
   }
 
