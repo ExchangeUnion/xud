@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"log"
 	"os"
 	"strings"
@@ -46,31 +47,36 @@ func TestIntegration(t *testing.T) {
 		teardown()
 	}()
 
-	ht := newHarnessTest(context.Background(), t)
+	assert := require.New(t)
+
 	log.Printf("Running %v integration tests", len(integrationTestCases))
 
 	// Open channels from both directions on each chain.
-	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
-	ht.assert.NoError(err)
-	aliceBobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
-	ht.assert.NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	bobCarolBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Carol.LndBtcNode)
-	ht.assert.NoError(err)
-	bobCarolLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Carol.LndLtcNode)
-	ht.assert.NoError(err)
+	aliceBobBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+	assert.NoError(err)
+	aliceBobLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+	assert.NoError(err)
 
-	carolDavidBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, xudNetwork.Dave.LndBtcNode)
-	ht.assert.NoError(err)
-	carolDavidLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, xudNetwork.Dave.LndLtcNode)
-	ht.assert.NoError(err)
+	bobCarolBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Carol.LndBtcNode)
+	assert.NoError(err)
+	bobCarolLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Carol.LndLtcNode)
+	assert.NoError(err)
+
+	carolDavidBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, xudNetwork.Dave.LndBtcNode)
+	assert.NoError(err)
+	carolDavidLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, xudNetwork.Dave.LndLtcNode)
+	assert.NoError(err)
 
 	initialStates := make(map[int]*xudrpc.GetInfoResponse)
 	for i, testCase := range integrationTestCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Timeout))
-			defer cancel()
-			ht := newHarnessTest(ctx, t1)
+			ht := newHarnessTest(ctx, cancel, t1)
+			defer ht.teardown()
+
 			ht.RunTestCase(testCase, xudNetwork)
 		})
 
@@ -80,27 +86,30 @@ func TestIntegration(t *testing.T) {
 			break
 		}
 
+		ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
 		// Save the nodes initial state after the initialization test.
 		// On all consecutive tests, verify that it hasn't changed,
 		// so that tests won't be affected by preceding ones.
 		if i == 0 {
 			for num, node := range xudNetwork.ActiveNodes {
-				res, err := node.Client.GetInfo(ht.ctx, &xudrpc.GetInfoRequest{})
-				ht.assert.NoError(err)
+				res, err := node.Client.GetInfo(ctx, &xudrpc.GetInfoRequest{})
+				assert.NoError(err)
 				initialStates[num] = res
 			}
 		} else {
 			for num, node := range xudNetwork.ActiveNodes {
-				res, err := node.Client.GetInfo(ht.ctx, &xudrpc.GetInfoRequest{})
-				ht.assert.NoError(err)
+				res, err := node.Client.GetInfo(ctx, &xudrpc.GetInfoRequest{})
+				assert.NoError(err)
 				initialState, ok := initialStates[num]
-				ht.assert.True(ok)
+				assert.True(ok)
 
 				msg := fmt.Sprintf("test should not leave a node (%v) in altered state", node.Name)
-				ht.assert.Equal(initialState.Version, res.Version, msg)
-				ht.assert.Equal(initialState.NodePubKey, res.NodePubKey, msg)
+				assert.Equal(initialState.Version, res.Version, msg)
+				assert.Equal(initialState.NodePubKey, res.NodePubKey, msg)
 				//		ht.assert.Equal(initialState.NumPeers, res.NumPeers, msg)
-				ht.assert.Equal(initialState.NumPairs, res.NumPairs, msg)
+				assert.Equal(initialState.NumPairs, res.NumPairs, msg)
 
 				// TODO: check why the following assertion fails after 'order_matching_and_swap' test.
 				// ht.assert.Equal(initialState.Orders, res.Orders, msg)
@@ -109,37 +118,45 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Close all channels, mostly in order to verify there are no pending HTLCs (which would require force-close).
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobCarolBtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobCarolLtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, carolDavidBtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, carolDavidLtcChanPoint, false)
-	ht.assert.NoError(err)
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
+	assert.NoError(err)
+	err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
+	assert.NoError(err)
+	err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobCarolBtcChanPoint, false)
+	assert.NoError(err)
+	err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobCarolLtcChanPoint, false)
+	assert.NoError(err)
+	err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Carol.LndBtcNode, carolDavidBtcChanPoint, false)
+	assert.NoError(err)
+	err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Carol.LndLtcNode, carolDavidLtcChanPoint, false)
+	assert.NoError(err)
 }
 
 func TestInstability(t *testing.T) {
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
-	ht := newHarnessTest(context.Background(), t)
+
+	assert := require.New(t)
+
 	log.Printf("Running %v instability tests", len(instabilityTestCases))
 
 	// Open channels from both directions on each chain.
-	aliceBobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
-	ht.assert.NoError(err)
-	aliceBobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
-	ht.assert.NoError(err)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	aliceBobBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+	assert.NoError(err)
+	aliceBobLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+	assert.NoError(err)
 
 	for _, testCase := range instabilityTestCases {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-			defer cancel()
-			ht := newHarnessTest(ctx, t1)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+			ht := newHarnessTest(ctx, cancel, t1)
+			defer ht.teardown()
+
 			ht.RunTestCase(testCase, xudNetwork)
 		})
 
@@ -149,42 +166,48 @@ func TestInstability(t *testing.T) {
 	}
 
 	// Close all channels before next iteration.
-	err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
-	ht.assert.NoError(err)
-	err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
-	ht.assert.NoError(err)
+	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBobBtcChanPoint, false)
+	assert.NoError(err)
+	err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceBobLtcChanPoint, false)
+	assert.NoError(err)
 }
 
 func TestSecurity(t *testing.T) {
 	xudNetwork, teardown := launchNetwork(true)
 	defer teardown()
 
-	ht := newHarnessTest(context.Background(), t)
+	assert := require.New(t)
+
 	log.Printf("Running %v security tests", len(securityTestCases))
 
 	// For each test: open channels, save the balance, execute the test,
 	// compare the balance and close the channels cooperatively.
 	for _, testCase := range securityTestCases {
 		// Open channels from both directions on each chain.
-		aliceBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
-		ht.assert.NoError(err)
-		aliceLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
-		ht.assert.NoError(err)
-		bobBtcChanPoint, err := openBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
-		ht.assert.NoError(err)
-		bobLtcChanPoint, err := openLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
-		ht.assert.NoError(err)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		aliceBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, xudNetwork.Bob.LndBtcNode)
+		assert.NoError(err)
+		aliceLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, xudNetwork.Bob.LndLtcNode)
+		assert.NoError(err)
+		bobBtcChanPoint, err := openBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, xudNetwork.Alice.LndBtcNode)
+		assert.NoError(err)
+		bobLtcChanPoint, err := openLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, xudNetwork.Alice.LndLtcNode)
+		assert.NoError(err)
 
 		// Save the initial balance.
-		alicePrevBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
-		ht.assert.NoError(err)
-		bobPrevBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
-		ht.assert.NoError(err)
+		alicePrevBalance, err := getBalance(ctx, xudNetwork.Alice)
+		assert.NoError(err)
+		bobPrevBalance, err := getBalance(ctx, xudNetwork.Bob)
+		assert.NoError(err)
 
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-			defer cancel()
-			ht := newHarnessTest(ctx, t1)
+			ht := newHarnessTest(ctx, cancel, t1)
+			defer ht.teardown()
+
 			ht.RunTestCase(testCase, xudNetwork)
 		})
 
@@ -192,26 +215,29 @@ func TestSecurity(t *testing.T) {
 			break
 		}
 
+		ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
 		if !testCase.balanceMayChange {
 			// Verify that balance remain unchanged.
-			aliceBalance, err := getBalance(ht.ctx, xudNetwork.Alice)
-			ht.assert.NoError(err)
-			ht.assert.Equal(alicePrevBalance, aliceBalance, "alice balance mismatch")
+			aliceBalance, err := getBalance(ctx, xudNetwork.Alice)
+			assert.NoError(err)
+			assert.Equal(alicePrevBalance, aliceBalance, "alice balance mismatch")
 
-			bobBalance, err := getBalance(ht.ctx, xudNetwork.Bob)
-			ht.assert.NoError(err)
-			ht.assert.Equal(bobPrevBalance, bobBalance, "bob balance mismatch")
+			bobBalance, err := getBalance(ctx, xudNetwork.Bob)
+			assert.NoError(err)
+			assert.Equal(bobPrevBalance, bobBalance, "bob balance mismatch")
 		}
 
 		// Close all channels before next iteration.
-		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeBtcChannel(ht.ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
-		ht.assert.NoError(err)
-		err = closeLtcChannel(ht.ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
-		ht.assert.NoError(err)
+		err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Alice.LndBtcNode, aliceBtcChanPoint, false)
+		assert.NoError(err)
+		err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Alice.LndLtcNode, aliceLtcChanPoint, false)
+		assert.NoError(err)
+		err = closeBtcChannel(ctx, xudNetwork.LndBtcNetwork, xudNetwork.Bob.LndBtcNode, bobBtcChanPoint, false)
+		assert.NoError(err)
+		err = closeLtcChannel(ctx, xudNetwork.LndLtcNetwork, xudNetwork.Bob.LndLtcNode, bobLtcChanPoint, false)
+		assert.NoError(err)
 	}
 }
 
@@ -224,8 +250,9 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 	for _, testCase := range unsettledChannelsSecurityTests {
 		success := t.Run(testCase.name, func(t1 *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(20*time.Minute))
-			defer cancel()
-			ht := newHarnessTest(ctx, t1)
+			ht := newHarnessTest(ctx, cancel, t1)
+			defer ht.teardown()
+
 			ht.RunTestCase(testCase, xudNetwork)
 		})
 
@@ -376,9 +403,6 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 	if err := xudHarness.Start(); err != nil {
 		log.Fatalf("cannot start xud network: %v", err)
 	}
-
-	// Wait a bit to avoid calls to xud nodes while still initializing.
-	time.Sleep(3 * time.Second)
 
 	teardown := func() {
 		if err := lndBtcNetworkHarness.TearDownAll(); err != nil {
