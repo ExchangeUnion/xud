@@ -25,7 +25,7 @@
     "nodemon:watch": "nodemon --watch dist -e js dist/Xud.js",
     "nodemon:watch:inspect": "nodemon --inspect-brk --watch dist -e js dist/Xud.js",
     "prepublishOnly": "cross-os clean && npm run compile",
-    "proto": "cross-os proto && cross-os swagger && cross-os protodocs && cross-os protoFixDeprecation",
+    "proto": "cross-os proto && cross-os swagger && cross-os protodocs && cross-os prototest && cross-os protoFixDeprecation",
     "slate": "proto2slate proto/xudrpc.proto",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
@@ -83,6 +83,11 @@
       "linux": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
       "darwin": "./node_modules/grpc-tools/bin/protoc --doc_out='docs' --doc_opt=markdown,api.md -I='proto' proto/xudrpc.proto",
       "win32": "node_modules\\grpc-tools\\bin\\protoc --doc_out=\"docs\" --doc_opt=markdown,api.md -I=\"proto\" proto\\xudrpc.proto"
+    },
+    "prototest": {
+      "linux": "./node_modules/grpc-tools/bin/protoc --go_out='plugins=grpc:test/simulation/xudrpc' -I='proto' proto/xudrpc.proto",
+      "darwin": "./node_modules/grpc-tools/bin/protoc --go_out='plugins=grpc:test/simulation/xudrpc' -I='proto' proto/xudrpc.proto",
+      "win32": "node_modules\\grpc-tools\\bin\\protoc --go_out=\"plugins=grpc:test\\simulation\\xudrpc\" -I=\"proto\" proto\\xudrpc.proto"
     },
     "stop": {
       "linux": "./bin/xucli shutdown",
