@@ -37,18 +37,20 @@ type harnessTest struct {
 	act *actions
 
 	// ctx is the context for the test scenario.
-	ctx context.Context
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // newHarnessTest creates a new instance of a harnessTest from a regular
 // testing.T instance.
-func newHarnessTest(ctx context.Context, t *testing.T) *harnessTest {
+func newHarnessTest(ctx context.Context, cancel context.CancelFunc, t *testing.T) *harnessTest {
 	assert := require.New(t)
 	return &harnessTest{
 		t:        t,
 		testCase: nil,
 		assert:   assert,
 		ctx:      ctx,
+		cancel:   cancel,
 
 		// actions instance to contain assert and ctx,
 		// to avoid passing them on every method call.
@@ -93,4 +95,16 @@ func (h *harnessTest) RunTestCase(testCase *testCase, net *xudtest.NetworkHarnes
 	testCase.test(net, h)
 
 	return
+}
+
+func (h *harnessTest) SetCtx(ctx context.Context, cancel context.CancelFunc) {
+	h.cancel()
+
+	h.ctx = ctx
+	h.cancel = cancel
+	h.act = &actions{assert: h.assert, ctx: ctx}
+}
+
+func (h *harnessTest) teardown() {
+	h.cancel()
 }
