@@ -479,7 +479,7 @@ class ConnextClient extends SwapClient {
         method,
         hostname: this.host,
         port: this.port,
-        path: `/api/v1/${endpoint}`,
+        path: `${endpoint}`,
       };
 
       let payloadStr: string | undefined;
