@@ -76,7 +76,7 @@ seedutil/seedutil
 
 # temp simulation test directory
 test/simulation/temp
-test/docker-xud/xud
+test/simulation/docker-xud/xud
 
 # Version file generated in build process
 lib/Version.ts
