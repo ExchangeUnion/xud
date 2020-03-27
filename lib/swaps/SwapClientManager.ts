@@ -103,6 +103,7 @@ class SwapClientManager extends EventEmitter {
         config: this.config.connext,
         logger: this.loggers.connext,
       });
+      initPromises.push(this.connextClient.init());
     }
 
     // bind event listeners before all swap clients have initialized
