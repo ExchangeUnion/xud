@@ -128,7 +128,7 @@ class ConnextClient extends SwapClient {
    */
   private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
     currencyInstances.forEach((currency) => {
-      if (currency.tokenAddress) {
+      if (currency.tokenAddress && currency.swapClient === SwapClientType.Connext) {
         this.tokenAddresses.set(currency.id, currency.tokenAddress);
       }
     });
