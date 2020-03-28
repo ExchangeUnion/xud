@@ -62,6 +62,7 @@ class ConnextClient extends SwapClient {
   private port: number;
   private host: string;
   private unitConverter: UnitConverter;
+  private seed: string | undefined;
 
   /**
    * Creates a connext client.
@@ -97,10 +98,17 @@ class ConnextClient extends SwapClient {
    * Checks for connectivity and gets our Connext account address
    */
   public initSpecific = async () => {
+    if (!this.seed) {
+      throw new Error('Cannot initialize ConnextClient without seed');
+    }
     await this.initConnextClient();
     this.setStatus(ClientStatus.Initialized);
     this.emit('initialized');
     await this.verifyConnectionWithTimeout();
+  }
+
+  public setSeed = (seed: string) => {
+    this.seed = seed;
   }
 
   /**

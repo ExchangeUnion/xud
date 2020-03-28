@@ -103,7 +103,9 @@ class SwapClientManager extends EventEmitter {
         config: this.config.connext,
         logger: this.loggers.connext,
       });
-      initPromises.push(this.connextClient.init());
+      // TODO(karl): cannot initialize ConnextClient here because
+      // we need the childSeed.
+      // initPromises.push(this.connextClient.init());
     }
 
     // bind event listeners before all swap clients have initialized
@@ -131,6 +133,19 @@ class SwapClientManager extends EventEmitter {
           this.swapClients.set(currency, this.raidenClient);
         }
       }
+    }
+  }
+
+  // TODO(erkarl): temporary function/workaround for proof of concept Connext swap
+  // because we need the childSeed from NodeKey, but in case of noencrypt
+  // it is created after SwapClientManager.init.
+  public initConnext = async (seed: string) => {
+    if (!this.connextClient) {
+      throw new Error('ConnextClient not found.');
+    }
+    if (!this.config.connext.disable) {
+      await this.connextClient.setSeed(seed);
+      await this.connextClient.init();
     }
   }
 

@@ -17,6 +17,7 @@ import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
 import { AssertionError } from 'assert';
+import { SwapClientType } from './constants/enums';
 
 const version: string = require('../package.json').version;
 
@@ -152,6 +153,12 @@ class Xud extends EventEmitter {
       }
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
+
+      // TODO: temporary code. We're initializing ConnextClient later
+      // because NodeKey is required.
+      await this.swapClientManager.initConnext(
+        nodeKey.childSeed(SwapClientType.Connext),
+      );
 
       this.pool = new Pool({
         nodeKey,
