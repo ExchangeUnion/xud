@@ -98,13 +98,12 @@ class ConnextClient extends SwapClient {
    * Checks for connectivity and gets our Connext account address
    */
   public initSpecific = async () => {
+    this.logger.error('initSpecific ConnextClient');
     if (!this.seed) {
       throw new Error('Cannot initialize ConnextClient without seed');
     }
+    await this.initWallet(this.seed);
     await this.initConnextClient();
-    this.setStatus(ClientStatus.Initialized);
-    this.emit('initialized');
-    await this.verifyConnectionWithTimeout();
   }
 
   public setSeed = (seed: string) => {
@@ -114,8 +113,8 @@ class ConnextClient extends SwapClient {
   /**
    * Initiates wallet for the Connext client
    */
-  public initWallet = async (seedMnemonic: string[]) => {
-    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic.join(' ') });
+  public initWallet = async (seedMnemonic: string) => {
+    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic });
     return parseResponseBody<ConnextInitWalletResponse>(res);
   }
 
