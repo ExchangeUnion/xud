@@ -98,7 +98,6 @@ class ConnextClient extends SwapClient {
    * Checks for connectivity and gets our Connext account address
    */
   public initSpecific = async () => {
-    this.logger.error('initSpecific ConnextClient');
     if (!this.seed) {
       throw new Error('Cannot initialize ConnextClient without seed');
     }
