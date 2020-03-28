@@ -231,11 +231,6 @@ class SwapClientManager extends EventEmitter {
       initWalletPromises.push(keystorePromise);
     }
 
-    if (this.connextClient) {
-      const initWalletPromise = this.connextClient.initWallet(seedMnemonic);
-      initWalletPromises.push(initWalletPromise);
-    }
-
     await Promise.all(initWalletPromises);
 
     return {
