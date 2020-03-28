@@ -20,6 +20,10 @@ export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClie
   return (swapClient.type === SwapClientType.Raiden);
 }
 
+export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
+  return (swapClient.type === SwapClientType.Connext);
+}
+
 export function isLndClient(swapClient: SwapClient): swapClient is LndClient {
   return (swapClient.type === SwapClientType.Lnd);
 }
@@ -131,6 +135,17 @@ class SwapClientManager extends EventEmitter {
         // associate swap clients with currencies managed by raiden client
         for (const currency of this.raidenClient.tokenAddresses.keys()) {
           this.swapClients.set(currency, this.raidenClient);
+        }
+      }
+    }
+
+    if (this.connextClient) {
+      if (this.connextClient.isMisconfigured()) {
+        this.misconfiguredClients.add(this.connextClient);
+      } else if (!this.connextClient.isDisabled()) {
+        // associate swap clients with currencies managed by connext client
+        for (const currency of this.connextClient.tokenAddresses.keys()) {
+          this.swapClients.set(currency, this.connextClient);
         }
       }
     }
@@ -395,10 +410,14 @@ class SwapClientManager extends EventEmitter {
    */
   public close = (): void => {
     let raidenClosed = false;
+    let connextClosed = false;
     for (const swapClient of this.swapClients.values()) {
       swapClient.close();
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
+      }
+      if (isConnextClient(swapClient)) {
+        connextClosed = true;
       }
     }
     for (const swapClient of this.misconfiguredClients) {
@@ -406,11 +425,21 @@ class SwapClientManager extends EventEmitter {
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
+      if (isConnextClient(swapClient)) {
+        connextClosed = true;
+      }
     }
+
     // we make sure to close raiden client because it
     // might not be associated with any currency
     if (this.raidenClient && !this.raidenClient.isDisabled() && !raidenClosed) {
       this.raidenClient.close();
+    }
+
+    // we make sure to close connext client because it
+    // might not be associated with any currency
+    if (this.connextClient && !this.connextClient.isDisabled() && !connextClosed) {
+      this.connextClient.close();
     }
   }
 
