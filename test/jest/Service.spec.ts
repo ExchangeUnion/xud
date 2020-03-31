@@ -22,7 +22,7 @@ const mockedPeer = <jest.Mock<Peer>><any>Peer;
 
 const getArgs = () => {
   return {
-    nodePubKey: '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a',
+    nodeIdentifier: '02f8895eb03c37b2665415be4d83b20228acc0abc55ebf6728565141c66cfc164a',
     amount: 16000000,
     currency: 'BTC',
   };
@@ -56,7 +56,7 @@ describe('Service', () => {
       const args = getArgs();
       await service.openChannel(args);
       expect(components.pool.getPeer)
-        .toHaveBeenCalledWith(args.nodePubKey);
+        .toHaveBeenCalledWith(args.nodeIdentifier);
       expect(components.swapClientManager.openChannel)
         .toHaveBeenCalledWith({
           peer,

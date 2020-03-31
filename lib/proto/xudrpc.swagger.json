@@ -278,8 +278,8 @@
         },
         "parameters": [
           {
-            "name": "node_pub_key",
-            "description": "The node pub key of the node for which to get information.",
+            "name": "node_identifier",
+            "description": "The node pub key or alias of the node for which to get information.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -759,9 +759,9 @@
     "xudrpcBanRequest": {
       "type": "object",
       "properties": {
-        "node_pub_key": {
+        "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the node to ban."
+          "description": "The node pub key or alias of the node to ban."
         }
       }
     },
@@ -867,9 +867,9 @@
     "xudrpcDiscoverNodesRequest": {
       "type": "object",
       "properties": {
-        "peer_pub_key": {
+        "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the peer to discover nodes from."
+          "description": "The node pub key or alias of the peer to discover nodes from."
         }
       }
     },
@@ -1267,6 +1267,10 @@
         "raiden_address": {
           "type": "string",
           "title": "The raiden address for this peer"
+        },
+        "alias": {
+          "type": "string",
+          "title": "The alias for this peer's public key"
         }
       }
     },
@@ -1591,9 +1595,9 @@
     "xudrpcUnbanRequest": {
       "type": "object",
       "properties": {
-        "node_pub_key": {
+        "node_identifier": {
           "type": "string",
-          "description": "The node pub key of the peer to unban."
+          "description": "The node pub key or alias of the peer to unban."
         },
         "reconnect": {
           "type": "boolean",

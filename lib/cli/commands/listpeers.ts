@@ -51,7 +51,7 @@ const formatPeers = (peers: ListPeersResponse.AsObject) => {
 @${peer.address}` ;
 
     const details = [
-      `Alias:
+      `Alias: ${peer.alias}
 
 Address ([node_key]@[host]:[port]):
 ${address}`,

@@ -10,6 +10,7 @@ import NodeKey from '../nodekey/NodeKey';
 import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { getExternalIp } from '../utils/utils';
+import { getAlias } from '../utils/aliasUtils';
 import errors, { errorCodes } from './errors';
 import Network from './Network';
 import NodeList, { reputationEventWeight } from './NodeList';
@@ -392,7 +393,7 @@ class Pool extends EventEmitter {
         banned,
       };
     } else {
-      this.logger.warn(`node ${nodePubKey} not found`);
+      this.logger.warn(`node ${nodePubKey} (${getAlias(nodePubKey)}) not found`);
       throw errors.NODE_UNKNOWN(nodePubKey);
     }
   }
@@ -545,7 +546,7 @@ class Pool extends EventEmitter {
     this.peers.set(peerPubKey, peer);
     peer.active = true;
     this.emit('peer.active', peerPubKey);
-    this.logger.verbose(`opened connection to ${peerPubKey} at ${addressUtils.toString(peer.address)}`);
+    this.logger.verbose(`opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`);
 
     // begin the process to handle a just opened peer, but return from this method immediately
     this.handleOpenedPeer(peer).catch(this.logger.error);
@@ -592,7 +593,7 @@ class Pool extends EventEmitter {
     const peer = this.peers.get(nodePubKey);
     if (peer) {
       await peer.close(reason, reasonPayload);
-      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)}`);
+      this.logger.info(`Disconnected from ${peer.nodePubKey}@${addressUtils.toString(peer.address)} (${peer.alias})`);
     } else {
       throw(errors.NOT_CONNECTED(nodePubKey));
     }
@@ -603,7 +604,6 @@ class Pool extends EventEmitter {
       throw errors.NODE_ALREADY_BANNED(nodePubKey);
     } else {
       const banned = await this.nodes.ban(nodePubKey);
-
       if (!banned) {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
@@ -625,7 +625,7 @@ class Pool extends EventEmitter {
           lastAddress: node.lastAddress,
         };
 
-        this.logger.info(`node ${nodePubKey} was unbanned`);
+        this.logger.info(`node ${nodePubKey} (${getAlias(nodePubKey)}) was unbanned`);
         if (reconnect) {
           await this.tryConnectNode(Node, false);
         }
@@ -640,7 +640,6 @@ class Pool extends EventEmitter {
     if (!peer) {
       throw errors.NOT_CONNECTED(peerPubKey);
     }
-
     return peer.discoverNodes();
   }
 
@@ -658,13 +657,13 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Gets a peer by its node pub key. Throws a [[NOT_CONNECTED]] error if the pub key does not
+   * Gets a peer by its node pub key or alias. Throws a [[NOT_CONNECTED]] error if the supplied identifier does not
    * match any currently connected peer.
    */
-  public getPeer = (nodePubKey: string) => {
-    const peer = this.peers.get(nodePubKey);
+  public getPeer = (peerPubKey: string) => {
+    const peer = this.peers.get(peerPubKey);
     if (!peer) {
-      throw errors.NOT_CONNECTED(nodePubKey);
+      throw errors.NOT_CONNECTED(peerPubKey);
     }
     return peer;
   }
@@ -721,7 +720,7 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.Order: {
         const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
-        this.logger.verbose(`received order from ${peer.nodePubKey}: ${JSON.stringify(receivedOrder)}`);
+        this.logger.verbose(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
 
         if (peer.isPairActive(incomingOrder.pairId)) {
@@ -733,7 +732,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.OrderInvalidation: {
         const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`received order invalidation from ${peer.nodePubKey}: ${JSON.stringify(orderPortion)}`);
+        this.logger.verbose(`received order invalidation from ${peer.label}: ${JSON.stringify(orderPortion)}`);
         this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
         break;
       }
@@ -745,7 +744,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.Orders: {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
-        this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.nodePubKey}`);
+        this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.label}`);
         receivedOrders.forEach((order) => {
           if (peer.isPairActive(order.pairId)) {
             this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
@@ -767,32 +766,32 @@ class Pool extends EventEmitter {
             newNodesCount += 1;
           }
         });
-        this.logger.verbose(`received ${nodes.length} nodes (${newNodesCount} new) from ${peer.nodePubKey}`);
+        this.logger.verbose(`received ${nodes.length} nodes (${newNodesCount} new) from ${peer.label}`);
         await this.connectNodes(nodes);
         break;
       }
       case PacketType.SanitySwap: {
-        this.logger.debug(`received sanitySwap from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.logger.debug(`received sanitySwap from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.sanitySwapInit', packet, peer);
         break;
       }
       case PacketType.SwapRequest: {
-        this.logger.debug(`received swapRequest from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.logger.debug(`received swapRequest from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapRequest', packet, peer);
         break;
       }
       case PacketType.SwapAccepted: {
-        this.logger.debug(`received swapAccepted from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.logger.debug(`received swapAccepted from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapAccepted', packet, peer);
         break;
       }
       case PacketType.SwapComplete: {
-        this.logger.debug(`received swapComplete from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.logger.debug(`received swapComplete from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapComplete', packet);
         break;
       }
       case PacketType.SwapFailed: {
-        this.logger.debug(`received swapFailed from ${peer.nodePubKey}: ${JSON.stringify(packet.body)}`);
+        this.logger.debug(`received swapFailed from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapFailed', packet);
         break;
       }
@@ -922,7 +921,7 @@ class Pool extends EventEmitter {
     const addresses = peer.addresses || [];
 
     if (!peer.inbound && peer.nodePubKey && shouldReconnect && (addresses.length || peer.address)) {
-      this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.nodePubKey}`);
+      this.logger.debug(`attempting to reconnect to a disconnected peer ${peer.label}`);
       const node = { addresses, lastAddress: peer.address, nodePubKey: peer.nodePubKey };
       await this.tryConnectNode(node, true);
     }
@@ -988,6 +987,51 @@ class Pool extends EventEmitter {
         resolve();
       }
     });
+  }
+
+  /**
+   * Resolves alias to a connected node's public key
+   */
+  public resolveAlias = (alias: string) => {
+    if (alias === '') {
+      throw errors.UNKNOWN_ALIAS;
+    }
+    let pubkeys: string[] = [];
+    this.peers.forEach((peer) => {
+      if (peer.alias) {
+        if (peer.alias.toLowerCase() === alias.toLowerCase()) {
+          pubkeys.push(peer.nodePubKey!);
+        }
+      }
+    });
+    pubkeys = pubkeys.concat(this.nodes.getBannedPubKeys(alias));
+    if (pubkeys.length === 1) {
+      return pubkeys[0];
+    } else if (pubkeys.length === 0) {
+      throw errors.UNKNOWN_ALIAS(alias);
+    } else {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+  }
+
+  /**
+   * Resolves alias of a possibly non-connected node
+   */
+  public getNodeByAlias = async (alias: string) => {
+    const nlist = await this.repository.getNodes();
+    const pubkeys: string[] = [];
+    for (const entry of nlist) {
+      if (getAlias(entry.nodePubKey).toLowerCase() === alias.toLowerCase()) {
+        pubkeys.push(entry.nodePubKey);
+      }
+    }
+    if (pubkeys.length === 1) {
+      return pubkeys[0];
+    } else if (pubkeys.length === 0) {
+      throw errors.UNKNOWN_ALIAS(alias);
+    } else {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
   }
 }
 

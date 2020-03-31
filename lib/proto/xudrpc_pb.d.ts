@@ -107,8 +107,8 @@ export namespace Balance {
 }
 
 export class BanRequest extends jspb.Message { 
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -123,7 +123,7 @@ export class BanRequest extends jspb.Message {
 
 export namespace BanRequest {
     export type AsObject = {
-        nodePubKey: string,
+        nodeIdentifier: string,
     }
 }
 
@@ -334,8 +334,8 @@ export namespace Currency {
 }
 
 export class DiscoverNodesRequest extends jspb.Message { 
-    getPeerPubKey(): string;
-    setPeerPubKey(value: string): void;
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -350,7 +350,7 @@ export class DiscoverNodesRequest extends jspb.Message {
 
 export namespace DiscoverNodesRequest {
     export type AsObject = {
-        peerPubKey: string,
+        nodeIdentifier: string,
     }
 }
 
@@ -543,8 +543,8 @@ export namespace GetInfoResponse {
 }
 
 export class GetNodeInfoRequest extends jspb.Message { 
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -559,7 +559,7 @@ export class GetNodeInfoRequest extends jspb.Message {
 
 export namespace GetNodeInfoRequest {
     export type AsObject = {
-        nodePubKey: string,
+        nodeIdentifier: string,
     }
 }
 
@@ -864,8 +864,8 @@ export namespace LndInfo {
 }
 
 export class OpenChannelRequest extends jspb.Message { 
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
 
     getCurrency(): string;
     setCurrency(value: string): void;
@@ -886,7 +886,7 @@ export class OpenChannelRequest extends jspb.Message {
 
 export namespace OpenChannelRequest {
     export type AsObject = {
-        nodePubKey: string,
+        nodeIdentifier: string,
         currency: string,
         amount: number,
     }
@@ -1146,6 +1146,9 @@ export class Peer extends jspb.Message {
     getRaidenAddress(): string;
     setRaidenAddress(value: string): void;
 
+    getAlias(): string;
+    setAlias(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Peer.AsObject;
@@ -1168,6 +1171,7 @@ export namespace Peer {
         xudVersion: string,
         secondsConnected: number,
         raidenAddress: string,
+        alias: string,
     }
 }
 
@@ -1858,8 +1862,8 @@ export namespace TradingLimitsResponse {
 }
 
 export class UnbanRequest extends jspb.Message { 
-    getNodePubKey(): string;
-    setNodePubKey(value: string): void;
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
 
     getReconnect(): boolean;
     setReconnect(value: boolean): void;
@@ -1877,7 +1881,7 @@ export class UnbanRequest extends jspb.Message {
 
 export namespace UnbanRequest {
     export type AsObject = {
-        nodePubKey: string,
+        nodeIdentifier: string,
         reconnect: boolean,
     }
 }

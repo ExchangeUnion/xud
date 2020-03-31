@@ -12,6 +12,7 @@ import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
+import { getAlias, isAlias } from '../utils/aliasUtils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -50,8 +51,8 @@ const argChecks = {
   HAS_NODE_PUB_KEY: ({ nodePubKey }: { nodePubKey: string }) => {
     if (nodePubKey === '') throw errors.INVALID_ARGUMENT('nodePubKey must be specified');
   },
-  HAS_PEER_PUB_KEY: ({ peerPubKey }: { peerPubKey: string }) => {
-    if (peerPubKey === '') throw errors.INVALID_ARGUMENT('peerPubKey must be specified');
+  HAS_NODE_IDENTIFIER: ({ nodeIdentifier }: { nodeIdentifier: string }) => {
+    if (nodeIdentifier === '') throw errors.INVALID_ARGUMENT('peerPubKey or alias must be specified');
   },
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
@@ -239,13 +240,14 @@ class Service {
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (
-    args: { nodePubKey: string, amount: number, currency: string },
+    args: { nodeIdentifier: string, amount: number, currency: string },
   ) => {
-    const { nodePubKey, amount, currency } = args;
-    argChecks.HAS_NODE_PUB_KEY({ nodePubKey });
+    const { nodeIdentifier, amount, currency } = args;
+    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     try {
+      const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
       const peer = this.pool.getPeer(nodePubKey);
       await this.swapClientManager.openChannel({
         peer,
@@ -254,24 +256,26 @@ class Service {
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
-      throw errors.OPEN_CHANNEL_FAILURE(currency, nodePubKey, amount, errorMessage);
+      throw errors.OPEN_CHANNEL_FAILURE(currency, nodeIdentifier, amount, errorMessage);
     }
   }
 
   /*
    * Ban a XU node manually and disconnect from it.
    */
-  public ban = async (args: { nodePubKey: string }) => {
-    argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.banNode(args.nodePubKey);
+  public ban = async (args: { nodeIdentifier: string }) => {
+    argChecks.HAS_NODE_IDENTIFIER(args);
+    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    await this.pool.banNode(nodePubKey);
   }
 
   /*
    * Remove ban from XU node manually and connenct to it.
    */
-  public unban = async (args: { nodePubKey: string, reconnect: boolean }) => {
-    argChecks.HAS_NODE_PUB_KEY(args);
-    await this.pool.unbanNode(args.nodePubKey, args.reconnect);
+  public unban = async (args: { nodeIdentifier: string, reconnect: boolean }) => {
+    argChecks.HAS_NODE_IDENTIFIER(args);
+    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    return this.pool.unbanNode(nodePubKey, args.reconnect);
   }
 
   public executeSwap = async (args: { orderId: string, pairId: string, peerPubKey: string, quantity: number }) => {
@@ -299,9 +303,10 @@ class Service {
   /**
    * Gets information about a specified node.
    */
-  public getNodeInfo = async (args: { nodePubKey: string }) => {
-    argChecks.HAS_NODE_PUB_KEY(args);
-    const info = await this.pool.getNodeReputation(args.nodePubKey);
+  public getNodeInfo = async (args: { nodeIdentifier: string }) => {
+    argChecks.HAS_NODE_IDENTIFIER(args);
+    const nodePubKey = isAlias(args.nodeIdentifier) ? await this.pool.getNodeByAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const info = await this.pool.getNodeReputation(nodePubKey);
     return info;
   }
 
@@ -346,7 +351,7 @@ class Service {
       uris,
       numPairs,
       network,
-      alias: '',
+      alias: getAlias(nodePubKey),
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {
@@ -494,11 +499,10 @@ class Service {
   }
 
   /** Discover nodes from a specific peer and apply new connections */
-  public discoverNodes = async (args: { peerPubKey: string }) => {
-    argChecks.HAS_PEER_PUB_KEY(args);
-    const { peerPubKey } = args;
-
-    return this.pool.discoverNodes(peerPubKey);
+  public discoverNodes = async (args: { nodeIdentifier: string }) => {
+    argChecks.HAS_NODE_IDENTIFIER(args);
+    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    return this.pool.discoverNodes(nodePubKey);
   }
 
   /*

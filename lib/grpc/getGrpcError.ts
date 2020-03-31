@@ -25,6 +25,7 @@ const getGrpcError = (err: any) => {
       break;
     case orderErrorCodes.PAIR_DOES_NOT_EXIST:
     case p2pErrorCodes.NODE_UNKNOWN:
+    case p2pErrorCodes.UNKNOWN_ALIAS:
     case orderErrorCodes.LOCAL_ID_DOES_NOT_EXIST:
     case orderErrorCodes.ORDER_NOT_FOUND:
       code = status.NOT_FOUND;
