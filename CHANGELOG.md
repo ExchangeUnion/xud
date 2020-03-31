@@ -1,3 +1,22 @@
+# [1.0.0-beta.2](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2020-03-31)
+
+
+### Bug Fixes
+
+* **lnd:** don't check for manual unlock ([565b623](https://github.com/ExchangeUnion/xud/commit/565b6231aa8aa92903dd5474ceb61315eeb1ea40))
+* **lnd:** exponential backoff for grpc client wait ([a17f73b](https://github.com/ExchangeUnion/xud/commit/a17f73ba19b4ac823866737256325f9a3de501bf)), closes [#1415](https://github.com/ExchangeUnion/xud/issues/1415)
+* allow unlock with disconnected lnd ([659d70b](https://github.com/ExchangeUnion/xud/commit/659d70b9f7b527fbd639fc75cb15ef4c707a13f0))
+
+
+### Features
+
+* different gRPC & HTTP port depending on active network ([#1286](https://github.com/ExchangeUnion/xud/issues/1286)) ([347f814](https://github.com/ExchangeUnion/xud/commit/347f8148eb4a91086a5d11e852e04686fa5c6410))
+* **rpc/cli:** node aliases ([#1362](https://github.com/ExchangeUnion/xud/issues/1362)) ([73e5665](https://github.com/ExchangeUnion/xud/commit/73e5665f922708618ceded99a5d591c0af2996a3))
+* **swapclient:** add Locked status ([f7b35a1](https://github.com/ExchangeUnion/xud/commit/f7b35a16450f174504ead351bb380633bd21fd57)), closes [#1411](https://github.com/ExchangeUnion/xud/issues/1411)
+* derive child seed from node key ([899c301](https://github.com/ExchangeUnion/xud/commit/899c301ca399db1d217982943c681b7987fd2f3c))
+
+
+
 # [1.0.0-beta.1](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta...v1.0.0-beta.1) (2020-02-27)
 
 
