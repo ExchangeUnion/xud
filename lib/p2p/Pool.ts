@@ -990,7 +990,8 @@ class Pool extends EventEmitter {
   }
 
   /**
-   * Resolves alias to a connected node's public key
+   * Resolves an alias to a known node's public key. Throws an error if a unique
+   * pub key cannot be found for the provided alias.
    */
   public resolveAlias = (alias: string) => {
     if (alias === '') {
