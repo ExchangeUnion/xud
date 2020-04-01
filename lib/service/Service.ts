@@ -12,7 +12,7 @@ import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
-import { getAlias, isAlias } from '../utils/aliasUtils';
+import { getAlias, isNodePubKey } from '../utils/aliasUtils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -247,7 +247,7 @@ class Service {
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     try {
-      const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+      const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
       const peer = this.pool.getPeer(nodePubKey);
       await this.swapClientManager.openChannel({
         peer,
@@ -265,7 +265,7 @@ class Service {
    */
   public ban = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     await this.pool.banNode(nodePubKey);
   }
 
@@ -274,7 +274,7 @@ class Service {
    */
   public unban = async (args: { nodeIdentifier: string, reconnect: boolean }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.unbanNode(nodePubKey, args.reconnect);
   }
 
@@ -305,7 +305,7 @@ class Service {
    */
   public getNodeInfo = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isAlias(args.nodeIdentifier) ? await this.pool.getNodeByAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     const info = await this.pool.getNodeReputation(nodePubKey);
     return info;
   }
@@ -501,7 +501,7 @@ class Service {
   /** Discover nodes from a specific peer and apply new connections */
   public discoverNodes = async (args: { nodeIdentifier: string }) => {
     argChecks.HAS_NODE_IDENTIFIER(args);
-    const nodePubKey = isAlias(args.nodeIdentifier) ? this.pool.resolveAlias(args.nodeIdentifier) : args.nodeIdentifier;
+    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
     return this.pool.discoverNodes(nodePubKey);
   }
 

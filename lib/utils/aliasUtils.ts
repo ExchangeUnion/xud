@@ -20,10 +20,6 @@ export const getAlias = (pubkey: string): string => {
   throw errors.INVALID_ARGUMENT('Not a valid public key');
 };
 
-export const isAlias = (nodeIdentifier: string): boolean => {
-  if (nodeIdentifier.length !== 66) {
-    return true;
-  } else {
-    return false;
-  }
+export const isNodePubKey = (nodeIdentifier: string): boolean => {
+  return nodeIdentifier.length === 66 && /^[0-9a-fA-F]+$/.test(nodeIdentifier);
 };
