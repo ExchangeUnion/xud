@@ -9,7 +9,12 @@ import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
+import {
+  ResolveRequest,
+  SwapFailure,
+  SwapSuccess,
+  ProvidePreimageRequest,
+} from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
@@ -556,6 +561,14 @@ class Service {
     argChecks.HAS_RHASH(request);
     argChecks.POSITIVE_AMOUNT(request);
     return this.swaps.handleResolveRequest(request);
+  }
+
+  /**
+   * Provides preimage for a hash.
+   */
+  public providePreimage = async (request: ProvidePreimageRequest) => {
+    // TODO: argChecks
+    this.swapClientManager.connextClient?.emit('preimage', request);
   }
 }
 export default Service;

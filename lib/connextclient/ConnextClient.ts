@@ -10,8 +10,9 @@ import SwapClient, {
   PaymentState,
   WalletBalance,
   TradingLimits,
+  SwapClientInfo,
 } from '../swaps/SwapClient';
-import { SwapDeal } from '../swaps/types';
+import { SwapDeal, ProvidePreimageRequest } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -50,6 +51,14 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
   });
 }
 
+interface ConnextClient {
+  on(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
+  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  once(event: 'initialized', listener: () => void): this;
+  emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
+  emit(event: 'initialized'): boolean;
+  emit(event: 'preimage', preimageRequest: ProvidePreimageRequest): void;
+}
 /**
  * A class representing a client to interact with connext.
  */

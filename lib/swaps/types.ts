@@ -107,3 +107,8 @@ export type ResolveRequest = {
   expiration: number,
   chain_height: number,
 };
+
+export type ProvidePreimageRequest = {
+  rHash: string,
+  preimage: string,
+};
