@@ -249,6 +249,7 @@ class ConnextClient extends SwapClient {
         secret = await this.executeHashLockResolve(deal.rPreimage);
       } else {
         // we are the taker paying the maker
+        throw new Error('we are the taker paying the maker');
         amount = deal.makerUnits;
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
