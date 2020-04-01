@@ -225,6 +225,19 @@ class Pool extends EventEmitter {
   }
 
   /**
+   * Updates our connext public key and supported token addresses, then sends a node state update
+   * packet to currently connected peers to notify them of the change.
+   */
+  public updateConnextState = (tokenAddresses: Map<string, string>, pubKey?: string) => {
+    console.log('updateConnextState', pubKey);
+    this.nodeState.connextAddress = pubKey || '';
+    tokenAddresses.forEach((tokenAddress, currency) => {
+      this.nodeState.tokenIdentifiers[currency] = tokenAddress;
+    });
+    this.sendNodeStateUpdate();
+  }
+
+  /**
    * Updates our lnd pub key and chain identifier for a given currency and sends a node state
    * update packet to currently connected peers to notify them of the change.
    */

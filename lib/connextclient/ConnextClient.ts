@@ -111,7 +111,15 @@ class ConnextClient extends SwapClient {
       throw new Error('Cannot initialize ConnextClient without seed');
     }
     await this.initWallet(this.seed);
-    await this.initConnextClient();
+    const config = await this.initConnextClient();
+    const { userPublicIdentifier } = config;
+    await this.subscribePreimage();
+
+    // Temp hack, remove me before mergin
+    setTimeout(() => {
+      this.verifyConnectionWithTimeout();
+    }, 2000);
+    // end of temp hack
   }
 
   public setSeed = (seed: string) => {
@@ -130,6 +138,14 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest('/connect', 'POST');
     return parseResponseBody<ConnextChannelConfig>(res);
   }
+
+  private subscribePreimage = async () => {
+    await this.sendRequest('/subscribe', 'POST', {
+      event: 'UPDATE_STATE_EVENT',
+      webhook: 'http://localhost:8887/preimage',
+    });
+  }
+
   /**
    * Associate connext with currencies that have a token address
    */
@@ -180,9 +196,14 @@ class ConnextClient extends SwapClient {
     this.logger.info('trying to verify connection to connext');
     try {
       await this.sendRequest('/health', 'GET');
-
-      // TODO: get SwapClientInfo
-      this.emit('connectionVerified', { newIdentifier: '' });
+      const configRes = await this.sendRequest('/config', 'GET');
+      // TODO: fix types, extract private config
+      const config = await parseResponseBody<any>(configRes);
+      const { userPublicIdentifier } = config;
+      console.log('pubKey', userPublicIdentifier);
+      this.emit('connectionVerified', {
+        newIdentifier: userPublicIdentifier,
+      });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
       this.logger.error(

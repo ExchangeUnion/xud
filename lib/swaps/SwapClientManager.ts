@@ -38,9 +38,11 @@ type LndUpdate = {
 interface SwapClientManager {
   on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
   on(event: 'raidenUpdate', listener: (tokenAddresses: Map<string, string>, address?: string) => void): this;
+  on(event: 'connextUpdate', listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void): this;
   on(event: 'htlcAccepted', listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
   emit(event: 'raidenUpdate', tokenAddresses: Map<string, string>, address?: string): boolean;
+  emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
   emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
 }
 
@@ -535,6 +537,19 @@ class SwapClientManager extends EventEmitter {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
           this.emit('raidenUpdate', this.raidenClient!.tokenAddresses, newIdentifier);
+        }
+      });
+    }
+
+    if (this.connextClient?.isOperational()) {
+      this.connextClient.on('connectionVerified', (swapClientInfo) => {
+        const { newIdentifier } = swapClientInfo;
+        if (newIdentifier) {
+          this.emit(
+            'connextUpdate',
+            this.connextClient!.tokenAddresses,
+            newIdentifier,
+          );
         }
       });
     }

@@ -217,6 +217,7 @@ class Swaps extends EventEmitter {
     });
     this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
     this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
+    this.swapClientManager.on('connextUpdate', this.pool.updateConnextState);
   }
 
   /**

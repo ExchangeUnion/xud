@@ -30,6 +30,7 @@ type PeerInfo = {
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
   raidenAddress?: string,
+  connextAddress?: string,
 };
 
 enum PeerStatus {
@@ -172,6 +173,7 @@ class Peer extends EventEmitter {
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
       raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
+      connextAddress: this.nodeState ? this.nodeState.connextAddress : undefined,
     };
   }
 
