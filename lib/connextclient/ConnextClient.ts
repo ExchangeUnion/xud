@@ -314,8 +314,11 @@ class ConnextClient extends SwapClient {
   }
 
   public getRoute = async () => {
-    // not implemented since connext doesnt use routes
-    return undefined;
+    return {
+      // TODO: verify that it's OK to return
+      // static getTotalTimeLock
+      getTotalTimeLock: () => 101,
+    };
   }
 
   public canRouteToNode = async () => {
