@@ -139,6 +139,11 @@ class ConnextClient extends SwapClient {
   }
 
   private subscribePreimage = async () => {
+    // TEMP/fixme: listen for preimage before transfer
+    // instead. Temp code for debugging.
+    this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
+      console.log('external preimage received', preimageRequest);
+    });
     await this.sendRequest('/subscribe', 'POST', {
       event: 'UPDATE_STATE_EVENT',
       webhook: 'http://localhost:8887/preimage',
