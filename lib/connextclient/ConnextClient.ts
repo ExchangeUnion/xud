@@ -111,11 +111,10 @@ class ConnextClient extends SwapClient {
       throw new Error('Cannot initialize ConnextClient without seed');
     }
     await this.initWallet(this.seed);
-    const config = await this.initConnextClient();
-    const { userPublicIdentifier } = config;
+    await this.initConnextClient();
     await this.subscribePreimage();
 
-    // Temp hack, remove me before mergin
+    // Temp hack, remove/fix me before merging
     setTimeout(() => {
       this.verifyConnectionWithTimeout();
     }, 2000);
