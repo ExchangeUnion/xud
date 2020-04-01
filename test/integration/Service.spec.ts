@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import Service from '../../lib/service/Service';
 import { SwapClientType, OrderSide, Owner } from '../../lib/constants/enums';
 import { getTempDir } from '../utils';
+import p2pErrors from '../../lib/p2p/errors';
 
 chai.use(chaiAsPromised);
 
@@ -163,16 +164,16 @@ describe('API Service', () => {
     await expect(Promise.all(removeCurrencyPromises)).to.be.fulfilled;
   });
 
-  it('should fail to ban an alias that does not exist', async () => {
-    const nodeIdentifier = 'doesNotExist';
-    const banNodePromise = service.ban({ nodeIdentifier });
-    await expect(banNodePromise).to.be.rejectedWith(`alias ${nodeIdentifier} is unknown`);
+  it('should fail to ban a node by alias that does not exist', async () => {
+    const alias = 'doesNotExist';
+    const banNodePromise = service.ban({ nodeIdentifier: alias });
+    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.UNKNOWN_ALIAS(alias).message);
   });
 
-  it('should fail to ban a node that does not exist', async () => {
-    const nodeIdentifier = '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b';
-    const banNodePromise = service.ban({ nodeIdentifier });
-    await expect(banNodePromise).to.be.rejectedWith(`node ${nodeIdentifier} is unknown`);
+  it('should fail to ban a node by nodePubKey that does not exist', async () => {
+    const nodePubKey = '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b';
+    const banNodePromise = service.ban({ nodeIdentifier: nodePubKey });
+    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.NODE_UNKNOWN(nodePubKey).message);
   });
 
   it('should shutdown', async () => {
