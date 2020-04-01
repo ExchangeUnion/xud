@@ -377,17 +377,19 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
     const { freeBalance } = await parseResponseBody<ConnextBalanceResponse>(res);
 
-    const pendingOpenBalance = this.unitConverter.unitsToAmount({
+    const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalance),
     });
     const inactiveBalance = 0;
-    const balance = pendingOpenBalance + inactiveBalance;
+    const balance = freeBalanceAmount + inactiveBalance;
 
     return {
       balance,
-      pendingOpenBalance,
+      // TODO: inactiveBalance
       inactiveBalance,
+      // TODO: is there a way to check pending channel balance for Connext?
+      pendingOpenBalance: 0,
     };
   }
 
