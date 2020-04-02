@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/stretchr/testify/require"
-	"time"
 )
 
 // actions provide self-contained reusable scenarios to be used in tests.
@@ -99,7 +100,7 @@ func (a *actions) connect(srcNode, destNode *xudtest.HarnessNode) {
 
 func (a *actions) openChannel(srcNode, destNode *xudtest.HarnessNode, currency string, amount int64) {
 	// connect srcNode to destNode.
-	reqConn := &xudrpc.OpenChannelRequest{NodePubKey: destNode.PubKey(), Currency: currency, Amount: amount}
+	reqConn := &xudrpc.OpenChannelRequest{NodeIdentifier: destNode.PubKey(), Currency: currency, Amount: amount}
 	_, err := srcNode.Client.OpenChannel(a.ctx, reqConn)
 	a.assert.NoError(err)
 }
@@ -110,13 +111,13 @@ func (a *actions) disconnect(srcNode, destNode *xudtest.HarnessNode) {
 }
 
 func (a *actions) ban(srcNode, destNode *xudtest.HarnessNode) {
-	reqBan := &xudrpc.BanRequest{NodePubKey: destNode.PubKey()}
+	reqBan := &xudrpc.BanRequest{NodeIdentifier: destNode.PubKey()}
 	_, err := srcNode.Client.Ban(a.ctx, reqBan)
 	a.assert.NoError(err)
 }
 
 func (a *actions) unban(srcNode, destNode *xudtest.HarnessNode) {
-	reqUnban := &xudrpc.UnbanRequest{NodePubKey: destNode.PubKey(), Reconnect: false}
+	reqUnban := &xudrpc.UnbanRequest{NodeIdentifier: destNode.PubKey(), Reconnect: false}
 	_, err := srcNode.Client.Unban(a.ctx, reqUnban)
 	a.assert.NoError(err)
 }
