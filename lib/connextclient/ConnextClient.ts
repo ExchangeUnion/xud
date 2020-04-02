@@ -12,7 +12,7 @@ import SwapClient, {
   TradingLimits,
   SwapClientInfo,
 } from '../swaps/SwapClient';
-import { SwapDeal, ProvidePreimageRequest } from '../swaps/types';
+import { SwapDeal, ProvidePreimageRequest, TransferReceivedRequest } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -53,11 +53,15 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
+  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
+  on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
+  emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
   emit(event: 'preimage', preimageRequest: ProvidePreimageRequest): void;
+  emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedRequest): void;
 }
 /**
  * A class representing a client to interact with connext.
@@ -113,6 +117,7 @@ class ConnextClient extends SwapClient {
     await this.initWallet(this.seed);
     await this.initConnextClient();
     await this.subscribePreimage();
+    await this.subscribeIncomingTransfer();
 
     // Temp hack, remove/fix me before merging
     setTimeout(() => {
@@ -141,7 +146,16 @@ class ConnextClient extends SwapClient {
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'UPDATE_STATE_EVENT',
+      // TODO: not always running on localhost
       webhook: 'http://localhost:8887/preimage',
+    });
+  }
+
+  private subscribeIncomingTransfer = async () => {
+    await this.sendRequest('/subscribe', 'POST', {
+      event: 'MESSAGE_APP_INSTANCE_INSTALL',
+      // TODO: not always running on localhost
+      webhook: 'http://localhost:8887/incoming-transfer',
     });
   }
 
@@ -199,7 +213,6 @@ class ConnextClient extends SwapClient {
       // TODO: fix types, extract private config
       const config = await parseResponseBody<any>(configRes);
       const { userPublicIdentifier } = config;
-      console.log('pubKey', userPublicIdentifier);
       this.emit('connectionVerified', {
         newIdentifier: userPublicIdentifier,
       });
@@ -254,15 +267,13 @@ class ConnextClient extends SwapClient {
         // TODO: why do we have to return preimage as a taker?
         // We already know it! -> deal.rPreimage.
         secret = deal.rPreimage!;
-        console.log('deal is', deal, amount, tokenAddress, lockTimeout);
 
         const waitForTransferClaimed = new Promise((resolve, reject) => {
           const failTimeout = setTimeout(() => {
             reject('hash lock transfer was not claimed within the timeout');
           }, 30000);
-          this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
+          this.on('preimage', (_preimageRequest: ProvidePreimageRequest) => {
             // TODO: check that the hash and preimage match
-            console.log('external preimage received', preimageRequest);
             clearTimeout(failTimeout);
             resolve();
           });
@@ -292,12 +303,26 @@ class ConnextClient extends SwapClient {
     }
   }
 
+  // TODO: Connext does not have the concept of invoices, but
+  // internally we reject the incoming transfer if it does not match the requirements.
   public addInvoice = async () => {
-    // not implemented, connext does not use invoices
+    this.on('transferReceived', (transferReceivedRequest) => {
+      // TODO: validations for amount and timelock
+      this.emit(
+        'htlcAccepted',
+        transferReceivedRequest.rHash,
+        transferReceivedRequest.amount,
+        // TODO: filter from this.tokenAddresses instead
+        'ETH',
+        // transferReceivedRequest.tokenAddress,
+      );
+    });
   }
 
-  public settleInvoice = async () => {
-    // not implemented, connext does not use invoices
+  public settleInvoice = async (_rHash: string, rPreimage: string) => {
+    await this.sendRequest('/hashlock-resolve', 'POST', {
+      lockHash: `0x${rPreimage}`,
+    });
   }
 
   public removeInvoice = async () => {

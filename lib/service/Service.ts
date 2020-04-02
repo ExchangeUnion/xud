@@ -14,6 +14,7 @@ import {
   SwapFailure,
   SwapSuccess,
   ProvidePreimageRequest,
+  TransferReceivedRequest,
 } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -569,6 +570,14 @@ class Service {
   public providePreimage = async (request: ProvidePreimageRequest) => {
     // TODO: argChecks
     this.swapClientManager.connextClient?.emit('preimage', request);
+  }
+
+  /**
+   * Notifies Connext client that a transfer has been received.
+   */
+  public transferReceived = async (request: TransferReceivedRequest) => {
+    // TODO: argChecks
+    this.swapClientManager.connextClient?.emit('transferReceived', request);
   }
 }
 export default Service;

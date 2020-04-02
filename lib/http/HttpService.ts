@@ -12,6 +12,31 @@ type ConnextPreimageRequest = {
   }
 };
 
+type CoinTransfer = {
+  amount: {
+    _hex: string;
+  };
+  to: string;
+};
+
+type ConnextIncomingTransferRequest = {
+  id: string;
+  data: {
+    appInstance: {
+      latestState: {
+        lockHash: string;
+        timelock: {
+          _hex: string;
+        };
+        coinTransfers: CoinTransfer[];
+      };
+      singleAssetTwoPartyCoinTransferInterpreterParams: {
+        tokenAddress: string;
+      };
+    };
+  }
+};
+
 class HttpService {
   constructor(private service: Service) {}
 
@@ -41,7 +66,6 @@ class HttpService {
       if (!preimage) {
         throw new Error('preImage is required');
       }
-      console.log('rHash', rHash, 'and preimage', preimage);
       this.service.providePreimage({
         rHash,
         preimage,
@@ -50,6 +74,35 @@ class HttpService {
     } else {
       return { success: false };
     }
+  }
+
+  public incomingTransfer = async (
+    incomingTransferRequest: ConnextIncomingTransferRequest,
+  ): Promise<any> => {
+    const { appInstance } = incomingTransferRequest.data;
+    const {
+      latestState,
+    } = appInstance;
+    const { lockHash, timelock, coinTransfers } = latestState;
+    const { tokenAddress } = appInstance.singleAssetTwoPartyCoinTransferInterpreterParams;
+    const TIMELOCK_BUFFER = 100;
+    const rHash = lockHash.slice(2);
+    const timelockWithBuffer = TIMELOCK_BUFFER + parseInt(timelock._hex, 16);
+    if (coinTransfers.length !== 2) {
+      throw new Error('coinTransfers length must be 2');
+    }
+    const senderAmount = parseInt(coinTransfers[0].amount._hex, 16);
+    const receiverAmount = parseInt(coinTransfers[1].amount._hex, 16);
+    if (receiverAmount !== 0) {
+      throw new Error('receiver amount must be 0');
+    }
+    this.service.transferReceived({
+      tokenAddress,
+      rHash,
+      timelock: timelockWithBuffer,
+      amount: senderAmount,
+    });
+    return { success: true };
   }
 }
 

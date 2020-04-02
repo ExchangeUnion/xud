@@ -542,6 +542,9 @@ class SwapClientManager extends EventEmitter {
     }
 
     if (this.connextClient?.isOperational()) {
+      this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
+        this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
+      });
       this.connextClient.on('connectionVerified', (swapClientInfo) => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {

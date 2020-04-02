@@ -108,7 +108,16 @@ export type ResolveRequest = {
   chain_height: number,
 };
 
+// TODO: move under connext types
 export type ProvidePreimageRequest = {
   rHash: string,
   preimage: string,
+};
+
+// TODO: move under connext types
+export type TransferReceivedRequest = {
+  tokenAddress: string;
+  rHash: string;
+  timelock: number;
+  amount: number;
 };
