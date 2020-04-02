@@ -1,7 +1,7 @@
 import { expect } from 'chai';
+import { OrderingDirection } from '../../lib/constants/enums';
 import Logger, { Level } from '../../lib/Logger';
 import TradingPair from '../../lib/orderbook/TradingPair';
-import { OrderingDirection } from '../../lib/constants/enums';
 import { ms } from '../../lib/utils/utils';
 import { createOwnOrder, createPeerOrder } from '../utils';
 
@@ -138,6 +138,17 @@ describe('TradingPair.match', () => {
     tp.addPeerOrder(createPeerOrder(5, 5, false));
     const { remainingOrder } = tp.match(createOwnOrder(5, 10, true));
     expect(remainingOrder).to.be.undefined;
+  });
+
+  it('should match with own order if equivalent peer order exists', () => {
+    const peerOrder = createPeerOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5, false);
+    tp.addPeerOrder(peerOrder);
+    tp.addOwnOrder(ownOrder);
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    expect(remainingOrder).to.be.undefined;
+    expect(matches[0].maker).to.not.equal(peerOrder);
+    expect(matches[0].maker).to.equal(ownOrder);
   });
 
   it('should split taker order when makers are insufficient', () => {
