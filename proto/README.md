@@ -8,12 +8,12 @@ Whenever `xudrpc.proto` is updated, the protobuf javascript code and type defini
 
 1. Install [Go](https://golang.org/doc/install) and add it to your PATH.
 
-1. Install [protoc-gen-swagger](https://github.com/grpc-ecosystem/grpc-gateway) at commit `f2862b476edcef83412c7af8687c9cd8e4097c0f`.
+1. Install [protoc-gen-swagger](https://github.com/grpc-ecosystem/grpc-gateway) at v1.8.6.
 
 ```bash
 git clone https://github.com/grpc-ecosystem/grpc-gateway $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
 cd $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway
-git reset --hard f2862b476edcef83412c7af8687c9cd8e4097c0f
+git reset --hard v1.8.6
 go install ./protoc-gen-swagger
 ```
 
