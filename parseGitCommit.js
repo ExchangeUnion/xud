@@ -19,7 +19,11 @@ const getCommitHash = () => {
 
 const isDirty = () => {
   const result = executeCommand('git status --short');
-  return result.length > 0;  
+  const lines = result.split("\n");
+  
+  // we want to ignore changes if they only affect npm-shrinkwrap.json as these
+  // may happen unintentionally when using npm to install xud
+  return lines.length > 2 || (lines.length === 2 && lines[0] !== ' M npm-shrinkwrap.json');  
 };
 
 const versionFilePath = `${__dirname}/lib/Version.ts`;
