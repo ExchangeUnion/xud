@@ -21,7 +21,7 @@
         "operationId": "AddCurrency",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcAddCurrencyResponse"
             }
@@ -48,7 +48,7 @@
         "operationId": "AddPair",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcAddPairResponse"
             }
@@ -75,7 +75,7 @@
         "operationId": "GetBalance",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetBalanceResponse"
             }
@@ -101,7 +101,7 @@
         "operationId": "Ban",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcBanResponse"
             }
@@ -128,7 +128,7 @@
         "operationId": "Connect",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcConnectResponse"
             }
@@ -155,7 +155,7 @@
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListCurrenciesResponse"
             }
@@ -172,7 +172,7 @@
         "operationId": "DiscoverNodes",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcDiscoverNodesResponse"
             }
@@ -199,7 +199,7 @@
         "operationId": "ExecuteSwap",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcSwapSuccess"
             }
@@ -226,7 +226,7 @@
         "operationId": "GetInfo",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetInfoResponse"
             }
@@ -243,7 +243,7 @@
         "operationId": "ListTrades",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListTradesResponse"
             }
@@ -270,7 +270,7 @@
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcGetNodeInfoResponse"
             }
@@ -296,7 +296,7 @@
         "operationId": "OpenChannel",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcOpenChannelResponse"
             }
@@ -313,7 +313,7 @@
         "operationId": "ListOrders",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListOrdersResponse"
             }
@@ -360,7 +360,7 @@
         "operationId": "ListPairs",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListPairsResponse"
             }
@@ -377,7 +377,7 @@
         "operationId": "ListPeers",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcListPeersResponse"
             }
@@ -394,9 +394,9 @@
         "operationId": "PlaceOrder",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcPlaceOrderEvent"
+              "$ref": "#/x-stream-definitions/xudrpcPlaceOrderEvent"
             }
           }
         },
@@ -421,7 +421,7 @@
         "operationId": "PlaceOrderSync",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderResponse"
             }
@@ -448,7 +448,7 @@
         "operationId": "RemoveCurrency",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveCurrencyResponse"
             }
@@ -475,7 +475,7 @@
         "operationId": "RemoveOrder",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemoveOrderResponse"
             }
@@ -502,7 +502,7 @@
         "operationId": "RemovePair",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcRemovePairResponse"
             }
@@ -529,7 +529,7 @@
         "operationId": "Shutdown",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcShutdownResponse"
             }
@@ -556,9 +556,9 @@
         "operationId": "SubscribeOrders",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcOrderUpdate"
+              "$ref": "#/x-stream-definitions/xudrpcOrderUpdate"
             }
           }
         },
@@ -583,9 +583,9 @@
         "operationId": "SubscribeSwapFailures",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapFailure"
+              "$ref": "#/x-stream-definitions/xudrpcSwapFailure"
             }
           }
         },
@@ -610,9 +610,9 @@
         "operationId": "SubscribeSwaps",
         "responses": {
           "200": {
-            "description": "(streaming responses)",
+            "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/xudrpcSwapSuccess"
+              "$ref": "#/x-stream-definitions/xudrpcSwapSuccess"
             }
           }
         },
@@ -637,7 +637,7 @@
         "operationId": "TradingLimits",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcTradingLimitsResponse"
             }
@@ -663,7 +663,7 @@
         "operationId": "Unban",
         "responses": {
           "200": {
-            "description": "",
+            "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/xudrpcUnbanResponse"
             }
@@ -694,6 +694,15 @@
       ],
       "default": "LND"
     },
+    "ListOrdersRequestOwner": {
+      "type": "string",
+      "enum": [
+        "BOTH",
+        "OWN",
+        "PEER"
+      ],
+      "default": "BOTH"
+    },
     "SwapSuccessRole": {
       "type": "string",
       "enum": [
@@ -701,6 +710,43 @@
         "MAKER"
       ],
       "default": "TAKER"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
     },
     "xudrpcAddCurrencyResponse": {
       "type": "object"
@@ -1632,6 +1678,56 @@
           "description": "The list of lnd clients that could not be unlocked."
         }
       }
+    }
+  },
+  "x-stream-definitions": {
+    "xudrpcOrderUpdate": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcOrderUpdate"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcOrderUpdate"
+    },
+    "xudrpcPlaceOrderEvent": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcPlaceOrderEvent"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcPlaceOrderEvent"
+    },
+    "xudrpcSwapFailure": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapFailure"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapFailure"
+    },
+    "xudrpcSwapSuccess": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapSuccess"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapSuccess"
     }
   }
 }
