@@ -26,7 +26,7 @@ import {
   ConnextInfo,
   ConnextVersion,
   TokenPaymentRequest,
-  TokenPaymentResponse,
+  // TokenPaymentResponse,
   ConnextTransferStatus,
 } from './types';
 
@@ -139,11 +139,6 @@ class ConnextClient extends SwapClient {
   }
 
   private subscribePreimage = async () => {
-    // TEMP/fixme: listen for preimage before transfer
-    // instead. Temp code for debugging.
-    this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
-      console.log('external preimage received', preimageRequest);
-    });
     await this.sendRequest('/subscribe', 'POST', {
       event: 'UPDATE_STATE_EVENT',
       webhook: 'http://localhost:8887/preimage',
@@ -220,7 +215,7 @@ class ConnextClient extends SwapClient {
 
   public sendSmallestAmount = async (
     rHash: string,
-    _destination: string,
+    destination: string,
     currency: string,
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
@@ -229,7 +224,8 @@ class ConnextClient extends SwapClient {
       amount: '1',
       assetId: tokenAddress,
       lockHash: rHash,
-      timelock: this.finalLock,
+      timelock: this.finalLock.toString(),
+      recipient: destination,
     });
     return secret;
   }
@@ -249,19 +245,40 @@ class ConnextClient extends SwapClient {
         secret = await this.executeHashLockResolve(deal.rPreimage);
       } else {
         // we are the taker paying the maker
-        throw new Error('we are the taker paying the maker');
+        if (!deal.destination) {
+          throw new Error('cannot send a payment without destination');
+        }
         amount = deal.makerUnits;
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
-        secret = await this.executeHashLockTransfer({
-          amount: `${amount}`,
-          assetId: tokenAddress,
-          lockHash: deal.rHash,
-          timelock: lockTimeout,
+        // TODO: why do we have to return preimage as a taker?
+        // We already know it! -> deal.rPreimage.
+        secret = deal.rPreimage!;
+        console.log('deal is', deal, amount, tokenAddress, lockTimeout);
+
+        const waitForTransferClaimed = new Promise((resolve, reject) => {
+          const failTimeout = setTimeout(() => {
+            reject('hash lock transfer was not claimed within the timeout');
+          }, 30000);
+          this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
+            // TODO: check that the hash and preimage match
+            console.log('external preimage received', preimageRequest);
+            clearTimeout(failTimeout);
+            resolve();
+          });
         });
+        const executeTransfer = this.executeHashLockTransfer({
+          assetId: tokenAddress,
+          amount: `${amount}`,
+          timelock: lockTimeout.toString(),
+          lockHash: `0x${deal.rHash}`,
+          recipient: deal.destination,
+        });
+        await Promise.all([executeTransfer, waitForTransferClaimed]);
       }
       return secret;
     } catch (err) {
+      // TODO: review all of these
       switch (err.code) {
         case 'ECONNRESET':
         case errorCodes.UNEXPECTED:
@@ -460,8 +477,10 @@ class ConnextClient extends SwapClient {
    */
   private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
-    const { preImage } = await parseResponseBody<ConnextTransferResponse>(res);
+    const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
+    return appId;
 
+    /* TODO: we don't need this?
     const response: TokenPaymentResponse = {
       ...payload,
       secret: preImage,
@@ -473,6 +492,7 @@ class ConnextClient extends SwapClient {
     } else {
       throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
     }
+    */
   }
 
   /**

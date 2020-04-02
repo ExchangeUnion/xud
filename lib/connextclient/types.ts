@@ -48,7 +48,8 @@ export type TokenPaymentRequest = {
   assetId: string;
   amount: string;
   lockHash: string;
-  timelock?: number;
+  timelock: string;
+  recipient: string;
 };
 
 /**
