@@ -45,7 +45,7 @@ If you already have [Node.js](https://nodejs.org/en/download/) installed, you ca
 sudo npm install xud -g --unsafe-perm
 ```
 
-We officially support the current Node.js LTS only, since it often takes time for the latest version to be supported by the gRPC library. Detailed instructions for installing `xud` can be found in the [docs for developers](https://docs.exchangeunion.com/development).
+We officially support the current Node.js LTS only, since it often takes time for the latest version to be supported by the gRPC library. Detailed instructions for installing `xud` can be found in the [installation](https://docs.exchangeunion.com/development/native-installation) &  [developer docs](https://docs.exchangeunion.com/development).
 
 ## Usage
 
