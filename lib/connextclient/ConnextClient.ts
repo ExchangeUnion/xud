@@ -68,7 +68,7 @@ interface ConnextClient {
  */
 class ConnextClient extends SwapClient {
   public readonly type = SwapClientType.Connext;
-  public readonly finalLock = 100;
+  public readonly finalLock = 200;
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
@@ -254,18 +254,38 @@ class ConnextClient extends SwapClient {
     let amount: number;
     let tokenAddress: string;
     let lockTimeout: number | undefined;
+    const waitForTransferClaimed = new Promise((resolve, reject) => {
+      const failTimeout = setTimeout(() => {
+        reject('hash lock transfer was not claimed within the timeout');
+      }, 30000);
+      this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
+        // TODO: check that the hash and preimage match
+        clearTimeout(failTimeout);
+        resolve(preimageRequest.preimage);
+      });
+    });
     try {
       let secret;
-      if (deal.role === SwapRole.Maker && deal.rPreimage) {
+      if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
         amount = deal.takerUnits;
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
-        secret = await this.executeHashLockResolve(deal.rPreimage);
+        // secret = await this.executeHashLockResolve(deal.rPreimage);
+        const executeTransfer = this.executeHashLockTransfer({
+          assetId: tokenAddress,
+          amount: `${amount}`,
+          // TODO: double check timelock (100 is the connext internal buffer)
+          timelock: (deal.takerCltvDelta + 100).toString(),
+          lockHash: `0x${deal.rHash}`,
+          recipient: deal.destination!,
+        });
+        const [executeTransferResponse, preimage] = await Promise.all([executeTransfer, waitForTransferClaimed]);
+        console.log('executeTransferResponse', executeTransferResponse);
+        // TODO: process the preimage earlier
+        secret = (preimage as string).slice(2);
+        console.log('returning preimage of', secret);
       } else {
         // we are the taker paying the maker
-        if (!deal.destination) {
-          throw new Error('cannot send a payment without destination');
-        }
         amount = deal.makerUnits;
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
@@ -273,22 +293,12 @@ class ConnextClient extends SwapClient {
         // We already know it! -> deal.rPreimage.
         secret = deal.rPreimage!;
 
-        const waitForTransferClaimed = new Promise((resolve, reject) => {
-          const failTimeout = setTimeout(() => {
-            reject('hash lock transfer was not claimed within the timeout');
-          }, 30000);
-          this.on('preimage', (_preimageRequest: ProvidePreimageRequest) => {
-            // TODO: check that the hash and preimage match
-            clearTimeout(failTimeout);
-            resolve();
-          });
-        });
         const executeTransfer = this.executeHashLockTransfer({
           assetId: tokenAddress,
           amount: `${amount}`,
           timelock: lockTimeout.toString(),
           lockHash: `0x${deal.rHash}`,
-          recipient: deal.destination,
+          recipient: deal.destination!,
         });
         await Promise.all([executeTransfer, waitForTransferClaimed]);
       }
@@ -324,10 +334,14 @@ class ConnextClient extends SwapClient {
     });
   }
 
+  /**
+   * Resolve a HashLock Transfer on the Connext network.
+   */
   public settleInvoice = async (_rHash: string, rPreimage: string) => {
     await this.sendRequest('/hashlock-resolve', 'POST', {
       lockHash: `0x${rPreimage}`,
     });
+    // TODO: error handling
   }
 
   public removeInvoice = async () => {
@@ -523,24 +537,6 @@ class ConnextClient extends SwapClient {
       throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
     }
     */
-  }
-
-  /**
-   * Resolve a HashLock Transfer on the Connext network.
-   * @param targetAddress recipient of the payment
-   * @param tokenAddress contract address of the token
-   * @param amount
-   * @param lockHash
-   */
-  private executeHashLockResolve = async (preImage: string): Promise<string> => {
-    await this.sendRequest('/hashlock-resolve', 'POST', { preImage });
-
-    if (preImage && preImage.startsWith('0x')) {
-      // remove '0x'
-      return preImage.slice(2);
-    } else {
-      throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
-    }
   }
 
   /**
