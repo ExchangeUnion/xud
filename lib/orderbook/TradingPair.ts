@@ -63,7 +63,13 @@ class TradingPair {
 
     return (a: Order, b: Order) => {
       if (a.price === b.price) {
-        return a.createdAt < b.createdAt;
+        if (isOwnOrder(a) && !isOwnOrder(b)) {
+          return true;
+        } else if (!isOwnOrder(a) && isOwnOrder(b)) {
+          return false;
+        } else {
+          return a.createdAt < b.createdAt;
+        }
       } else {
         return directionComparator(a.price, b.price);
       }
