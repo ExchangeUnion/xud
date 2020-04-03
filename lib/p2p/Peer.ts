@@ -134,6 +134,11 @@ class Peer extends EventEmitter {
     return this._nodePubKey;
   }
 
+  public set nodePubKey(nodePubKey: string | undefined) {
+    this._nodePubKey = nodePubKey;
+    this._alias = nodePubKey ? getAlias(nodePubKey) : undefined;
+  }
+
   public get alias(): string | undefined {
     return this._alias;
   }
@@ -847,7 +852,7 @@ class Peer extends EventEmitter {
 
     // finally set this peer's node state to the node state in the init packet body
     this.nodeState = body.nodeState;
-    this.setIdentifiers(body.nodePubKey);
+    this.nodePubKey = body.nodePubKey;
     this._version = body.version;
   }
 
