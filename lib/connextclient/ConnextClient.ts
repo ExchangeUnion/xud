@@ -116,6 +116,7 @@ class ConnextClient extends SwapClient {
     }
     await this.initWallet(this.seed);
     await this.initConnextClient();
+    await this.unsubscribeAll();
     await this.subscribePreimage();
     await this.subscribeIncomingTransfer();
 
@@ -141,6 +142,10 @@ class ConnextClient extends SwapClient {
   public initConnextClient = async () => {
     const res = await this.sendRequest('/connect', 'POST');
     return parseResponseBody<ConnextChannelConfig>(res);
+  }
+
+  private unsubscribeAll = async () => {
+    await this.sendRequest('/subscribe/all', 'DELETE');
   }
 
   private subscribePreimage = async () => {
