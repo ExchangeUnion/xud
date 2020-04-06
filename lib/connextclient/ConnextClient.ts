@@ -118,12 +118,6 @@ class ConnextClient extends SwapClient {
     await this.unsubscribeAll();
     await this.subscribePreimage();
     await this.subscribeIncomingTransfer();
-
-    // Temp hack, remove/fix me before merging
-    setTimeout(() => {
-      this.verifyConnectionWithTimeout();
-    }, 2000);
-    // end of temp hack
   }
 
   public setSeed = (seed: string) => {
