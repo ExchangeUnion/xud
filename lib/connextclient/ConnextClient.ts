@@ -26,7 +26,6 @@ import {
   ConnextInfo,
   ConnextVersion,
   TokenPaymentRequest,
-  // TokenPaymentResponse,
   ConnextTransferStatus,
 } from './types';
 
@@ -52,8 +51,8 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 }
 
 interface ConnextClient {
-  on(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
-  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
+  once(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
+  once(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
@@ -258,7 +257,8 @@ class ConnextClient extends SwapClient {
       const failTimeout = setTimeout(() => {
         reject('hash lock transfer was not claimed within the timeout');
       }, 30000);
-      this.on('preimage', (preimageRequest: ProvidePreimageRequest) => {
+      // TODO: what happens in case of multiple transfers at the same time?
+      this.once('preimage', (preimageRequest: ProvidePreimageRequest) => {
         // TODO: check that the hash and preimage match
         clearTimeout(failTimeout);
         resolve(preimageRequest.preimage);
@@ -283,7 +283,6 @@ class ConnextClient extends SwapClient {
         console.log('executeTransferResponse', executeTransferResponse);
         // TODO: process the preimage earlier
         secret = (preimage as string).slice(2);
-        console.log('returning preimage of', secret);
       } else {
         // we are the taker paying the maker
         amount = deal.makerUnits;
@@ -321,7 +320,8 @@ class ConnextClient extends SwapClient {
   // TODO: Connext does not have the concept of invoices, but
   // internally we reject the incoming transfer if it does not match the requirements.
   public addInvoice = async () => {
-    this.on('transferReceived', (transferReceivedRequest) => {
+    // TODO: what happens in case of multiple transfers at the same time?
+    this.once('transferReceived', (transferReceivedRequest) => {
       // TODO: validations for amount and timelock
       this.emit(
         'htlcAccepted',

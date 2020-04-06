@@ -35,13 +35,6 @@ export type ConnextVersion = {
 };
 
 /**
- * The response for tokenPayment call.
- */
-export type TokenPaymentResponse = TokenPaymentRequest & {
-  secret?: string;
-};
-
-/**
  * The payload for tokenPayment call.
  */
 export type TokenPaymentRequest = {
