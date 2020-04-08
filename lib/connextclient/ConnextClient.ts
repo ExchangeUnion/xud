@@ -151,7 +151,7 @@ class ConnextClient extends SwapClient {
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_RECEIVED',
+      event: 'CONDITIONAL_TRANSFER_RECEIVED_EVENT',
       // TODO: not always running on localhost
       webhook: 'http://localhost:8887/incoming-transfer',
     });
