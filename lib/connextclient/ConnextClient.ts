@@ -106,19 +106,7 @@ class ConnextClient extends SwapClient {
     return 'Connext';
   }
 
-  /**
-   * Checks for connectivity and gets our Connext account address
-   */
-  public initSpecific = async () => {
-    if (!this.seed) {
-      throw new Error('Cannot initialize ConnextClient without seed');
-    }
-    await this.initWallet(this.seed);
-    await this.initConnextClient();
-    await this.unsubscribeAll();
-    await this.subscribePreimage();
-    await this.subscribeIncomingTransfer();
-  }
+  public initSpecific = async () => {};
 
   public setSeed = (seed: string) => {
     this.seed = seed;
@@ -207,6 +195,14 @@ class ConnextClient extends SwapClient {
     this.logger.info('trying to verify connection to connext');
     try {
       await this.sendRequest('/health', 'GET');
+      if (!this.seed) {
+        throw new Error('Cannot initialize ConnextClient without seed');
+      }
+      await this.initWallet(this.seed);
+      await this.initConnextClient();
+      await this.unsubscribeAll();
+      await this.subscribePreimage();
+      await this.subscribeIncomingTransfer();
       const configRes = await this.sendRequest('/config', 'GET');
       // TODO: fix types, extract private config
       const config = await parseResponseBody<any>(configRes);
