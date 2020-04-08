@@ -279,7 +279,6 @@ class ConnextClient extends SwapClient {
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
         // TODO: why do we have to return preimage as a taker?
-        // We already know it! -> deal.rPreimage.
         secret = deal.rPreimage!;
 
         const executeTransfer = this.executeHashLockTransfer({
