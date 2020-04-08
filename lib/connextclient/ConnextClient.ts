@@ -306,22 +306,38 @@ class ConnextClient extends SwapClient {
     }
   }
 
-  // TODO: Connext does not have the concept of invoices, but
-  // internally we reject the incoming transfer if it does not match the requirements.
-  public addInvoice = async () => {
+  public addInvoice = async (expectedHash: string, expectedUnits: number, expectedTimelock = this.finalLock) => {
+    // TODO: get expectedTokenAddress from params
+    const expectedTokenAddress = '0x0000000000000000000000000000000000000000';
     // TODO: what happens in case of multiple transfers at the same time?
     this.once('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
-      // TODO: validations for amount and timelock
-      const currency = this.tokenAddresses.get(transferReceivedRequest.tokenAddress);
+      const {
+        tokenAddress,
+        amount,
+        timelock,
+        rHash,
+      } = transferReceivedRequest;
+      const currency = this.tokenAddresses.get(tokenAddress);
       if (!currency) {
-        this.logger.error('received transfer for unknown currency ${TransferReceivedRequest.tokenAddresses}');
+        this.logger.error(`received transfer for unknown currency ${tokenAddress}`);
       } else {
-        this.emit(
-          'htlcAccepted',
-          transferReceivedRequest.rHash,
-          transferReceivedRequest.amount,
-          currency,
-        );
+        if (
+          // TODO: rename amount => units
+          amount === expectedUnits &&
+          rHash === expectedHash &&
+          timelock === expectedTimelock &&
+          tokenAddress === expectedTokenAddress
+        ) {
+          this.emit(
+            'htlcAccepted',
+            rHash,
+            amount,
+            currency,
+          );
+        } else {
+          // TODO: is the error logging enough or should we also emit htlcRejected to Swaps?
+          this.logger.error(`ignoring received pending transfer because it does not meet the requirements - expectedUnits: ${expectedUnits} actualUnits: ${amount}, expectedHash: ${expectedHash} actualHash: ${rHash}, expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress}, expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`);
+        }
       }
     });
   }
