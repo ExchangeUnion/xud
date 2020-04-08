@@ -310,16 +310,19 @@ class ConnextClient extends SwapClient {
   // internally we reject the incoming transfer if it does not match the requirements.
   public addInvoice = async () => {
     // TODO: what happens in case of multiple transfers at the same time?
-    this.once('transferReceived', (transferReceivedRequest) => {
+    this.once('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
       // TODO: validations for amount and timelock
-      this.emit(
-        'htlcAccepted',
-        transferReceivedRequest.rHash,
-        transferReceivedRequest.amount,
-        // TODO: filter from this.tokenAddresses instead
-        'ETH',
-        // transferReceivedRequest.tokenAddress,
-      );
+      const currency = this.tokenAddresses.get(transferReceivedRequest.tokenAddress);
+      if (!currency) {
+        this.logger.error('received transfer for unknown currency ${TransferReceivedRequest.tokenAddresses}');
+      } else {
+        this.emit(
+          'htlcAccepted',
+          transferReceivedRequest.rHash,
+          transferReceivedRequest.amount,
+          currency,
+        );
+      }
     });
   }
 
