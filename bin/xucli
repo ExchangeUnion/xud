@@ -12,13 +12,11 @@ require('yargs')
     },
     rpcport: {
       alias: 'p',
-      default: 8886,
       describe: 'RPC service port',
       type: 'number',
     },
     rpchost: {
       alias: 'h',
-      default: 'localhost',
       describe: 'RPC service hostname',
       type: 'string',
     },
@@ -32,6 +30,11 @@ require('yargs')
       describe: 'Display output in json format',
       type: 'boolean',
       default: false,
+    },
+    xudir: {
+      alias: 'x',
+      describe: 'Data directory for xud',
+      type: 'string',
     },
   })
   .commandDir('../dist/cli/commands/', { recurse: true })

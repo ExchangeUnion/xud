@@ -13,8 +13,8 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new RemovePairRequest();
   request.setPairId(argv.pair_id.toUpperCase());
-  loadXudClient(argv).removePair(request, callback(argv));
+  (await loadXudClient(argv)).removePair(request, callback(argv));
 };

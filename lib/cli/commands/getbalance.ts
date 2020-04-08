@@ -70,10 +70,10 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new GetBalanceRequest();
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
-  loadXudClient(argv).getBalance(request, callback(argv, displayBalances));
+  (await loadXudClient(argv)).getBalance(request, callback(argv, displayBalances));
 };

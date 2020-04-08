@@ -13,8 +13,8 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new ConnectRequest();
   request.setNodeUri(argv.node_uri);
-  loadXudClient(argv).connect(request, callback(argv));
+  (await loadXudClient(argv)).connect(request, callback(argv));
 };

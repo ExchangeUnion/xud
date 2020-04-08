@@ -28,11 +28,11 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new Currency();
   request.setCurrency(argv.currency.toUpperCase());
   request.setSwapClient(Number(SwapClientType[argv.swap_client]));
   request.setTokenAddress(argv.token_address);
   request.setDecimalPlaces(argv.decimal_places);
-  loadXudClient(argv).addCurrency(request, callback(argv));
+  (await loadXudClient(argv)).addCurrency(request, callback(argv));
 };

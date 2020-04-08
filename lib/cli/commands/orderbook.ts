@@ -178,10 +178,10 @@ const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) 
   console.log(JSON.stringify(jsonOrderbooks, undefined, 2));
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setOwner(Number(Owner.Both));
-  loadXudClient(argv).listOrders(request, callback(argv, displayTables, displayJson));
+  (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables, displayJson));
 };

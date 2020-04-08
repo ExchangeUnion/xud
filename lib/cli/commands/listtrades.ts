@@ -46,8 +46,8 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new ListTradesRequest();
   request.setLimit(argv.limit);
-  loadXudClient(argv).listTrades(request, callback(argv, displayTrades));
+  (await loadXudClient(argv)).listTrades(request, callback(argv, displayTrades));
 };

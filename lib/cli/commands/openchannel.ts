@@ -26,11 +26,12 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new OpenChannelRequest();
   request.setNodeIdentifier(argv.node_identifier);
   request.setCurrency(argv.currency.toUpperCase());
   request.setAmount(coinsToSats(argv.amount));
   request.setPushAmount(coinsToSats(argv.amount));
-  loadXudClient(argv).openChannel(request, callback(argv));
+
+  (await loadXudClient(argv)).openChannel(request, callback(argv));
 };

@@ -101,11 +101,11 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setOwner(Number(Owner[argv.owner]));
   request.setLimit(argv.limit);
-  loadXudClient(argv).listOrders(request, callback(argv, displayTables));
+  (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables));
 };

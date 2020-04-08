@@ -43,7 +43,7 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   .example(`$0 ${command} 10 ZRX/GNT market`, `place a market order to ${command} 10 ZRX for GNT`);
 };
 
-export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
+export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) => {
   const request = new PlaceOrderRequest();
 
   const numericPrice = Number(argv.price);
@@ -74,8 +74,9 @@ export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
     request.setReplaceOrderId(argv.replace_order_id);
   }
 
+  const client = await loadXudClient(argv);
   if (argv.stream) {
-    const subscription = loadXudClient(argv).placeOrder(request);
+    const subscription = client.placeOrder(request);
     let noMatches = true;
     subscription.on('data', (response: PlaceOrderEvent) => {
       if (argv.json) {
@@ -108,7 +109,7 @@ export const placeOrderHandler = (argv: Arguments<any>, side: OrderSide) => {
       console.error(err.message);
     });
   } else {
-    loadXudClient(argv).placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
+    client.placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
   }
 };
 

@@ -18,9 +18,9 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new UnbanRequest();
   request.setNodeIdentifier(argv.node_identifier);
   request.setReconnect(argv.reconnect);
-  loadXudClient(argv).unban(request, callback(argv));
+  (await loadXudClient(argv)).unban(request, callback(argv));
 };

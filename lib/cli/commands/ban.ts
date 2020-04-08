@@ -13,8 +13,8 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new BanRequest();
   request.setNodeIdentifier(argv.node_identifier);
-  loadXudClient(argv).ban(request, callback(argv));
+  (await loadXudClient(argv)).ban(request, callback(argv));
 };
