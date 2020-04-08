@@ -487,11 +487,12 @@ class ConnextClient extends SwapClient {
   public walletBalance = async (): Promise<WalletBalance> => {
     return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
   }
+
   /**
-   * Creates a payment client.
+   * Deposits funds to a node
    */
-  public openChannel = async (): Promise<void> => {
-    await this.initConnextClient();
+  public openChannel = async () => {
+    // TODO: call "/deposit" end point with { assetId: string; amount: number }
   }
 
   /**
