@@ -3,7 +3,7 @@ import { callback, loadXudClient } from '../command';
 import { OpenChannelRequest } from '../../proto/xudrpc_pb';
 import { coinsToSats } from '../utils';
 
-export const command = 'openchannel <node_identifier> <currency> <amount>';
+export const command = 'openchannel <node_identifier> <currency> <amount> [push_amount]';
 
 export const describe = 'open a payment channel with a peer';
 
@@ -20,6 +20,10 @@ export const builder = {
     type: 'number',
     description: 'the amount to be deposited into the channel',
   },
+  push_amount: {
+    type: 'number',
+    description: 'the amount to be pushed to the remote side of the channel',
+  },
 };
 
 export const handler = (argv: Arguments<any>) => {
@@ -27,5 +31,6 @@ export const handler = (argv: Arguments<any>) => {
   request.setNodeIdentifier(argv.node_identifier);
   request.setCurrency(argv.currency.toUpperCase());
   request.setAmount(coinsToSats(argv.amount));
+  request.setPushAmount(coinsToSats(argv.amount));
   loadXudClient(argv).openChannel(request, callback(argv));
 };

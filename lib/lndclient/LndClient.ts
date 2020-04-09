@@ -718,12 +718,12 @@ class LndClient extends SwapClient {
    * Opens a channel given peerPubKey and amount.
    */
   public openChannel = async (
-    { peerIdentifier: peerPubKey, units, lndUris }:
-    { peerIdentifier: string, units: number, lndUris: string[] },
+    { peerIdentifier: peerPubKey, units, lndUris, pushUnits = 0 }:
+    { peerIdentifier: string, units: number, lndUris: string[], pushUnits?: number },
   ): Promise<void> => {
     const connectionEstablished = await this.connectPeerAddreses(lndUris);
     if (connectionEstablished) {
-      await this.openChannelSync(peerPubKey, units);
+      await this.openChannelSync(peerPubKey, units, pushUnits);
     } else {
       throw new Error(`could not connect to lnd uris for ${peerPubKey}`);
     }
@@ -762,10 +762,11 @@ class LndClient extends SwapClient {
   /**
    * Opens a channel with a connected lnd node.
    */
-  private openChannelSync = (node_pubkey_string: string, local_funding_amount: number): Promise<lndrpc.ChannelPoint> => {
+  private openChannelSync = (nodePubkeyString: string, localFundingAmount: number, pushSat = 0): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
-    request.setNodePubkeyString(node_pubkey_string);
-    request.setLocalFundingAmount(local_funding_amount);
+    request.setNodePubkeyString(nodePubkeyString);
+    request.setLocalFundingAmount(localFundingAmount);
+    request.setPushSat(pushSat);
     return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint>('openChannelSync', request);
   }
 

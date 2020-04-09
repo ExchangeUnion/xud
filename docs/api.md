@@ -647,7 +647,8 @@
 | ----- | ---- | ----- | ----------- |
 | node_identifier | [string](#string) |  | The node pub key or alias of the peer with which to open channel with. |
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
-| amount | [int64](#int64) |  | The amount of the channel denominated in satoshis. |
+| amount | [int64](#int64) |  | The amount to be deposited into the channel denominated in satoshis. |
+| push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
 
 
 

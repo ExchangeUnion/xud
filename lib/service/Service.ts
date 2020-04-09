@@ -240,9 +240,9 @@ class Service {
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (
-    args: { nodeIdentifier: string, amount: number, currency: string },
+    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
   ) => {
-    const { nodeIdentifier, amount, currency } = args;
+    const { nodeIdentifier, amount, currency, pushAmount } = args;
     argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
@@ -253,6 +253,7 @@ class Service {
         peer,
         amount,
         currency,
+        pushAmount,
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
