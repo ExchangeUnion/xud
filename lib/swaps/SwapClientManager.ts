@@ -413,16 +413,11 @@ class SwapClientManager extends EventEmitter {
       amount: pushAmount,
     });
 
+    let uris: string[] | undefined;
     if (isLndClient(swapClient)) {
-      const lndUris = peer.getLndUris(currency);
-      if (!lndUris) {
-        throw new Error('unable to get lnd listening uris');
-      }
-      await swapClient.openChannel({ peerIdentifier, units, lndUris, pushUnits });
-      return;
+      uris = peer.getLndUris(currency);
     }
-    // fallback to raiden for all non-lnd currencies
-    await swapClient.openChannel({ peerIdentifier, units, currency });
+    await swapClient.openChannel({ peerIdentifier, currency, units, uris, pushUnits });
   }
 
   /**

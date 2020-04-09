@@ -236,20 +236,6 @@ describe('Swaps.SwapClientManager', () => {
       }
     });
 
-    test('it fails lnd without lndUris', async () => {
-      expect.assertions(1);
-      const currency = 'BTC';
-      const amount = 16000000;
-      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-      peer.getLndUris = jest.fn().mockReturnValue(undefined);
-      await swapClientManager.init(db.models);
-      try {
-        await swapClientManager.openChannel({ peer, currency, amount });
-      } catch (e) {
-        expect(e).toMatchSnapshot();
-      }
-    });
-
     test('it opens a channel using lnd', async () => {
       const currency = 'BTC';
       const amount = 16000000;
@@ -268,7 +254,7 @@ describe('Swaps.SwapClientManager', () => {
       expect(mockLndOpenChannel).toHaveBeenCalledWith(
         expect.objectContaining({
           units: amount,
-          lndUris: lndListeningUris,
+          uris: lndListeningUris,
           peerIdentifier: peerLndPubKey,
         }),
       );
@@ -295,6 +281,8 @@ describe('Swaps.SwapClientManager', () => {
           currency,
           units: expectedUnits,
           peerIdentifier: peerRaidenAddress,
+          // uris: undefined,
+          pushUnits: 0,
         }),
       );
     });

@@ -278,12 +278,12 @@ abstract class SwapClient extends EventEmitter {
    * optional currency and optional lndUris.
    */
   public abstract async openChannel(
-    { peerIdentifier, units, currency, lndUris, pushUnits }:
+    { peerIdentifier, units, currency, uris, pushUnits }:
     {
       peerIdentifier: string,
       units: number,
       currency?: string,
-      lndUris?: string[],
+      uris?: string[],
       pushUnits?: number,
     },
   ): Promise<void>;
