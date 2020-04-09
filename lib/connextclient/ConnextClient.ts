@@ -336,7 +336,12 @@ class ConnextClient extends SwapClient {
           );
         } else {
           // TODO: is the error logging enough or should we also emit htlcRejected to Swaps?
-          this.logger.error(`ignoring received pending transfer because it does not meet the requirements - expectedUnits: ${expectedUnits} actualUnits: ${amount}, expectedHash: ${expectedHash} actualHash: ${rHash}, expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress}, expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`);
+          this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
+            expectedUnits: ${expectedUnits} actualUnits: ${amount},
+            expectedHash: ${expectedHash} actualHash: ${rHash},
+            expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
+            expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
+          );
         }
       }
     });
