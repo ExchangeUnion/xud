@@ -354,7 +354,6 @@ class ConnextClient extends SwapClient {
     await this.sendRequest('/hashlock-resolve', 'POST', {
       lockHash: `0x${rPreimage}`,
     });
-    // TODO: error handling
   }
 
   public removeInvoice = async () => {
