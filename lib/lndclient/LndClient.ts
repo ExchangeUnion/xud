@@ -725,14 +725,13 @@ class LndClient extends SwapClient {
     if (connectionEstablished) {
       await this.openChannelSync(peerPubKey, units);
     } else {
-      throw new Error('connectPeerAddreses failed');
+      throw new Error(`could not connect to lnd uris for ${peerPubKey}`);
     }
   }
 
   /**
-   * Tries to connect to a given list of peer's node addresses
-   * in a sequential order.
-   * Returns true when successful, otherwise false.
+   * Tries to connect to a given list of a peer's uris in sequential order.
+   * @returns `true` when successful, otherwise `false`.
    */
   private connectPeerAddreses = async (
     peerListeningUris: string[],
@@ -745,23 +744,16 @@ class LndClient extends SwapClient {
           address: splitUri[1],
         };
       });
-    const CONNECT_TIMEOUT = 4000;
     for (const uri of splitListeningUris) {
       const { peerPubKey, address } = uri;
-      let timeout: NodeJS.Timeout | undefined;
       try {
-        timeout = setTimeout(() => {
-          throw new Error('connectPeer has timed out');
-        }, CONNECT_TIMEOUT);
         await this.connectPeer(peerPubKey, address);
         return true;
       } catch (e) {
         if (e.message && e.message.includes('already connected')) {
           return true;
         }
-        this.logger.trace(`connectPeer failed: ${e}`);
-      } finally {
-        timeout && clearTimeout(timeout);
+        this.logger.trace(`connectPeer to ${uri} failed: ${e}`);
       }
     }
     return false;

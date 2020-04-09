@@ -126,30 +126,6 @@ describe('LndClient', () => {
         .toHaveBeenCalledWith(peerPubKey, units);
     });
 
-    test('it throws when timeout reached', async () => {
-      expect.assertions(3);
-      jest.useFakeTimers();
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
-      const timeOut = () => {
-        jest.runAllTimers();
-        return new Promise(() => {});
-      };
-      lnd['connectPeer'] = jest.fn()
-        .mockImplementation(timeOut);
-      try {
-        await lnd.openChannel({
-          units,
-          peerIdentifier: peerPubKey,
-          lndUris: lndListeningUris,
-        });
-      } catch (e) {
-        expect(e).toMatchSnapshot();
-      }
-      expect(lnd['connectPeer']).toHaveBeenCalledTimes(2);
-      expect(lnd['openChannelSync']).not.toHaveBeenCalled();
-      jest.clearAllTimers();
-    });
-
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
       lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
