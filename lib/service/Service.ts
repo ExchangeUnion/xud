@@ -254,12 +254,19 @@ class Service {
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     try {
-      const peer = this.pool.getPeer(nodePubKey);
-      await this.swapClientManager.openChannel({
-        peer,
-        amount,
-        currency,
-      });
+      if (nodePubKey === 'Connext') {
+        await this.swapClientManager.connextClient?.deposit({
+          currency,
+          amount,
+        });
+      } else {
+        const peer = this.pool.getPeer(nodePubKey);
+        await this.swapClientManager.openChannel({
+          peer,
+          amount,
+          currency,
+        });
+      }
     } catch (e) {
       const errorMessage = e.message || 'unknown';
       throw errors.OPEN_CHANNEL_FAILURE(currency, nodePubKey, amount, errorMessage);
