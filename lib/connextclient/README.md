@@ -1,65 +1,70 @@
-# Getting Started
+# Connext
 
-These instructions will guide you on setting up Connext compatible with development builds of XUD.
-
-## Prerequisites
-
-- Linux, preferably [Ubuntu 17.04 or greater](https://wiki.ubuntu.com/Releases).
-- Node, preferably [13.7 or greater](https://nodejs.org/en/)
-- _If installing Go Ethereum from source_ - [Go 1.7 or greater](https://golang.org/doc/install), preferably the latest version.
-
-## Go Ethereum
-
-### Installing Go Ethereum
-
-Install the latest release of Go Ethereum according to the [official instructions](https://github.com/ethereum/go-ethereum/wiki/Installing-Geth).
-
-### Running Go Ethereum
-
-Start `geth` and allow it to sync with the Ropsten testnet.
-
+## Installing Connext node for local development
 ```bash
-geth --testnet --fast --rpc --rpcapi eth,net,web3 --bootnodes "enode://20c9ad97c081d63397d7b685a412227a40e23c8bdc6688c6f37e97cfbc22d2b4d1db1510d8f61e6a8866ad7f0e17c02b14182d37ea7c3c8b9c2683aeb6b733a1@52.169.14.227:30303,enode://6ce05930c72abc632c58e2e4324f7c7ea478cec0ed4fa2528982cf34483094e9cbc9216e7aa349691242576d552a2a56aaeae426c5303ded677ce455ba1acd9d@13.84.180.240:30303"
+git clone https://github.com/ConnextProject/indra.git
+cd indra
+make
+```
+### Running Connext node
+```bash
+make start
 ```
 
-### Creating an Account
-
-Attach to the `geth` console.
-
+For logs
 ```bash
-geth attach --datadir ~/.ethereum/testnet
+bash ops/logs.sh node
 ```
 
-From within the console, create an account.
-
-```bash
-personal.newAccount()
-```
-
-## Connext
-
-### Installing Connext
-
-Install v0.3.0 from source with a virtual python environment.
-
+## Installing Connext REST API client
 ```bash
 git clone https://github.com/ConnextProject/rest-api-client
 cd rest-api-client
 npm install
-npm run start
 ```
 
-### Running Connext
-
+### Running Connext REST API client
 Create environment variables file and point to the Etheruem and Connext node
 
 ```bash
-CONNEXT_ETH_PROVIDER_URL="INSERT_URL"
-CONNEXT_NODE_URL="INSERT_URL"
+CONNEXT_ETH_PROVIDER_URL="http://0.0.0.0:8545"
+CONNEXT_NODE_URL="http://0.0.0.0:8080"
 ```
 
 Then run the REST API server
-
 ```bash
 npm run start
 ```
+
+## Add Connext to xud.conf
+```bash
+[connext]
+disable = false
+host = "localhost"
+port = 5040
+```
+
+## Add ETH currency
+```bash
+./bin/xucli addcurrency ETH Connext 18 --token_address="0x0000000000000000000000000000000000000000"
+```
+A restart of xud is currently required for it to show up under `xucli getbalance` call.
+
+## Fund the Connext client address
+Get the Connext address from the output of `./bin/xucli getinfo`
+
+Initialize MetaMask wallet with seed `candy maple cake sugar pudding cream honey rich smooth crumble sweet treat` - this is the root treasury account for local development network/chain: `http://localhost:8545`.
+
+After making a transfer your funds should be visible as wallet balance in the output of `./bin/xucli getbalance`.
+
+## Open a payment channel between the node and client
+`./bin/xucli openchannel Connext ETH 1`
+
+Your funds should now be visiable as channel balance in the output of `./bin/xucli getbalance`.
+
+## Add trading pair
+`./bin/xucli addpair ETH BTC`.
+
+A restart of xud is currently required for the trading pair to be swappable.
+
+At this point you should be able to perform ETHBTC swaps.
