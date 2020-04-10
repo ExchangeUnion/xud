@@ -477,20 +477,17 @@ class ConnextClient extends SwapClient {
     const tokenAddress = this.getTokenAddress(currency);
 
     const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const { freeBalance } = await parseResponseBody<ConnextBalanceResponse>(res);
+    const { freeBalanceOffChain } = await parseResponseBody<ConnextBalanceResponse>(res);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
-      units: Number(freeBalance),
+      units: Number(freeBalanceOffChain),
     });
-    const inactiveBalance = 0;
-    const balance = freeBalanceAmount + inactiveBalance;
+    const balance = freeBalanceAmount;
 
     return {
       balance,
-      // TODO: inactiveBalance
-      inactiveBalance,
-      // TODO: is there a way to check pending channel balance for Connext?
+      inactiveBalance: 0,
       pendingOpenBalance: 0,
     };
   }
@@ -506,8 +503,32 @@ class ConnextClient extends SwapClient {
   /**
    * Returns the balances available in wallet for a specified currency.
    */
-  public walletBalance = async (): Promise<WalletBalance> => {
-    return { totalBalance: 0, confirmedBalance: 0, unconfirmedBalance: 0 };
+  public walletBalance = async (
+    currency?: string,
+  ): Promise<WalletBalance> => {
+    if (!currency) {
+      return {
+        totalBalance: 0,
+        confirmedBalance: 0,
+        unconfirmedBalance: 0,
+      };
+    }
+
+    const tokenAddress = this.getTokenAddress(currency);
+
+    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
+    const { freeBalanceOnChain } = await parseResponseBody<ConnextBalanceResponse>(res);
+
+    const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
+      currency,
+      units: Number(freeBalanceOnChain),
+    });
+
+    return {
+      totalBalance: confirmedBalanceAmount,
+      confirmedBalance: confirmedBalanceAmount,
+      unconfirmedBalance: 0,
+    };
   }
 
   /**
@@ -536,20 +557,6 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
     return appId;
-
-    /* TODO: we don't need this?
-    const response: TokenPaymentResponse = {
-      ...payload,
-      secret: preImage,
-    };
-
-    if (response.secret && response.secret.startsWith('0x')) {
-      // remove '0x'
-      return response.secret.slice(2);
-    } else {
-      throw errors.INVALID_TOKEN_PAYMENT_RESPONSE;
-    }
-    */
   }
 
   /**

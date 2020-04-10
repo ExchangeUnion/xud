@@ -71,7 +71,10 @@ export type ConnextChannelConfig = {
 /**
  * The response for channelBalance call.
  */
-export type ConnextBalanceResponse = { freeBalance: string };
+export type ConnextBalanceResponse = {
+  freeBalanceOffChain: string;
+  freeBalanceOnChain: string;
+};
 
 /**
  * The response for hashLockTransfer call.
