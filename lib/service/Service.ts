@@ -5,6 +5,7 @@ import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
+import { ConnextInfo } from '../connextclient/types';
 import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
@@ -46,6 +47,7 @@ type XudInfo = {
   orders: { peer: number, own: number };
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
+  connext?: ConnextInfo;
   pendingSwapHashes: string[];
 };
 
@@ -341,6 +343,11 @@ class Service {
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
     const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
+    const connext = await this.swapClientManager.connextClient?.getInfo();
+    if (connext) {
+      connext.chain = `${connext.chain ? connext.chain : ''} ${this.pool.getNetwork()}`;
+    }
+
     if (raiden) {
       raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
     }
@@ -348,6 +355,7 @@ class Service {
     return {
       lnd,
       raiden,
+      connext,
       nodePubKey,
       uris,
       numPairs,

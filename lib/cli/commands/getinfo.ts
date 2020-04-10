@@ -2,7 +2,13 @@ import { callback, loadXudClient } from '../command';
 import { Arguments } from 'yargs';
 import Table, { VerticalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { GetInfoRequest, GetInfoResponse, LndInfo, RaidenInfo } from '../../proto/xudrpc_pb';
+import {
+  GetInfoRequest,
+  GetInfoResponse,
+  LndInfo,
+  RaidenInfo,
+  ConnextInfo,
+} from '../../proto/xudrpc_pb';
 
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
@@ -95,10 +101,35 @@ const displayRaiden = (info: RaidenInfo.AsObject) => {
 
 };
 
+const displayConnext = (info: ConnextInfo.AsObject) => {
+  const table = new Table() as VerticalTable;
+
+  table.push(
+    { [colors.blue('Status')]: info.status },
+    { [colors.blue('Version')]: info.version },
+    { [colors.blue('Address')]: info.address },
+    { [colors.blue('Channels')] :
+ `Active: ${info.channels ? info.channels['active'] : 0}\
+ | Pending: 0\
+ | Closed: ${info.channels ? info.channels['closed'] : 0}`,
+    },
+    { [colors.blue('Network')] : info.chain },
+  );
+
+  console.log(colors.underline(colors.bold('\nConnext info:')));
+  console.log(table.toString(), '\n');
+
+};
+
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
   displayGeneral(response);
+
   if (response.raiden) {
     displayRaiden(response.raiden);
+  }
+
+  if (response.connext) {
+    displayConnext(response.connext);
   }
 
   response.lndMap.forEach(asset => displayLndInfo(asset[0], asset[1]));

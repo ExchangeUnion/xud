@@ -402,19 +402,16 @@ class ConnextClient extends SwapClient {
     return 1; // connext's API does not tell us the height
   }
 
-  public getConnextInfo = async (): Promise<ConnextInfo> => {
+  public getInfo = async (): Promise<ConnextInfo> => {
     let channels: ConnextChannelCount | undefined;
     let address: string | undefined;
     let version: string | undefined;
-    let status = 'Ready';
-    const chain =
-      Object.keys(this.tokenAddresses).find(
-        key => this.tokenAddresses.get(key) === this.address,
-      ) || 'connext';
+    let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
       try {
+        status = 'Ready';
         version = (await this.getVersion()).version;
         const connextChannels = await this.getChannels();
         channels = {
@@ -422,7 +419,7 @@ class ConnextClient extends SwapClient {
           settled: 0,
           closed: 0,
         };
-        address = this.address;
+        address = connextChannels[0].freeBalanceAddress;
         if (channels.active <= 0) {
           status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS().message;
         }
@@ -432,7 +429,6 @@ class ConnextClient extends SwapClient {
     }
 
     return {
-      chain,
       status,
       channels,
       address,
@@ -444,7 +440,10 @@ class ConnextClient extends SwapClient {
    * Gets the connext version.
    */
   public getVersion = async (): Promise<ConnextVersion> => {
-    return ({} as any);
+    return ({
+      // TODO: there's no version endpoint for the rest-api-wrapper, yet
+      version: 'happy-easter',
+    });
   }
 
   /**
@@ -463,6 +462,7 @@ class ConnextClient extends SwapClient {
    * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
    */
   public getChannels = async (): Promise<ConnextChannelConfig[]> => {
+    // TODO: change this - DO NOT MERGE before this TODO is gone
     const channel = await this.getChannel();
     return [channel];
   }

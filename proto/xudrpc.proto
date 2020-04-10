@@ -433,6 +433,7 @@ message GetInfoResponse {
   // The network of this node.
   string network = 10 [json_name = "network"];
   repeated string pending_swap_hashes = 11 [json_name = "pending_swap_hashes"];
+  ConnextInfo connext = 12 [json_name = "connext"];
 }
 
 message GetNodeInfoRequest {
@@ -635,6 +636,14 @@ message PlaceOrderEvent {
 }
 
 message RaidenInfo {
+  string status = 1 [json_name = "status"];
+  string address = 2 [json_name = "address"];
+  Channels channels = 3 [json_name = "channels"];
+  string version = 4 [json_name = "version"];
+  string chain = 5 [json_name = "chain"];
+}
+
+message ConnextInfo {
   string status = 1 [json_name = "status"];
   string address = 2 [json_name = "address"];
   Channels channels = 3 [json_name = "channels"];
