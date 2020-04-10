@@ -199,8 +199,8 @@ class ConnextClient extends SwapClient {
         throw new Error('Cannot initialize ConnextClient without seed');
       }
       await this.initWallet(this.seed);
-      await this.initConnextClient();
       await this.unsubscribeAll();
+      await this.initConnextClient();
       await this.subscribePreimage();
       await this.subscribeIncomingTransfer();
       const configRes = await this.sendRequest('/config', 'GET');
