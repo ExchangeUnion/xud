@@ -121,6 +121,7 @@ class ConnextClient extends SwapClient {
         timelock === expectedTimelock &&
         tokenAddress === expectedTokenAddress
       ) {
+        this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
         this.emit('htlcAccepted', rHash, units, currency);
         // TODO: should we also store this in the database?
         this.expectedIncomingTransfers.delete(rHash);
