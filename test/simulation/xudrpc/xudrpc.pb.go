@@ -4240,7 +4240,7 @@ type XudClient interface {
 	AddPair(ctx context.Context, in *AddPairRequest, opts ...grpc.CallOption) (*AddPairResponse, error)
 	// Bans a node and immediately disconnects from it. This can be used to prevent any connections
 	// to a specific node.
-	// shell: xucli ban <node_key>
+	// shell: xucli ban <node_identifier>
 	Ban(ctx context.Context, in *BanRequest, opts ...grpc.CallOption) (*BanResponse, error)
 	// Attempts to connect to a node. Once connected, the node is added to the list of peers and
 	// becomes available for swaps and trading. A handshake exchanges information about the peer's
@@ -4257,7 +4257,7 @@ type XudClient interface {
 	// shell: xucli getinfo
 	GetInfo(ctx context.Context, in *GetInfoRequest, opts ...grpc.CallOption) (*GetInfoResponse, error)
 	// Gets general information about a node.
-	// shell: xucli getnodeinfo <node_key>
+	// shell: xucli getnodeinfo <node_identifier>
 	GetNodeInfo(ctx context.Context, in *GetNodeInfoRequest, opts ...grpc.CallOption) (*GetNodeInfoResponse, error)
 	// Gets orders from the order book. This call returns the state of the order book at a given point
 	// in time, although it is not guaranteed to still be vaild by the time a response is received
@@ -4279,7 +4279,7 @@ type XudClient interface {
 	// shell: xucli listtrades [limit]
 	ListTrades(ctx context.Context, in *ListTradesRequest, opts ...grpc.CallOption) (*ListTradesResponse, error)
 	// Opens a payment channel to a peer for the specified amount and currency.
-	// shell: xucli openchannel <node_key> <currency> <amount>
+	// shell: xucli openchannel <node_identifier> <currency> <amount>
 	OpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*OpenChannelResponse, error)
 	// Adds an order to the order book.
 	// If price is zero or unspecified a market order will get added.
@@ -4329,7 +4329,7 @@ type XudClient interface {
 	// shell: xucli tradinglimits [currency]
 	TradingLimits(ctx context.Context, in *TradingLimitsRequest, opts ...grpc.CallOption) (*TradingLimitsResponse, error)
 	// Removes a ban from a node manually and, optionally, attempts to connect to it.
-	// shell: xucli unban <node_key> [reconnect]
+	// shell: xucli unban <node_identifier> [reconnect]
 	Unban(ctx context.Context, in *UnbanRequest, opts ...grpc.CallOption) (*UnbanResponse, error)
 }
 
@@ -4679,7 +4679,7 @@ type XudServer interface {
 	AddPair(context.Context, *AddPairRequest) (*AddPairResponse, error)
 	// Bans a node and immediately disconnects from it. This can be used to prevent any connections
 	// to a specific node.
-	// shell: xucli ban <node_key>
+	// shell: xucli ban <node_identifier>
 	Ban(context.Context, *BanRequest) (*BanResponse, error)
 	// Attempts to connect to a node. Once connected, the node is added to the list of peers and
 	// becomes available for swaps and trading. A handshake exchanges information about the peer's
@@ -4696,7 +4696,7 @@ type XudServer interface {
 	// shell: xucli getinfo
 	GetInfo(context.Context, *GetInfoRequest) (*GetInfoResponse, error)
 	// Gets general information about a node.
-	// shell: xucli getnodeinfo <node_key>
+	// shell: xucli getnodeinfo <node_identifier>
 	GetNodeInfo(context.Context, *GetNodeInfoRequest) (*GetNodeInfoResponse, error)
 	// Gets orders from the order book. This call returns the state of the order book at a given point
 	// in time, although it is not guaranteed to still be vaild by the time a response is received
@@ -4718,7 +4718,7 @@ type XudServer interface {
 	// shell: xucli listtrades [limit]
 	ListTrades(context.Context, *ListTradesRequest) (*ListTradesResponse, error)
 	// Opens a payment channel to a peer for the specified amount and currency.
-	// shell: xucli openchannel <node_key> <currency> <amount>
+	// shell: xucli openchannel <node_identifier> <currency> <amount>
 	OpenChannel(context.Context, *OpenChannelRequest) (*OpenChannelResponse, error)
 	// Adds an order to the order book.
 	// If price is zero or unspecified a market order will get added.
@@ -4768,7 +4768,7 @@ type XudServer interface {
 	// shell: xucli tradinglimits [currency]
 	TradingLimits(context.Context, *TradingLimitsRequest) (*TradingLimitsResponse, error)
 	// Removes a ban from a node manually and, optionally, attempts to connect to it.
-	// shell: xucli unban <node_key> [reconnect]
+	// shell: xucli unban <node_identifier> [reconnect]
 	Unban(context.Context, *UnbanRequest) (*UnbanResponse, error)
 }
 
