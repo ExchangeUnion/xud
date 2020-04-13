@@ -29,27 +29,9 @@ import {
   ConnextTransferStatus,
   ExpectedIncomingTransfer,
 } from './types';
+import { parseResponseBody } from '../utils/utils';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
-
-/**
- * A utility function to parse the payload from an http response.
- */
-async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
-  res.setEncoding('utf8');
-  return new Promise<T>((resolve, reject) => {
-    let body = '';
-    res.on('data', (chunk) => {
-      body += chunk;
-    });
-    res.on('end', () => {
-      resolve(JSON.parse(body));
-    });
-    res.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
 
 interface ConnextClient {
   once(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
