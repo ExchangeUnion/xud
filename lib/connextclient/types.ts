@@ -1,9 +1,6 @@
 /**
  * The configurable options for the connext client.
  */
-
-import { PaymentState } from 'lib/swaps/SwapClient';
-
 export type ConnextClientConfig = {
   disable: boolean;
   host: string;
@@ -29,7 +26,6 @@ export type ConnextChannelCount = {
 /**
  * The connext version.
  */
-
 export type ConnextVersion = {
   version: string;
 };
@@ -69,7 +65,7 @@ export type ConnextChannelConfig = {
 };
 
 /**
- * The response for channelBalance call.
+ * The response for balance call.
  */
 export type ConnextBalanceResponse = {
   freeBalanceOffChain: string;
@@ -95,11 +91,6 @@ export type ConnextTransferStatus = {
   lockHash: string;
   status: string;
   meta?: any;
-};
-
-export type PaymentHistoryItem = {
-  rHash: string;
-  status: PaymentState;
 };
 
 export type ExpectedIncomingTransfer = {
