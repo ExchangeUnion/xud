@@ -256,7 +256,10 @@ abstract class SwapClient extends EventEmitter {
   /**
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
    */
-  public abstract async addInvoice(rHash: string, units: number, expiry?: number): Promise<void>;
+  public abstract async addInvoice(
+    { rHash, units, expiry, currency }:
+    { rHash: string, units: number, expiry?: number, currency?: string },
+  ): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 

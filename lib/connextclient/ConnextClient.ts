@@ -321,9 +321,14 @@ class ConnextClient extends SwapClient {
     }
   }
 
-  public addInvoice = async (expectedHash: string, expectedUnits: number, expectedTimelock = this.finalLock) => {
-    // TODO: get expectedTokenAddress from params
-    const expectedTokenAddress = '0x0000000000000000000000000000000000000000';
+  public addInvoice = async (
+    { rHash: expectedHash, units: expectedUnits, expiry: expectedTimelock, currency: expectedCurrency }:
+    { rHash: string, units: number, expiry?: number, currency?: string },
+  ) => {
+    if (!expectedCurrency) {
+      throw new Error('cannot add invoice, expected currency is missing');
+    }
+    const expectedTokenAddress = this.tokenAddresses.get(expectedCurrency);
     // TODO: what happens in case of multiple transfers at the same time?
     this.once('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
       const {

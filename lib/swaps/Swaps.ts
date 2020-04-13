@@ -184,7 +184,7 @@ class Swaps extends EventEmitter {
       this.sanitySwaps.set(rHash, sanitySwap);
       const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await swapClient.addInvoice(rHash, 1);
+        await swapClient.addInvoice({ rHash, units: 1 });
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
@@ -388,7 +388,7 @@ class Swaps extends EventEmitter {
 
     try {
       await Promise.all([
-        swapClient.addInvoice(rHash, 1),
+        swapClient.addInvoice({ rHash, units: 1 }),
         peer.sendPacket(sanitySwapInitPacket),
         peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
@@ -642,7 +642,12 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await makerSwapClient.addInvoice(deal.rHash, deal.makerUnits, deal.makerCltvDelta);
+      await makerSwapClient.addInvoice({
+        rHash: deal.rHash,
+        units: deal.makerUnits,
+        expiry: deal.makerCltvDelta,
+        currency: deal.makerCurrency,
+      });
     } catch (err) {
       await this.failDeal({
         deal,
@@ -731,7 +736,12 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await takerSwapClient.addInvoice(deal.rHash, deal.takerUnits, deal.takerCltvDelta);
+      await takerSwapClient.addInvoice({
+        rHash: deal.rHash,
+        units: deal.takerUnits,
+        expiry: deal.takerCltvDelta,
+        currency: deal.takerCurrency,
+      });
     } catch (err) {
       await this.failDeal({
         deal,
