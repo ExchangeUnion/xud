@@ -585,7 +585,6 @@ class Service {
    * Provides preimage for a hash.
    */
   public providePreimage = async (request: ProvidePreimageEvent) => {
-    // TODO: argChecks
     this.swapClientManager.connextClient?.emit('preimage', request);
   }
 
@@ -593,7 +592,6 @@ class Service {
    * Notifies Connext client that a transfer has been received.
    */
   public transferReceived = async (request: TransferReceivedEvent) => {
-    // TODO: argChecks
     this.swapClientManager.connextClient?.emit('transferReceived', request);
   }
 }
