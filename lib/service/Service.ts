@@ -5,7 +5,11 @@ import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
-import { ConnextInfo } from '../connextclient/types';
+import {
+  ConnextInfo,
+  ProvidePreimageEvent,
+  TransferReceivedEvent,
+} from '../connextclient/types';
 import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
@@ -14,8 +18,6 @@ import {
   ResolveRequest,
   SwapFailure,
   SwapSuccess,
-  ProvidePreimageRequest,
-  TransferReceivedRequest,
 } from '../swaps/types';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -582,7 +584,7 @@ class Service {
   /**
    * Provides preimage for a hash.
    */
-  public providePreimage = async (request: ProvidePreimageRequest) => {
+  public providePreimage = async (request: ProvidePreimageEvent) => {
     // TODO: argChecks
     this.swapClientManager.connextClient?.emit('preimage', request);
   }
@@ -590,7 +592,7 @@ class Service {
   /**
    * Notifies Connext client that a transfer has been received.
    */
-  public transferReceived = async (request: TransferReceivedRequest) => {
+  public transferReceived = async (request: TransferReceivedEvent) => {
     // TODO: argChecks
     this.swapClientManager.connextClient?.emit('transferReceived', request);
   }

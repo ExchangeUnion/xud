@@ -12,7 +12,7 @@ import SwapClient, {
   TradingLimits,
   SwapClientInfo,
 } from '../swaps/SwapClient';
-import { SwapDeal, ProvidePreimageRequest, TransferReceivedRequest } from '../swaps/types';
+import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -28,6 +28,8 @@ import {
   TokenPaymentRequest,
   ConnextTransferStatus,
   ExpectedIncomingTransfer,
+  ProvidePreimageEvent,
+  TransferReceivedEvent,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 
@@ -36,16 +38,16 @@ export const TIMELOCK_BUFFER = 100;
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
 interface ConnextClient {
-  once(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
-  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
+  once(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
+  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
-  emit(event: 'preimage', preimageRequest: ProvidePreimageRequest): void;
-  emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedRequest): void;
+  emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
+  emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
 }
 /**
  * A class representing a client to interact with connext.
@@ -94,7 +96,7 @@ class ConnextClient extends SwapClient {
 
   public initSpecific = async () => {
     // listen for incoming transfers
-    this.on('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
+    this.on('transferReceived', (transferReceivedRequest: TransferReceivedEvent) => {
       const {
         tokenAddress,
         units,
@@ -288,7 +290,7 @@ class ConnextClient extends SwapClient {
         reject('hash lock transfer was not claimed within the timeout');
       }, 30000);
       // TODO: what happens in case of multiple transfers at the same time?
-      this.once('preimage', (preimageRequest: ProvidePreimageRequest) => {
+      this.once('preimage', (preimageRequest: ProvidePreimageEvent) => {
         // TODO: check that the hash and preimage match
         clearTimeout(failTimeout);
         resolve(preimageRequest.preimage);

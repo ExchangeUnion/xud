@@ -138,3 +138,15 @@ export type ConnextIncomingTransferRequest = {
     };
   };
 };
+
+export type ProvidePreimageEvent = {
+  rHash: string,
+  preimage: string,
+};
+
+export type TransferReceivedEvent = {
+  tokenAddress: string;
+  rHash: string;
+  timelock: number;
+  units: number;
+};
