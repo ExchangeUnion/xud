@@ -512,7 +512,7 @@ message ListPeersResponse {
 
 message ListTradesRequest {
   // The maximum number of trades to return
-  int32 limit = 1 [json_name = "limit"];
+  uint32 limit = 1 [json_name = "limit"];
 }
 
 message ListTradesResponse {
@@ -535,7 +535,7 @@ message OpenChannelRequest {
   // The ticker symbol of the currency to open the channel for.
   string currency = 2 [json_name = "currency"];
   // The amount to be deposited into the channel denominated in satoshis.
-  int64 amount = 3 [json_name = "amount"];
+  uint64 amount = 3 [json_name = "amount"];
   // The balance amount to be pushed to the remote side of the channel denominated in satoshis.
   uint64 push_amount = 4 [json_name = "push_amount"];
 }
@@ -798,7 +798,7 @@ message Trade {
   // The payment hash involved in this trade.
   string r_hash = 3 [json_name = "r_hash"];
   // The quantity transacted in this trade.
-  int64 quantity = 4 [json_name = "quantity"];
+  uint64 quantity = 4 [json_name = "quantity"];
   // The trading pair for this trade.
   string pair_id = 5 [json_name = "pair_id"];
 }

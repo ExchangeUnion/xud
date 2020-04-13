@@ -628,7 +628,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| limit | [int32](#int32) |  | The maximum number of trades to return |
+| limit | [uint32](#uint32) |  | The maximum number of trades to return |
 
 
 
@@ -681,7 +681,7 @@
 | ----- | ---- | ----- | ----------- |
 | node_identifier | [string](#string) |  | The node pub key or alias of the peer with which to open channel with. |
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
-| amount | [int64](#int64) |  | The amount to be deposited into the channel denominated in satoshis. |
+| amount | [uint64](#uint64) |  | The amount to be deposited into the channel denominated in satoshis. |
 | push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
 
 
@@ -1145,7 +1145,7 @@
 | maker_order | [Order](#xudrpc.Order) |  | The maker order involved in this trade. |
 | taker_order | [Order](#xudrpc.Order) |  | The taker order involved in this trade. |
 | r_hash | [string](#string) |  | The payment hash involved in this trade. |
-| quantity | [int64](#int64) |  | The quantity transacted in this trade. |
+| quantity | [uint64](#uint64) |  | The quantity transacted in this trade. |
 | pair_id | [string](#string) |  | The trading pair for this trade. |
 
 

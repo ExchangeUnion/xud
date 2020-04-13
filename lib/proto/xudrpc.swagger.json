@@ -1159,7 +1159,7 @@
       "properties": {
         "limit": {
           "type": "integer",
-          "format": "int32",
+          "format": "int64",
           "title": "The maximum number of trades to return"
         }
       }
@@ -1674,7 +1674,7 @@
         },
         "quantity": {
           "type": "string",
-          "format": "int64",
+          "format": "uint64",
           "description": "The quantity transacted in this trade."
         },
         "pair_id": {
