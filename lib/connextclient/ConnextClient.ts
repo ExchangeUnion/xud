@@ -193,6 +193,19 @@ class ConnextClient extends SwapClient {
     return tokenAdress;
   }
 
+  protected getCurrencyByTokenaddress(tokenAddress: string): string {
+    let currency;
+    for (const [key, value] of this.tokenAddresses.entries()) {
+      if (value === tokenAddress) {
+        currency = key;
+      }
+    }
+    if (!currency) {
+      throw new Error(`could not find currency for tokenAddress ${tokenAddress}`);
+    }
+    return currency;
+  }
+
   protected verifyConnection = async () => {
     this.logger.info('trying to verify connection to connext');
     try {
@@ -319,32 +332,28 @@ class ConnextClient extends SwapClient {
         timelock,
         rHash,
       } = transferReceivedRequest;
-      const currency = this.tokenAddresses.get(tokenAddress);
-      if (!currency) {
-        this.logger.error(`received transfer for unknown currency ${tokenAddress}`);
+      const currency = this.getCurrencyByTokenaddress(tokenAddress);
+      if (
+        // TODO: rename amount => units
+        amount === expectedUnits &&
+        rHash === expectedHash &&
+        timelock === expectedTimelock &&
+        tokenAddress === expectedTokenAddress
+      ) {
+        this.emit(
+          'htlcAccepted',
+          rHash,
+          amount,
+          currency,
+        );
       } else {
-        if (
-          // TODO: rename amount => units
-          amount === expectedUnits &&
-          rHash === expectedHash &&
-          timelock === expectedTimelock &&
-          tokenAddress === expectedTokenAddress
-        ) {
-          this.emit(
-            'htlcAccepted',
-            rHash,
-            amount,
-            currency,
-          );
-        } else {
-          // TODO: is the error logging enough or should we also emit htlcRejected to Swaps?
-          this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
-            expectedUnits: ${expectedUnits} actualUnits: ${amount},
-            expectedHash: ${expectedHash} actualHash: ${rHash},
-            expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
-            expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
-          );
-        }
+        // TODO: is the error logging enough or should we also emit htlcRejected to Swaps?
+        this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
+          expectedUnits: ${expectedUnits} actualUnits: ${amount},
+          expectedHash: ${expectedHash} actualHash: ${rHash},
+          expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
+          expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
+        );
       }
     });
   }
