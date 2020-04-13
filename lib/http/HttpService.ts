@@ -1,5 +1,6 @@
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
+import { TIMELOCK_BUFFER } from '../connextclient/ConnextClient';
 import { RaidenResolveRequest, RaidenResolveResponse } from '../raidenclient/types';
 
 type ConnextPreimageRequest = {
@@ -83,8 +84,6 @@ class HttpService {
       timelock: timelockHex,
     } = incomingTransferRequest.data.transferMeta;
     const rHash = lockHash.slice(2);
-    // TODO: import from ConnextClient
-    const TIMELOCK_BUFFER = 100;
     const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
     const units = parseInt(amountHex._hex, 16);
     this.service.transferReceived({

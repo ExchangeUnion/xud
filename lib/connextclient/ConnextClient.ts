@@ -31,6 +31,8 @@ import {
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 
+export const TIMELOCK_BUFFER = 100;
+
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
 interface ConnextClient {
