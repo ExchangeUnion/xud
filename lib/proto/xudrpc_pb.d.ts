@@ -202,6 +202,52 @@ export namespace Channels {
     }
 }
 
+export class CloseChannelRequest extends jspb.Message { 
+    getNodeIdentifier(): string;
+    setNodeIdentifier(value: string): void;
+
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+    getForce(): boolean;
+    setForce(value: boolean): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CloseChannelRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: CloseChannelRequest): CloseChannelRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CloseChannelRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CloseChannelRequest;
+    static deserializeBinaryFromReader(message: CloseChannelRequest, reader: jspb.BinaryReader): CloseChannelRequest;
+}
+
+export namespace CloseChannelRequest {
+    export type AsObject = {
+        nodeIdentifier: string,
+        currency: string,
+        force: boolean,
+    }
+}
+
+export class CloseChannelResponse extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CloseChannelResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: CloseChannelResponse): CloseChannelResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CloseChannelResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CloseChannelResponse;
+    static deserializeBinaryFromReader(message: CloseChannelResponse, reader: jspb.BinaryReader): CloseChannelResponse;
+}
+
+export namespace CloseChannelResponse {
+    export type AsObject = {
+    }
+}
+
 export class ConnectRequest extends jspb.Message { 
     getNodeUri(): string;
     setNodeUri(value: string): void;

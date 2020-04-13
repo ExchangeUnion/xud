@@ -217,6 +217,22 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.closeChannel]]
+   */
+  public closeChannel: grpc.handleUnaryCall<xudrpc.CloseChannelRequest, xudrpc.CloseChannelResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.closeChannel(call.request.toObject());
+      const response = new xudrpc.CloseChannelResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.removeOrder]]
    */
   public removeOrder: grpc.handleUnaryCall<xudrpc.RemoveOrderRequest, xudrpc.RemoveOrderResponse> = async (call, callback) => {

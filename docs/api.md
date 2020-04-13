@@ -12,6 +12,8 @@
     - [BanResponse](#xudrpc.BanResponse)
     - [Chain](#xudrpc.Chain)
     - [Channels](#xudrpc.Channels)
+    - [CloseChannelRequest](#xudrpc.CloseChannelRequest)
+    - [CloseChannelResponse](#xudrpc.CloseChannelResponse)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
     - [ConnextInfo](#xudrpc.ConnextInfo)
@@ -88,11 +90,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -213,6 +213,33 @@
 | inactive | [uint32](#uint32) |  | The number of inactive/offline channels for this lnd instance. |
 | pending | [uint32](#uint32) |  | The number of channels that are pending on-chain confirmation before they can be used. |
 | closed | [uint32](#uint32) |  | The number of channels that have been closed. |
+
+
+
+
+
+
+<a name="xudrpc.CloseChannelRequest"></a>
+
+### CloseChannelRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_identifier | [string](#string) |  | The node pub key or alias of the peer with which to close any channels with. |
+| currency | [string](#string) |  | The ticker symbol of the currency of the channel to close. |
+| force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
+
+
+
+
+
+
+<a name="xudrpc.CloseChannelResponse"></a>
+
+### CloseChannelResponse
+
 
 
 
@@ -1395,6 +1422,7 @@ The primary service for interacting with a running xud node.
 | AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. shell: xucli addcurrency &lt;currency&gt; &lt;swap_client&gt; [decimal_places] [token_address] |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. shell: xucli addpair &lt;base_currency&gt; &lt;quote_currency&gt; |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. shell: xucli ban &lt;node_identifier&gt; |
+| CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;node_identifier&gt; &lt;currency&gt; [--force] |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
 | Deposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli deposit &lt;currency&gt; |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
