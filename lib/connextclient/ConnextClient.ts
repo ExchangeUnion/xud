@@ -27,6 +27,7 @@ import {
   ConnextVersion,
   TokenPaymentRequest,
   ConnextTransferStatus,
+  ExpectedIncomingTransfer,
 } from './types';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
@@ -52,7 +53,7 @@ async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
 
 interface ConnextClient {
   once(event: 'preimage', listener: (preimageRequest: ProvidePreimageRequest) => void): void;
-  once(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
+  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedRequest) => void): void;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
@@ -71,6 +72,7 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
+  private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
   private port: number;
   private host: string;
   private unitConverter: UnitConverter;
@@ -106,7 +108,47 @@ class ConnextClient extends SwapClient {
     return 'Connext';
   }
 
-  public initSpecific = async () => {};
+  public initSpecific = async () => {
+    // listen for incoming transfers
+    this.on('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
+      const {
+        tokenAddress,
+        amount,
+        timelock,
+        rHash,
+      } = transferReceivedRequest;
+      const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
+      if (!expectedIncomingTransfer) {
+        this.logger.error(`received unexpected incoming transfer with rHash ${rHash}`);
+        return;
+      }
+      const {
+        rHash: expectedHash,
+        units: expectedUnits,
+        expiry: expectedTimelock,
+        tokenAddress: expectedTokenAddress,
+      } = expectedIncomingTransfer;
+      const currency = this.getCurrencyByTokenaddress(tokenAddress);
+      if (
+        // TODO: rename amount => units
+        amount === expectedUnits &&
+        rHash === expectedHash &&
+        timelock === expectedTimelock &&
+        tokenAddress === expectedTokenAddress
+      ) {
+        this.emit('htlcAccepted', rHash, amount, currency);
+        // TODO: should we also store this in the database?
+        this.expectedIncomingTransfers.delete(rHash);
+      } else {
+        this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
+          expectedUnits: ${expectedUnits} actualUnits: ${amount},
+          expectedHash: ${expectedHash} actualHash: ${rHash},
+          expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
+          expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
+        );
+      }
+    });
+  }
 
   public setSeed = (seed: string) => {
     this.seed = seed;
@@ -328,39 +370,18 @@ class ConnextClient extends SwapClient {
     if (!expectedCurrency) {
       throw new Error('cannot add invoice, expected currency is missing');
     }
-    const expectedTokenAddress = this.tokenAddresses.get(expectedCurrency);
-    // TODO: what happens in case of multiple transfers at the same time?
-    this.once('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
-      const {
-        tokenAddress,
-        amount,
-        timelock,
-        rHash,
-      } = transferReceivedRequest;
-      const currency = this.getCurrencyByTokenaddress(tokenAddress);
-      if (
-        // TODO: rename amount => units
-        amount === expectedUnits &&
-        rHash === expectedHash &&
-        timelock === expectedTimelock &&
-        tokenAddress === expectedTokenAddress
-      ) {
-        this.emit(
-          'htlcAccepted',
-          rHash,
-          amount,
-          currency,
-        );
-      } else {
-        // TODO: is the error logging enough or should we also emit htlcRejected to Swaps?
-        this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
-          expectedUnits: ${expectedUnits} actualUnits: ${amount},
-          expectedHash: ${expectedHash} actualHash: ${rHash},
-          expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
-          expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
-        );
-      }
-    });
+    if (!expectedTimelock) {
+      throw new Error('cannot add invoice, expiry is missing');
+    }
+    const expectedTokenAddress = this.getTokenAddress(expectedCurrency);
+    const expectedIncomingTransfer: ExpectedIncomingTransfer = {
+      rHash: expectedHash,
+      units: expectedUnits,
+      expiry: expectedTimelock,
+      tokenAddress: expectedTokenAddress,
+    };
+    // TODO: should we also store this in the database?
+    this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
   }
 
   /**

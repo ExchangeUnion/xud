@@ -101,3 +101,10 @@ export type PaymentHistoryItem = {
   rHash: string;
   status: PaymentState;
 };
+
+export type ExpectedIncomingTransfer = {
+  rHash: string;
+  units: number;
+  expiry: number;
+  tokenAddress: string;
+};
