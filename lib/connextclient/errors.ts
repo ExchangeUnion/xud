@@ -1,5 +1,4 @@
 import errorCodesPrefix from '../constants/errorCodesPrefix';
-import { ClientStatus } from '../swaps/SwapClient';
 
 const codesPrefix = errorCodesPrefix.CONNEXT;
 const errorCodes = {
@@ -12,10 +11,8 @@ const errorCodes = {
   TOKEN_ADDRESS_NOT_FOUND: codesPrefix.concat('.7'),
   PAYMENT_NOT_FOUND: codesPrefix.concat('.8'),
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.9'),
-  CONNEXT_IS_UNAVAILABLE: codesPrefix.concat('.10'),
   CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.11'),
   CONNEXT_CLIENT_NOT_INITIALIZED: codesPrefix.concat('.12'),
-  CONNEXT_WALLET_NOT_INITIALIZED: codesPrefix.concat('.13'),
 };
 
 const errors = {
@@ -23,10 +20,6 @@ const errors = {
     message: 'connext is disabled',
     code: errorCodes.CONNEXT_IS_DISABLED,
   },
-  CONNEXT_IS_UNAVAILABLE: (status: ClientStatus) => ({
-    message: `connext is ${ClientStatus[status]}`,
-    code: errorCodes.CONNEXT_IS_UNAVAILABLE,
-  }),
   CONNEXT_HAS_NO_ACTIVE_CHANNELS: () => ({
     message: 'connext has no active channels',
     code: errorCodes.CONNEXT_HAS_NO_ACTIVE_CHANNELS,
@@ -34,10 +27,6 @@ const errors = {
   CONNEXT_CLIENT_NOT_INITIALIZED: {
     message: 'connext client is not initialized',
     code: errorCodes.CONNEXT_CLIENT_NOT_INITIALIZED,
-  },
-  CONNEXT_WALLET_NOT_INITIALIZED: {
-    message: 'connext wallet is not initialized',
-    code: errorCodes.CONNEXT_WALLET_NOT_INITIALIZED,
   },
   INSUFFICIENT_BALANCE: {
     message: 'insufficient balance to perform request',
@@ -47,15 +36,6 @@ const errors = {
     message: 'request timed out',
     code: errorCodes.TIMEOUT,
   },
-  /**
-   * For HTTP 409 responses from Connext. For token payments 409 means "the address
-   * or the amount is invalid, or there is no path to the target, or the identifier
-   * is already in use for a different payment."
-   */
-  INVALID: (message: string) => ({
-    message,
-    code: errorCodes.INVALID,
-  }),
   SERVER_ERROR: {
     message: 'connext server error',
     code: errorCodes.SERVER_ERROR,
