@@ -119,5 +119,5 @@ export type TransferReceivedRequest = {
   tokenAddress: string;
   rHash: string;
   timelock: number;
-  amount: number;
+  units: number;
 };

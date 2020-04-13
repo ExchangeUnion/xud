@@ -86,11 +86,11 @@ class HttpService {
     // TODO: import from ConnextClient
     const TIMELOCK_BUFFER = 100;
     const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
-    const amount = parseInt(amountHex._hex, 16);
+    const units = parseInt(amountHex._hex, 16);
     this.service.transferReceived({
       rHash,
       timelock,
-      amount,
+      units,
       tokenAddress: assetId,
     });
     return { success: true };

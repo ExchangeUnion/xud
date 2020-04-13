@@ -95,7 +95,7 @@ class ConnextClient extends SwapClient {
     this.on('transferReceived', (transferReceivedRequest: TransferReceivedRequest) => {
       const {
         tokenAddress,
-        amount,
+        units,
         timelock,
         rHash,
       } = transferReceivedRequest;
@@ -112,18 +112,17 @@ class ConnextClient extends SwapClient {
       } = expectedIncomingTransfer;
       const currency = this.getCurrencyByTokenaddress(tokenAddress);
       if (
-        // TODO: rename amount => units
-        amount === expectedUnits &&
+        units === expectedUnits &&
         rHash === expectedHash &&
         timelock === expectedTimelock &&
         tokenAddress === expectedTokenAddress
       ) {
-        this.emit('htlcAccepted', rHash, amount, currency);
+        this.emit('htlcAccepted', rHash, units, currency);
         // TODO: should we also store this in the database?
         this.expectedIncomingTransfers.delete(rHash);
       } else {
         this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
-          expectedUnits: ${expectedUnits} actualUnits: ${amount},
+          expectedUnits: ${expectedUnits} actualUnits: ${units},
           expectedHash: ${expectedHash} actualHash: ${rHash},
           expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
           expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
