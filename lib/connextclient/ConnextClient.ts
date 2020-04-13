@@ -152,12 +152,6 @@ class ConnextClient extends SwapClient {
     return parseResponseBody<ConnextChannelConfig>(res);
   }
 
-  /* TODO: no longer necessary?
-  private unsubscribeAll = async () => {
-    await this.sendRequest('/subscribe/all', 'DELETE');
-  }
-  */
-
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'UPDATE_STATE_EVENT',
@@ -241,7 +235,6 @@ class ConnextClient extends SwapClient {
         throw new Error('Cannot initialize ConnextClient without seed');
       }
       await this.initWallet(this.seed);
-      // await this.unsubscribeAll();
       await this.initConnextClient();
       await this.subscribePreimage();
       await this.subscribeIncomingTransfer();
