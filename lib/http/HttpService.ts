@@ -2,27 +2,10 @@ import Service from '../service/Service';
 import serviceErrors from '../service/errors';
 import { TIMELOCK_BUFFER } from '../connextclient/ConnextClient';
 import { RaidenResolveRequest, RaidenResolveResponse } from '../raidenclient/types';
-import { ConnextPreimageRequest } from '../connextclient/types';
-
-type ConnextIncomingTransferRequest = {
-  id: string;
-  data: {
-    amount: {
-      _hex: string;
-    };
-    assetId: string;
-    meta: {
-      recipient: string;
-      sender: string;
-    };
-    transferMeta: {
-      lockHash: string;
-      timelock: {
-        _hex: string;
-      };
-    };
-  };
-};
+import {
+  ConnextPreimageRequest,
+  ConnextIncomingTransferRequest,
+} from '../connextclient/types';
 
 class HttpService {
   constructor(private service: Service) {}

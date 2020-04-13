@@ -118,3 +118,23 @@ export type ConnextPreimageRequest = {
     };
   }
 };
+
+export type ConnextIncomingTransferRequest = {
+  id: string;
+  data: {
+    amount: {
+      _hex: string;
+    };
+    assetId: string;
+    meta: {
+      recipient: string;
+      sender: string;
+    };
+    transferMeta: {
+      lockHash: string;
+      timelock: {
+        _hex: string;
+      };
+    };
+  };
+};
