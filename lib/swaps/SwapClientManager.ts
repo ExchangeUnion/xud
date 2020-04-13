@@ -454,7 +454,7 @@ class SwapClientManager extends EventEmitter {
    */
   public openChannel = async (
     { peer, amount, currency }:
-      { peer: Peer, amount: number, currency: string },
+    { peer: Peer, amount: number, currency: string },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
