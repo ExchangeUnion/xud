@@ -4278,7 +4278,7 @@ type XudClient interface {
 	// Gets a list of completed trades.
 	// shell: xucli listtrades [limit]
 	ListTrades(ctx context.Context, in *ListTradesRequest, opts ...grpc.CallOption) (*ListTradesResponse, error)
-	// Opens a payment channel to a peer with the given node pub key for the specified amount and currency.
+	// Opens a payment channel to a peer for the specified amount and currency.
 	// shell: xucli openchannel <node_key> <currency> <amount>
 	OpenChannel(ctx context.Context, in *OpenChannelRequest, opts ...grpc.CallOption) (*OpenChannelResponse, error)
 	// Adds an order to the order book.
@@ -4717,7 +4717,7 @@ type XudServer interface {
 	// Gets a list of completed trades.
 	// shell: xucli listtrades [limit]
 	ListTrades(context.Context, *ListTradesRequest) (*ListTradesResponse, error)
-	// Opens a payment channel to a peer with the given node pub key for the specified amount and currency.
+	// Opens a payment channel to a peer for the specified amount and currency.
 	// shell: xucli openchannel <node_key> <currency> <amount>
 	OpenChannel(context.Context, *OpenChannelRequest) (*OpenChannelResponse, error)
 	// Adds an order to the order book.

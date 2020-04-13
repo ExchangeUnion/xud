@@ -292,7 +292,7 @@
     },
     "/v1/openchannel": {
       "post": {
-        "summary": "Opens a payment channel to a peer with the given node pub key for the specified amount and currency.\nshell: xucli openchannel \u003cnode_key\u003e \u003ccurrency\u003e \u003camount\u003e",
+        "summary": "Opens a payment channel to a peer for the specified amount and currency.\nshell: xucli openchannel \u003cnode_key\u003e \u003ccurrency\u003e \u003camount\u003e",
         "operationId": "OpenChannel",
         "responses": {
           "200": {
