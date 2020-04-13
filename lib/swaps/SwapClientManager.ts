@@ -393,8 +393,8 @@ class SwapClientManager extends EventEmitter {
    * @returns Nothing upon success, throws otherwise.
    */
   public openChannel = async (
-    { peer, amount, currency }:
-    { peer: Peer, amount: number, currency: string },
+    { peer, amount, currency, pushAmount = 0 }:
+    { peer: Peer, amount: number, currency: string, pushAmount?: number },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
@@ -408,12 +408,17 @@ class SwapClientManager extends EventEmitter {
       amount,
       currency,
     });
+    const pushUnits = this.unitConverter.amountToUnits({
+      currency,
+      amount: pushAmount,
+    });
+
     if (isLndClient(swapClient)) {
       const lndUris = peer.getLndUris(currency);
       if (!lndUris) {
         throw new Error('unable to get lnd listening uris');
       }
-      await swapClient.openChannel({ peerIdentifier, units, lndUris });
+      await swapClient.openChannel({ peerIdentifier, units, lndUris, pushUnits });
       return;
     }
     // fallback to raiden for all non-lnd currencies

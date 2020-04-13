@@ -123,7 +123,29 @@ describe('LndClient', () => {
         .toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
       expect(lnd['openChannelSync'])
-        .toHaveBeenCalledWith(peerPubKey, units);
+        .toHaveBeenCalledWith(peerPubKey, units, 0);
+    });
+
+    test('it pushes satoshis to the peer when specified', async () => {
+      expect.assertions(4);
+      const pushUnits = 481824;
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['connectPeer'] = jest.fn()
+        .mockImplementationOnce(() => {
+          return Promise.resolve();
+        });
+      await lnd.openChannel({
+        units,
+        pushUnits,
+        peerIdentifier: peerPubKey,
+        lndUris: lndListeningUris,
+      });
+      expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
+      expect(lnd['connectPeer'])
+        .toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
+      expect(lnd['openChannelSync'])
+        .toHaveBeenCalledWith(peerPubKey, units, pushUnits);
     });
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {

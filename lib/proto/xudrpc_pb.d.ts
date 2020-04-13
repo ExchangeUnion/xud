@@ -873,6 +873,9 @@ export class OpenChannelRequest extends jspb.Message {
     getAmount(): number;
     setAmount(value: number): void;
 
+    getPushAmount(): number;
+    setPushAmount(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OpenChannelRequest.AsObject;
@@ -889,6 +892,7 @@ export namespace OpenChannelRequest {
         nodeIdentifier: string,
         currency: string,
         amount: number,
+        pushAmount: number,
     }
 }
 
