@@ -285,7 +285,6 @@ class ConnextClient extends SwapClient {
       }, 30000);
       // TODO: what happens in case of multiple transfers at the same time?
       this.once('preimage', (preimageRequest: ProvidePreimageEvent) => {
-        // TODO: check that the hash and preimage match
         clearTimeout(failTimeout);
         resolve(preimageRequest.preimage);
       });
@@ -314,9 +313,7 @@ class ConnextClient extends SwapClient {
         amount = deal.makerUnits;
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
-        // TODO: why do we have to return preimage as a taker?
         secret = deal.rPreimage!;
-
         const executeTransfer = this.executeHashLockTransfer({
           assetId: tokenAddress,
           amount: `${amount}`,
@@ -328,7 +325,6 @@ class ConnextClient extends SwapClient {
       }
       return secret;
     } catch (err) {
-      // TODO: review all of these
       switch (err.code) {
         case 'ECONNRESET':
         case errorCodes.UNEXPECTED:
