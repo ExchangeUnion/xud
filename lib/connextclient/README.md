@@ -50,6 +50,9 @@ port = 5040
 ```
 A restart of xud is currently required for it to show up under `xucli getbalance` call.
 
+Optionally, in regtest environment you can also add a test ERC20 token TOK:
+`./bin/xucli addcurrency TOK Connext 18 --token_address="0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC"`
+
 ## Fund the Connext client address
 Get the Connext address from the output of `./bin/xucli getinfo`
 
@@ -60,6 +63,9 @@ After making a transfer your funds should be visible as wallet balance in the ou
 ## Open a payment channel between the node and client
 `./bin/xucli openchannel Connext ETH 1`
 
+Optionally, in regtest environment, add a channel for TOK:
+`./bin/xucli openchannel Connext TOK 1`
+
 Your funds should now be visiable as channel balance in the output of `./bin/xucli getbalance`.
 
 ## Add trading pair
@@ -68,3 +74,6 @@ Your funds should now be visiable as channel balance in the output of `./bin/xuc
 A restart of xud is currently required for the trading pair to be swappable.
 
 At this point you should be able to perform ETHBTC swaps.
+
+Optionally, in regtest environment, you can also add a test ERC20 token TOK pair:
+`./bin/xucli addpair TOK BTC`
