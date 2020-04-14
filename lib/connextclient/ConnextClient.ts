@@ -304,8 +304,7 @@ class ConnextClient extends SwapClient {
         });
         const [executeTransferResponse, preimage] = await Promise.all([executeTransfer, waitForTransferClaimed]);
         console.log('executeTransferResponse', executeTransferResponse);
-        // TODO: process the preimage earlier
-        secret = (preimage as string).slice(2);
+        secret = (preimage as string);
       } else {
         // we are the taker paying the maker
         amount = deal.makerUnits;

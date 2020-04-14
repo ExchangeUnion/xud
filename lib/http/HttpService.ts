@@ -38,7 +38,7 @@ class HttpService {
       }
       this.service.providePreimage({
         rHash,
-        preimage,
+        preimage: preimage.slice(2),
       });
       return { success: true };
     } else {
