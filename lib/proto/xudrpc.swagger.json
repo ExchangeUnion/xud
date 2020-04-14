@@ -97,7 +97,7 @@
     },
     "/v1/ban": {
       "post": {
-        "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.\nshell: xucli ban \u003cnode_key\u003e",
+        "summary": "Bans a node and immediately disconnects from it. This can be used to prevent any connections\nto a specific node.\nshell: xucli ban \u003cnode_identifier\u003e",
         "operationId": "Ban",
         "responses": {
           "200": {
@@ -266,7 +266,7 @@
     },
     "/v1/nodeinfo": {
       "get": {
-        "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_key\u003e",
+        "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_identifier\u003e",
         "operationId": "GetNodeInfo",
         "responses": {
           "200": {
@@ -292,7 +292,7 @@
     },
     "/v1/openchannel": {
       "post": {
-        "summary": "Opens a payment channel to a peer with the given node pub key for the specified amount and currency.\nshell: xucli openchannel \u003cnode_key\u003e \u003ccurrency\u003e \u003camount\u003e",
+        "summary": "Opens a payment channel to a peer for the specified amount and currency.\nshell: xucli openchannel \u003cnode_identifier\u003e \u003ccurrency\u003e \u003camount\u003e",
         "operationId": "OpenChannel",
         "responses": {
           "200": {
@@ -659,7 +659,7 @@
     },
     "/v1/unban": {
       "post": {
-        "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.\nshell: xucli unban \u003cnode_key\u003e [reconnect]",
+        "summary": "Removes a ban from a node manually and, optionally, attempts to connect to it.\nshell: xucli unban \u003cnode_identifier\u003e [reconnect]",
         "operationId": "Unban",
         "responses": {
           "200": {

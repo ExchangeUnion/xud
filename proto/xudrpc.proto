@@ -65,7 +65,7 @@ service Xud {
 
   /* Bans a node and immediately disconnects from it. This can be used to prevent any connections
    * to a specific node.
-   * shell: xucli ban <node_key> */
+   * shell: xucli ban <node_identifier> */
   rpc Ban(BanRequest) returns (BanResponse) {
     option (google.api.http) = {
       post: "/v1/ban"
@@ -110,7 +110,7 @@ service Xud {
   }
 
   /* Gets general information about a node.
-   * shell: xucli getnodeinfo <node_key> */
+   * shell: xucli getnodeinfo <node_identifier> */
   rpc GetNodeInfo(GetNodeInfoRequest) returns (GetNodeInfoResponse) {
     option (google.api.http) = {
       get: "/v1/nodeinfo"
@@ -161,8 +161,8 @@ service Xud {
     };
   }
 
-  /* Opens a payment channel to a peer with the given node pub key for the specified amount and currency.
-   * shell: xucli openchannel <node_key> <currency> <amount> */
+  /* Opens a payment channel to a peer for the specified amount and currency.
+   * shell: xucli openchannel <node_identifier> <currency> <amount> */
   rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
     option (google.api.http) = {
       post: "/v1/openchannel"
@@ -280,7 +280,7 @@ service Xud {
   }
 
   /* Removes a ban from a node manually and, optionally, attempts to connect to it.
-   * shell: xucli unban <node_key> [reconnect] */
+   * shell: xucli unban <node_identifier> [reconnect] */
   rpc Unban(UnbanRequest) returns (UnbanResponse) {
     option (google.api.http) = {
       post: "/v1/unban"
