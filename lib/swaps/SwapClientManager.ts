@@ -109,9 +109,6 @@ class SwapClientManager extends EventEmitter {
         config: this.config.connext,
         logger: this.loggers.connext,
       });
-      // TODO(karl): cannot initialize ConnextClient here because
-      // we need the childSeed.
-      // initPromises.push(this.connextClient.init());
     }
 
     // bind event listeners before all swap clients have initialized

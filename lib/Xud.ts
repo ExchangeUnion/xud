@@ -154,6 +154,12 @@ class Xud extends EventEmitter {
 
       this.logger.info(`Local nodePubKey is ${nodeKey.pubKey}`);
 
+      // We initialize Connext separately because it
+      // requires a NodeKey.
+      await this.swapClientManager.initConnext(
+        nodeKey.childSeed(SwapClientType.Connext),
+      );
+
       this.pool = new Pool({
         nodeKey,
         version,
@@ -183,12 +189,6 @@ class Xud extends EventEmitter {
 
       // wait for components to initialize in parallel
       await Promise.all(initPromises);
-
-      // TODO: temporary code. We're initializing ConnextClient later
-      // because NodeKey is required.
-      await this.swapClientManager.initConnext(
-        nodeKey.childSeed(SwapClientType.Connext),
-      );
 
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init();
