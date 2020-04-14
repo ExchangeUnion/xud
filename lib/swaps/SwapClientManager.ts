@@ -150,14 +150,9 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
-  // TODO(erkarl): temporary function/workaround for proof of concept Connext swap
-  // because we need the childSeed from NodeKey, but in case of noencrypt
-  // it is created after SwapClientManager.init.
+  // Initializes Connext client with a seed
   public initConnext = async (seed: string) => {
-    if (!this.connextClient) {
-      throw new Error('ConnextClient not found.');
-    }
-    if (!this.config.connext.disable) {
+    if (!this.config.connext.disable && this.connextClient) {
       await this.connextClient.setSeed(seed);
       await this.connextClient.init();
     }
