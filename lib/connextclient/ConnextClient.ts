@@ -295,12 +295,10 @@ class ConnextClient extends SwapClient {
         // we are the maker paying the taker
         amount = deal.takerUnits;
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
-        // secret = await this.executeHashLockResolve(deal.rPreimage);
         const executeTransfer = this.executeHashLockTransfer({
           assetId: tokenAddress,
           amount: `${amount}`,
-          // TODO: double check timelock (100 is the connext internal buffer)
-          timelock: (deal.takerCltvDelta + 100).toString(),
+          timelock: (deal.takerCltvDelta + TIMELOCK_BUFFER).toString(),
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
         });
