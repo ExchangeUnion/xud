@@ -174,6 +174,8 @@ class Config {
       disable: false,
       host: 'localhost',
       port: 5040,
+      webhookhost: 'localhost',
+      webhookport: 8887,
     };
   }
 

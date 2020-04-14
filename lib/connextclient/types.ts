@@ -5,6 +5,8 @@ export type ConnextClientConfig = {
   disable: boolean;
   host: string;
   port: number;
+  webhookhost: string;
+  webhookport: number;
 };
 
 /** General information about the state of this connext client. */

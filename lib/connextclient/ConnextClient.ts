@@ -61,6 +61,8 @@ class ConnextClient extends SwapClient {
   private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
   private port: number;
   private host: string;
+  private webhookport: number;
+  private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
 
@@ -82,6 +84,8 @@ class ConnextClient extends SwapClient {
 
     this.port = config.port;
     this.host = config.host;
+    this.webhookhost = config.webhookhost;
+    this.webhookport = config.webhookport;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
   }
@@ -156,16 +160,14 @@ class ConnextClient extends SwapClient {
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'UPDATE_STATE_EVENT',
-      // TODO: not always running on localhost
-      webhook: 'http://localhost:8887/preimage',
+      webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
     });
   }
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'CONDITIONAL_TRANSFER_RECEIVED_EVENT',
-      // TODO: not always running on localhost
-      webhook: 'http://localhost:8887/incoming-transfer',
+      webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
   }
 
