@@ -75,9 +75,9 @@ const getGrpcError = (err: any) => {
 
   // return a grpc error with the code if we've assigned one, otherwise pass along the caught error as UNKNOWN
   const grpcError: grpc.ServiceError = {
-    code: code || status.UNKNOWN,
-    message: err.message,
-    name: err.name,
+    code: code ?? status.UNKNOWN,
+    message: err.message ?? (typeof err === 'string' ? err : ''),
+    name: err.name ?? 'UnknownError',
   };
 
   return grpcError;
