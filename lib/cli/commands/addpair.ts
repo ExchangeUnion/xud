@@ -17,9 +17,9 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new AddPairRequest();
   request.setBaseCurrency(argv.base_currency.toUpperCase());
   request.setQuoteCurrency(argv.quote_currency.toUpperCase());
-  loadXudClient(argv).addPair(request, callback(argv));
+  (await loadXudClient(argv)).addPair(request, callback(argv));
 };

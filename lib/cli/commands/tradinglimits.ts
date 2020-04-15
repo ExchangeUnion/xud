@@ -51,11 +51,11 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new TradingLimitsRequest();
   if (argv.currency) {
     request.setCurrency(argv.currency.toUpperCase());
   }
 
-  loadXudClient(argv).tradingLimits(request, callback(argv, displayLimits));
+  (await loadXudClient(argv)).tradingLimits(request, callback(argv, displayLimits));
 };

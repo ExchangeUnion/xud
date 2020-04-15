@@ -158,7 +158,7 @@ a single password provided below.
             return;
           }
 
-          const client = loadXudInitClient(argv);
+          const client = await loadXudInitClient(argv);
           // wait up to 3 seconds for rpc server to listen before call in case xud was just started
           client.waitForReady(Date.now() + 3000, () => {
             client.restoreNode(request, callback(argv, formatOutput));

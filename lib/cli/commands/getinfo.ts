@@ -108,6 +108,6 @@ export const command = 'getinfo';
 
 export const describe = 'get general info from the local xud node';
 
-export const handler = (argv: Arguments) => {
-  loadXudClient(argv).getInfo(new GetInfoRequest(), callback(argv, displayGetInfo));
+export const handler = async (argv: Arguments) => {
+  (await loadXudClient(argv)).getInfo(new GetInfoRequest(), callback(argv, displayGetInfo));
 };

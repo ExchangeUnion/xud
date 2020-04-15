@@ -43,6 +43,6 @@ export const command = 'listcurrencies';
 
 export const describe = 'list available currencies';
 
-export const handler = (argv: Arguments) => {
-  loadXudClient(argv).listCurrencies(new ListCurrenciesRequest(), callback(argv, displayTable));
+export const handler = async (argv: Arguments) => {
+  (await loadXudClient(argv)).listCurrencies(new ListCurrenciesRequest(), callback(argv, displayTable));
 };

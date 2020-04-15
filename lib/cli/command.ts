@@ -1,25 +1,54 @@
 import fs from 'fs';
 import grpc, { status } from 'grpc';
+import path from 'path';
 import { Arguments } from 'yargs';
+import Config from '../Config';
 import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
-import { getDefaultCertPath } from './utils';
 
 /**
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
  */
-export const loadXudClient = (argv: Arguments<any>) => {
-  const certPath = argv.tlscertpath || getDefaultCertPath();
+export const loadXudClient = async (argv: Arguments<any>) => {
+  const config = new Config();
+  await config.load({
+    xudir: argv.xudir,
+    rpc: {
+      port: argv.rpcport,
+      host: argv.rpchost,
+    },
+  });
+
+  const certPath = argv.tlscertpath || path.join(config.xudir, 'tls.cert');
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
+
+  // in case port and host args were not set, we update them to the values we
+  // determined by loading the config
+  argv.rpcport = config.rpc.port;
+  argv.rpchost = config.rpc.host;
 
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };
 
-export const loadXudInitClient = (argv: Arguments<any>) => {
-  const certPath = argv.tlscertpath || getDefaultCertPath();
+export const loadXudInitClient = async (argv: Arguments<any>) => {
+  const config = new Config();
+  await config.load({
+    xudir: argv.xudir,
+    rpc: {
+      port: argv.rpcport,
+      host: argv.rpchost,
+    },
+  });
+
+  const certPath = argv.tlscertpath || path.join(config.xudir, 'tls.cert');
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
+
+  // in case port and host args were not set, we update them to the values we
+  // determined by loading the config
+  argv.rpcport = config.rpc.port;
+  argv.rpchost = config.rpc.host;
 
   return new XudInitClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };

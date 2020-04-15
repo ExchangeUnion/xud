@@ -80,6 +80,6 @@ export const command = 'listpeers';
 
 export const describe = 'list connected peers';
 
-export const handler = (argv: Arguments) => {
-  loadXudClient(argv).listPeers(new ListPeersRequest(), callback(argv, displayTables));
+export const handler = async (argv: Arguments) => {
+  (await loadXudClient(argv)).listPeers(new ListPeersRequest(), callback(argv, displayTables));
 };

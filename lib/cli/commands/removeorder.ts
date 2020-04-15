@@ -17,11 +17,11 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new RemoveOrderRequest();
   request.setOrderId(argv.order_id);
   if (argv.quantity) {
     request.setQuantity(coinsToSats(argv.quantity));
   }
-  loadXudClient(argv).removeOrder(request, callback(argv));
+  (await loadXudClient(argv)).removeOrder(request, callback(argv));
 };

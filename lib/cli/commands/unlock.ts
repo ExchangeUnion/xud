@@ -26,12 +26,12 @@ export const handler = (argv: Arguments) => {
   });
 
   process.stdout.write('Enter master xud password: ');
-  rl.question('', (password) => {
+  rl.question('', async (password) => {
     process.stdout.write('\n');
     rl.close();
     const request = new UnlockNodeRequest();
     request.setPassword(password);
-    const client = loadXudInitClient(argv);
+    const client = await loadXudInitClient(argv);
     // wait up to 3 seconds for rpc server to listen before call in case xud was just started
     client.waitForReady(Date.now() + 3000, () => {
       client.unlockNode(request, callback(argv, formatOutput));

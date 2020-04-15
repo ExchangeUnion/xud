@@ -15,15 +15,17 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments) => {
-  ensureConnection(argv, true);
+export const handler = async (argv: Arguments) => {
+  await ensureConnection(argv, true);
 };
 
-let xud: XudClient;
+let client: XudClient;
 
-const ensureConnection = (argv: Arguments, printError?: boolean) => {
-  if (!xud) xud = loadXudClient(argv);
-  xud.waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
+const ensureConnection = async (argv: Arguments, printError?: boolean) => {
+  if (!client) {
+    client = await loadXudClient(argv);
+  }
+  client.waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
     if (error) {
       if (printError) console.error(`${error.name}: ${error.message}`);
       setTimeout(ensureConnection.bind(undefined, argv), 3000);
@@ -35,10 +37,9 @@ const ensureConnection = (argv: Arguments, printError?: boolean) => {
 };
 
 const streamOrders = (argv: Arguments<any>) => {
-  const xudClient = loadXudClient(argv);
   const ordersReqeust = new xudrpc.SubscribeOrdersRequest();
   ordersReqeust.setExisting(argv.existing);
-  const ordersSubscription = loadXudClient(argv).subscribeOrders(ordersReqeust);
+  const ordersSubscription = client.subscribeOrders(ordersReqeust);
   ordersSubscription.on('data', (orderUpdate: xudrpc.OrderUpdate) => {
     if (orderUpdate.getOrder() !== undefined) {
       console.log(`Order added: ${JSON.stringify(orderUpdate.getOrder()!.toObject())}`);
@@ -50,19 +51,19 @@ const streamOrders = (argv: Arguments<any>) => {
   // adding end, close, error events only once,
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
   ordersSubscription.on('end', reconnect.bind(undefined, argv));
-  ordersSubscription.on('error', (err: Error) => {
+  ordersSubscription.on('error', async (err: Error) => {
     console.warn(`Unexpected error occured: ${err.message}, trying to reconnect`);
-    ensureConnection(argv);
+    await ensureConnection(argv);
   });
 
   const swapsRequest = new xudrpc.SubscribeSwapsRequest();
   swapsRequest.setIncludeTaker(true);
-  const swapsSubscription = xudClient.subscribeSwaps(swapsRequest);
+  const swapsSubscription = client.subscribeSwaps(swapsRequest);
   swapsSubscription.on('data', (swapSuccess: xudrpc.SwapSuccess) => {
     console.log(`Order swapped: ${JSON.stringify(swapSuccess.toObject())}`);
   });
 
-  const swapFailuresSubscription = xudClient.subscribeSwapFailures(swapsRequest);
+  const swapFailuresSubscription = client.subscribeSwapFailures(swapsRequest);
   swapFailuresSubscription.on('data', (swapFailure: xudrpc.SwapFailure) => {
     console.log(`Swap failed: ${JSON.stringify(swapFailure.toObject())}`);
   });
@@ -72,7 +73,7 @@ const streamOrders = (argv: Arguments<any>) => {
   swapFailuresSubscription.on('error', () => {});
 };
 
-const reconnect = (argv: Arguments) => {
+const reconnect = async (argv: Arguments) => {
   console.log('Stream has closed, trying to reconnect');
-  ensureConnection(argv, false);
+  await ensureConnection(argv, false);
 };

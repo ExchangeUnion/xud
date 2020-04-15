@@ -28,6 +28,6 @@ export const command = 'listpairs';
 
 export const describe = 'get order book\'s available pairs';
 
-export const handler = (argv: Arguments) => {
-  loadXudClient(argv).listPairs(new ListPairsRequest(), callback(argv, displayPairs));
+export const handler = async (argv: Arguments) => {
+  (await loadXudClient(argv)).listPairs(new ListPairsRequest(), callback(argv, displayPairs));
 };
