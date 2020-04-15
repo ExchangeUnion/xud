@@ -300,7 +300,7 @@ class ConnextClient extends SwapClient {
         const executeTransfer = this.executeHashLockTransfer({
           assetId: tokenAddress,
           amount: `${amount}`,
-          timelock: (deal.takerCltvDelta + TIMELOCK_BUFFER).toString(),
+          timelock: deal.takerCltvDelta.toString(),
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
         });
