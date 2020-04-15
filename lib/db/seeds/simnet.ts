@@ -26,6 +26,12 @@ const currencies = [
     tokenAddress: '0x0000000000000000000000000000000000000000',
   },
   {
+    id: 'TOK',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC',
+  },
+  {
     id: 'WETH',
     swapClient: SwapClientType.Raiden,
     decimalPlaces: 18,
