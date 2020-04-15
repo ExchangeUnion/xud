@@ -17,27 +17,33 @@ $ npm run test:sim:run
 
 #### Specific builds
 
-For taking into effect changes in test code, one must build the `test` image before re-running the tests:
+When making changes to the simulation test code, one must build the `test` image before rerunning the tests:
 
 ```bash
 $ npm run test:sim:build:test
 $ npm run test:sim:run
 ```
 
-For taking into effect changes in `xud` (non-test, production code), one must build the `xud` image before re-running the tests, in addition to cleaning its volume:
-
+When making changes to non-test `xud` code, one must build the `xud` image before rerunning the tests, in addition to cleaning its volume:
+ 
 ```bash
-$ docker volume rm simulation_xud-vol
-$ npm run test:sim:build:test
+$ npm run test:sim:clean:xud
+$ npm run test:sim:build:xud
 $ npm run test:sim:run
 ```
 
-For taking into effect changes in `lnd` version/tag, one must build the `lnd` image before re-running the tests, in addition to cleaning its volume:
+When making changes to `lnd` version/tag, one must build the `lnd` image before rerunning the tests, in addition to cleaning its volume:
 
 ```bash
-$ docker volume rm simulation_lnd-vol
+$ npm run test:sim:clean:lnd
 $ npm run test:sim:build:lnd
 $ npm run test:sim:run
+```
+
+When making changes to custom-xud branches (used in the Security/Instability test suites) one must clean its volume:
+
+```bash
+$ npm run test:sim:clean:custom-xud
 ```
 
 #### Other test suites
