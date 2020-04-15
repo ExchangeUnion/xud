@@ -519,6 +519,26 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
   }
 
+  public withdraw = async ({ amount, destination, all = false, fee }: {
+    amount: number,
+    destination: string,
+    all?: boolean,
+    fee?: number,
+  }) => {
+    const request = new lndrpc.SendCoinsRequest();
+    request.setAddr(destination);
+    if (fee) {
+      request.setSatPerByte(fee);
+    }
+    if (all) {
+      request.setSendAll(all);
+    } else {
+      request.setAmount(amount);
+    }
+    const withdrawResponse = await this.unaryCall<lndrpc.SendCoinsRequest, lndrpc.SendCoinsResponse>('sendCoins', request);
+    return withdrawResponse.getTxid();
+  }
+
   public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {
     const request = this.buildSendRequest({
       rHash,
@@ -633,10 +653,11 @@ class LndClient extends SwapClient {
   /**
    * Gets a new address for the internal lnd wallet.
    */
-  public newAddress = (addressType: lndrpc.AddressType): Promise<lndrpc.NewAddressResponse> => {
+  public newAddress = async (addressType = lndrpc.AddressType.WITNESS_PUBKEY_HASH) => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
-    return this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
+    const newAddressResponse = await this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
+    return newAddressResponse.getAddress();
   }
 
   /**

@@ -79,6 +79,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     addPair: IXudService_IAddPair;
     ban: IXudService_IBan;
     connect: IXudService_IConnect;
+    deposit: IXudService_IDeposit;
     discoverNodes: IXudService_IDiscoverNodes;
     getBalance: IXudService_IGetBalance;
     getInfo: IXudService_IGetInfo;
@@ -101,6 +102,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     subscribeSwapFailures: IXudService_ISubscribeSwapFailures;
     tradingLimits: IXudService_ITradingLimits;
     unban: IXudService_IUnban;
+    withdraw: IXudService_IWithdraw;
 }
 
 interface IXudService_IAddCurrency extends grpc.MethodDefinition<xudrpc_pb.Currency, xudrpc_pb.AddCurrencyResponse> {
@@ -138,6 +140,15 @@ interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRe
     requestDeserialize: grpc.deserialize<xudrpc_pb.ConnectRequest>;
     responseSerialize: grpc.serialize<xudrpc_pb.ConnectResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ConnectResponse>;
+}
+interface IXudService_IDeposit extends grpc.MethodDefinition<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse> {
+    path: string; // "/xudrpc.Xud/Deposit"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.DepositRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.DepositRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.DepositResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.DepositResponse>;
 }
 interface IXudService_IDiscoverNodes extends grpc.MethodDefinition<xudrpc_pb.DiscoverNodesRequest, xudrpc_pb.DiscoverNodesResponse> {
     path: string; // "/xudrpc.Xud/DiscoverNodes"
@@ -337,6 +348,15 @@ interface IXudService_IUnban extends grpc.MethodDefinition<xudrpc_pb.UnbanReques
     responseSerialize: grpc.serialize<xudrpc_pb.UnbanResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.UnbanResponse>;
 }
+interface IXudService_IWithdraw extends grpc.MethodDefinition<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse> {
+    path: string; // "/xudrpc.Xud/Withdraw"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.WithdrawRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.WithdrawRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.WithdrawResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.WithdrawResponse>;
+}
 
 export const XudService: IXudService;
 
@@ -345,6 +365,7 @@ export interface IXudServer {
     addPair: grpc.handleUnaryCall<xudrpc_pb.AddPairRequest, xudrpc_pb.AddPairResponse>;
     ban: grpc.handleUnaryCall<xudrpc_pb.BanRequest, xudrpc_pb.BanResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
+    deposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
     discoverNodes: grpc.handleUnaryCall<xudrpc_pb.DiscoverNodesRequest, xudrpc_pb.DiscoverNodesResponse>;
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
@@ -367,6 +388,7 @@ export interface IXudServer {
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
     tradingLimits: grpc.handleUnaryCall<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse>;
     unban: grpc.handleUnaryCall<xudrpc_pb.UnbanRequest, xudrpc_pb.UnbanResponse>;
+    withdraw: grpc.handleUnaryCall<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse>;
 }
 
 export interface IXudClient {
@@ -382,6 +404,9 @@ export interface IXudClient {
     connect(request: xudrpc_pb.ConnectRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -444,6 +469,9 @@ export interface IXudClient {
     unban(request: xudrpc_pb.UnbanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
+    withdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class XudClient extends grpc.Client implements IXudClient {
@@ -460,6 +488,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public connect(request: xudrpc_pb.ConnectRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -522,4 +553,7 @@ export class XudClient extends grpc.Client implements IXudClient {
     public unban(request: xudrpc_pb.UnbanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     public unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     public unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
+    public withdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    public withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    public withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
 }

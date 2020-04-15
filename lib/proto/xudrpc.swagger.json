@@ -166,6 +166,33 @@
         ]
       }
     },
+    "/v1/deposit": {
+      "post": {
+        "summary": "Gets an address to deposit a given currency into the xud wallets.\nshell: xucli deposit \u003ccurrency\u003e",
+        "operationId": "Deposit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/discovernodes": {
       "post": {
         "summary": "Discover nodes from a specific peer and apply new connections",
@@ -683,6 +710,33 @@
           "Xud"
         ]
       }
+    },
+    "/v1/withdraw": {
+      "post": {
+        "summary": "Withdraws a given currency from the xud wallets to a specified address.\nshell: xucli withdraw \u003camount\u003e \u003ccurrency\u003e \u003cdestination\u003e [fee]",
+        "operationId": "Withdraw",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcWithdrawResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcWithdrawRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
     }
   },
   "definitions": {
@@ -907,6 +961,24 @@
           "type": "integer",
           "format": "int64",
           "description": "The number of places to the right of the decimal point of the smallest subunit of the currency.\nFor example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full\nunits (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10\nexponent of the smallest subunit expressed as a positive integer. A default value of 8 is\nused if unspecified."
+        }
+      }
+    },
+    "xudrpcDepositRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol of the currency to deposit."
+        }
+      }
+    },
+    "xudrpcDepositResponse": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "The address to use to deposit funds."
         }
       }
     },
@@ -1676,6 +1748,43 @@
             "type": "string"
           },
           "description": "The list of lnd clients that could not be unlocked."
+        }
+      }
+    },
+    "xudrpcWithdrawRequest": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "description": "The ticker symbol of the currency to withdraw."
+        },
+        "destination": {
+          "type": "string",
+          "description": "The address to withdraw funds to."
+        },
+        "amount": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The amount to withdraw denominated in satoshis"
+        },
+        "all": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether to withdraw all available funds for this currency.\nIf true, the amount field is ignored."
+        },
+        "fee": {
+          "type": "integer",
+          "format": "int64",
+          "description": "The fee to use for the withdrawal transaction denominated in satoshis per byte."
+        }
+      }
+    },
+    "xudrpcWithdrawResponse": {
+      "type": "object",
+      "properties": {
+        "transaction_id": {
+          "type": "string",
+          "description": "The id of the withdrawal transaction."
         }
       }
     }

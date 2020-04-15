@@ -385,6 +385,40 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
+  public deposit = async (currency: string) => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+    if (isLndClient(swapClient)) {
+      const address = await swapClient.newAddress();
+      return address;
+    } else {
+      // TODO: generic deposit logic
+      throw new Error('currency currently not supported for fetching deposit addresses');
+    }
+  }
+
+  public withdraw = async ({ currency, amount, destination, all, fee }: {
+    currency: string,
+    destination: string,
+    amount: number,
+    all?: boolean,
+    fee?: number,
+  }) => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+    if (isLndClient(swapClient)) {
+      const txId = await swapClient.withdraw({ amount, destination, all, fee });
+      return txId;
+    } else {
+      // TODO: generic withdraw logic
+      throw new Error('currency currently not supported for on-chain withdrawal');
+    }
+  }
+
   /**
    * Opens a payment channel.
    * @param peer a peer to open the payment channel with.
