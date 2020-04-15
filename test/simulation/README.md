@@ -24,7 +24,7 @@ $ npm run test:sim:build:test
 $ npm run test:sim:run
 ```
 
-When making changes to non-test `xud` code, one must build the `xud` image before rerunning the tests, in addition to cleaning its volume:
+When making changes to non-test `xud` code, one must build the `xud` image and clean its volume before rerunning the tests:
  
 ```bash
 $ npm run test:sim:clean:xud
@@ -32,7 +32,7 @@ $ npm run test:sim:build:xud
 $ npm run test:sim:run
 ```
 
-When making changes to `lnd` version/tag, one must build the `lnd` image before rerunning the tests, in addition to cleaning its volume:
+When making changes to `lnd` version/tag, one must build the `lnd` image and clean its volume before rerunning the tests:
 
 ```bash
 $ npm run test:sim:clean:lnd
