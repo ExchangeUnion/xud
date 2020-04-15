@@ -50,7 +50,7 @@ describe('LndClient', () => {
 
   afterEach(async () => {
     jest.clearAllMocks();
-    await lnd.close();
+    lnd.close();
   });
 
   describe('openChannel', () => {
@@ -62,25 +62,6 @@ describe('LndClient', () => {
       `${peerPubKey}@${externalIp1}`,
       `${peerPubKey}@${externalIp2}`,
     ];
-
-    test('it throws when connectPeer fails', async () => {
-      expect.assertions(3);
-      lnd['connectPeer'] = jest.fn().mockImplementation(() => {
-        throw new Error('connectPeer failed');
-      });
-      try {
-        await lnd.openChannel({
-          units,
-          peerIdentifier: peerPubKey,
-          lndUris: [lndListeningUris[0]],
-        });
-      } catch (e) {
-        expect(e).toMatchSnapshot();
-      }
-      expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
-      expect(lnd['connectPeer'])
-        .toHaveBeenCalledWith(peerPubKey, externalIp1);
-    });
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
@@ -96,7 +77,7 @@ describe('LndClient', () => {
       await lnd.openChannel({
         units,
         peerIdentifier: peerPubKey,
-        lndUris: lndListeningUris,
+        uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(2);
       expect(lnd['connectPeer'])
@@ -116,7 +97,7 @@ describe('LndClient', () => {
       await lnd.openChannel({
         units,
         peerIdentifier: peerPubKey,
-        lndUris: lndListeningUris,
+        uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer'])
@@ -138,7 +119,7 @@ describe('LndClient', () => {
         units,
         pushUnits,
         peerIdentifier: peerPubKey,
-        lndUris: lndListeningUris,
+        uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer'])
@@ -158,7 +139,7 @@ describe('LndClient', () => {
       await lnd.openChannel({
         units,
         peerIdentifier: peerPubKey,
-        lndUris: lndListeningUris,
+        uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
       expect(lnd['connectPeer'])
@@ -177,7 +158,7 @@ describe('LndClient', () => {
         await lnd.openChannel({
           units,
           peerIdentifier: peerPubKey,
-          lndUris: lndListeningUris,
+          uris: lndListeningUris,
         });
       } catch (e) {
         expect(e).toMatchSnapshot();

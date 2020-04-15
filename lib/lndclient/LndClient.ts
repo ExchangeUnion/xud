@@ -718,15 +718,14 @@ class LndClient extends SwapClient {
    * Opens a channel given peerPubKey and amount.
    */
   public openChannel = async (
-    { peerIdentifier: peerPubKey, units, lndUris, pushUnits = 0 }:
-    { peerIdentifier: string, units: number, lndUris: string[], pushUnits?: number },
+    { peerIdentifier: peerPubKey, units, uris, pushUnits = 0 }:
+    { peerIdentifier: string, units: number, uris?: string[], pushUnits?: number },
   ): Promise<void> => {
-    const connectionEstablished = await this.connectPeerAddreses(lndUris);
-    if (connectionEstablished) {
-      await this.openChannelSync(peerPubKey, units, pushUnits);
-    } else {
-      throw new Error(`could not connect to lnd uris for ${peerPubKey}`);
+    if (uris) {
+      await this.connectPeerAddreses(uris);
     }
+
+    await this.openChannelSync(peerPubKey, units, pushUnits);
   }
 
   /**
