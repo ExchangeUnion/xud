@@ -281,16 +281,6 @@ class ConnextClient extends SwapClient {
     let amount: number;
     let tokenAddress: string;
     let lockTimeout: number | undefined;
-    const waitForTransferClaimed = new Promise((resolve, reject) => {
-      const failTimeout = setTimeout(() => {
-        reject('hash lock transfer was not claimed within the timeout');
-      }, 30000);
-      // TODO: what happens in case of multiple transfers at the same time?
-      this.once('preimage', (preimageRequest: ProvidePreimageEvent) => {
-        clearTimeout(failTimeout);
-        resolve(preimageRequest.preimage);
-      });
-    });
     try {
       let secret;
       if (deal.role === SwapRole.Maker) {
@@ -303,6 +293,16 @@ class ConnextClient extends SwapClient {
           timelock: deal.takerCltvDelta.toString(),
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
+        });
+        const waitForTransferClaimed = new Promise((resolve, reject) => {
+          const failTimeout = setTimeout(() => {
+            reject('hash lock transfer was not claimed within the timeout');
+          }, 30000);
+          // TODO: what happens in case of multiple transfers at the same time?
+          this.once('preimage', (preimageRequest: ProvidePreimageEvent) => {
+            clearTimeout(failTimeout);
+            resolve(preimageRequest.preimage);
+          });
         });
         const [executeTransferResponse, preimage] = await Promise.all([executeTransfer, waitForTransferClaimed]);
         console.log('executeTransferResponse', executeTransferResponse);
@@ -320,7 +320,7 @@ class ConnextClient extends SwapClient {
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
         });
-        await Promise.all([executeTransfer, waitForTransferClaimed]);
+        await executeTransfer;
       }
       return secret;
     } catch (err) {

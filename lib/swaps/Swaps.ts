@@ -211,6 +211,16 @@ class Swaps extends EventEmitter {
         const deal = this.getDeal(rHash);
         if (deal) {
           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+          try {
+            const peer = this.pool.getPeer(deal.peerPubKey);
+            await this.setDealPhase(deal, SwapPhase.SwapCompleted);
+            const responseBody: packets.SwapCompletePacketBody = { rHash };
+
+            this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
+            await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
+          } catch (e) {
+            this.logger.error(`failed to send SwapCompletePacket to peer: ${e}`);
+          }
         }
       } catch (err) {
         this.logger.error('could not settle invoice', err);
@@ -779,13 +789,6 @@ class Swaps extends EventEmitter {
       }
       return;
     }
-
-    // swap succeeded!
-    await this.setDealPhase(deal, SwapPhase.SwapCompleted);
-    const responseBody: packets.SwapCompletePacketBody = { rHash };
-
-    this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
-    await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
   }
 
   /**
@@ -1016,6 +1019,7 @@ class Swaps extends EventEmitter {
 
       // we treat responding to a resolve request as having received payment and persist the state
       await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+      // TODO: how does this flow set the SwapPhase to Completed?
 
       this.logger.debug(`handleResolveRequest returning preimage ${preimage} for hash ${rHash}`);
       return preimage;
