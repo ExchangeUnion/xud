@@ -1227,7 +1227,8 @@ class Swaps extends EventEmitter {
       this.logger.error(`received swap complete for unknown deal payment hash ${rHash}`);
       return;
     }
-    await this.setDealPhase(deal, SwapPhase.SwapCompleted);
+    // TODO: testing out if we need external packet to set SwapPhase as Complete
+    // await this.setDealPhase(deal, SwapPhase.SwapCompleted);
   }
 
   private handleSwapFailed = async (packet: packets.SwapFailedPacket) => {
