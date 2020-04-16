@@ -211,17 +211,15 @@ class Swaps extends EventEmitter {
         const deal = this.getDeal(rHash);
         if (deal) {
           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-          if (deal.role === SwapRole.Taker) {
-            try {
-              const peer = this.pool.getPeer(deal.peerPubKey);
-              await this.setDealPhase(deal, SwapPhase.SwapCompleted);
-              const responseBody: packets.SwapCompletePacketBody = { rHash };
+          try {
+            const peer = this.pool.getPeer(deal.peerPubKey);
+            await this.setDealPhase(deal, SwapPhase.SwapCompleted);
+            const responseBody: packets.SwapCompletePacketBody = { rHash };
 
-              this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
-              await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
-            } catch (e) {
-              this.logger.error(`failed to send SwapCompletePacket to peer: ${e}`);
-            }
+            this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
+            await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
+          } catch (e) {
+            this.logger.error(`failed to send SwapCompletePacket to peer: ${e}`);
           }
         }
       } catch (err) {
