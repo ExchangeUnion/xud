@@ -57,7 +57,6 @@ export type ConnextInitWalletResponse = { success: boolean };
  * The response for initChannel call.
  */
 export type ConnextChannelConfig = {
-  freeBalanceAddress: string,
   multisigAddress: string,
   natsClusterId: string,
   natsToken: string,

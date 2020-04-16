@@ -244,9 +244,9 @@ class ConnextClient extends SwapClient {
       const configRes = await this.sendRequest('/config', 'GET');
       // TODO: fix types, extract private config
       const config = await parseResponseBody<any>(configRes);
-      const { userPublicIdentifier } = config;
+      const { userIdentifier } = config;
       this.emit('connectionVerified', {
-        newIdentifier: userPublicIdentifier,
+        newIdentifier: userIdentifier,
       });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
@@ -430,7 +430,7 @@ class ConnextClient extends SwapClient {
           settled: 0,
           closed: 0,
         };
-        address = connextChannels[0].freeBalanceAddress;
+        address = connextChannels[0].signerAddress;
         if (channels.active <= 0) {
           status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS().message;
         }
