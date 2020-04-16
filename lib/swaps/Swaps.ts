@@ -200,7 +200,7 @@ class Swaps extends EventEmitter {
       }
     });
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
-    this.pool.on('packet.swapComplete', this.handleSwapComplete);
+    // this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapFailed', this.handleSwapFailed);
 
     this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
@@ -211,18 +211,9 @@ class Swaps extends EventEmitter {
         const deal = this.getDeal(rHash);
         if (deal) {
           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-          if (deal.role === SwapRole.Taker) {
-            try {
-              const peer = this.pool.getPeer(deal.peerPubKey);
-              await this.setDealPhase(deal, SwapPhase.SwapCompleted);
-              const responseBody: packets.SwapCompletePacketBody = { rHash };
-
-              this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
-              await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
-            } catch (e) {
-              this.logger.error(`failed to send SwapCompletePacket to peer: ${e}`);
-            }
-          }
+          // TODO: refactor the codebase so that setting
+          // SwapPhase.SwapCompleted is not necessary
+          await this.setDealPhase(deal, SwapPhase.SwapCompleted);
         }
       } catch (err) {
         this.logger.error('could not settle invoice', err);
@@ -1220,6 +1211,7 @@ class Swaps extends EventEmitter {
     }
   }
 
+  /*
   private handleSwapComplete = async (response: packets.SwapCompletePacket) => {
     const { rHash } = response.body!;
     const deal = this.getDeal(rHash);
@@ -1227,9 +1219,9 @@ class Swaps extends EventEmitter {
       this.logger.error(`received swap complete for unknown deal payment hash ${rHash}`);
       return;
     }
-    // TODO: testing out if we need external packet to set SwapPhase as Complete
     // await this.setDealPhase(deal, SwapPhase.SwapCompleted);
   }
+  */
 
   private handleSwapFailed = async (packet: packets.SwapFailedPacket) => {
     const { rHash, errorMessage, failureReason } = packet.body!;
