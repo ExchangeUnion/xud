@@ -13,13 +13,19 @@ import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
  */
 const loadXudConfig = async (argv: Arguments<any>) => {
   const config = new Config();
-  await config.load({
-    xudir: argv.xudir,
-    rpc: {
-      port: argv.rpcport,
-      host: argv.rpchost,
-    },
-  });
+  try {
+    await config.load({
+      xudir: argv.xudir,
+      rpc: {
+        port: argv.rpcport,
+        host: argv.rpchost,
+      },
+    });
+  } catch (err) {
+    // if we can't load the config file, we should alert the user but continue
+    // on to attempt the call with the commands args or default config values
+    console.error(err);
+  }
 
   // for any args that were not set, we update them to the values we
   // determined by loading the config
