@@ -85,6 +85,8 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 		if err != nil {
 			return nil, fmt.Errorf("custom xud compilation failure: %v", err)
 		}
+
+		log.Printf("custom xud installation finished")
 	}
 
 	customNode, err := n.newNode(node.Name, xudPath, true)
