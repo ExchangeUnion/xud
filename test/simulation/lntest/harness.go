@@ -339,7 +339,7 @@ func (n *NetworkHarness) newNode(name string, extraArgs []string,
 	n.activeNodes[node.NodeID] = node
 	n.mtx.Unlock()
 
-	if err := node.start(n.lndErrorChan); err != nil {
+	if err := node.Start(n.lndErrorChan); err != nil {
 		return nil, err
 	}
 
@@ -546,7 +546,7 @@ func (n *NetworkHarness) RestartNode(node *HarnessNode, callback func() error) e
 		}
 	}
 
-	return node.start(n.lndErrorChan)
+	return node.Start(n.lndErrorChan)
 }
 
 // ShutdownNode stops an active lnd process and returns when the process has
