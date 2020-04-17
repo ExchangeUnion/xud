@@ -9,7 +9,6 @@ make
 ### Running Connext node
 
 ```bash
-docker swarm init
 make start
 ```
 
