@@ -6,7 +6,7 @@ const nodes = [
     nodePubKey: '03193508d52dc8235c1bf6e902dae30c6dc1823f1e3cdc3c1a97652af9142cd4fe',
     addresses: [
       { host: 'xud1.simnet.exchangeunion.com', port: 28885 },
-      { host: 'lqcaoc3ga4ateijlmo3mk7jb4r2fy22ko36asp44spjt6htmozosqbad.onion', port: 18885 },
+      { host: 'lqcaoc3ga4ateijlmo3mk7jb4r2fy22ko36asp44spjt6htmozosqbad.onion', port: 28885 },
     ],
   },
 ] as db.NodeAttributes[];
