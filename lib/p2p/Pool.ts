@@ -457,9 +457,10 @@ class Pool extends EventEmitter {
   private addressIsSelf = (address: Address): boolean => {
     if (address.port === this.listenPort) {
       switch (address.host) {
+        case '::':
         case '::1':
-        case '0.0.0.0':
         case '127.0.0.1':
+        case '0.0.0.0':
         case 'localhost':
           return true;
       }
