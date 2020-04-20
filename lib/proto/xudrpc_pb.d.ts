@@ -557,6 +557,12 @@ export class GetInfoResponse extends jspb.Message {
     addPendingSwapHashes(value: string, index?: number): string;
 
 
+    hasConnext(): boolean;
+    clearConnext(): void;
+    getConnext(): ConnextInfo | undefined;
+    setConnext(value?: ConnextInfo): void;
+
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): GetInfoResponse.AsObject;
     static toObject(includeInstance: boolean, msg: GetInfoResponse): GetInfoResponse.AsObject;
@@ -581,6 +587,7 @@ export namespace GetInfoResponse {
         alias: string,
         network: string,
         pendingSwapHashesList: Array<string>,
+        connext?: ConnextInfo.AsObject,
     }
 }
 
@@ -1400,6 +1407,46 @@ export class RaidenInfo extends jspb.Message {
 }
 
 export namespace RaidenInfo {
+    export type AsObject = {
+        status: string,
+        address: string,
+        channels?: Channels.AsObject,
+        version: string,
+        chain: string,
+    }
+}
+
+export class ConnextInfo extends jspb.Message { 
+    getStatus(): string;
+    setStatus(value: string): void;
+
+    getAddress(): string;
+    setAddress(value: string): void;
+
+
+    hasChannels(): boolean;
+    clearChannels(): void;
+    getChannels(): Channels | undefined;
+    setChannels(value?: Channels): void;
+
+    getVersion(): string;
+    setVersion(value: string): void;
+
+    getChain(): string;
+    setChain(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ConnextInfo.AsObject;
+    static toObject(includeInstance: boolean, msg: ConnextInfo): ConnextInfo.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: ConnextInfo, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ConnextInfo;
+    static deserializeBinaryFromReader(message: ConnextInfo, reader: jspb.BinaryReader): ConnextInfo;
+}
+
+export namespace ConnextInfo {
     export type AsObject = {
         status: string,
         address: string,

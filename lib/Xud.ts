@@ -17,6 +17,7 @@ import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
 import { AssertionError } from 'assert';
+import { SwapClientType } from './constants/enums';
 
 const version: string = require('../package.json').version;
 
@@ -183,6 +184,12 @@ class Xud extends EventEmitter {
       // wait for components to initialize in parallel
       await Promise.all(initPromises);
 
+      // We initialize Connext separately because it
+      // requires a NodeKey.
+      await this.swapClientManager.initConnext(
+        nodeKey.childSeed(SwapClientType.Connext),
+      );
+
       // initialize pool and start listening/connecting only once other components are initialized
       await this.pool.init();
 
@@ -195,7 +202,10 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      if (this.swapClientManager.raidenClient?.isOperational()) {
+      if (
+        this.swapClientManager.raidenClient?.isOperational() ||
+        this.swapClientManager.connextClient?.isOperational()
+      ) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,

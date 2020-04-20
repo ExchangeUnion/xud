@@ -250,3 +250,22 @@ export const getDefaultBackupDir = () => {
       return path.join(process.env.HOME!, '.xud-backup');
   }
 };
+
+/**
+ * A utility function to parse the payload from an http response.
+ */
+export async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
+  res.setEncoding('utf8');
+  return new Promise<T>((resolve, reject) => {
+    let body = '';
+    res.on('data', (chunk) => {
+      body += chunk;
+    });
+    res.on('end', () => {
+      resolve(JSON.parse(body));
+    });
+    res.on('error', (err) => {
+      reject(err);
+    });
+  });
+}

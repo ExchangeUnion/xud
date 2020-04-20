@@ -881,7 +881,10 @@ class LndClient extends SwapClient {
     this.logger.info('wallet unlocked');
   }
 
-  public addInvoice = async (rHash: string, units: number, expiry = this.finalLock) => {
+  public addInvoice = async (
+    { rHash, units, expiry = this.finalLock }:
+    { rHash: string, units: number, expiry?: number },
+  ) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
     addHoldInvoiceRequest.setValue(units);

@@ -9,6 +9,7 @@ import { Level } from './Logger';
 import { OrderBookThresholds } from './orderbook/types';
 import { PoolConfig } from './p2p/types';
 import { RaidenClientConfig } from './raidenclient/types';
+import { ConnextClientConfig } from './connextclient/types';
 import { deepMerge } from './utils/utils';
 
 const propAssertions = {
@@ -54,6 +55,7 @@ class Config {
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
+  public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
   public debug: { raidenDirectChannelChecks: boolean };
@@ -167,6 +169,13 @@ class Config {
       host: 'localhost',
       port: 5001,
       keystorepath: raidenDefaultKeystorePath,
+    };
+    this.connext = {
+      disable: false,
+      host: 'localhost',
+      port: 5040,
+      webhookhost: 'localhost',
+      webhookport: 8887,
     };
   }
 

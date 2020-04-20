@@ -193,6 +193,7 @@ describe('Parser', () => {
     addresses: [{ host: '1.1.1.1', port: 8885 }, { host: '2.2.2.2', port: 8885 }],
     pairs: [uuid()],
     raidenAddress: uuid(),
+    connextAddress: uuid(),
     lndPubKeys: { BTC: uuid(), LTC: uuid() },
     lndUris: { BTC: [''], LTC: [''] },
     tokenIdentifiers: { BTC: 'bitcoin-testnet', LTC: 'litecoin-testnet' },

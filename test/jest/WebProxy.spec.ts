@@ -33,6 +33,9 @@ describe('WebProxy', () => {
       raiden: {
         disable: true,
       },
+      connext: {
+        disable: true,
+      },
     };
 
     xud = new Xud();

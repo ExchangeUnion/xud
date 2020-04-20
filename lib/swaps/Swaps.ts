@@ -43,6 +43,8 @@ class Swaps extends EventEmitter {
   private static readonly UNITS_PER_CURRENCY: { [key: string]: number } = {
     BTC: 1,
     LTC: 1,
+    ETH: 10 ** 10,
+    USDT: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
   };
@@ -182,7 +184,7 @@ class Swaps extends EventEmitter {
       this.sanitySwaps.set(rHash, sanitySwap);
       const swapClient = this.swapClientManager.get(currency)!;
       try {
-        await swapClient.addInvoice(rHash, 1);
+        await swapClient.addInvoice({ rHash, units: 1 });
       } catch (err) {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
@@ -197,7 +199,6 @@ class Swaps extends EventEmitter {
       }
     });
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
-    this.pool.on('packet.swapComplete', this.handleSwapComplete);
     this.pool.on('packet.swapFailed', this.handleSwapFailed);
 
     this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
@@ -208,6 +209,9 @@ class Swaps extends EventEmitter {
         const deal = this.getDeal(rHash);
         if (deal) {
           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+          // TODO: refactor the codebase so that setting
+          // SwapPhase.SwapCompleted is not necessary
+          await this.setDealPhase(deal, SwapPhase.SwapCompleted);
         }
       } catch (err) {
         this.logger.error('could not settle invoice', err);
@@ -215,6 +219,7 @@ class Swaps extends EventEmitter {
     });
     this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
     this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
+    this.swapClientManager.on('connextUpdate', this.pool.updateConnextState);
   }
 
   /**
@@ -385,7 +390,7 @@ class Swaps extends EventEmitter {
 
     try {
       await Promise.all([
-        swapClient.addInvoice(rHash, 1),
+        swapClient.addInvoice({ rHash, units: 1 }),
         peer.sendPacket(sanitySwapInitPacket),
         peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
       ]);
@@ -639,7 +644,12 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await makerSwapClient.addInvoice(deal.rHash, deal.makerUnits, deal.makerCltvDelta);
+      await makerSwapClient.addInvoice({
+        rHash: deal.rHash,
+        units: deal.makerUnits,
+        expiry: deal.makerCltvDelta,
+        currency: deal.makerCurrency,
+      });
     } catch (err) {
       await this.failDeal({
         deal,
@@ -728,7 +738,12 @@ class Swaps extends EventEmitter {
     }
 
     try {
-      await takerSwapClient.addInvoice(deal.rHash, deal.takerUnits, deal.takerCltvDelta);
+      await takerSwapClient.addInvoice({
+        rHash: deal.rHash,
+        units: deal.takerUnits,
+        expiry: deal.takerCltvDelta,
+        currency: deal.takerCurrency,
+      });
     } catch (err) {
       await this.failDeal({
         deal,
@@ -765,13 +780,6 @@ class Swaps extends EventEmitter {
       }
       return;
     }
-
-    // swap succeeded!
-    await this.setDealPhase(deal, SwapPhase.SwapCompleted);
-    const responseBody: packets.SwapCompletePacketBody = { rHash };
-
-    this.logger.debug(`Sending swap complete to peer: ${JSON.stringify(responseBody)}`);
-    await peer.sendPacket(new packets.SwapCompletePacket(responseBody));
   }
 
   /**
@@ -1002,6 +1010,9 @@ class Swaps extends EventEmitter {
 
       // we treat responding to a resolve request as having received payment and persist the state
       await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+      // TODO: refactor the codebase so that setting
+      // SwapPhase.SwapCompleted is not necessary
+      await this.setDealPhase(deal, SwapPhase.SwapCompleted);
 
       this.logger.debug(`handleResolveRequest returning preimage ${preimage} for hash ${rHash}`);
       return preimage;
@@ -1198,16 +1209,6 @@ class Swaps extends EventEmitter {
       clearTimeout(this.timeouts.get(deal.rHash));
       this.timeouts.delete(deal.rHash);
     }
-  }
-
-  private handleSwapComplete = async (response: packets.SwapCompletePacket) => {
-    const { rHash } = response.body!;
-    const deal = this.getDeal(rHash);
-    if (!deal) {
-      this.logger.error(`received swap complete for unknown deal payment hash ${rHash}`);
-      return;
-    }
-    await this.setDealPhase(deal, SwapPhase.SwapCompleted);
   }
 
   private handleSwapFailed = async (packet: packets.SwapFailedPacket) => {

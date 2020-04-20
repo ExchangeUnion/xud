@@ -280,11 +280,12 @@ describe('Swaps Integration', () => {
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);
       const expectedMakerCltvDelta = 1641;
-      expect(lndLtc.addInvoice).toHaveBeenCalledWith(
-        swapRequestBody.rHash,
-        swapRequestBody.proposedQuantity,
-        expectedMakerCltvDelta,
-      );
+      expect(lndLtc.addInvoice).toHaveBeenCalledWith({
+        rHash: swapRequestBody.rHash,
+        units: swapRequestBody.proposedQuantity,
+        expiry: expectedMakerCltvDelta,
+        currency: makerCurrency,
+      });
       expect(peer.sendPacket).toHaveBeenCalledTimes(1);
       // @ts-ignore
       const actualSendSwapAcceptedPacket = peer.sendPacket.mock.calls[0][0];

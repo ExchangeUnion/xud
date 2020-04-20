@@ -32,6 +32,7 @@ type PeerInfo = {
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
   raidenAddress?: string,
+  connextAddress?: string,
 };
 
 enum PeerStatus {
@@ -161,6 +162,10 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.raidenAddress : undefined;
   }
 
+  public get connextAddress(): string | undefined {
+    return this.nodeState ? this.nodeState.connextAddress : undefined;
+  }
+
   /** Returns a list of trading pairs advertised by this peer. */
   public get advertisedPairs(): string[] {
     if (this.nodeState) {
@@ -184,6 +189,7 @@ class Peer extends EventEmitter {
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
       raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
+      connextAddress: this.nodeState ? this.nodeState.connextAddress : undefined,
     };
   }
 
@@ -222,17 +228,23 @@ class Peer extends EventEmitter {
     return advertisedCurrencies;
   }
 
+  public getLndPubKey(currency?: string): string | undefined {
+    if (!this.nodeState || !currency) {
+      return undefined;
+    }
+    return this.nodeState.lndPubKeys[currency];
+  }
+
   public getIdentifier = (clientType: SwapClientType, currency?: string): string | undefined => {
     if (!this.nodeState) {
       return undefined;
     }
-    if (clientType === SwapClientType.Lnd && currency) {
-      return this.nodeState.lndPubKeys[currency];
+    switch (clientType) {
+      case SwapClientType.Lnd: return this.getLndPubKey(currency);
+      case SwapClientType.Raiden: return this.raidenAddress;
+      case SwapClientType.Connext: return this.connextAddress;
+      default: return;
     }
-    if (clientType === SwapClientType.Raiden) {
-      return this.nodeState.raidenAddress;
-    }
-    return;
   }
 
   public getTokenIdentifier = (currency: string): string | undefined => {

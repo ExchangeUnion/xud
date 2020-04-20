@@ -10,10 +10,15 @@ import { Loggers } from '../Logger';
 import { Currency } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import RaidenClient from '../raidenclient/RaidenClient';
+import ConnextClient from '../connextclient/ConnextClient';
 import { keystore } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
+
+export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
+  return (swapClient.type === SwapClientType.Connext);
+}
 
 export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
   return (swapClient.type === SwapClientType.Raiden);
@@ -33,9 +38,11 @@ type LndUpdate = {
 interface SwapClientManager {
   on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
   on(event: 'raidenUpdate', listener: (tokenAddresses: Map<string, string>, address?: string) => void): this;
+  on(event: 'connextUpdate', listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void): this;
   on(event: 'htlcAccepted', listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
   emit(event: 'raidenUpdate', tokenAddresses: Map<string, string>, address?: string): boolean;
+  emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
   emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
 }
 
@@ -43,6 +50,7 @@ class SwapClientManager extends EventEmitter {
   /** A map between currencies and all enabled swap clients */
   public swapClients = new Map<string, SwapClient>();
   public raidenClient?: RaidenClient;
+  public connextClient?: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
 
@@ -92,6 +100,17 @@ class SwapClientManager extends EventEmitter {
       initPromises.push(this.raidenClient.init());
     }
 
+    if (!this.config.connext.disable) {
+      // setup Connext
+      const currencyInstances = await models.Currency.findAll();
+      this.connextClient = new ConnextClient({
+        currencyInstances,
+        unitConverter: this.unitConverter,
+        config: this.config.connext,
+        logger: this.loggers.connext,
+      });
+    }
+
     // bind event listeners before all swap clients have initialized
     this.bind();
 
@@ -117,6 +136,25 @@ class SwapClientManager extends EventEmitter {
           this.swapClients.set(currency, this.raidenClient);
         }
       }
+    }
+
+    if (this.connextClient) {
+      if (this.connextClient.isMisconfigured()) {
+        this.misconfiguredClients.add(this.connextClient);
+      } else if (!this.connextClient.isDisabled()) {
+        // associate swap clients with currencies managed by connext client
+        for (const currency of this.connextClient.tokenAddresses.keys()) {
+          this.swapClients.set(currency, this.connextClient);
+        }
+      }
+    }
+  }
+
+  // Initializes Connext client with a seed
+  public initConnext = async (seed: string) => {
+    if (!this.config.connext.disable && this.connextClient) {
+      this.connextClient.setSeed(seed);
+      await this.connextClient.init();
     }
   }
 
@@ -366,10 +404,14 @@ class SwapClientManager extends EventEmitter {
    */
   public close = (): void => {
     let raidenClosed = false;
+    let connextClosed = false;
     for (const swapClient of this.swapClients.values()) {
       swapClient.close();
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
+      }
+      if (isConnextClient(swapClient)) {
+        connextClosed = true;
       }
     }
     for (const swapClient of this.misconfiguredClients) {
@@ -377,11 +419,19 @@ class SwapClientManager extends EventEmitter {
       if (isRaidenClient(swapClient)) {
         raidenClosed = true;
       }
+      if (isConnextClient(swapClient)) {
+        connextClosed = true;
+      }
     }
     // we make sure to close raiden client because it
     // might not be associated with any currency
     if (this.raidenClient && !this.raidenClient.isDisabled() && !raidenClosed) {
       this.raidenClient.close();
+    }
+    // we make sure to close connext client because it
+    // might not be associated with any currency
+    if (this.connextClient && !this.connextClient.isDisabled() && !connextClosed) {
+      this.connextClient.close();
     }
   }
 
@@ -511,6 +561,21 @@ class SwapClientManager extends EventEmitter {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
           this.emit('raidenUpdate', this.raidenClient!.tokenAddresses, newIdentifier);
+        }
+      });
+    }
+    if (this.connextClient?.isOperational()) {
+      this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
+        this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
+      });
+      this.connextClient.on('connectionVerified', (swapClientInfo) => {
+        const { newIdentifier } = swapClientInfo;
+        if (newIdentifier) {
+          this.emit(
+            'connextUpdate',
+            this.connextClient!.tokenAddresses,
+            newIdentifier,
+          );
         }
       });
     }

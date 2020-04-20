@@ -61,6 +61,58 @@ class HttpServer {
     res.end(JSON.stringify(resJson));
   }
 
+  private incomingTransfer = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    let statusCode = 200;
+    let resJson: any;
+    let reqJson: any;
+
+    try {
+      reqJson = await this.reqToJson(req);
+    } catch (err) {
+      statusCode = 400;
+      resJson = { message: JSON.stringify(err), retry: false };
+    }
+
+    if (reqJson) {
+      try {
+        resJson = await this.httpService.incomingTransfer(reqJson);
+      } catch (err) {
+        const msg = 'incomingTransfer request failed';
+        this.logger.error(`${msg}: ${err}`);
+        statusCode = 500;
+        resJson = { message: msg };
+      }
+    }
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(resJson));
+  }
+
+  private providePreimage = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+    let statusCode = 200;
+    let resJson: any;
+    let reqJson: any;
+
+    try {
+      reqJson = await this.reqToJson(req);
+    } catch (err) {
+      statusCode = 400;
+      resJson = { message: JSON.stringify(err), retry: false };
+    }
+
+    if (reqJson) {
+      try {
+        resJson = await this.httpService.providePreimage(reqJson);
+      } catch (err) {
+        const msg = 'providing preimage to xud failed';
+        this.logger.error(`${msg}: ${err}`);
+        statusCode = 500;
+        resJson = { message: msg };
+      }
+    }
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(resJson));
+  }
+
   private requestListener: http.RequestListener = async (req, res) => {
     if (!req.headers['content-length']) {
       res.writeHead(411);
@@ -69,6 +121,12 @@ class HttpServer {
     }
 
     switch (req.url) {
+      case '/preimage':
+        await this.providePreimage(req, res);
+        break;
+      case '/incoming-transfer':
+        await this.incomingTransfer(req, res);
+        break;
       case '/resolveraiden':
         await this.resolveRaidenHandler(req, res);
         break;

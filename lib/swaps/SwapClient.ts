@@ -254,9 +254,16 @@ abstract class SwapClient extends EventEmitter {
   public abstract async canRouteToNode(destination: string, currency?: string): Promise<boolean>;
 
   /**
+   * Notifies that swap client to expect a payment.
+   * @param rHash the hash of the preimage
    * @param units the amount of the invoice denominated in the smallest units supported by its currency
+   * @param expiry
+   * @param currency
    */
-  public abstract async addInvoice(rHash: string, units: number, expiry?: number): Promise<void>;
+  public abstract async addInvoice(
+    { rHash, units, expiry, currency }:
+    { rHash: string, units: number, expiry?: number, currency?: string },
+  ): Promise<void>;
 
   public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
 

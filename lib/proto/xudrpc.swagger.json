@@ -918,6 +918,26 @@
     "xudrpcConnectResponse": {
       "type": "object"
     },
+    "xudrpcConnextInfo": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "channels": {
+          "$ref": "#/definitions/xudrpcChannels"
+        },
+        "version": {
+          "type": "string"
+        },
+        "chain": {
+          "type": "string"
+        }
+      }
+    },
     "xudrpcCreateNodeResponse": {
       "type": "object",
       "properties": {
@@ -1088,6 +1108,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "connext": {
+          "$ref": "#/definitions/xudrpcConnextInfo"
         }
       }
     },
