@@ -127,8 +127,9 @@ describe('P2P Pool', () => {
 
   test('should reject connecting to its own addresses', async () => {
     const selfAddresses = [
-      '::1',
+      '::',
       '0.0.0.0',
+      '::1',
       '127.0.0.1',
       'localhost',
     ];
