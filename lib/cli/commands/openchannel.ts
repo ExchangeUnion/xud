@@ -23,6 +23,7 @@ export const builder = {
   push_amount: {
     type: 'number',
     description: 'the amount to be pushed to the remote side of the channel',
+    default: 0,
   },
 };
 
@@ -31,7 +32,7 @@ export const handler = async (argv: Arguments<any>) => {
   request.setNodeIdentifier(argv.node_identifier);
   request.setCurrency(argv.currency.toUpperCase());
   request.setAmount(coinsToSats(argv.amount));
-  request.setPushAmount(coinsToSats(argv.amount));
+  request.setPushAmount(coinsToSats(argv.push_amount));
 
   (await loadXudClient(argv)).openChannel(request, callback(argv));
 };
