@@ -59,15 +59,12 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 	}
 	delete(n.ActiveNodes, node.ID)
 
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-
 	t := time.Now()
+	xudPath := filepath.Join("/custom-xud-vol", branch)
 
-	xudPath := filepath.Join(wd, "./temp", branch)
-	if _, err := os.Stat(xudPath); os.IsNotExist(err) {
+	if _, err := os.Stat(xudPath); !os.IsNotExist(err) {
+		log.Printf("custom xud found at %v", xudPath)
+	} else {
 		log.Printf("custom xud not found at %v, installing...", xudPath)
 
 		_, err := exec.Command("git", "clone", "-b", branch, "https://github.com/ExchangeUnion/xud", xudPath).Output()
@@ -88,6 +85,8 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 		if err != nil {
 			return nil, fmt.Errorf("custom xud compilation failure: %v", err)
 		}
+
+		log.Printf("custom xud installation finished")
 	}
 
 	customNode, err := n.newNode(node.Name, xudPath, true)

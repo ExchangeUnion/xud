@@ -30,12 +30,14 @@ services:
       - btcd-vol:/btcd-vol
       - lnd-vol:/lnd-vol
       - xud-vol:/xud-vol
+      - custom-xud-vol:/custom-xud-vol
       - nvm-vol:/nvm-vol
       - gomod-vol:/gomod-vol
 volumes:
   btcd-vol:
   lnd-vol:
   xud-vol:
+  custom-xud-vol:
   nvm-vol:
   gomod-vol:
 

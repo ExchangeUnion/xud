@@ -8,37 +8,68 @@ The simulation tests’ only dependencies are [Docker](https://docs.docker.com/i
 
 ## Usage (via `xud` npm scripts)
 
-Run the tests after building all images:
+#### Run the tests after building all images:
 
 ```bash
 $ npm run test:sim:build
 $ npm run test:sim:run
 ```
 
-Whenever test code is being refactored, one must build the `test` image before re-running the tests so that changes could take effect:
+#### Specific builds
+
+When making changes to the simulation test code, one must build the `test` image before rerunning the tests:
 
 ```bash
 $ npm run test:sim:build:test
 $ npm run test:sim:run
 ```
---- 
 
-The `test:sim:run` script mentioned above runs only the Integration tests suite.
+When making changes to non-test `xud` code, one must build the `xud` image and clean its volume before rerunning the tests:
+ 
+```bash
+$ npm run test:sim:clean:xud
+$ npm run test:sim:build:xud
+$ npm run test:sim:run
+```
 
-For running the Security tests suite:
+When making changes to `lnd` version/tag, one must build the `lnd` image and clean its volume before rerunning the tests:
+
+```bash
+$ npm run test:sim:clean:lnd
+$ npm run test:sim:build:lnd
+$ npm run test:sim:run
+```
+
+When making changes to custom-xud branches (used in the Security/Instability test suites) one must clean its volume:
+
+```bash
+$ npm run test:sim:clean:custom-xud
+```
+
+#### Other test suites
+
+The `test:sim:run` script mentioned above runs only the **Integration** tests suite.
+
+For running the **Security** tests suite:
 ```bash
 $ npm run test:sim:run:security
 ```
 
-For running the Instability tests suite:
+For running the **Instability** tests suite:
  ```bash
  $ npm run test:sim:run:instability
  ```
- ---
-Upon every test run, `xud` nodes logs are being directed to `temp/logs`. For printing them unto console:
+
+ #### Logs
+
+Upon every test run, all of `xud` & `lnd` nodes logs are being directed to `temp/logs`. 
+
+For printing them unto console:
 ```bash
 $ npm run test:sim:logs
 ```
+
+---
 
 ## Simulation Test Cases
 
