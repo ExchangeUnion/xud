@@ -18,11 +18,11 @@ var instabilityTestCases = []*testCase{
 		test: testNetworkInit,
 	},
 	{
-		name: "maker crashed after send payment",
+		name: "maker crashed after send payment", // replacing Alice
 		test: testMakerCrashedAfterSend,
 	},
 	{
-		name: "maker crashed after send payment with delayed settlement",
+		name: "maker crashed after send payment with delayed settlement", // replacing Alice + Bob
 		test: testMakerCrashedAfterSendDelayedSettlement,
 	},
 }
@@ -129,14 +129,14 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 	aliceIntermediateBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
 	aliceIntermediateLtcBalance := aliceIntermediateBalance.ltc.channel.GetBalance()
-	ht.assert.NotEqual(alicePrevLtcBalance+ltcQuantity, aliceIntermediateLtcBalance)
+	ht.assert.Less(aliceIntermediateLtcBalance, alicePrevLtcBalance)
 
 	// Delay to allow for payment to be claimed by bob then recovered by alice
-	time.Sleep(4 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Verify that alice received her LTC
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
 	aliceLtcBalance := aliceBalance.ltc.channel.GetBalance()
-	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not receive LTC")
+	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not recover LTC funds")
 }
