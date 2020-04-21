@@ -13,8 +13,8 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new DepositRequest();
   request.setCurrency(argv.currency);
-  loadXudClient(argv).deposit(request, callback(argv));
+  (await loadXudClient(argv)).deposit(request, callback(argv));
 };
