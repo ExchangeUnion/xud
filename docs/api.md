@@ -17,6 +17,8 @@
     - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
     - [CreateNodeResponse](#xudrpc.CreateNodeResponse)
     - [Currency](#xudrpc.Currency)
+    - [DepositRequest](#xudrpc.DepositRequest)
+    - [DepositResponse](#xudrpc.DepositResponse)
     - [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest)
     - [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse)
     - [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest)
@@ -77,6 +79,8 @@
     - [UnbanResponse](#xudrpc.UnbanResponse)
     - [UnlockNodeRequest](#xudrpc.UnlockNodeRequest)
     - [UnlockNodeResponse](#xudrpc.UnlockNodeResponse)
+    - [WithdrawRequest](#xudrpc.WithdrawRequest)
+    - [WithdrawResponse](#xudrpc.WithdrawResponse)
   
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
@@ -281,6 +285,36 @@
 | swap_client | [Currency.SwapClient](#xudrpc.Currency.SwapClient) |  | The payment channel network client to use for executing swaps. |
 | token_address | [string](#string) |  | The contract address for layered tokens such as ERC20. |
 | decimal_places | [uint32](#uint32) |  | The number of places to the right of the decimal point of the smallest subunit of the currency. For example, BTC, LTC, and others where the smallest subunits (satoshis) are 0.00000001 full units (bitcoins) have 8 decimal places. ETH has 18. This can be thought of as the base 10 exponent of the smallest subunit expressed as a positive integer. A default value of 8 is used if unspecified. |
+
+
+
+
+
+
+<a name="xudrpc.DepositRequest"></a>
+
+### DepositRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol of the currency to deposit. |
+
+
+
+
+
+
+<a name="xudrpc.DepositResponse"></a>
+
+### DepositResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| address | [string](#string) |  | The address to use to deposit funds. |
 
 
 
@@ -1238,6 +1272,40 @@
 
 
 
+
+<a name="xudrpc.WithdrawRequest"></a>
+
+### WithdrawRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| currency | [string](#string) |  | The ticker symbol of the currency to withdraw. |
+| destination | [string](#string) |  | The address to withdraw funds to. |
+| amount | [uint64](#uint64) |  | The amount to withdraw denominated in satoshis |
+| all | [bool](#bool) |  | Whether to withdraw all available funds for this currency. If true, the amount field is ignored. |
+| fee | [uint32](#uint32) |  | The fee to use for the withdrawal transaction denominated in satoshis per byte. |
+
+
+
+
+
+
+<a name="xudrpc.WithdrawResponse"></a>
+
+### WithdrawResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_id | [string](#string) |  | The id of the withdrawal transaction. |
+
+
+
+
+
  
 
 
@@ -1305,6 +1373,7 @@ The primary service for interacting with a running xud node.
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. shell: xucli addpair &lt;base_currency&gt; &lt;quote_currency&gt; |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. shell: xucli ban &lt;node_identifier&gt; |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
+| Deposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli deposit &lt;currency&gt; |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
@@ -1327,6 +1396,7 @@ The primary service for interacting with a running xud node.
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
 | TradingLimits | [TradingLimitsRequest](#xudrpc.TradingLimitsRequest) | [TradingLimitsResponse](#xudrpc.TradingLimitsResponse) | Gets the trading limits for one or all currencies. shell: xucli tradinglimits [currency] |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. shell: xucli unban &lt;node_identifier&gt; [reconnect] |
+| Withdraw | [WithdrawRequest](#xudrpc.WithdrawRequest) | [WithdrawResponse](#xudrpc.WithdrawResponse) | Withdraws a given currency from the xud wallets to a specified address. shell: xucli withdraw &lt;amount&gt; &lt;currency&gt; &lt;destination&gt; [fee] |
 
 
 <a name="xudrpc.XudInit"></a>

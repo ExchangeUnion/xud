@@ -85,6 +85,15 @@ service Xud {
     };
   }
 
+  /* Gets an address to deposit a given currency into the xud wallets.
+   * shell: xucli deposit <currency> */
+  rpc Deposit(DepositRequest) returns (DepositResponse) {
+    option (google.api.http) = {
+      post: "/v1/deposit"
+      body: "*"
+    };
+  }
+
   /* Discover nodes from a specific peer and apply new connections */
   rpc DiscoverNodes(DiscoverNodesRequest) returns (DiscoverNodesResponse) {
       option (google.api.http) = {
@@ -287,6 +296,15 @@ service Xud {
       body: "*"
     };
   }
+
+  /* Withdraws a given currency from the xud wallets to a specified address.
+   * shell: xucli withdraw <amount> <currency> <destination> [fee] */
+  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse) {
+    option (google.api.http) = {
+      post: "/v1/withdraw"
+      body: "*"
+    };
+  }
 }
 
 enum OrderSide {
@@ -381,6 +399,15 @@ message Currency {
   // exponent of the smallest subunit expressed as a positive integer. A default value of 8 is
   // used if unspecified.
   uint32 decimal_places = 4 [json_name = "decimal_places"];
+}
+
+message DepositRequest {
+  // The ticker symbol of the currency to deposit.
+  string currency = 1 [json_name = "currency"];
+}
+message DepositResponse {
+  // The address to use to deposit funds.
+  string address = 1 [json_name = "address"];
 }
 
 message DiscoverNodesRequest {
@@ -806,4 +833,22 @@ message UnlockNodeResponse {
   bool unlocked_raiden = 2;
   // The list of lnd clients that could not be unlocked.
   repeated string locked_lnds = 3;
+}
+
+message WithdrawRequest {
+  // The ticker symbol of the currency to withdraw.
+  string currency = 1 [json_name = "currency"];
+  // The address to withdraw funds to.
+  string destination = 2 [json_name = "destination"];
+  // The amount to withdraw denominated in satoshis
+  uint64 amount = 3 [json_name = "amount"];
+  // Whether to withdraw all available funds for this currency.
+  // If true, the amount field is ignored.
+  bool all = 4 [json_name = "all"];
+  // The fee to use for the withdrawal transaction denominated in satoshis per byte.
+  uint32 fee = 5 [json_name = "fee"];
+}
+message WithdrawResponse {
+  // The id of the withdrawal transaction.
+  string transaction_id = 1 [json_name = "transaction_id"];
 }

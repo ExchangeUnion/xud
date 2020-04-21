@@ -317,6 +317,38 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.deposit]]
+   */
+  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.deposit(call.request.toObject());
+      const response = new xudrpc.DepositResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
+   * See [[Service.withdraw]]
+   */
+  public withdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (call, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      await this.service.withdraw(call.request.toObject());
+      const response = new xudrpc.WithdrawResponse();
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.ban]]
    */
   public ban: grpc.handleUnaryCall<xudrpc.BanRequest, xudrpc.BanResponse> = async (call, callback) => {
