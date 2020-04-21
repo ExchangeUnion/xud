@@ -29,7 +29,7 @@ export const builder = {
   },
 };
 
-export const handler = (argv: Arguments<any>) => {
+export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();
   request.setCurrency(argv.currency);
   if (argv.all) {
@@ -40,5 +40,5 @@ export const handler = (argv: Arguments<any>) => {
   request.setDestination(argv.destination);
   request.setFee(argv.fee);
 
-  loadXudClient(argv).withdraw(request, callback(argv));
+  (await loadXudClient(argv)).withdraw(request, callback(argv));
 };
