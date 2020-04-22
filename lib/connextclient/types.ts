@@ -104,8 +104,8 @@ export type ExpectedIncomingTransfer = {
 
 export type ConnextPreimageRequest = {
   id: string;
-  data: {
-    newState: {
+  data?: {
+    newState?: {
       lockHash: string;
       preImage: string;
     };
@@ -114,7 +114,7 @@ export type ConnextPreimageRequest = {
 
 export type ConnextIncomingTransferRequest = {
   id: string;
-  data: {
+  data?: {
     amount: {
       _hex: string;
     };

@@ -49,24 +49,28 @@ class HttpService {
   public incomingTransfer = async (
     incomingTransferRequest: ConnextIncomingTransferRequest,
   ): Promise<any> => {
-    const {
-      amount: amountHex,
-      assetId,
-    } = incomingTransferRequest.data;
-    const {
-      lockHash,
-      timelock: timelockHex,
-    } = incomingTransferRequest.data.transferMeta;
-    const rHash = lockHash.slice(2);
-    const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
-    const units = parseInt(amountHex._hex, 16);
-    await this.service.transferReceived({
-      rHash,
-      timelock,
-      units,
-      tokenAddress: assetId,
-    });
-    return { success: true };
+    if (incomingTransferRequest.data) {
+      const {
+        amount: amountHex,
+        assetId,
+      } = incomingTransferRequest.data;
+      const {
+        lockHash,
+        timelock: timelockHex,
+      } = incomingTransferRequest.data.transferMeta;
+      const rHash = lockHash.slice(2);
+      const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
+      const units = parseInt(amountHex._hex, 16);
+      await this.service.transferReceived({
+        rHash,
+        timelock,
+        units,
+        tokenAddress: assetId,
+      });
+      return { success: true };
+    } else {
+      return { success: false };
+    }
   }
 
 }
