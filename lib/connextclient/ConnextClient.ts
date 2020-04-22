@@ -396,8 +396,8 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public removeInvoice = async () => {
-    // not implemented, connext does not use invoices
+  public removeInvoice = async (rHash: string) => {
+    this.expectedIncomingTransfers.delete(rHash);
   }
 
   private async getHashLockStatus(lockHash: string) {
