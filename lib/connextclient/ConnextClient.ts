@@ -500,7 +500,6 @@ class ConnextClient extends SwapClient {
    * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
    */
   public getChannels = async (): Promise<ConnextChannelConfig[]> => {
-    // TODO: change this - DO NOT MERGE before this TODO is gone
     const channel = await this.getChannel();
     return [channel];
   }
