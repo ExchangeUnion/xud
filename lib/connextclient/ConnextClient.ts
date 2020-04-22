@@ -427,9 +427,8 @@ class ConnextClient extends SwapClient {
   }
 
   public getRoute = async () => {
+    /** A placeholder route value that assumes a fixed lock time of 100 for Connext. */
     return {
-      // TODO: verify that it's OK to return
-      // static getTotalTimeLock
       getTotalTimeLock: () => 101,
     };
   }
