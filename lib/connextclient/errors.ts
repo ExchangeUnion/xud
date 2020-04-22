@@ -16,6 +16,7 @@ const errorCodes = {
   CURRENCY_NOT_FOUND_BY_TOKENADDRESS: codesPrefix.concat('.13'),
   CURRENCY_MISSING: codesPrefix.concat('.14'),
   EXPIRY_MISSING: codesPrefix.concat('.15'),
+  MISSING_SEED: codesPrefix.concat('.16'),
 };
 
 const errors = {
@@ -70,6 +71,10 @@ const errors = {
   EXPIRY_MISSING: {
     message: 'expiry is missing',
     code: errorCodes.EXPIRY_MISSING,
+  },
+  MISSING_SEED: {
+    message: 'seed is missing',
+    code: errorCodes.MISSING_SEED,
   },
 };
 

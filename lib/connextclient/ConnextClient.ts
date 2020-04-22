@@ -166,7 +166,6 @@ class ConnextClient extends SwapClient {
       ) {
         this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
         this.emit('htlcAccepted', rHash, units, currency);
-        // TODO: should we also store this in the database?
         this.expectedIncomingTransfers.delete(rHash);
       } else {
         this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
@@ -274,10 +273,10 @@ class ConnextClient extends SwapClient {
   protected verifyConnection = async () => {
     this.logger.info('trying to verify connection to connext');
     try {
-      await this.sendRequest('/health', 'GET');
       if (!this.seed) {
-        throw new Error('Cannot initialize ConnextClient without seed');
+        throw errors.MISSING_SEED;
       }
+      await this.sendRequest('/health', 'GET');
       await this.initWallet(this.seed);
       const config = await this.initConnextClient();
       await this.subscribePreimage();
@@ -385,7 +384,6 @@ class ConnextClient extends SwapClient {
       expiry: expectedTimelock,
       tokenAddress: expectedTokenAddress,
     };
-    // TODO: should we also store this in the database?
     this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
   }
 
