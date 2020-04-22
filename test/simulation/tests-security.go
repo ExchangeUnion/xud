@@ -194,10 +194,17 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	bobPrevBalance, err := getBalance(ht.ctx, net.Bob)
 	ht.assert.NoError(err)
 
-	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Alice.LndBtcNode, net.Bob.LndBtcNode)
+	amt := int64(15000000)
+	pushAmt := int64(7500000)
+	aliceBtcChanPoint, err := openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Alice.LndBtcNode, net.Bob.LndBtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
-	_, err = openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, net.Alice.LndLtcNode)
+	_, err = openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Bob.LndLtcNode, net.Alice.LndLtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
+
+	bobPrevLtcChanList, err := net.Bob.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.NoError(err)
+	ht.assert.Equal(len(bobPrevLtcChanList.Channels), 1)
+	bobPrevLtcChan := bobPrevLtcChanList.Channels[0]
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -253,10 +260,10 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	err = closeBtcChannel(ht.ctx, net.LndBtcNetwork, net.Alice.LndBtcNode, aliceBtcChanPoint, false)
 	ht.assert.NoError(err)
 
-	onchainFeesThreshold := int64(20000)
+	onchainFeesThreshold := int64(200000)
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
-	walletDiff := alicePrevBalance.btc.wallet.TotalBalance - aliceBalance.btc.wallet.TotalBalance
+	walletDiff := alicePrevBalance.btc.wallet.TotalBalance - aliceBalance.btc.wallet.TotalBalance - pushAmt
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"alice btc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.btc.wallet.TotalBalance, aliceBalance.btc.wallet.TotalBalance)
 
@@ -265,11 +272,11 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	bobLtcChanList, err := net.Bob.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
 	ht.assert.Equal(len(bobLtcChanList.Channels), 1)
-	bobChan := bobLtcChanList.Channels[0]
-	ht.assert.True(bobChan.RemoteBalance == 0)
-	ht.assert.True(bobChan.LocalBalance > 0)
-	ht.assert.Equal(len(bobChan.PendingHtlcs), 1)
-	expirationHeight := bobChan.PendingHtlcs[0].ExpirationHeight
+	bobLtcChan := bobLtcChanList.Channels[0]
+	ht.assert.Greater(bobPrevLtcChan.LocalBalance-bobLtcChan.LocalBalance, int64(bobOrderReq.Quantity))
+	ht.assert.Equal(bobPrevLtcChan.RemoteBalance, bobLtcChan.RemoteBalance)
+	ht.assert.Equal(len(bobLtcChan.PendingHtlcs), 1)
+	expirationHeight := bobLtcChan.PendingHtlcs[0].ExpirationHeight
 
 	// Expire the HTLC.
 
@@ -306,7 +313,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	onchainFeesThreshold = int64(200000)
 	bobBalance, err := getBalance(ht.ctx, net.Bob)
 	ht.assert.NoError(err)
-	walletDiff = bobPrevBalance.ltc.wallet.TotalBalance - bobBalance.ltc.wallet.TotalBalance
+	walletDiff = bobPrevBalance.ltc.wallet.TotalBalance - bobBalance.ltc.wallet.TotalBalance - pushAmt
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"bob ltc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.ltc.wallet.TotalBalance, bobBalance.ltc.wallet.TotalBalance)
 }
@@ -385,10 +392,17 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	bobPrevBalance, err := getBalance(ht.ctx, net.Bob)
 	ht.assert.NoError(err)
 
-	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode)
+	amt := int64(15000000)
+	pushAmt := int64(7500000)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
-	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode)
+	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
+
+	bobPrevBtcChanList, err := net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.NoError(err)
+	ht.assert.Equal(len(bobPrevBtcChanList.Channels), 1)
+	bobPrevBtcChan := bobPrevBtcChanList.Channels[0]
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -439,11 +453,11 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	bobBtcChanList, err := net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
 	ht.assert.Equal(len(bobBtcChanList.Channels), 1)
-	bobChan := bobBtcChanList.Channels[0]
-	ht.assert.True(bobChan.RemoteBalance == 0)
-	ht.assert.True(bobChan.LocalBalance > 0)
-	ht.assert.Equal(len(bobChan.PendingHtlcs), 1)
-	expirationHeight := bobChan.PendingHtlcs[0].ExpirationHeight
+	bobBtcChan := bobBtcChanList.Channels[0]
+	ht.assert.Greater(bobPrevBtcChan.LocalBalance-bobBtcChan.LocalBalance, int64(float64(bobOrderReq.Quantity)*bobOrderReq.Price))
+	ht.assert.Equal(bobPrevBtcChan.RemoteBalance, bobBtcChan.RemoteBalance)
+	ht.assert.Equal(len(bobBtcChan.PendingHtlcs), 1)
+	expirationHeight := bobBtcChan.PendingHtlcs[0].ExpirationHeight
 
 	// Expire the HTLC.
 
@@ -480,7 +494,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	onchainFeesThreshold := int64(200000)
 	bobBalance, err := getBalance(ht.ctx, net.Bob)
 	ht.assert.NoError(err)
-	walletDiff := bobPrevBalance.btc.wallet.TotalBalance - bobBalance.btc.wallet.TotalBalance
+	walletDiff := bobPrevBalance.btc.wallet.TotalBalance - bobBalance.btc.wallet.TotalBalance - pushAmt
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"bob Btc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.btc.wallet.TotalBalance, bobBalance.btc.wallet.TotalBalance)
 
@@ -493,7 +507,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	onchainFeesThreshold = int64(200000)
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
-	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance
+	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance - pushAmt
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
 }
