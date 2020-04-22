@@ -175,6 +175,8 @@ class ConnextClient extends SwapClient {
     });
   }
 
+  // TODO: Ideally, this would be set in the constructor.
+  // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
   }
