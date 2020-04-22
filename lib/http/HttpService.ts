@@ -25,30 +25,30 @@ class HttpService {
     return { secret };
   }
 
-  public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<any> => {
+  public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
       preimageRequest.data && preimageRequest.data.newState
     ) {
       const { lockHash: rHash, preImage: preimage } = preimageRequest.data.newState;
       if (!rHash) {
-        throw new Error('rHash is required');
+        throw serviceErrors.INVALID_ARGUMENT('lockHash is missing');
       }
       if (!preimage) {
-        throw new Error('preImage is required');
+        throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
       await this.service.providePreimage({
         rHash: rHash.slice(2),
         preimage: preimage.slice(2),
       });
-      return { success: true };
+      return {};
     } else {
-      return { success: false };
+      throw serviceErrors.INVALID_REQUEST;
     }
   }
 
   public incomingTransfer = async (
     incomingTransferRequest: ConnextIncomingTransferRequest,
-  ): Promise<any> => {
+  ): Promise<object> => {
     if (incomingTransferRequest.data) {
       const {
         amount: amountHex,
@@ -67,9 +67,9 @@ class HttpService {
         units,
         tokenAddress: assetId,
       });
-      return { success: true };
+      return {};
     } else {
-      return { success: false };
+      throw serviceErrors.INVALID_REQUEST;
     }
   }
 

@@ -8,6 +8,7 @@ const errorCodes = {
   PENDING_CALL_CONFLICT: codesPrefix.concat('.4'),
   OPEN_CHANNEL_FAILURE: codesPrefix.concat('.5'),
   NODE_DOES_NOT_EXIST: codesPrefix.concat('.6'),
+  INVALID_REQUEST: codesPrefix.concat('.7'),
 };
 
 const errors = {
@@ -34,6 +35,10 @@ const errors = {
   NODE_DOES_NOT_EXIST: {
     message: 'xud node cannot be unlocked because it does not exist',
     code: errorCodes.NODE_DOES_NOT_EXIST,
+  },
+  INVALID_REQUEST: {
+    message: 'invalid request',
+    code: errorCodes.INVALID_REQUEST,
   },
 };
 
