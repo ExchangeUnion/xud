@@ -7,6 +7,7 @@ git clone https://github.com/ConnextProject/indra.git
 cd indra
 make
 ```
+
 ### Running Connext node
 
 ```bash
