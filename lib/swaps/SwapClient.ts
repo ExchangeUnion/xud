@@ -2,6 +2,7 @@ import Logger from '../Logger';
 import { EventEmitter } from 'events';
 import { SwapDeal, Route } from './types';
 import { SwapClientType } from '../constants/enums';
+import { setTimeoutPromise } from '../utils/utils';
 
 enum ClientStatus {
   /** The starting status before a client has initialized. */
@@ -169,7 +170,8 @@ abstract class SwapClient extends EventEmitter {
   protected abstract async initSpecific(): Promise<void>;
 
   protected setConnected = async (newIdentifier?: string, newUris?: string[]) => {
-    await this.updateCapacity();
+    // we wait briefly to update the capacities for this swap client then proceed to set status to connected
+    await Promise.race([this.updateCapacity(), setTimeoutPromise(SwapClient.CAPACITY_REFRESH_INTERVAL)]);
     this.setStatus(ClientStatus.ConnectionVerified);
     this.emit('connectionVerified', {
       newIdentifier,
