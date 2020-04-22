@@ -138,47 +138,45 @@ class ConnextClient extends SwapClient {
   }
 
   public initSpecific = async () => {
-    this.listenForIncomingTransfers();
+    this.on('transferReceived', this.onTransferReceived.bind(this));
   }
 
-  private listenForIncomingTransfers = () => {
-    this.on('transferReceived', (transferReceivedRequest: TransferReceivedEvent) => {
-      const {
+  private onTransferReceived = (transferReceivedRequest: TransferReceivedEvent) => {
+    const {
         tokenAddress,
         units,
         timelock,
         rHash,
       } = transferReceivedRequest;
-      const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
-      if (!expectedIncomingTransfer) {
-        this.logger.warn(`received unexpected incoming transfer with rHash ${rHash}`);
-        return;
-      }
-      const {
+    const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
+    if (!expectedIncomingTransfer) {
+      this.logger.warn(`received unexpected incoming transfer with rHash ${rHash}`);
+      return;
+    }
+    const {
         rHash: expectedHash,
         units: expectedUnits,
         expiry: expectedTimelock,
         tokenAddress: expectedTokenAddress,
       } = expectedIncomingTransfer;
-      const currency = this.getCurrencyByTokenaddress(tokenAddress);
-      if (
+    const currency = this.getCurrencyByTokenaddress(tokenAddress);
+    if (
         units === expectedUnits &&
         rHash === expectedHash &&
         timelock === expectedTimelock &&
         tokenAddress === expectedTokenAddress
       ) {
-        this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
-        this.emit('htlcAccepted', rHash, units, currency);
-        this.expectedIncomingTransfers.delete(rHash);
-      } else {
-        this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
-          expectedUnits: ${expectedUnits} actualUnits: ${units},
-          expectedHash: ${expectedHash} actualHash: ${rHash},
-          expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
-          expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
-        );
-      }
-    });
+      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
+      this.emit('htlcAccepted', rHash, units, currency);
+      this.expectedIncomingTransfers.delete(rHash);
+    } else {
+      this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
+        expectedUnits: ${expectedUnits} actualUnits: ${units},
+        expectedHash: ${expectedHash} actualHash: ${rHash},
+        expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
+        expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
+      );
+    }
   }
 
   // TODO: Ideally, this would be set in the constructor.
