@@ -1013,8 +1013,9 @@ class Swaps extends EventEmitter {
 
   private handleSwapTimeout = async (rHash: string, reason: SwapFailureReason) => {
     const deal = this.getDeal(rHash)!;
-    const peer = this.pool.getPeer(deal.peerPubKey);
+    const peer = this.pool.tryGetPeer(deal.peerPubKey);
     this.timeouts.delete(rHash);
+
     await this.failDeal({
       deal,
       peer,

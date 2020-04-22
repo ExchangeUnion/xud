@@ -669,6 +669,14 @@ class Pool extends EventEmitter {
     return peer;
   }
 
+  public tryGetPeer = (peerPubKey: string) => {
+    try {
+      return this.getPeer(peerPubKey);
+    } catch (err) {
+      return;
+    }
+  }
+
   public broadcastOrder = (order: OutgoingOrder) => {
     const orderPacket = new packets.OrderPacket(order);
     this.peers.forEach(async (peer) => {
