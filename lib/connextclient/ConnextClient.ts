@@ -93,6 +93,10 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
+  /** A map of expected invoices by hash.
+   * This is equivalent to invoices of lnd with the difference
+   * being that we're managing the state of invoice on xud level.
+   */
   private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
   private port: number;
   private host: string;
