@@ -148,7 +148,7 @@ class ConnextClient extends SwapClient {
       } = transferReceivedRequest;
       const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
       if (!expectedIncomingTransfer) {
-        this.logger.error(`received unexpected incoming transfer with rHash ${rHash}`);
+        this.logger.warn(`received unexpected incoming transfer with rHash ${rHash}`);
         return;
       }
       const {
