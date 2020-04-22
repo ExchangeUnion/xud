@@ -262,7 +262,7 @@ class ConnextClient extends SwapClient {
       }
     }
     if (!currency) {
-      throw new Error(`could not find currency for tokenAddress ${tokenAddress}`);
+      throw errors.CURRENCY_NOT_FOUND(tokenAddress);
     }
     return currency;
   }
