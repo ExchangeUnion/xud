@@ -138,7 +138,10 @@ class ConnextClient extends SwapClient {
   }
 
   public initSpecific = async () => {
-    // listen for incoming transfers
+    this.listenForIncomingTransfers();
+  }
+
+  private listenForIncomingTransfers = () => {
     this.on('transferReceived', (transferReceivedRequest: TransferReceivedEvent) => {
       const {
         tokenAddress,
