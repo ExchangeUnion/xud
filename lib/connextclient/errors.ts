@@ -13,7 +13,9 @@ const errorCodes = {
   INVALID_TOKEN_PAYMENT_RESPONSE: codesPrefix.concat('.9'),
   CONNEXT_HAS_NO_ACTIVE_CHANNELS: codesPrefix.concat('.11'),
   CONNEXT_CLIENT_NOT_INITIALIZED: codesPrefix.concat('.12'),
-  CURRENCY_NOT_FOUND: codesPrefix.concat('.13'),
+  CURRENCY_NOT_FOUND_BY_TOKENADDRESS: codesPrefix.concat('.13'),
+  CURRENCY_MISSING: codesPrefix.concat('.14'),
+  EXPIRY_MISSING: codesPrefix.concat('.15'),
 };
 
 const errors = {
@@ -57,10 +59,18 @@ const errors = {
     message: 'connext TokenPaymentResponse is invalid',
     code: errorCodes.INVALID_TOKEN_PAYMENT_RESPONSE,
   },
-  CURRENCY_NOT_FOUND: (tokenAddress: string) => ({
+  CURRENCY_NOT_FOUND_BY_TOKENADDRESS: (tokenAddress: string) => ({
     message: `could not find currency for tokenAddress ${tokenAddress}`,
-    code: errorCodes.CURRENCY_NOT_FOUND,
+    code: errorCodes.CURRENCY_NOT_FOUND_BY_TOKENADDRESS,
   }),
+  CURRENCY_MISSING: {
+    message: 'currency is missing',
+    code: errorCodes.CURRENCY_MISSING,
+  },
+  EXPIRY_MISSING: {
+    message: 'expiry is missing',
+    code: errorCodes.EXPIRY_MISSING,
+  },
 };
 
 export { errorCodes };

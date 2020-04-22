@@ -262,7 +262,7 @@ class ConnextClient extends SwapClient {
       }
     }
     if (!currency) {
-      throw errors.CURRENCY_NOT_FOUND(tokenAddress);
+      throw errors.CURRENCY_NOT_FOUND_BY_TOKENADDRESS(tokenAddress);
     }
     return currency;
   }
@@ -369,10 +369,10 @@ class ConnextClient extends SwapClient {
     { rHash: string, units: number, expiry?: number, currency?: string },
   ) => {
     if (!expectedCurrency) {
-      throw new Error('cannot add invoice, expected currency is missing');
+      throw errors.CURRENCY_MISSING;
     }
     if (!expectedTimelock) {
-      throw new Error('cannot add invoice, expiry is missing');
+      throw errors.EXPIRY_MISSING;
     }
     const expectedTokenAddress = this.getTokenAddress(expectedCurrency);
     const expectedIncomingTransfer: ExpectedIncomingTransfer = {
