@@ -553,7 +553,7 @@ class SwapClientManager extends EventEmitter {
         });
       }
     }
-    // we handle raiden separately because we don't want to attach
+    // we handle raiden and connext separately because we don't want to attach
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
     if (this.raidenClient?.isOperational()) {
