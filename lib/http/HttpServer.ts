@@ -25,6 +25,8 @@ class HttpServer {
       statusCode = 400;
       resJson = { message: JSON.stringify(err), retry: false };
     }
+    // TODO: Refactor code above this point so we don't need to
+    // keep repeating it when adding new endpoints.
 
     if (reqJson) {
       try {
@@ -72,6 +74,8 @@ class HttpServer {
       statusCode = 400;
       resJson = { message: JSON.stringify(err), retry: false };
     }
+    // TODO: Refactor code above this point so we don't need to
+    // keep repeating it when adding new endpoints.
 
     if (reqJson) {
       try {
@@ -98,6 +102,8 @@ class HttpServer {
       statusCode = 400;
       resJson = { message: JSON.stringify(err), retry: false };
     }
+    // TODO: Refactor code above this point so we don't need to
+    // keep repeating it when adding new endpoints.
 
     if (reqJson) {
       try {
