@@ -20,10 +20,10 @@ const errors = {
     message: 'connext is disabled',
     code: errorCodes.CONNEXT_IS_DISABLED,
   },
-  CONNEXT_HAS_NO_ACTIVE_CHANNELS: () => ({
+  CONNEXT_HAS_NO_ACTIVE_CHANNELS: {
     message: 'connext has no active channels',
     code: errorCodes.CONNEXT_HAS_NO_ACTIVE_CHANNELS,
-  }),
+  },
   CONNEXT_CLIENT_NOT_INITIALIZED: {
     message: 'connext client is not initialized',
     code: errorCodes.CONNEXT_CLIENT_NOT_INITIALIZED,

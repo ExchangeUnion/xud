@@ -457,7 +457,7 @@ class ConnextClient extends SwapClient {
         };
         address = connextChannels[0].signerAddress;
         if (channels.active <= 0) {
-          status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS().message;
+          status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS.message;
         }
       } catch (err) {
         status = err.message;
