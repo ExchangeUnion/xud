@@ -569,25 +569,21 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  public async openChannel() {}
-
   /**
    * Deposits funds to a node
    */
   public deposit = async (
-    { currency, amount }:
-    { currency: string, amount: number },
+    { currency, units }:
+    { currency: string, units: number },
   ) => {
-    const units = this.unitConverter.amountToUnits({
-      amount,
-      currency,
-    });
     const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/deposit', 'POST', {
       assetId,
       amount: units.toString(),
     });
   }
+
+  public async openChannel() {}
 
   /**
    * Closes a payment client.

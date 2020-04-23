@@ -260,25 +260,20 @@ class Service {
     args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
   ) => {
     const { nodeIdentifier, amount, currency, pushAmount } = args;
-    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     try {
-      if (nodeIdentifier === 'Connext') {
-        await this.swapClientManager.connextClient?.deposit({
-          currency,
-          amount,
-        });
-      } else {
+      let peer;
+      if (args.nodeIdentifier) {
         const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-        const peer = this.pool.getPeer(nodePubKey);
-        await this.swapClientManager.openChannel({
-          peer,
-          amount,
-          currency,
-          pushAmount,
-        });
+        peer = this.pool.getPeer(nodePubKey);
       }
+      await this.swapClientManager.openChannel({
+        peer,
+        amount,
+        currency,
+        pushAmount,
+      });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
       throw errors.OPEN_CHANNEL_FAILURE(currency, nodeIdentifier, amount, errorMessage);

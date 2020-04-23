@@ -478,15 +478,11 @@ class SwapClientManager extends EventEmitter {
    */
   public openChannel = async (
     { peer, amount, currency, pushAmount = 0 }:
-    { peer: Peer, amount: number, currency: string, pushAmount?: number },
+    { peer?: Peer, amount: number, currency: string, pushAmount?: number },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
-    }
-    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
-    if (!peerIdentifier) {
-      throw new Error('peer not connected to swap client');
     }
     const units = this.unitConverter.amountToUnits({
       amount,
@@ -497,6 +493,18 @@ class SwapClientManager extends EventEmitter {
       amount: pushAmount,
     });
 
+    if (!peer) {
+      if (isConnextClient(swapClient)) {
+        await swapClient.deposit({ currency, units });
+        return;
+      } else {
+        throw new Error('peerPubKey or alias must be specified');
+      }
+    }
+    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
+    if (!peerIdentifier) {
+      throw new Error('peer not connected to swap client');
+    }
     let uris: string[] | undefined;
     if (isLndClient(swapClient)) {
       uris = peer.getLndUris(currency);
