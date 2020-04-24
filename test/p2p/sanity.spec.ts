@@ -37,6 +37,9 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
   raiden: {
     disable: true,
   },
+  connext: {
+    disable: true,
+  },
 });
 
 describe('P2P Sanity Tests', () => {

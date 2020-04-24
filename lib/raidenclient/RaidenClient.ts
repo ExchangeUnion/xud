@@ -10,6 +10,7 @@ import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import { Channel, OpenChannelPayload, PaymentEvent, RaidenChannelCount, RaidenClientConfig,
   RaidenInfo, RaidenVersion, TokenPaymentRequest, TokenPaymentResponse } from './types';
+import { parseResponseBody } from '../utils/utils';
 
 type RaidenErrorResponse = { errors: string };
 
@@ -22,25 +23,6 @@ type PendingTransfer = {
   token_address: string;
   transferred_amount: string;
 };
-
-/**
- * A utility function to parse the payload from an http response.
- */
-async function parseResponseBody<T>(res: http.IncomingMessage): Promise<T> {
-  res.setEncoding('utf8');
-  return new Promise<T>((resolve, reject) => {
-    let body = '';
-    res.on('data', (chunk) => {
-      body += chunk;
-    });
-    res.on('end', () => {
-      resolve(JSON.parse(body));
-    });
-    res.on('error', (err) => {
-      reject(err);
-    });
-  });
-}
 
 /**
  * A class representing a client to interact with raiden.

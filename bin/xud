@@ -171,6 +171,27 @@ const { argv } = require('yargs')
       describe: 'Port for raiden REST service',
       type: 'number',
     },
+    'connext.disable': {
+      describe: 'Disable Connext integration',
+      type: 'boolean',
+      default: undefined,
+    },
+    'connext.host': {
+      describe: 'Host of the Connext client',
+      type: 'string',
+    },
+    'connext.port': {
+      describe: 'Port for Connext client',
+      type: 'number',
+    },
+    'connext.webhookhost': {
+      describe: 'Host for the webhooks from Connext client',
+      type: 'string',
+    },
+    'connext.webhookport': {
+      describe: 'Port for the webhooks from Connext client',
+      type: 'number',
+    },
     'rpc.host': {
       describe: 'gRPC service host',
       type: 'string',

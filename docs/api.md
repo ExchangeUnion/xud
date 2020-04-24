@@ -14,6 +14,7 @@
     - [Channels](#xudrpc.Channels)
     - [ConnectRequest](#xudrpc.ConnectRequest)
     - [ConnectResponse](#xudrpc.ConnectResponse)
+    - [ConnextInfo](#xudrpc.ConnextInfo)
     - [CreateNodeRequest](#xudrpc.CreateNodeRequest)
     - [CreateNodeResponse](#xudrpc.CreateNodeResponse)
     - [Currency](#xudrpc.Currency)
@@ -87,9 +88,11 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
+  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
+
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -235,6 +238,25 @@
 
 ### ConnectResponse
 
+
+
+
+
+
+
+<a name="xudrpc.ConnextInfo"></a>
+
+### ConnextInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  |  |
+| address | [string](#string) |  |  |
+| channels | [Channels](#xudrpc.Channels) |  |  |
+| version | [string](#string) |  |  |
+| chain | [string](#string) |  |  |
 
 
 
@@ -444,6 +466,7 @@
 | alias | [string](#string) |  | The alias of this instance of xud. |
 | network | [string](#string) |  | The network of this node. |
 | pending_swap_hashes | [string](#string) | repeated |  |
+| connext | [ConnextInfo](#xudrpc.ConnextInfo) |  |  |
 
 
 
