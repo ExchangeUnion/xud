@@ -23,12 +23,12 @@ var instabilityTestCases = []*testCase{
 		test: testMakerCrashedAfterSend,
 	},
 	{
-		name: "maker crashed after send payment with delayed settlement", // replacing Alice + Bob
-		test: testMakerCrashedAfterSendDelayedSettlement,
+		name: "maker lnd crashed before order settlement", // replacing Alice
+		test: testMakerLndCrashedBeforeSettlement,
 	},
 	{
-		name: "maker lnd crashed before order settlement",
-		test: testMakerLndCrashedBeforeSettlement,
+		name: "maker crashed after send payment with delayed settlement", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlement,
 	},
 }
 
