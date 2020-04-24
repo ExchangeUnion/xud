@@ -98,7 +98,7 @@ func (a *actions) connect(srcNode, destNode *xudtest.HarnessNode) {
 	a.assert.NoError(err)
 }
 
-func (a *actions) openChannel(srcNode, destNode *xudtest.HarnessNode, currency string, amount int64) {
+func (a *actions) openChannel(srcNode, destNode *xudtest.HarnessNode, currency string, amount uint64) {
 	// connect srcNode to destNode.
 	reqConn := &xudrpc.OpenChannelRequest{NodeIdentifier: destNode.PubKey(), Currency: currency, Amount: amount}
 	_, err := srcNode.Client.OpenChannel(a.ctx, reqConn)

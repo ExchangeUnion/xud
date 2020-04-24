@@ -6,49 +6,58 @@ import Config from '../Config';
 import { XudClient, XudInitClient } from '../proto/xudrpc_grpc_pb';
 
 /**
+ * Attempts to load the xud configuration file to dynamically determine the
+ * port and interface that xud is listening for rpc calls on as well as the
+ * tls cert path, if arguments specifying these parameters were not provided.
+ * @param argv the command line arguments
+ */
+const loadXudConfig = async (argv: Arguments<any>) => {
+  const config = new Config();
+  try {
+    await config.load({
+      xudir: argv.xudir,
+      rpc: {
+        port: argv.rpcport,
+        host: argv.rpchost,
+      },
+    });
+  } catch (err) {
+    // if we can't load the config file, we should alert the user but continue
+    // on to attempt the call with the commands args or default config values
+    console.error(err);
+  }
+
+  // for any args that were not set, we update them to the values we
+  // determined by loading the config
+  argv.xudir = argv.xudir ?? config.xudir;
+  argv.rpcport = argv.rpcport ?? config.rpc.port;
+  if (argv.rpchost === undefined) {
+    argv.rpchost = (config.rpc.host === '0.0.0.0' || config.rpc.host === '::') ?
+      'localhost' : // if xud is listening on any address, try reaching it with localhost
+      config.rpc.host;
+  }
+};
+
+/**
  * A generic function to instantiate an XU client.
  * @param argv the command line arguments
  */
 export const loadXudClient = async (argv: Arguments<any>) => {
-  const config = new Config();
-  await config.load({
-    xudir: argv.xudir,
-    rpc: {
-      port: argv.rpcport,
-      host: argv.rpchost,
-    },
-  });
+  await loadXudConfig(argv);
 
-  const certPath = argv.tlscertpath || path.join(config.xudir, 'tls.cert');
+  const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
-
-  // in case port and host args were not set, we update them to the values we
-  // determined by loading the config
-  argv.rpcport = config.rpc.port;
-  argv.rpchost = config.rpc.host;
 
   return new XudClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };
 
 export const loadXudInitClient = async (argv: Arguments<any>) => {
-  const config = new Config();
-  await config.load({
-    xudir: argv.xudir,
-    rpc: {
-      port: argv.rpcport,
-      host: argv.rpchost,
-    },
-  });
+  await loadXudConfig(argv);
 
-  const certPath = argv.tlscertpath || path.join(config.xudir, 'tls.cert');
+  const certPath = argv.tlscertpath || path.join(argv.xudir, 'tls.cert');
   const cert = fs.readFileSync(certPath);
   const credentials = grpc.credentials.createSsl(cert);
-
-  // in case port and host args were not set, we update them to the values we
-  // determined by loading the config
-  argv.rpcport = config.rpc.port;
-  argv.rpchost = config.rpc.host;
 
   return new XudInitClient(`${argv.rpchost}:${argv.rpcport}`, credentials);
 };

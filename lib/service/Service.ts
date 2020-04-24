@@ -236,6 +236,17 @@ class Service {
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   }
 
+  public deposit = async (args: { currency: string }) => {
+    const { currency } = args;
+    const address = await this.swapClientManager.deposit(currency);
+    return address;
+  }
+
+  public withdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
+    const txId = await this.swapClientManager.withdraw(args);
+    return txId;
+  }
+
   /*
    * Opens a payment channel to a specified node, currency and amount.
    */

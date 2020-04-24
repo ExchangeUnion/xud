@@ -333,6 +333,48 @@ export namespace Currency {
 
 }
 
+export class DepositRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DepositRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: DepositRequest): DepositRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DepositRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DepositRequest;
+    static deserializeBinaryFromReader(message: DepositRequest, reader: jspb.BinaryReader): DepositRequest;
+}
+
+export namespace DepositRequest {
+    export type AsObject = {
+        currency: string,
+    }
+}
+
+export class DepositResponse extends jspb.Message { 
+    getAddress(): string;
+    setAddress(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): DepositResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: DepositResponse): DepositResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: DepositResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): DepositResponse;
+    static deserializeBinaryFromReader(message: DepositResponse, reader: jspb.BinaryReader): DepositResponse;
+}
+
+export namespace DepositResponse {
+    export type AsObject = {
+        address: string,
+    }
+}
+
 export class DiscoverNodesRequest extends jspb.Message { 
     getNodeIdentifier(): string;
     setNodeIdentifier(value: string): void;
@@ -1958,6 +2000,64 @@ export namespace UnlockNodeResponse {
         unlockedLndsList: Array<string>,
         unlockedRaiden: boolean,
         lockedLndsList: Array<string>,
+    }
+}
+
+export class WithdrawRequest extends jspb.Message { 
+    getCurrency(): string;
+    setCurrency(value: string): void;
+
+    getDestination(): string;
+    setDestination(value: string): void;
+
+    getAmount(): number;
+    setAmount(value: number): void;
+
+    getAll(): boolean;
+    setAll(value: boolean): void;
+
+    getFee(): number;
+    setFee(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): WithdrawRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: WithdrawRequest): WithdrawRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: WithdrawRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): WithdrawRequest;
+    static deserializeBinaryFromReader(message: WithdrawRequest, reader: jspb.BinaryReader): WithdrawRequest;
+}
+
+export namespace WithdrawRequest {
+    export type AsObject = {
+        currency: string,
+        destination: string,
+        amount: number,
+        all: boolean,
+        fee: number,
+    }
+}
+
+export class WithdrawResponse extends jspb.Message { 
+    getTransactionId(): string;
+    setTransactionId(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): WithdrawResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: WithdrawResponse): WithdrawResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: WithdrawResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): WithdrawResponse;
+    static deserializeBinaryFromReader(message: WithdrawResponse, reader: jspb.BinaryReader): WithdrawResponse;
+}
+
+export namespace WithdrawResponse {
+    export type AsObject = {
+        transactionId: string,
     }
 }
 
