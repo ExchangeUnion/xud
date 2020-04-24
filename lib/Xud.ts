@@ -17,7 +17,9 @@ import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
 import { AssertionError } from 'assert';
-import { SwapClientType } from './constants/enums';
+import { SwapClientType, XuNetwork } from './constants/enums';
+import { createSimnetChannel } from './utils/simnet-connext-channels';
+import { Subscription } from 'rxjs';
 
 const version: string = require('../package.json').version;
 
@@ -43,6 +45,7 @@ class Xud extends EventEmitter {
   private shuttingDown = false;
   private swapClientManager?: SwapClientManager;
   private unitConverter?: UnitConverter;
+  private simnetChannels$?: Subscription;
 
   /**
    * Create an Exchange Union daemon.
@@ -213,6 +216,35 @@ class Xud extends EventEmitter {
         );
       }
 
+      // if we're running in simnet mode and Connext is enabled we'll
+      // attempt to request funds from the faucet and open a channel
+      // to the node once we have received the on-chain funds
+      if (
+        this.config.network === XuNetwork.SimNet &&
+        this.swapClientManager.connextClient?.isOperational()
+      ) {
+        this.simnetChannels$ = createSimnetChannel({
+          currency: 'ETH',
+          // minimum channelBalance threshold
+          minChannelAmount: 100000000,
+          // minimum walletBalance threshold
+          minWalletAmount: 100000000,
+          // we check the channel and on-chain balance every 10 seconds
+          // and refund from faucet if below the walletAmount
+          retryInterval: 10000,
+        }).subscribe({
+          next: () => {
+            this.logger.info('Connext wallet funded and channel opened');
+          },
+          error: (e) => {
+            this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
+          },
+          complete: () => {
+            this.logger.info('Stopped monitoring Connext balances for automatic funding and channel creation');
+          },
+        });
+      }
+
       // initialize rpc server last
       if (this.rpcServer) {
         this.rpcServer.grpcService.setService(this.service);
@@ -236,6 +268,8 @@ class Xud extends EventEmitter {
 
     // TODO: ensure we are not in the middle of executing any trades
     const closePromises: Promise<void>[] = [];
+
+    this.simnetChannels$?.unsubscribe();
 
     if (this.swapClientManager) {
       this.swapClientManager.close();
