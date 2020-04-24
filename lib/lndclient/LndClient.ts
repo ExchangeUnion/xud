@@ -743,7 +743,7 @@ class LndClient extends SwapClient {
     { peerIdentifier: string, units: number, uris?: string[], pushUnits?: number },
   ): Promise<void> => {
     if (uris) {
-      await this.connectPeerAddreses(uris);
+      await this.connectPeerAddresses(uris);
     }
 
     await this.openChannelSync(peerPubKey, units, pushUnits);
@@ -753,7 +753,7 @@ class LndClient extends SwapClient {
    * Tries to connect to a given list of a peer's uris in sequential order.
    * @returns `true` when successful, otherwise `false`.
    */
-  private connectPeerAddreses = async (
+  private connectPeerAddresses = async (
     peerListeningUris: string[],
   ): Promise<boolean> => {
     const splitListeningUris = peerListeningUris
