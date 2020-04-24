@@ -146,8 +146,8 @@ const faucetRequest = (connextAddress: string) => {
 };
 
 const createSimnetChannel = (
-  { currency, minChannelAmount, minWalletAmount, retryInterval }:
-  { currency: string, minChannelAmount: number, minWalletAmount: number, retryInterval: number },
+  { currency, minChannelAmount, channelAmount, minWalletAmount, retryInterval }:
+  { currency: string, minChannelAmount: number, channelAmount: number, minWalletAmount: number, retryInterval: number },
 ) => {
   const client$ = from(loadXudClient({}));
   const balances$ = client$.pipe(
@@ -162,7 +162,7 @@ const createSimnetChannel = (
           // to open a channel
           return empty();
         } else {
-          return from(openConnextChannel(client, currency, minChannelAmount));
+          return from(openConnextChannel(client, currency, channelAmount));
         }
       }),
       // when the flow is completed we wait until the retryInterval

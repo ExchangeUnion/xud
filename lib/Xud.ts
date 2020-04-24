@@ -225,6 +225,8 @@ class Xud extends EventEmitter {
       ) {
         this.simnetChannels$ = createSimnetChannel({
           currency: 'ETH',
+          // amount of currency to put in the channel
+          channelAmount: 1000000000,
           // minimum channelBalance threshold
           minChannelAmount: 100000000,
           // minimum walletBalance threshold
