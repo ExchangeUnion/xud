@@ -59,19 +59,19 @@ The mechanism in which `custom-xud` is created is via the git patch file named `
 To modify the patch, one should first apply it to the current working tree (it is advisable to stash or commit current changes before doing so):
 
 ```bash
-$ test:sim:custom-xud:apply
+$ npm run test:sim:custom-xud:apply
 ```
 
 To reverse the applied patch, and restore previous working tree state:
 
 ```bash
-$ test:sim:custom-xud:reverse
+$ npm run test:sim:custom-xud:reverse
 ```
 
 To override the patch with new changes from the current working tree:
 
 ```bash
-$ test:sim:custom-xud:patch
+$ npm run test:sim:custom-xud:patch
 ```
 
 To run the tests with the modified patch, one must build the `xud` image and clean its `custom-xud` volume before rerunning the tests:
