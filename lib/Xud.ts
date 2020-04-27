@@ -18,7 +18,7 @@ import Swaps from './swaps/Swaps';
 import { UnitConverter } from './utils/UnitConverter';
 import { AssertionError } from 'assert';
 import { SwapClientType, XuNetwork } from './constants/enums';
-import { createSimnetChannel } from './utils/simnet-connext-channels';
+import { createSimnetChannels } from './utils/simnet-connext-channels';
 import { Subscription } from 'rxjs';
 
 const version: string = require('../package.json').version;
@@ -223,20 +223,30 @@ class Xud extends EventEmitter {
         this.config.network === XuNetwork.SimNet &&
         this.swapClientManager.connextClient?.isOperational()
       ) {
-        this.simnetChannels$ = createSimnetChannel({
-          currency: 'ETH',
-          // amount of currency to put in the channel
-          channelAmount: 1000000000,
-          // minimum channelBalance threshold
-          minChannelAmount: 100000000,
-          // minimum walletBalance threshold
-          minWalletAmount: 100000000,
+        this.simnetChannels$ = createSimnetChannels({
+          channels: [
+            {
+              currency: 'ETH',
+              // amount of currency to put in the channel
+              channelAmount: 1000000000,
+              // minimum channelBalance threshold
+              minChannelAmount: 100000000,
+              // minimum walletBalance threshold
+              minWalletAmount: 100000000,
+            },
+            {
+              currency: 'XUC',
+              channelAmount: 37500000000,
+              minChannelAmount: 1000000000,
+              minWalletAmount: 1000000000,
+            },
+          ],
           // we check the channel and on-chain balance every 10 seconds
           // and refund from faucet if below the walletAmount
           retryInterval: 10000,
         }).subscribe({
-          next: () => {
-            this.logger.info('Connext wallet funded and channel opened');
+          next: (currency) => {
+            this.logger.info(`Connext wallet funded and channel opened for ${currency}`);
           },
           error: (e) => {
             this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
