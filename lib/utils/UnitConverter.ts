@@ -7,6 +7,7 @@ class UnitConverter {
     USDT: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
+    XUC: 10 ** 10,
   };
   public init = () => {
     // TODO: Populate the mapping from the database (Currency.decimalPlaces).
