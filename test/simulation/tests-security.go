@@ -55,7 +55,7 @@ var unsettledChannelsSecurityTests = []*testCase{
 
 func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=TAKER_SWAPACCEPTED_STALL"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::TAKER_SWAPACCEPTED_STALL"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -98,7 +98,7 @@ func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTes
 	ht.assert.NoError(e.err)
 	ht.assert.NotNil(e.swapFailure)
 	ht.assert.Equal(e.swapFailure.PeerPubKey, net.Alice.PubKey())
-	ht.assert.Equal(e.swapFailure.FailureReason, "SwapTimedOut")
+	ht.assert.Equal(e.swapFailure.FailureReason, "DealTimedOut")
 	ht.assert.Equal(e.swapFailure.OrderId, bobOrder.Id)
 
 	// Cleanup.
@@ -118,7 +118,7 @@ func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTes
 
 func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=MAKER_1ST_HTLC_STALL"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::MAKER_1ST_HTLC_STALL"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -185,7 +185,7 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=MAKER_1ST_HTLC_SHUTDOWN"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::MAKER_1ST_HTLC_SHUTDOWN"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -313,7 +313,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=TAKER_2ND_HTLC_STALL"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::TAKER_2ND_HTLC_STALL"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -376,7 +376,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=TAKER_2ND_HTLC_SHUTDOWN"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::TAKER_2ND_HTLC_SHUTDOWN"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -500,7 +500,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 func testTakerStallingAfterSwapSucceeded(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "adversarial/breakswap", []string{"BREAKSWAP=TAKER_SWAPSUCCEEDED_STALL"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=SECURITY::TAKER_SWAPSUCCEEDED_STALL"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 

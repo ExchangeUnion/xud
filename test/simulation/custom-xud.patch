@@ -1,0 +1,163 @@
+diff --git a/lib/Xud.ts b/lib/Xud.ts
+index bfdb2e34..a859f051 100644
+--- a/lib/Xud.ts
++++ b/lib/Xud.ts
+@@ -83,6 +83,11 @@ class Xud extends EventEmitter {
+       this.logger.info('config file loaded');
+     }
+ 
++    this.logger.info('CUSTOM-XUD');
++    if (process.env.CUSTOM_SCENARIO) {
++      this.logger.info(`CUSTOM_SCENARIO=${process.env.CUSTOM_SCENARIO}`);
++    }
++
+     try {
+       if (!this.config.rpc.disable) {
+         // start rpc server first, it will respond with UNAVAILABLE error
+diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
+index f8cce222..eb3be0bb 100644
+--- a/lib/swaps/SwapRecovery.ts
++++ b/lib/swaps/SwapRecovery.ts
+@@ -21,7 +21,15 @@ class SwapRecovery {
+ 
+   public beginTimer = () => {
+     if (!this.pendingSwapsTimer) {
+-      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL);
++      let interval = SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL;
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++        interval = 5000;
++      }
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
++        interval = 5000;
++      }
++
++      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, interval);
+     }
+   }
+ 
+diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
+index 672d6159..05c5043b 100644
+--- a/lib/swaps/Swaps.ts
++++ b/lib/swaps/Swaps.ts
+@@ -202,10 +202,29 @@ class Swaps extends EventEmitter {
+ 
+     this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
+       try {
+-        const rPreimage = await this.resolveHash(rHash, amount, currency);
+-        await swapClient.settleInvoice(rHash, rPreimage);
++        const rPreimage = await this.resolveHash(rHash, amount, currency)
++        if (rPreimage === '') {
++          this.logger.info('NOT SETTLING INVOICE');
++          return;
++        }
+ 
+         const deal = this.getDeal(rHash);
++
++        if (deal && deal.role === SwapRole.Taker && process.env.CUSTOM_SCENARIO === 'INSTABILITY::TAKER_DELAY_BEFORE_SETTLE') {
++          this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++          await setTimeoutPromise(5000);
++        }
++
++        if (deal && deal.role === SwapRole.Maker && process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++          this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++          this.logger.info(`LNDLTC_PID: ${process.env.LNDLTC_PID}`);
++          process.kill(parseInt(process.env.LNDLTC_PID!, 10));
++          await setTimeoutPromise(1000);
++        }
++
++        this.logger.info('SETTLING INVOICE');
++        await swapClient.settleInvoice(rHash, rPreimage);
++
+         if (deal) {
+           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+         }
+@@ -543,7 +562,12 @@ class Swaps extends EventEmitter {
+       createTime: Date.now(),
+     };
+ 
+-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
++    let interval = Swaps.SWAP_COMPLETE_TIMEOUT;
++    if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++      interval = 5000;
++    }
++
++    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, interval, rHash, SwapFailureReason.SwapTimedOut));
+ 
+     // add the deal. Going forward we can "record" errors related to this deal.
+     this.addDeal(deal);
+@@ -671,6 +695,16 @@ class Swaps extends EventEmitter {
+    * accepted, initiates the swap.
+    */
+   private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
++    if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_SWAPACCEPTED_STALL') {
++      this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++      return;
++    }
++
++    if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_SWAPACCEPTED_SHUTDOWN') {
++      this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++      process.exit();
++    }
++
+     assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
+     const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
+     const deal = this.getDeal(rHash);
+@@ -745,6 +779,11 @@ class Swaps extends EventEmitter {
+ 
+     try {
+       await makerSwapClient.sendPayment(deal);
++
++      if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_SWAPSUCCEEDED_STALL') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        return;
++      }
+     } catch (err) {
+       if (err.code === errorCodes.PAYMENT_REJECTED) {
+         // if the maker rejected our payment, the swap failed due to an error on their side
+@@ -927,12 +966,29 @@ class Swaps extends EventEmitter {
+ 
+       this.logger.debug('Executing maker code to resolve hash');
+ 
++      if (process.env.CUSTOM_SCENARIO === 'SECURITY::MAKER_1ST_HTLC_STALL') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        return '';
++      }
++
++      if (process.env.CUSTOM_SCENARIO === 'SECURITY::MAKER_1ST_HTLC_SHUTDOWN') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        process.exit();
++      }
++
+       const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
+ 
+       // we update the phase persist the deal to the database before we attempt to send payment
+       await this.setDealPhase(deal, SwapPhase.SendingPayment);
+
+       try {
++        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
++          setTimeout(() => {
++            this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++            process.exit();
++          }, 2000);
++        }
++
+         deal.rPreimage = await swapClient.sendPayment(deal);
+         return deal.rPreimage;
+       } catch (err) {
+@@ -962,6 +1018,16 @@ class Swaps extends EventEmitter {
+       assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
+       this.logger.debug('Executing taker code to resolve hash');
+ 
++      if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_2ND_HTLC_STALL') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        return '';
++      }
++
++      if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_2ND_HTLC_SHUTDOWN') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        process.exit();
++      }
++
+       return deal.rPreimage!;
+     }
+   }

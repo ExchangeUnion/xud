@@ -11,7 +11,8 @@ services:
   xud:
     build: ./docker-xud
     volumes:
-      - xud-vol:/app
+      - xud-vol:/app/xud
+      - custom-xud-vol:/app/custom-xud
       - nvm-vol:/usr/local/nvm
   gomod:
     build:

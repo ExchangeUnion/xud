@@ -2,11 +2,6 @@ package xudtest
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -52,7 +47,7 @@ type CtxSetter interface {
 	SetCtx(ctx context.Context, cancel context.CancelFunc)
 }
 
-func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, branch string, envVars []string) (*HarnessNode, error) {
+func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, node *HarnessNode, envVars []string) (*HarnessNode, error) {
 	err := node.shutdown(true, true)
 	if err != nil {
 		return nil, err
@@ -60,36 +55,8 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 	delete(n.ActiveNodes, node.ID)
 
 	t := time.Now()
-	xudPath := filepath.Join("/custom-xud-vol", branch)
 
-	if _, err := os.Stat(xudPath); !os.IsNotExist(err) {
-		log.Printf("custom xud found at %v", xudPath)
-	} else {
-		log.Printf("custom xud not found at %v, installing...", xudPath)
-
-		_, err := exec.Command("git", "clone", "-b", branch, "https://github.com/ExchangeUnion/xud", xudPath).Output()
-		if err != nil {
-			return nil, fmt.Errorf("custom xud git clone failure: %v", err)
-		}
-
-		cmd := exec.Command("npm", "i")
-		cmd.Dir = xudPath
-		_, err = cmd.Output()
-		if err != nil {
-			return nil, fmt.Errorf("custom xud npm i failure: %v", err)
-		}
-
-		cmd = exec.Command("npm", "run", "compile")
-		cmd.Dir = xudPath
-		_, err = cmd.Output()
-		if err != nil {
-			return nil, fmt.Errorf("custom xud compilation failure: %v", err)
-		}
-
-		log.Printf("custom xud installation finished")
-	}
-
-	customNode, err := n.newNode(node.Name, xudPath, true)
+	customNode, err := n.newNode(node.Name, "/custom-xud-vol", true)
 	if err != nil {
 		return nil, err
 	}

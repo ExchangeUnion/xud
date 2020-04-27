@@ -8,14 +8,24 @@ The simulation tests’ only dependencies are [Docker](https://docs.docker.com/i
 
 ## Usage (via `xud` npm scripts)
 
-#### Run the tests after building all images:
+#### Run all test suites after building all images:
 
 ```bash
 $ npm run test:sim:build
 $ npm run test:sim:run
 ```
 
-#### Specific builds
+#### Run every test suite separately after building all images:
+
+```bash
+$ npm run test:sim:build
+$ npm run test:sim:run:integration
+$ npm run test:sim:run:security
+$ npm run test:sim:run:stability
+
+```
+
+#### Specific image builds
 
 When making changes to the simulation test code, one must build the `test` image before rerunning the tests:
 
@@ -40,24 +50,36 @@ $ npm run test:sim:build:lnd
 $ npm run test:sim:run
 ```
 
-When making changes to custom-xud branches (used in the Security/Instability test suites) one must clean its volume:
+#### About `custom-xud`
+
+`custom-xud` is a modified version of `xud` used to simulate different custom behaviours (adversarial or instability), which are used in the Security/Instability test suites.
+
+The mechanism in which `custom-xud` is created is via the git patch file named `custom-xud.patch`.
+
+To modify the patch, one should first apply it to the current working tree (it is advisable to stash or commit current changes before doing so):
 
 ```bash
-$ npm run test:sim:clean:custom-xud
+$ test:sim:custom-xud:apply
 ```
 
-#### Other test suites
+To reverse the applied patch, and restore previous working tree state:
 
-The `test:sim:run` script mentioned above runs only the **Integration** tests suite.
-
-For running the **Security** tests suite:
 ```bash
-$ npm run test:sim:run:security
+$ test:sim:custom-xud:reverse
 ```
 
-For running the **Instability** tests suite:
+To override the patch with new changes from the current working tree:
+
+```bash
+$ test:sim:custom-xud:patch
+```
+
+To run the tests with the modified patch, one must build the `xud` image and clean its `custom-xud` volume before rerunning the tests:
+
  ```bash
- $ npm run test:sim:run:instability
+ $ npm run test:sim:clean:custom-xud
+ $ npm run test:sim:build:xud
+ $ npm run test:sim:run
  ```
 
  #### Logs
