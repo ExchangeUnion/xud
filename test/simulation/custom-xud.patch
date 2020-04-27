@@ -39,7 +39,7 @@ diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
 index 672d6159..05c5043b 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
-@@ -202,10 +202,29 @@ class Swaps extends EventEmitter {
+@@ -202,13 +202,32 @@ class Swaps extends EventEmitter {
  
      this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
        try {
@@ -70,6 +70,9 @@ index 672d6159..05c5043b 100644
 +
          if (deal) {
            await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+           // TODO: refactor the codebase so that setting
+           // SwapPhase.SwapCompleted is not necessary
+           await this.setDealPhase(deal, SwapPhase.SwapCompleted);
          }
 @@ -543,7 +562,12 @@ class Swaps extends EventEmitter {
        createTime: Date.now(),
