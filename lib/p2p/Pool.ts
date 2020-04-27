@@ -121,6 +121,7 @@ class Pool extends EventEmitter {
       addresses: [],
       pairs: [],
       raidenAddress: '',
+      connextAddress: '',
       lndPubKeys: {},
       lndUris: {},
       tokenIdentifiers: {},
@@ -218,6 +219,18 @@ class Pool extends EventEmitter {
    */
   public updateRaidenState = (tokenAddresses: Map<string, string>, raidenAddress?: string) => {
     this.nodeState.raidenAddress = raidenAddress || '';
+    tokenAddresses.forEach((tokenAddress, currency) => {
+      this.nodeState.tokenIdentifiers[currency] = tokenAddress;
+    });
+    this.sendNodeStateUpdate();
+  }
+
+  /**
+   * Updates our connext public key and supported token addresses, then sends a node state update
+   * packet to currently connected peers to notify them of the change.
+   */
+  public updateConnextState = (tokenAddresses: Map<string, string>, pubKey?: string) => {
+    this.nodeState.connextAddress = pubKey || '';
     tokenAddresses.forEach((tokenAddress, currency) => {
       this.nodeState.tokenIdentifiers[currency] = tokenAddress;
     });

@@ -5,6 +5,11 @@ import { OrderSidesArrays } from '../orderbook/TradingPair';
 import { Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
+import {
+  ConnextInfo,
+  ProvidePreimageEvent,
+  TransferReceivedEvent,
+} from '../connextclient/types';
 import swapsErrors from '../swaps/errors';
 import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
@@ -41,6 +46,7 @@ type XudInfo = {
   orders: { peer: number, own: number };
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
+  connext?: ConnextInfo;
   pendingSwapHashes: string[];
 };
 
@@ -254,12 +260,14 @@ class Service {
     args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
   ) => {
     const { nodeIdentifier, amount, currency, pushAmount } = args;
-    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
     try {
-      const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-      const peer = this.pool.getPeer(nodePubKey);
+      let peer;
+      if (args.nodeIdentifier) {
+        const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+        peer = this.pool.getPeer(nodePubKey);
+      }
       await this.swapClientManager.openChannel({
         peer,
         amount,
@@ -355,10 +363,15 @@ class Service {
     if (raiden) {
       raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
     }
+    const connext = await this.swapClientManager.connextClient?.getInfo();
+    if (connext) {
+      connext.chain = `${connext.chain ? connext.chain : ''} ${this.pool.getNetwork()}`;
+    }
 
     return {
       lnd,
       raiden,
+      connext,
       nodePubKey,
       uris,
       numPairs,
@@ -573,6 +586,21 @@ class Service {
     argChecks.POSITIVE_AMOUNT(request);
     return this.swaps.handleResolveRequest(request);
   }
+
+  /**
+   * Provides preimage for a hash.
+   */
+  public providePreimage = async (event: ProvidePreimageEvent) => {
+    this.swapClientManager.connextClient?.emit('preimage', event);
+  }
+
+  /**
+   * Notifies Connext client that a transfer has been received.
+   */
+  public transferReceived = async (event: TransferReceivedEvent) => {
+    this.swapClientManager.connextClient?.emit('transferReceived', event);
+  }
+
 }
 export default Service;
 export { ServiceComponents, XudInfo };

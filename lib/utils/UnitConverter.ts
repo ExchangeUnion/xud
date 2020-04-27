@@ -3,6 +3,8 @@ class UnitConverter {
   private UNITS_PER_CURRENCY: { [key: string]: number } = {
     BTC: 1,
     LTC: 1,
+    ETH: 10 ** 10,
+    USDT: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
   };

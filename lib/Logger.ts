@@ -29,6 +29,7 @@ export enum Context {
   OrderBook = 'ORDERBOOK',
   Lnd = 'LND',
   Raiden = 'RAIDEN',
+  Connext = 'CONNEXT',
   Swaps = 'SWAPS',
   Http = 'HTTP',
   Backup = 'BACKUP',
@@ -42,6 +43,7 @@ type Loggers = {
   orderbook: Logger,
   lnd: Logger,
   raiden: Logger,
+  connext: Logger,
   swaps: Logger,
   http: Logger,
 };
@@ -116,6 +118,7 @@ class Logger {
       orderbook: new Logger({ ...object, context: Context.OrderBook }),
       lnd: new Logger({ ...object, context: Context.Lnd }),
       raiden: new Logger({ ...object, context: Context.Raiden }),
+      connext: new Logger({ ...object, context: Context.Connext }),
       swaps: new Logger({ ...object, context: Context.Swaps }),
       http: new Logger({ ...object, context: Context.Http }),
     };

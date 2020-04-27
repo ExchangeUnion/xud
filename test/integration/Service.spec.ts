@@ -52,6 +52,9 @@ describe('API Service', () => {
       raiden: {
         disable: true,
       },
+      connext: {
+        disable: true,
+      },
     };
 
     xud = new Xud();

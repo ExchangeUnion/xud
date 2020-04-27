@@ -22,6 +22,7 @@ jest.mock('../../lib/Logger', () => {
   return jest.fn().mockImplementation(() => {
     return {
       createSubLogger: () => {},
+      info: () => {},
     };
   });
 });
@@ -77,6 +78,7 @@ const loggers = {
   orderbook: logger,
   lnd: logger,
   raiden: logger,
+  connext: logger,
   swaps: logger,
   http: logger,
 };
@@ -116,6 +118,13 @@ describe('Swaps.SwapClientManager', () => {
       host: 'localhost',
       port: 1234,
       keystorepath: '',
+    };
+    config.connext = {
+      disable: false,
+      host: 'localhost',
+      port: 4321,
+      webhookhost: 'localhost',
+      webhookport: 4422,
     };
     config.debug = {
       raidenDirectChannelChecks: true,
