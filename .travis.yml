@@ -19,6 +19,7 @@ jobs:
       services:
         - docker
       script:
+        - npm run test:sim:build
         - npm run test:sim:run:integration
       after_failure:
         - npm run test:sim:logs
