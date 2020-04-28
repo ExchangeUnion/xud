@@ -200,14 +200,14 @@ class ConnextClient extends SwapClient {
 
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
-      event: 'UPDATE_STATE_EVENT',
+      event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
     });
   }
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_RECEIVED_EVENT',
+      event: 'CONDITIONAL_TRANSFER_CREATED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
   }
