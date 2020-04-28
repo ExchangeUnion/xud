@@ -512,6 +512,8 @@ message ListOrdersRequest {
   Owner owner = 2 [json_name = "owner"];
   // The maximum number of orders to return from each side of the order book.
   uint32 limit = 3 [json_name = "limit"];
+  // Whether to include the node aliases of owners of the orders. 
+  bool include_aliases = 4 [json_name = "include_aliases"];
 }
 message ListOrdersResponse {
   // A map between pair ids and their buy and sell orders.
@@ -549,6 +551,13 @@ message LndInfo {
   string alias = 7 [json_name = "alias"];
 }
 
+message NodeIdentifier {
+  // The pub key of this node
+  string node_pub_key = 1 [json_name = "node_pub_key"];
+  // An alias for this node deterministically generated from the pub key
+  string alias = 2 [json_name = "alias"];
+}
+
 message OpenChannelRequest {
   // The node pub key or alias of the peer with which to open channel with.
   string node_identifier = 1 [json_name = "node_identifier"];
@@ -571,12 +580,10 @@ message Order {
   string pair_id = 3 [json_name = "pair_id"];
   // A UUID for this order.
   string id = 4 [json_name = "id"];
-  oneof own_or_peer {
-    // The node pub key of the peer that created this order.
-    string peer_pub_key = 5 [json_name = "peer_pub_key"];
-    // The local id for this order.
-    string local_id = 6 [json_name = "local_id"];
-  }
+  // The identifier of the node that created this order.
+  NodeIdentifier node_identifier = 5 [json_name = "node_identifier"];
+  // The local id for this order, if applicable.
+  string local_id = 6 [json_name = "local_id"];
   // The epoch time when this order was created.
   uint64 created_at = 7 [json_name = "created_at"];
   // Whether this order is a buy or sell

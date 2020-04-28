@@ -94,6 +94,7 @@ describe('API Service', () => {
       pairId,
       owner: Owner.Both,
       limit: 0,
+      includeAliases: false,
     };
     const orders = service.listOrders(args);
 
@@ -106,7 +107,7 @@ describe('API Service', () => {
     expect(order.price).to.equal(placeOrderArgs.price);
     expect(order.quantity).to.equal(placeOrderArgs.quantity);
     expect(order.pairId).to.equal(placeOrderArgs.pairId);
-    expect(order.isBuy).to.equal(placeOrderArgs.side === OrderSide.Buy);
+    expect(order.side).to.equal(placeOrderArgs.side);
     expect(order.id).to.equal(orderId);
   });
 

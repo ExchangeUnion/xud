@@ -76,6 +76,11 @@ type Stamp = OrderIdentifier & {
   initialQuantity: number;
 };
 
+export type SortableOrder = {
+  price: number;
+  createdAt: number;
+};
+
 export type OwnMarketOrder = MarketOrder & Local;
 
 export type OwnLimitOrder = LimitOrder & Local;

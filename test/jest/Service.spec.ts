@@ -264,7 +264,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [], sellArray: [] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0 });
+      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0, includeAliases: false });
       expect(result.size).toEqual(pairIds.length);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(0);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(0);
@@ -277,7 +277,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0 });
+      const result = service.listOrders({ pairId: '', owner: Owner.Both, limit: 0, includeAliases: false });
       expect(result.size).toEqual(pairIds.length);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
@@ -290,7 +290,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [createOrder(1, 999)], sellArray: [createOrder(2, 123)] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 0 });
+      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 0, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(3);
@@ -301,7 +301,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Peer, limit: 0 });
+      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Peer, limit: 0, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(1);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
@@ -312,7 +312,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [createOrder(1, 999), createOrder(1, 123)], sellArray: [createOrder(2, 123)] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Own, limit: 0 });
+      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Own, limit: 0, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(1);
@@ -323,7 +323,7 @@ describe('Service', () => {
       const ownOrders = { buyArray: [createOrder(3, 999), createOrder(2, 123)], sellArray: [createOrder(6, 123)] };
       setup(peersOrders, ownOrders);
 
-      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 2 });
+      const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 2, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
       expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 1)).toBeTruthy();

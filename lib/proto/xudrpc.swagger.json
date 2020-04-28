@@ -391,6 +391,14 @@
             "required": false,
             "type": "integer",
             "format": "int64"
+          },
+          {
+            "name": "include_aliases",
+            "description": "Whether to include the node aliases of owners of the orders.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -1251,6 +1259,19 @@
         }
       }
     },
+    "xudrpcNodeIdentifier": {
+      "type": "object",
+      "properties": {
+        "node_pub_key": {
+          "type": "string",
+          "title": "The pub key of this node"
+        },
+        "alias": {
+          "type": "string",
+          "title": "An alias for this node deterministically generated from the pub key"
+        }
+      }
+    },
     "xudrpcOpenChannelResponse": {
       "type": "object"
     },
@@ -1275,13 +1296,13 @@
           "type": "string",
           "description": "A UUID for this order."
         },
-        "peer_pub_key": {
-          "type": "string",
-          "description": "The node pub key of the peer that created this order."
+        "node_identifier": {
+          "$ref": "#/definitions/xudrpcNodeIdentifier",
+          "description": "The identifier of the node that created this order."
         },
         "local_id": {
           "type": "string",
-          "description": "The local id for this order."
+          "description": "The local id for this order, if applicable."
         },
         "created_at": {
           "type": "string",

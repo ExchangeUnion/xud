@@ -141,8 +141,8 @@ func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 	a.assert.Len(res.SwapFailures, 0)
 	a.assert.NotNil(res.RemainingOrder)
 	a.assert.NotEqual(res.RemainingOrder.Id, req.OrderId)
-	a.assert.IsType(new(xudrpc.Order_LocalId), res.RemainingOrder.OwnOrPeer)
-	a.assert.Equal(res.RemainingOrder.OwnOrPeer.(*xudrpc.Order_LocalId).LocalId, req.OrderId)
+	a.assert.True(res.RemainingOrder.IsOwnOrder)
+	a.assert.Equal(res.RemainingOrder.LocalId, req.OrderId)
 
 	// Retrieve and verify the added order event on destNode.
 	e := <-destNodeOrderChan
@@ -158,8 +158,7 @@ func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
 	a.assert.Equal(peerOrder.Side, req.Side)
 	a.assert.False(peerOrder.IsOwnOrder)
 	a.assert.Equal(peerOrder.Id, res.RemainingOrder.Id)
-	a.assert.IsType(new(xudrpc.Order_PeerPubKey), peerOrder.OwnOrPeer)
-	a.assert.Equal(peerOrder.OwnOrPeer.(*xudrpc.Order_PeerPubKey).PeerPubKey, srcNode.PubKey())
+	a.assert.Equal(peerOrder.NodeIdentifier.NodePubKey, srcNode.PubKey())
 
 	// Verify that a new order was added to the order books.
 	srcNodeCount, destNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
@@ -186,7 +185,7 @@ func (a *actions) removeOrderAndInvalidate(srcNode, destNode *xudtest.HarnessNod
 	a.verifyConnectivity(destNode, srcNode)
 
 	// Remove the order on srcNode.
-	req := &xudrpc.RemoveOrderRequest{OrderId: order.OwnOrPeer.(*xudrpc.Order_LocalId).LocalId}
+	req := &xudrpc.RemoveOrderRequest{OrderId: order.LocalId}
 	res, err := srcNode.Client.RemoveOrder(a.ctx, req)
 	a.assert.NoError(err)
 
