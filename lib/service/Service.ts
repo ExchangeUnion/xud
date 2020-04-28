@@ -15,9 +15,9 @@ import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
+import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
-import { getAlias, isNodePubKey } from '../utils/aliasUtils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -353,7 +353,7 @@ class Service {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool;
+    const { nodePubKey, addresses, alias } = this.pool;
 
     const uris: string[] = [];
 
@@ -395,7 +395,7 @@ class Service {
       uris,
       numPairs,
       network,
-      alias: getAlias(nodePubKey),
+      alias,
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {
@@ -623,3 +623,4 @@ class Service {
 }
 export default Service;
 export { ServiceComponents, XudInfo };
+

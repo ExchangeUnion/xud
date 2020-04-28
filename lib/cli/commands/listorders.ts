@@ -20,10 +20,10 @@ const HEADER = [
 const SECONDARY_HEADER = [
   colors.green('Quantity'),
   colors.green('Price'),
-  colors.green('Own Order'),
+  colors.green('Alias'),
   colors.red('Quantity'),
   colors.red('Price'),
-  colors.red('Own Order'),
+  colors.red('Alias'),
 ];
 
 const addSide = (orderSide: Order.AsObject[]): string[] => {
@@ -42,9 +42,9 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
 
 export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
   const formattedOrders: FormattedTradingPairOrders[] = [];
-  orders.ordersMap.forEach((tradingPair) => {
-    const buy = tradingPair[1].buyOrdersList;
-    const sell = tradingPair[1].sellOrdersList;
+  orders.ordersMap.map(orderMapping => orderMapping[1]).forEach((tradingPair) => {
+    const buy = tradingPair.buyOrdersList;
+    const sell = tradingPair.sellOrdersList;
     const totalRows = buy.length < sell.length
       ? sell.length : buy.length;
     const tradingPairOrders = Array.from(Array(totalRows))
