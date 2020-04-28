@@ -105,8 +105,19 @@ export type ExpectedIncomingTransfer = {
 export type ConnextPreimageRequest = {
   id: string;
   data?: {
-    newState?: {
-      lockHash: string;
+    type: string;
+    amount: {
+      _hex: string;
+    };
+    assetId: string;
+    paymentId: string;
+    sender: string;
+    recipient: string;
+    meta: {
+      sender: string;
+      recipient: string;
+    };
+    transferMeta: {
       preImage: string;
     };
   }

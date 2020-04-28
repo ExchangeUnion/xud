@@ -6,6 +6,7 @@ import {
   ConnextPreimageRequest,
   ConnextIncomingTransferRequest,
 } from '../connextclient/types';
+import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
@@ -27,18 +28,18 @@ class HttpService {
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
-      preimageRequest.data && preimageRequest.data.newState
+      preimageRequest.data && preimageRequest.data.transferMeta
     ) {
-      const { lockHash: rHash, preImage: preimage } = preimageRequest.data.newState;
-      if (!rHash) {
-        throw serviceErrors.INVALID_ARGUMENT('lockHash is missing');
-      }
+      const { preImage: preimage } = preimageRequest.data.transferMeta;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
+      const slicedPreimage = preimage.slice(2);
+      const rHash = createHash('sha256').update(Buffer.from(slicedPreimage, 'hex')).digest('hex');
+      console.log('created rHash is', rHash);
       await this.service.providePreimage({
-        rHash: rHash.slice(2),
-        preimage: preimage.slice(2),
+        rHash,
+        preimage: slicedPreimage,
       });
       return {};
     } else {
