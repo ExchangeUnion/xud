@@ -299,7 +299,7 @@ abstract class SwapClient extends EventEmitter {
     { rHash: string, units: number, expiry?: number, currency?: string },
   ): Promise<void>;
 
-  public abstract async settleInvoice(rHash: string, rPreimage: string): Promise<void>;
+  public abstract async settleInvoice(rHash: string, rPreimage: string, currency?: string): Promise<void>;
 
   public abstract async removeInvoice(rHash: string): Promise<void>;
 

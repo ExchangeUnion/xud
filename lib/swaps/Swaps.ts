@@ -205,7 +205,7 @@ class Swaps extends EventEmitter {
     this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
       try {
         const rPreimage = await this.resolveHash(rHash, amount, currency);
-        await swapClient.settleInvoice(rHash, rPreimage);
+        await swapClient.settleInvoice(rHash, rPreimage, currency);
 
         const deal = this.getDeal(rHash);
         if (deal) {

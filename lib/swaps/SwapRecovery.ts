@@ -85,7 +85,7 @@ class SwapRecovery {
                   'waiting for raiden to request secret and claim payment.');
                 this.recoveredPreimageSwaps.set(deal.rHash, deal);
               } else {
-                await makerSwapClient.settleInvoice(deal.rHash, deal.rPreimage);
+                await makerSwapClient.settleInvoice(deal.rHash, deal.rPreimage, deal.makerCurrency);
                 deal.state = SwapState.Recovered;
                 this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
               }
