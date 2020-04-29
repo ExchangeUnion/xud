@@ -36,7 +36,6 @@ class HttpService {
       }
       const slicedPreimage = preimage.slice(2);
       const rHash = createHash('sha256').update(Buffer.from(slicedPreimage, 'hex')).digest('hex');
-      console.log('created rHash is', rHash);
       await this.service.providePreimage({
         rHash,
         preimage: slicedPreimage,
