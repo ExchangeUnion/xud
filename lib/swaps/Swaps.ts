@@ -256,7 +256,7 @@ class Swaps extends EventEmitter {
       failureReason,
       errorMessage,
     };
-    this.logger.debug(`Sending swap error to peer: ${JSON.stringify(errorBody)}`);
+    this.logger.debug(`Sending ${SwapFailureReason[errorBody.failureReason]} error to peer: ${JSON.stringify(errorBody)}`);
     await peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
   }
 
