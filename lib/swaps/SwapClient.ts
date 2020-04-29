@@ -183,13 +183,42 @@ abstract class SwapClient extends EventEmitter {
 
   }
 
-  protected setStatus = (status: ClientStatus): void => {
-    if (this.status === status) {
+  protected setStatus = (newStatus: ClientStatus): void => {
+    if (this.status === newStatus) {
       return;
     }
 
-    this.logger.info(`${this.constructor.name} status: ${ClientStatus[status]}`);
-    this.status = status;
+    let validStatusTransition: boolean;
+    switch (newStatus) {
+      case ClientStatus.Disabled:
+      case ClientStatus.Misconfigured:
+      case ClientStatus.Initialized:
+        // these statuses can only be set on a client that has not been initialized
+        validStatusTransition = this.isNotInitialized();
+        break;
+      case ClientStatus.Unlocked:
+        // this status can only be set on a client that is waiting unlock
+        validStatusTransition = this.isWaitingUnlock();
+        break;
+      case ClientStatus.ConnectionVerified:
+      case ClientStatus.Disconnected:
+      case ClientStatus.WaitingUnlock:
+      case ClientStatus.OutOfSync:
+        // these statuses can only be set on an operational, initalized client
+        validStatusTransition = this.isOperational();
+        break;
+      case ClientStatus.NotInitialized:
+        // this is the starting status and cannot be reassigned
+        validStatusTransition = false;
+        break;
+    }
+
+    if (validStatusTransition) {
+      this.logger.info(`new status: ${ClientStatus[newStatus]}`);
+      this.status = newStatus;
+    } else {
+      this.logger.error(`cannot set status to ${ClientStatus[newStatus]} from ${ClientStatus[this.status]}`);
+    }
   }
 
   private updateCapacityTimerCallback = async () => {
@@ -313,7 +342,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
