@@ -56,6 +56,7 @@ func (cfg nodeConfig) genArgs() []string {
 	var args []string
 
 	args = append(args, "--initdb=false")
+	args = append(args, "--regtest")
 	args = append(args, "--loglevel=trace")
 
 	if cfg.NoBalanceChecks {
