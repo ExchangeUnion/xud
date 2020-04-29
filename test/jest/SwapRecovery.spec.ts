@@ -136,7 +136,7 @@ describe('SwapRecovery', () => {
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
     expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash);
     expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
-    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage);
+    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
     expect(deal.state).toEqual(SwapState.Recovered);
     expect(save).toHaveBeenCalledTimes(1);
   });
