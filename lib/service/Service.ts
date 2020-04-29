@@ -254,6 +254,25 @@ class Service {
   }
 
   /*
+   * Closes any payment channels for a specified node and currency.
+   */
+  public closeChannel = async (
+    args: { nodeIdentifier: string, currency: string, force: boolean },
+  ) => {
+    const { nodeIdentifier, currency, force } = args;
+    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
+    argChecks.VALID_CURRENCY({ currency });
+
+    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
+    const peer = this.pool.getPeer(nodePubKey);
+    await this.swapClientManager.closeChannel({
+      peer,
+      currency,
+      force,
+    });
+  }
+
+  /*
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (

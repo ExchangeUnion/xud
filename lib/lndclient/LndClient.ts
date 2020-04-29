@@ -1027,30 +1027,46 @@ class LndClient extends SwapClient {
   /**
    * Attempts to close an open channel.
    */
-  public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): void => {
-    if (!this.lightning) {
-      throw(errors.UNAVAILABLE(this.currency, this.status));
-    }
-    const request = new lndrpc.CloseChannelRequest();
-    const channelPoint = new lndrpc.ChannelPoint();
-    channelPoint.setFundingTxidStr(fundingTxId);
-    channelPoint.setOutputIndex(outputIndex);
-    request.setChannelPoint(channelPoint);
-    request.setForce(force);
-    this.lightning.closeChannel(request, this.meta)
-      // TODO: handle close channel events
-      .on('data', (message: string) => {
-        this.logger.info(`closeChannel update: ${message}`);
-      })
-      .on('end', () => {
-        this.logger.info('closeChannel ended');
-      })
-      .on('status', (status: string) => {
-        this.logger.debug(`closeChannel status: ${JSON.stringify(status)}`);
-      })
-      .on('error', (error: any) => {
-        this.logger.error(`closeChannel error: ${error}`);
-      });
+  public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): Promise<void> => {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.lightning) {
+        throw(errors.UNAVAILABLE(this.currency, this.status));
+      }
+      const request = new lndrpc.CloseChannelRequest();
+      const channelPoint = new lndrpc.ChannelPoint();
+      channelPoint.setFundingTxidStr(fundingTxId);
+      channelPoint.setOutputIndex(outputIndex);
+      request.setChannelPoint(channelPoint);
+      request.setForce(force);
+
+      this.lightning.closeChannel(request, this.meta)
+        .on('data', (message: lndrpc.CloseStatusUpdate) => {
+          if (message.hasClosePending()) {
+            const txId = base64ToHex(message.getClosePending()!.getTxid_asB64());
+            if (txId) {
+              this.logger.info(`channel closed with tx id ${txId}`);
+              resolve();
+            }
+          }
+        })
+        .on('end', () => {
+          this.logger.debug('closeChannel ended');
+          // we should receeive a channel close update above before the end event
+          // if we don't, assume the call has failed and reject
+          // if we have already resolved the promise this line will do nothing
+          reject('channel close ended unexpectedly');
+        })
+        .on('status', (status: grpc.StatusObject) => {
+          this.logger.debug(`closeChannel status: ${status.code} ${status.details}`);
+          if (status.code !== grpc.status.OK) {
+            reject(status.details);
+          }
+        })
+        .on('error', (err: any) => {
+          this.logger.error(`closeChannel error: ${err}`);
+          reject(err);
+        });
+    });
   }
 
   /** Lnd specific procedure to disconnect from the server. */

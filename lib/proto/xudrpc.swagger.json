@@ -122,6 +122,23 @@
         ]
       }
     },
+    "/v1/closechannel": {
+      "post": {
+        "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003cnode_identifier\u003e \u003ccurrency\u003e [--force]",
+        "operationId": "CloseChannel",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcCloseChannelResponse"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/connect": {
       "post": {
         "summary": "Attempts to connect to a node. Once connected, the node is added to the list of peers and\nbecomes available for swaps and trading. A handshake exchanges information about the peer's\nsupported trading and swap clients. Orders will be shared with the peer upon connection and\nupon new order placements.\nshell: xucli connect \u003cnode_uri\u003e",
@@ -905,6 +922,9 @@
           "description": "The number of channels that have been closed."
         }
       }
+    },
+    "xudrpcCloseChannelResponse": {
+      "type": "object"
     },
     "xudrpcConnectRequest": {
       "type": "object",

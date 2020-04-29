@@ -470,6 +470,40 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
+   * Closes any payment channels with a peer for a given currency.
+   * @param peer a peer to open the payment channel with.
+   * @param currency a currency for the payment channel.
+   * @param amount the size of the payment channel local balance
+   * @returns Nothing upon success, throws otherwise.
+   */
+  public closeChannel = async (
+    { peer, currency, force }:
+    { peer: Peer, currency: string, force: boolean },
+  ): Promise<void> => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
+    if (!peerIdentifier) {
+      throw new Error('peer not connected to swap client');
+    }
+    // TODO: temporarily we only support closing lnd channels, make this logic generic
+    if (isLndClient(swapClient)) {
+      const lndChannels = (await swapClient.listChannels()).getChannelsList();
+      const closePromises: Promise<void>[] = [];
+      lndChannels.forEach((channel) => {
+        if (channel.getRemotePubkey() === peerIdentifier) {
+          const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
+          const closePromise = swapClient.closeChannel(fundingTxId, Number(outputIndex), force);
+          closePromises.push(closePromise);
+        }
+      });
+      await Promise.all(closePromises);
+    }
+  }
+
+  /**
    * Opens a payment channel.
    * @param peer a peer to open the payment channel with.
    * @param currency a currency for the payment channel.

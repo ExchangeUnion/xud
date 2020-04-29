@@ -73,6 +73,14 @@ service Xud {
     };
   }
 
+  /* Closes any existing payment channels with a peer for the specified currency.
+   * shell: xucli closechannel <node_identifier> <currency> [--force]*/
+  rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse) {
+    option (google.api.http) = {
+      post: "/v1/closechannel"
+    };
+  }
+
   /* Attempts to connect to a node. Once connected, the node is added to the list of peers and
    * becomes available for swaps and trading. A handshake exchanges information about the peer's
    * supported trading and swap clients. Orders will be shared with the peer upon connection and
@@ -360,6 +368,17 @@ message Channels {
   // The number of channels that have been closed.
   uint32 closed = 4 [json_name = "closed"];
 }
+
+message CloseChannelRequest {
+  // The node pub key or alias of the peer with which to close any channels with.
+  string node_identifier = 1 [json_name = "node_identifier"];
+  // The ticker symbol of the currency of the channel to close.
+  string currency = 2 [json_name = "currency"];
+  // Whether to force close the channel in case the peer is offline or unresponsive.
+  bool force = 3 [json_name = "force"];
+}
+
+message CloseChannelResponse {}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
