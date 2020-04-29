@@ -47,6 +47,7 @@ class Swaps extends EventEmitter {
     USDT: 10 ** 10,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
+    XUC: 10 ** 10,
   };
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;

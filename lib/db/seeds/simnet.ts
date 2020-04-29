@@ -15,6 +15,12 @@ const currencies = [
   { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   { id: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   {
+    id: 'XUC',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0xEcFcaB0A285d3380E488A39B4BB21e777f8A4EaC',
+  },
+  {
     id: 'ETH',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
@@ -40,6 +46,7 @@ const pairs = [
   { baseCurrency: 'WETH', quoteCurrency: 'BTC' },
   { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
+  { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
 ] as db.PairAttributes[];
 
 export {
