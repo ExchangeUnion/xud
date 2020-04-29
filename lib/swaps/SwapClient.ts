@@ -160,11 +160,14 @@ abstract class SwapClient extends EventEmitter {
     // client specific initialization
     await this.initSpecific();
 
-    // final steps to complete initialization
-    this.setStatus(ClientStatus.Initialized);
-    this.setTimers();
-    this.emit('initialized');
-    await this.verifyConnectionWithTimeout();
+    // check to make sure that the client wasn't disabled in the initSpecific routine
+    if (this.isNotInitialized()) {
+      // final steps to complete initialization
+      this.setStatus(ClientStatus.Initialized);
+      this.setTimers();
+      this.emit('initialized');
+      await this.verifyConnectionWithTimeout();
+    }
   }
 
   protected abstract async initSpecific(): Promise<void>;
