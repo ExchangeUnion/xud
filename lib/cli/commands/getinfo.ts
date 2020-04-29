@@ -6,7 +6,6 @@ import {
   GetInfoRequest,
   GetInfoResponse,
   LndInfo,
-  RaidenInfo,
   ConnextInfo,
 } from '../../proto/xudrpc_pb';
 
@@ -35,7 +34,7 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
   console.log(basicInfotable.toString(), '\n');
 };
 
-const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][], raiden: RaidenInfo.AsObject | undefined) => {
+const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][]) => {
   let status = '';
 
   if (numPeers === 0) {
@@ -50,12 +49,6 @@ const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject]
     }
   });
 
-  if (!raiden) {
-    status += 'Raiden: Could not fetch status information';
-  } else if (raiden.status !== 'Ready') {
-    status += `Raiden: ${raiden.status}`;
-  }
-
   return status.substring(0, status.length - 1) || 'Ready';
 };
 
@@ -65,7 +58,7 @@ const displayGeneral = (info: GetInfoResponse.AsObject) => {
 ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
 
   table.push(
-    { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap, info.raiden) },
+    { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap) },
     { [colors.blue('Alias')]: info.alias },
     { [colors.blue('Node Key')]: info.nodePubKey },
     { [colors.blue('Address')]: address },
@@ -79,26 +72,6 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
   );
   console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
   console.log(table.toString(), '\n');
-};
-
-const displayRaiden = (info: RaidenInfo.AsObject) => {
-  const table = new Table() as VerticalTable;
-
-  table.push(
-    { [colors.blue('Status')]: info.status },
-    { [colors.blue('Version')]: info.version },
-    { [colors.blue('Address')]: info.address },
-    { [colors.blue('Channels')] :
- `Active: ${info.channels ? info.channels['active'] : 0}\
- | Pending: 0\
- | Closed: ${info.channels ? info.channels['closed'] : 0}`,
-    },
-    { [colors.blue('Network')] : info.chain },
-  );
-
-  console.log(colors.underline(colors.bold('\nRaiden info:')));
-  console.log(table.toString(), '\n');
-
 };
 
 const displayConnext = (info: ConnextInfo.AsObject) => {
@@ -123,9 +96,6 @@ const displayConnext = (info: ConnextInfo.AsObject) => {
 
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
   displayGeneral(response);
-  if (response.raiden) {
-    displayRaiden(response.raiden);
-  }
   if (response.connext) {
     displayConnext(response.connext);
   }
