@@ -14,15 +14,8 @@ export type ConnextInfo = {
   status: string;
   error?: string;
   address?: string;
-  channels?: ConnextChannelCount;
   chain?: string;
   version?: string;
-};
-
-export type ConnextChannelCount = {
-  active: number;
-  settled: number;
-  closed: number;
 };
 
 /**
@@ -54,9 +47,9 @@ export type ConnextErrorResponse = { message: string };
 export type ConnextInitWalletResponse = { success: boolean };
 
 /**
- * The response for initChannel call.
+ * The response for /config call.
  */
-export type ConnextChannelConfig = {
+export type ConnextConfigResponse = {
   multisigAddress: string;
   natsClusterId: string;
   natsToken: string;

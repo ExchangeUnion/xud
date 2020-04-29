@@ -81,11 +81,6 @@ const displayConnext = (info: ConnextInfo.AsObject) => {
     { [colors.blue('Status')]: info.status },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
-    { [colors.blue('Channels')] :
- `Active: ${info.channels ? info.channels['active'] : 0}\
- | Pending: 0\
- | Closed: ${info.channels ? info.channels['closed'] : 0}`,
-    },
     { [colors.blue('Network')] : info.chain },
   );
 

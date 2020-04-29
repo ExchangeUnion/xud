@@ -18,10 +18,9 @@ import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
   ConnextInitWalletResponse,
-  ConnextChannelConfig,
+  ConnextConfigResponse,
   ConnextBalanceResponse,
   ConnextTransferResponse,
-  ConnextChannelCount,
   ConnextClientConfig,
   ConnextInfo,
   ConnextVersion,
@@ -195,7 +194,7 @@ class ConnextClient extends SwapClient {
 
   public initConnextClient = async () => {
     const res = await this.sendRequest('/connect', 'POST');
-    return await parseResponseBody<ConnextChannelConfig>(res);
+    return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
   private subscribePreimage = async () => {
@@ -445,7 +444,6 @@ class ConnextClient extends SwapClient {
   }
 
   public getInfo = async (): Promise<ConnextInfo> => {
-    let channels: ConnextChannelCount | undefined;
     let address: string | undefined;
     let version: string | undefined;
     let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
@@ -455,27 +453,14 @@ class ConnextClient extends SwapClient {
       try {
         status = 'Ready';
         version = await this.getVersion();
-        const connextChannels = await this.getChannels();
-        channels = {
-          active: connextChannels.length,
-          settled: 0,
-          closed: 0,
-        };
-        address = connextChannels[0].signerAddress;
-        if (channels.active <= 0) {
-          status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS.message;
-        }
+        const clientConfig = await this.getClientConfig();
+        address = clientConfig.signerAddress;
       } catch (err) {
         status = err.message;
       }
     }
 
-    return {
-      status,
-      channels,
-      address,
-      version,
-    };
+    return { status, address, version };
   }
 
   /**
@@ -488,23 +473,12 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Gets info about a given connext payment client.
-   * @param tokenAddress the token address for the network to which the client belongs
-   * @param multisigAddress the address of the client to query
+   * Gets the configuration of Connext client.
    */
-  public getChannel = async (): Promise<ConnextChannelConfig> => {
+  public getClientConfig = async (): Promise<ConnextConfigResponse> => {
     const res = await this.sendRequest('/config', 'GET');
-    const channel = await parseResponseBody<ConnextChannelConfig>(res);
-    return channel;
-  }
-
-  /**
-   * Gets info about all non-settled channels.
-   * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
-   */
-  public getChannels = async (): Promise<ConnextChannelConfig[]> => {
-    const channel = await this.getChannel();
-    return [channel];
+    const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
+    return clientConfig;
   }
 
   public channelBalance = async (
