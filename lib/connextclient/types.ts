@@ -122,17 +122,24 @@ export type ConnextIncomingTransferRequest = {
     amount: {
       _hex: string;
     };
+    appIdentityHash: string;
     assetId: string;
     meta: {
       recipient: string;
       sender: string;
+      timelock: 200
     };
+    sender: string;
     transferMeta: {
       lockHash: string;
-      timelock: {
+      expiry: {
         _hex: string;
       };
+      timelock: string;
     };
+    type: string;
+    paymentId: string,
+    recipient: string;
   };
 };
 

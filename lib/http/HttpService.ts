@@ -56,10 +56,10 @@ class HttpService {
       } = incomingTransferRequest.data;
       const {
         lockHash,
-        timelock: timelockHex,
+        timelock: timelockString,
       } = incomingTransferRequest.data.transferMeta;
       const rHash = lockHash.slice(2);
-      const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
+      const timelock = TIMELOCK_BUFFER + parseInt(timelockString, 10);
       const units = parseInt(amountHex._hex, 16);
       await this.service.transferReceived({
         rHash,
