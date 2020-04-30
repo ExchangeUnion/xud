@@ -34,8 +34,6 @@ import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent } from 'rxjs';
 import { take, pluck, timeout, filter } from 'rxjs/operators';
 
-export const TIMELOCK_BUFFER = 100;
-
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
 interface ConnextClient {
