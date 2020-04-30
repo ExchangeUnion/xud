@@ -58,7 +58,7 @@ interface ConnextClient {
 const waitForPreimageByHash = (
   client: SwapClient,
   expectedHash: string,
-  errorTimeout = 30000,
+  errorTimeout = 75000,
 ): Promise<string> => {
   // create an observable that emits values when a preimage
   // event is triggered on the client
