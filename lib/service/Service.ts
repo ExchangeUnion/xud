@@ -1,23 +1,18 @@
-import { OrderSide, SwapClientType, SwapRole, Owner } from '../constants/enums';
+import { ConnextInfo, ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
+import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
-import { OrderSidesArrays } from '../orderbook/TradingPair';
-import { Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
+import { isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
-import {
-  ConnextInfo,
-  ProvidePreimageEvent,
-  TransferReceivedEvent,
-} from '../connextclient/types';
 import swapsErrors from '../swaps/errors';
-import SwapClientManager from '../swaps/SwapClientManager';
 import { TradingLimits } from '../swaps/SwapClient';
+import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
 import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
+import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
-import { getAlias, isNodePubKey } from '../utils/aliasUtils';
 import commitHash from '../Version';
 import errors from './errors';
 
@@ -48,6 +43,24 @@ type XudInfo = {
   raiden?: RaidenInfo;
   connext?: ConnextInfo;
   pendingSwapHashes: string[];
+};
+
+type NodeIdentifier = {
+  nodePubKey: string;
+  alias?: string;
+};
+
+type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity'>> & {
+  nodeIdentifier: NodeIdentifier;
+  side: OrderSide;
+  localId?: string;
+  hold?: number;
+  isOwnOrder: boolean;
+};
+
+type ServiceOrderSidesArrays = {
+  buyArray: ServiceOrder[],
+  sellArray: ServiceOrder[],
 };
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
@@ -353,7 +366,7 @@ class Service {
    * Get general information about this Exchange Union node.
    */
   public getInfo = async (): Promise<XudInfo> => {
-    const { nodePubKey, addresses } = this.pool;
+    const { nodePubKey, addresses, alias } = this.pool;
 
     const uris: string[] = [];
 
@@ -395,7 +408,7 @@ class Service {
       uris,
       numPairs,
       network,
-      alias: getAlias(nodePubKey),
+      alias,
       version: `${this.version}${commitHash}`,
       numPeers: this.pool.peerCount,
       orders: {
@@ -406,35 +419,79 @@ class Service {
     };
   }
 
+  private toServiceOrder = (order: Order, includeAliases = false): ServiceOrder => {
+    const { id, createdAt, pairId, price, quantity } = order;
+    let serviceOrder: ServiceOrder;
+    if (isOwnOrder(order)) {
+      serviceOrder = {
+        id,
+        createdAt,
+        pairId,
+        price,
+        quantity,
+        side: order.isBuy ? OrderSide.Buy : OrderSide.Sell,
+        isOwnOrder: true,
+        localId: order.localId,
+        hold: order.hold,
+        nodeIdentifier: {
+          nodePubKey: this.pool.nodePubKey,
+          alias: includeAliases ? this.pool.alias : undefined,
+        },
+      };
+    } else {
+      serviceOrder = {
+        id,
+        createdAt,
+        pairId,
+        price,
+        quantity,
+        side: order.isBuy ? OrderSide.Buy : OrderSide.Sell,
+        isOwnOrder: false,
+        nodeIdentifier: {
+          nodePubKey: order.peerPubKey,
+          alias: includeAliases ? this.pool.getPeer(order.peerPubKey)?.alias : undefined,
+        },
+      };
+    }
+    return serviceOrder;
+  }
+
   /**
    * Get a map between pair ids and its orders from the order book.
    */
   public listOrders = (
-    args: { pairId: string, owner: Owner | number, limit: number },
-    ): Map<string, OrderSidesArrays<any>> => {
-    const { pairId, owner, limit } = args;
+    args: { pairId: string, owner: Owner | number, limit: number, includeAliases: boolean },
+    ): Map<string, ServiceOrderSidesArrays> => {
+    const { pairId, owner, limit, includeAliases } = args;
     const includeOwnOrders = owner === Owner.Both || owner === Owner.Own;
     const includePeerOrders = owner === Owner.Both || owner === Owner.Peer;
 
-    const result = new Map<string, OrderSidesArrays<any>>();
+    const result = new Map<string, ServiceOrderSidesArrays>();
 
     const listOrderTypes = (pairId: string) => {
-      const orders: OrderSidesArrays<any> = {
+      const orders: ServiceOrderSidesArrays = {
         buyArray: [],
         sellArray: [],
       };
 
       if (includePeerOrders) {
         const peerOrders = this.orderBook.getPeersOrders(pairId);
-        orders.buyArray = peerOrders.buyArray;
-        orders.sellArray = peerOrders.sellArray;
+
+        const peerBuyOrders = peerOrders.buyArray.map(order => this.toServiceOrder(order, includeAliases));
+        const peerSellOrders = peerOrders.sellArray.map(order => this.toServiceOrder(order, includeAliases));
+
+        orders.buyArray = orders.buyArray.concat(peerBuyOrders);
+        orders.sellArray = orders.sellArray.concat(peerSellOrders);
       }
 
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-        orders.buyArray = orders.buyArray.concat(ownOrders.buyArray);
-        orders.sellArray = orders.sellArray.concat(ownOrders.sellArray);
+        const ownBuyOrders = ownOrders.buyArray.map(order => this.toServiceOrder(order, includeAliases));
+        const ownSellOrders = ownOrders.sellArray.map(order => this.toServiceOrder(order, includeAliases));
+
+        orders.buyArray = orders.buyArray.concat(ownBuyOrders);
+        orders.sellArray = orders.sellArray.concat(ownSellOrders);
       }
 
       // sort all orders
@@ -622,4 +679,4 @@ class Service {
 
 }
 export default Service;
-export { ServiceComponents, XudInfo };
+export { ServiceComponents, XudInfo, ServiceOrder };

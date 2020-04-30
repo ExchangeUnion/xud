@@ -9,8 +9,8 @@ import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
-import { getExternalIp } from '../utils/utils';
 import { getAlias } from '../utils/aliasUtils';
+import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import Network from './Network';
 import NodeList, { reputationEventWeight } from './NodeList';
@@ -75,6 +75,8 @@ class Pool extends EventEmitter {
   public version: string;
   /** Our node pub key. */
   public nodePubKey: string;
+  /** Our alias. */
+  public alias: string;
   /** The local handshake data to be sent to newly connected peers. */
   private nodeState: NodeState;
   /** A map of pub keys to nodes for which we have pending outgoing connections. */
@@ -111,6 +113,7 @@ class Pool extends EventEmitter {
     this.logger = logger;
     this.nodeKey = nodeKey;
     this.nodePubKey = nodeKey.pubKey;
+    this.alias = getAlias(nodeKey.pubKey);
     this.version = version;
     this.config = config;
     this.network = new Network(xuNetwork);
@@ -145,7 +148,7 @@ class Pool extends EventEmitter {
     return this.nodeState.addresses;
   }
 
-  public getTokenIdentifier(currency: string) {
+  public getTokenIdentifier = (currency: string) => {
     return this.nodeState.tokenIdentifiers[currency];
   }
 

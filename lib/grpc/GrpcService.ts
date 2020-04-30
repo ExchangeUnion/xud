@@ -5,13 +5,37 @@ import { CurrencyInstance, OrderInstance, TradeInstance } from '../db/types';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
-import Service from '../service/Service';
+import Service, { ServiceOrder } from '../service/Service';
 import { SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
 /**
  * Creates an xudrpc Order message from an [[Order]].
  */
+const createServiceOrder = (order: ServiceOrder) => {
+  const grpcOrder = new xudrpc.Order();
+  grpcOrder.setCreatedAt(order.createdAt);
+  grpcOrder.setId(order.id);
+  if (order.hold) {
+    grpcOrder.setHold(order.hold);
+  }
+  if (order.localId) {
+    grpcOrder.setLocalId(order.localId);
+  }
+  grpcOrder.setIsOwnOrder(order.isOwnOrder);
+  const nodeIdentifier = new xudrpc.NodeIdentifier();
+  nodeIdentifier.setNodePubKey(order.nodeIdentifier.nodePubKey);
+  if (order.nodeIdentifier.alias) {
+    nodeIdentifier.setAlias(order.nodeIdentifier.alias);
+  }
+  grpcOrder.setNodeIdentifier(nodeIdentifier);
+  grpcOrder.setPairId(order.pairId);
+  grpcOrder.setPrice(order.price);
+  grpcOrder.setQuantity(order.quantity);
+  grpcOrder.setSide(order.side as number);
+  return grpcOrder;
+};
+
 const createOrder = (order: Order) => {
   const grpcOrder = new xudrpc.Order();
   grpcOrder.setCreatedAt(order.createdAt);
@@ -21,7 +45,9 @@ const createOrder = (order: Order) => {
     grpcOrder.setLocalId((order).localId);
     grpcOrder.setIsOwnOrder(true);
   } else {
-    grpcOrder.setPeerPubKey((order).peerPubKey);
+    const nodeIdentifier = new xudrpc.NodeIdentifier();
+    nodeIdentifier.setNodePubKey(order.peerPubKey);
+    grpcOrder.setNodeIdentifier(nodeIdentifier);
     grpcOrder.setIsOwnOrder(false);
   }
   grpcOrder.setPairId(order.pairId);
@@ -566,9 +592,9 @@ class GrpcService {
       const listOrdersResponse = this.service.listOrders(call.request.toObject());
       const response = new xudrpc.ListOrdersResponse();
 
-      const listOrdersList = <T extends Order>(orders: T[]) => {
+      const listOrdersList = <T extends ServiceOrder>(orders: T[]) => {
         const ordersList: xudrpc.Order[] = [];
-        orders.forEach(order => ordersList.push(createOrder(<Order>order)));
+        orders.forEach(order => ordersList.push(createServiceOrder(order)));
         return ordersList;
       };
 

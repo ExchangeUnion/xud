@@ -6,7 +6,7 @@ import moment from 'moment';
 import os from 'os';
 import path from 'path';
 import { promisify } from 'util';
-import { Order, Pair } from '../orderbook/types';
+import { Pair, SortableOrder } from '../orderbook/types';
 import p2pErrors from '../p2p/errors';
 
 const MAX_DECIMAL_PLACES = 12;
@@ -194,8 +194,8 @@ export const convertKvpArrayToKvps = <T>(kvpArray: [string, T][]): { [key: strin
   return kvps;
 };
 
-export const sortOrders = (orders: Order[], isBuy: boolean): Order[] => {
-  return orders.sort((a: Order, b: Order) => {
+export const sortOrders = <T extends SortableOrder>(orders: T[], isBuy: boolean): T[] => {
+  return orders.sort((a: T, b: T) => {
     if (a.price === b.price) {
       return a.createdAt - b.createdAt;
     }

@@ -11,7 +11,7 @@ type FormattedTradingPairOrders = {
   orders: string[][],
 };
 
-const COLUMNS = [19, 19, 12, 19, 19, 12];
+const COLUMNS = [15, 13, 18, 15, 13, 18];
 const COLUMNS_IN_ORDER_SIDE = COLUMNS.length / 2;
 const HEADER = [
   { content: colors.green('Buy'), colSpan: 3 },
@@ -20,20 +20,19 @@ const HEADER = [
 const SECONDARY_HEADER = [
   colors.green('Quantity'),
   colors.green('Price'),
-  colors.green('Own Order'),
+  colors.green('Alias'),
   colors.red('Quantity'),
   colors.red('Price'),
-  colors.red('Own Order'),
+  colors.red('Alias'),
 ];
 
-const addSide = (orderSide: Order.AsObject[]): string[] => {
+const addOrderToSide = (orderSide: Order.AsObject[]): string[] => {
   const order = orderSide.pop();
   if (order) {
-    const isOwn = order.isOwnOrder ? 'X' : '';
     return [
       satsToCoinsStr(order.quantity),
       order.price.toString(),
-      isOwn,
+      order.nodeIdentifier!.alias,
     ].map(i => order.isOwnOrder ? colors.cyan(i) : i);
   } else {
     return Array.from(Array(COLUMNS_IN_ORDER_SIDE)).map(() => '');
@@ -42,17 +41,17 @@ const addSide = (orderSide: Order.AsObject[]): string[] => {
 
 export const formatOrders = (orders: ListOrdersResponse.AsObject) => {
   const formattedOrders: FormattedTradingPairOrders[] = [];
-  orders.ordersMap.forEach((tradingPair) => {
-    const buy = tradingPair[1].buyOrdersList;
-    const sell = tradingPair[1].sellOrdersList;
+  orders.ordersMap.forEach(([pairId, tradingPair]) => {
+    const buy = tradingPair.buyOrdersList;
+    const sell = tradingPair.sellOrdersList;
     const totalRows = buy.length < sell.length
       ? sell.length : buy.length;
     const tradingPairOrders = Array.from(Array(totalRows))
       .map(() => {
-        return addSide(buy).concat(addSide(sell));
+        return addOrderToSide(buy).concat(addOrderToSide(sell));
       });
     formattedOrders.push({
-      pairId: tradingPair[0],
+      pairId,
       orders: tradingPairOrders,
     });
   });
@@ -107,5 +106,6 @@ export const handler = async (argv: Arguments<any>) => {
   request.setPairId(pairId);
   request.setOwner(Number(Owner[argv.owner]));
   request.setLimit(argv.limit);
+  request.setIncludeAliases(true);
   (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables));
 };

@@ -733,6 +733,9 @@ export class ListOrdersRequest extends jspb.Message {
     getLimit(): number;
     setLimit(value: number): void;
 
+    getIncludeAliases(): boolean;
+    setIncludeAliases(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ListOrdersRequest.AsObject;
@@ -749,6 +752,7 @@ export namespace ListOrdersRequest {
         pairId: string,
         owner: ListOrdersRequest.Owner,
         limit: number,
+        includeAliases: boolean,
     }
 
     export enum Owner {
@@ -958,6 +962,31 @@ export namespace LndInfo {
     }
 }
 
+export class NodeIdentifier extends jspb.Message { 
+    getNodePubKey(): string;
+    setNodePubKey(value: string): void;
+
+    getAlias(): string;
+    setAlias(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): NodeIdentifier.AsObject;
+    static toObject(includeInstance: boolean, msg: NodeIdentifier): NodeIdentifier.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: NodeIdentifier, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): NodeIdentifier;
+    static deserializeBinaryFromReader(message: NodeIdentifier, reader: jspb.BinaryReader): NodeIdentifier;
+}
+
+export namespace NodeIdentifier {
+    export type AsObject = {
+        nodePubKey: string,
+        alias: string,
+    }
+}
+
 export class OpenChannelRequest extends jspb.Message { 
     getNodeIdentifier(): string;
     setNodeIdentifier(value: string): void;
@@ -1022,14 +1051,11 @@ export class Order extends jspb.Message {
     setId(value: string): void;
 
 
-    hasPeerPubKey(): boolean;
-    clearPeerPubKey(): void;
-    getPeerPubKey(): string;
-    setPeerPubKey(value: string): void;
+    hasNodeIdentifier(): boolean;
+    clearNodeIdentifier(): void;
+    getNodeIdentifier(): NodeIdentifier | undefined;
+    setNodeIdentifier(value?: NodeIdentifier): void;
 
-
-    hasLocalId(): boolean;
-    clearLocalId(): void;
     getLocalId(): string;
     setLocalId(value: string): void;
 
@@ -1045,8 +1071,6 @@ export class Order extends jspb.Message {
     getHold(): number;
     setHold(value: number): void;
 
-
-    getOwnOrPeerCase(): Order.OwnOrPeerCase;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Order.AsObject;
@@ -1064,23 +1088,13 @@ export namespace Order {
         quantity: number,
         pairId: string,
         id: string,
-        peerPubKey: string,
+        nodeIdentifier?: NodeIdentifier.AsObject,
         localId: string,
         createdAt: number,
         side: OrderSide,
         isOwnOrder: boolean,
         hold: number,
     }
-
-    export enum OwnOrPeerCase {
-        OWNORPEER_NOT_SET = 0,
-    
-    PEER_PUB_KEY = 5,
-
-    LOCAL_ID = 6,
-
-    }
-
 }
 
 export class OrderRemoval extends jspb.Message { 

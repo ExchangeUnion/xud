@@ -45,6 +45,7 @@
     - [ListTradesRequest](#xudrpc.ListTradesRequest)
     - [ListTradesResponse](#xudrpc.ListTradesResponse)
     - [LndInfo](#xudrpc.LndInfo)
+    - [NodeIdentifier](#xudrpc.NodeIdentifier)
     - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
     - [OpenChannelResponse](#xudrpc.OpenChannelResponse)
     - [Order](#xudrpc.Order)
@@ -583,6 +584,7 @@
 | pair_id | [string](#string) |  | The trading pair for which to retrieve orders. |
 | owner | [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner) |  | Whether only own, only peer or both orders should be included in result. |
 | limit | [uint32](#uint32) |  | The maximum number of orders to return from each side of the order book. |
+| include_aliases | [bool](#bool) |  | Whether to include the node aliases of owners of the orders. |
 
 
 
@@ -721,6 +723,22 @@
 
 
 
+<a name="xudrpc.NodeIdentifier"></a>
+
+### NodeIdentifier
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| node_pub_key | [string](#string) |  | The pub key of this node |
+| alias | [string](#string) |  | An alias for this node deterministically generated from the pub key |
+
+
+
+
+
+
 <a name="xudrpc.OpenChannelRequest"></a>
 
 ### OpenChannelRequest
@@ -761,8 +779,8 @@
 | quantity | [uint64](#uint64) |  | The quantity of the order in satoshis. |
 | pair_id | [string](#string) |  | The trading pair that this order is for. |
 | id | [string](#string) |  | A UUID for this order. |
-| peer_pub_key | [string](#string) |  | The node pub key of the peer that created this order. |
-| local_id | [string](#string) |  | The local id for this order. |
+| node_identifier | [NodeIdentifier](#xudrpc.NodeIdentifier) |  | The identifier of the node that created this order. |
+| local_id | [string](#string) |  | The local id for this order, if applicable. |
 | created_at | [uint64](#uint64) |  | The epoch time when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
