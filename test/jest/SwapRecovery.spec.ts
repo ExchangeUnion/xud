@@ -134,7 +134,7 @@ describe('SwapRecovery', () => {
 
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
     expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
     expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
     expect(deal.state).toEqual(SwapState.Recovered);
@@ -151,7 +151,7 @@ describe('SwapRecovery', () => {
 
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
     expect(swapRecovery['failDeal']).toHaveBeenCalledTimes(1);
     expect(swapRecovery['failDeal']).toHaveBeenCalledWith(deal, lndBtc);
   });
@@ -164,7 +164,7 @@ describe('SwapRecovery', () => {
 
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
-    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash);
+    expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
     expect(swapRecovery.pendingSwaps).toContain(deal);
   });
 

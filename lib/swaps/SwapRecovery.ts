@@ -76,7 +76,7 @@ class SwapRecovery {
         if (deal.role === SwapRole.Maker) {
           // we should check to see if our payment went through
           // if it did, we can claim payment with the preimage for our side of the swap
-          const paymentStatus = await takerSwapClient.lookupPayment(deal.rHash);
+          const paymentStatus = await takerSwapClient.lookupPayment(deal.rHash, deal.takerCurrency);
           if (paymentStatus.state === PaymentState.Succeeded) {
             try {
               deal.rPreimage = paymentStatus.preimage!;

@@ -402,15 +402,16 @@ class ConnextClient extends SwapClient {
     this.expectedIncomingTransfers.delete(rHash);
   }
 
-  private async getHashLockStatus(lockHash: string) {
-    const res = await this.sendRequest(`/hashlock-status/${lockHash}`, 'GET');
+  private async getHashLockStatus(lockHash: string, assetId: string) {
+    const res = await this.sendRequest(`/hashlock-status/${lockHash}/${assetId}`, 'GET');
     const { status } = await parseResponseBody<ConnextTransferStatus>(res);
     return status;
   }
 
-  public lookupPayment = async (rHash: string) => {
+  public lookupPayment = async (rHash: string, currency: string) => {
     try {
-      const status = await this.getHashLockStatus(rHash);
+      const assetId = this.getTokenAddress(currency);
+      const status = await this.getHashLockStatus(rHash, assetId);
 
       switch (status) {
         case 'PENDING':
