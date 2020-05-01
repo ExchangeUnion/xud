@@ -3,10 +3,10 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '03193508d52dc8235c1bf6e902dae30c6dc1823f1e3cdc3c1a97652af9142cd4fe',
+    nodePubKey: '025443023c0303eb5671522cda0d49acb0e74c77f1371bf86262bad637835eb9e4',
     addresses: [
       { host: 'xud1.simnet.exchangeunion.com', port: 28885 },
-      { host: 'lqcaoc3ga4ateijlmo3mk7jb4r2fy22ko36asp44spjt6htmozosqbad.onion', port: 28885 },
+      { host: 'xe4vwapndzzxlz47fb3n7ysqq4wynqic4cceel3pv3s6ehr6j2t663qd.onion', port: 28885 },
     ],
   },
 ] as db.NodeAttributes[];
