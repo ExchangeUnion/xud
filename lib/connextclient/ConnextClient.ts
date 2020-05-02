@@ -160,9 +160,10 @@ class ConnextClient extends SwapClient {
     if (
         units === expectedUnits &&
         rHash === expectedHash &&
-        timelock === expectedTimelock &&
+        // timelock === expectedTimelock &&
         tokenAddress === expectedTokenAddress
       ) {
+      this.logger.warn('warning locktime check has been temporarily disabled - unsafe mode');
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
       this.emit('htlcAccepted', rHash, units, currency);
       this.expectedIncomingTransfers.delete(rHash);
