@@ -189,7 +189,7 @@ class Xud extends EventEmitter {
 
       // We initialize Connext separately because it
       // requires a NodeKey.
-      this.swapClientManager.initConnext(
+      await this.swapClientManager.initConnext(
         nodeKey.childSeed(SwapClientType.Connext),
       );
 
