@@ -31,7 +31,7 @@ import {
   TransferReceivedEvent,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent } from 'rxjs';
+import { Observable, fromEvent, from, combineLatest } from 'rxjs';
 import { take, pluck, timeout, filter } from 'rxjs/operators';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
@@ -450,9 +450,18 @@ class ConnextClient extends SwapClient {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
       try {
+        const getInfo$ = combineLatest(
+          from(this.getVersion()),
+          from(this.getClientConfig()),
+        ).pipe(
+          // error if no response within 5000 ms
+          timeout(5000),
+          // complete the stream when we receive 1 value
+          take(1),
+        );
+        const [streamVersion, clientConfig] = await getInfo$.toPromise();
         status = 'Ready';
-        version = await this.getVersion();
-        const clientConfig = await this.getClientConfig();
+        version = streamVersion;
         address = clientConfig.signerAddress;
       } catch (err) {
         status = err.message;
