@@ -1,11 +1,11 @@
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
 import { RaidenResolveRequest, RaidenResolveResponse } from '../raidenclient/types';
-import { TIMELOCK_BUFFER } from '../connextclient/ConnextClient';
 import {
   ConnextPreimageRequest,
   ConnextIncomingTransferRequest,
 } from '../connextclient/types';
+import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
@@ -27,18 +27,17 @@ class HttpService {
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
-      preimageRequest.data && preimageRequest.data.newState
+      preimageRequest.data && preimageRequest.data.transferMeta
     ) {
-      const { lockHash: rHash, preImage: preimage } = preimageRequest.data.newState;
-      if (!rHash) {
-        throw serviceErrors.INVALID_ARGUMENT('lockHash is missing');
-      }
+      const { preImage: preimage } = preimageRequest.data.transferMeta;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
+      const slicedPreimage = preimage.slice(2);
+      const rHash = createHash('sha256').update(Buffer.from(slicedPreimage, 'hex')).digest('hex');
       await this.service.providePreimage({
-        rHash: rHash.slice(2),
-        preimage: preimage.slice(2),
+        rHash,
+        preimage: slicedPreimage,
       });
       return {};
     } else {
@@ -56,10 +55,10 @@ class HttpService {
       } = incomingTransferRequest.data;
       const {
         lockHash,
-        timelock: timelockHex,
+        timelock: timelockString,
       } = incomingTransferRequest.data.transferMeta;
       const rHash = lockHash.slice(2);
-      const timelock = TIMELOCK_BUFFER + parseInt(timelockHex._hex, 16);
+      const timelock = parseInt(timelockString, 10);
       const units = parseInt(amountHex._hex, 16);
       await this.service.transferReceived({
         rHash,

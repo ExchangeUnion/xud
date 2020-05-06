@@ -14,15 +14,8 @@ export type ConnextInfo = {
   status: string;
   error?: string;
   address?: string;
-  channels?: ConnextChannelCount;
   chain?: string;
   version?: string;
-};
-
-export type ConnextChannelCount = {
-  active: number;
-  settled: number;
-  closed: number;
 };
 
 /**
@@ -54,9 +47,9 @@ export type ConnextErrorResponse = { message: string };
 export type ConnextInitWalletResponse = { success: boolean };
 
 /**
- * The response for initChannel call.
+ * The response for /config call.
  */
-export type ConnextChannelConfig = {
+export type ConnextConfigResponse = {
   multisigAddress: string;
   natsClusterId: string;
   natsToken: string;
@@ -105,8 +98,19 @@ export type ExpectedIncomingTransfer = {
 export type ConnextPreimageRequest = {
   id: string;
   data?: {
-    newState?: {
-      lockHash: string;
+    type: string;
+    amount: {
+      _hex: string;
+    };
+    assetId: string;
+    paymentId: string;
+    sender: string;
+    recipient: string;
+    meta: {
+      sender: string;
+      recipient: string;
+    };
+    transferMeta: {
       preImage: string;
     };
   }
@@ -118,17 +122,24 @@ export type ConnextIncomingTransferRequest = {
     amount: {
       _hex: string;
     };
+    appIdentityHash: string;
     assetId: string;
     meta: {
       recipient: string;
       sender: string;
+      timelock: 200
     };
+    sender: string;
     transferMeta: {
       lockHash: string;
-      timelock: {
+      expiry: {
         _hex: string;
       };
+      timelock: string;
     };
+    type: string;
+    paymentId: string,
+    recipient: string;
   };
 };
 

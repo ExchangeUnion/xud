@@ -123,7 +123,7 @@ const faucetRequest = (connextAddress: string) => {
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
       method: 'POST',
-      hostname: '35.193.71.174',
+      hostname: 'xud1.simnet.exchangeunion.com',
       port: 9000,
       path: '/faucet',
     };

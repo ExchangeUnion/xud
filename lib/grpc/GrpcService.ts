@@ -539,12 +539,6 @@ class GrpcService {
         const connext = new xudrpc.ConnextInfo();
         connext.setStatus(getInfoResponse.connext.status);
         if (getInfoResponse.connext.address) connext.setAddress(getInfoResponse.connext.address);
-        if (getInfoResponse.connext.channels) {
-          const channels = new xudrpc.Channels();
-          channels.setActive(getInfoResponse.connext.channels.active);
-          channels.setClosed(getInfoResponse.connext.channels.closed);
-          connext.setChannels(channels);
-        }
         if (getInfoResponse.connext.version) connext.setVersion(getInfoResponse.connext.version);
         if (getInfoResponse.connext.chain) connext.setChain(getInfoResponse.connext.chain);
         response.setConnext(connext);

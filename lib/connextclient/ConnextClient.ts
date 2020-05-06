@@ -18,10 +18,9 @@ import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
   ConnextInitWalletResponse,
-  ConnextChannelConfig,
+  ConnextConfigResponse,
   ConnextBalanceResponse,
   ConnextTransferResponse,
-  ConnextChannelCount,
   ConnextClientConfig,
   ConnextInfo,
   ConnextVersion,
@@ -32,10 +31,8 @@ import {
   TransferReceivedEvent,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent } from 'rxjs';
+import { Observable, fromEvent, from, combineLatest } from 'rxjs';
 import { take, pluck, timeout, filter } from 'rxjs/operators';
-
-export const TIMELOCK_BUFFER = 100;
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
@@ -61,7 +58,7 @@ interface ConnextClient {
 const waitForPreimageByHash = (
   client: SwapClient,
   expectedHash: string,
-  errorTimeout = 30000,
+  errorTimeout = 75000,
 ): Promise<string> => {
   // create an observable that emits values when a preimage
   // event is triggered on the client
@@ -195,19 +192,19 @@ class ConnextClient extends SwapClient {
 
   public initConnextClient = async () => {
     const res = await this.sendRequest('/connect', 'POST');
-    return await parseResponseBody<ConnextChannelConfig>(res);
+    return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
-      event: 'UPDATE_STATE_EVENT',
+      event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
     });
   }
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_RECEIVED_EVENT',
+      event: 'CONDITIONAL_TRANSFER_CREATED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
   }
@@ -391,9 +388,11 @@ class ConnextClient extends SwapClient {
   /**
    * Resolve a HashLock Transfer on the Connext network.
    */
-  public settleInvoice = async (_rHash: string, rPreimage: string) => {
+  public settleInvoice = async (_rHash: string, rPreimage: string, currency: string) => {
+    const assetId = this.tokenAddresses.get(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
-      lockHash: `0x${rPreimage}`,
+      assetId,
+      preImage: `0x${rPreimage}`,
     });
   }
 
@@ -401,15 +400,16 @@ class ConnextClient extends SwapClient {
     this.expectedIncomingTransfers.delete(rHash);
   }
 
-  private async getHashLockStatus(lockHash: string) {
-    const res = await this.sendRequest(`/hashlock-status/${lockHash}`, 'GET');
+  private async getHashLockStatus(lockHash: string, assetId: string) {
+    const res = await this.sendRequest(`/hashlock-status/${lockHash}/${assetId}`, 'GET');
     const { status } = await parseResponseBody<ConnextTransferStatus>(res);
     return status;
   }
 
-  public lookupPayment = async (rHash: string) => {
+  public lookupPayment = async (rHash: string, currency: string) => {
     try {
-      const status = await this.getHashLockStatus(rHash);
+      const assetId = this.getTokenAddress(currency);
+      const status = await this.getHashLockStatus(rHash, assetId);
 
       switch (status) {
         case 'PENDING':
@@ -443,7 +443,6 @@ class ConnextClient extends SwapClient {
   }
 
   public getInfo = async (): Promise<ConnextInfo> => {
-    let channels: ConnextChannelCount | undefined;
     let address: string | undefined;
     let version: string | undefined;
     let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
@@ -451,29 +450,25 @@ class ConnextClient extends SwapClient {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
       try {
+        const getInfo$ = combineLatest(
+          from(this.getVersion()),
+          from(this.getClientConfig()),
+        ).pipe(
+          // error if no response within 5000 ms
+          timeout(5000),
+          // complete the stream when we receive 1 value
+          take(1),
+        );
+        const [streamVersion, clientConfig] = await getInfo$.toPromise();
         status = 'Ready';
-        version = await this.getVersion();
-        const connextChannels = await this.getChannels();
-        channels = {
-          active: connextChannels.length,
-          settled: 0,
-          closed: 0,
-        };
-        address = connextChannels[0].signerAddress;
-        if (channels.active <= 0) {
-          status = errors.CONNEXT_HAS_NO_ACTIVE_CHANNELS.message;
-        }
+        version = streamVersion;
+        address = clientConfig.signerAddress;
       } catch (err) {
         status = err.message;
       }
     }
 
-    return {
-      status,
-      channels,
-      address,
-      version,
-    };
+    return { status, address, version };
   }
 
   /**
@@ -486,23 +481,12 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Gets info about a given connext payment client.
-   * @param tokenAddress the token address for the network to which the client belongs
-   * @param multisigAddress the address of the client to query
+   * Gets the configuration of Connext client.
    */
-  public getChannel = async (): Promise<ConnextChannelConfig> => {
+  public getClientConfig = async (): Promise<ConnextConfigResponse> => {
     const res = await this.sendRequest('/config', 'GET');
-    const channel = await parseResponseBody<ConnextChannelConfig>(res);
-    return channel;
-  }
-
-  /**
-   * Gets info about all non-settled channels.
-   * @param tokenAddress an optional parameter to specify channels belonging to the specified token network
-   */
-  public getChannels = async (): Promise<ConnextChannelConfig[]> => {
-    const channel = await this.getChannel();
-    return [channel];
+    const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
+    return clientConfig;
   }
 
   public channelBalance = async (
