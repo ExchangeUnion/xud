@@ -58,7 +58,10 @@ class Config {
   public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
-  public debug: { raidenDirectChannelChecks: boolean };
+  public debug: {
+    testing: boolean,
+    raidenDirectChannelChecks: boolean,
+  };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -140,6 +143,7 @@ class Config {
       port: 8080,
     };
     this.debug = {
+      testing: false,
       raidenDirectChannelChecks: true,
     };
     // TODO: add dynamic max/min price limits

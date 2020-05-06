@@ -77,6 +77,11 @@ const { argv } = require('yargs')
       type: 'string',
       alias: 'x',
     },
+    'debug.testing': {
+      describe: 'Developer mode to facilitate testing swaps',
+      type: 'boolean',
+      default: undefined,
+    },
     'debug.raidenDirectChannelChecks': {
       describe: 'Whether to require direct channels for raiden payments',
       type: 'boolean',

@@ -1,27 +1,24 @@
 import assert from 'assert';
-import uuidv1 from 'uuid/v1';
 import { EventEmitter } from 'events';
+import uuidv1 from 'uuid/v1';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
+import { limits, maxLimits } from '../constants/limits';
+import { Models } from '../db/DB';
+import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
+import Logger from '../Logger';
+import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
+import Peer from '../p2p/Peer';
+import Pool from '../p2p/Pool';
+import swapsErrors from '../swaps/errors';
+import Swaps from '../swaps/Swaps';
+import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
+import { getAlias } from '../utils/aliasUtils';
+import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
+import errors from './errors';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
-import errors from './errors';
-import swapsErrors from '../swaps/errors';
-import Pool from '../p2p/Pool';
-import Peer from '../p2p/Peer';
-import Logger from '../Logger';
-import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
-import { getAlias } from '../utils/aliasUtils';
-import { Models } from '../db/DB';
-import Swaps from '../swaps/Swaps';
-import { limits, maxLimits } from '../constants/limits';
-import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
-import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
 import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
   OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from './types';
-import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
-import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
-// We add the Bluebird import to ts-ignore because it's actually being used.
-// @ts-ignore
-import Bluebird from 'bluebird';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -77,6 +74,7 @@ class OrderBook extends EventEmitter {
   private logger: Logger;
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
+  private testing: boolean;
   private maxlimits: boolean;
   private pool: Pool;
   private swaps: Swaps;
@@ -95,7 +93,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, maxlimits = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, maxlimits = false, testing = false }:
   {
     logger: Logger,
     models: Models,
@@ -106,6 +104,7 @@ class OrderBook extends EventEmitter {
     nobalancechecks: boolean,
     nomatching?: boolean,
     maxlimits?: boolean,
+    testing?: boolean,
   }) {
     super();
 
@@ -117,6 +116,7 @@ class OrderBook extends EventEmitter {
     this.nobalancechecks = nobalancechecks;
     this.maxlimits = maxlimits;
     this.thresholds = thresholds;
+    this.testing = testing;
 
     this.repository = new OrderBookRepository(models);
 
@@ -444,6 +444,8 @@ class OrderBook extends EventEmitter {
     const swapSuccesses: SwapSuccess[] = [];
     /** Failed swaps attempted for the placed order. */
     const swapFailures: SwapFailure[] = [];
+    /** Maker orders that we attempted to swap with but failed. */
+    const failedMakerOrders: PeerOrder[] = [];
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -514,6 +516,9 @@ class OrderBook extends EventEmitter {
               peerPubKey: maker.peerPubKey,
             };
             swapFailures.push(swapFailure);
+            if (this.testing) {
+              failedMakerOrders.push(maker);
+            }
             onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
             await retryFailedSwap(portion.quantity);
           } else {
@@ -542,6 +547,13 @@ class OrderBook extends EventEmitter {
         this.addOwnOrder(remainingOrder);
         onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
       }
+    }
+
+    if (this.testing) {
+      // in testing/debug mode, we add orders that failed swaps back to the order book to retry them
+      failedMakerOrders.forEach((peerOrder) => {
+        this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+      });
     }
 
     return {
@@ -861,7 +873,7 @@ class OrderBook extends EventEmitter {
 
     // activate verified currencies
     currenciesToVerify.forEach((swappable, currency) => {
-      if (swappable) {
+      if (swappable || this.testing) { // always activate currencies if in debug/testing mode
         peer.activateCurrency(currency);
       }
     });

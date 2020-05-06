@@ -164,6 +164,7 @@ class Xud extends EventEmitter {
         xuNetwork: this.config.network,
         logger: loggers.p2p,
         models: this.db.models,
+        testing: this.config.debug.testing,
       });
 
       const initPromises: Promise<any>[] = [];
@@ -181,6 +182,7 @@ class Xud extends EventEmitter {
         nosanityswaps: this.config.nosanityswaps,
         nobalancechecks: this.config.nobalancechecks,
         maxlimits: this.config.maxlimits,
+        testing: this.config.debug.testing,
       });
       initPromises.push(this.orderBook.init());
 
