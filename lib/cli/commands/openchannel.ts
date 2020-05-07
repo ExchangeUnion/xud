@@ -1,4 +1,4 @@
-import { Arguments } from 'yargs';
+import { Arguments, CommandBuilder } from 'yargs';
 import { callback, loadXudClient } from '../command';
 import { OpenChannelRequest } from '../../proto/xudrpc_pb';
 import { coinsToSats } from '../utils';
@@ -7,7 +7,7 @@ export const command = 'openchannel <currency> <amount> [node_identifier] [push_
 
 export const describe = 'open a payment channel with a peer';
 
-export const builder = {
+export const builder: CommandBuilder = {
   node_identifier: {
     description: 'the node key or alias of the connected peer to open the channel with',
     type: 'string',
