@@ -29,6 +29,9 @@ export const builder = {
 };
 
 export const handler = async (argv: Arguments<any>) => {
+  if (isNaN(argv.decimal_places) || argv.decimal_places >= 100 || argv.decimal_places < 0) {
+    throw 'decimal_places must be a number between 0 and 100';
+  }
   const request = new Currency();
   request.setCurrency(argv.currency.toUpperCase());
   request.setSwapClient(Number(SwapClientType[argv.swap_client]));
