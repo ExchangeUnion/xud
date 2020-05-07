@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/roasbeef/btcutil"
 	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
@@ -413,8 +414,8 @@ func getInfo(ctx context.Context, n *xudtest.HarnessNode) (*xudrpc.GetInfoRespon
 	return info, nil
 }
 
-func openBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
-	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 7500000, false)
+func openBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode, amt int64, pushAmt int64) (*lnrpc.ChannelPoint, error) {
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, btcutil.Amount(amt), btcutil.Amount(pushAmt), false)
 	if err != nil {
 		return nil, err
 	}
@@ -443,8 +444,8 @@ func closeBtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntes
 	return nil
 }
 
-func openLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode) (*lnrpc.ChannelPoint, error) {
-	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, 15000000, 7500000, false)
+func openLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, srcNode, destNode *lntest.HarnessNode, amt int64, pushAmt int64) (*lnrpc.ChannelPoint, error) {
+	openChanStream, err := ln.OpenChannel(ctx, srcNode, destNode, btcutil.Amount(amt), btcutil.Amount(pushAmt), false)
 	if err != nil {
 		return nil, err
 	}
