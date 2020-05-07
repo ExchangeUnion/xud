@@ -139,7 +139,7 @@ const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
   const baseCurrency = getBaseCurrency(swapFailure.pairId);
-  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} with peer order ${swapFailure.orderId}`);
+  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} due to ${swapFailure.failureReason} with peer order ${swapFailure.orderId}`);
 };
 
 const formatRemainingOrder = (order: Order.AsObject) => {
