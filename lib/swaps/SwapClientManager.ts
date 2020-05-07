@@ -606,7 +606,7 @@ class SwapClientManager extends EventEmitter {
         }
       });
     }
-    if (this.connextClient?.isOperational()) {
+    if (this.connextClient && !this.connextClient.isDisabled() && !this.connextClient.isMisconfigured()) {
       this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
         this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
       });
