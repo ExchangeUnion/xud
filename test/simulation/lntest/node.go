@@ -152,17 +152,17 @@ type HarnessNode struct {
 
 	// PubKey is the serialized compressed identity public key of the node.
 	// This field will only be populated once the node itself has been
-	// started via the start() method.
+	// started via the Start() method.
 	PubKey    [33]byte
 	PubKeyStr string
 
-	cmd     *exec.Cmd
+	Cmd     *exec.Cmd
 	pidFile string
 	logFile *os.File
 
-	// processExit is a channel that's closed once it's detected that the
+	// ProcessExit is a channel that's closed once it's detected that the
 	// process this instance of HarnessNode is bound to has exited.
-	processExit chan struct{}
+	ProcessExit chan struct{}
 
 	chanWatchRequests chan *chanWatchRequest
 
@@ -215,6 +215,7 @@ func newNode(cfg nodeConfig) (*HarnessNode, error) {
 		Cfg:               &cfg,
 		NodeID:            nodeNum,
 		chanWatchRequests: make(chan *chanWatchRequest),
+		quit:              make(chan struct{}),
 	}, nil
 }
 
@@ -229,16 +230,14 @@ func (hn *HarnessNode) DBPath() string {
 //
 // This may not clean up properly if an error is returned, so the caller should
 // call shutdown() regardless of the return value.
-func (hn *HarnessNode) start(lndError chan<- error) error {
-	hn.quit = make(chan struct{})
-
+func (hn *HarnessNode) Start(lndError chan<- error) error {
 	args := hn.Cfg.genArgs()
 	args = append(args, fmt.Sprintf("--profile=%d", 9000+hn.NodeID))
-	hn.cmd = exec.Command("/lnd-vol/go/src/github.com/lightningnetwork/lnd/lnd-debug", args...)
+	hn.Cmd = exec.Command("/lnd-vol/go/src/github.com/lightningnetwork/lnd/lnd-debug", args...)
 
 	// Redirect stderr output to buffer
 	var errb bytes.Buffer
-	hn.cmd.Stderr = &errb
+	hn.Cmd.Stderr = &errb
 
 	// Make sure the log file cleanup function is initialized, even
 	// if no log file is created.
@@ -263,32 +262,32 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 
 		// Pass node's stderr to both errb and the file.
 		w := io.MultiWriter(&errb, file)
-		hn.cmd.Stderr = w
+		hn.Cmd.Stderr = w
 
 		// Pass the node's stdout only to the file.
-		hn.cmd.Stdout = file
+		hn.Cmd.Stdout = file
 
 		// Let the node keep a reference to this file, such
 		// that we can add to it if necessary.
 		hn.logFile = file
 	}
 
-	if err := hn.cmd.Start(); err != nil {
+	if err := hn.Cmd.Start(); err != nil {
 		return err
 	}
 
 	// Launch a new goroutine which that bubbles up any potential fatal
 	// process errors to the goroutine running the tests.
-	hn.processExit = make(chan struct{})
+	hn.ProcessExit = make(chan struct{})
 	go func() {
-		err := hn.cmd.Wait()
+		err := hn.Cmd.Wait()
 
 		if err != nil {
 			lndError <- errors.Errorf("%v\n%v\n", err, errb.String())
 		}
 
 		// Signal any onlookers that this process has exited.
-		close(hn.processExit)
+		close(hn.ProcessExit)
 
 		// Make sure log file is closed.
 		finalizeLogfile()
@@ -296,7 +295,7 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 
 	// Write process ID to a file.
 	if err := hn.writePidFile(); err != nil {
-		hn.cmd.Process.Kill()
+		hn.Cmd.Process.Kill()
 		return err
 	}
 
@@ -305,7 +304,7 @@ func (hn *HarnessNode) start(lndError chan<- error) error {
 	useMacaroons := !hn.Cfg.HasSeed
 	conn, err := hn.ConnectRPC(useMacaroons)
 	if err != nil {
-		hn.cmd.Process.Kill()
+		hn.Cmd.Process.Kill()
 		return err
 	}
 
@@ -415,7 +414,7 @@ func (hn *HarnessNode) writePidFile() error {
 	}
 	defer pid.Close()
 
-	_, err = fmt.Fprintf(pid, "%v\n", hn.cmd.Process.Pid)
+	_, err = fmt.Fprintf(pid, "%v\n", hn.Cmd.Process.Pid)
 	if err != nil {
 		return err
 	}
@@ -494,11 +493,11 @@ func (hn *HarnessNode) cleanup() error {
 // Stop attempts to stop the active lnd process.
 func (hn *HarnessNode) stop() error {
 	// Do nothing if the process is not running.
-	if hn.processExit == nil {
+	if hn.ProcessExit == nil {
 		return nil
 	}
 
-	// If start() failed before creating a client, we will just wait for the
+	// If Start() failed before creating a client, we will just wait for the
 	// child process to die.
 	if hn.LightningClient != nil {
 		// Don't watch for error because sometimes the RPC connection gets
@@ -510,7 +509,7 @@ func (hn *HarnessNode) stop() error {
 
 	// Wait for lnd process and other goroutines to exit.
 	select {
-	case <-hn.processExit:
+	case <-hn.ProcessExit:
 	case <-time.After(60 * time.Second):
 		return fmt.Errorf("process did not exit")
 	}
@@ -519,7 +518,7 @@ func (hn *HarnessNode) stop() error {
 	hn.wg.Wait()
 
 	hn.quit = nil
-	hn.processExit = nil
+	hn.ProcessExit = nil
 	hn.LightningClient = nil
 	hn.WalletUnlockerClient = nil
 	return nil

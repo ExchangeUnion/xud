@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
@@ -22,11 +23,16 @@ var instabilityTestCases = []*testCase{
 		test: testMakerCrashedAfterSend,
 	},
 	{
+		name: "maker lnd crashed before order settlement", // replacing Alice
+		test: testMakerLndCrashedBeforeSettlement,
+	},
+	{
 		name: "maker crashed after send payment with delayed settlement", // replacing Alice + Bob
 		test: testMakerCrashedAfterSendDelayedSettlement,
 	},
 }
 
+// testMakerLndCrashedBeforeSettlement
 func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "instability", []string{"BREAKSWAP=MAKER_CRASH_AFTER_SEND"})
@@ -135,6 +141,66 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 	time.Sleep(10 * time.Second)
 
 	// Verify that alice received her LTC
+	aliceBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	aliceLtcBalance := aliceBalance.ltc.channel.GetBalance()
+	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not recover LTC funds")
+}
+
+func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
+	var err error
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "instability", []string{
+		"BREAKSWAP=MAKER_LND_CRASHED_BEFORE_SETTLE",
+		fmt.Sprintf("LNDLTC_PID=%d", net.Alice.LndLtcNode.Cmd.Process.Pid),
+	})
+	ht.assert.NoError(err)
+	ht.act.init(net.Alice)
+
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	// Save the initial balance.
+	alicePrevBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	alicePrevLtcBalance := alicePrevBalance.ltc.channel.GetBalance()
+
+	// Place an order on Alice.
+	aliceOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    0.02,
+		Quantity: uint64(ltcQuantity),
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
+
+	// Place a matching order on Bob.
+	bobOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    aliceOrderReq.Price,
+		Quantity: aliceOrderReq.Quantity,
+		PairId:   aliceOrderReq.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	go net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
+
+	// Alice's lnd-ltc is expected to be killed by Alice's custom xud.
+	<-net.Alice.LndLtcNode.ProcessExit
+
+	// Wait a bit so that Alice's call to lnd-ltc for settlement would fail.
+	time.Sleep(5 * time.Second)
+
+	// Restart Alice's lnd-ltc.
+	err = net.Alice.LndLtcNode.Start(nil)
+	ht.assert.NoError(err)
+
+	// Brief delay to allow for swap to be recovered consistently.
+	// The pending swap recheck interval is usually 5m, but was adjusted in
+	// Alice's custom xud to 5s (as well as the swap completion timeout interval).
+	time.Sleep(10 * time.Second)
+
+	// Verify that alice received her LTC.
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
 	ht.assert.NoError(err)
 	aliceLtcBalance := aliceBalance.ltc.channel.GetBalance()
