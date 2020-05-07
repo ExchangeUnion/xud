@@ -20,7 +20,7 @@ jobs:
         - docker
       script:
         - npm run test:sim:build
-        - npm run test:sim:run:integration
+        - npm run test:sim:run
       after_failure:
         - npm run test:sim:logs
     - name: test:seedutil

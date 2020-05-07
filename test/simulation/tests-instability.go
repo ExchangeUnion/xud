@@ -149,8 +149,8 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "instability", []string{
-		"BREAKSWAP=MAKER_LND_CRASHED_BEFORE_SETTLE",
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
+		"CUSTOM_SCENARIO=INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE",
 		fmt.Sprintf("LNDLTC_PID=%d", net.Alice.LndLtcNode.Cmd.Process.Pid),
 	})
 	ht.assert.NoError(err)
