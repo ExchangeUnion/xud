@@ -27,7 +27,6 @@ type ChannelConfig = {
   currency: string;
   channelAmount: number;
   minChannelAmount: number;
-  minWalletAmount: number;
 };
 
 const processResponse = (resolve: Function, reject: Function) => {
@@ -61,7 +60,7 @@ const openConnextChannel = async (client: XudClient, currency: string, amount: n
   return openChannelResponse as OpenChannelResponse;
 };
 
-const checkBalanceObservable = (client: XudClient, currency: string, minimumWalletBalance: number): Observable<Balances> => {
+const checkBalanceObservable = (client: XudClient, currency: string, minimumBalance: number): Observable<Balances> => {
   return from(
     getBalance(client, currency),
   ).pipe(
@@ -74,7 +73,7 @@ const checkBalanceObservable = (client: XudClient, currency: string, minimumWall
       };
     }),
     mergeMap((balances) => {
-      if (balances.walletBalance < minimumWalletBalance) {
+      if (balances.walletBalance < minimumBalance) {
         // the balance is under our specified threshold
         // we'll hit the faucet with our connext address
         // and then recheck the balance
@@ -83,7 +82,7 @@ const checkBalanceObservable = (client: XudClient, currency: string, minimumWall
             return from(faucetRequest(connextAddress)).pipe(
               // we wait 31 seconds (~2 blocks) before checking the balance again
               delay(31000),
-              mergeMap(() => checkBalanceObservable(client, currency, minimumWalletBalance)),
+              mergeMap(() => checkBalanceObservable(client, currency, minimumBalance)),
             );
           }),
         );
@@ -159,13 +158,13 @@ const faucetRequest = (connextAddress: string) => {
 };
 
 const createSimnetChannel = (
-  { currency, minChannelAmount, channelAmount, minWalletAmount, retryInterval }:
-  { currency: string, minChannelAmount: number, channelAmount: number, minWalletAmount: number, retryInterval: number },
+  { currency, minChannelAmount, channelAmount, retryInterval }:
+  { currency: string, minChannelAmount: number, channelAmount: number, retryInterval: number },
 ) => {
   const client$ = from(loadXudClient({}));
   const balances$ = client$.pipe(
     // once we have the client we'll attempt to check the balances
-    mergeMap(client => checkBalanceObservable(client, currency, minWalletAmount)),
+    mergeMap(client => checkBalanceObservable(client, currency, channelAmount)),
   );
   const simnetChannel$ = combineLatest(balances$, client$)
     .pipe(
