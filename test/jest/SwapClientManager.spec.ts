@@ -128,6 +128,7 @@ describe('Swaps.SwapClientManager', () => {
     };
     config.debug = {
       raidenDirectChannelChecks: true,
+      testing: false,
     };
     db = new DB(loggers.db, config.dbpath);
     unitConverter = new UnitConverter();

@@ -95,18 +95,20 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** Points to config comes during construction. */
   private config: PoolConfig;
+  private testing: boolean;
   private repository: P2PRepository;
   private network: Network;
   private logger: Logger;
   private nodeKey: NodeKey;
 
-  constructor({ config, xuNetwork, logger, models, nodeKey, version }: {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version, testing = false }: {
     config: PoolConfig,
     xuNetwork: XuNetwork,
     logger: Logger,
     models: Models,
     nodeKey: NodeKey,
     version: string,
+    testing?: boolean,
   }) {
     super();
 
@@ -116,6 +118,7 @@ class Pool extends EventEmitter {
     this.alias = getAlias(nodeKey.pubKey);
     this.version = version;
     this.config = config;
+    this.testing = testing;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
@@ -913,6 +916,10 @@ class Pool extends EventEmitter {
     peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
+        if (this.testing && event !== ReputationEvent.ManualBan && event !== ReputationEvent.ManualUnban) {
+          // we don't add non-manual reputation events when in debug/testing mode to preven unintentional bans
+          return;
+        }
         await this.addReputationEvent(peer.nodePubKey, event);
       }
     });
