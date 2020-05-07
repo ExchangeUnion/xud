@@ -13,5 +13,12 @@ ENV WD=/app
 WORKDIR $WD
 
 # copy xud and install dependencies
-COPY xud .
-RUN . $NVM_DIR/nvm.sh && npm i
+COPY xud ./xud
+RUN . $NVM_DIR/nvm.sh && cd xud && npm i
+
+# copy custom-xud and use xud's installed dependencies
+COPY custom-xud ./custom-xud
+RUN cp -R ./xud/node_modules ./custom-xud/node_modules
+
+
+

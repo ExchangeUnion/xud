@@ -35,7 +35,7 @@ var instabilityTestCases = []*testCase{
 // testMakerLndCrashedBeforeSettlement
 func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "instability", []string{"BREAKSWAP=MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -87,10 +87,10 @@ func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 
 func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, "instability", []string{"BREAKSWAP=MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
 	ht.assert.NoError(err)
 
-	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, "instability", []string{"BREAKSWAP=TAKER_DELAY_BEFORE_SETTLE"})
+	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, []string{"CUSTOM_SCENARIO=INSTABILITY::TAKER_DELAY_BEFORE_SETTLE"})
 	ht.assert.NoError(err)
 
 	ht.act.init(net.Alice)
