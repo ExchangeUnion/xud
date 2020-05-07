@@ -44,7 +44,7 @@ index 672d6159..05c5043b 100644
      this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
        try {
 -        const rPreimage = await this.resolveHash(rHash, amount, currency);
--        await swapClient.settleInvoice(rHash, rPreimage);
+-        await swapClient.settleInvoice(rHash, rPreimage, currency);
 +        const rPreimage = await this.resolveHash(rHash, amount, currency)
 +        if (rPreimage === '') {
 +          this.logger.info('NOT SETTLING INVOICE');
@@ -66,7 +66,7 @@ index 672d6159..05c5043b 100644
 +        }
 +
 +        this.logger.info('SETTLING INVOICE');
-+        await swapClient.settleInvoice(rHash, rPreimage);
++        await swapClient.settleInvoice(rHash, rPreimage, currency);
 +
          if (deal) {
            await this.setDealPhase(deal, SwapPhase.PaymentReceived);
