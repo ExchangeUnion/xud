@@ -1,10 +1,10 @@
-import { Arguments } from 'yargs';
-import { callback, loadXudClient } from '../command';
-import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { satsToCoinsStr } from '../utils';
+import { Arguments, Argv } from 'yargs';
 import { Owner } from '../../constants/enums';
+import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
+import { callback, loadXudClient } from '../command';
+import { satsToCoinsStr } from '../utils';
 
 type FormattedTradingPairOrders = {
   pairId: string,
@@ -82,30 +82,36 @@ export const command = 'listorders [pair_id] [owner] [limit]';
 
 export const describe = 'list orders from the order book';
 
-export const builder = {
-  pair_id: {
+export const builder = (argv: Argv) => argv
+  .option('pair_id', {
     describe: 'trading pair for which to retrieve orders',
     type: 'string',
-  },
-  owner: {
+  })
+  .option('owner', {
     describe: 'whether to include own, peer or both orders',
     type: 'string',
     choices: ['Both', 'Own', 'Peer'],
     default: 'Both',
-  },
-  limit: {
-    describe: 'max number of orders to return',
+  })
+  .option('limit', {
+    describe: 'max number of orders to return per order book side',
     type: 'number',
-    default: 0,
-  },
-};
+  })
+  .example('$0 listorders', 'list all known orders')
+  .example('$0 listorders LTC/BTC', 'list all LTC/BTC orders')
+  .example('$0 listorders LTC/BTC Peer', 'list all LTC/BTC orders from peers')
+  .example('$0 listorders LTC/BTC Peer 10', 'list the 10 best LTC/BTC orders from peers')
+  .example('$0 listorders --owner Own', 'list all local orders')
+  .example('$0 listorders --limit 10', 'list the 10 best orders for all trading pairs');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new ListOrdersRequest();
   const pairId = argv.pair_id ? argv.pair_id.toUpperCase() : undefined;
   request.setPairId(pairId);
   request.setOwner(Number(Owner[argv.owner]));
-  request.setLimit(argv.limit);
+  if (argv.limit) {
+    request.setLimit(argv.limit);
+  }
   request.setIncludeAliases(true);
   (await loadXudClient(argv)).listOrders(request, callback(argv, displayTables));
 };

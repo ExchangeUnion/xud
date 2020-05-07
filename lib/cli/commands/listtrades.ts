@@ -1,8 +1,8 @@
-import { Arguments } from 'yargs';
-import { callback, loadXudClient } from '../command';
-import { ListTradesRequest, ListTradesResponse, Trade } from '../../proto/xudrpc_pb';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { Arguments, Argv } from 'yargs';
+import { ListTradesRequest, ListTradesResponse, Trade } from '../../proto/xudrpc_pb';
+import { callback, loadXudClient } from '../command';
 import { satsToCoinsStr } from '../utils';
 
 const HEADERS = [
@@ -38,13 +38,14 @@ export const command = 'listtrades [limit]';
 
 export const describe = 'list completed trades';
 
-export const builder = {
-  limit: {
+export const builder = (argv: Argv) => argv
+  .option('limit', {
     description: 'the maximum number of trades to display',
     type: 'number',
     default: 15,
-  },
-};
+  })
+  .example('$0 listtrades', 'list most recent trades')
+  .example('$0 listtrades 50', 'list the 50 most recent trades');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new ListTradesRequest();
