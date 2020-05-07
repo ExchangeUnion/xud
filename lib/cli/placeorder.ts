@@ -134,7 +134,7 @@ const formatInternalMatch = (order: Order.AsObject) => {
 
 const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
   const baseCurrency = getBaseCurrency(swapSuccess.pairId);
-  console.log(`swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
+  console.log(`successfully swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
 };
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
