@@ -819,7 +819,8 @@ class Pool extends EventEmitter {
         break;
       }
       case PacketType.SwapFailed: {
-        this.logger.debug(`received swapFailed from ${peer.label}: ${JSON.stringify(packet.body)}`);
+        const { body } = (packet as packets.SwapFailedPacket);
+        this.logger.debug(`received swapFailed due to ${body?.failureReason} from ${peer.label}: ${JSON.stringify(body)}`);
         this.emit('packet.swapFailed', packet);
         break;
       }
