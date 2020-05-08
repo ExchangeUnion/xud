@@ -15,7 +15,6 @@ const errorCodes = {
   CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS: codesPrefix.concat('.11'),
   INSUFFICIENT_OUTBOUND_BALANCE: codesPrefix.concat('.12'),
   MIN_QUANTITY_VIOLATED: codesPrefix.concat('.13'),
-  EXCEEDING_LIMIT: codesPrefix.concat('.14'),
   QUANTITY_ON_HOLD: codesPrefix.concat('.15'),
 };
 
@@ -71,10 +70,6 @@ const errors = {
   MIN_QUANTITY_VIOLATED: (id: string) => ({
     message: `order ${id} has surpassed the minimum quantity`,
     code: errorCodes.MIN_QUANTITY_VIOLATED,
-  }),
-  EXCEEDING_LIMIT: (currency: string, amount: number, limit: number) => ({
-    message: `order amount ${amount} is exceeding limit of ${limit} set for ${currency}`,
-    code: errorCodes.EXCEEDING_LIMIT,
   }),
   QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
     message: `order with local id ${localId} has a quantity of ${holdQuantity} on hold`,
