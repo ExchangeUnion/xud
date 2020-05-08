@@ -29,7 +29,7 @@ const deal: SwapDeal = {
   peerPubKey,
   rHash,
   role: SwapRole.Maker,
-  phase: SwapPhase.SwapCompleted,
+  phase: SwapPhase.PaymentReceived,
   state: SwapState.Completed,
   orderId: order.id,
   localId: order.localId,

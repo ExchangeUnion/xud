@@ -1,8 +1,8 @@
 diff --git a/lib/Xud.ts b/lib/Xud.ts
-index bfdb2e34..a859f051 100644
+index 810345d90..9585a2761 100644
 --- a/lib/Xud.ts
 +++ b/lib/Xud.ts
-@@ -83,6 +83,11 @@ class Xud extends EventEmitter {
+@@ -87,6 +87,11 @@ class Xud extends EventEmitter {
        this.logger.info('config file loaded');
      }
  
@@ -15,7 +15,7 @@ index bfdb2e34..a859f051 100644
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
-index f8cce222..eb3be0bb 100644
+index f077b3ca4..7398a97b4 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
 @@ -21,7 +21,15 @@ class SwapRecovery {
@@ -36,16 +36,14 @@ index f8cce222..eb3be0bb 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index 672d6159..05c5043b 100644
+index fd7024fa2..d469ce7ac 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
-@@ -202,13 +202,32 @@ class Swaps extends EventEmitter {
- 
+@@ -205,9 +205,28 @@ class Swaps extends EventEmitter {
      this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
        try {
--        const rPreimage = await this.resolveHash(rHash, amount, currency);
+         const rPreimage = await this.resolveHash(rHash, amount, currency);
 -        await swapClient.settleInvoice(rHash, rPreimage, currency);
-+        const rPreimage = await this.resolveHash(rHash, amount, currency)
 +        if (rPreimage === '') {
 +          this.logger.info('NOT SETTLING INVOICE');
 +          return;
@@ -70,11 +68,8 @@ index 672d6159..05c5043b 100644
 +
          if (deal) {
            await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-           // TODO: refactor the codebase so that setting
-           // SwapPhase.SwapCompleted is not necessary
-           await this.setDealPhase(deal, SwapPhase.SwapCompleted);
          }
-@@ -543,7 +562,12 @@ class Swaps extends EventEmitter {
+@@ -546,7 +565,12 @@ class Swaps extends EventEmitter {
        createTime: Date.now(),
      };
  
@@ -88,7 +83,7 @@ index 672d6159..05c5043b 100644
  
      // add the deal. Going forward we can "record" errors related to this deal.
      this.addDeal(deal);
-@@ -671,6 +695,16 @@ class Swaps extends EventEmitter {
+@@ -679,6 +703,16 @@ class Swaps extends EventEmitter {
     * accepted, initiates the swap.
     */
    private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
@@ -105,7 +100,7 @@ index 672d6159..05c5043b 100644
      assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
      const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
      const deal = this.getDeal(rHash);
-@@ -745,6 +779,11 @@ class Swaps extends EventEmitter {
+@@ -758,6 +792,11 @@ class Swaps extends EventEmitter {
  
      try {
        await makerSwapClient.sendPayment(deal);
@@ -117,7 +112,7 @@ index 672d6159..05c5043b 100644
      } catch (err) {
        if (err.code === errorCodes.PAYMENT_REJECTED) {
          // if the maker rejected our payment, the swap failed due to an error on their side
-@@ -927,12 +966,29 @@ class Swaps extends EventEmitter {
+@@ -933,12 +972,29 @@ class Swaps extends EventEmitter {
  
        this.logger.debug('Executing maker code to resolve hash');
  
@@ -135,7 +130,7 @@ index 672d6159..05c5043b 100644
  
        // we update the phase persist the deal to the database before we attempt to send payment
        await this.setDealPhase(deal, SwapPhase.SendingPayment);
-
+ 
        try {
 +        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
 +          setTimeout(() => {
@@ -147,7 +142,7 @@ index 672d6159..05c5043b 100644
          deal.rPreimage = await swapClient.sendPayment(deal);
          return deal.rPreimage;
        } catch (err) {
-@@ -962,6 +1018,16 @@ class Swaps extends EventEmitter {
+@@ -968,6 +1024,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
  

@@ -140,8 +140,6 @@ Adversarial test cases pit a modified version of `xud` against a standard one to
 - [x] Maker becomes unresponsive after taker set up first HTLC to the maker (to be fixed: <https://github.com/ExchangeUnion/xud/issues/1048>).
 - [x] Taker becomes unresponsive after maker set up second HTLC to taker (before invoice is settled) (to be fixed: <https://github.com/ExchangeUnion/xud/issues/1049>).
 - [ ] Maker becomes unresponsive after maker set up second HTLC to taker (before invoice is settled).
-- [x] Taker becomes unresponsive after releasing the preimage (maker doesn't get `SwapCompletedPacket`).
-- [ ] Maker becomes unresponsive after the taker released the preimage (maker doesn't get `SwapCompletedPacket`) (to be fixed: <https://github.com/ExchangeUnion/xud/issues/1050>).
 - [ ] Taker becomes unresponsive after the maker released preimage for first payment.
 
 ### Swap partners close channels
@@ -152,8 +150,6 @@ Adversarial test cases pit a modified version of `xud` against a standard one to
 - [ ] Maker force-closes/cooperatively closes channel after taker set up first HTLC to the maker.
 - [ ] Taker force-closes/cooperatively closes channel after maker set up second HTLC to taker (before settling invoice).
 - [ ] Maker force-closes/cooperatively closes channel after maker set up second HTLC to taker (before settling invoice).
-- [ ] Taker force-closes/cooperatively closes channel after preimage release (maker doesn't get `SwapCompletedPacket`).
-- [ ] Maker force-closes/cooperatively closes channel after preimage release (maker doesn't get `SwapCompletedPacket`).
 - [ ] Taker force-closes/cooperatively closes channel after the maker released preimage for first payment.
 
 ### Change currency ticker/token address (after https://github.com/ExchangeUnion/xud/issues/910 is merged)
@@ -168,7 +164,6 @@ Adversarial test cases pit a modified version of `xud` against a standard one to
 - [ ] Taker changes currency in p2p messages after taker set up first HTLC to the maker.
 - [ ] Taker changes currency in p2p messages after maker set up second HTLC to the maker.
 - [ ] Maker changes currency in p2p messages after maker set up second HTLC to the maker.
-- [ ] Taker changes currency in p2p message after preimage release (in `SwapCompletedPacket`).
 
 ### Other potential categories of tests
 

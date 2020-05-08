@@ -91,11 +91,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 

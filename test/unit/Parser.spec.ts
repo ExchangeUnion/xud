@@ -346,13 +346,6 @@ describe('Parser', () => {
     testInvalidPacket(new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: undefined })));
     testInvalidPacket(new packets.SwapAcceptedPacket(removeUndefinedProps({ ...swapAcceptedPacketBody, makerCltvDelta: 0 })));
 
-    const swapCompletePacketBody = {
-      rHash,
-    };
-    testValidPacket(new packets.SwapCompletePacket(swapCompletePacketBody));
-    testInvalidPacket(new packets.SwapCompletePacket(swapCompletePacketBody, uuid()));
-    testInvalidPacket(new packets.SwapCompletePacket(removeUndefinedProps({ ...swapCompletePacketBody, rHash: undefined })));
-
     const swapFailedPacketBody = {
       rHash,
       errorMessage: 'this is a test',

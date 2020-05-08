@@ -41,7 +41,6 @@ interface Pool {
   on(event: 'packet.sanitySwapInit', listener: (packet: packets.SanitySwapInitPacket, peer: Peer) => void): this;
   on(event: 'packet.swapRequest', listener: (packet: packets.SwapRequestPacket, peer: Peer) => void): this;
   on(event: 'packet.swapAccepted', listener: (packet: packets.SwapAcceptedPacket, peer: Peer) => void): this;
-  on(event: 'packet.swapComplete', listener: (packet: packets.SwapCompletePacket) => void): this;
   on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
@@ -56,7 +55,6 @@ interface Pool {
   emit(event: 'packet.sanitySwapInit', packet: packets.SanitySwapInitPacket, peer: Peer): boolean;
   emit(event: 'packet.swapRequest', packet: packets.SwapRequestPacket, peer: Peer): boolean;
   emit(event: 'packet.swapAccepted', packet: packets.SwapAcceptedPacket, peer: Peer): boolean;
-  emit(event: 'packet.swapComplete', packet: packets.SwapCompletePacket): boolean;
   emit(event: 'packet.swapFailed', packet: packets.SwapFailedPacket): boolean;
 }
 
@@ -811,11 +809,6 @@ class Pool extends EventEmitter {
       case PacketType.SwapAccepted: {
         this.logger.debug(`received swapAccepted from ${peer.label}: ${JSON.stringify(packet.body)}`);
         this.emit('packet.swapAccepted', packet, peer);
-        break;
-      }
-      case PacketType.SwapComplete: {
-        this.logger.debug(`received swapComplete from ${peer.label}: ${JSON.stringify(packet.body)}`);
-        this.emit('packet.swapComplete', packet);
         break;
       }
       case PacketType.SwapFailed: {
