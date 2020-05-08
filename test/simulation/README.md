@@ -62,6 +62,8 @@ To modify the patch, one should first apply it to the current working tree (it i
 npm run test:sim:custom-xud:apply
 ```
 
+If the patch cannot be applied cleanly, it will create `.rej` files in the same directory as any files which were not able to be patched. You will need to go through and manually apply (or discard) the changes that could not be automatically applied.
+
 To reverse the applied patch, and restore previous working tree state:
 
 ```bash
