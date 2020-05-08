@@ -140,39 +140,30 @@ class ConnextClient extends SwapClient {
 
   private onTransferReceived = (transferReceivedRequest: TransferReceivedEvent) => {
     const {
-        tokenAddress,
-        units,
-        timelock,
-        rHash,
-      } = transferReceivedRequest;
+      tokenAddress,
+      units,
+      timelock,
+      rHash,
+    } = transferReceivedRequest;
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer with rHash ${rHash}`);
+      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}`);
       return;
     }
     const {
-        rHash: expectedHash,
-        units: expectedUnits,
-        expiry: expectedTimelock,
-        tokenAddress: expectedTokenAddress,
-      } = expectedIncomingTransfer;
+      units: expectedUnits,
+      expiry: expectedTimelock,
+      tokenAddress: expectedTokenAddress,
+    } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
     if (
-        units === expectedUnits &&
-        rHash === expectedHash &&
-        timelock === expectedTimelock &&
-        tokenAddress === expectedTokenAddress
-      ) {
+      tokenAddress === expectedTokenAddress &&
+      units === expectedUnits &&
+      timelock === expectedTimelock
+    ) {
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
       this.emit('htlcAccepted', rHash, units, currency);
       this.expectedIncomingTransfers.delete(rHash);
-    } else {
-      this.logger.error(`ignoring received pending transfer because it does not meet the requirements -
-        expectedUnits: ${expectedUnits} actualUnits: ${units},
-        expectedHash: ${expectedHash} actualHash: ${rHash},
-        expectedTokenAddress: ${expectedTokenAddress} actualTokenAddress: ${tokenAddress},
-        expectedTimeLock: ${expectedTimelock} actualTimelock: ${timelock}`,
-      );
     }
   }
 
@@ -313,18 +304,18 @@ class ConnextClient extends SwapClient {
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
-    let amount: number;
+    let amount: string;
     let tokenAddress: string;
     let lockTimeout: number | undefined;
     try {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits;
+        amount = BigInt(deal.takerUnits).toString();
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const executeTransfer = this.executeHashLockTransfer({
+          amount,
           assetId: tokenAddress,
-          amount: `${amount}`,
           timelock: deal.takerCltvDelta.toString(),
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
@@ -337,13 +328,13 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits;
+        amount = BigInt(deal.makerUnits).toString();
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
         secret = deal.rPreimage!;
         const executeTransfer = this.executeHashLockTransfer({
+          amount,
           assetId: tokenAddress,
-          amount: `${amount}`,
           timelock: lockTimeout.toString(),
           lockHash: `0x${deal.rHash}`,
           recipient: deal.destination!,
@@ -563,7 +554,7 @@ class ConnextClient extends SwapClient {
     const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/deposit', 'POST', {
       assetId,
-      amount: units.toString(),
+      amount: BigInt(units).toString(),
     });
   }
 
@@ -600,8 +591,8 @@ class ConnextClient extends SwapClient {
     amount: number,
   ): Promise<void> => {
     await this.sendRequest('/hashlock-transfer', 'POST', {
-      amount,
       assetId,
+      amount: BigInt(amount).toString(),
     });
   }
 
