@@ -48,7 +48,7 @@
     "test:sim:run:security": "(cd test/simulation && ./docker-run.sh TestSecurity)",
     "test:sim:compile:xud": "(npm run compile && mkdir -p test/simulation/docker-xud/xud && cp -a dist test/simulation/docker-xud/xud && cp -a bin test/simulation/docker-xud/xud && cp package.json test/simulation/docker-xud/xud)",
     "test:sim:compile:custom-xud": "(npm run test:sim:custom-xud:apply && npm run compile && mkdir -p test/simulation/docker-xud/custom-xud/dist && npm run test:sim:custom-xud:reverse && cp -a dist test/simulation/docker-xud/custom-xud && cp -a bin test/simulation/docker-xud/custom-xud && cp package.json test/simulation/docker-xud/custom-xud)",
-    "test:sim:custom-xud:patch": "git diff > test/simulation/custom-xud.patch",
+    "test:sim:custom-xud:patch": "git diff -- . ':(exclude)test/simulation/custom-xud.patch' > test/simulation/custom-xud.patch",
     "test:sim:custom-xud:apply": "git apply test/simulation/custom-xud.patch",
     "test:sim:custom-xud:reverse": "git apply -R test/simulation/custom-xud.patch",
     "test:sim:clean": "(cd test/simulation && ./docker-clean.sh)",
