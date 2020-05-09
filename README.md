@@ -8,7 +8,7 @@
 
 ![xud logo](logo.png)
 
-The Exchange Union Daemon ([`xud`](https://github.com/ExchangeUnion/xud)) is the reference node implementation powering [OpenDEX](https://opendex.network), a decentralized exchange (DEX) built on top of the [Lightning](https://lightning.network/) and [Raiden](https://raiden.network/) network. `xud` brings individual traders, market makers and exchanges onto OpenDEX to form a single global trading network and liquidity pool.
+The Exchange Union Daemon ([`xud`](https://github.com/ExchangeUnion/xud)) is the reference implementation powering [OpenDEX](https://opendex.network), a decentralized exchange built on top of the [Lightning](https://lightning.network/) and [Connext](https://connext.network/) network. `xud` brings individual traders, market makers and exchanges onto OpenDEX to form a single global trading network and liquidity pool.
 
 Get started trading 👉 [here](https://docs.exchangeunion.com/start-trading/user-guide) 👈
 
@@ -22,7 +22,7 @@ Basis of L3 DEX. The naming is intentionally derived from [BOLT](https://github.
 
 `xud` encompasses the following components:
 
-* Integration with [lnd](https://github.com/lightningnetwork/lnd) and [raiden](https://github.com/raiden-network/raiden) nodes.
+* Integration with [lnd](https://github.com/lightningnetwork/lnd) and [connext](https://github.com/connext/rest-api-client) clients.
 * Decentralized order book to locally aggregate orders from the known network.
 * Matching engine to match new local orders with existing local and remote orders and initiate atomic swaps with remote peers.
 * Peer-to-peer networking with and discovery of other nodes.
