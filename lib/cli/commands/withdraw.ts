@@ -1,33 +1,35 @@
-import { Arguments } from 'yargs';
+import { Arguments, Argv } from 'yargs';
 import { WithdrawRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 
-export const command = 'withdraw <amount> <currency> <destination> [fee]';
+export const command = 'withdraw [amount] [currency] [destination] [fee]';
 
 export const describe = 'withdraws on-chain funds from xud';
 
-export const builder = {
-  amount: {
+export const builder = (argv: Argv) => argv
+  .option('amount', {
     description: 'the amount to withdraw',
     type: 'number',
-  },
-  currency: {
+  })
+  .option('currency', {
     description: 'the ticker symbol of the currency to withdraw.',
     type: 'string',
-  },
-  destination: {
+  })
+  .option('destination', {
     description: 'the address to send withdrawn funds to',
     type: 'string',
-  },
-  fee: {
+  })
+  .option('fee', {
     description: 'the fee in satoshis (or equivalent) per byte',
     type: 'number',
-  },
-  all: {
-    description: 'whether to withdraw all available funds for the specified currency',
+  })
+  .option('all', {
+    description: 'whether to withdraw all available funds',
     type: 'boolean',
-  },
-};
+  })
+  .example('$0 withdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
+  .example('$0 withdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20', 'withdraws 0.1 BTC using 20 sats/byte')
+  .example('$0 withdraw --all --currency BTC --address 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();

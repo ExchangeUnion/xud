@@ -6,15 +6,15 @@ import { checkDecimalPlaces } from '../utils/utils';
 
 export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   const command = side === OrderSide.BUY ? 'buy' : 'sell';
-  argv.option('quantity', {
+  argv.positional('quantity', {
     type: 'number',
     describe: 'the quantity to trade',
   })
-  .option('pair_id', {
+  .positional('pair_id', {
     type: 'string',
     describe: 'the trading pair ticker id for the order',
   })
-  .option('price', {
+  .positional('price', {
     type: 'string',
     describe: 'the price for limit orders, or "mkt"/"market" for market orders',
   })

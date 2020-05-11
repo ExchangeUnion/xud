@@ -1,19 +1,18 @@
-import { loadXudClient } from '../command';
-import { Arguments } from 'yargs';
-import * as xudrpc from '../../proto/xudrpc_pb';
+import { Arguments, Argv } from 'yargs';
 import { XudClient } from '../../proto/xudrpc_grpc_pb';
+import * as xudrpc from '../../proto/xudrpc_pb';
+import { loadXudClient } from '../command';
 
 export const command = 'streamorders [existing]';
 
 export const describe = 'stream order added, removed, and swapped events (DEMO)';
 
-export const builder = {
-  existing: {
+export const builder = (argv: Argv) => argv
+  .option('existing', {
     description: 'whether to return existing orders',
     type: 'boolean',
     default: true,
-  },
-};
+  });
 
 export const handler = async (argv: Arguments) => {
   await ensureConnection(argv, true);

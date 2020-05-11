@@ -1,9 +1,9 @@
-import { callback, loadXudClient } from '../command';
-import { Arguments } from 'yargs';
-import { GetBalanceRequest, GetBalanceResponse } from '../../proto/xudrpc_pb';
-import { satsToCoinsStr } from '../utils';
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
+import { Arguments, Argv } from 'yargs';
+import { GetBalanceRequest, GetBalanceResponse } from '../../proto/xudrpc_pb';
+import { callback, loadXudClient } from '../command';
+import { satsToCoinsStr } from '../utils';
 
 const HEADERS = [
   colors.blue('Currency'),
@@ -63,12 +63,13 @@ export const command = 'getbalance [currency]';
 
 export const describe = 'get total balance for a given currency';
 
-export const builder = {
-  currency: {
+export const builder = (argv: Argv) => argv
+  .option('currency', {
     describe: 'the currency to query for',
     type: 'string',
-  },
-};
+  })
+  .example('$0 getbalance', 'get balance for all currencies')
+  .example('$0 getbalance BTC', 'get BTC balance');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new GetBalanceRequest();

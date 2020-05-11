@@ -1,6 +1,6 @@
 import Table, { HorizontalTable } from 'cli-table3';
 import colors from 'colors/safe';
-import { Arguments } from 'yargs';
+import { Arguments, Argv } from 'yargs';
 import { Owner } from '../../constants/enums';
 import { ListOrdersRequest, ListOrdersResponse, Order } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
@@ -145,17 +145,20 @@ export const command = 'orderbook [pair_id] [precision]';
 
 export const describe = 'display the order book, with orders aggregated per price point';
 
-export const builder = {
-  pair_id: {
+export const builder = (argv: Argv) => argv
+  .option('pair_id', {
     describe: 'trading pair for which to retrieve the order book',
     type: 'string',
-  },
-  precision: {
+  })
+  .option('precision', {
     describe: 'the number of digits following the decimal point',
     type: 'number',
     default: 8,
-  },
-};
+  })
+  .example('$0 orderbook', 'display the order books for all trading pairs')
+  .example('$0 orderbook LTC/BTC', 'display the LTC/BTC order book')
+  .example('$0 orderbook LTC/BTC 2', 'display the LTC/BTC order book with 2 decimal precision')
+  .example('$0 orderbook --precision 2', 'display the order books for all trading pairs with 2 decimal precision');
 
 const displayJson = (orders: ListOrdersResponse.AsObject, argv: Arguments<any>) => {
   const jsonOrderbooks: OrderbookJson[] = [];
