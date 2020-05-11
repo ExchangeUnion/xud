@@ -1,8 +1,7 @@
 import assert from 'assert';
 import { EventEmitter } from 'events';
 import uuidv1 from 'uuid/v1';
-import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, XuNetwork } from '../constants/enums';
-import { limits, maxLimits } from '../constants/limits';
+import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
 import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
 import Logger from '../Logger';
@@ -75,7 +74,6 @@ class OrderBook extends EventEmitter {
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
   private testing: boolean;
-  private maxlimits: boolean;
   private pool: Pool;
   private swaps: Swaps;
 
@@ -93,7 +91,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, maxlimits = false, testing = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, testing = false }:
   {
     logger: Logger,
     models: Models,
@@ -103,7 +101,6 @@ class OrderBook extends EventEmitter {
     nosanityswaps: boolean,
     nobalancechecks: boolean,
     nomatching?: boolean,
-    maxlimits?: boolean,
     testing?: boolean,
   }) {
     super();
@@ -114,7 +111,6 @@ class OrderBook extends EventEmitter {
     this.nomatching = nomatching;
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
-    this.maxlimits = maxlimits;
     this.thresholds = thresholds;
     this.testing = testing;
 
@@ -389,7 +385,7 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+    const { outboundCurrency, inboundCurrency, outboundAmount } =
         Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
     const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
     const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
@@ -408,28 +404,6 @@ class OrderBook extends EventEmitter {
       if (outboundAmount > totalOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
       }
-    }
-
-    // check if order abides by limits
-    let outboundCurrencyLimit: number;
-    let inboundCurrencyLimit: number;
-
-    if (this.pool.getNetwork() === XuNetwork.MainNet && !this.maxlimits) {
-      // if we're on mainnet and we haven't specified that we're using maximum limits
-      // then use the hardcoded mainnet order size limits
-      outboundCurrencyLimit = limits[outboundCurrency];
-      inboundCurrencyLimit = limits[inboundCurrency];
-    } else {
-      // otherwise use the maximum channel sizes as order size limits
-      outboundCurrencyLimit = maxLimits[outboundCurrency];
-      inboundCurrencyLimit = maxLimits[inboundCurrency];
-    }
-
-    if (outboundCurrencyLimit && outboundAmount > outboundCurrencyLimit) {
-      throw errors.EXCEEDING_LIMIT(outboundCurrency, outboundAmount, outboundCurrencyLimit);
-    }
-    if (inboundCurrencyLimit && inboundAmount > inboundCurrencyLimit) {
-      throw errors.EXCEEDING_LIMIT(inboundCurrency, inboundAmount, inboundCurrencyLimit);
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.

@@ -71,8 +71,6 @@ class Config {
   public nomatching = false;
   /** Whether a password should not be used to encrypt the xud key and underlying wallets. */
   public noencrypt = true; // TODO: enable encryption by default
-  /** Whether to use the maximum network channel sizes as trading limits. */
-  public maxlimits = false;
   /**
    * Whether to disable sanity swaps that verify that the orders can possibly be swapped
    * before adding trading pairs as active.
