@@ -454,6 +454,7 @@ class OrderBook extends EventEmitter {
         this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         portion.localId = maker.localId;
         internalMatches.push(maker);
+        this.pool.broadcastOrderInvalidation(portion);
         this.emit('ownOrder.filled', portion);
         await this.persistTrade(portion.quantity, maker, taker);
         onUpdate && onUpdate({ type: PlaceOrderEventType.InternalMatch, payload: maker });
