@@ -32,7 +32,13 @@ class GrpcServer {
       if (!status) {
         logger.debug(`unknown status for call ${ctx.service.path}`);
       } else if (status.code !== 0) {
-        logger.error(`call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`);
+        if (typeof status.details === 'object') {
+          logger.error(`call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`);
+        } else if (typeof status.details === 'string') {
+          logger.error(`call ${ctx.service.path} errored with code ${status.code}: ${status.details}`);
+        } else {
+          logger.error(`call ${ctx.service.path} errored with code ${status.code}`);
+        }
       } else {
         logger.trace(`call ${ctx.service.path} succeeded`);
       }

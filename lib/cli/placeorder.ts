@@ -22,9 +22,9 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
     type: 'string',
     describe: 'the local order id for this order',
   })
-  .option('stream', {
+  .option('sync', {
     type: 'boolean',
-    describe: 'whether to execute in streaming mode',
+    describe: 'prints the outcome all at once when matching completes',
     alias: 's',
     default: false,
   })
@@ -75,7 +75,9 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
   }
 
   const client = await loadXudClient(argv);
-  if (argv.stream) {
+  if (argv.sync) {
+    client.placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
+  } else {
     const subscription = client.placeOrder(request);
     let noMatches = true;
     subscription.on('data', (response: PlaceOrderEvent) => {
@@ -108,8 +110,6 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
       process.exitCode = 1;
       console.error(err.message);
     });
-  } else {
-    client.placeOrderSync(request, callback(argv, formatPlaceOrderOutput));
   }
 };
 
@@ -134,7 +134,7 @@ const formatInternalMatch = (order: Order.AsObject) => {
 
 const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
   const baseCurrency = getBaseCurrency(swapSuccess.pairId);
-  console.log(`swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
+  console.log(`successfully swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
 };
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
