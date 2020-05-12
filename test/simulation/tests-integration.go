@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
-	"time"
 )
 
 var integrationTestCases = []*testCase{
@@ -15,6 +16,10 @@ var integrationTestCases = []*testCase{
 	{
 		name: "order matching and swap",
 		test: testOrderMatchingAndSwap,
+	},
+	{
+		name: "internal match and invalidation",
+		test: testInternalMatchAndInvalidation,
 	},
 	{
 		name: "p2p discovery",
@@ -185,6 +190,28 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 
 	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
 	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testInternalMatchAndInvalidation(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "internal_maker_order_id",
+		Price:    0.02,
+		Quantity: 1000000,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Alice.
+	ht.act.matchOrderAndInvalidate(net.Alice, net.Bob, order)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)
