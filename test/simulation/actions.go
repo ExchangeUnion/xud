@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/roasbeef/btcutil"
 	"time"
+
+	"github.com/roasbeef/btcutil"
 
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
@@ -121,6 +122,59 @@ func (a *actions) unban(srcNode, destNode *xudtest.HarnessNode) {
 	reqUnban := &xudrpc.UnbanRequest{NodeIdentifier: destNode.PubKey(), Reconnect: false}
 	_, err := srcNode.Client.Unban(a.ctx, reqUnban)
 	a.assert.NoError(err)
+}
+
+func (a *actions) matchOrderAndInvalidate(srcNode, destNode *xudtest.HarnessNode,
+	order *xudrpc.Order) {
+	a.assert.True(order.IsOwnOrder)
+
+	// Subscribe to added orders on destNode
+	destNodeOrderChan := subscribeOrders(a.ctx, destNode)
+
+	// Fetch nodes current order book state.
+	prevSrcNodeCount, prevDestNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
+	a.assert.NoError(err)
+	a.assert.NotZero(prevSrcNodeCount.Own)
+	a.assert.NotZero(prevDestNodeCount.Peer)
+
+	var side xudrpc.OrderSide
+	if order.Side == xudrpc.OrderSide_BUY {
+		side = xudrpc.OrderSide_SELL
+	} else {
+		side = xudrpc.OrderSide_BUY
+	}
+
+	req := &xudrpc.PlaceOrderRequest{
+		Price:    order.Price,
+		Quantity: order.Quantity,
+		PairId:   order.PairId,
+		Side:     side,
+	}
+
+	// Place the order on srcNode and verify the result.
+	res, err := srcNode.Client.PlaceOrderSync(a.ctx, req)
+	a.assert.NoError(err)
+	a.assert.Len(res.InternalMatches, 1)
+	a.assert.Len(res.SwapSuccesses, 0)
+	a.assert.Len(res.SwapFailures, 0)
+	a.assert.Nil(res.RemainingOrder)
+
+	// Verify that order is removed by peer
+	e := <-destNodeOrderChan
+	a.assert.NoError(e.err)
+	a.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
+	a.assert.Equal(orderRemoval.OrderId, order.Id)
+	a.assert.Equal(orderRemoval.Quantity, order.Quantity)
+	a.assert.Equal(orderRemoval.PairId, order.PairId)
+
+	// Verify that the order was removed from the order books.
+	srcNodeCount, destNodeCount, err := getOrdersCount(a.ctx, srcNode, destNode)
+	a.assert.NoError(err)
+	a.assert.Equal(srcNodeCount.Own, prevSrcNodeCount.Own-1)
+	a.assert.Equal(srcNodeCount.Peer, prevSrcNodeCount.Peer)
+	a.assert.Equal(destNodeCount.Own, prevDestNodeCount.Own)
+	a.assert.Equal(destNodeCount.Peer, prevDestNodeCount.Peer-1)
 }
 
 func (a *actions) placeOrderAndBroadcast(srcNode, destNode *xudtest.HarnessNode,
