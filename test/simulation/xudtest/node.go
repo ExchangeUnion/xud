@@ -43,6 +43,10 @@ type nodeConfig struct {
 	RaidenHost    string
 	RaidenPort    int
 
+	ConnextDisable bool
+	ConnextHost    string
+	ConnextPort    int
+
 	P2PPort  int
 	RPCPort  int
 	HTTPPort int
@@ -88,6 +92,13 @@ func (cfg nodeConfig) genArgs() []string {
 		args = append(args, fmt.Sprintf("--raiden.port=%v", cfg.RaidenPort))
 	} else {
 		args = append(args, "--raiden.disable")
+	}
+
+	if !cfg.ConnextDisable {
+		args = append(args, fmt.Sprintf("--connext.host=%v", cfg.ConnextHost))
+		args = append(args, fmt.Sprintf("--connext.port=%v", cfg.ConnextPort))
+	} else {
+		args = append(args, "--connext.disable")
 	}
 
 	return args
@@ -140,6 +151,7 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 		XUDPath:         xudPath,
 		NoBalanceChecks: noBalanceChecks,
 		RaidenDisable:   true,
+		ConnextDisable:  true,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
