@@ -180,9 +180,6 @@ class Parser extends EventEmitter {
       case PacketType.SwapAccepted:
         packetOrPbObj = packetTypes.SwapAcceptedPacket.deserialize(payload);
         break;
-      case PacketType.SwapComplete:
-        packetOrPbObj = packetTypes.SwapCompletePacket.deserialize(payload);
-        break;
       case PacketType.SwapFailed:
         packetOrPbObj = packetTypes.SwapFailedPacket.deserialize(payload);
         break;

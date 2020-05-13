@@ -655,35 +655,6 @@ export namespace SwapAcceptedPacket {
     }
 }
 
-export class SwapCompletePacket extends jspb.Message { 
-    getId(): string;
-    setId(value: string): void;
-
-    getReqId(): string;
-    setReqId(value: string): void;
-
-    getRHash(): string;
-    setRHash(value: string): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): SwapCompletePacket.AsObject;
-    static toObject(includeInstance: boolean, msg: SwapCompletePacket): SwapCompletePacket.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: SwapCompletePacket, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): SwapCompletePacket;
-    static deserializeBinaryFromReader(message: SwapCompletePacket, reader: jspb.BinaryReader): SwapCompletePacket;
-}
-
-export namespace SwapCompletePacket {
-    export type AsObject = {
-        id: string,
-        reqId: string,
-        rHash: string,
-    }
-}
-
 export class SwapFailedPacket extends jspb.Message { 
     getId(): string;
     setId(value: string): void;

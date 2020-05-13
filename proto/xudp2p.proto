@@ -134,12 +134,6 @@ message SwapAcceptedPacket {
     uint32 maker_cltv_delta = 5;
 }
 
-message SwapCompletePacket {
-    string id = 1;
-    string req_id = 2;
-    string r_hash = 3;
-}
-
 message SwapFailedPacket {
     string id = 1;
     string req_id = 2;

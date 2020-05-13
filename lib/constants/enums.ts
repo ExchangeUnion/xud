@@ -80,8 +80,6 @@ export enum SwapPhase {
    * receiving swap client so it can accept payment.
    */
   PaymentReceived = 4,
-  /** The swap has been formally completed and both sides have confirmed they've received payment. */
-  SwapCompleted = 5,
 }
 
 export enum SwapState {

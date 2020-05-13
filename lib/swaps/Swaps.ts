@@ -210,9 +210,6 @@ class Swaps extends EventEmitter {
         const deal = this.getDeal(rHash);
         if (deal) {
           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-          // TODO: refactor the codebase so that setting
-          // SwapPhase.SwapCompleted is not necessary
-          await this.setDealPhase(deal, SwapPhase.SwapCompleted);
         }
       } catch (err) {
         this.logger.error('could not settle invoice', err);
@@ -1011,9 +1008,6 @@ class Swaps extends EventEmitter {
 
       // we treat responding to a resolve request as having received payment and persist the state
       await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-      // TODO: refactor the codebase so that setting
-      // SwapPhase.SwapCompleted is not necessary
-      await this.setDealPhase(deal, SwapPhase.SwapCompleted);
 
       this.logger.debug(`handleResolveRequest returning preimage ${preimage} for hash ${rHash}`);
       return preimage;
@@ -1169,13 +1163,9 @@ class Swaps extends EventEmitter {
         break;
       case SwapPhase.PaymentReceived:
         assert(deal.phase === SwapPhase.SendingPayment, 'PaymentReceived can be only be set after SendingPayment');
-        this.logger.debug(`Payment received for deal with payment hash ${deal.rPreimage}`);
-        break;
-      case SwapPhase.SwapCompleted:
-        assert(deal.phase === SwapPhase.PaymentReceived, 'SwapCompleted can be only be set after PaymentReceived');
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
-        this.logger.debug(`Swap completed. preimage = ${deal.rPreimage}`);
+        this.logger.debug(`Payment received for deal with hash ${deal.rHash} - preimage is ${deal.rPreimage}`);
         break;
       default:
         assert.fail('unknown deal phase');
