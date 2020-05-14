@@ -26,26 +26,11 @@ const currencies = [
     decimalPlaces: 18,
     tokenAddress: '0x0000000000000000000000000000000000000000',
   },
-  {
-    id: 'WETH',
-    swapClient: SwapClientType.Raiden,
-    decimalPlaces: 18,
-    tokenAddress: '0x892F91dc428Fc3Dc0a57eC46C8245F2511b8a542',
-  },
-  {
-    id: 'DAI',
-    swapClient: SwapClientType.Raiden,
-    decimalPlaces: 18,
-    tokenAddress: '0x4115652c9025d99512e9026B8F11C3E265bfecD7',
-  },
 ] as db.CurrencyAttributes[];
 
 const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
-  { baseCurrency: 'WETH', quoteCurrency: 'BTC' },
-  { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
-  { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
   { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
 ] as db.PairAttributes[];
 
