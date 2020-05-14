@@ -146,6 +146,17 @@ class OrderBook extends EventEmitter {
     return ourTokenIdentifier === peerTokenIdentifier;
   }
 
+  private bindTradingPair = (tp: TradingPair) => {
+    tp.on('ownOrder.filled', (order, fullyRemoved) => {
+      this.pool.broadcastOrderInvalidation(order);
+      this.emit('ownOrder.filled', order);
+
+      if (fullyRemoved) {
+        this.localIdMap.delete(order.localId);
+      }
+    });
+  }
+
   private bindPool = () => {
     this.pool.on('packet.order', this.addPeerOrder);
     this.pool.on('packet.orderInvalidation', this.handleOrderInvalidation);
@@ -186,6 +197,9 @@ class OrderBook extends EventEmitter {
     pairs.forEach((pair) => {
       this.pairInstances.set(pair.id, pair);
       this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
+      const tp = new TradingPair(this.logger, pair.id, this.nomatching);
+      this.tradingPairs.set(pair.id, tp);
+      this.bindTradingPair(tp);
     });
 
     this.pool.updatePairs(this.pairIds);
@@ -467,8 +481,6 @@ class OrderBook extends EventEmitter {
         this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         portion.localId = maker.localId;
         internalMatches.push(maker);
-        this.pool.broadcastOrderInvalidation(portion);
-        this.emit('ownOrder.filled', portion);
         await this.persistTrade(portion.quantity, maker, taker);
       } else {
         // this is a match with a peer order which cannot be considered executed until after a

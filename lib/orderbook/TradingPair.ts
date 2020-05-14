@@ -1,4 +1,5 @@
 import assert from 'assert';
+import { EventEmitter } from 'events';
 import FastPriorityQueue from 'fastpriorityqueue';
 import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
@@ -23,11 +24,18 @@ type OrderSidesQueues = {
   sellQueue: FastPriorityQueue<Order>,
 };
 
+interface TradingPair {
+  /** Adds a listener to be called when an own order has been removed for this trading pair. */
+  on(event: 'ownOrder.filled', listener: (order: OwnOrder, fullyRemoved: boolean) => void): this;
+  /** Notifies listening that an own order has been removed for this trading pair. */
+  emit(event: 'ownOrder.filled', order: OwnOrder, fullyRemoved: boolean): boolean;
+}
+
 /**
  * Represents a single trading pair in the order book. Responsible for managing all active orders
  * and for matching orders according to their price and quantity.
  */
-class TradingPair {
+class TradingPair extends EventEmitter {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
   public queues?: OrderSidesQueues;
   /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
@@ -36,6 +44,8 @@ class TradingPair {
   public peersOrders: Map<string, OrderSidesMaps<PeerOrder>>;
 
   constructor(private logger: Logger, public pairId: string, private nomatching = false) {
+    super();
+
     if (!nomatching) {
       this.queues = {
         buyQueue: TradingPair.createPriorityQueue(OrderingDirection.Desc),
@@ -336,6 +346,7 @@ class TradingPair {
     let remainingOrder: OwnOrder | undefined = { ...takerOrder };
 
     const queue = takerOrder.isBuy ? this.queues!.sellQueue : this.queues!.buyQueue;
+    /** Orders with a hold that are removed from the queue during matching and must be added back afterwards. */
     const queueRemovedOrdersWithHold: OwnOrder[] = [];
     const getMatchingQuantity = (remainingOrder: OwnOrder, oppositeOrder: Order) => takerOrder.isBuy
       ? TradingPair.getMatchingQuantity(remainingOrder, oppositeOrder)
@@ -343,7 +354,7 @@ class TradingPair {
 
     // as long as we have remaining quantity to match and orders to match against, keep checking for matches
     while (remainingOrder && !queue.isEmpty()) {
-      // get the best available maker order from the top of the queue
+      /** The best available maker order from the top of the queue */
       const makerOrder = queue.peek()!;
       const makerAvailableQuantityOrder = isOwnOrder(makerOrder)
         ? { ...makerOrder, quantity: makerOrder.quantity - makerOrder.hold, hold: 0 }
@@ -386,11 +397,15 @@ class TradingPair {
           map.delete(makerOrder.id);
           this.logger.debug(`removed order ${makerOrder.id} while matching order ${takerOrder.id}`);
         } else if (makerAvailableQuantityFullyMatched) {
-          // only an own order can be fully matched for available quantity, but not fully matched in the overall
+          // only an own order can be fully matched for available quantity, but not fully matched due to a hold
           assert(isOwnOrder(makerOrder));
 
           assert(queue.poll() === makerOrder);
           queueRemovedOrdersWithHold.push(makerOrder);
+        }
+
+        if (isOwnOrder(makerOrder)) {
+          this.emit('ownOrder.filled', { ...makerOrder, quantity: matchingQuantity }, makerFullyMatched);
         }
       }
     }
