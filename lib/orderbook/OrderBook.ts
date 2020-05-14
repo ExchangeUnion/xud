@@ -26,8 +26,6 @@ interface OrderBook {
   on(event: 'peerOrder.invalidation', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a remote order was filled by an own order and removed */
   on(event: 'peerOrder.filled', listener: (order: OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a local order was swapped and removed, after it was filled and executed remotely */
-  on(event: 'ownOrder.swapped', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a local order was filled by an own order and removed */
   on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when a local order was added */
@@ -41,8 +39,6 @@ interface OrderBook {
   emit(event: 'peerOrder.invalidation', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a remote order was filled by an own order and removed */
   emit(event: 'peerOrder.filled', order: OrderPortion): boolean;
-  /** Notifies listeners that all or part of a local order was swapped and removed, after it was filled and executed remotely */
-  emit(event: 'ownOrder.swapped', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a local order was filled by an own order and removed */
   emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
   /** Notifies listeners that a local order was added */
@@ -170,7 +166,6 @@ class OrderBook extends EventEmitter {
         this.removeOrderHold(orderId, pairId, quantity);
 
         const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
-        this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
       }
     });

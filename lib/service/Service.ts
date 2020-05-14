@@ -697,7 +697,6 @@ class Service {
     const orderRemoved$ = merge(
       fromEvent<OrderPortion>(this.orderBook, 'peerOrder.invalidation'),
       fromEvent<OrderPortion>(this.orderBook, 'peerOrder.filled'),
-      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.filled'),
       fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed'),
     ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
