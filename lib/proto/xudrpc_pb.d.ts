@@ -1377,10 +1377,10 @@ export namespace PlaceOrderResponse {
 
 export class PlaceOrderEvent extends jspb.Message { 
 
-    hasInternalMatch(): boolean;
-    clearInternalMatch(): void;
-    getInternalMatch(): Order | undefined;
-    setInternalMatch(value?: Order): void;
+    hasMatch(): boolean;
+    clearMatch(): void;
+    getMatch(): Order | undefined;
+    setMatch(value?: Order): void;
 
 
     hasSwapSuccess(): boolean;
@@ -1415,7 +1415,7 @@ export class PlaceOrderEvent extends jspb.Message {
 
 export namespace PlaceOrderEvent {
     export type AsObject = {
-        internalMatch?: Order.AsObject,
+        match?: Order.AsObject,
         swapSuccess?: SwapSuccess.AsObject,
         remainingOrder?: Order.AsObject,
         swapFailure?: SwapFailure.AsObject,
@@ -1424,7 +1424,7 @@ export namespace PlaceOrderEvent {
     export enum EventCase {
         EVENT_NOT_SET = 0,
     
-    INTERNAL_MATCH = 1,
+    MATCH = 1,
 
     SWAP_SUCCESS = 2,
 

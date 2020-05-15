@@ -322,7 +322,7 @@ class OrderBook extends EventEmitter {
     const stampedOrder = this.stampOwnOrder(order);
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
-      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: stampedOrder });
+      onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: stampedOrder });
 
       return {
         internalMatches: [],
@@ -448,6 +448,7 @@ class OrderBook extends EventEmitter {
      * simultaneously.
      */
     const handleMatch = async (maker: Order, taker: OwnOrder) => {
+      onUpdate && onUpdate({ type: PlaceOrderEventType.Match, order: maker });
       const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (isOwnOrder(maker)) {
         // this is an internal match which is effectively executed immediately upon being found
@@ -457,7 +458,6 @@ class OrderBook extends EventEmitter {
         this.pool.broadcastOrderInvalidation(portion);
         this.emit('ownOrder.filled', portion);
         await this.persistTrade(portion.quantity, maker, taker);
-        onUpdate && onUpdate({ type: PlaceOrderEventType.InternalMatch, payload: maker });
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
@@ -476,7 +476,7 @@ class OrderBook extends EventEmitter {
             this.logger.info(`match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity} with peer ${maker.peerPubKey} (${alias})`);
           }
           swapSuccesses.push(swapResult);
-          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, payload: swapResult });
+          onUpdate && onUpdate({ type: PlaceOrderEventType.SwapSuccess, swapSuccess: swapResult });
         } catch (err) {
           const failMsg = `swap for ${portion.quantity} failed during order matching`;
           if (typeof err === 'number' && SwapFailureReason[err] !== undefined) {
@@ -494,7 +494,7 @@ class OrderBook extends EventEmitter {
             if (this.testing) {
               failedMakerOrders.push(maker);
             }
-            onUpdate && onUpdate({ type: PlaceOrderEventType.SwapFailure, payload: swapFailure });
+            onUpdate && onUpdate({ swapFailure, type: PlaceOrderEventType.SwapFailure });
             await retryFailedSwap(portion.quantity);
           } else {
             // treat this as a critical error and abort matching, we only expect SwapFailureReasons to be thrown in the try block above
@@ -520,7 +520,7 @@ class OrderBook extends EventEmitter {
         remainingOrder = undefined;
       } else {
         this.addOwnOrder(remainingOrder);
-        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, payload: remainingOrder });
+        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
       }
     }
 

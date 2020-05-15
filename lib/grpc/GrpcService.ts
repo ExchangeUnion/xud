@@ -1,11 +1,12 @@
 /* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { status } from 'grpc';
+import { ServiceOrder, ServicePlaceOrderEvent } from 'lib/service/types';
 import { SwapFailureReason } from '../constants/enums';
 import { CurrencyInstance, OrderInstance, TradeInstance } from '../db/types';
 import { LndInfo } from '../lndclient/types';
-import { isOwnOrder, Order, OrderPortion, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
+import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
-import Service, { ServiceOrder } from '../service/Service';
+import Service from '../service/Service';
 import { SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
@@ -136,20 +137,20 @@ const createPlaceOrderResponse = (result: PlaceOrderResult) => {
 /**
  * Creates an xudrpc PlaceOrderEvent message from a [[PlaceOrderEvent]].
  */
-const createPlaceOrderEvent = (e: PlaceOrderEvent) => {
+const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
   const placeOrderEvent = new xudrpc.PlaceOrderEvent();
   switch (e.type) {
-    case PlaceOrderEventType.InternalMatch:
-      placeOrderEvent.setInternalMatch(createOrder(e.payload as Order));
+    case PlaceOrderEventType.Match:
+      placeOrderEvent.setMatch(createServiceOrder(e.order!));
       break;
     case PlaceOrderEventType.SwapSuccess:
-      placeOrderEvent.setSwapSuccess(createSwapSuccess(e.payload as SwapSuccess));
+      placeOrderEvent.setSwapSuccess(createSwapSuccess(e.swapSuccess!));
       break;
     case PlaceOrderEventType.RemainingOrder:
-      placeOrderEvent.setRemainingOrder(createOrder(e.payload as Order));
+      placeOrderEvent.setRemainingOrder(createServiceOrder(e.order!));
       break;
     case PlaceOrderEventType.SwapFailure:
-      placeOrderEvent.setSwapFailure(createSwapFailure(e.payload as SwapFailure));
+      placeOrderEvent.setSwapFailure(createSwapFailure(e.swapFailure!));
       break;
   }
   return placeOrderEvent;
@@ -726,7 +727,7 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.placeOrder(call.request.toObject(), (result: PlaceOrderEvent) => {
+      await this.service.placeOrder(call.request.toObject(), (result: ServicePlaceOrderEvent) => {
         call.write(createPlaceOrderEvent(result));
       });
 

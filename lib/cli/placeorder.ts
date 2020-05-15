@@ -84,13 +84,17 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
       if (argv.json) {
         console.log(JSON.stringify(response.toObject(), undefined, 2));
       } else {
-        const internalMatch = response.getInternalMatch();
+        const orderMatch = response.getMatch();
         const swapSuccess = response.getSwapSuccess();
         const remainingOrder = response.getRemainingOrder();
         const swapFailure = response.getSwapFailure();
-        if (internalMatch) {
+        if (orderMatch) {
           noMatches = false;
-          formatInternalMatch(internalMatch.toObject());
+          if (orderMatch.getIsOwnOrder()) {
+            formatInternalMatch(orderMatch.toObject());
+          } else {
+            formatPeerMatch(orderMatch.toObject());
+          }
         } else if (swapSuccess) {
           noMatches = false;
           formatSwapSuccess(swapSuccess.toObject());
@@ -132,6 +136,13 @@ const formatInternalMatch = (order: Order.AsObject) => {
   console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
 };
 
+const formatPeerMatch = (order: Order.AsObject) => {
+  const baseCurrency = getBaseCurrency(order.pairId);
+
+  // tslint:disable-next-line: max-line-length
+  console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with peer ${order.nodeIdentifier!.alias} order ${order.id}, attempting swap...`);
+};
+
 const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
   const baseCurrency = getBaseCurrency(swapSuccess.pairId);
   console.log(`successfully swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
@@ -139,7 +150,7 @@ const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
   const baseCurrency = getBaseCurrency(swapFailure.pairId);
-  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} due to ${swapFailure.failureReason} with peer order ${swapFailure.orderId}`);
+  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} due to ${swapFailure.failureReason} with peer order ${swapFailure.orderId}, continuing with matching routine...`);
 };
 
 const formatRemainingOrder = (order: Order.AsObject) => {

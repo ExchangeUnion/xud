@@ -1,5 +1,5 @@
 import { SwapClientType } from '../constants/enums';
-import { SwapSuccess, SwapFailure } from '../swaps/types';
+import { SwapFailure, SwapSuccess } from '../swaps/types';
 
 export type OrderBookThresholds = {
   minQuantity: number;
@@ -24,11 +24,13 @@ export type PlaceOrderResult = {
 
 export type PlaceOrderEvent = {
   type: PlaceOrderEventType;
-  payload: OwnOrder | SwapSuccess | SwapFailure;
+  order?: Order;
+  swapSuccess?: SwapSuccess;
+  swapFailure?: SwapFailure;
 };
 
 export enum PlaceOrderEventType {
-  InternalMatch,
+  Match,
   SwapSuccess,
   RemainingOrder,
   SwapFailure,

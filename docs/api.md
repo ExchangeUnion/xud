@@ -904,7 +904,7 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| internal_match | [Order](#xudrpc.Order) |  | An own order (or portion thereof) that matched the newly placed order. |
+| match | [Order](#xudrpc.Order) |  | An order (or portion thereof) that matched the newly placed order. |
 | swap_success | [SwapSuccess](#xudrpc.SwapSuccess) |  | A successful swap of a peer order that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 | swap_failure | [SwapFailure](#xudrpc.SwapFailure) |  | A swap attempt that failed. |

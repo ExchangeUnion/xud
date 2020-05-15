@@ -1,11 +1,12 @@
-import Service, { ServiceComponents } from '../../lib/service/Service';
-import Orderbook from '../../lib/orderbook/OrderBook';
-import Swaps from '../../lib/swaps/Swaps';
-import SwapClientManager from '../../lib/swaps/SwapClientManager';
-import Pool from '../../lib/p2p/Pool';
-import Peer from '../../lib/p2p/Peer';
-import SwapClient from '../../lib/swaps/SwapClient';
 import { Owner } from '../../lib/constants/enums';
+import Orderbook from '../../lib/orderbook/OrderBook';
+import Peer from '../../lib/p2p/Peer';
+import Pool from '../../lib/p2p/Pool';
+import Service from '../../lib/service/Service';
+import { ServiceComponents } from '../../lib/service/types';
+import SwapClient from '../../lib/swaps/SwapClient';
+import SwapClientManager from '../../lib/swaps/SwapClientManager';
+import Swaps from '../../lib/swaps/Swaps';
 
 jest.mock('../../lib/orderbook/OrderBook');
 const mockedOrderbook = <jest.Mock<Orderbook>><any>Orderbook;
