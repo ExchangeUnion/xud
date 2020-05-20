@@ -52,6 +52,10 @@ class NodeList extends EventEmitter {
     this.nodes.forEach(callback);
   }
 
+  public getId = (nodePubKey: string) => {
+    return this.nodes.get(nodePubKey)?.id;
+  }
+
   /**
    * Return list of public keys of all banned nodes with a given alias.
    */

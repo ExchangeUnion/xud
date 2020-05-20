@@ -153,6 +153,10 @@ class Pool extends EventEmitter {
     return this.nodeState.tokenIdentifiers[currency];
   }
 
+  public getNodeId = (nodePubKey: string) => {
+    return this.nodes.getId(nodePubKey);
+  }
+
   /**
    * Initialize the Pool by connecting to known nodes and listening to incoming peer connections, if configured to do so.
    */

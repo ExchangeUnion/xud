@@ -546,7 +546,12 @@ class OrderBook extends EventEmitter {
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     // make sure the order is in the database before we begin the swap
-    await this.repository.addOrderIfNotExists(maker);
+    if (!(await this.repository.getOrder(maker.id))) {
+      await this.repository.addOrderIfNotExists({
+        ...maker,
+        nodeId: this.pool.getNodeId(maker.peerPubKey),
+      });
+    }
     try {
       const swapResult = await this.swaps.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
@@ -583,6 +588,7 @@ class OrderBook extends EventEmitter {
     if (takerOrder) {
       addOrderPromises.push(this.repository.addOrderIfNotExists(takerOrder));
     }
+
     await Promise.all(addOrderPromises);
     await this.repository.addTrade({
       quantity,
