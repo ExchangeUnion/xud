@@ -681,8 +681,8 @@ message PlaceOrderResponse {
 
 message PlaceOrderEvent {
   oneof event {
-    // An own order (or portion thereof) that matched the newly placed order.
-    Order internal_match = 1 [json_name = "internal_match"];
+    // An order (or portion thereof) that matched the newly placed order.
+    Order match = 1 [json_name = "match"];
     // A successful swap of a peer order that matched the newly placed order.
     SwapSuccess swap_success = 2 [json_name = "swap_success"];
     // The remaining portion of the order, after matches, that enters the order book.

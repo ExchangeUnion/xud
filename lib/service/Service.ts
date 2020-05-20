@@ -1,10 +1,8 @@
-import { ConnextInfo, ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
+import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
-import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
 import { isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
-import { RaidenInfo } from '../raidenclient/types';
 import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
@@ -15,53 +13,7 @@ import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
-
-/**
- * The components required by the API service layer.
- */
-type ServiceComponents = {
-  orderBook: OrderBook;
-  swapClientManager: SwapClientManager;
-  pool: Pool;
-  /** The version of the local xud instance. */
-  version: string;
-  swaps: Swaps;
-  /** The function to be called to shutdown the parent process */
-  shutdown: () => void;
-};
-
-type XudInfo = {
-  version: string;
-  nodePubKey: string;
-  uris: string[];
-  network: string;
-  alias: string;
-  numPeers: number;
-  numPairs: number;
-  orders: { peer: number, own: number };
-  lnd: Map<string, LndInfo>;
-  raiden?: RaidenInfo;
-  connext?: ConnextInfo;
-  pendingSwapHashes: string[];
-};
-
-type NodeIdentifier = {
-  nodePubKey: string;
-  alias?: string;
-};
-
-type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity'>> & {
-  nodeIdentifier: NodeIdentifier;
-  side: OrderSide;
-  localId?: string;
-  hold?: number;
-  isOwnOrder: boolean;
-};
-
-type ServiceOrderSidesArrays = {
-  buyArray: ServiceOrder[],
-  sellArray: ServiceOrder[],
-};
+import { ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, XudInfo } from './types';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -559,7 +511,7 @@ class Service {
   public placeOrder = async (
     args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
       replaceOrderId?: string, immediateOrCancel: boolean },
-    callback?: (e: PlaceOrderEvent) => void,
+    callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
@@ -579,8 +531,19 @@ class Service {
       localId: orderId,
     };
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, callback) :
-      await this.orderBook.placeMarketOrder(order, callback);
+    /** Modified callback that converts Order to ServiceOrder before passing to callback. */
+    const serviceCallback: ((e: PlaceOrderEvent) => void) | undefined = callback ? (e) => {
+      const { type, order, swapSuccess, swapFailure } = e;
+      callback({
+        type,
+        swapSuccess,
+        swapFailure,
+        order: order ? this.toServiceOrder(order, true) : undefined,
+      });
+    } : undefined;
+
+    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, serviceCallback) :
+      await this.orderBook.placeMarketOrder(order, serviceCallback);
   }
 
   /** Removes a currency. */
@@ -679,4 +642,3 @@ class Service {
 
 }
 export default Service;
-export { ServiceComponents, XudInfo, ServiceOrder };

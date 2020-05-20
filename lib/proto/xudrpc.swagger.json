@@ -1456,9 +1456,9 @@
     "xudrpcPlaceOrderEvent": {
       "type": "object",
       "properties": {
-        "internal_match": {
+        "match": {
           "$ref": "#/definitions/xudrpcOrder",
-          "description": "An own order (or portion thereof) that matched the newly placed order."
+          "description": "An order (or portion thereof) that matched the newly placed order."
         },
         "swap_success": {
           "$ref": "#/definitions/xudrpcSwapSuccess",
