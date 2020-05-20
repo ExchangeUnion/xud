@@ -7,6 +7,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     takerOrderId: { type: DataTypes.STRING, allowNull: true },
     rHash: { type: DataTypes.STRING, allowNull: true },
     quantity: { type: DataTypes.BIGINT, allowNull: false },
+    createdAt: { type: DataTypes.DATE },
   };
 
   const options: Sequelize.DefineOptions<db.TradeInstance> = {

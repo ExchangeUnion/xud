@@ -10,7 +10,7 @@ import NodeKey from '../nodekey/NodeKey';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { ms } from '../utils/utils';
-import { getAlias } from '../utils/aliasUtils';
+import { pubKeyToAlias } from '../utils/aliasUtils';
 import errors, { errorCodes } from './errors';
 import Framer from './Framer';
 import Network from './Network';
@@ -137,7 +137,7 @@ class Peer extends EventEmitter {
 
   public set nodePubKey(nodePubKey: string | undefined) {
     this._nodePubKey = nodePubKey;
-    this._alias = nodePubKey ? getAlias(nodePubKey) : undefined;
+    this._alias = nodePubKey ? pubKeyToAlias(nodePubKey) : undefined;
   }
 
   public get alias(): string | undefined {
@@ -873,7 +873,7 @@ class Peer extends EventEmitter {
    */
   public setIdentifiers(nodePubKey: string) {
     this._nodePubKey = nodePubKey;
-    this._alias = getAlias(nodePubKey);
+    this._alias = pubKeyToAlias(nodePubKey);
   }
 
   /**
