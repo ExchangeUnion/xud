@@ -133,6 +133,7 @@ service Xud {
       get: "/v1/nodeinfo"
     };
   }
+
   /* Gets orders from the order book. This call returns the state of the order book at a given point
    * in time, although it is not guaranteed to still be vaild by the time a response is received
    * and processed by a client. It accepts an optional trading pair id parameter. If specified, only
@@ -166,15 +167,6 @@ service Xud {
   rpc ListPeers(ListPeersRequest) returns (ListPeersResponse) {
     option (google.api.http) = {
       get: "/v1/peers"
-    };
-  }
-
-  /* Gets a list of completed trades.
-   * shell: xucli listtrades [limit] */
-  rpc ListTrades(ListTradesRequest) returns (ListTradesResponse) {
-    option (google.api.http) = {
-      post: "/v1/listtrades"
-      body: "*"
     };
   }
 
@@ -288,6 +280,15 @@ service Xud {
     };
   }
 
+  /* Gets a list of completed trades.
+   * shell: xucli tradehistory [limit] */
+  rpc TradeHistory(TradeHistoryRequest) returns (TradeHistoryResponse) {
+    option (google.api.http) = {
+      post: "/v1/tradehistory"
+      body: "*"
+    };
+  }
+
   /* Gets the trading limits for one or all currencies.
    * shell: xucli tradinglimits [currency] */
   rpc TradingLimits(TradingLimitsRequest) returns (TradingLimitsResponse) {
@@ -318,6 +319,13 @@ service Xud {
 enum OrderSide {
   BUY = 0;
   SELL = 1;
+  BOTH = 2;
+}
+
+enum Role {
+  TAKER = 0;
+  MAKER = 1;
+  INTERNAL = 2;
 }
 
 message AddCurrencyResponse {}
@@ -532,15 +540,6 @@ message ListPeersResponse {
   repeated Peer peers = 1 [json_name = "peers"];
 }
 
-message ListTradesRequest {
-  // The maximum number of trades to return
-  uint32 limit = 1 [json_name = "limit"];
-}
-
-message ListTradesResponse {
-  repeated Trade trades = 1 [json_name = "trades"];
-}
-
 message LndInfo {
   string status = 1 [json_name = "status"];
   Channels channels = 2 [json_name = "channels"];
@@ -584,7 +583,7 @@ message Order {
   NodeIdentifier node_identifier = 5 [json_name = "node_identifier"];
   // The local id for this order, if applicable.
   string local_id = 6 [json_name = "local_id"];
-  // The epoch time when this order was created.
+  // The epoch time in milliseconds when this order was created.
   uint64 created_at = 7 [json_name = "created_at"];
   // Whether this order is a buy or sell
   OrderSide side = 8 [json_name = "side"];
@@ -801,10 +800,6 @@ message SwapSuccess {
   uint64 amount_sent = 9 [json_name = "amount_sent"];
   // The node pub key of the peer that executed this order.
   string peer_pub_key = 10 [json_name = "peer_pub_key"];
-  enum Role {
-    TAKER = 0;
-    MAKER = 1;
-  }
   // Our role in the swap, either MAKER or TAKER.
   Role role = 11 [json_name = "role"];
   // The ticker symbol of the currency received.
@@ -817,24 +812,45 @@ message SwapSuccess {
   double price = 15 [json_name = "price"];
 }
 
-message TradingLimits {
-  // Max outbound capacity for a distinct channel denominated in satoshis.
-  uint64 MaxSell = 1 [json_name = "max_sell"];
-  // Max inbound capacity for a distinct channel denominated in satoshis.
-  uint64 MaxBuy = 2 [json_name = "max_buy"];
-}
-
 message Trade {
   // The maker order involved in this trade.
   Order maker_order = 1 [json_name = "maker_order"];
-  // The taker order involved in this trade.
-  Order taker_order = 2 [json_name = "taker_order_id"];
+  // The taker order involved in this trade. Note that when a trade occurs from
+  // a remote peer filling one of our orders, we do not receive the order (only a
+  // swap request) and this field will be empty.
+  Order taker_order = 2 [json_name = "taker_order"];
   // The payment hash involved in this trade.
   string r_hash = 3 [json_name = "r_hash"];
   // The quantity transacted in this trade.
   uint64 quantity = 4 [json_name = "quantity"];
   // The trading pair for this trade.
   string pair_id = 5 [json_name = "pair_id"];
+  // The price used for the trade.
+  double price = 6 [json_name = "price"];
+  // Our role in the trade.
+  Role role = 7 [json_name = "role"];
+  // The epoch time in milliseconds that this trade was executed
+  uint64 executed_at = 8 [json_name = "executed_at"];
+  // Whether this node was on the buy or sell side of the trade - or both in case of internal trades.
+  OrderSide side = 9 [json_name = "side"];
+  // The counterparty to this trade, if applicable.
+  NodeIdentifier counterparty = 10 [json_name = "counterparty"];
+}
+
+message TradeHistoryRequest {
+  // The maximum number of trades to return
+  uint32 limit = 1 [json_name = "limit"];
+}
+
+message TradeHistoryResponse {
+  repeated Trade trades = 1 [json_name = "trades"];
+}
+
+message TradingLimits {
+  // Max outbound capacity for a distinct channel denominated in satoshis.
+  uint64 MaxSell = 1 [json_name = "max_sell"];
+  // Max inbound capacity for a distinct channel denominated in satoshis.
+  uint64 MaxBuy = 2 [json_name = "max_buy"];
 }
 
 message TradingLimitsRequest {

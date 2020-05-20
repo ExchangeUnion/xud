@@ -2,9 +2,9 @@ import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
 import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types';
 import addressUtils from '../utils/addressUtils';
+import { pubKeyToAlias } from '../utils/aliasUtils';
 import P2PRepository from './P2PRepository';
 import { Address } from './types';
-import { pubKeyToAlias } from '../utils/aliasUtils';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -28,8 +28,13 @@ interface NodeList {
 
 /** Represents a list of nodes for managing network peers activity */
 class NodeList extends EventEmitter {
+  /** A map of node pub keys to node instances. */
   private nodes = new Map<string, NodeInstance>();
   private bannedNodes = new Map<string, NodeInstance>();
+  /** A map of node ids to node instances. */
+  private nodeIdMap = new Map<number, NodeInstance>();
+  /** A map of node pub keys to aliases. */
+  private aliases = new Map<string, string>();
 
   private static readonly BAN_THRESHOLD = -50;
 
@@ -50,6 +55,20 @@ class NodeList extends EventEmitter {
 
   public forEach = (callback: (node: NodeInstance) => void) => {
     this.nodes.forEach(callback);
+  }
+
+  /**
+   * Get the internal node id for a given nodePubKey.
+   */
+  public getNodeById = (nodeId: number) => {
+    return this.nodeIdMap.get(nodeId);
+  }
+
+  /**
+   * Get the alias for a given nodePubKey.
+   */
+  public getAlias = (nodePubKey: string) => {
+    return this.aliases.get(nodePubKey);
   }
 
   public getId = (nodePubKey: string) => {
@@ -100,7 +119,7 @@ class NodeList extends EventEmitter {
       if (node.banned) {
         this.bannedNodes.set(node.nodePubKey, node);
       } else {
-        this.nodes.set(node.nodePubKey, node);
+        this.addNode(node);
         const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
           events.forEach(({ event }) => {
             this.updateReputationScore(node, event);
@@ -118,7 +137,7 @@ class NodeList extends EventEmitter {
   public createNode = async (nodeFactory: NodeFactory) => {
     const node = await this.repository.addNodeIfNotExists(nodeFactory);
     if (node) {
-      this.nodes.set(node.nodePubKey, node);
+      this.addNode(node);
     }
   }
 
@@ -220,6 +239,13 @@ class NodeList extends EventEmitter {
   private setBanStatus = (node: NodeInstance, status: boolean) => {
     node.banned = status;
     return node.save();
+  }
+
+  private addNode = (node: NodeInstance) => {
+    const { nodePubKey } = node;
+    this.nodes.set(nodePubKey, node);
+    this.nodeIdMap.set(node.id, node);
+    this.aliases.set(nodePubKey, pubKeyToAlias(nodePubKey));
   }
 }
 

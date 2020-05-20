@@ -153,8 +153,16 @@ class Pool extends EventEmitter {
     return this.nodeState.tokenIdentifiers[currency];
   }
 
+  public getNodePubKeyById = (nodeId: number) => {
+    return this.nodes.getNodeById(nodeId)?.nodePubKey;
+  }
+
   public getNodeId = (nodePubKey: string) => {
     return this.nodes.getId(nodePubKey);
+  }
+
+  public getNodeAlias = (nodePubKey: string) => {
+    return this.nodes.getAlias(nodePubKey);
   }
 
   /**

@@ -866,50 +866,6 @@ export namespace ListPeersResponse {
     }
 }
 
-export class ListTradesRequest extends jspb.Message { 
-    getLimit(): number;
-    setLimit(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ListTradesRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ListTradesRequest): ListTradesRequest.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ListTradesRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ListTradesRequest;
-    static deserializeBinaryFromReader(message: ListTradesRequest, reader: jspb.BinaryReader): ListTradesRequest;
-}
-
-export namespace ListTradesRequest {
-    export type AsObject = {
-        limit: number,
-    }
-}
-
-export class ListTradesResponse extends jspb.Message { 
-    clearTradesList(): void;
-    getTradesList(): Array<Trade>;
-    setTradesList(value: Array<Trade>): void;
-    addTrades(value?: Trade, index?: number): Trade;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ListTradesResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: ListTradesResponse): ListTradesResponse.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ListTradesResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ListTradesResponse;
-    static deserializeBinaryFromReader(message: ListTradesResponse, reader: jspb.BinaryReader): ListTradesResponse;
-}
-
-export namespace ListTradesResponse {
-    export type AsObject = {
-        tradesList: Array<Trade.AsObject>,
-    }
-}
-
 export class LndInfo extends jspb.Message { 
     getStatus(): string;
     setStatus(value: string): void;
@@ -1845,8 +1801,8 @@ export class SwapSuccess extends jspb.Message {
     getPeerPubKey(): string;
     setPeerPubKey(value: string): void;
 
-    getRole(): SwapSuccess.Role;
-    setRole(value: SwapSuccess.Role): void;
+    getRole(): Role;
+    setRole(value: Role): void;
 
     getCurrencyReceived(): string;
     setCurrencyReceived(value: string): void;
@@ -1881,42 +1837,11 @@ export namespace SwapSuccess {
         amountReceived: number,
         amountSent: number,
         peerPubKey: string,
-        role: SwapSuccess.Role,
+        role: Role,
         currencyReceived: string,
         currencySent: string,
         rPreimage: string,
         price: number,
-    }
-
-    export enum Role {
-    TAKER = 0,
-    MAKER = 1,
-    }
-
-}
-
-export class TradingLimits extends jspb.Message { 
-    getMaxsell(): number;
-    setMaxsell(value: number): void;
-
-    getMaxbuy(): number;
-    setMaxbuy(value: number): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): TradingLimits.AsObject;
-    static toObject(includeInstance: boolean, msg: TradingLimits): TradingLimits.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: TradingLimits, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): TradingLimits;
-    static deserializeBinaryFromReader(message: TradingLimits, reader: jspb.BinaryReader): TradingLimits;
-}
-
-export namespace TradingLimits {
-    export type AsObject = {
-        maxsell: number,
-        maxbuy: number,
     }
 }
 
@@ -1942,6 +1867,24 @@ export class Trade extends jspb.Message {
     getPairId(): string;
     setPairId(value: string): void;
 
+    getPrice(): number;
+    setPrice(value: number): void;
+
+    getRole(): Role;
+    setRole(value: Role): void;
+
+    getExecutedAt(): number;
+    setExecutedAt(value: number): void;
+
+    getSide(): OrderSide;
+    setSide(value: OrderSide): void;
+
+
+    hasCounterparty(): boolean;
+    clearCounterparty(): void;
+    getCounterparty(): NodeIdentifier | undefined;
+    setCounterparty(value?: NodeIdentifier): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Trade.AsObject;
@@ -1960,6 +1903,80 @@ export namespace Trade {
         rHash: string,
         quantity: number,
         pairId: string,
+        price: number,
+        role: Role,
+        executedAt: number,
+        side: OrderSide,
+        counterparty?: NodeIdentifier.AsObject,
+    }
+}
+
+export class TradeHistoryRequest extends jspb.Message { 
+    getLimit(): number;
+    setLimit(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradeHistoryRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: TradeHistoryRequest): TradeHistoryRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradeHistoryRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradeHistoryRequest;
+    static deserializeBinaryFromReader(message: TradeHistoryRequest, reader: jspb.BinaryReader): TradeHistoryRequest;
+}
+
+export namespace TradeHistoryRequest {
+    export type AsObject = {
+        limit: number,
+    }
+}
+
+export class TradeHistoryResponse extends jspb.Message { 
+    clearTradesList(): void;
+    getTradesList(): Array<Trade>;
+    setTradesList(value: Array<Trade>): void;
+    addTrades(value?: Trade, index?: number): Trade;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradeHistoryResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: TradeHistoryResponse): TradeHistoryResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradeHistoryResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradeHistoryResponse;
+    static deserializeBinaryFromReader(message: TradeHistoryResponse, reader: jspb.BinaryReader): TradeHistoryResponse;
+}
+
+export namespace TradeHistoryResponse {
+    export type AsObject = {
+        tradesList: Array<Trade.AsObject>,
+    }
+}
+
+export class TradingLimits extends jspb.Message { 
+    getMaxsell(): number;
+    setMaxsell(value: number): void;
+
+    getMaxbuy(): number;
+    setMaxbuy(value: number): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): TradingLimits.AsObject;
+    static toObject(includeInstance: boolean, msg: TradingLimits): TradingLimits.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: TradingLimits, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): TradingLimits;
+    static deserializeBinaryFromReader(message: TradingLimits, reader: jspb.BinaryReader): TradingLimits;
+}
+
+export namespace TradingLimits {
+    export type AsObject = {
+        maxsell: number,
+        maxbuy: number,
     }
 }
 
@@ -2164,4 +2181,11 @@ export namespace WithdrawResponse {
 export enum OrderSide {
     BUY = 0,
     SELL = 1,
+    BOTH = 2,
+}
+
+export enum Role {
+    TAKER = 0,
+    MAKER = 1,
+    INTERNAL = 2,
 }

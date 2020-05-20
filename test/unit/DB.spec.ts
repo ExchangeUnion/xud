@@ -1,13 +1,13 @@
 import chai, { expect } from 'chai';
+import { SwapClientType, SwapPhase, SwapRole, SwapState } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
-import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
+import { TradeFactory } from '../../lib/db/types';
 import Logger, { Level } from '../../lib/Logger';
-import { SwapClientType, SwapRole, SwapState, SwapPhase } from '../../lib/constants/enums';
+import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
+import P2PRepository from '../../lib/p2p/P2PRepository';
 import SwapRepository from '../../lib/swaps/SwapRepository';
 import { SwapDeal } from '../../lib/swaps/types';
-import P2PRepository from '../../lib/p2p/P2PRepository';
 import { createOwnOrder, getTempDir } from '../utils';
-import { TradeFactory } from '../../lib/db/types';
 import chaiAsPromised = require('chai-as-promised');
 
 chai.use(chaiAsPromised);

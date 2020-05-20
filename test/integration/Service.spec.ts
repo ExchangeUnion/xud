@@ -1,10 +1,10 @@
 import chai, { expect } from 'chai';
-import Xud from '../../lib/Xud';
 import chaiAsPromised from 'chai-as-promised';
-import Service from '../../lib/service/Service';
-import { SwapClientType, OrderSide, Owner } from '../../lib/constants/enums';
-import { getTempDir } from '../utils';
+import { OrderSide, Owner, SwapClientType } from '../../lib/constants/enums';
 import p2pErrors from '../../lib/p2p/errors';
+import Service from '../../lib/service/Service';
+import Xud from '../../lib/Xud';
+import { getTempDir } from '../utils';
 
 chai.use(chaiAsPromised);
 

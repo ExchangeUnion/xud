@@ -1,12 +1,11 @@
 /* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { status } from 'grpc';
-import { ServiceOrder, ServicePlaceOrderEvent } from 'lib/service/types';
 import { SwapFailureReason } from '../constants/enums';
-import { CurrencyInstance, OrderInstance, TradeInstance } from '../db/types';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
+import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
 import { SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
@@ -31,8 +30,12 @@ const createServiceOrder = (order: ServiceOrder) => {
   }
   grpcOrder.setNodeIdentifier(nodeIdentifier);
   grpcOrder.setPairId(order.pairId);
-  grpcOrder.setPrice(order.price);
-  grpcOrder.setQuantity(order.quantity);
+  if (order.price) {
+    grpcOrder.setPrice(order.price);
+  }
+  if (order.quantity) {
+    grpcOrder.setQuantity(order.quantity);
+  }
   grpcOrder.setSide(order.side as number);
   return grpcOrder;
 };
@@ -90,26 +93,6 @@ const createSwapFailure = (swapFailure: SwapFailure) => {
   grpcSwapFailure.setQuantity(swapFailure.quantity);
   grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
   return grpcSwapFailure;
-};
-
-/**
- * Creates an xudrpc Order from OrderInstance.
- */
-const getGrpcOrderFromOrderInstance = (order: OrderInstance) => {
-  const grpcOrder = new xudrpc.Order();
-  grpcOrder.setCreatedAt(order.createdAt);
-  grpcOrder.setId(order.id);
-  grpcOrder.setIsOwnOrder(order.nodeId === undefined);
-  if (order.localId) {
-    grpcOrder.setLocalId(order.localId);
-  }
-  grpcOrder.setPairId(order.pairId);
-  // TODO: set peer pub key if order.nodeId has a value
-  if (order.price) {
-    grpcOrder.setPrice(order.price);
-  }
-  grpcOrder.setSide(order.isBuy ? xudrpc.OrderSide.BUY : xudrpc.OrderSide.SELL);
-  return grpcOrder;
 };
 
 /**
@@ -619,11 +602,13 @@ class GrpcService {
       const currencies = this.service.listCurrencies();
       const response = new xudrpc.ListCurrenciesResponse();
 
-      currencies.forEach((currency: CurrencyInstance) => {
+      currencies.forEach((currency) => {
         const resultCurrency = new xudrpc.Currency();
         resultCurrency.setDecimalPlaces(currency.decimalPlaces);
         resultCurrency.setCurrency(currency.id);
-        resultCurrency.setTokenAddress(currency.tokenAddress);
+        if (currency.tokenAddress) {
+          resultCurrency.setTokenAddress(currency.tokenAddress);
+        }
         resultCurrency.setSwapClient(currency.swapClient as number);
         response.getCurrenciesList().push(resultCurrency);
       });
@@ -653,27 +638,41 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.listTrades]]
+   * See [[Service.tradeHistory]]
    */
-  public listTrades: grpc.handleUnaryCall<xudrpc.ListTradesRequest, xudrpc.ListTradesResponse> = async (call, callback) => {
+  public tradeHistory: grpc.handleUnaryCall<xudrpc.TradeHistoryRequest, xudrpc.TradeHistoryResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      const trades = await this.service.listTrades(call.request.toObject());
-      const response = new xudrpc.ListTradesResponse();
-      const tradesList: xudrpc.Trade[] = [];
-      await Promise.all(trades.map(async (trade: TradeInstance) => {
+      const trades = await this.service.tradeHistory(call.request.toObject());
+      const response = new xudrpc.TradeHistoryResponse();
+      const tradesList: xudrpc.Trade[] = trades.map((trade) => {
         const grpcTrade = new xudrpc.Trade();
-        const makerOrder = await trade.getMakerOrder();
-        const takerOrder = await trade.getTakerOrder();
+        grpcTrade.setMakerOrder(createServiceOrder(trade.makerOrder));
+        if (trade.takerOrder) {
+          grpcTrade.setTakerOrder(createServiceOrder(trade.takerOrder));
+        }
+        grpcTrade.setPairId(trade.pairId);
         grpcTrade.setQuantity(trade.quantity);
-        grpcTrade.setRHash(trade.rHash ? trade.rHash : '');
-        grpcTrade.setMakerOrder(getGrpcOrderFromOrderInstance(makerOrder!));
-        grpcTrade.setTakerOrder(takerOrder ? getGrpcOrderFromOrderInstance(takerOrder) : undefined);
-        grpcTrade.setPairId(makerOrder!.pairId);
-        tradesList.push(grpcTrade);
-      }));
+        if (trade.rHash) {
+          grpcTrade.setRHash(trade.rHash);
+        }
+        grpcTrade.setPrice(trade.price);
+        grpcTrade.setSide(trade.side as number);
+        grpcTrade.setRole(trade.role as number);
+        grpcTrade.setExecutedAt(trade.executedAt);
+        if (trade.counterparty) {
+          const counterparty = new xudrpc.NodeIdentifier();
+          counterparty.setNodePubKey(trade.counterparty.nodePubKey);
+          if (trade.counterparty.alias) {
+            counterparty.setAlias(trade.counterparty.alias);
+          }
+          grpcTrade.setCounterparty(counterparty);
+        }
+
+        return grpcTrade;
+      });
 
       response.setTradesList(tradesList);
       callback(null, response);

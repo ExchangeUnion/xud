@@ -42,8 +42,6 @@
     - [ListPairsResponse](#xudrpc.ListPairsResponse)
     - [ListPeersRequest](#xudrpc.ListPeersRequest)
     - [ListPeersResponse](#xudrpc.ListPeersResponse)
-    - [ListTradesRequest](#xudrpc.ListTradesRequest)
-    - [ListTradesResponse](#xudrpc.ListTradesResponse)
     - [LndInfo](#xudrpc.LndInfo)
     - [NodeIdentifier](#xudrpc.NodeIdentifier)
     - [OpenChannelRequest](#xudrpc.OpenChannelRequest)
@@ -75,6 +73,8 @@
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [Trade](#xudrpc.Trade)
+    - [TradeHistoryRequest](#xudrpc.TradeHistoryRequest)
+    - [TradeHistoryResponse](#xudrpc.TradeHistoryResponse)
     - [TradingLimits](#xudrpc.TradingLimits)
     - [TradingLimitsRequest](#xudrpc.TradingLimitsRequest)
     - [TradingLimitsResponse](#xudrpc.TradingLimitsResponse)
@@ -89,7 +89,7 @@
     - [Currency.SwapClient](#xudrpc.Currency.SwapClient)
     - [ListOrdersRequest.Owner](#xudrpc.ListOrdersRequest.Owner)
     - [OrderSide](#xudrpc.OrderSide)
-    - [SwapSuccess.Role](#xudrpc.SwapSuccess.Role)
+    - [Role](#xudrpc.Role)
   
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
@@ -671,36 +671,6 @@
 
 
 
-<a name="xudrpc.ListTradesRequest"></a>
-
-### ListTradesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| limit | [uint32](#uint32) |  | The maximum number of trades to return |
-
-
-
-
-
-
-<a name="xudrpc.ListTradesResponse"></a>
-
-### ListTradesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| trades | [Trade](#xudrpc.Trade) | repeated |  |
-
-
-
-
-
-
 <a name="xudrpc.LndInfo"></a>
 
 ### LndInfo
@@ -780,7 +750,7 @@
 | id | [string](#string) |  | A UUID for this order. |
 | node_identifier | [NodeIdentifier](#xudrpc.NodeIdentifier) |  | The identifier of the node that created this order. |
 | local_id | [string](#string) |  | The local id for this order, if applicable. |
-| created_at | [uint64](#uint64) |  | The epoch time when this order was created. |
+| created_at | [uint64](#uint64) |  | The epoch time in milliseconds when this order was created. |
 | side | [OrderSide](#xudrpc.OrderSide) |  | Whether this order is a buy or sell |
 | is_own_order | [bool](#bool) |  | Whether this order is a local own order or a remote peer order. |
 | hold | [uint64](#uint64) |  | The quantity on hold pending swap execution. |
@@ -1190,7 +1160,7 @@
 | amount_received | [uint64](#uint64) |  | The amount received denominated in satoshis. |
 | amount_sent | [uint64](#uint64) |  | The amount sent denominated in satoshis. |
 | peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
-| role | [SwapSuccess.Role](#xudrpc.SwapSuccess.Role) |  | Our role in the swap, either MAKER or TAKER. |
+| role | [Role](#xudrpc.Role) |  | Our role in the swap, either MAKER or TAKER. |
 | currency_received | [string](#string) |  | The ticker symbol of the currency received. |
 | currency_sent | [string](#string) |  | The ticker symbol of the currency sent. |
 | r_preimage | [string](#string) |  | The hex-encoded preimage. |
@@ -1210,10 +1180,45 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | maker_order | [Order](#xudrpc.Order) |  | The maker order involved in this trade. |
-| taker_order | [Order](#xudrpc.Order) |  | The taker order involved in this trade. |
+| taker_order | [Order](#xudrpc.Order) |  | The taker order involved in this trade. Note that when a trade occurs from a remote peer filling one of our orders, we do not receive the order (only a swap request) and this field will be empty. |
 | r_hash | [string](#string) |  | The payment hash involved in this trade. |
 | quantity | [uint64](#uint64) |  | The quantity transacted in this trade. |
 | pair_id | [string](#string) |  | The trading pair for this trade. |
+| price | [double](#double) |  | The price used for the trade. |
+| role | [Role](#xudrpc.Role) |  | Our role in the trade. |
+| executed_at | [uint64](#uint64) |  | The epoch time in milliseconds that this trade was executed |
+| side | [OrderSide](#xudrpc.OrderSide) |  | Whether this node was on the buy or sell side of the trade - or both in case of internal trades. |
+| counterparty | [NodeIdentifier](#xudrpc.NodeIdentifier) |  | The counterparty to this trade, if applicable. |
+
+
+
+
+
+
+<a name="xudrpc.TradeHistoryRequest"></a>
+
+### TradeHistoryRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [uint32](#uint32) |  | The maximum number of trades to return |
+
+
+
+
+
+
+<a name="xudrpc.TradeHistoryResponse"></a>
+
+### TradeHistoryResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| trades | [Trade](#xudrpc.Trade) | repeated |  |
 
 
 
@@ -1410,18 +1415,20 @@
 | ---- | ------ | ----------- |
 | BUY | 0 |  |
 | SELL | 1 |  |
+| BOTH | 2 |  |
 
 
 
-<a name="xudrpc.SwapSuccess.Role"></a>
+<a name="xudrpc.Role"></a>
 
-### SwapSuccess.Role
+### Role
 
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | TAKER | 0 |  |
 | MAKER | 1 |  |
+| INTERNAL | 2 |  |
 
 
  
@@ -1450,7 +1457,6 @@ The primary service for interacting with a running xud node.
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. shell: xucli listcurrencies |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. shell: xucli listpairs |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. shell: xucli listpeers |
-| ListTrades | [ListTradesRequest](#xudrpc.ListTradesRequest) | [ListTradesResponse](#xudrpc.ListTradesResponse) | Gets a list of completed trades. shell: xucli listtrades [limit] |
 | OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer for the specified amount and currency. shell: xucli openchannel &lt;node_identifier&gt; &lt;currency&gt; &lt;amount&gt; |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous, non-streaming version of PlaceOrder. shell: xucli buy &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] shell: xucli sell &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] |
@@ -1462,6 +1468,7 @@ The primary service for interacting with a running xud node.
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
 | SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
+| TradeHistory | [TradeHistoryRequest](#xudrpc.TradeHistoryRequest) | [TradeHistoryResponse](#xudrpc.TradeHistoryResponse) | Gets a list of completed trades. shell: xucli tradehistory [limit] |
 | TradingLimits | [TradingLimitsRequest](#xudrpc.TradingLimitsRequest) | [TradingLimitsResponse](#xudrpc.TradingLimitsResponse) | Gets the trading limits for one or all currencies. shell: xucli tradinglimits [currency] |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. shell: xucli unban &lt;node_identifier&gt; [reconnect] |
 | Withdraw | [WithdrawRequest](#xudrpc.WithdrawRequest) | [WithdrawResponse](#xudrpc.WithdrawResponse) | Withdraws a given currency from the xud wallets to a specified address. shell: xucli withdraw &lt;amount&gt; &lt;currency&gt; &lt;destination&gt; [fee] |

@@ -1,21 +1,21 @@
-import { ReputationEvent, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
-import Peer from '../p2p/Peer';
-import { Models } from '../db/DB';
-import * as packets from '../p2p/packets/types';
-import Logger from '../Logger';
-import Pool from '../p2p/Pool';
-import { EventEmitter } from 'events';
-import SwapRepository from './SwapRepository';
-import { OwnOrder, PeerOrder } from '../orderbook/types';
 import assert from 'assert';
-import { SwapDealInstance } from '../db/types';
-import { ResolveRequest, Route, SanitySwap, SwapDeal, SwapSuccess } from './types';
-import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
-import { PacketType } from '../p2p/packets';
-import SwapClientManager from './SwapClientManager';
-import errors, { errorCodes } from './errors';
-import SwapRecovery from './SwapRecovery';
 import poissonQuantile from 'distributions-poisson-quantile';
+import { EventEmitter } from 'events';
+import { ReputationEvent, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
+import { Models } from '../db/DB';
+import { SwapDealInstance } from '../db/types';
+import Logger from '../Logger';
+import { OwnOrder, PeerOrder } from '../orderbook/types';
+import { PacketType } from '../p2p/packets';
+import * as packets from '../p2p/packets/types';
+import Peer from '../p2p/Peer';
+import Pool from '../p2p/Pool';
+import { generatePreimageAndHash, setTimeoutPromise } from '../utils/utils';
+import errors, { errorCodes } from './errors';
+import SwapClientManager from './SwapClientManager';
+import SwapRecovery from './SwapRecovery';
+import SwapRepository from './SwapRepository';
+import { ResolveRequest, Route, SanitySwap, SwapDeal, SwapSuccess } from './types';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;

@@ -1,8 +1,8 @@
 import Sequelize, { DataTypeAbstract, DefineAttributeColumnOptions, DefineAttributes } from 'sequelize';
+import { ReputationEvent } from '../constants/enums';
+import { Currency, Order, Pair } from '../orderbook/types';
 import { Address, NodeConnectionInfo } from '../p2p/types';
 import { SwapDeal } from '../swaps/types';
-import { Currency, Pair, Order } from '../orderbook/types';
-import { ReputationEvent } from '../constants/enums';
 
 export type SequelizeAttributes<T extends { [key: string]: any }> = DefineAttributes & {
   [P in keyof T]: string | DataTypeAbstract | DefineAttributeColumnOptions
@@ -67,12 +67,17 @@ export type TradeFactory = {
   quantity: number,
 };
 
-export type TradeAttributes = TradeFactory;
+export type TradeAttributes = TradeFactory & {
+  makerOrder?: OrderAttributes;
+  takerOrder?: OrderAttributes;
+  SwapDeal?: SwapDealAttributes;
+};
 
 export type TradeInstance = TradeAttributes & Sequelize.Instance<TradeAttributes> & {
   getMakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
   getTakerOrder: Sequelize.BelongsToGetAssociationMixin<OrderInstance>;
   getSwapDeal: Sequelize.BelongsToGetAssociationMixin<SwapDealInstance>;
+  createdAt: Date,
 };
 
 /* Node */

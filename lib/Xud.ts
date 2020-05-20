@@ -1,8 +1,11 @@
+import { AssertionError } from 'assert';
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { Subscription } from 'rxjs';
 import bootstrap from './bootstrap';
 import Config from './Config';
+import { SwapClientType, XuNetwork } from './constants/enums';
 import DB from './db/DB';
 import GrpcServer from './grpc/GrpcServer';
 import GrpcWebProxyServer from './grpc/webproxy/GrpcWebProxyServer';
@@ -15,11 +18,8 @@ import InitService from './service/InitService';
 import Service from './service/Service';
 import SwapClientManager from './swaps/SwapClientManager';
 import Swaps from './swaps/Swaps';
-import { UnitConverter } from './utils/UnitConverter';
-import { AssertionError } from 'assert';
-import { SwapClientType, XuNetwork } from './constants/enums';
 import { createSimnetChannels } from './utils/simnet-connext-channels';
-import { Subscription } from 'rxjs';
+import { UnitConverter } from './utils/UnitConverter';
 
 const version: string = require('../package.json').version;
 
