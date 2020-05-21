@@ -1,5 +1,5 @@
 diff --git a/lib/Xud.ts b/lib/Xud.ts
-index 810345d90..9585a2761 100644
+index b50acec47..bfd7a86d6 100644
 --- a/lib/Xud.ts
 +++ b/lib/Xud.ts
 @@ -87,6 +87,11 @@ class Xud extends EventEmitter {
@@ -36,7 +36,7 @@ index f077b3ca4..7398a97b4 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index fd7024fa2..d469ce7ac 100644
+index 5ee168fa9..f0a3b879d 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
 @@ -205,9 +205,28 @@ class Swaps extends EventEmitter {
@@ -110,9 +110,9 @@ index fd7024fa2..d469ce7ac 100644
 +        return;
 +      }
      } catch (err) {
-       if (err.code === errorCodes.PAYMENT_REJECTED) {
-         // if the maker rejected our payment, the swap failed due to an error on their side
-@@ -933,12 +972,29 @@ class Swaps extends EventEmitter {
+       // first we must handle the edge case where the maker has paid us but failed to claim our payment
+       // in this case, we've already marked the swap as having been paid and completed
+@@ -939,12 +978,29 @@ class Swaps extends EventEmitter {
  
        this.logger.debug('Executing maker code to resolve hash');
  
@@ -142,7 +142,7 @@ index fd7024fa2..d469ce7ac 100644
          deal.rPreimage = await swapClient.sendPayment(deal);
          return deal.rPreimage;
        } catch (err) {
-@@ -968,6 +1024,16 @@ class Swaps extends EventEmitter {
+@@ -974,6 +1030,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
  
