@@ -1032,25 +1032,11 @@ class Pool extends EventEmitter {
    * pub key cannot be found for the provided alias.
    */
   public resolveAlias = (alias: string) => {
-    if (alias === '') {
+    const nodePubKey = this.nodes.getPubKeyForAlias(alias);
+    if (!nodePubKey) {
       throw errors.UNKNOWN_ALIAS(alias);
     }
-    let matchingNodePubKeys: string[] = [];
-    this.peers.forEach((peer) => {
-      if (peer.alias) {
-        if (peer.alias.toLowerCase() === alias.toLowerCase()) {
-          matchingNodePubKeys.push(peer.nodePubKey!);
-        }
-      }
-    });
-    matchingNodePubKeys = matchingNodePubKeys.concat(this.nodes.getBannedPubKeys(alias));
-    if (matchingNodePubKeys.length === 1) {
-      return matchingNodePubKeys[0];
-    } else if (matchingNodePubKeys.length === 0) {
-      throw errors.UNKNOWN_ALIAS(alias);
-    } else {
-      throw errors.ALIAS_CONFLICT(alias);
-    }
+    return nodePubKey;
   }
 }
 
