@@ -759,6 +759,13 @@ class Swaps extends EventEmitter {
     try {
       await makerSwapClient.sendPayment(deal);
     } catch (err) {
+      // first we must handle the edge case where the maker has paid us but failed to claim our payment
+      // in this case, we've already marked the swap as having been paid and completed
+      if (deal.state !== SwapState.Completed) {
+        this.logger.warn(`maker was unable to claim payment for ${deal.rHash} but has already paid us`);
+        return;
+      }
+
       if (err.code === errorCodes.PAYMENT_REJECTED) {
         // if the maker rejected our payment, the swap failed due to an error on their side
         // and we don't need to send them a SwapFailedPacket
@@ -776,7 +783,6 @@ class Swaps extends EventEmitter {
           errorMessage: err.message,
         });
       }
-      return;
     }
   }
 
