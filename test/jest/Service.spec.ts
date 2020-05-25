@@ -1,4 +1,4 @@
-import { Owner } from '../../lib/constants/enums';
+import { Owner, SwapClientType } from '../../lib/constants/enums';
 import Logger from '../../lib/Logger';
 import Orderbook from '../../lib/orderbook/OrderBook';
 import Peer from '../../lib/p2p/Peer';
@@ -13,16 +13,33 @@ jest.mock('../../lib/orderbook/OrderBook');
 const mockedOrderbook = <jest.Mock<Orderbook>><any>Orderbook;
 jest.mock('../../lib/swaps/Swaps');
 const mockedSwaps = <jest.Mock<Swaps>><any>Swaps;
-jest.mock('../../lib/swaps/SwapClientManager');
+jest.mock('../../lib/swaps/SwapClientManager', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      getType: () => SwapClientType.Lnd,
+    };
+  });
+});
 const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
 jest.mock('../../lib/swaps/SwapClient');
 const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 jest.mock('../../lib/p2p/Pool');
 const mockedPool = <jest.Mock<Pool>><any>Pool;
 jest.mock('../../lib/p2p/Peer');
+jest.mock('../../lib/p2p/Peer', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      getLndPubKey: () => lndPubKey,
+      getIdentifier: () => lndPubKey,
+      getLndUris: jest.fn(),
+    };
+  });
+});
 const mockedPeer = <jest.Mock<Peer>><any>Peer;
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
+
+const lndPubKey = 'lndpubkey';
 
 const getArgs = () => {
   return {
@@ -56,7 +73,7 @@ describe('Service', () => {
   });
 
   describe('openChannel', () => {
-    test('gets peer from pool for swapClientManager', async () => {
+    test('gets peer identifier from pool for swapClientManager', async () => {
       service = new Service(components);
       const args = getArgs();
       await service.openChannel(args);
@@ -64,7 +81,7 @@ describe('Service', () => {
         .toHaveBeenCalledWith(args.nodeIdentifier);
       expect(components.swapClientManager.openChannel)
         .toHaveBeenCalledWith({
-          peer,
+          remoteIdentifier: lndPubKey,
           amount: args.amount,
           currency: args.currency,
         });

@@ -2,7 +2,6 @@ import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger from '../../lib/Logger';
-import Peer from '../../lib/p2p/Peer';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
@@ -83,8 +82,6 @@ const loggers = {
   http: logger,
   service: logger,
 };
-jest.mock('../../lib/p2p/Peer');
-const mockedPeer = <jest.Mock<Peer>><any>Peer;
 
 describe('Swaps.SwapClientManager', () => {
   let config: Config;
@@ -210,13 +207,10 @@ describe('Swaps.SwapClientManager', () => {
   });
 
   describe('openChannel', () => {
-    let peer: Peer;
-    let peerLndPubKey: string;
+    let remoteIdentifier: string;
 
     beforeEach(() => {
-      peer = new mockedPeer();
-      peerLndPubKey = '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
-      peer.getIdentifier = jest.fn().mockReturnValue(peerLndPubKey);
+      remoteIdentifier = '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
     });
 
     test('it fails without swap client', async () => {
@@ -227,21 +221,19 @@ describe('Swaps.SwapClientManager', () => {
       swapClientManager.get = jest.fn().mockReturnValue(undefined);
       await swapClientManager.init(db.models);
       try {
-        await swapClientManager.openChannel({ peer, currency, amount });
+        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
     });
 
     test('it fails without peerSwapClientPubKey', async () => {
-      expect.assertions(1);
       const currency = 'BTC';
       const amount = 16000000;
       swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-      peer.getIdentifier = jest.fn().mockReturnValue(undefined);
       await swapClientManager.init(db.models);
       try {
-        await swapClientManager.openChannel({ peer, currency, amount });
+        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
@@ -256,17 +248,15 @@ describe('Swaps.SwapClientManager', () => {
         '123.456.789.321:9735',
         '192.168.63.155:9777',
       ];
-      peer.getLndUris = jest.fn().mockReturnValue(lndListeningUris);
       await swapClientManager.init(db.models);
-      await swapClientManager.openChannel({ peer, currency, amount });
+      await swapClientManager.openChannel({ remoteIdentifier, currency, amount, uris: lndListeningUris });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
-      expect(peer.getIdentifier).toHaveBeenCalledWith(SwapClientType.Lnd, currency);
       expect(mockLndOpenChannel).toHaveBeenCalledTimes(1);
       expect(mockLndOpenChannel).toHaveBeenCalledWith(
         expect.objectContaining({
+          remoteIdentifier,
           units: amount,
           uris: lndListeningUris,
-          peerIdentifier: peerLndPubKey,
         }),
       );
     });
@@ -277,21 +267,17 @@ describe('Swaps.SwapClientManager', () => {
       const amount = 5000000;
       const expectedUnits = 50000000000000000;
       const peerRaidenAddress = '0x10D8CCAD85C7dc123090B43aA1f98C00a303BFC5';
-      peer.getIdentifier = jest.fn().mockReturnValue(peerRaidenAddress);
       swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       const getClientSpy = jest.spyOn(swapClientManager, 'get');
-      peer.getLndUris = jest.fn();
       await swapClientManager.init(db.models);
-      await swapClientManager.openChannel({ peer, currency, amount });
+      await swapClientManager.openChannel({ currency, amount, remoteIdentifier: peerRaidenAddress });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
-      expect(peer.getIdentifier).toHaveBeenCalledWith(SwapClientType.Raiden, currency);
-      expect(peer.getLndUris).toHaveBeenCalledTimes(0);
       expect(mockRaidenOpenChannel).toHaveBeenCalledTimes(1);
       expect(mockRaidenOpenChannel).toHaveBeenCalledWith(
         expect.objectContaining({
           currency,
           units: expectedUnits,
-          peerIdentifier: peerRaidenAddress,
+          remoteIdentifier: peerRaidenAddress,
           // uris: undefined,
           pushUnits: 0,
         }),

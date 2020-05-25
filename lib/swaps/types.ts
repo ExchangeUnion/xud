@@ -107,3 +107,32 @@ export type ResolveRequest = {
   expiration: number,
   chain_height: number,
 };
+
+export type CloseChannelParams = {
+  /** The remote node with which to close channels.. */
+  remoteIdentifier?: string,
+  /**
+   * The amount to extract from the channel, if applicable. If 0 or unspecified,
+   * the entire off-chain balance for the specified currency will be extracted.
+   */
+  units?: number,
+  currency?: string,
+  /**
+   * The on-chain address to send funds extracted from the channel. If unspecified
+   * the funds return to the default wallet for the client closing the channel.
+   */
+  destination?: string,
+  force?: boolean,
+};
+
+export type OpenChannelParams = {
+  /** The remote node with which to open the channel. */
+  remoteIdentifier?: string,
+  /** The size of the channel. */
+  units: number,
+  currency?: string,
+  /** Uris with which to connect to the remote node. */
+  uris?: string[],
+  /** The balance to assign to the remote node. */
+  pushUnits?: number,
+};

@@ -526,7 +526,7 @@ class RaidenClient extends SwapClient {
    * Creates a payment channel.
    */
   public openChannel = async (
-    { peerIdentifier: peerAddress, units, currency }:
+    { peerIdentifier, units, currency }:
     { peerIdentifier: string, units: number, currency: string },
   ): Promise<void> => {
     const tokenAddress = this.tokenAddresses.get(currency);
@@ -534,7 +534,7 @@ class RaidenClient extends SwapClient {
       throw(errors.TOKEN_ADDRESS_NOT_FOUND);
     }
     await this.openChannelRequest({
-      partner_address: peerAddress,
+      partner_address: peerIdentifier,
       token_address: tokenAddress,
       total_deposit: units,
       settle_timeout: 20660,
@@ -557,9 +557,13 @@ class RaidenClient extends SwapClient {
    * Closes a payment channel.
    * @param channel_address the address of the channel to close
    */
-  public closeChannel = async (channel_address: string): Promise<void> => {
+  public closeChannelRequest = async (channel_address: string): Promise<void> => {
     const endpoint = `channels/${channel_address}`;
     await this.sendRequest(endpoint, 'PATCH', { state: 'settled' });
+  }
+
+  public closeChannel = async () => {
+    // unimplemented
   }
 
   /**
@@ -599,6 +603,11 @@ class RaidenClient extends SwapClient {
 
     const body = await parseResponseBody<{ our_address: string }>(res);
     return body.our_address;
+  }
+
+  public deposit = async () => {
+    const depositAddress = await this.getAddress();
+    return depositAddress;
   }
 
   /** Raiden client specific cleanup. */

@@ -20,6 +20,7 @@ const getGrpcError = (err: any) => {
     case p2pErrorCodes.NODE_TOR_ADDRESS:
     case orderErrorCodes.MIN_QUANTITY_VIOLATED:
     case orderErrorCodes.QUANTITY_DOES_NOT_MATCH:
+    case swapErrorCodes.REMOTE_IDENTIFIER_MISSING:
       code = status.INVALID_ARGUMENT;
       break;
     case orderErrorCodes.PAIR_DOES_NOT_EXIST:

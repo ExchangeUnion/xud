@@ -1,6 +1,6 @@
 import Logger from '../Logger';
 import { EventEmitter } from 'events';
-import { SwapDeal, Route } from './types';
+import { SwapDeal, Route, CloseChannelParams, OpenChannelParams } from './types';
 import { SwapClientType } from '../constants/enums';
 import { setTimeoutPromise } from '../utils/utils';
 
@@ -315,19 +315,21 @@ abstract class SwapClient extends EventEmitter {
   public abstract async getHeight(): Promise<number>;
 
   /**
-   * Opens a payment channel given peerIdentifier, amount
-   * optional currency and optional lndUris.
+   * Opens a payment channel.
    */
   public abstract async openChannel(
-    { peerIdentifier, units, currency, uris, pushUnits }:
-    {
-      peerIdentifier: string,
-      units: number,
-      currency?: string,
-      uris?: string[],
-      pushUnits?: number,
-    },
+    { remoteIdentifier, units, currency, uris, pushUnits }: OpenChannelParams,
   ): Promise<void>;
+
+  /**
+   * Closes a payment channel.
+   */
+  public abstract async closeChannel(
+    { remoteIdentifier, units, currency, destination, force }: CloseChannelParams,
+  ): Promise<void>;
+
+  /** Gets a deposit address. */
+  public abstract async deposit(): Promise<string>;
 
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;

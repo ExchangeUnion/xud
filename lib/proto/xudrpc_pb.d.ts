@@ -212,6 +212,12 @@ export class CloseChannelRequest extends jspb.Message {
     getForce(): boolean;
     setForce(value: boolean): void;
 
+    getDestination(): string;
+    setDestination(value: string): void;
+
+    getAmount(): number;
+    setAmount(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CloseChannelRequest.AsObject;
@@ -228,6 +234,8 @@ export namespace CloseChannelRequest {
         nodeIdentifier: string,
         currency: string,
         force: boolean,
+        destination: string,
+        amount: number,
     }
 }
 

@@ -12,6 +12,7 @@ const errorCodes = {
   SWAP_CLIENT_MISCONFIGURED: codesPrefix.concat('.8'),
   UNKNOWN_PAYMENT_ERROR: codesPrefix.concat('.9'),
   PAYMENT_PENDING: codesPrefix.concat('.10'),
+  REMOTE_IDENTIFIER_MISSING: codesPrefix.concat('.11'),
 };
 
 const errors = {
@@ -60,6 +61,10 @@ const errors = {
     message: `a payment for ${rHash} is pending`,
     code: errorCodes.UNKNOWN_PAYMENT_ERROR,
   }),
+  REMOTE_IDENTIFIER_MISSING: {
+    message: 'operation failed due to a missing remote identifier',
+    code: errorCodes.REMOTE_IDENTIFIER_MISSING,
+  },
 };
 
 export { errorCodes };

@@ -27,7 +27,8 @@ export const builder = (argv: Argv) => argv
   })
   .example('$0 openchannel BTC 0.1 028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b', 'open an 0.1 BTC channel by node key')
   .example('$0 openchannel BTC 0.1 CheeseMonkey', 'open an 0.1 BTC channel by alias')
-  .example('$0 openchannel BTC 0.1 CheeseMonkey 0.05', 'open an 0.1 BTC channel by alias and push 0.05 to remote side');
+  .example('$0 openchannel BTC 0.1 CheeseMonkey 0.05', 'open an 0.1 BTC channel by alias and push 0.05 to remote side')
+  .example('$0 openchannel ETH 0.5', 'deposit 0.5 into an ETH Connext channel without specifying a remote node');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new OpenChannelRequest();
