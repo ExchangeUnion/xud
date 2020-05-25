@@ -761,7 +761,7 @@ class Swaps extends EventEmitter {
     } catch (err) {
       // first we must handle the edge case where the maker has paid us but failed to claim our payment
       // in this case, we've already marked the swap as having been paid and completed
-      if (deal.state !== SwapState.Completed) {
+      if (deal.state === SwapState.Completed) {
         this.logger.warn(`maker was unable to claim payment for ${deal.rHash} but has already paid us`);
         return;
       }
