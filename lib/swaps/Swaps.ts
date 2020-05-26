@@ -269,7 +269,7 @@ class Swaps extends EventEmitter {
   }
 
   public getPendingSwapHashes = () => {
-    return Array.from(this.swapRecovery.pendingSwaps).map(pendingSwap => pendingSwap.rHash);
+    return Array.from(this.swapRecovery.pendingSwaps.keys());
   }
 
   /**
@@ -771,7 +771,7 @@ class Swaps extends EventEmitter {
         // and we don't need to send them a SwapFailedPacket
         await this.failDeal({
           deal,
-          failureReason: SwapFailureReason.RemoteError,
+          failureReason: SwapFailureReason.PaymentRejected,
           errorMessage: err.message,
         });
       } else {
@@ -944,27 +944,61 @@ class Swaps extends EventEmitter {
       // we update the phase persist the deal to the database before we attempt to send payment
       await this.setDealPhase(deal, SwapPhase.SendingPayment);
 
+      // check to make sure we did not fail the deal for any reason. if we failed
+      // the deal then we may not be able to claim our payment even if we resolve the hash
+      assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
+
       try {
         deal.rPreimage = await swapClient.sendPayment(deal);
         return deal.rPreimage;
       } catch (err) {
-        if (err.code === errorCodes.UNKNOWN_PAYMENT_ERROR) {
-          // the payment failed but we are unsure of its final status, so we fail
-          // the deal and assign the payment to be checked in swap recovery
-          clearTimeout(this.timeouts.get(deal.rHash));
-          this.timeouts.delete(deal.rHash);
-          this.emit('swap.failed', deal);
-          this.deals.delete(deal.rHash);
-          const swapDealInstance = await this.repository.getSwapDeal(rHash);
-          this.swapRecovery.pendingSwaps.add(swapDealInstance!);
-        } else {
-          await this.failDeal({
-            deal,
-            peer,
-            failedCurrency: deal.takerCurrency,
-            failureReason: SwapFailureReason.SendPaymentFailure,
-            errorMessage: err.message,
-          });
+        const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
+        switch (err.code) {
+          case errorCodes.FINAL_PAYMENT_ERROR:
+            // the payment failed permanently, so we remove our incoming invoice
+            // and fail the deal
+            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+
+            await this.failDeal({
+              deal,
+              peer,
+              failedCurrency: deal.takerCurrency,
+              failureReason: SwapFailureReason.SendPaymentFailure,
+              errorMessage: err.message,
+            });
+            break;
+          case errorCodes.PAYMENT_REJECTED:
+            // the payment was rejected by the taker
+            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+
+            await this.failDeal({
+              deal,
+              failureReason: SwapFailureReason.PaymentRejected,
+              errorMessage: err.message,
+            });
+            break;
+          default:
+            // the payment failed but we are unsure of its final status, so we fail
+            // the deal and assign the payment to be checked in swap recovery
+            // we cannot remove our incoming invoice because we are not yet certain
+            // whether our outgoing payment can be claimed by the taker or not
+            await this.failDeal({
+              deal,
+              peer,
+              failedCurrency: deal.takerCurrency,
+              failureReason: SwapFailureReason.UnknownError,
+              errorMessage: err.message,
+            });
+
+            // we may already be in swap recovery for this deal due to a timeout
+            // prior to the payment failing for an unknown reason. if not, we
+            // put this deal into swap recovery right now to monitor for a
+            // conclusive resolution
+            if (!this.swapRecovery.pendingSwaps.has(rHash)) {
+              const swapDealInstance = await this.repository.getSwapDeal(rHash);
+              this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
+            }
+            break;
         }
         throw err;
       }
@@ -1039,7 +1073,7 @@ class Swaps extends EventEmitter {
       // we need to make sure that the taker doesn't claim our payment without us having a chance
       // to claim ours. we will send this swap to recovery to monitor its outcome
       const swapDealInstance = await this.repository.getSwapDeal(rHash);
-      this.swapRecovery.pendingSwaps.add(swapDealInstance!);
+      this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
     }
   }
 
@@ -1107,6 +1141,9 @@ class Swaps extends EventEmitter {
         // peer misbehaving, penalize the peer
         void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapMisbehavior);
         break;
+      case SwapFailureReason.UnknownError:
+        this.logger.warn(`swap failed due to unknown error: ${errorMessage}`);
+        break;
       default:
         // do nothing, the swap failed for an innocuous reason
         break;
@@ -1124,10 +1161,13 @@ class Swaps extends EventEmitter {
 
     clearTimeout(this.timeouts.get(deal.rHash));
     this.timeouts.delete(deal.rHash);
-    const swapClient = this.swapClientManager.get(deal.role === SwapRole.Maker ? deal.makerCurrency : deal.takerCurrency);
-    if (swapClient) {
+    if (deal.phase === SwapPhase.SwapAccepted && deal.role === SwapRole.Maker) {
+      // if we are the maker and we have accepted a swap deal but we haven't yet started paying the taker
+      // then we should cancel
+      const swapClient = this.swapClientManager.get(deal.role === SwapRole.Maker ? deal.makerCurrency : deal.takerCurrency)!;
       swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
     }
+
     this.emit('swap.failed', deal);
 
     if (peer) {

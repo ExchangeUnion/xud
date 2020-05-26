@@ -9,8 +9,8 @@ import SwapClientManager from './SwapClientManager';
  * ensuring that we do not lose funds on a partially completed swap.
  */
 class SwapRecovery {
-  /** A set of swaps where we have a pending outgoing payment for swaps where we don't know the preimage. */
-  public pendingSwaps: Set<SwapDealInstance> = new Set();
+  /** A map of payment hashes to swaps where we have a pending outgoing payment but don't know the preimage. */
+  public pendingSwaps: Map<string, SwapDealInstance> = new Map();
   /** A map of payment hashes to swaps where we have recovered the preimage but not used it to claim payment yet. */
   public recoveredPreimageSwaps: Map<string, SwapDealInstance> = new Map();
   private pendingSwapsTimer?: NodeJS.Timeout;
@@ -46,7 +46,7 @@ class SwapRecovery {
     }
     deal.state = SwapState.Error;
     deal.failureReason = SwapFailureReason.Crash;
-    this.pendingSwaps.delete(deal);
+    this.pendingSwaps.delete(deal.rHash);
     await deal.save();
   }
 
@@ -55,12 +55,12 @@ class SwapRecovery {
     const takerSwapClient = this.swapClientManager.get(deal.takerCurrency);
     if (!makerSwapClient || !makerSwapClient.isConnected()) {
       this.logger.warn(`could not recover deal ${deal.rHash} because ${deal.makerCurrency} swap client is offline`);
-      this.pendingSwaps.add(deal);
+      this.pendingSwaps.set(deal.rHash, deal);
       return;
     }
     if (!takerSwapClient || !takerSwapClient.isConnected()) {
       this.logger.warn(`could not recover deal ${deal.rHash} because ${deal.takerCurrency} swap client is offline`);
-      this.pendingSwaps.add(deal);
+      this.pendingSwaps.set(deal.rHash, deal);
       return;
     }
 
@@ -89,7 +89,7 @@ class SwapRecovery {
                 deal.state = SwapState.Recovered;
                 this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
               }
-              this.pendingSwaps.delete(deal);
+              this.pendingSwaps.delete(deal.rHash);
               await deal.save();
               // TODO: update order and trade in database to indicate they were executed
             } catch (err) {
@@ -103,7 +103,7 @@ class SwapRecovery {
           } else {
             // the payment is pending, we will need to follow up on this
             this.logger.info(`recovered swap for ${deal.rHash} still has pending payments and will be monitored`);
-            this.pendingSwaps.add(deal);
+            this.pendingSwaps.set(deal.rHash, deal);
           }
         } else if (deal.role === SwapRole.Taker) {
           // we are not at risk of losing funds, but we should cancel any open invoices
