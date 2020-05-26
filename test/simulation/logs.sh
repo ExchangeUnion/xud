@@ -1,3 +1,3 @@
 #!/bin/bash
 
-cat $PWD/temp/logs/*.log
+find $PWD/temp/logs -type f -name xud*.log -printf "\n%f\n\n" -exec cat {} \;
