@@ -79,13 +79,20 @@ export type ConnextTransferResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
-  senderPublicIdentifier: string;
-  receiverPublicIdentifier?: string;
+  receiverIdentifier: string;
+  senderIdentifier: string;
   assetId: string;
   amount: string;
   lockHash: string;
   status: string;
-  meta?: any;
+  meta: {
+    sender: string;
+    timelock: string;
+  };
+  preImage?: string;
+  expiry: {
+    _hex: string;
+  };
 };
 
 export type ExpectedIncomingTransfer = {

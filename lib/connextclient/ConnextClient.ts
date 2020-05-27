@@ -11,6 +11,7 @@ import SwapClient, {
   WalletBalance,
   TradingLimits,
   SwapClientInfo,
+  PaymentStatus,
 } from '../swaps/SwapClient';
 import { SwapDeal } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
@@ -58,7 +59,7 @@ interface ConnextClient {
 const waitForPreimageByHash = (
   client: SwapClient,
   expectedHash: string,
-  errorTimeout = 75000,
+  errorTimeout = 34000,
 ): Promise<string> => {
   // create an observable that emits values when a preimage
   // event is triggered on the client
@@ -393,20 +394,23 @@ class ConnextClient extends SwapClient {
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
     const res = await this.sendRequest(`/hashlock-status/0x${lockHash}/${assetId}`, 'GET');
-    const { status } = await parseResponseBody<ConnextTransferStatus>(res);
-    return status;
+    const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
+    return transferStatusResponse;
   }
 
-  public lookupPayment = async (rHash: string, currency: string) => {
+  public lookupPayment = async (rHash: string, currency: string): Promise<PaymentStatus> => {
     try {
       const assetId = this.getTokenAddress(currency);
-      const status = await this.getHashLockStatus(rHash, assetId);
+      const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
 
-      switch (status) {
+      switch (transferStatusResponse.status) {
         case 'PENDING':
           return { state: PaymentState.Pending };
         case 'COMPLETED':
-          return { state: PaymentState.Succeeded };
+          return {
+            state: PaymentState.Succeeded,
+            preimage: transferStatusResponse.preImage?.slice(2),
+          };
         case 'EXPIRED':
         case 'FAILED':
           return { state: PaymentState.Failed };
