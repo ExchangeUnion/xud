@@ -78,7 +78,7 @@ class OrderBook extends EventEmitter {
   private swaps: Swaps;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
-  private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 10000; // 10 sec
+  private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 60000; // 1 min
   /** Max time for sanity swaps to succeed. */
   private static readonly MAX_SANITY_SWAP_TIME = 15000;
 
