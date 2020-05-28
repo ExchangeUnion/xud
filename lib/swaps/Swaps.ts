@@ -1095,6 +1095,8 @@ class Swaps extends EventEmitter {
     }) => {
     assert(deal.state !== SwapState.Completed, 'Can not fail a completed deal.');
 
+    this.logger.trace(`failing deal ${deal.rHash} in state ${SwapState[deal.state]} & phase ${SwapPhase[deal.phase]} due to ${SwapFailureReason[failureReason]}`);
+
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
     if (deal.state === SwapState.Error) {
@@ -1168,6 +1170,7 @@ class Swaps extends EventEmitter {
       swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
     }
 
+    this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
     this.emit('swap.failed', deal);
 
     if (peer) {

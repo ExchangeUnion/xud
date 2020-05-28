@@ -33,6 +33,7 @@ export enum Context {
   Swaps = 'SWAPS',
   Http = 'HTTP',
   Backup = 'BACKUP',
+  Service = 'SERVICE',
 }
 
 type Loggers = {
@@ -46,6 +47,7 @@ type Loggers = {
   connext: Logger,
   swaps: Logger,
   http: Logger,
+  service: Logger,
 };
 
 class Logger {
@@ -121,6 +123,7 @@ class Logger {
       connext: new Logger({ ...object, context: Context.Connext }),
       swaps: new Logger({ ...object, context: Context.Swaps }),
       http: new Logger({ ...object, context: Context.Http }),
+      service: new Logger({ ...object, context: Context.Service }),
     };
   }
 

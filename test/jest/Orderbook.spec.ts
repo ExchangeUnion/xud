@@ -105,6 +105,7 @@ const loggers = {
   connext: logger,
   swaps: logger,
   http: logger,
+  service: logger,
 };
 
 const localId = '97945230-8144-11e9-beb7-49ba94e5bd74';

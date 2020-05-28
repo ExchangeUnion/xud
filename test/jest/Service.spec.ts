@@ -1,4 +1,5 @@
 import { Owner } from '../../lib/constants/enums';
+import Logger from '../../lib/Logger';
 import Orderbook from '../../lib/orderbook/OrderBook';
 import Peer from '../../lib/p2p/Peer';
 import Pool from '../../lib/p2p/Pool';
@@ -20,6 +21,8 @@ jest.mock('../../lib/p2p/Pool');
 const mockedPool = <jest.Mock<Pool>><any>Pool;
 jest.mock('../../lib/p2p/Peer');
 const mockedPeer = <jest.Mock<Peer>><any>Peer;
+jest.mock('../../lib/Logger');
+const mockedLogger = <jest.Mock<Logger>><any>Logger;
 
 const getArgs = () => {
   return {
@@ -41,6 +44,7 @@ describe('Service', () => {
       swaps: new mockedSwaps(),
       version: '1.0.0',
       shutdown: jest.fn(),
+      logger: new mockedLogger(),
     };
     peer = new mockedPeer();
     components.pool.getPeer = jest.fn().mockReturnValue(peer);
