@@ -2,7 +2,7 @@ import assert from 'assert';
 import { EventEmitter } from 'events';
 import net, { Server, Socket } from 'net';
 import semver from 'semver';
-import { DisconnectionReason, ReputationEvent, XuNetwork } from '../constants/enums';
+import { DisconnectionReason, ReputationEvent, XuNetwork, SwapFailureReason } from '../constants/enums';
 import { Models } from '../db/DB';
 import { ReputationEventInstance } from '../db/types';
 import Logger from '../Logger';
@@ -825,7 +825,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.SwapFailed: {
         const { body } = (packet as packets.SwapFailedPacket);
-        this.logger.debug(`received swapFailed due to ${body?.failureReason} from ${peer.label}: ${JSON.stringify(body)}`);
+        this.logger.debug(`received swapFailed due to ${SwapFailureReason[body!.failureReason]} from ${peer.label}: ${JSON.stringify(body)}`);
         this.emit('packet.swapFailed', packet);
         break;
       }

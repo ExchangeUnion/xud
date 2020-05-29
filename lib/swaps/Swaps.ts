@@ -1209,12 +1209,13 @@ class Swaps extends EventEmitter {
           deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAccepted,
             'SendingPayment can only be set after SwapRequested (taker) or SwapAccepted (maker)');
         deal.executeTime = Date.now();
+        this.logger.debug(`Setting SendingPayment phase for deal ${deal.rHash}`);
         break;
       case SwapPhase.PaymentReceived:
         assert(deal.phase === SwapPhase.SendingPayment, 'PaymentReceived can be only be set after SendingPayment');
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
-        this.logger.debug(`Payment received for deal with hash ${deal.rHash} - preimage is ${deal.rPreimage}`);
+        this.logger.debug(`Setting PaymentReceived phase for deal ${deal.rHash} - preimage is ${deal.rPreimage}`);
         break;
       default:
         assert.fail('unknown deal phase');
