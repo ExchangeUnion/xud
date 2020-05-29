@@ -4,13 +4,14 @@ import { EventEmitter } from 'events';
 import stringify from 'json-stable-stringify';
 import net, { Socket } from 'net';
 import secp256k1 from 'secp256k1';
+import { SocksClient, SocksClientOptions } from 'socks';
 import { DisconnectionReason, ReputationEvent, SwapClientType } from '../constants/enums';
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
+import { pubKeyToAlias } from '../utils/aliasUtils';
 import { ms } from '../utils/utils';
-import { getAlias } from '../utils/aliasUtils';
 import errors, { errorCodes } from './errors';
 import Framer from './Framer';
 import Network from './Network';
@@ -19,7 +20,6 @@ import { isPacketType, isPacketTypeArray, ResponseType } from './packets/Packet'
 import * as packets from './packets/types';
 import Parser from './Parser';
 import { Address, NodeConnectionInfo, NodeState } from './types';
-import { SocksClient, SocksClientOptions } from 'socks';
 
 /** Key info about a peer for display purposes */
 type PeerInfo = {
@@ -137,7 +137,7 @@ class Peer extends EventEmitter {
 
   public set nodePubKey(nodePubKey: string | undefined) {
     this._nodePubKey = nodePubKey;
-    this._alias = nodePubKey ? getAlias(nodePubKey) : undefined;
+    this._alias = nodePubKey ? pubKeyToAlias(nodePubKey) : undefined;
   }
 
   public get alias(): string | undefined {
@@ -873,7 +873,7 @@ class Peer extends EventEmitter {
    */
   public setIdentifiers(nodePubKey: string) {
     this._nodePubKey = nodePubKey;
-    this._alias = getAlias(nodePubKey);
+    this._alias = pubKeyToAlias(nodePubKey);
   }
 
   /**

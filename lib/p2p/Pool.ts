@@ -9,7 +9,7 @@ import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
-import { getAlias } from '../utils/aliasUtils';
+import { pubKeyToAlias } from '../utils/aliasUtils';
 import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import Network from './Network';
@@ -113,7 +113,7 @@ class Pool extends EventEmitter {
     this.logger = logger;
     this.nodeKey = nodeKey;
     this.nodePubKey = nodeKey.pubKey;
-    this.alias = getAlias(nodeKey.pubKey);
+    this.alias = pubKeyToAlias(nodeKey.pubKey);
     this.version = version;
     this.config = config;
     this.testing = testing;
@@ -151,6 +151,18 @@ class Pool extends EventEmitter {
 
   public getTokenIdentifier = (currency: string) => {
     return this.nodeState.tokenIdentifiers[currency];
+  }
+
+  public getNodePubKeyById = (nodeId: number) => {
+    return this.nodes.getNodeById(nodeId)?.nodePubKey;
+  }
+
+  public getNodeId = (nodePubKey: string) => {
+    return this.nodes.getId(nodePubKey);
+  }
+
+  public getNodeAlias = (nodePubKey: string) => {
+    return this.nodes.getAlias(nodePubKey);
   }
 
   /**
@@ -410,7 +422,7 @@ class Pool extends EventEmitter {
         banned,
       };
     } else {
-      this.logger.warn(`node ${nodePubKey} (${getAlias(nodePubKey)}) not found`);
+      this.logger.warn(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) not found`);
       throw errors.NODE_UNKNOWN(nodePubKey);
     }
   }
@@ -643,7 +655,7 @@ class Pool extends EventEmitter {
           lastAddress: node.lastAddress,
         };
 
-        this.logger.info(`node ${nodePubKey} (${getAlias(nodePubKey)}) was unbanned`);
+        this.logger.info(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) was unbanned`);
         if (reconnect) {
           await this.tryConnectNode(Node, false);
         }

@@ -281,33 +281,6 @@
         ]
       }
     },
-    "/v1/listtrades": {
-      "post": {
-        "summary": "Gets a list of completed trades.\nshell: xucli listtrades [limit]",
-        "operationId": "ListTrades",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/xudrpcListTradesResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcListTradesRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/nodeinfo": {
       "get": {
         "summary": "Gets general information about a node.\nshell: xucli getnodeinfo \u003cnode_identifier\u003e",
@@ -683,6 +656,33 @@
         ]
       }
     },
+    "/v1/tradehistory": {
+      "post": {
+        "summary": "Gets a list of completed trades.\nshell: xucli tradehistory [limit]",
+        "operationId": "TradeHistory",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcTradeHistoryResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcTradeHistoryRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/tradinglimits": {
       "get": {
         "summary": "Gets the trading limits for one or all currencies.\nshell: xucli tradinglimits [currency]",
@@ -781,14 +781,6 @@
         "PEER"
       ],
       "default": "BOTH"
-    },
-    "SwapSuccessRole": {
-      "type": "string",
-      "enum": [
-        "TAKER",
-        "MAKER"
-      ],
-      "default": "TAKER"
     },
     "protobufAny": {
       "type": "object",
@@ -1202,27 +1194,6 @@
         }
       }
     },
-    "xudrpcListTradesRequest": {
-      "type": "object",
-      "properties": {
-        "limit": {
-          "type": "integer",
-          "format": "int64",
-          "title": "The maximum number of trades to return"
-        }
-      }
-    },
-    "xudrpcListTradesResponse": {
-      "type": "object",
-      "properties": {
-        "trades": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/xudrpcTrade"
-          }
-        }
-      }
-    },
     "xudrpcLndInfo": {
       "type": "object",
       "properties": {
@@ -1304,7 +1275,7 @@
         "created_at": {
           "type": "string",
           "format": "uint64",
-          "description": "The epoch time when this order was created."
+          "description": "The epoch time in milliseconds when this order was created."
         },
         "side": {
           "$ref": "#/definitions/xudrpcOrderSide",
@@ -1353,7 +1324,8 @@
       "type": "string",
       "enum": [
         "BUY",
-        "SELL"
+        "SELL",
+        "BOTH"
       ],
       "default": "BUY"
     },
@@ -1625,6 +1597,15 @@
         }
       }
     },
+    "xudrpcRole": {
+      "type": "string",
+      "enum": [
+        "TAKER",
+        "MAKER",
+        "INTERNAL"
+      ],
+      "default": "TAKER"
+    },
     "xudrpcShutdownRequest": {
       "type": "object"
     },
@@ -1696,7 +1677,7 @@
           "description": "The node pub key of the peer that executed this order."
         },
         "role": {
-          "$ref": "#/definitions/SwapSuccessRole",
+          "$ref": "#/definitions/xudrpcRole",
           "description": "Our role in the swap, either MAKER or TAKER."
         },
         "currency_received": {
@@ -1727,7 +1708,7 @@
         },
         "taker_order": {
           "$ref": "#/definitions/xudrpcOrder",
-          "description": "The taker order involved in this trade."
+          "description": "The taker order involved in this trade. Note that when a trade occurs from\na remote peer filling one of our orders, we do not receive the order (only a\nswap request) and this field will be empty."
         },
         "r_hash": {
           "type": "string",
@@ -1741,6 +1722,49 @@
         "pair_id": {
           "type": "string",
           "description": "The trading pair for this trade."
+        },
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The price used for the trade."
+        },
+        "role": {
+          "$ref": "#/definitions/xudrpcRole",
+          "description": "Our role in the trade."
+        },
+        "executed_at": {
+          "type": "string",
+          "format": "uint64",
+          "title": "The epoch time in milliseconds that this trade was executed"
+        },
+        "side": {
+          "$ref": "#/definitions/xudrpcOrderSide",
+          "description": "Whether this node was on the buy or sell side of the trade - or both in case of internal trades."
+        },
+        "counterparty": {
+          "$ref": "#/definitions/xudrpcNodeIdentifier",
+          "description": "The counterparty to this trade, if applicable."
+        }
+      }
+    },
+    "xudrpcTradeHistoryRequest": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "integer",
+          "format": "int64",
+          "title": "The maximum number of trades to return"
+        }
+      }
+    },
+    "xudrpcTradeHistoryResponse": {
+      "type": "object",
+      "properties": {
+        "trades": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/xudrpcTrade"
+          }
         }
       }
     },

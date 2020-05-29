@@ -89,7 +89,6 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     listCurrencies: IXudService_IListCurrencies;
     listPairs: IXudService_IListPairs;
     listPeers: IXudService_IListPeers;
-    listTrades: IXudService_IListTrades;
     openChannel: IXudService_IOpenChannel;
     placeOrder: IXudService_IPlaceOrder;
     placeOrderSync: IXudService_IPlaceOrderSync;
@@ -101,6 +100,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     subscribeOrders: IXudService_ISubscribeOrders;
     subscribeSwaps: IXudService_ISubscribeSwaps;
     subscribeSwapFailures: IXudService_ISubscribeSwapFailures;
+    tradeHistory: IXudService_ITradeHistory;
     tradingLimits: IXudService_ITradingLimits;
     unban: IXudService_IUnban;
     withdraw: IXudService_IWithdraw;
@@ -232,15 +232,6 @@ interface IXudService_IListPeers extends grpc.MethodDefinition<xudrpc_pb.ListPee
     responseSerialize: grpc.serialize<xudrpc_pb.ListPeersResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ListPeersResponse>;
 }
-interface IXudService_IListTrades extends grpc.MethodDefinition<xudrpc_pb.ListTradesRequest, xudrpc_pb.ListTradesResponse> {
-    path: string; // "/xudrpc.Xud/ListTrades"
-    requestStream: boolean; // false
-    responseStream: boolean; // false
-    requestSerialize: grpc.serialize<xudrpc_pb.ListTradesRequest>;
-    requestDeserialize: grpc.deserialize<xudrpc_pb.ListTradesRequest>;
-    responseSerialize: grpc.serialize<xudrpc_pb.ListTradesResponse>;
-    responseDeserialize: grpc.deserialize<xudrpc_pb.ListTradesResponse>;
-}
 interface IXudService_IOpenChannel extends grpc.MethodDefinition<xudrpc_pb.OpenChannelRequest, xudrpc_pb.OpenChannelResponse> {
     path: string; // "/xudrpc.Xud/OpenChannel"
     requestStream: boolean; // false
@@ -340,6 +331,15 @@ interface IXudService_ISubscribeSwapFailures extends grpc.MethodDefinition<xudrp
     responseSerialize: grpc.serialize<xudrpc_pb.SwapFailure>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.SwapFailure>;
 }
+interface IXudService_ITradeHistory extends grpc.MethodDefinition<xudrpc_pb.TradeHistoryRequest, xudrpc_pb.TradeHistoryResponse> {
+    path: string; // "/xudrpc.Xud/TradeHistory"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.TradeHistoryRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.TradeHistoryRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.TradeHistoryResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.TradeHistoryResponse>;
+}
 interface IXudService_ITradingLimits extends grpc.MethodDefinition<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse> {
     path: string; // "/xudrpc.Xud/TradingLimits"
     requestStream: boolean; // false
@@ -385,7 +385,6 @@ export interface IXudServer {
     listCurrencies: grpc.handleUnaryCall<xudrpc_pb.ListCurrenciesRequest, xudrpc_pb.ListCurrenciesResponse>;
     listPairs: grpc.handleUnaryCall<xudrpc_pb.ListPairsRequest, xudrpc_pb.ListPairsResponse>;
     listPeers: grpc.handleUnaryCall<xudrpc_pb.ListPeersRequest, xudrpc_pb.ListPeersResponse>;
-    listTrades: grpc.handleUnaryCall<xudrpc_pb.ListTradesRequest, xudrpc_pb.ListTradesResponse>;
     openChannel: grpc.handleUnaryCall<xudrpc_pb.OpenChannelRequest, xudrpc_pb.OpenChannelResponse>;
     placeOrder: grpc.handleServerStreamingCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderEvent>;
     placeOrderSync: grpc.handleUnaryCall<xudrpc_pb.PlaceOrderRequest, xudrpc_pb.PlaceOrderResponse>;
@@ -397,6 +396,7 @@ export interface IXudServer {
     subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
     subscribeSwaps: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapSuccess>;
     subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeSwapsRequest, xudrpc_pb.SwapFailure>;
+    tradeHistory: grpc.handleUnaryCall<xudrpc_pb.TradeHistoryRequest, xudrpc_pb.TradeHistoryResponse>;
     tradingLimits: grpc.handleUnaryCall<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse>;
     unban: grpc.handleUnaryCall<xudrpc_pb.UnbanRequest, xudrpc_pb.UnbanResponse>;
     withdraw: grpc.handleUnaryCall<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse>;
@@ -445,9 +445,6 @@ export interface IXudClient {
     listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
-    listTrades(request: xudrpc_pb.ListTradesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
-    listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
-    listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
@@ -477,6 +474,9 @@ export interface IXudClient {
     subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
     subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
+    tradeHistory(request: xudrpc_pb.TradeHistoryRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
+    tradeHistory(request: xudrpc_pb.TradeHistoryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
+    tradeHistory(request: xudrpc_pb.TradeHistoryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
     tradingLimits(request: xudrpc_pb.TradingLimitsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
@@ -532,9 +532,6 @@ export class XudClient extends grpc.Client implements IXudClient {
     public listPeers(request: xudrpc_pb.ListPeersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
     public listPeers(request: xudrpc_pb.ListPeersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListPeersResponse) => void): grpc.ClientUnaryCall;
-    public listTrades(request: xudrpc_pb.ListTradesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
-    public listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
-    public listTrades(request: xudrpc_pb.ListTradesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ListTradesResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
     public openChannel(request: xudrpc_pb.OpenChannelRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.OpenChannelResponse) => void): grpc.ClientUnaryCall;
@@ -564,6 +561,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public subscribeSwaps(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapSuccess>;
     public subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
     public subscribeSwapFailures(request: xudrpc_pb.SubscribeSwapsRequest, metadata?: grpc.Metadata, options?: Partial<grpc.CallOptions>): grpc.ClientReadableStream<xudrpc_pb.SwapFailure>;
+    public tradeHistory(request: xudrpc_pb.TradeHistoryRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
+    public tradeHistory(request: xudrpc_pb.TradeHistoryRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
+    public tradeHistory(request: xudrpc_pb.TradeHistoryRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradeHistoryResponse) => void): grpc.ClientUnaryCall;
     public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;
     public tradingLimits(request: xudrpc_pb.TradingLimitsRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.TradingLimitsResponse) => void): grpc.ClientUnaryCall;

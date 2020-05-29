@@ -3,7 +3,7 @@ import colors from 'colors/safe';
 import { Arguments } from 'yargs';
 import { ListPeersRequest, ListPeersResponse, Peer } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
-import { generateHeaders } from '../utils';
+import { generateHeaders, shorten } from '../utils';
 
 const HEADERS = [
   'Peer',
@@ -16,13 +16,6 @@ const createTable = () => {
     head: generateHeaders(HEADERS),
   }) as HorizontalTable;
   return table;
-};
-
-const trimPubKey = (key: string) => {
-  if (key.length <= 0) {
-    return '';
-  }
-  return `${key.slice(0, 10)}...${key.slice(key.length - 10)}`;
 };
 
 const formatPairList = (pairs: string[]) => {
@@ -38,7 +31,7 @@ const formatLndPubKeys = (lndKeys: string[][]) => {
   let str = '';
   lndKeys.forEach((client) => {
     /* eslint disable-next-line */
-    str = `${str}${str ? '\n' : ''}${client[0]} lnd key: ${trimPubKey(client[1])}`;
+    str = `${str}${str ? '\n' : ''}${client[0]} lnd key: ${shorten(client[1])}`;
   });
   return str;
 };
@@ -60,7 +53,7 @@ ${address}`,
 \nversion: ${peer.xudVersion}\
 \ntime connected: ${peer.secondsConnected.toString()} seconds\
 \n${formatLndPubKeys(peer.lndPubKeysMap)}\
-${peer.raidenAddress ? `\nraiden address: ${trimPubKey(peer.raidenAddress)}` : ''}`,
+${peer.raidenAddress ? `\nraiden address: ${shorten(peer.raidenAddress)}` : ''}`,
     ];
     formattedPeers.push(details);
   });

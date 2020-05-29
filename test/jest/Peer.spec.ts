@@ -4,7 +4,7 @@ import Network from '../../lib/p2p/Network';
 import Peer from '../../lib/p2p/Peer';
 import { Address } from '../../lib/p2p/types';
 import addressUtils from '../../lib/utils/addressUtils';
-import { getAlias } from '../../lib/utils/aliasUtils';
+import { pubKeyToAlias } from '../../lib/utils/aliasUtils';
 
 describe('Peer', () => {
   const logger = Logger.createLoggers(Level.Warn).p2p;
@@ -33,7 +33,7 @@ describe('Peer', () => {
   test('peer label equals established node pub key + alias', async () => {
     const nodePubKey = '038395febbcecdcb869b95b5fe73419ef2602f640c6bfc88635d99a111015c0822';
     peer.setIdentifiers(nodePubKey);
-    const alias = getAlias(nodePubKey);
+    const alias = pubKeyToAlias(nodePubKey);
     const expectedLabel = `${nodePubKey} (${alias})`;
     expect(peer.label).toEqual(expectedLabel);
   });

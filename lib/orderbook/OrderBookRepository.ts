@@ -1,6 +1,6 @@
-import * as db from '../db/types';
 import Bluebird from 'bluebird';
 import { Models } from '../db/DB';
+import * as db from '../db/types';
 
 class OrderbookRepository {
 
@@ -48,16 +48,26 @@ class OrderbookRepository {
     }
   }
 
+  public getOrder = (id: string) => {
+    return this.models.Order.findOne({
+      where: { id },
+    });
+  }
+
   public addTrade = (trade: db.TradeFactory) => {
     return this.models.Trade.create(trade);
   }
 
   public getTrades = (limit?: number): Bluebird<db.TradeInstance[]> => {
-    if (limit) {
-      return this.models.Trade.findAll({ limit, order: [['createdAt', 'DESC']] });
-    } else {
-      return this.models.Trade.findAll({ order: [['createdAt', 'DESC']] });
-    }
+    return this.models.Trade.findAll({
+      limit,
+      order: [['createdAt', 'DESC']],
+      include: [
+        { model: this.models.Order, as: 'makerOrder' },
+        { model: this.models.Order, as: 'takerOrder' },
+        { model: this.models.SwapDeal, include: [this.models.Node] },
+      ],
+    });
   }
 }
 

@@ -13,6 +13,7 @@ export enum OrderingDirection {
 export enum OrderSide {
   Buy,
   Sell,
+  Both,
 }
 
 export enum Owner {
@@ -59,6 +60,7 @@ export const magicValsXuNetwork = {
 export enum SwapRole {
   Taker = 0,
   Maker = 1,
+  Internal = 2,
 }
 
 export enum SwapPhase {

@@ -6,7 +6,7 @@ import errors from '../service/errors';
  * not a valid 66 character hex string.
  * @param pubkey a public key in hex format to convert to an alias
  */
-export const getAlias = (pubkey: string): string => {
+export const pubKeyToAlias = (pubkey: string): string => {
   const getWord = (substring: string): string | undefined => {
     const asNumber = parseInt(substring, 16);
     if (!isNaN(asNumber)) {

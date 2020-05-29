@@ -1,7 +1,8 @@
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
+import { OrderAttributes, TradeInstance } from '../db/types';
 import OrderBook from '../orderbook/OrderBook';
-import { isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
+import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
@@ -13,7 +14,7 @@ import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
 import commitHash from '../Version';
 import errors from './errors';
-import { ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, XudInfo } from './types';
+import { NodeIdentifier, ServiceComponents, ServiceOrder, ServiceOrderSidesArrays, ServicePlaceOrderEvent, ServiceTrade, XudInfo } from './types';
 
 /** Functions to check argument validity and throw [[INVALID_ARGUMENT]] when invalid. */
 const argChecks = {
@@ -421,40 +422,36 @@ class Service {
     const result = new Map<string, ServiceOrderSidesArrays>();
 
     const listOrderTypes = (pairId: string) => {
-      const orders: ServiceOrderSidesArrays = {
-        buyArray: [],
-        sellArray: [],
-      };
+      let buyArray: Order[] = [];
+      let sellArray: Order[] = [];
 
       if (includePeerOrders) {
         const peerOrders = this.orderBook.getPeersOrders(pairId);
 
-        const peerBuyOrders = peerOrders.buyArray.map(order => this.toServiceOrder(order, includeAliases));
-        const peerSellOrders = peerOrders.sellArray.map(order => this.toServiceOrder(order, includeAliases));
-
-        orders.buyArray = orders.buyArray.concat(peerBuyOrders);
-        orders.sellArray = orders.sellArray.concat(peerSellOrders);
+        buyArray = buyArray.concat(peerOrders.buyArray);
+        sellArray = sellArray.concat(peerOrders.sellArray);
       }
 
       if (includeOwnOrders) {
         const ownOrders = this.orderBook.getOwnOrders(pairId);
 
-        const ownBuyOrders = ownOrders.buyArray.map(order => this.toServiceOrder(order, includeAliases));
-        const ownSellOrders = ownOrders.sellArray.map(order => this.toServiceOrder(order, includeAliases));
-
-        orders.buyArray = orders.buyArray.concat(ownBuyOrders);
-        orders.sellArray = orders.sellArray.concat(ownSellOrders);
+        buyArray = buyArray.concat(ownOrders.buyArray);
+        sellArray = sellArray.concat(ownOrders.sellArray);
       }
 
       // sort all orders
-      orders.buyArray = sortOrders(orders.buyArray, true);
-      orders.sellArray = sortOrders(orders.sellArray, false);
+      buyArray = sortOrders(buyArray, true);
+      sellArray = sortOrders(sellArray, false);
 
       if (limit > 0) {
-        orders.buyArray = orders.buyArray.slice(0, limit);
-        orders.sellArray = orders.sellArray.slice(0, limit);
+        buyArray = buyArray.slice(0, limit);
+        sellArray = sellArray.slice(0, limit);
       }
-      return orders;
+
+      return {
+        buyArray: buyArray.map(order => this.toServiceOrder(order, includeAliases)),
+        sellArray: sellArray.map(order => this.toServiceOrder(order, includeAliases)),
+      };
     };
 
     if (pairId) {
@@ -472,7 +469,7 @@ class Service {
    * Get the list of the order book's supported currencies
    * @returns A list of supported currency ticker symbols
    */
-  public listCurrencies = () => {
+  public listCurrencies = (): Map<string, Currency> => {
     return this.orderBook.currencies;
   }
 
@@ -493,15 +490,86 @@ class Service {
   }
 
   /**
-   * Gets the list of trades.
+   * Gets trading history.
    */
-  public listTrades = (args: { limit: number }) => {
+  public tradeHistory = async (args: { limit: number }): Promise<ServiceTrade[]> => {
     const { limit } = args;
-    if (limit === 0) {
-      return this.orderBook.getTrades();
-    } else {
-      return this.orderBook.getTrades(limit);
-    }
+    const trades = await this.orderBook.getTrades(limit);
+
+    const orderInstanceToServiceOrder = (order: OrderAttributes, quantity: number): ServiceOrder => {
+      const isOwnOrder = !!order.localId;
+      let nodeIdentifier: NodeIdentifier;
+
+      if (isOwnOrder) {
+        nodeIdentifier = {
+          nodePubKey: this.pool.nodePubKey,
+          alias: this.pool.alias,
+        };
+      } else {
+        const nodePubKey = this.pool.getNodePubKeyById(order.nodeId!)!;
+        nodeIdentifier = {
+          nodePubKey,
+          alias: this.pool.getNodeAlias(nodePubKey),
+        };
+      }
+
+      return {
+        isOwnOrder,
+        nodeIdentifier,
+        quantity,
+        id: order.id,
+        pairId: order.pairId,
+        price: order.price,
+        side: order.isBuy ? OrderSide.Buy : OrderSide.Sell,
+        localId: order.localId,
+        createdAt: order.createdAt,
+      };
+    };
+
+    const serviceTrades: ServiceTrade[] = trades.map((trade: TradeInstance) => {
+      const takerOrder = trade.takerOrder ? orderInstanceToServiceOrder(trade.takerOrder, trade.quantity) : undefined;
+      const makerOrder = orderInstanceToServiceOrder(trade.makerOrder!, trade.quantity);
+      let role: SwapRole;
+      let side: OrderSide;
+      let counterparty: NodeIdentifier | undefined;
+
+      if (takerOrder) {
+        if (makerOrder.isOwnOrder) {
+          role = SwapRole.Internal;
+          side = OrderSide.Both;
+        } else {
+          role = SwapRole.Taker;
+          side = takerOrder.side;
+        }
+      } else {
+        // no taker order means we were the maker in a swap
+        role = SwapRole.Maker;
+        side = makerOrder.side;
+      }
+
+      if (trade.SwapDeal) {
+        const nodePubKey = trade.SwapDeal.peerPubKey;
+        counterparty = {
+          nodePubKey,
+          alias: this.pool.getNodeAlias(nodePubKey),
+        };
+      }
+
+      return {
+        makerOrder,
+        takerOrder,
+        role,
+        side,
+        counterparty,
+        rHash: trade.rHash,
+        quantity: trade.quantity,
+        pairId: makerOrder.pairId,
+        price: makerOrder.price!,
+        executedAt: trade.createdAt.getTime(),
+      };
+    });
+
+    return serviceTrades;
   }
 
   /**

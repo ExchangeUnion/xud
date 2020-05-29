@@ -1,5 +1,5 @@
 import { ConnextInfo } from '../connextclient/types';
-import { OrderSide } from '../constants/enums';
+import { OrderSide, SwapRole } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import OrderBook from '../orderbook/OrderBook';
 import { Order, PlaceOrderEvent } from '../orderbook/types';
@@ -42,12 +42,27 @@ export type NodeIdentifier = {
   alias?: string;
 };
 
-export type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity'>> & {
+export type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity' | 'quantity' | 'price'>> & {
   nodeIdentifier: NodeIdentifier;
   side: OrderSide;
   localId?: string;
   hold?: number;
   isOwnOrder: boolean;
+  quantity?: number;
+  price?: number;
+};
+
+export type ServiceTrade = {
+  makerOrder: ServiceOrder,
+  takerOrder?: ServiceOrder,
+  rHash?: string,
+  quantity: number,
+  pairId: string,
+  price: number,
+  role: SwapRole,
+  side: OrderSide,
+  executedAt: number,
+  counterparty?: NodeIdentifier;
 };
 
 export type ServiceOrderSidesArrays = {

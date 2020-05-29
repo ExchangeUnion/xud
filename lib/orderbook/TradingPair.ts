@@ -2,8 +2,8 @@ import assert from 'assert';
 import FastPriorityQueue from 'fastpriorityqueue';
 import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
-import { isOwnOrder, Order, OwnOrder, PeerOrder, OrderMatch, MatchingResult } from './types';
 import errors from './errors';
+import { isOwnOrder, MatchingResult, Order, OrderMatch, OwnOrder, PeerOrder } from './types';
 
 /** A map between orders and their order ids. */
 type OrderMap<T extends Order> = Map<string, T>;

@@ -11,7 +11,7 @@ import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
 import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
-import { getAlias } from '../utils/aliasUtils';
+import { pubKeyToAlias } from '../utils/aliasUtils';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import errors from './errors';
 import OrderBookRepository from './OrderBookRepository';
@@ -461,7 +461,7 @@ class OrderBook extends EventEmitter {
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
-        const alias = getAlias(maker.peerPubKey);
+        const alias = pubKeyToAlias(maker.peerPubKey);
         this.logger.debug(`matched with peer ${maker.peerPubKey} (${alias}), executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         try {
           const swapResult = await this.executeSwap(maker, taker);
@@ -546,7 +546,12 @@ class OrderBook extends EventEmitter {
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
     // make sure the order is in the database before we begin the swap
-    await this.repository.addOrderIfNotExists(maker);
+    if (!(await this.repository.getOrder(maker.id))) {
+      await this.repository.addOrderIfNotExists({
+        ...maker,
+        nodeId: this.pool.getNodeId(maker.peerPubKey),
+      });
+    }
     try {
       const swapResult = await this.swaps.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
@@ -583,6 +588,7 @@ class OrderBook extends EventEmitter {
     if (takerOrder) {
       addOrderPromises.push(this.repository.addOrderIfNotExists(takerOrder));
     }
+
     await Promise.all(addOrderPromises);
     await this.repository.addTrade({
       quantity,
@@ -756,7 +762,7 @@ class OrderBook extends EventEmitter {
     for (const pairId of this.pairInstances.keys()) {
       this.removePeerPair(peerPubKey, pairId);
     }
-    this.logger.debug(`removed all orders for peer ${peerPubKey} (${getAlias(peerPubKey)})`);
+    this.logger.debug(`removed all orders for peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`);
   }
 
   private removePeerPair = (peerPubKey: string, pairId: string) => {
@@ -899,7 +905,7 @@ class OrderBook extends EventEmitter {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
       this.emit('peerOrder.invalidation', removeResult.order);
     } catch {
-      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${getAlias(peerPubKey)})`);
+      this.logger.error(`failed to remove order (${oi.id}) of peer ${peerPubKey} (${pubKeyToAlias(peerPubKey)})`);
       // TODO: Penalize peer
     }
   }
