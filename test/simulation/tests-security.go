@@ -1,10 +1,11 @@
 package main
 
 import (
+	"time"
+
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
-	"time"
 )
 
 // securityTestCases are test cases which try to break the protocol via
@@ -22,10 +23,6 @@ var securityTestCases = []*testCase{
 	{
 		name: "maker stalling after 1st htlc",
 		test: testMakerStallingAfter1stHTLC,
-	},
-	{
-		name: "taker stalling after 2nd htlc",
-		test: testTakerStallingAfter2ndHTLC,
 	},
 	{
 		name:             "taker stalling after swap succeeded",
@@ -48,6 +45,10 @@ var unsettledChannelsSecurityTests = []*testCase{
 		test: testMakerShutdownAfter1stHTLC,
 	},
 	{
+		name: "taker stalling after 2nd htlc",
+		test: testTakerStallingAfter2ndHTLC,
+	},
+	{
 		name: "taker shutdown after 2nd htlc",
 		test: testTakerShutdownAfter2ndHTLC,
 	},
@@ -65,7 +66,7 @@ func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTes
 
 	// Place an order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "taker_stalling_on_swap_accepted",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -78,7 +79,7 @@ func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTes
 
 	// Place a matching order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "taker_stalling_on_swap_accepted",
 		Price:    bobOrderReq.Price,
 		Quantity: bobOrderReq.Quantity,
 		PairId:   bobOrderReq.PairId,
@@ -128,7 +129,7 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "maker_stalling_after_1st_htlc",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -141,7 +142,7 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "maker_stalling_after_1st_htlc",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -153,7 +154,7 @@ func testMakerStallingAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.Len(res.InternalMatches, 0)
 	ht.assert.Len(res.SwapSuccesses, 0)
 	ht.assert.Len(res.SwapFailures, 1)
-	ht.assert.Equal(res.SwapFailures[0].FailureReason, "SwapTimedOut")
+	ht.assert.True(res.SwapFailures[0].FailureReason == "SwapTimedOut" || res.SwapFailures[0].FailureReason == "PaymentRejected")
 	ht.assert.NotNil(res.RemainingOrder)
 	ht.assert.Equal(res.RemainingOrder.GetLocalId(), bobOrderReq.OrderId)
 	ht.assert.Equal(res.RemainingOrder.Quantity, bobOrderReq.Quantity)
@@ -212,7 +213,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "maker_shutdown_after_1st_htlc",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -225,7 +226,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "maker_shutdown_after_1st_htlc",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -324,13 +325,30 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
+	alicePrevBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	bobPrevBalance, err := getBalance(ht.ctx, net.Bob)
+	ht.assert.NoError(err)
+
+	amt := int64(15000000)
+	pushAmt := int64(7500000)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
+	ht.assert.NoError(err)
+	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode, amt, pushAmt)
+	ht.assert.NoError(err)
+
+	bobPrevBtcChanList, err := net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.NoError(err)
+	ht.assert.Equal(len(bobPrevBtcChanList.Channels), 1)
+	bobPrevBtcChan := bobPrevBtcChanList.Channels[0]
+
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
 	// Place an order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "taker_stalling_2nd_htlc",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -343,7 +361,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place a matching order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "taker_stalling_2nd_htlc",
 		Price:    bobOrderReq.Price,
 		Quantity: bobOrderReq.Quantity,
 		PairId:   bobOrderReq.PairId,
@@ -378,7 +396,69 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
 
-	ht.act.disconnect(net.Alice, net.Bob)
+	// Closing maker BTC channel and checking balance.
+	// First, find the pending HTLC expiration height.
+
+	bobBtcChanList, err := net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(bobBtcChanList.Channels), 1)
+	bobBtcChan := bobBtcChanList.Channels[0]
+	ht.assert.Greater(bobPrevBtcChan.LocalBalance-bobBtcChan.LocalBalance, int64(float64(bobOrderReq.Quantity)*bobOrderReq.Price))
+	ht.assert.Equal(bobPrevBtcChan.RemoteBalance, bobBtcChan.RemoteBalance)
+	ht.assert.Equal(len(bobBtcChan.PendingHtlcs), 1)
+	expirationHeight := bobBtcChan.PendingHtlcs[0].ExpirationHeight
+
+	// Expire the HTLC.
+
+	btcInfo, err := net.LndBtcNetwork.BtcMiner.Node.GetInfo()
+	ht.assert.NoError(err)
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(expirationHeight - uint32(btcInfo.Blocks))
+	ht.assert.NoError(err)
+	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
+	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
+
+	time.Sleep(25 * time.Second)
+
+	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
+
+	bobBtcChanList, err = net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(bobBtcChanList.Channels), 0)
+
+	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
+
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(1)
+	ht.assert.NoError(err)
+
+	time.Sleep(5 * time.Second)
+
+	// Wait for HTLC output to be fully confirmed.
+
+	_, err = net.LndBtcNetwork.BtcMiner.Node.Generate(6)
+	ht.assert.NoError(err)
+
+	time.Sleep(35 * time.Second)
+
+	// Check balance.
+
+	onchainFeesThreshold := int64(200000)
+	bobBalance, err := getBalance(ht.ctx, net.Bob)
+	ht.assert.NoError(err)
+	walletDiff := bobPrevBalance.btc.wallet.TotalBalance - bobBalance.btc.wallet.TotalBalance - pushAmt
+	ht.assert.True(walletDiff < onchainFeesThreshold,
+		"bob Btc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.btc.wallet.TotalBalance, bobBalance.btc.wallet.TotalBalance)
+
+	// Closing taker LTC channel and checking balance.
+	// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
+
+	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
+	ht.assert.NoError(err)
+
+	onchainFeesThreshold = int64(200000)
+	aliceBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance - pushAmt
+	ht.assert.True(walletDiff < onchainFeesThreshold,
+		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
+
 }
 
 func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {

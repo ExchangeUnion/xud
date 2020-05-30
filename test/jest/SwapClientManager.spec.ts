@@ -81,6 +81,7 @@ const loggers = {
   connext: logger,
   swaps: logger,
   http: logger,
+  service: logger,
 };
 jest.mock('../../lib/p2p/Peer');
 const mockedPeer = <jest.Mock<Peer>><any>Peer;

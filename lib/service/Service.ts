@@ -1,6 +1,7 @@
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
+import Logger from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
@@ -57,6 +58,7 @@ class Service {
   private pool: Pool;
   private version: string;
   private swaps: Swaps;
+  private logger: Logger;
 
   /** Create an instance of available RPC methods and bind all exposed functions. */
   constructor(components: ServiceComponents) {
@@ -65,6 +67,7 @@ class Service {
     this.swapClientManager = components.swapClientManager;
     this.pool = components.pool;
     this.swaps = components.swaps;
+    this.logger = components.logger;
 
     this.version = components.version;
   }
@@ -678,6 +681,7 @@ class Service {
    */
   public subscribeSwapFailures = async (args: { includeTaker: boolean }, callback: (swapFailure: SwapFailure) => void) => {
     this.swaps.on('swap.failed', (deal) => {
+      this.logger.trace(`notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`);
       // always alert client for maker matches, taker matches only when specified
       if (deal.role === SwapRole.Maker || args.includeTaker) {
         callback(deal as SwapFailure);

@@ -88,7 +88,7 @@ describe('SwapRecovery', () => {
     expect(deal.state).toEqual(SwapState.Error);
     expect(deal.failureReason).toEqual(SwapFailureReason.Crash);
     expect(swapRecovery.pendingSwaps.delete).toHaveBeenCalledTimes(1);
-    expect(swapRecovery.pendingSwaps.delete).toHaveBeenCalledWith(deal);
+    expect(swapRecovery.pendingSwaps.delete).toHaveBeenCalledWith(deal.rHash);
     expect(save).toHaveBeenCalledTimes(1);
   });
 
@@ -165,7 +165,7 @@ describe('SwapRecovery', () => {
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
     expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
-    expect(swapRecovery.pendingSwaps).toContain(deal);
+    expect(swapRecovery.pendingSwaps.has(deal.rHash)).toBeTruthy();
   });
 
 });

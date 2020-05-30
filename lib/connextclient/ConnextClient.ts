@@ -350,9 +350,8 @@ class ConnextClient extends SwapClient {
         case errorCodes.TIMEOUT:
         case errorCodes.SERVER_ERROR:
         case errorCodes.INVALID_TOKEN_PAYMENT_RESPONSE:
-          throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
         default:
-          throw swapErrors.FINAL_PAYMENT_ERROR(err.message);
+          throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
       }
     }
   }

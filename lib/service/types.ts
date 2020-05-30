@@ -7,6 +7,7 @@ import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
+import Logger from 'lib/Logger';
 
 /**
  * The components required by the API service layer.
@@ -15,10 +16,11 @@ export type ServiceComponents = {
   orderBook: OrderBook;
   swapClientManager: SwapClientManager;
   pool: Pool;
-    /** The version of the local xud instance. */
+  /** The version of the local xud instance. */
   version: string;
   swaps: Swaps;
-    /** The function to be called to shutdown the parent process */
+  logger: Logger;
+  /** The function to be called to shutdown the parent process */
   shutdown: () => void;
 };
 

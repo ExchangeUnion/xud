@@ -15,7 +15,7 @@ index b50acec47..bfd7a86d6 100644
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
-index f077b3ca4..7398a97b4 100644
+index 9a4bc5efb..78e4c53a4 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
 @@ -21,7 +21,15 @@ class SwapRecovery {
@@ -36,7 +36,7 @@ index f077b3ca4..7398a97b4 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index 5ee168fa9..f0a3b879d 100644
+index 3f9f73ede..1effe1637 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
 @@ -205,9 +205,28 @@ class Swaps extends EventEmitter {
@@ -112,12 +112,14 @@ index 5ee168fa9..f0a3b879d 100644
      } catch (err) {
        // first we must handle the edge case where the maker has paid us but failed to claim our payment
        // in this case, we've already marked the swap as having been paid and completed
-@@ -939,12 +978,29 @@ class Swaps extends EventEmitter {
+@@ -939,6 +978,18 @@ class Swaps extends EventEmitter {
  
        this.logger.debug('Executing maker code to resolve hash');
  
 +      if (process.env.CUSTOM_SCENARIO === 'SECURITY::MAKER_1ST_HTLC_STALL') {
 +        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
++        await makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error);
 +        return '';
 +      }
 +
@@ -129,7 +131,8 @@ index 5ee168fa9..f0a3b879d 100644
        const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
  
        // we update the phase persist the deal to the database before we attempt to send payment
-       await this.setDealPhase(deal, SwapPhase.SendingPayment);
+@@ -949,6 +1000,13 @@ class Swaps extends EventEmitter {
+       assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
  
        try {
 +        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
@@ -142,7 +145,7 @@ index 5ee168fa9..f0a3b879d 100644
          deal.rPreimage = await swapClient.sendPayment(deal);
          return deal.rPreimage;
        } catch (err) {
-@@ -974,6 +1030,16 @@ class Swaps extends EventEmitter {
+@@ -995,6 +1053,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
  

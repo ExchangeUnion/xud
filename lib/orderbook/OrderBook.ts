@@ -78,7 +78,7 @@ class OrderBook extends EventEmitter {
   private swaps: Swaps;
 
   /** Max time for placeOrder iterations (due to swaps failures retries). */
-  private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 10000; // 10 sec
+  private static readonly MAX_PLACEORDER_ITERATIONS_TIME = 60000; // 1 min
   /** Max time for sanity swaps to succeed. */
   private static readonly MAX_SANITY_SWAP_TIME = 15000;
 
@@ -332,7 +332,12 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    return this.placeOrder(stampedOrder, immediateOrCancel, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
+    return this.placeOrder({
+      onUpdate,
+      order: stampedOrder,
+      discardRemaining: immediateOrCancel,
+      maxTime: Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME,
+    });
   }
 
   public placeMarketOrder = async (order: OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
@@ -341,7 +346,12 @@ class OrderBook extends EventEmitter {
     }
 
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.POSITIVE_INFINITY : 0 });
-    const addResult = await this.placeOrder(stampedOrder, true, onUpdate, Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME);
+    const addResult = await this.placeOrder({
+      onUpdate,
+      order: stampedOrder,
+      discardRemaining: true,
+      maxTime: Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME,
+    });
     delete addResult.remainingOrder;
     return addResult;
   }
@@ -357,12 +367,19 @@ class OrderBook extends EventEmitter {
    * routine including internal matches, successful swaps, failed swaps, and remaining orders
    * @param maxTime the deadline in epoch milliseconds for this method to end recursive calls
    */
-  private placeOrder = async (
-    order: OwnOrder,
+  private placeOrder = async ({
+    order,
     discardRemaining = false,
+    retry = false,
+    onUpdate,
+    maxTime,
+  }: {
+    order: OwnOrder,
+    discardRemaining?: boolean,
+    retry?: boolean,
     onUpdate?: (e: PlaceOrderEvent) => void,
     maxTime?: number,
-  ): Promise<PlaceOrderResult> => {
+  }): Promise<PlaceOrderResult> => {
     // Check if order complies to thresholds
     if (this.thresholds.minQuantity > 0) {
       if (!this.checkThresholdCompliance(order)) {
@@ -373,7 +390,7 @@ class OrderBook extends EventEmitter {
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
-      assert(discardRemaining, 'discardRemaining must be true on recursive calls where maxTime could exceed');
+      assert(retry, 'we may only timeout placeOrder on retries');
       this.logger.debug(`placeOrder max time exceeded. order (${JSON.stringify(order)}) won't be fully matched`);
 
       // returning the remaining order to be rolled back and handled by the initial call
@@ -381,7 +398,7 @@ class OrderBook extends EventEmitter {
         internalMatches: [],
         swapSuccesses: [],
         swapFailures: [],
-        remainingOrder: order,
+        remainingOrder: discardRemaining ? undefined : order,
       };
     }
 
@@ -430,7 +447,7 @@ class OrderBook extends EventEmitter {
       const orderToRetry: OwnOrder = { ...order, quantity: failedSwapQuantity };
 
       // invoke placeOrder recursively, append matches/swaps and any remaining order
-      const retryResult = await this.placeOrder(orderToRetry, true, onUpdate, maxTime);
+      const retryResult = await this.placeOrder({ discardRemaining, onUpdate, maxTime, order: orderToRetry, retry: true });
       internalMatches.push(...retryResult.internalMatches);
       swapSuccesses.push(...retryResult.swapSuccesses);
       if (retryResult.remainingOrder) {
@@ -518,7 +535,11 @@ class OrderBook extends EventEmitter {
     if (remainingOrder) {
       if (discardRemaining) {
         remainingOrder = undefined;
-      } else {
+      } else if (!retry) {
+        // on recursive retries of placeOrder, we don't add remaining orders to the orderbook
+        // instead we preserve the remainder and return it to the parent caller, which will sum
+        // up any remaining orders and add them to the order book as a single order once
+        // matching is complete
         this.addOwnOrder(remainingOrder);
         onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
       }

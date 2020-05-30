@@ -76,6 +76,7 @@ describe('Swaps Integration', () => {
     logger = new mockedLogger();
     logger.debug = jest.fn();
     logger.error = jest.fn();
+    logger.trace = jest.fn();
     db = new mockedDB();
     pool = new mockedPool();
     swapClientManager = new mockedSwapClientManager();

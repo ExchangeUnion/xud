@@ -203,6 +203,7 @@ class Xud extends EventEmitter {
         swapClientManager: this.swapClientManager,
         pool: this.pool,
         swaps: this.swaps,
+        logger: loggers.service,
         shutdown: this.beginShutdown,
       });
 
