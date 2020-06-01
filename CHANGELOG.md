@@ -35,6 +35,7 @@
 
 
 ### Features
+
 * swaps: add connext swap client support ([94ecf85](https://github.com/ExchangeUnion/xud/commit/94ecf85bfc87dfc489a9eabfbf06003b1f270b96))
 * **cli:** automatically determine rpc host/port ([2063fe0](https://github.com/ExchangeUnion/xud/commit/2063fe0dbc2fb5dbd3231638427b030e2f59950b)), closes [#1451](https://github.com/ExchangeUnion/xud/issues/1451)
 * **cli:** clarify positional args & add examples ([a0072ee](https://github.com/ExchangeUnion/xud/commit/a0072eec6843f14ae3c7ed97a5db7c44f512d147))
