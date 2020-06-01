@@ -196,7 +196,8 @@ class Swaps extends EventEmitter {
       await setTimeoutPromise(Swaps.SANITY_SWAP_COMPLETE_TIMEOUT);
       if (this.sanitySwaps.delete(rHash)) {
         // if we're here, it means the sanity swap has not completed within the time limit
-        swapClient.removeInvoice(rHash).catch(this.logger.error);
+        // TODO(removeInvoice):
+        // swapClient.removeInvoice(rHash).catch(this.logger.error);
       }
     });
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
@@ -394,7 +395,8 @@ class Swaps extends EventEmitter {
       ]);
     } catch (err) {
       this.logger.warn(`sanity swap could not be initiated for ${currency} using rHash ${rHash}: ${err.message}`);
-      swapClient.removeInvoice(rHash).catch(this.logger.error);
+      // TODO(removeInvoice):
+      // swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
 
@@ -404,7 +406,9 @@ class Swaps extends EventEmitter {
       return true;
     } catch (err) {
       this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
-      swapClient.removeInvoice(rHash).catch(this.logger.error);
+
+      // TODO(removeInvoice):
+      // swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
   }
@@ -903,7 +907,8 @@ class Swaps extends EventEmitter {
           return preimage;
         } catch (err) {
           this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
-          swapClient.removeInvoice(rHash).catch(this.logger.error);
+          // TODO(removeInvoice):
+          // swapClient.removeInvoice(rHash).catch(this.logger.error);
           throw err;
         }
       }
@@ -952,12 +957,14 @@ class Swaps extends EventEmitter {
         deal.rPreimage = await swapClient.sendPayment(deal);
         return deal.rPreimage;
       } catch (err) {
-        const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
+        // TODO(removeInvoice):
+        // const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
         switch (err.code) {
           case errorCodes.FINAL_PAYMENT_ERROR:
             // the payment failed permanently, so we remove our incoming invoice
             // and fail the deal
-            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+            // TODO(removeInvoice):
+            // makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
 
             await this.failDeal({
               deal,
@@ -969,7 +976,8 @@ class Swaps extends EventEmitter {
             break;
           case errorCodes.PAYMENT_REJECTED:
             // the payment was rejected by the taker
-            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+            // TODO(removeInvoice):
+            // makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
 
             await this.failDeal({
               deal,
