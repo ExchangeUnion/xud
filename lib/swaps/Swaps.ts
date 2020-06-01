@@ -952,13 +952,12 @@ class Swaps extends EventEmitter {
         deal.rPreimage = await swapClient.sendPayment(deal);
         return deal.rPreimage;
       } catch (err) {
-        const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
+        // the payment failed but we are unsure of its final status, so we fail
+        // the deal and assign the payment to be checked in swap recovery
+        // we don't remove our incoming invoice because we are not yet certain
+        // whether our outgoing payment can be claimed by the taker or not
         switch (err.code) {
           case errorCodes.FINAL_PAYMENT_ERROR:
-            // the payment failed permanently, so we remove our incoming invoice
-            // and fail the deal
-            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
-
             await this.failDeal({
               deal,
               peer,
@@ -968,9 +967,6 @@ class Swaps extends EventEmitter {
             });
             break;
           case errorCodes.PAYMENT_REJECTED:
-            // the payment was rejected by the taker
-            makerSwapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
-
             await this.failDeal({
               deal,
               failureReason: SwapFailureReason.PaymentRejected,
@@ -978,10 +974,6 @@ class Swaps extends EventEmitter {
             });
             break;
           default:
-            // the payment failed but we are unsure of its final status, so we fail
-            // the deal and assign the payment to be checked in swap recovery
-            // we cannot remove our incoming invoice because we are not yet certain
-            // whether our outgoing payment can be claimed by the taker or not
             await this.failDeal({
               deal,
               peer,
@@ -989,17 +981,17 @@ class Swaps extends EventEmitter {
               failureReason: SwapFailureReason.UnknownError,
               errorMessage: err.message,
             });
-
-            // we may already be in swap recovery for this deal due to a timeout
-            // prior to the payment failing for an unknown reason. if not, we
-            // put this deal into swap recovery right now to monitor for a
-            // conclusive resolution
-            if (!this.swapRecovery.pendingSwaps.has(rHash)) {
-              const swapDealInstance = await this.repository.getSwapDeal(rHash);
-              this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
-            }
             break;
         }
+
+        // we may already be in swap recovery for this deal due to a timeout
+        // prior to the payment failing . if not, we put this deal into swap
+        // recovery right now to monitor for a conclusive resolution
+        if (!this.swapRecovery.pendingSwaps.has(rHash)) {
+          const swapDealInstance = await this.repository.getSwapDeal(rHash);
+          this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
+        }
+
         throw err;
       }
     } else {
