@@ -196,8 +196,7 @@ class Swaps extends EventEmitter {
       await setTimeoutPromise(Swaps.SANITY_SWAP_COMPLETE_TIMEOUT);
       if (this.sanitySwaps.delete(rHash)) {
         // if we're here, it means the sanity swap has not completed within the time limit
-        // TODO(removeInvoice):
-        // swapClient.removeInvoice(rHash).catch(this.logger.error);
+        swapClient.removeInvoice(rHash).catch(this.logger.error);
       }
     });
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
@@ -395,8 +394,7 @@ class Swaps extends EventEmitter {
       ]);
     } catch (err) {
       this.logger.warn(`sanity swap could not be initiated for ${currency} using rHash ${rHash}: ${err.message}`);
-      // TODO(removeInvoice):
-      // swapClient.removeInvoice(rHash).catch(this.logger.error);
+      swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
 
@@ -406,9 +404,7 @@ class Swaps extends EventEmitter {
       return true;
     } catch (err) {
       this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
-
-      // TODO(removeInvoice):
-      // swapClient.removeInvoice(rHash).catch(this.logger.error);
+      swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
   }
@@ -907,8 +903,7 @@ class Swaps extends EventEmitter {
           return preimage;
         } catch (err) {
           this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
-          // TODO(removeInvoice):
-          // swapClient.removeInvoice(rHash).catch(this.logger.error);
+          swapClient.removeInvoice(rHash).catch(this.logger.error);
           throw err;
         }
       }
