@@ -1,3 +1,60 @@
+# [1.0.0-beta.3](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2020-06-01)
+
+
+### Bug Fixes
+
+* add `::` to selfaddress detection ([#1489](https://github.com/ExchangeUnion/xud/issues/1489)) ([18aa554](https://github.com/ExchangeUnion/xud/commit/18aa554c8d8092a37d89c8d6bee899f7711587ed))
+* add connextUpdate listener when not operational ([3ef792e](https://github.com/ExchangeUnion/xud/commit/3ef792e00484da809d3ceb4a660b4c1fd7432099))
+* broadcast invalidation after internal match ([1cc8ec4](https://github.com/ExchangeUnion/xud/commit/1cc8ec4f7b1a34d6f5bede3f77d310bc7f6d91ea)), closes [#1547](https://github.com/ExchangeUnion/xud/issues/1547)
+* connectPeerAddresses typo ([#1504](https://github.com/ExchangeUnion/xud/issues/1504)) ([38732ed](https://github.com/ExchangeUnion/xud/commit/38732ed8e7381dba60e7451d39db739b6201afc4))
+* ignore npm-shrinkwrap for commit hash ([52689be](https://github.com/ExchangeUnion/xud/commit/52689be0f50abd1fb1bdc13a0fbbdf73386d891b))
+* persist node id of peer for swapped order ([7ffa091](https://github.com/ExchangeUnion/xud/commit/7ffa091497632c6a6a3bfbff5d8b2b670bbcf257))
+* prevent hang on first updateCapacity call ([#1493](https://github.com/ExchangeUnion/xud/issues/1493)) ([a6b981d](https://github.com/ExchangeUnion/xud/commit/a6b981d130b96d2da483f9a7efd8d9e4c2f98158))
+* raiden ([#1552](https://github.com/ExchangeUnion/xud/issues/1552)) ([db3789e](https://github.com/ExchangeUnion/xud/commit/db3789ee9651b2cf3fa159bc7643d39ec9f931bf))
+* string message grpc error handling ([a1a600d](https://github.com/ExchangeUnion/xud/commit/a1a600d4d0b45e66a7018b3cfb42cb7ae7191555))
+* update xud version on every compile ([bc3d4ec](https://github.com/ExchangeUnion/xud/commit/bc3d4ec32e5a74878476b50beeea717df0a3f747)), closes [#1449](https://github.com/ExchangeUnion/xud/issues/1449)
+* **cli:** cleaner message if decimal_places NaN ([41d01f9](https://github.com/ExchangeUnion/xud/commit/41d01f9499fb53409e410a58c91db882610f5ccb)), closes [#1539](https://github.com/ExchangeUnion/xud/issues/1539)
+* **cli:** handle config file loading error ([824bcd6](https://github.com/ExchangeUnion/xud/commit/824bcd65b5506588c5fde2c6833127cde78890bb))
+* **cli:** openchannel push amount ([71b73f8](https://github.com/ExchangeUnion/xud/commit/71b73f846f6c8174c81fa4e231617a567aff5d91))
+* **cli:** use localhost when rpc config 0.0.0.0 ([0cdde81](https://github.com/ExchangeUnion/xud/commit/0cdde815be0582a93ddc02bf95c552cf0905ace6))
+* **connext:** add 0x prefix to getHashLockStatus ([d470a14](https://github.com/ExchangeUnion/xud/commit/d470a14bcc95a5417a51dc53be5a121bd434afac))
+* **connext:** provide preimage for swap recovery ([1724d57](https://github.com/ExchangeUnion/xud/commit/1724d57d5593dc63f1eee7ccf9af73d05da0a8ec))
+* **connext:** rebalancer logic for simnet channel opener ([#1540](https://github.com/ExchangeUnion/xud/issues/1540)) ([3896397](https://github.com/ExchangeUnion/xud/commit/389639788c55881c453d818ce3eac7b0952545dd))
+* **connext:** unknown send payment error ([c93dfec](https://github.com/ExchangeUnion/xud/commit/c93dfec1caa71d9cb7544e94bc683e98ab5ff7dd))
+* **lnd:** relax unhandled openchannel timeout ([b072391](https://github.com/ExchangeUnion/xud/commit/b072391e3553035ee8eed1fed4804e61e8b91f39)), closes [#1405](https://github.com/ExchangeUnion/xud/issues/1405)
+* **orderbook:** match own orders before peers' ([ca9f26b](https://github.com/ExchangeUnion/xud/commit/ca9f26bfe0fecee2df31a73f5e56dd33f412fbce)), closes [#1206](https://github.com/ExchangeUnion/xud/issues/1206)
+* **orderbook:** remainingOrder on retries ([421f0ad](https://github.com/ExchangeUnion/xud/commit/421f0ad821f3c245946ca5780ed14c90e6cf90e5))
+* **rpc:** correctly log errors for streaming calls ([55c0c11](https://github.com/ExchangeUnion/xud/commit/55c0c112ee5881de3ad3859dab30f1a393e34fe7))
+* **swapclient:** don't initialize if misconfigured ([3168336](https://github.com/ExchangeUnion/xud/commit/3168336c3f9bc4b6c5ca4f194a386aed4188d09e))
+* **swaps:** don't cancel invoice on swap timeout ([3c20171](https://github.com/ExchangeUnion/xud/commit/3c201718b4cccaf4530b5d84076c0c186646aa8c)), closes [#1574](https://github.com/ExchangeUnion/xud/issues/1574)
+* **swaps:** don't fail payment for complete swap ([#1581](https://github.com/ExchangeUnion/xud/issues/1581)) ([0f9c9ff](https://github.com/ExchangeUnion/xud/commit/0f9c9ff893e4635f78d2c514aa832da5fb64996e)), closes [#1571](https://github.com/ExchangeUnion/xud/issues/1571) [#1569](https://github.com/ExchangeUnion/xud/issues/1569)
+* **swaps:** failed payment for completed swap ([274230a](https://github.com/ExchangeUnion/xud/commit/274230adad5c9cb7794a3591b5c7dff823e23fc4)), closes [#1569](https://github.com/ExchangeUnion/xud/issues/1569)
+
+
+### Features
+
+* **cli:** automatically determine rpc host/port ([2063fe0](https://github.com/ExchangeUnion/xud/commit/2063fe0dbc2fb5dbd3231638427b030e2f59950b)), closes [#1451](https://github.com/ExchangeUnion/xud/issues/1451)
+* **cli:** clarify positional args & add examples ([a0072ee](https://github.com/ExchangeUnion/xud/commit/a0072eec6843f14ae3c7ed97a5db7c44f512d147))
+* **cli:** print "successfully" for SwapSuccesses ([de2e6cb](https://github.com/ExchangeUnion/xud/commit/de2e6cb27028e8dd1df19e127f1bd913285f46f0))
+* **cli:** print placeorder swapfailure reason ([5355813](https://github.com/ExchangeUnion/xud/commit/5355813075eb762f89824f6179ddb64df6d28b16))
+* **cli:** use streaming PlaceOrder by default ([b4e8d9d](https://github.com/ExchangeUnion/xud/commit/b4e8d9db882175236d65b02b344db4e3706e651b))
+* **cli:** use ticker format for addpair ([b8b0f9b](https://github.com/ExchangeUnion/xud/commit/b8b0f9b115c32f352e4da7e884c0f61a1e81cb30)), closes [#1521](https://github.com/ExchangeUnion/xud/issues/1521)
+* **lnd:** attempt openchannel when connect fails ([d0589ea](https://github.com/ExchangeUnion/xud/commit/d0589ea1e4ed210df67e3957a063a96f693cba6f))
+* **p2p:** log reason enum for SwapFailed packet ([f875e1a](https://github.com/ExchangeUnion/xud/commit/f875e1a212cec942e0249bda0f754d68fb6c78c4)), closes [#1499](https://github.com/ExchangeUnion/xud/issues/1499)
+* **rpc:** CloseChannel call ([f69fa7c](https://github.com/ExchangeUnion/xud/commit/f69fa7cc16371f345037bfde8612f429916b9c43)), closes [#1471](https://github.com/ExchangeUnion/xud/issues/1471) [#1472](https://github.com/ExchangeUnion/xud/issues/1472) [#1476](https://github.com/ExchangeUnion/xud/issues/1476)
+* **rpc:** deposit & withdraw calls using lnd ([c306ea3](https://github.com/ExchangeUnion/xud/commit/c306ea32067d2f4f0a7ebfce59c87762c67dddde)), closes [#1062](https://github.com/ExchangeUnion/xud/issues/1062)
+* **rpc:** include aliases in ListOrders ([c865f59](https://github.com/ExchangeUnion/xud/commit/c865f59bca652a70a1ea586d171724e070115e29)), closes [#643](https://github.com/ExchangeUnion/xud/issues/643)
+* **rpc:** push amount in OpenChannel call ([6bf82f9](https://github.com/ExchangeUnion/xud/commit/6bf82f9ee148388471c42103a73ed061a990801f)), closes [#1464](https://github.com/ExchangeUnion/xud/issues/1464)
+* additional swaps-related logging ([2b385d7](https://github.com/ExchangeUnion/xud/commit/2b385d7da7490bedac8884fcf8b85940dd28f3f1))
+* **rpc:** TradeHistory ([79bed74](https://github.com/ExchangeUnion/xud/commit/79bed74d99f3bb425e8bb36f72390543ca33b901)), closes [#1232](https://github.com/ExchangeUnion/xud/issues/1232)
+* peer order match events & alias ([fb6ecfd](https://github.com/ExchangeUnion/xud/commit/fb6ecfd584f54120c892af4cdc6fca42db89c384)), closes [#1514](https://github.com/ExchangeUnion/xud/issues/1514)
+* **service:** add logger ([8aca0fd](https://github.com/ExchangeUnion/xud/commit/8aca0fdd5033d2d8aa0cd5d8532f35ebc9d0c5ae))
+* **simnet:** increase ETH channel size ([#1506](https://github.com/ExchangeUnion/xud/issues/1506)) ([1e20723](https://github.com/ExchangeUnion/xud/commit/1e207235ec18ae4ba7932ce09f64b45e3a350e37))
+* **swaps:** log full SwapFailureReason name ([0a93f96](https://github.com/ExchangeUnion/xud/commit/0a93f9696c74c07c969bf71d9834cb1dda7155cb)), closes [#1499](https://github.com/ExchangeUnion/xud/issues/1499)
+* testing config option for develoment/tests ([2738b07](https://github.com/ExchangeUnion/xud/commit/2738b075e42f7c374e49bc389ea6b68e934cceb3)), closes [#1496](https://github.com/ExchangeUnion/xud/issues/1496)
+
+
+
 # [1.0.0-beta.2](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.1...v1.0.0-beta.2) (2020-03-31)
 
 
