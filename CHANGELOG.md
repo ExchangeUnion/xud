@@ -1,5 +1,8 @@
 # [1.0.0-beta.3](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2020-06-01)
 
+### BREAKING CHANGES
+
+* `NodeState` packet now contains `connext_address` field
 
 ### Bug Fixes
 
@@ -32,7 +35,7 @@
 
 
 ### Features
-
+* swaps: add connext swap client support ([94ecf85](https://github.com/ExchangeUnion/xud/commit/94ecf85bfc87dfc489a9eabfbf06003b1f270b96))
 * **cli:** automatically determine rpc host/port ([2063fe0](https://github.com/ExchangeUnion/xud/commit/2063fe0dbc2fb5dbd3231638427b030e2f59950b)), closes [#1451](https://github.com/ExchangeUnion/xud/issues/1451)
 * **cli:** clarify positional args & add examples ([a0072ee](https://github.com/ExchangeUnion/xud/commit/a0072eec6843f14ae3c7ed97a5db7c44f512d147))
 * **cli:** print "successfully" for SwapSuccesses ([de2e6cb](https://github.com/ExchangeUnion/xud/commit/de2e6cb27028e8dd1df19e127f1bd913285f46f0))
