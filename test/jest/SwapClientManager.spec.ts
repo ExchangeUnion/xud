@@ -70,6 +70,7 @@ jest.mock('../../lib/raidenclient/RaidenClient', () => {
 });
 
 const logger = new Logger({});
+logger.error = jest.fn();
 const loggers = {
   global: logger,
   db: logger,

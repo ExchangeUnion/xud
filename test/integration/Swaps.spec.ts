@@ -116,6 +116,7 @@ describe('Swaps.Integration', () => {
     pool = sandbox.createStubInstance(Pool) as any;
     pool.addReputationEvent = () => Promise.resolve(true);
     pool.getPeer = () => peer;
+    pool.tryGetPeer = () => peer;
     // getRoute response
     getRouteResponse = () => {
       return Promise.resolve({
