@@ -82,13 +82,13 @@ describe('SwapRecovery', () => {
   test('it fails a deal', async () => {
     const deal: any = { ...swapDealInstance };
     swapRecovery = new SwapRecovery(swapClientManager, logger);
-    swapRecovery.pendingSwaps.delete = jest.fn();
+    swapRecovery['pendingSwaps'].delete = jest.fn();
 
     await swapRecovery['failDeal'](deal, lndBtc);
     expect(deal.state).toEqual(SwapState.Error);
     expect(deal.failureReason).toEqual(SwapFailureReason.Crash);
-    expect(swapRecovery.pendingSwaps.delete).toHaveBeenCalledTimes(1);
-    expect(swapRecovery.pendingSwaps.delete).toHaveBeenCalledWith(deal.rHash);
+    expect(swapRecovery['pendingSwaps'].delete).toHaveBeenCalledTimes(1);
+    expect(swapRecovery['pendingSwaps'].delete).toHaveBeenCalledWith(deal.rHash);
     expect(save).toHaveBeenCalledTimes(1);
   });
 
@@ -165,7 +165,7 @@ describe('SwapRecovery', () => {
     await swapRecovery.recoverDeal(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
     expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
-    expect(swapRecovery.pendingSwaps.has(deal.rHash)).toBeTruthy();
+    expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeTruthy();
   });
 
 });
