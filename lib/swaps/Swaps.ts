@@ -269,7 +269,7 @@ class Swaps extends EventEmitter {
   }
 
   public getPendingSwapHashes = () => {
-    return Array.from(this.swapRecovery.pendingSwaps.keys());
+    return this.swapRecovery.getPendingSwapHashes();
   }
 
   /**
@@ -953,7 +953,7 @@ class Swaps extends EventEmitter {
         return deal.rPreimage;
       } catch (err) {
         // the payment failed but we are unsure of its final status, so we fail
-        // the deal and assign the payment to be checked in swap recovery
+        // the deal and assign the payment to be checked in swap recovery.
         // we don't remove our incoming invoice because we are not yet certain
         // whether our outgoing payment can be claimed by the taker or not
         switch (err.code) {
@@ -982,14 +982,6 @@ class Swaps extends EventEmitter {
               errorMessage: err.message,
             });
             break;
-        }
-
-        // we may already be in swap recovery for this deal due to a timeout
-        // prior to the payment failing . if not, we put this deal into swap
-        // recovery right now to monitor for a conclusive resolution
-        if (!this.swapRecovery.pendingSwaps.has(rHash)) {
-          const swapDealInstance = await this.repository.getSwapDeal(rHash);
-          this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
         }
 
         throw err;
@@ -1061,11 +1053,11 @@ class Swaps extends EventEmitter {
     });
 
     if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
-      // if the swap times out while we are in the middle of sending payment as the maker
+      // if the swap fails while we are in the middle of sending payment as the maker
       // we need to make sure that the taker doesn't claim our payment without us having a chance
       // to claim ours. we will send this swap to recovery to monitor its outcome
       const swapDealInstance = await this.repository.getSwapDeal(rHash);
-      this.swapRecovery.pendingSwaps.set(rHash, swapDealInstance!);
+      await this.swapRecovery.recoverDeal(swapDealInstance!);
     }
   }
 
