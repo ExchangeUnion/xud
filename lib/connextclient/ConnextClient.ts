@@ -419,7 +419,8 @@ class ConnextClient extends SwapClient {
           return { state: PaymentState.Pending };
       }
     } catch (e) {
-      throw errors.PAYMENT_NOT_FOUND;
+      this.logger.error(e);
+      throw errors.SERVER_ERROR;
     }
   }
 
