@@ -835,7 +835,7 @@ class Pool extends EventEmitter {
   /** Validates a peer. If a check fails, closes the peer and throws a p2p error. */
   private validatePeer = async (peer: Peer): Promise<void> => {
     assert(peer.nodePubKey);
-    const peerPubKey = peer.nodePubKey!;
+    const peerPubKey = peer.nodePubKey;
 
     if (peerPubKey === this.nodePubKey) {
       await peer.close(DisconnectionReason.ConnectedToSelf);

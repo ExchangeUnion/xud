@@ -183,7 +183,7 @@ class RaidenClient extends SwapClient {
         amount,
         lock_timeout,
         token_address: tokenAddress,
-        target_address: deal.destination!,
+        target_address: deal.destination,
         secret_hash: deal.rHash,
       });
       return this.sanitizeTokenPaymentResponse(tokenPaymentResponse);

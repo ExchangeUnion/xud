@@ -11,7 +11,7 @@ const addressUtils = {
     const { remoteAddress, remotePort } = socket;
     assert(remoteAddress, 'socket must have a remoteAddress value');
     assert(remotePort, 'socket must have a remotePort value');
-    return { host: remoteAddress!, port: remotePort! };
+    return { host: remoteAddress, port: remotePort };
   },
 
   /**

@@ -680,7 +680,7 @@ class Swaps extends EventEmitter {
    */
   private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
     assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
-    const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
+    const { quantity, rHash, makerCltvDelta } = responsePacket.body;
     const deal = this.getDeal(rHash);
     if (!deal) {
       this.logger.warn(`received swap accepted for unrecognized deal: ${rHash}`);
@@ -992,7 +992,7 @@ class Swaps extends EventEmitter {
       assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
       this.logger.debug('Executing taker code to resolve hash');
 
-      return deal.rPreimage!;
+      return deal.rPreimage;
     }
   }
 
@@ -1208,7 +1208,7 @@ class Swaps extends EventEmitter {
 
     deal.phase = newPhase;
 
-    if (deal.phase !== SwapPhase.SwapCreated && deal.phase !== SwapPhase.SwapRequested) {
+    if (deal.phase !== SwapPhase.SwapRequested) {
       // once a deal is accepted, we persist its state to the database on every phase update
       await this.persistDeal(deal);
     }
