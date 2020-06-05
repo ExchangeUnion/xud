@@ -81,9 +81,9 @@
       "win32": "@powershell -NoProfile -ExecutionPolicy Unrestricted -Command ./winFixDeprecation.ps1"
     },
     "proto": {
-      "linux": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "darwin": "./node_modules/grpc-tools/bin/protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-grpc=node_modules/.bin/grpc_tools_node_protoc_plugin' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
-      "win32": "node_modules\\grpc-tools\\bin\\protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-grpc=node_modules\\.bin\\grpc_tools_node_protoc_plugin.cmd\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\xudp2p.proto proto\\lndrpc.proto proto\\lndinvoices.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
+      "linux": "grpc_tools_node_protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "darwin": "grpc_tools_node_protoc --js_out='import_style=commonjs,binary:lib/proto' --ts_out='lib/proto' --grpc_out='lib/proto' --plugin='protoc-gen-ts=node_modules/.bin/protoc-gen-ts' -I='proto' proto/*.proto proto/google/api/*.proto proto/google/protobuf/*.proto",
+      "win32": "grpc_tools_node_protoc --js_out=\"import_style=commonjs,binary:lib\\proto\" --ts_out=\"lib\\proto\" --grpc_out=\"lib\\proto\" --plugin=\"protoc-gen-ts=node_modules\\.bin\\protoc-gen-ts.cmd\" -I=\"proto\" proto\\xudrpc.proto proto\\xudp2p.proto proto\\lndrpc.proto proto\\lndinvoices.proto proto\\annotations.proto proto\\google\\api\\http.proto proto\\google\\protobuf\\descriptor.proto"
     },
     "swagger": {
       "linux": "./node_modules/grpc-tools/bin/protoc --swagger_out='lib/proto' -I='proto' proto/xudrpc.proto",
@@ -170,7 +170,7 @@
     "rxjs": "^6.5.5",
     "secp256k1": "^3.7.1",
     "semver": "^6.3.0",
-    "sequelize": "^4.44.2",
+    "sequelize": "^4.44.4",
     "socks": "^2.3.3",
     "sqlite3": "^4.1.0",
     "swagger-ui-express": "^4.1.2",
@@ -190,7 +190,7 @@
     "@types/jest": "^24.0.24",
     "@types/json-stable-stringify": "^1.0.32",
     "@types/mocha": "^5.2.7",
-    "@types/node": "^12.11.1",
+    "@types/node": "^14.0.10",
     "@types/node-forge": "^0.8.6",
     "@types/secp256k1": "^3.5.0",
     "@types/semver": "^6.0.2",
@@ -202,23 +202,23 @@
     "@types/yargs": "^13.0.3",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
-    "concurrently": "^5.0.0",
-    "conventional-changelog-cli": "^2.0.31",
+    "concurrently": "^5.2.0",
+    "conventional-changelog-cli": "^2.0.34",
     "grpc-tools": "1.8.0",
     "grpc_tools_node_protoc_ts": "^2.5.5",
-    "jest": "^24.9.0",
-    "mocha": "^6.2.1",
-    "nodemon": "^1.19.4",
+    "jest": "^26.0.1",
+    "mocha": "^7.2.0",
+    "nodemon": "^2.0.4",
     "proto2slate": "^1.1.0",
     "sinon": "^7.5.0",
     "supertest": "^4.0.2",
-    "ts-jest": "^24.2.0",
+    "ts-jest": "^26.1.0",
     "ts-node": "^8.4.1",
     "tslint": "^5.20.0",
     "tslint-config-airbnb": "^5.11.2",
     "tslint-no-circular-imports": "^0.7.0",
-    "typedoc": "^0.16.10",
-    "typescript": "^3.8.2"
+    "typedoc": "^0.17.7",
+    "typescript": "^3.9.3"
   },
   "engines": {
     "node": ">=10.2.0"

@@ -567,11 +567,11 @@ class LndClient extends SwapClient {
       assert(deal.destination, 'swap deal as taker must have a destination');
       request = this.buildSendRequest({
         rHash: deal.rHash,
-        destination: deal.destination!,
+        destination: deal.destination,
         amount: deal.makerAmount,
         // Using the agreed upon makerCltvDelta. Maker won't accept
         // our payment if we provide a smaller value.
-        finalCltvDelta: deal.makerCltvDelta!,
+        finalCltvDelta: deal.makerCltvDelta,
       });
     } else {
       // we are the maker paying the taker
@@ -579,7 +579,7 @@ class LndClient extends SwapClient {
       assert(deal.takerCltvDelta, 'swap deal as maker must have a takerCltvDelta');
       request = this.buildSendRequest({
         rHash: deal.rHash,
-        destination: deal.takerPubKey!,
+        destination: deal.takerPubKey,
         amount: deal.takerAmount,
         finalCltvDelta: deal.takerCltvDelta,
         // Enforcing the maximum duration/length of the payment by specifying

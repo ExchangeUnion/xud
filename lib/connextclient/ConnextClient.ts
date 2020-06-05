@@ -319,7 +319,7 @@ class ConnextClient extends SwapClient {
           assetId: tokenAddress,
           timelock: deal.takerCltvDelta.toString(),
           lockHash: `0x${deal.rHash}`,
-          recipient: deal.destination!,
+          recipient: deal.destination,
         });
         // @ts-ignore
         const [executeTransferResponse, preimage] = await Promise.all([
@@ -338,7 +338,7 @@ class ConnextClient extends SwapClient {
           assetId: tokenAddress,
           timelock: lockTimeout.toString(),
           lockHash: `0x${deal.rHash}`,
-          recipient: deal.destination!,
+          recipient: deal.destination,
         });
         await executeTransfer;
       }

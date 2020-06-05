@@ -1,5 +1,5 @@
 diff --git a/lib/Xud.ts b/lib/Xud.ts
-index b50acec47..bfd7a86d6 100644
+index 08402caa8..c9972d258 100644
 --- a/lib/Xud.ts
 +++ b/lib/Xud.ts
 @@ -87,6 +87,11 @@ class Xud extends EventEmitter {
@@ -15,7 +15,7 @@ index b50acec47..bfd7a86d6 100644
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
-index 9a4bc5efb..78e4c53a4 100644
+index dc868b894..a9b98f814 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
 @@ -21,7 +21,15 @@ class SwapRecovery {
@@ -36,7 +36,7 @@ index 9a4bc5efb..78e4c53a4 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index 3f9f73ede..1effe1637 100644
+index 1002dbb57..f7a88019c 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
 @@ -205,9 +205,28 @@ class Swaps extends EventEmitter {
@@ -98,7 +98,7 @@ index 3f9f73ede..1effe1637 100644
 +    }
 +
      assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
-     const { quantity, rHash, makerCltvDelta } = responsePacket.body!;
+     const { quantity, rHash, makerCltvDelta } = responsePacket.body;
      const deal = this.getDeal(rHash);
 @@ -758,6 +792,11 @@ class Swaps extends EventEmitter {
  
@@ -145,7 +145,7 @@ index 3f9f73ede..1effe1637 100644
          deal.rPreimage = await swapClient.sendPayment(deal);
          return deal.rPreimage;
        } catch (err) {
-@@ -995,6 +1053,16 @@ class Swaps extends EventEmitter {
+@@ -992,6 +1050,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
  
@@ -159,6 +159,6 @@ index 3f9f73ede..1effe1637 100644
 +        process.exit();
 +      }
 +
-       return deal.rPreimage!;
+       return deal.rPreimage;
      }
    }

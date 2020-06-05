@@ -939,9 +939,9 @@ class OrderBook extends EventEmitter {
   private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer) => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     assert(this.swaps, 'swaps module is disabled');
-    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body;
 
-    if (!Swaps.validateSwapRequest(requestPacket.body!)) {
+    if (!Swaps.validateSwapRequest(requestPacket.body)) {
       // TODO: penalize peer for invalid swap request
       await peer.sendPacket(new SwapFailedPacket({
         rHash,
