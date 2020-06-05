@@ -10,7 +10,7 @@ import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
 import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
-import { SwapDeal } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
@@ -519,8 +519,13 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
   }
 
+  public deposit = async () => {
+    const depositAddress = await this.newAddress();
+    return depositAddress;
+  }
+
   public withdraw = async ({ amount, destination, all = false, fee }: {
-    amount: number,
+    amount?: number,
     destination: string,
     all?: boolean,
     fee?: number,
@@ -532,7 +537,7 @@ class LndClient extends SwapClient {
     }
     if (all) {
       request.setSendAll(all);
-    } else {
+    } else if (amount) {
       request.setAmount(amount);
     }
     const withdrawResponse = await this.unaryCall<lndrpc.SendCoinsRequest, lndrpc.SendCoinsResponse>('sendCoins', request);
@@ -653,7 +658,7 @@ class LndClient extends SwapClient {
   /**
    * Gets a new address for the internal lnd wallet.
    */
-  public newAddress = async (addressType = lndrpc.AddressType.WITNESS_PUBKEY_HASH) => {
+  private newAddress = async (addressType = lndrpc.AddressType.WITNESS_PUBKEY_HASH) => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
     const newAddressResponse = await this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
@@ -739,14 +744,17 @@ class LndClient extends SwapClient {
    * Opens a channel given peerPubKey and amount.
    */
   public openChannel = async (
-    { peerIdentifier: peerPubKey, units, uris, pushUnits = 0 }:
-    { peerIdentifier: string, units: number, uris?: string[], pushUnits?: number },
+    { remoteIdentifier, units, uris, pushUnits = 0 }: OpenChannelParams,
   ): Promise<void> => {
+    if (!remoteIdentifier) {
+      // TODO: better handling for for unrecognized peers & force closing channels
+      throw new Error('peer not connected to swap client');
+    }
     if (uris) {
       await this.connectPeerAddresses(uris);
     }
 
-    await this.openChannelSync(peerPubKey, units, pushUnits);
+    await this.openChannelSync(remoteIdentifier, units, pushUnits);
   }
 
   /**
@@ -1025,13 +1033,32 @@ class LndClient extends SwapClient {
   }
 
   /**
-   * Attempts to close an open channel.
+   * Closes any payment channels with a specified node.
    */
-  public closeChannel = (fundingTxId: string, outputIndex: number, force: boolean): Promise<void> => {
+  public closeChannel = async ({ remoteIdentifier, force = false }: CloseChannelParams) => {
+    if (remoteIdentifier === undefined) {
+      throw swapErrors.REMOTE_IDENTIFIER_MISSING;
+    }
+    const channels = (await this.listChannels()).getChannelsList();
+    const closePromises: Promise<void>[] = [];
+    channels.forEach((channel) => {
+      if (channel.getRemotePubkey() === remoteIdentifier) {
+        const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
+        const closePromise = this.closeChannelSync(fundingTxId, Number(outputIndex), force);
+        closePromises.push(closePromise);
+      }
+    });
+    await Promise.all(closePromises);
+  }
+
+  /** A synchronous helper method for the closeChannel call */
+  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
       if (!this.lightning) {
         throw(errors.UNAVAILABLE(this.currency, this.status));
       }
+
+      // TODO: set delivery_address parameter after upgrading to 0.10+ lnd API proto definition
       const request = new lndrpc.CloseChannelRequest();
       const channelPoint = new lndrpc.ChannelPoint();
       channelPoint.setFundingTxidStr(fundingTxId);

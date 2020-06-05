@@ -231,6 +231,8 @@
 | node_identifier | [string](#string) |  | The node pub key or alias of the peer with which to close any channels with. |
 | currency | [string](#string) |  | The ticker symbol of the currency of the channel to close. |
 | force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
+| destination | [string](#string) |  | The on-chain address to send funds extracted from the channel. If unspecified, the funds return to the default wallet for the client closing the channel. |
+| amount | [uint64](#uint64) |  | For Connext only - the amount to extract from the channel. If 0 or unspecified, the entire off-chain balance for the specified currency will be extracted. |
 
 
 
@@ -1446,9 +1448,9 @@ The primary service for interacting with a running xud node.
 | AddCurrency | [Currency](#xudrpc.Currency) | [AddCurrencyResponse](#xudrpc.AddCurrencyResponse) | Adds a currency to the list of supported currencies. Once added, the currency may be used for new trading pairs. shell: xucli addcurrency &lt;currency&gt; &lt;swap_client&gt; [decimal_places] [token_address] |
 | AddPair | [AddPairRequest](#xudrpc.AddPairRequest) | [AddPairResponse](#xudrpc.AddPairResponse) | Adds a trading pair to the list of supported trading pairs. The newly supported pair is advertised to peers so they may begin sending orders for it. shell: xucli addpair &lt;base_currency&gt; &lt;quote_currency&gt; |
 | Ban | [BanRequest](#xudrpc.BanRequest) | [BanResponse](#xudrpc.BanResponse) | Bans a node and immediately disconnects from it. This can be used to prevent any connections to a specific node. shell: xucli ban &lt;node_identifier&gt; |
-| CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;node_identifier&gt; &lt;currency&gt; [--force] |
+| CloseChannel | [CloseChannelRequest](#xudrpc.CloseChannelRequest) | [CloseChannelResponse](#xudrpc.CloseChannelResponse) | Closes any existing payment channels with a peer for the specified currency. shell: xucli closechannel &lt;currency&gt; [node_identifier ] [--force] |
 | Connect | [ConnectRequest](#xudrpc.ConnectRequest) | [ConnectResponse](#xudrpc.ConnectResponse) | Attempts to connect to a node. Once connected, the node is added to the list of peers and becomes available for swaps and trading. A handshake exchanges information about the peer&#39;s supported trading and swap clients. Orders will be shared with the peer upon connection and upon new order placements. shell: xucli connect &lt;node_uri&gt; |
-| Deposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli deposit &lt;currency&gt; |
+| WalletDeposit | [DepositRequest](#xudrpc.DepositRequest) | [DepositResponse](#xudrpc.DepositResponse) | Gets an address to deposit a given currency into the xud wallets. shell: xucli walletdeposit &lt;currency&gt; |
 | DiscoverNodes | [DiscoverNodesRequest](#xudrpc.DiscoverNodesRequest) | [DiscoverNodesResponse](#xudrpc.DiscoverNodesResponse) | Discover nodes from a specific peer and apply new connections |
 | GetBalance | [GetBalanceRequest](#xudrpc.GetBalanceRequest) | [GetBalanceResponse](#xudrpc.GetBalanceResponse) | Gets the total balance available across all payment channels and wallets for one or all currencies. shell: xucli getbalance [currency] |
 | GetInfo | [GetInfoRequest](#xudrpc.GetInfoRequest) | [GetInfoResponse](#xudrpc.GetInfoResponse) | Gets general information about this node. shell: xucli getinfo |
@@ -1457,7 +1459,7 @@ The primary service for interacting with a running xud node.
 | ListCurrencies | [ListCurrenciesRequest](#xudrpc.ListCurrenciesRequest) | [ListCurrenciesResponse](#xudrpc.ListCurrenciesResponse) | Gets a list of this node&#39;s supported currencies. shell: xucli listcurrencies |
 | ListPairs | [ListPairsRequest](#xudrpc.ListPairsRequest) | [ListPairsResponse](#xudrpc.ListPairsResponse) | Gets a list of this nodes suported trading pairs. shell: xucli listpairs |
 | ListPeers | [ListPeersRequest](#xudrpc.ListPeersRequest) | [ListPeersResponse](#xudrpc.ListPeersResponse) | Gets a list of connected peers. shell: xucli listpeers |
-| OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer for the specified amount and currency. shell: xucli openchannel &lt;node_identifier&gt; &lt;currency&gt; &lt;amount&gt; |
+| OpenChannel | [OpenChannelRequest](#xudrpc.OpenChannelRequest) | [OpenChannelResponse](#xudrpc.OpenChannelResponse) | Opens a payment channel to a peer for the specified amount and currency. shell: xucli openchannel &lt;currency&gt; &lt;amount&gt; [node_identifier] [push_amount] |
 | PlaceOrder | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderEvent](#xudrpc.PlaceOrderEvent) stream | Adds an order to the order book. If price is zero or unspecified a market order will get added. |
 | PlaceOrderSync | [PlaceOrderRequest](#xudrpc.PlaceOrderRequest) | [PlaceOrderResponse](#xudrpc.PlaceOrderResponse) | The synchronous, non-streaming version of PlaceOrder. shell: xucli buy &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] shell: xucli sell &lt;quantity&gt; &lt;pair_id&gt; &lt;price&gt; [order_id] [stream] |
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Executes a swap on a maker peer order. |
@@ -1471,7 +1473,7 @@ The primary service for interacting with a running xud node.
 | TradeHistory | [TradeHistoryRequest](#xudrpc.TradeHistoryRequest) | [TradeHistoryResponse](#xudrpc.TradeHistoryResponse) | Gets a list of completed trades. shell: xucli tradehistory [limit] |
 | TradingLimits | [TradingLimitsRequest](#xudrpc.TradingLimitsRequest) | [TradingLimitsResponse](#xudrpc.TradingLimitsResponse) | Gets the trading limits for one or all currencies. shell: xucli tradinglimits [currency] |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. shell: xucli unban &lt;node_identifier&gt; [reconnect] |
-| Withdraw | [WithdrawRequest](#xudrpc.WithdrawRequest) | [WithdrawResponse](#xudrpc.WithdrawResponse) | Withdraws a given currency from the xud wallets to a specified address. shell: xucli withdraw &lt;amount&gt; &lt;currency&gt; &lt;destination&gt; [fee] |
+| WalletWithdraw | [WithdrawRequest](#xudrpc.WithdrawRequest) | [WithdrawResponse](#xudrpc.WithdrawResponse) | Withdraws a given currency from the xud wallets to a specified address. shell: xucli withdraw [amount] [currency] &lt;destination&gt; [fee] |
 
 
 <a name="xudrpc.XudInit"></a>

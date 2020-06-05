@@ -124,7 +124,7 @@
     },
     "/v1/closechannel": {
       "post": {
-        "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003cnode_identifier\u003e \u003ccurrency\u003e [--force]",
+        "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003ccurrency\u003e [node_identifier ] [--force]",
         "operationId": "CloseChannel",
         "responses": {
           "200": {
@@ -178,33 +178,6 @@
             }
           }
         },
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
-    "/v1/deposit": {
-      "post": {
-        "summary": "Gets an address to deposit a given currency into the xud wallets.\nshell: xucli deposit \u003ccurrency\u003e",
-        "operationId": "Deposit",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/xudrpcDepositResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcDepositRequest"
-            }
-          }
-        ],
         "tags": [
           "Xud"
         ]
@@ -309,7 +282,7 @@
     },
     "/v1/openchannel": {
       "post": {
-        "summary": "Opens a payment channel to a peer for the specified amount and currency.\nshell: xucli openchannel \u003cnode_identifier\u003e \u003ccurrency\u003e \u003camount\u003e",
+        "summary": "Opens a payment channel to a peer for the specified amount and currency.\nshell: xucli openchannel \u003ccurrency\u003e \u003camount\u003e [node_identifier] [push_amount]",
         "operationId": "OpenChannel",
         "responses": {
           "200": {
@@ -736,10 +709,37 @@
         ]
       }
     },
-    "/v1/withdraw": {
+    "/v1/walletdeposit": {
       "post": {
-        "summary": "Withdraws a given currency from the xud wallets to a specified address.\nshell: xucli withdraw \u003camount\u003e \u003ccurrency\u003e \u003cdestination\u003e [fee]",
-        "operationId": "Withdraw",
+        "summary": "Gets an address to deposit a given currency into the xud wallets.\nshell: xucli walletdeposit \u003ccurrency\u003e",
+        "operationId": "WalletDeposit",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcDepositRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/walletwithdraw": {
+      "post": {
+        "summary": "Withdraws a given currency from the xud wallets to a specified address.\nshell: xucli withdraw [amount] [currency] \u003cdestination\u003e [fee]",
+        "operationId": "WalletWithdraw",
         "responses": {
           "200": {
             "description": "A successful response.",

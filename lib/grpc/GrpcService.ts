@@ -343,15 +343,16 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.deposit]]
+   * See [[Service.walletDeposit]]
    */
-  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
+  public walletDeposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      await this.service.deposit(call.request.toObject());
+      const address = await this.service.walletDeposit(call.request.toObject());
       const response = new xudrpc.DepositResponse();
+      response.setAddress(address);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -359,14 +360,14 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.withdraw]]
+   * See [[Service.walletWithdraw]]
    */
-  public withdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (call, callback) => {
+  public walletWithdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      await this.service.withdraw(call.request.toObject());
+      await this.service.walletWithdraw(call.request.toObject());
       const response = new xudrpc.WithdrawResponse();
       callback(null, response);
     } catch (err) {

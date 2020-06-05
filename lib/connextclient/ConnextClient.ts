@@ -13,7 +13,7 @@ import SwapClient, {
   SwapClientInfo,
   PaymentStatus,
 } from '../swaps/SwapClient';
-import { SwapDeal } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -490,19 +490,15 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const tokenAddress = this.getTokenAddress(currency);
-
-    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const { freeBalanceOffChain } = await parseResponseBody<ConnextBalanceResponse>(res);
+    const { freeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalanceOffChain),
     });
-    const balance = freeBalanceAmount;
 
     return {
-      balance,
+      balance: freeBalanceAmount,
       inactiveBalance: 0,
       pendingOpenBalance: 0,
     };
@@ -530,10 +526,7 @@ class ConnextClient extends SwapClient {
       };
     }
 
-    const tokenAddress = this.getTokenAddress(currency);
-
-    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const { freeBalanceOnChain } = await parseResponseBody<ConnextBalanceResponse>(res);
+    const { freeBalanceOnChain } = await this.getBalance(currency);
 
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
@@ -547,13 +540,22 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  /**
-   * Deposits funds to a node
-   */
-  public deposit = async (
-    { currency, units }:
-    { currency: string, units: number },
-  ) => {
+  private getBalance = async (currency: string) => {
+    const tokenAddress = this.getTokenAddress(currency);
+    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
+    const balance = await parseResponseBody<ConnextBalanceResponse>(res);
+    return balance;
+  }
+
+  public deposit = async () => {
+    const clientConfig = await this.getClientConfig();
+    return clientConfig.signerAddress;
+  }
+
+  public openChannel = async ({ currency, units }: OpenChannelParams) => {
+    if (!currency) {
+      throw errors.CURRENCY_MISSING;
+    }
     const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/deposit', 'POST', {
       assetId,
@@ -561,14 +563,17 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public async openChannel() {}
+  public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<void> => {
+    if (!currency) {
+      throw errors.CURRENCY_MISSING;
+    }
+    const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
 
-  /**
-   * Closes a payment client.
-   * @param multisigAddress the address of the client to close
-   */
-  public closeChannel = async (): Promise<void> => {
-    // not relevant for connext
+    await this.sendRequest('/withdraw', 'POST', {
+      recipient: destination,
+      amount: BigInt(amount).toString(),
+      assetId: this.tokenAddresses.get(currency),
+    });
   }
 
   /**

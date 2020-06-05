@@ -211,13 +211,13 @@ class Service {
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   }
 
-  public deposit = async (args: { currency: string }) => {
+  public walletDeposit = async (args: { currency: string }) => {
     const { currency } = args;
     const address = await this.swapClientManager.deposit(currency);
     return address;
   }
 
-  public withdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
+  public walletWithdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
     const txId = await this.swapClientManager.withdraw(args);
     return txId;
   }
@@ -226,18 +226,28 @@ class Service {
    * Closes any payment channels for a specified node and currency.
    */
   public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean },
+    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number },
   ) => {
-    const { nodeIdentifier, currency, force } = args;
-    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
+    const { nodeIdentifier, currency, force, destination, amount } = args;
     argChecks.VALID_CURRENCY({ currency });
 
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-    const peer = this.pool.getPeer(nodePubKey);
+    let remoteIdentifier: string | undefined;
+    if (nodeIdentifier) {
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+      const swapClientType = this.swapClientManager.getType(currency);
+      if (swapClientType === undefined) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
+      }
+      const peer = this.pool.getPeer(nodePubKey);
+      remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+    }
+
     await this.swapClientManager.closeChannel({
-      peer,
       currency,
       force,
+      destination,
+      amount,
+      remoteIdentifier,
     });
   }
 
@@ -250,14 +260,27 @@ class Service {
     const { nodeIdentifier, amount, currency, pushAmount } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+
+    let remoteIdentifier: string | undefined;
+    let uris: string[] | undefined;
+
     try {
-      let peer;
-      if (args.nodeIdentifier) {
-        const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-        peer = this.pool.getPeer(nodePubKey);
+      if (nodeIdentifier) {
+        const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+        const swapClientType = this.swapClientManager.getType(currency);
+        if (swapClientType === undefined) {
+          throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
+        }
+        const peer = this.pool.getPeer(nodePubKey);
+        remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+        if (swapClientType === SwapClientType.Lnd) {
+          uris = peer.getLndUris(currency);
+        }
       }
+
       await this.swapClientManager.openChannel({
-        peer,
+        remoteIdentifier,
+        uris,
         amount,
         currency,
         pushAmount,
