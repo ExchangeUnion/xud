@@ -1187,6 +1187,7 @@ class Swaps extends EventEmitter {
       case SwapPhase.SwapAccepted:
         assert(deal.role === SwapRole.Maker, 'SwapAccepted can only be set by the maker');
         assert(deal.phase === SwapPhase.SwapCreated, 'SwapAccepted can be only be set after SwapCreated');
+        this.logger.debug(`Setting SwapAccepted phase for deal ${deal.rHash}`);
         break;
       case SwapPhase.SendingPayment:
         assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||

@@ -595,7 +595,7 @@ class LndClient extends SwapClient {
    * Sends a payment through the Lightning Network.
    */
   private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
-    this.logger.trace(`sending payment of ${request.getAmt()} for ${request.getPaymentHashString()}`);
+    this.logger.trace(`sending payment with request: ${JSON.stringify(request.toObject())}`);
     return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
   }
 
@@ -631,8 +631,7 @@ class LndClient extends SwapClient {
     if (!this.isConnected()) {
       throw swapErrors.FINAL_PAYMENT_ERROR(errors.UNAVAILABLE(this.currency, this.status).message);
     }
-
-    this.logger.trace(`sending payment with ${JSON.stringify(request.toObject())}`);
+    this.logger.debug(`sending payment of ${request.getAmt()} with hash ${request.getPaymentHashString()} to ${request.getDestString()}`);
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);

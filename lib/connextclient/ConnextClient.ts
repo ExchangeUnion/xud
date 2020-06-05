@@ -587,6 +587,7 @@ class ConnextClient extends SwapClient {
    * @param lockHash
    */
   private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
+    this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
     return appId;
