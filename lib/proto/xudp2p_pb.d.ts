@@ -143,8 +143,8 @@ export class NodeState extends jspb.Message {
     getLndUrisMap(): jspb.Map<string, LndUris>;
     clearLndUrisMap(): void;
 
-    getConnextAddress(): string;
-    setConnextAddress(value: string): void;
+    getConnextIdentifier(): string;
+    setConnextIdentifier(value: string): void;
 
 
     serializeBinary(): Uint8Array;
@@ -168,7 +168,7 @@ export namespace NodeState {
         tokenIdentifiersMap: Array<[string, string]>,
 
         lndUrisMap: Array<[string, LndUris.AsObject]>,
-        connextAddress: string,
+        connextIdentifier: string,
     }
 }
 

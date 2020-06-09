@@ -17,7 +17,7 @@ export type NodeState = {
   addresses: Address[];
   pairs: string[];
   raidenAddress: string;
-  connextAddress: string;
+  connextIdentifier: string;
   /** An object mapping currency symbols to lnd pub keys. */
   lndPubKeys: { [currency: string]: string | undefined };
   /** An object mapping currency symbols to lnd listening uris */
