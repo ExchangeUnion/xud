@@ -1051,14 +1051,6 @@ class Swaps extends EventEmitter {
       peer,
       failureReason: reason,
     });
-
-    if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
-      // if the swap fails while we are in the middle of sending payment as the maker
-      // we need to make sure that the taker doesn't claim our payment without us having a chance
-      // to claim ours. we will send this swap to recovery to monitor its outcome
-      const swapDealInstance = await this.repository.getSwapDeal(rHash);
-      await this.swapRecovery.recoverDeal(swapDealInstance!);
-    }
   }
 
   /**
@@ -1147,11 +1139,19 @@ class Swaps extends EventEmitter {
 
     clearTimeout(this.timeouts.get(deal.rHash));
     this.timeouts.delete(deal.rHash);
-    if (deal.phase === SwapPhase.SwapAccepted && deal.role === SwapRole.Maker) {
-      // if we are the maker and we have accepted a swap deal but we haven't yet started paying the taker
-      // then we should cancel
-      const swapClient = this.swapClientManager.get(deal.role === SwapRole.Maker ? deal.makerCurrency : deal.takerCurrency)!;
-      swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+    if (deal.role === SwapRole.Maker) {
+      if (deal.phase === SwapPhase.SwapAccepted) {
+        // if we are the maker and we have accepted a swap deal but we haven't yet started paying the taker
+        // then we should cancel the invoice for our incoming payment if one exists
+        const swapClient = this.swapClientManager.get(deal.makerCurrency)!;
+        swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
+      } else if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
+        // if the swap fails while we are in the middle of sending payment as the maker
+        // we need to make sure that the taker doesn't claim our payment without us having a chance
+        // to claim ours. we will send this swap to recovery to monitor its outcome
+        const swapDealInstance = await this.repository.getSwapDeal(deal.rHash);
+        await this.swapRecovery.recoverDeal(swapDealInstance!);
+      }
     }
 
     this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
