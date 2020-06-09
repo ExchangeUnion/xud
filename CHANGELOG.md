@@ -1,3 +1,35 @@
+# [1.0.0-beta.4](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2020-06-09)
+
+
+### Bug Fixes
+
+* **connext:** set default lookupPayment status as pending ([#1603](https://github.com/ExchangeUnion/xud/issues/1603)) ([141bcc5](https://github.com/ExchangeUnion/xud/commit/141bcc543e3e70dd6a26346bb517832973d78f48))
+* **p2p:** change connext_address to connext_identifier ([13157b0](https://github.com/ExchangeUnion/xud/commit/13157b050cd9a79961cdf9feaa69eb9fc1fdce48))
+* **swaps:** don't try to accept a failed deal ([d827957](https://github.com/ExchangeUnion/xud/commit/d82795759653505c6a3a5fa54c57cb74a5c58c3a)), closes [#1614](https://github.com/ExchangeUnion/xud/issues/1614)
+* **swaps:** go to recovery for all failures ([43f38d2](https://github.com/ExchangeUnion/xud/commit/43f38d2816226f91e75ba023ba609b399a4a2ba0)), closes [#1606](https://github.com/ExchangeUnion/xud/issues/1606)
+* format ([e32d33c](https://github.com/ExchangeUnion/xud/commit/e32d33c2ef93ae35d42a4a7ecf847529ff957a1c))
+* resolve alias for all known nodes ([3cbd2d8](https://github.com/ExchangeUnion/xud/commit/3cbd2d88bd40014a6ac62c7035900415423be77c))
+
+
+### Features
+
+* **swaps:** log when sending payments ([46e2d4e](https://github.com/ExchangeUnion/xud/commit/46e2d4ebf9c54becfe360ff7ff722aff4c05b77e))
+* add additional simnet,testnet bootstrap node ([9a03146](https://github.com/ExchangeUnion/xud/commit/9a03146e9deabb43b556648693ee1830feb63046))
+* add xud.kilrau.com:8885 mainnet seed ([f249489](https://github.com/ExchangeUnion/xud/commit/f249489c0d07984c211b9be44ce1844c1ee8dc24))
+* **rpc/connext:** deposit & openchannel calls ([#1577](https://github.com/ExchangeUnion/xud/issues/1577)) ([ebb715e](https://github.com/ExchangeUnion/xud/commit/ebb715e45aeba8ea42bde26cfd3b7ce54f167912)), closes [#1472](https://github.com/ExchangeUnion/xud/issues/1472) [#1473](https://github.com/ExchangeUnion/xud/issues/1473)
+* **swaps:** check payment immediately on recovery ([#1600](https://github.com/ExchangeUnion/xud/issues/1600)) ([6bea4a6](https://github.com/ExchangeUnion/xud/commit/6bea4a61dad128205f184256f1ab1c2460188af3)), closes [#1598](https://github.com/ExchangeUnion/xud/issues/1598)
+
+
+### BREAKING CHANGES
+
+* **p2p:** `connext_address` field in `NodeState` has been renamed
+to `connext_identifier`.
+
+Related: https://github.com/opendexnetwork/opendex/issues/28
+Closes: https://github.com/ExchangeUnion/xud/issues/1611
+
+
+
 # [1.0.0-beta.3](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.2...v1.0.0-beta.3) (2020-06-01)
 
 
