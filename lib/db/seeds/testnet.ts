@@ -9,6 +9,13 @@ const nodes = [
       { host: 'pso32ae2l5nyh3clgee2nj2hgpmcnluhaqibjm2r2fjcsn4gclxfmrid.onion', port: 18885 },
     ],
   },
+  {
+    nodePubKey: '02799dff47d38da549c9f9e3dcd94388e3a9fe05b4ea50ea0636562b4ba2b4ca4a',
+    addresses: [
+      { host: 'xud.kilrau.com', port: 18885 },
+      { host: 'k3wdrskfge6cvvoebekjf6krgl73a6mh4y6qciyonisiwanmxhcgr5qd.onion', port: 18885 },
+    ],
+  },
 ] as db.NodeAttributes[];
 
 const currencies = [
