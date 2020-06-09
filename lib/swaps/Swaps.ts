@@ -693,6 +693,14 @@ class Swaps extends EventEmitter {
       return;
     }
 
+    if (deal.state === SwapState.Error) {
+      // this swap deal may have already failed, either due to a DealTimedOut
+      // error while we were waiting for the swap to be accepted, or some
+      // other unexpected error or issue
+      this.logger.warn(`received swap accepted for deal that has already failed: ${rHash}`);
+      return;
+    }
+
     // clear the timer waiting for acceptance of our swap offer, and set a new timer waiting for
     // the swap to be completed
     clearTimeout(this.timeouts.get(rHash));
@@ -1044,7 +1052,6 @@ class Swaps extends EventEmitter {
   private handleSwapTimeout = async (rHash: string, reason: SwapFailureReason) => {
     const deal = this.getDeal(rHash)!;
     const peer = this.pool.tryGetPeer(deal.peerPubKey);
-    this.timeouts.delete(rHash);
 
     await this.failDeal({
       deal,
@@ -1173,7 +1180,7 @@ class Swaps extends EventEmitter {
    * including persisting the deal state to the database.
    */
   private setDealPhase = async (deal: SwapDeal, newPhase: SwapPhase) => {
-    assert(deal.state === SwapState.Active, 'deal is not Active. Can not change deal phase');
+    assert(deal.state === SwapState.Active, `deal ${deal.rHash} is not Active. Can not change deal phase`);
 
     switch (newPhase) {
       case SwapPhase.SwapCreated:
