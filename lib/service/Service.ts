@@ -287,7 +287,7 @@ class Service {
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
-      throw errors.OPEN_CHANNEL_FAILURE(currency, nodeIdentifier, amount, errorMessage);
+      throw errors.OPEN_CHANNEL_FAILURE(currency, amount, errorMessage, nodeIdentifier);
     }
   }
 
