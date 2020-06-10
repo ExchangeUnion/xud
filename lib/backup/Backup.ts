@@ -117,7 +117,7 @@ class Backup extends EventEmitter {
         this.logger.info(`Listening to ${currency} LND channel backups`);
 
         lndClient.on('channelBackup', (channelBackup) => {
-          this.logger.debug(`New ${lndClient.currency} channel backup`);
+          this.logger.trace(`New ${lndClient.currency} channel backup`);
           this.writeBackup(backupPath, channelBackup);
         });
         lndClient.on('channelBackupEnd', async () => {
@@ -169,7 +169,7 @@ class Backup extends EventEmitter {
         // Compare the MD5 hash of the current content of the file with hash of the content when
         // it was backed up the last time to ensure that the content of the file has changed
         if (hash !== previousDatabaseHash) {
-          this.logger.debug(`${client} database changed`);
+          this.logger.trace(`${client} database changed`);
 
           previousDatabaseHash = hash;
           this.writeBackup(backupPath, content);
