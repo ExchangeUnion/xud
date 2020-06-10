@@ -16,6 +16,12 @@ const nodes = [
       { host: 'k3wdrskfge6cvvoebekjf6krgl73a6mh4y6qciyonisiwanmxhcgr5qd.onion', port: 18885 },
     ],
   },
+  {
+    nodePubKey: '02c22007d3367713a3f938595d5f9ad4b049c2fc27cad07035fc6b62b2f3a20149',
+    addresses: [
+      { host: 'xud.testnet.boltz.exchange', port: 18885 },
+    ],
+  },
 ] as db.NodeAttributes[];
 
 const currencies = [
