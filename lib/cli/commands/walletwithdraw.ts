@@ -34,7 +34,7 @@ export const builder = (argv: Argv) => argv
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();
-  request.setCurrency(argv.currency);
+  request.setCurrency(argv.currency.toUpperCase());
   if (argv.all) {
     request.setAll(argv.all);
   } else {
