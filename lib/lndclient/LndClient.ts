@@ -1006,6 +1006,7 @@ class LndClient extends SwapClient {
     invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
       if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
         // we have accepted an htlc for this invoice
+        this.logger.debug(`accepted htlc for invoice ${rHash}`);
         this.emit('htlcAccepted', rHash, invoice.getValue());
       }
     }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
