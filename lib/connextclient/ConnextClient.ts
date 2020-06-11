@@ -91,11 +91,14 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  /** A map of expected invoices by hash.
+  /**
+   * A map of expected invoices by hash.
    * This is equivalent to invoices of lnd with the difference
    * being that we're managing the state of invoice on xud level.
    */
   private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
+  /** The set of hashes for outgoing transfers. */
+  private outgoingTransferHashes = new Set<string>();
   private port: number;
   private host: string;
   private webhookport: number;
@@ -146,11 +149,18 @@ class ConnextClient extends SwapClient {
       timelock,
       rHash,
     } = transferReceivedRequest;
+
+    if (this.outgoingTransferHashes.has(rHash)) {
+      this.outgoingTransferHashes.delete(rHash);
+      this.logger.debug(`outgoing hash lock transfer with rHash ${rHash} created`);
+      return;
+    }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
       this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}`);
       return;
     }
+
     const {
       units: expectedUnits,
       expiry: expectedTimelock,
@@ -588,6 +598,7 @@ class ConnextClient extends SwapClient {
    */
   private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
     this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
+    this.outgoingTransferHashes.add(payload.lockHash);
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
     return appId;
