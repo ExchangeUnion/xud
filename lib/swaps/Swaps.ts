@@ -481,7 +481,7 @@ class Swaps extends EventEmitter {
     // TODO: consider the time gap between taking the routes and using them.
     this.logger.debug(`trying to accept deal: ${JSON.stringify(orderToAccept)} from xudPubKey: ${peer.nodePubKey}`);
 
-    const rHash = requestPacket.body!.rHash;
+    const { rHash, proposedQuantity, pairId, takerCltvDelta, orderId } = requestPacket.body!;
     const reqId = requestPacket.header.id;
     if (this.usedHashes.has(rHash)) {
       await this.sendErrorToPeer({
@@ -492,12 +492,11 @@ class Swaps extends EventEmitter {
       });
       return false;
     }
-    const requestBody = requestPacket.body!;
 
     const { quantity, price, isBuy } = orderToAccept;
 
     const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
-      Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, requestBody.pairId);
+      Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, pairId);
 
     const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
     if (!makerSwapClient) {
@@ -523,10 +522,25 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    const takerIdentifier = peer.getIdentifier(takerSwapClient.type, takerCurrency)!;
+    // Make sure we are connected to swap clients for both currencies
+    const inactiveCurrency = this.checkInactiveCurrencyClients(pairId);
+    if (inactiveCurrency) {
+      await this.sendErrorToPeer({
+        peer,
+        rHash,
+        reqId,
+        failureReason: SwapFailureReason.SwapClientNotSetup,
+        errorMessage: `${inactiveCurrency} is inactive`,
+      });
+      return false;
+    }
 
+    const takerIdentifier = peer.getIdentifier(takerSwapClient.type, takerCurrency)!;
     const deal: SwapDeal = {
-      ...requestBody,
+      rHash,
+      pairId,
+      proposedQuantity,
+      orderId,
       price,
       isBuy,
       quantity,
@@ -536,6 +550,7 @@ class Swaps extends EventEmitter {
       takerCurrency,
       makerUnits,
       takerUnits,
+      takerCltvDelta,
       takerPubKey: takerIdentifier,
       destination: takerIdentifier,
       peerPubKey: peer.nodePubKey!,
@@ -550,19 +565,6 @@ class Swaps extends EventEmitter {
 
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
-
-    // Make sure we are connected to swap clients for both currencies
-    const inactiveCurrency = this.checkInactiveCurrencyClients(deal.pairId);
-    if (inactiveCurrency) {
-      await this.failDeal({
-        deal,
-        peer,
-        reqId,
-        failureReason: SwapFailureReason.SwapClientNotSetup,
-        failedCurrency: inactiveCurrency,
-      });
-      return false;
-    }
 
     let makerToTakerRoute: Route | undefined;
     try {
@@ -664,9 +666,9 @@ class Swaps extends EventEmitter {
     await this.setDealPhase(deal, SwapPhase.SwapAccepted);
 
     const responseBody: packets.SwapAcceptedPacketBody = {
+      rHash,
       makerCltvDelta: deal.makerCltvDelta || 1,
-      rHash: requestBody.rHash,
-      quantity: requestBody.proposedQuantity,
+      quantity: proposedQuantity,
     };
 
     this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
