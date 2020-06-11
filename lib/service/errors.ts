@@ -28,10 +28,17 @@ const errors = {
     message: 'a pending call is ongoing that conflicts with this call',
     code: errorCodes.PENDING_CALL_CONFLICT,
   },
-  OPEN_CHANNEL_FAILURE: (currency: string, nodePubKey: string, amount: number, message: string) => ({
-    message: `failed to open channel with nodePubKey: ${nodePubKey}, currency: ${currency}, amount: ${amount}, message: ${message}`,
-    code: errorCodes.OPEN_CHANNEL_FAILURE,
-  }),
+  OPEN_CHANNEL_FAILURE: (currency: string, amount: number, errorMessage: string, nodeIdentifier?: string) => {
+    let message = `failed to open ${currency} channel for ${amount}`;
+    if (nodeIdentifier) {
+      message += ` with ${nodeIdentifier}`;
+    }
+    message += `: ${errorMessage}`;
+    return {
+      message,
+      code: errorCodes.OPEN_CHANNEL_FAILURE,
+    };
+  },
   NODE_DOES_NOT_EXIST: {
     message: 'xud node cannot be unlocked because it does not exist',
     code: errorCodes.NODE_DOES_NOT_EXIST,

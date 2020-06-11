@@ -902,13 +902,13 @@ class LndClient extends SwapClient {
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
+    this.logger.debug(`settling invoice for ${rHash}`);
     const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
     settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
     await this.settleInvoiceLnd(settleInvoiceRequest);
 
     const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
     if (invoiceSubscription) {
-      this.logger.debug(`settled invoice for ${rHash}`);
       invoiceSubscription.cancel();
     }
   }
@@ -1006,6 +1006,7 @@ class LndClient extends SwapClient {
     invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
       if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
         // we have accepted an htlc for this invoice
+        this.logger.debug(`accepted htlc for invoice ${rHash}`);
         this.emit('htlcAccepted', rHash, invoice.getValue());
       }
     }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
