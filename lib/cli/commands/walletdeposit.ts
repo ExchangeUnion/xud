@@ -15,6 +15,6 @@ export const builder = (argv: Argv) => argv
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new DepositRequest();
-  request.setCurrency(argv.currency);
+  request.setCurrency(argv.currency.toUpperCase());
   (await loadXudClient(argv)).walletDeposit(request, callback(argv));
 };
