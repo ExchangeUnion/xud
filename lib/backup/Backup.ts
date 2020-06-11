@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { EventEmitter } from 'events';
-import fs from 'fs';
+import { FSWatcher, promises as fs, watch } from 'fs';
 import path from 'path';
 import Config from '../Config';
 import LndClient from '../lndclient/LndClient';
@@ -18,7 +18,7 @@ class Backup extends EventEmitter {
 
   private backupDir!: string;
 
-  private fileWatchers: fs.FSWatcher[] = [];
+  private fileWatchers: FSWatcher[] = [];
   private lndClients: LndClient[] = [];
   private checkLndTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -35,11 +35,12 @@ class Backup extends EventEmitter {
       dateFormat: this.config.logdateformat,
     });
 
-    if (!fs.existsSync(this.backupDir)) {
-      try {
-        fs.mkdirSync(this.backupDir);
-      } catch (error) {
-        this.logger.error(`Could not create backup directory: ${error}`);
+    try {
+      await fs.mkdir(this.backupDir);
+    } catch (err) {
+      if (err.code !== 'EEXIST') {
+        // ignore the error if the directory already exists, otherwise throw
+        this.logger.error(`Could not create backup directory: ${err}`);
         return;
       }
     }
@@ -111,14 +112,14 @@ class Backup extends EventEmitter {
         this.logger.verbose(`Writing initial ${lndClient.currency} LND channel backup to: ${backupPath}`);
 
         const channelBackup = await lndClient.exportAllChannelBackup();
-        this.writeBackup(backupPath, channelBackup);
+        await this.writeBackup(backupPath, channelBackup);
 
         lndClient.subscribeChannelBackups();
         this.logger.info(`Listening to ${currency} LND channel backups`);
 
-        lndClient.on('channelBackup', (channelBackup) => {
+        lndClient.on('channelBackup', async (channelBackup) => {
           this.logger.debug(`New ${lndClient.currency} channel backup`);
-          this.writeBackup(backupPath, channelBackup);
+          await this.writeBackup(backupPath, channelBackup);
         });
         lndClient.on('channelBackupEnd', async () => {
           this.logger.warn(`Lost subscription to ${lndClient.currency} channel backups - attempting to restore`);
@@ -141,30 +142,34 @@ class Backup extends EventEmitter {
     let previousDatabaseHash: string | undefined;
     const backupPath = this.getBackupPath(client);
 
-    if (fs.existsSync(dbPath)) {
+    try {
       this.logger.verbose(`Writing initial ${client} database backup to: ${backupPath}`);
-      const { content, hash } = this.readDatabase(dbPath);
+      const { content, hash } = await this.readDatabase(dbPath);
 
-      this.writeBackup(backupPath, content);
+      await this.writeBackup(backupPath, content);
       previousDatabaseHash = hash;
-    } else {
-      this.logger.warn(`Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`);
-      const dbDir = path.dirname(dbPath);
-      const dbFilename = path.basename(dbPath);
-      await new Promise((resolve) => {
-        const dbCreateWatcher = fs.watch(dbDir, (_, filename) => {
-          if (filename === dbFilename) {
-            this.logger.info(`${client} database created at ${dbPath}`);
-            dbCreateWatcher.close();
-            resolve();
-          }
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        this.logger.warn(`Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`);
+        const dbDir = path.dirname(dbPath);
+        const dbFilename = path.basename(dbPath);
+        await new Promise((resolve) => {
+          const dbCreateWatcher = watch(dbDir, (_, filename) => {
+            if (filename === dbFilename) {
+              this.logger.info(`${client} database created at ${dbPath}`);
+              dbCreateWatcher.close();
+              resolve();
+            }
+          });
         });
-      });
+      } else {
+        throw err;
+      }
     }
 
-    this.fileWatchers.push(fs.watch(dbPath, { persistent: true, recursive: false }, (event: string) => {
+    this.fileWatchers.push(watch(dbPath, { persistent: true, recursive: false }, async (event: string) => {
       if (event === 'change') {
-        const { content, hash } = this.readDatabase(dbPath);
+        const { content, hash } = await this.readDatabase(dbPath);
 
         // Compare the MD5 hash of the current content of the file with hash of the content when
         // it was backed up the last time to ensure that the content of the file has changed
@@ -172,7 +177,7 @@ class Backup extends EventEmitter {
           this.logger.debug(`${client} database changed`);
 
           previousDatabaseHash = hash;
-          this.writeBackup(backupPath, content);
+          await this.writeBackup(backupPath, content);
         }
       }
     }));
@@ -180,8 +185,8 @@ class Backup extends EventEmitter {
     this.logger.verbose(`Listening for changes to the ${client} database`);
   }
 
-  private readDatabase = (path: string): { content: Buffer, hash: string } => {
-    const content = fs.readFileSync(path);
+  private readDatabase = async (path: string): Promise<{ content: Buffer, hash: string }> => {
+    const content = await fs.readFile(path);
 
     return {
       content,
@@ -189,9 +194,9 @@ class Backup extends EventEmitter {
     };
   }
 
-  private writeBackup = (backupPath: string, data: Uint8Array) => {
+  private writeBackup = async (backupPath: string, data: Uint8Array) => {
     try {
-      fs.writeFileSync(
+      await fs.writeFile(
         backupPath,
         data,
       );
