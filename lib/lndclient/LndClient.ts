@@ -902,13 +902,13 @@ class LndClient extends SwapClient {
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
+    this.logger.debug(`settling invoice for ${rHash}`);
     const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
     settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
     await this.settleInvoiceLnd(settleInvoiceRequest);
 
     const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
     if (invoiceSubscription) {
-      this.logger.debug(`settled invoice for ${rHash}`);
       invoiceSubscription.cancel();
     }
   }
