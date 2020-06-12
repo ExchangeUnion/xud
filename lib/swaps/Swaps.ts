@@ -1207,6 +1207,28 @@ class Swaps extends EventEmitter {
         assert(deal.phase === SwapPhase.SendingPayment, 'PaymentReceived can be only be set after SendingPayment');
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
+
+        clearTimeout(this.timeouts.get(deal.rHash));
+        this.timeouts.delete(deal.rHash);
+
+        const wasMaker = deal.role === SwapRole.Maker;
+        const swapSuccess = {
+          orderId: deal.orderId,
+          localId: deal.localId,
+          pairId: deal.pairId,
+          quantity: deal.quantity!,
+          amountReceived: wasMaker ? deal.makerAmount : deal.takerAmount,
+          amountSent: wasMaker ? deal.takerAmount : deal.makerAmount,
+          currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
+          currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
+          rHash: deal.rHash,
+          rPreimage: deal.rPreimage,
+          price: deal.price,
+          peerPubKey: deal.peerPubKey,
+          role: deal.role,
+        };
+        this.emit('swap.paid', swapSuccess);
+
         this.logger.debug(`Setting PaymentReceived phase for deal ${deal.rHash} - preimage is ${deal.rPreimage}`);
         break;
       default:
@@ -1219,29 +1241,6 @@ class Swaps extends EventEmitter {
     if (deal.phase !== SwapPhase.SwapRequested) {
       // once a deal is accepted, we persist its state to the database on every phase update
       await this.persistDeal(deal);
-    }
-
-    if (deal.phase === SwapPhase.PaymentReceived) {
-      const wasMaker = deal.role === SwapRole.Maker;
-      const swapSuccess = {
-        orderId: deal.orderId,
-        localId: deal.localId,
-        pairId: deal.pairId,
-        quantity: deal.quantity!,
-        amountReceived: wasMaker ? deal.makerAmount : deal.takerAmount,
-        amountSent: wasMaker ? deal.takerAmount : deal.makerAmount,
-        currencyReceived: wasMaker ? deal.makerCurrency : deal.takerCurrency,
-        currencySent: wasMaker ? deal.takerCurrency : deal.makerCurrency,
-        rHash: deal.rHash,
-        rPreimage: deal.rPreimage,
-        price: deal.price,
-        peerPubKey: deal.peerPubKey,
-        role: deal.role,
-      };
-      this.emit('swap.paid', swapSuccess);
-
-      clearTimeout(this.timeouts.get(deal.rHash));
-      this.timeouts.delete(deal.rHash);
     }
   }
 
