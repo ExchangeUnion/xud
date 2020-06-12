@@ -105,6 +105,7 @@ class ConnextClient extends SwapClient {
   private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
+  private _totalOutboundAmount = new Map<string, number>();
 
   /**
    * Creates a connext client.
@@ -222,17 +223,15 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public totalOutboundAmount = (): number => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
-    return MAX_AMOUNT;
+  public totalOutboundAmount = (currency: string): number => {
+    return this._totalOutboundAmount.get(currency) || 0;
   }
 
-  public maxChannelOutboundAmount = (): number => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
-    return MAX_AMOUNT;
+  public maxChannelOutboundAmount = (currency: string): number => {
+    return this._totalOutboundAmount.get(currency) || 0;
   }
 
-  public maxChannelInboundAmount = (): number => {
+  public maxChannelInboundAmount = (_currency: string): number => {
     // assume MAX_AMOUNT since Connext will re-collaterize accordingly
     return MAX_AMOUNT;
   }
@@ -510,6 +509,7 @@ class ConnextClient extends SwapClient {
       units: Number(freeBalanceOffChain),
     });
 
+    this._totalOutboundAmount.set(currency, freeBalanceAmount);
     return {
       balance: freeBalanceAmount,
       inactiveBalance: 0,
@@ -517,11 +517,11 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  public tradingLimits = async (): Promise<TradingLimits> => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
+  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
+    await this.channelBalance(currency); // refreshes the max outbound balance
     return {
-      maxSell: MAX_AMOUNT,
-      maxBuy: MAX_AMOUNT,
+      maxSell: this.maxChannelOutboundAmount(currency),
+      maxBuy: this.maxChannelInboundAmount(currency),
     };
   }
 
