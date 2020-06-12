@@ -661,7 +661,7 @@ class Swaps extends EventEmitter {
     }
 
     // persist the swap deal to the database after we've added an invoice for it
-    await this.setDealPhase(deal, SwapPhase.SwapAccepted);
+    const newPhasePromise = this.setDealPhase(deal, SwapPhase.SwapAccepted);
 
     const responseBody: packets.SwapAcceptedPacketBody = {
       makerCltvDelta: deal.makerCltvDelta || 1,
@@ -670,7 +670,8 @@ class Swaps extends EventEmitter {
     };
 
     this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
-    await peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    const sendSwapAcceptedPromise = peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    await Promise.all([newPhasePromise, sendSwapAcceptedPromise]);
     return true;
   }
 
