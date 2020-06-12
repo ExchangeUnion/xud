@@ -48,13 +48,6 @@ class Backup extends EventEmitter {
       this.logger.error(`Could not connect to LNDs: ${err}`);
     });
 
-    // Start the Raiden database filewatcher
-    if (args.raiden) {
-      this.startFilewatcher('raiden', args.raiden.dbpath).catch(this.logger.error);
-    } else {
-      this.logger.warn('Raiden database file not specified');
-    }
-
     // Start the XUD database filewatcher
     this.startFilewatcher('xud', this.config.dbpath).catch(this.logger.error);
 
