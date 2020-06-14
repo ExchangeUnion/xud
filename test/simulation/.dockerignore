@@ -1,0 +1,15 @@
+temp
+docker-btcd
+docker-lnd
+docker-xud
+docker-connext
+
+docker-build.sh
+docker-clean.sh
+docker-compose.yml
+docker-run.sh
+Dockerfile
+Dockerfile_gomod
+custom-xud.patch
+logs.sh
+README.md

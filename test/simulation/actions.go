@@ -44,8 +44,8 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 			node.SetPubKey(res.NodePubKey)
 
 			// Add currencies
-			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "")
-			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "")
+			a.addCurrency(node, "BTC", xudrpc.Currency_LND, "", 8)
+			a.addCurrency(node, "LTC", xudrpc.Currency_LND, "", 8)
 
 			// Add pairs to the node.
 			a.addPair(node, "LTC", "BTC")
@@ -58,9 +58,9 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 	}
 }
 
-func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string) {
+func (a *actions) addCurrency(node *xudtest.HarnessNode, currency string, swapClient xudrpc.Currency_SwapClient, tokenAddress string, decimalPlaces uint32) {
 	if len(tokenAddress) > 0 {
-		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress}
+		req := &xudrpc.Currency{Currency: currency, SwapClient: swapClient, TokenAddress: tokenAddress, DecimalPlaces: decimalPlaces}
 		_, err := node.Client.AddCurrency(a.ctx, req)
 		a.assert.NoError(err)
 	} else {
@@ -522,6 +522,15 @@ func closeLtcChannel(ctx context.Context, ln *lntest.NetworkHarness, node *lntes
 	}
 
 	if _, err := ln.WaitForChannelClose(ctx, closeChanStream); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func openETHChannel(ctx context.Context, srcNode *xudtest.HarnessNode, amt uint64, pushAmt uint64) error {
+	req := &xudrpc.OpenChannelRequest{NodeIdentifier: "", Currency: "ETH", Amount: amt, PushAmount: pushAmt}
+	if _, err := srcNode.Client.OpenChannel(ctx, req); err != nil {
 		return err
 	}
 

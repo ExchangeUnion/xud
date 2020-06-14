@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
@@ -16,6 +18,10 @@ var integrationTestCases = []*testCase{
 	{
 		name: "order matching and swap",
 		test: testOrderMatchingAndSwap,
+	},
+	{
+		name: "order matching and swap connext",
+		test: testOrderMatchingAndSwapConnext,
 	},
 	{
 		name: "internal match and invalidation",
@@ -241,6 +247,123 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 		Side:     xudrpc.OrderSide_SELL,
 	}
 	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func waitConnextReady(node *xudtest.HarnessNode) error {
+	isReady := func() bool {
+		info, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		if err != nil {
+			return false
+		}
+
+		return info.Connext.Address != ""
+	}
+
+	timeout := time.After(30 * time.Second)
+	for !isReady() {
+		select {
+		case <-timeout:
+			return fmt.Errorf("timeout waiting for connext to be ready")
+		case <-time.After(1 * time.Second):
+		}
+	}
+
+	return nil
+}
+
+func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Wait for Alice's connext connection to catch-up.
+	err := waitConnextReady(net.Alice)
+	ht.assert.NoError(err)
+
+	// Fund Alice's wallet.
+	resInfo, err := net.Alice.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+	ht.assert.NoError(err)
+	amount := big.NewInt(2000000000000000000)
+	err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
+	ht.assert.NoError(err)
+
+	time.Sleep(15 * time.Second)
+
+	// Init Alice.
+	ETHTokenAddress := "0x0000000000000000000000000000000000000000"
+	ht.act.addCurrency(net.Alice, "ETH", 2, ETHTokenAddress, 18)
+	ht.act.addPair(net.Alice, "BTC", "ETH")
+	err = net.RestartNode(net.Alice)
+	ht.assert.NoError(err)
+
+	// Verify Alice ETH balance.
+	// TODO: are the expected values correct?
+	resBal, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(200000000), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(200000000), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].ChannelBalance)
+
+	// Wait for Bob's connext connection to catch-up.
+	err = waitConnextReady(net.Bob)
+	ht.assert.NoError(err)
+
+	// Init Bob.
+	ht.act.addCurrency(net.Bob, "ETH", 2, ETHTokenAddress, 18)
+	ht.act.addPair(net.Bob, "BTC", "ETH")
+	err = net.RestartNode(net.Bob)
+	ht.assert.NoError(err)
+
+	// Verify Bob ETH balance.
+	resBal, err = net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].ChannelBalance)
+
+	// Open channel from Alice.
+	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
+	ht.assert.NoError(err)
+
+	// Verify Alice ETH balance.
+	// TODO: are the expected values correct?
+	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(199979000), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(199978600), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(400), resBal.Balances["ETH"].ChannelBalance)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    40,
+		Quantity: 1,
+		PairId:   "BTC/ETH",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Bob.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: req.Quantity,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
+
+	time.Sleep(5 * time.Second)
+
+	// Verify Alice ETH balance.
+	// TODO: are the expected values correct?
+	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(199978960), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(199978600), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(360), resBal.Balances["ETH"].ChannelBalance)
+
+	// Verify Bob ETH balance.
+	// TODO: are the expected values correct?
+	resBal, err = net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.Equal(uint64(40), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(40), resBal.Balances["ETH"].ChannelBalance)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)
