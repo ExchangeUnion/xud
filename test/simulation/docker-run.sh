@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ $@ == "TestIntegration" ]]
+if [[ $@ == "TestIntegration" || $# == 0 ] ]]
 then
     pushd temp/indra
     make start
@@ -9,7 +9,7 @@ fi
 
 docker-compose run -v $PWD/temp/logs:/app/temp/logs test go test -v -timeout 20m -run=$@
 
-if [[ $@ == "TestIntegration" ]]
+if [[ $@ == "TestIntegration" || $# == 0 ] ]]
 then
     pushd temp/indra
     make reset
