@@ -822,8 +822,7 @@ class GrpcService {
    * See [[Service.subscribeOrders]]
    */
   public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
     this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
@@ -848,8 +847,7 @@ class GrpcService {
    * See [[Service.subscribeSwapFailures]]
    */
   public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
     this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
@@ -862,8 +860,7 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
