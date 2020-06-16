@@ -1,5 +1,5 @@
 /* tslint:disable no-floating-promises no-null-keyword */
-import grpc, { status } from 'grpc';
+import grpc, { status, ServerWritableStream } from 'grpc';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
@@ -138,6 +138,12 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
   }
   return placeOrderEvent;
 };
+
+function getCancelledPromise(call: ServerWritableStream<any>) {
+  return new Promise<void>((resolve) => {
+    call.once('cancelled', resolve);
+  });
+}
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
@@ -825,6 +831,9 @@ class GrpcService {
     if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelledPromise = getCancelledPromise(call);
+
     this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
       if (order) {
@@ -839,8 +848,8 @@ class GrpcService {
         orderUpdate.setOrderRemoval(grpcOrderRemoval);
       }
       call.write(orderUpdate);
-    });
-    this.addStream(call);
+    },
+    cancelledPromise);
   }
 
   /*
@@ -850,9 +859,11 @@ class GrpcService {
     if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelledPromise = getCancelledPromise(call);
     this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
       call.write(createSwapFailure(result));
-    });
+    }, cancelledPromise);
     this.addStream(call);
   }
 
@@ -863,9 +874,11 @@ class GrpcService {
     if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelledPromise = getCancelledPromise(call);
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
-    });
+    }, cancelledPromise);
     this.addStream(call);
   }
 }
