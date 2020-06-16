@@ -651,7 +651,10 @@ class LndClient extends SwapClient {
         throw swapErrors.FINAL_PAYMENT_ERROR(paymentError);
       }
     }
-    return base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
+    const preimage = base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
+
+    this.logger.debug(`sent payment with hash ${request.getPaymentHashString()}, preimage is ${preimage}`);
+    return preimage;
   }
 
   /**

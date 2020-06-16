@@ -335,6 +335,7 @@ class ConnextClient extends SwapClient {
           executeTransfer,
           waitForPreimageByHash(this, deal.rHash),
         ]);
+        this.logger.debug(`received preimage ${preimage} for payment with hash ${deal.rHash}`);
         secret = preimage;
       } else {
         // we are the taker paying the maker
