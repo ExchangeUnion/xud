@@ -13,6 +13,7 @@ describe('WebProxy', () => {
       xudir: getTempDir(true),
       dbpath: ':memory:',
       initdb: false,
+      noencrypt: true,
       webproxy: {
         port,
         disable: false,

@@ -70,7 +70,7 @@ class Config {
   /** Whether matching will be disabled */
   public nomatching = false;
   /** Whether a password should not be used to encrypt the xud key and underlying wallets. */
-  public noencrypt = true; // TODO: enable encryption by default
+  public noencrypt = false;
   /**
    * Whether to disable sanity swaps that verify that the orders can possibly be swapped
    * before adding trading pairs as active.
