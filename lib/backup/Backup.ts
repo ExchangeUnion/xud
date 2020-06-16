@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +8,9 @@ import { getDefaultBackupDir } from '../utils/utils';
 
 interface Backup {
   on(event: 'newBackup', listener: (path: string) => void): this;
+  on(event: 'changeDetected', listener: (client: string) => void): this;
   emit(event: 'newBackup', path: string): boolean;
+  emit(event: 'changeDetected', client: string): boolean;
 }
 
 class Backup extends EventEmitter {
@@ -21,6 +22,18 @@ class Backup extends EventEmitter {
   private fileWatchers: fs.FSWatcher[] = [];
   private lndClients: LndClient[] = [];
   private checkLndTimer: ReturnType<typeof setInterval> | undefined;
+
+  /** A map of client names to a boolean indicating whether they have changed since the last backup. */
+  private databaseChangedMap = new Map<string, boolean>();
+
+  private xudBackupTimer = setInterval(() => {
+    if (this.databaseChangedMap.get('xud') === true) {
+      const backupPath = this.getBackupPath('xud');
+      const content = this.readDatabase(this.config.dbpath);
+      this.writeBackup(backupPath, content);
+      this.databaseChangedMap.set('xud', false);
+    }
+  }, 180000);
 
   public start = async (args: { [argName: string]: any }) => {
     await this.config.load(args);
@@ -48,13 +61,6 @@ class Backup extends EventEmitter {
       this.logger.error(`Could not connect to LNDs: ${err}`);
     });
 
-    // Start the Raiden database filewatcher
-    if (args.raiden) {
-      this.startFilewatcher('raiden', args.raiden.dbpath).catch(this.logger.error);
-    } else {
-      this.logger.warn('Raiden database file not specified');
-    }
-
     // Start the XUD database filewatcher
     this.startFilewatcher('xud', this.config.dbpath).catch(this.logger.error);
 
@@ -72,6 +78,8 @@ class Backup extends EventEmitter {
     for (const lndClient of this.lndClients) {
       lndClient.close();
     }
+
+    clearInterval(this.xudBackupTimer);
   }
 
   private waitForLndConnected = (lndClient: LndClient) => {
@@ -138,15 +146,13 @@ class Backup extends EventEmitter {
   }
 
   private startFilewatcher = async (client: string, dbPath: string) => {
-    let previousDatabaseHash: string | undefined;
     const backupPath = this.getBackupPath(client);
 
     if (fs.existsSync(dbPath)) {
       this.logger.verbose(`Writing initial ${client} database backup to: ${backupPath}`);
-      const { content, hash } = this.readDatabase(dbPath);
+      const content = this.readDatabase(dbPath);
 
       this.writeBackup(backupPath, content);
-      previousDatabaseHash = hash;
     } else {
       this.logger.warn(`Could not find database file of ${client} at ${dbPath}, waiting for it to be created...`);
       const dbDir = path.dirname(dbPath);
@@ -164,29 +170,19 @@ class Backup extends EventEmitter {
 
     this.fileWatchers.push(fs.watch(dbPath, { persistent: true, recursive: false }, (event: string) => {
       if (event === 'change') {
-        const { content, hash } = this.readDatabase(dbPath);
-
-        // Compare the MD5 hash of the current content of the file with hash of the content when
-        // it was backed up the last time to ensure that the content of the file has changed
-        if (hash !== previousDatabaseHash) {
-          this.logger.trace(`${client} database changed`);
-
-          previousDatabaseHash = hash;
-          this.writeBackup(backupPath, content);
-        }
+        this.logger.trace(`${client} database changed`);
+        this.emit('changeDetected', client);
+        this.databaseChangedMap.set(client, true);
       }
     }));
 
     this.logger.verbose(`Listening for changes to the ${client} database`);
   }
 
-  private readDatabase = (path: string): { content: Buffer, hash: string } => {
+  private readDatabase = (path: string) => {
     const content = fs.readFileSync(path);
 
-    return {
-      content,
-      hash: createHash('md5').update(content).digest('base64'),
-    };
+    return content;
   }
 
   private writeBackup = (backupPath: string, data: Uint8Array) => {
@@ -195,6 +191,7 @@ class Backup extends EventEmitter {
         backupPath,
         data,
       );
+      this.logger.trace(`new backup written to ${backupPath}`);
       this.emit('newBackup', backupPath);
     } catch (error) {
       this.logger.error(`Could not write backup file: ${error}`);
