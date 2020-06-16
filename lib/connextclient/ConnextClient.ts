@@ -387,9 +387,10 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Resolve a HashLock Transfer on the Connext network.
+   * Resolves a HashLock Transfer on the Connext network.
    */
-  public settleInvoice = async (_rHash: string, rPreimage: string, currency: string) => {
+  public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
+    this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
     const assetId = this.tokenAddresses.get(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
