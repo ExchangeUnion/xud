@@ -3,13 +3,6 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '037a74737630bb5a9979762b2163ef9f95c81e00caf347bacc17f16991cdbb61f7',
-    addresses: [
-      { host: 'xud1.testnet.exchangeunion.com', port: 18885 },
-      { host: 'pso32ae2l5nyh3clgee2nj2hgpmcnluhaqibjm2r2fjcsn4gclxfmrid.onion', port: 18885 },
-    ],
-  },
-  {
     nodePubKey: '02799dff47d38da549c9f9e3dcd94388e3a9fe05b4ea50ea0636562b4ba2b4ca4a',
     addresses: [
       { host: 'xud.kilrau.com', port: 18885 },
