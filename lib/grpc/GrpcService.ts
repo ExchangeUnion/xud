@@ -1,5 +1,7 @@
 /* tslint:disable no-floating-promises no-null-keyword */
-import grpc, { status, ServerWritableStream } from 'grpc';
+import grpc, { ServerWritableStream, status } from 'grpc';
+import { fromEvent } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
@@ -139,11 +141,11 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
   return placeOrderEvent;
 };
 
-function getCancelledPromise(call: ServerWritableStream<any>) {
-  return new Promise<void>((resolve) => {
-    call.once('cancelled', resolve);
-  });
-}
+const getCancelled$ = (call: ServerWritableStream<any>) => {
+  return fromEvent<void>(call, 'cancelled').pipe(
+    take(1),
+  );
+};
 
 /** Class containing the available RPC methods for XUD */
 class GrpcService {
@@ -832,7 +834,7 @@ class GrpcService {
       return;
     }
 
-    const cancelledPromise = getCancelledPromise(call);
+    const cancelled$ = getCancelled$(call);
 
     this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
@@ -849,7 +851,7 @@ class GrpcService {
       }
       call.write(orderUpdate);
     },
-    cancelledPromise);
+    cancelled$);
   }
 
   /*
@@ -860,10 +862,10 @@ class GrpcService {
       return;
     }
 
-    const cancelledPromise = getCancelledPromise(call);
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
       call.write(createSwapFailure(result));
-    }, cancelledPromise);
+    }, cancelled$);
     this.addStream(call);
   }
 
@@ -875,10 +877,10 @@ class GrpcService {
       return;
     }
 
-    const cancelledPromise = getCancelledPromise(call);
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
-    }, cancelledPromise);
+    }, cancelled$);
     this.addStream(call);
   }
 }

@@ -1,9 +1,11 @@
+import { fromEvent, merge, Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
-import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
+import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
@@ -669,7 +671,7 @@ class Service {
   public subscribeOrders = (
     args: { existing: boolean },
     callback: (order?: Order, orderRemoval?: OrderPortion) => void,
-    cancelledPromise: Promise<void>,
+    cancelled$: Observable<void>,
   ) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
@@ -682,25 +684,27 @@ class Service {
       });
     }
 
-    this.orderBook.on('peerOrder.incoming', callback);
-    this.orderBook.on('ownOrder.added', callback);
+    const orderAdded$ = merge(
+      fromEvent<PeerOrder>(this.orderBook, 'peerOrder.incoming'),
+      fromEvent<OwnOrder>(this.orderBook, 'ownOrder.added'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
-    const removalCallback = (orderRemoval: OrderPortion) => callback(undefined, orderRemoval);
-    this.orderBook.on('peerOrder.invalidation', removalCallback);
-    this.orderBook.on('peerOrder.filled', removalCallback);
-    this.orderBook.on('ownOrder.filled', removalCallback);
-    this.orderBook.on('ownOrder.removed', removalCallback);
+    orderAdded$.subscribe({
+      next: callback,
+      error: this.logger.error,
+    });
 
-    // we wait for the streaming call to be canceled
-    cancelledPromise.then(() => {
-      // after it is canceled we can remove all the listeners set above
-      this.orderBook.removeListener('peerOrder.incoming', callback);
-      this.orderBook.removeListener('ownOrder.added', callback);
-      this.orderBook.removeListener('peerOrder.invalidation', removalCallback);
-      this.orderBook.removeListener('peerOrder.filled', removalCallback);
-      this.orderBook.removeListener('ownOrder.filled', removalCallback);
-      this.orderBook.removeListener('ownOrder.removed', removalCallback);
-    }).catch(this.logger.error);
+    const orderRemoved$ = merge(
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.invalidation'),
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+
+    orderRemoved$.subscribe({
+      next: (orderPortion) => { callback(undefined, orderPortion); },
+      error: this.logger.error,
+    });
   }
 
   /*
@@ -709,7 +713,7 @@ class Service {
   public subscribeSwaps = async (
     args: { includeTaker: boolean },
     callback: (swapSuccess: SwapSuccess) => void,
-    cancelledPromise: Promise<void>,
+    cancelled$: Observable<void>,
   ) => {
     const onSwapPaid = (swapSuccess: SwapSuccess) => {
       // always alert client for maker matches, taker matches only when specified
@@ -717,9 +721,14 @@ class Service {
         callback(swapSuccess);
       }
     };
-    this.swaps.on('swap.paid', onSwapPaid);
 
-    cancelledPromise.then(() => this.swaps.removeListener('swap.paid', onSwapPaid)).catch(this.logger.error);
+    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid')
+      .pipe(takeUntil(cancelled$));
+
+    swapPaid$.subscribe({
+      next: onSwapPaid,
+      error: this.logger.error,
+    });
   }
 
   /*
@@ -728,7 +737,7 @@ class Service {
   public subscribeSwapFailures = async (
     args: { includeTaker: boolean },
     callback: (swapFailure: SwapFailure) => void,
-    cancelledPromise: Promise<void>,
+    cancelled$: Observable<void>,
   ) => {
     const onSwapFailed = (deal: SwapDeal) => {
       this.logger.trace(`notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`);
@@ -737,9 +746,14 @@ class Service {
         callback(deal as SwapFailure);
       }
     };
-    this.swaps.on('swap.failed', onSwapFailed);
 
-    cancelledPromise.then(() => this.swaps.removeListener('swap.failed', onSwapFailed)).catch(this.logger.error);
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed')
+      .pipe(takeUntil(cancelled$));
+
+    swapFailed$.subscribe({
+      next: onSwapFailed,
+      error: this.logger.error,
+    });
   }
 
   /**
