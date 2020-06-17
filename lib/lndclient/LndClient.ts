@@ -905,7 +905,7 @@ class LndClient extends SwapClient {
   }
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
-    this.logger.debug(`settling invoice for ${rHash}`);
+    this.logger.debug(`settling invoice for ${rHash} with preimage ${rPreimage}`);
     const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
     settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
     await this.settleInvoiceLnd(settleInvoiceRequest);
