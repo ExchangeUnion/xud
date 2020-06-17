@@ -1,6 +1,6 @@
 /* tslint:disable no-floating-promises no-null-keyword */
 import grpc, { ServerWritableStream, status } from 'grpc';
-import * as rxjs from 'rxjs';
+import { fromEvent } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
@@ -142,7 +142,7 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
 };
 
 const getCancelled$ = (call: ServerWritableStream<any>) => {
-  return rxjs.fromEvent<void>(call, 'cancelled').pipe(
+  return fromEvent<void>(call, 'cancelled').pipe(
     take(1),
   );
 };

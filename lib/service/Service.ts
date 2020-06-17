@@ -747,7 +747,7 @@ class Service {
       }
     };
 
-    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.paid')
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed')
       .pipe(takeUntil(cancelled$));
 
     swapFailed$.subscribe({
