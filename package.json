@@ -29,7 +29,7 @@
     "slate": "proto2slate proto/xudrpc.proto",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
-    "test": "npm run test:unit && npm run test:crypto && npm run test:int && npm run test:p2p && npm run test:jest",
+    "test": "npm run prettier:check && npm run test:unit && npm run test:crypto && npm run test:int && npm run test:p2p && npm run test:jest",
     "test:int": "mocha --timeout 10000 -r ts-node/register test/integration/*",
     "test:int:watch": "mocha --timeout 10000 -r ts-node/register test/integration/*  --watch --watch-extensions ts",
     "test:unit": "mocha --timeout 10000 -r ts-node/register test/unit/*",
@@ -62,7 +62,9 @@
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
     "preversion": "npm run lintNoFix && npm test && npm run test:sim:build && npm run test:sim",
     "postversion": "npm run compile",
-    "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc && npm run slate"
+    "version": "npm run config && npm run changelog && git add sample-xud.conf CHANGELOG.md && npm run typedoc && npm run slate",
+    "prettier:fix": "prettier --write lib/ test/",
+    "prettier:check": "prettier --check lib/ test/"
   },
   "cross-os": {
     "clean": {
@@ -209,6 +211,7 @@
     "jest": "^26.0.1",
     "mocha": "^7.2.0",
     "nodemon": "^2.0.4",
+    "prettier": "2.0.5",
     "proto2slate": "^1.1.0",
     "sinon": "^7.5.0",
     "supertest": "^4.0.2",
