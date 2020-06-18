@@ -22,7 +22,7 @@ class InitService extends EventEmitter {
     private swapClientManager: SwapClientManager,
     private nodeKeyPath: string,
     private nodeKeyExists: boolean,
-    private databasePath: string,
+    private databasePath: string
   ) {
     super();
   }
@@ -59,7 +59,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public unlockNode = async (args: { password: string }) => {
     const { password } = args;
@@ -87,15 +87,15 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   public restoreNode = async (args: {
-    password: string,
-    xudDatabase: Uint8Array,
-    lndBackupsMap: Map<string, Uint8Array>,
-    raidenDatabase: Uint8Array,
-    seedMnemonicList: string[],
-    raidenDatabasePath: string,
+    password: string;
+    xudDatabase: Uint8Array;
+    lndBackupsMap: Map<string, Uint8Array>;
+    raidenDatabase: Uint8Array;
+    seedMnemonicList: string[];
+    raidenDatabasePath: string;
   }) => {
     const {
       password,
@@ -143,7 +143,7 @@ class InitService extends EventEmitter {
     } finally {
       this.pendingCall = false;
     }
-  }
+  };
 
   private newWalletValidation = (password: string) => {
     if (this.nodeKeyExists) {
@@ -155,12 +155,12 @@ class InitService extends EventEmitter {
     }
     if (this.swapClientManager.misconfiguredClients.size > 0) {
       const misconfiguredClientLabels: string[] = [];
-      this.swapClientManager.misconfiguredClients.forEach((client) => {
+      this.swapClientManager.misconfiguredClients.forEach(client => {
         misconfiguredClientLabels.push(client.label);
       });
       throw swapErrors.SWAP_CLIENT_MISCONFIGURED(misconfiguredClientLabels);
     }
-  }
+  };
 
   private prepareCall = async (ignoreUnavailableClients = false) => {
     if (this.pendingCall) {
@@ -177,7 +177,7 @@ class InitService extends EventEmitter {
         throw err;
       }
     }
-  }
+  };
 }
 
 export default InitService;

@@ -20,9 +20,9 @@ export type RaidenInfo = {
 };
 
 export type RaidenChannelCount = {
-  active: number,
-  settled: number,
-  closed: number,
+  active: number;
+  settled: number;
+  closed: number;
 };
 
 /**
@@ -51,7 +51,7 @@ export type Channel = OpenChannelPayload & {
   token_network_identifier: string;
   channel_identifier: number;
   /** The balance of the channel denominated in the smallest units supported by the token. */
-  balance: number
+  balance: number;
   state: string;
 };
 
@@ -66,13 +66,13 @@ export type TokenPaymentResponse = TokenPaymentRequest & {
  * The payload for tokenPayment call.
  */
 export type TokenPaymentRequest = {
-  token_address: string,
-  target_address: string,
+  token_address: string;
+  target_address: string;
   /** The amount of the payment request denominated in the smallest units supported by the token. */
-  amount: number,
-  secret_hash: string,
-  identifier?: number,
-  lock_timeout?: number,
+  amount: number;
+  secret_hash: string;
+  identifier?: number;
+  lock_timeout?: number;
 };
 
 export type RaidenResolveRequest = {
@@ -90,16 +90,16 @@ export type RaidenResolveRequest = {
 
 export type RaidenResolveResponse = {
   /** The preimage in hex format. */
-  secret: string,
+  secret: string;
 };
 
 export type PaymentEvent = {
   event: string;
   payment_network_address: string;
-  token_network_address: string
+  token_network_address: string;
   identifier: number;
   amount?: number;
-  target?: string
+  target?: string;
   initiator?: string;
   secret?: string;
   route?: string[];

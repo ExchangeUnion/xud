@@ -1,7 +1,10 @@
 import Sequelize from 'sequelize';
 import * as db from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
+export default (
+  sequelize: Sequelize.Sequelize,
+  DataTypes: Sequelize.DataTypes
+) => {
   const attributes: db.SequelizeAttributes<db.TradeAttributes> = {
     makerOrderId: { type: DataTypes.STRING, allowNull: false },
     takerOrderId: { type: DataTypes.STRING, allowNull: true },
@@ -16,7 +19,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     updatedAt: false,
   };
 
-  const Trade = sequelize.define<db.TradeInstance, db.TradeAttributes>('Trade', attributes, options);
+  const Trade = sequelize.define<db.TradeInstance, db.TradeAttributes>(
+    'Trade',
+    attributes,
+    options
+  );
 
   Trade.associate = (models: Sequelize.Models) => {
     models.Trade.belongsTo(models.Order, {

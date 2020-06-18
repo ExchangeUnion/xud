@@ -81,7 +81,12 @@ class Xud extends EventEmitter {
       }
     }
 
-    const loggers = Logger.createLoggers(this.config.loglevel, this.config.logpath, this.config.instanceid, this.config.logdateformat);
+    const loggers = Logger.createLoggers(
+      this.config.loglevel,
+      this.config.logpath,
+      this.config.instanceid,
+      this.config.logdateformat
+    );
     this.logger = loggers.global;
     if (configFileLoaded) {
       this.logger.info('config file loaded');
@@ -96,7 +101,7 @@ class Xud extends EventEmitter {
           this.config.rpc.port,
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
-          path.join(this.config.xudir, 'tls.key'),
+          path.join(this.config.xudir, 'tls.key')
         );
 
         if (!this.config.webproxy.disable) {
@@ -105,7 +110,7 @@ class Xud extends EventEmitter {
             this.config.webproxy.port,
             this.config.rpc.port,
             this.config.rpc.host,
-            path.join(this.config.xudir, 'tls.cert'),
+            path.join(this.config.xudir, 'tls.cert')
           );
         }
       }
@@ -116,10 +121,20 @@ class Xud extends EventEmitter {
       this.unitConverter = new UnitConverter();
       this.unitConverter.init();
 
-      const nodeKeyPath = NodeKey.getPath(this.config.xudir, this.config.instanceid);
-      const nodeKeyExists = await fs.access(nodeKeyPath).then(() => true).catch(() => false);
+      const nodeKeyPath = NodeKey.getPath(
+        this.config.xudir,
+        this.config.instanceid
+      );
+      const nodeKeyExists = await fs
+        .access(nodeKeyPath)
+        .then(() => true)
+        .catch(() => false);
 
-      this.swapClientManager = new SwapClientManager(this.config, loggers, this.unitConverter);
+      this.swapClientManager = new SwapClientManager(
+        this.config,
+        loggers,
+        this.unitConverter
+      );
       await this.swapClientManager.init(this.db.models);
 
       let nodeKey: NodeKey | undefined;
@@ -132,11 +147,18 @@ class Xud extends EventEmitter {
         }
       } else if (this.rpcServer) {
         this.rpcServer.grpcService.locked = true;
-        const initService = new InitService(this.swapClientManager, nodeKeyPath, nodeKeyExists, this.config.dbpath);
+        const initService = new InitService(
+          this.swapClientManager,
+          nodeKeyPath,
+          nodeKeyExists,
+          this.config.dbpath
+        );
 
         this.rpcServer.grpcInitService.setInitService(initService);
-        this.logger.info("Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'");
-        nodeKey = await new Promise<NodeKey | undefined>((resolve) => {
+        this.logger.info(
+          "Node key is encrypted, unlock with 'xucli unlock', 'xucli create', or 'xucli restore'"
+        );
+        nodeKey = await new Promise<NodeKey | undefined>(resolve => {
           initService.once('nodekey', resolve);
           this.on('shutdown', () => {
             // in case we shutdown before unlocking xud
@@ -169,7 +191,12 @@ class Xud extends EventEmitter {
 
       const initPromises: Promise<any>[] = [];
 
-      this.swaps = new Swaps(loggers.swaps, this.db.models, this.pool, this.swapClientManager);
+      this.swaps = new Swaps(
+        loggers.swaps,
+        this.db.models,
+        this.pool,
+        this.swapClientManager
+      );
       initPromises.push(this.swaps.init());
 
       this.orderBook = new OrderBook({
@@ -191,7 +218,7 @@ class Xud extends EventEmitter {
       // We initialize Connext separately because it
       // requires a NodeKey.
       await this.swapClientManager.initConnext(
-        nodeKey.childSeed(SwapClientType.Connext),
+        nodeKey.childSeed(SwapClientType.Connext)
       );
 
       // initialize pool and start listening/connecting only once other components are initialized
@@ -214,7 +241,7 @@ class Xud extends EventEmitter {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,
-          this.config.http.host,
+          this.config.http.host
         );
       }
 
@@ -256,14 +283,20 @@ class Xud extends EventEmitter {
           // and refund from faucet if below the walletAmount
           retryInterval: 10000,
         }).subscribe({
-          next: (currency) => {
-            this.logger.info(`Connext wallet funded and channel opened for ${currency}`);
+          next: currency => {
+            this.logger.info(
+              `Connext wallet funded and channel opened for ${currency}`
+            );
           },
-          error: (e) => {
-            this.logger.error(`Failed to fund Connext wallet and open a channel: ${e}`);
+          error: e => {
+            this.logger.error(
+              `Failed to fund Connext wallet and open a channel: ${e}`
+            );
           },
           complete: () => {
-            this.logger.info('Stopped monitoring Connext balances for automatic funding and channel creation');
+            this.logger.info(
+              'Stopped monitoring Connext balances for automatic funding and channel creation'
+            );
           },
         });
       }
@@ -271,15 +304,17 @@ class Xud extends EventEmitter {
       // initialize rpc server last
       if (this.rpcServer) {
         this.rpcServer.grpcService.setService(this.service);
-
       } else {
         this.logger.info('RPC server is disabled.');
       }
     } catch (err) {
-      this.logger.error('Unexpected error during initialization, shutting down...', err);
+      this.logger.error(
+        'Unexpected error during initialization, shutting down...',
+        err
+      );
       await this.shutdown();
     }
-  }
+  };
 
   private shutdown = async () => {
     if (this.shuttingDown) {
@@ -318,15 +353,15 @@ class Xud extends EventEmitter {
     this.logger.info('XUD shutdown gracefully');
 
     this.emit('shutdown');
-  }
+  };
 
   /**
    * Initiate graceful shutdown of xud. Emits the `shutdown` event when shutdown is complete.
    */
   public beginShutdown = () => {
     // we begin the shutdown process but return a response before it completes.
-    void (this.shutdown());
-  }
+    void this.shutdown();
+  };
 }
 
 if (!module.parent) {

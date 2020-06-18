@@ -3,10 +3,14 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '02d167d1fe523d4ea777e06cf34c7d19a8a278165f68b4033224f05a8c678e982c',
+    nodePubKey:
+      '02d167d1fe523d4ea777e06cf34c7d19a8a278165f68b4033224f05a8c678e982c',
     addresses: [
       { host: 'xud.kilrau.com', port: 8885 },
-      { host: 'fsq22euwtdh6dshiq4ewq2k7zy6iyzykacqlad54z4ixunftkjqc3vad.onion', port: 8885 },
+      {
+        host: 'fsq22euwtdh6dshiq4ewq2k7zy6iyzykacqlad54z4ixunftkjqc3vad.onion',
+        port: 8885,
+      },
     ],
   },
 ] as db.NodeAttributes[];
@@ -35,8 +39,4 @@ const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
 ] as db.PairAttributes[];
 
-export {
-  nodes,
-  currencies,
-  pairs,
-};
+export { nodes, currencies, pairs };

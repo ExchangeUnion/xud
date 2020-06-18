@@ -27,18 +27,20 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): SwapFailedPacket | pb.SwapFailedPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): SwapFailedPacket | pb.SwapFailedPacket.AsObject => {
     const obj = pb.SwapFailedPacket.deserializeBinary(binary).toObject();
     return SwapFailedPacket.validate(obj) ? SwapFailedPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.SwapFailedPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.rHash
-    );
-  }
+    return !!(obj.id && obj.rHash);
+  };
 
-  private static convert = (obj: pb.SwapFailedPacket.AsObject): SwapFailedPacket => {
+  private static convert = (
+    obj: pb.SwapFailedPacket.AsObject
+  ): SwapFailedPacket => {
     return new SwapFailedPacket({
       header: removeUndefinedProps({
         id: obj.id,
@@ -50,7 +52,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
         failureReason: obj.failureReason,
       }),
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SwapFailedPacket();
@@ -63,7 +65,7 @@ class SwapFailedPacket extends Packet<SwapFailedPacketBody> {
     msg.setFailureReason(this.body!.failureReason);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SwapFailedPacket;

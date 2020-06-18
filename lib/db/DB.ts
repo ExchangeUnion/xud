@@ -5,18 +5,17 @@ import Logger from '../Logger';
 import * as db from './types';
 import { XuNetwork } from '../constants/enums';
 import { promises as fs } from 'fs';
-import {
-  defaultNodes,
-  defaultCurrencies,
-  defaultPairs,
-} from '../db/seeds';
+import { defaultNodes, defaultCurrencies, defaultPairs } from '../db/seeds';
 
 type Models = {
   Node: Sequelize.Model<db.NodeInstance, db.NodeAttributes>;
   Currency: Sequelize.Model<db.CurrencyInstance, db.CurrencyAttributes>;
   SwapDeal: Sequelize.Model<db.SwapDealInstance, db.SwapDealAttributes>;
   Pair: Sequelize.Model<db.PairInstance, db.PairAttributes>;
-  ReputationEvent: Sequelize.Model<db.ReputationEventInstance, db.ReputationEventAttributes>;
+  ReputationEvent: Sequelize.Model<
+    db.ReputationEventInstance,
+    db.ReputationEventAttributes
+  >;
   Order: Sequelize.Model<db.OrderInstance, db.OrderAttributes>;
   Trade: Sequelize.Model<db.TradeInstance, db.TradeAttributes>;
 };
@@ -42,36 +41,38 @@ class DB {
    * Initialize the connection to the database.
    * @param initDb whether to intialize a new database with default values if no database exists
    */
-  public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
+  public init = async (
+    network = XuNetwork.SimNet,
+    initDb = false
+  ): Promise<void> => {
     this.models = await this.loadModels();
-    const shouldInitDb = initDb && await this.isNewDb();
+    const shouldInitDb = initDb && (await this.isNewDb());
 
     try {
       await this.sequelize.authenticate();
-      this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
+      this.logger.info(
+        `connected to database ${this.storage ? this.storage : 'in memory'}`
+      );
     } catch (err) {
       this.logger.error('unable to connect to the database', err);
       throw err;
     }
-    const { Node, Currency, Pair, ReputationEvent, SwapDeal, Order, Trade } = this.models;
+    const {
+      Node,
+      Currency,
+      Pair,
+      ReputationEvent,
+      SwapDeal,
+      Order,
+      Trade,
+    } = this.models;
     // sync schemas with the database in phases, according to FKs dependencies
-    await Promise.all([
-      Node.sync(),
-      Currency.sync(),
-    ]);
+    await Promise.all([Node.sync(), Currency.sync()]);
     // Pair is dependent on Currency, ReputationEvent is dependent on Node
-    await Promise.all([
-      Pair.sync(),
-      ReputationEvent.sync(),
-    ]);
+    await Promise.all([Pair.sync(), ReputationEvent.sync()]);
     // Order is dependent on Pair
-    await Promise.all([
-      Order.sync(),
-    ]);
-    await Promise.all([
-      Trade.sync(),
-      SwapDeal.sync(),
-    ]);
+    await Promise.all([Order.sync()]);
+    await Promise.all([Trade.sync(), SwapDeal.sync()]);
 
     if (shouldInitDb) {
       // initialize database with the seed nodes for the configured network
@@ -92,7 +93,7 @@ class DB {
         await Pair.bulkCreate(pairs);
       }
     }
-  }
+  };
 
   /**
    * Checks whether the database is new, in other words whether we are not
@@ -112,24 +113,28 @@ class DB {
       }
     }
     return true;
-  }
+  };
 
   public close = (): Bluebird<void> => {
     return this.sequelize.close();
-  }
+  };
 
   private loadModels = async (): Promise<Models> => {
     const models: { [index: string]: Sequelize.Model<any, any> } = {};
     const modelsFolder = path.join(__dirname, 'models');
     (await fs.readdir(modelsFolder))
       // filter for only files that end in .js or .ts (but not .d.ts)
-      .filter(file => file !== path.basename(__filename) && file.match(/.js$|(^.?|\.[^d]|[^.]d|[^.][^d])\.ts$/))
-      .forEach((file) => {
+      .filter(
+        file =>
+          file !== path.basename(__filename) &&
+          file.match(/.js$|(^.?|\.[^d]|[^.]d|[^.][^d])\.ts$/)
+      )
+      .forEach(file => {
         const model = this.sequelize.import(path.join(modelsFolder, file));
         models[model.name] = model;
       });
 
-    Object.keys(models).forEach((key) => {
+    Object.keys(models).forEach(key => {
       const model = models[key];
       if (model.associate) {
         model.associate(models);
@@ -137,7 +142,7 @@ class DB {
     });
 
     return <Models>models;
-  }
+  };
 }
 
 export default DB;

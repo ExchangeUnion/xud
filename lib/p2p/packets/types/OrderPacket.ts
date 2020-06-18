@@ -16,20 +16,23 @@ class OrderPacket extends Packet<OutgoingOrder> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): OrderPacket | pb.OrderPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): OrderPacket | pb.OrderPacket.AsObject => {
     const obj = pb.OrderPacket.deserializeBinary(binary).toObject();
     return OrderPacket.validate(obj) ? OrderPacket.convert(obj) : obj;
-  }
+  };
 
   private static validate = (obj: pb.OrderPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.order
-      && obj.order.id
-      && obj.order.pairId
-      && obj.order.price > 0
-      && obj.order.quantity > 0
+    return !!(
+      obj.id &&
+      obj.order &&
+      obj.order.id &&
+      obj.order.pairId &&
+      obj.order.price > 0 &&
+      obj.order.quantity > 0
     );
-  }
+  };
 
   private static convert = (obj: pb.OrderPacket.AsObject): OrderPacket => {
     return new OrderPacket({
@@ -44,7 +47,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
         isBuy: obj.order!.isBuy,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const pbOrder = new pb.Order();
@@ -59,7 +62,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
     msg.setOrder(pbOrder);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default OrderPacket;

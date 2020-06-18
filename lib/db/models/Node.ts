@@ -2,7 +2,10 @@ import Sequelize from 'sequelize';
 import * as db from '../types';
 import { Address } from '../../p2p/types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
+export default (
+  sequelize: Sequelize.Sequelize,
+  DataTypes: Sequelize.DataTypes
+) => {
   const attributes: db.SequelizeAttributes<db.NodeAttributes> = {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     nodePubKey: { type: DataTypes.STRING, unique: true, allowNull: false },
@@ -25,7 +28,9 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
       type: Sequelize.VIRTUAL,
       allowNull: true,
       get(this: db.NodeInstance) {
-        return this.lastAddressText ? JSON.parse(this.lastAddressText) : undefined;
+        return this.lastAddressText
+          ? JSON.parse(this.lastAddressText)
+          : undefined;
       },
       set(this: db.NodeInstance, value: Address) {
         if (value) {
@@ -36,17 +41,23 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     banned: { type: DataTypes.BOOLEAN, allowNull: true },
   };
 
-  const indexes: Sequelize.DefineIndexesOptions[] = [{
-    unique: true,
-    fields: ['nodePubKey'],
-  }];
+  const indexes: Sequelize.DefineIndexesOptions[] = [
+    {
+      unique: true,
+      fields: ['nodePubKey'],
+    },
+  ];
 
   const options: Sequelize.DefineOptions<db.NodeInstance> = {
     indexes,
     tableName: 'nodes',
   };
 
-  const Node = sequelize.define<db.NodeInstance, db.NodeAttributes>('Node', attributes, options);
+  const Node = sequelize.define<db.NodeInstance, db.NodeAttributes>(
+    'Node',
+    attributes,
+    options
+  );
 
   Node.associate = (models: Sequelize.Models) => {
     models.Node.hasMany(models.ReputationEvent, {

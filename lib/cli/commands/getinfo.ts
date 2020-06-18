@@ -11,30 +11,40 @@ import {
 
 const displayLndInfo = (asset: string, info: LndInfo.AsObject) => {
   const basicInfotable = new Table() as VerticalTable;
-  basicInfotable.push(
-    { [colors.blue('Status')]: info.status },
-  );
+  basicInfotable.push({ [colors.blue('Status')]: info.status });
 
-  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
-${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+  const address = info.urisList[0]
+    ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
+    : '';
 
   basicInfotable.push(
     { [colors.blue('Version')]: info.version || '' },
     { [colors.blue('Address')]: address },
-    { [colors.blue('Alias')] : info.alias || '' },
-    { [colors.blue('Channels')] :
- `Active: ${info.channels ? info.channels['active'] : 0}\
+    { [colors.blue('Alias')]: info.alias || '' },
+    {
+      [colors.blue('Channels')]: `Active: ${
+        info.channels ? info.channels['active'] : 0
+      }\
  | Pending: ${info.channels ? info.channels['pending'] : 0}\
  | Closed: ${info.channels ? info.channels['closed'] : 0}`,
     },
-    { [colors.blue('Network')] : info.chainsList && info.chainsList.length > 0 ? `${info.chainsList[0].chain} ${info.chainsList[0].network}` : '' },
+    {
+      [colors.blue('Network')]:
+        info.chainsList && info.chainsList.length > 0
+          ? `${info.chainsList[0].chain} ${info.chainsList[0].network}`
+          : '',
+    }
   );
 
   console.log(colors.underline(colors.bold(`\nLND-${asset} Info:`)));
   console.log(basicInfotable.toString(), '\n');
 };
 
-const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject][]) => {
+const determineXudStatus = (
+  numPeers: number,
+  lndMap: [string, LndInfo.AsObject][]
+) => {
   let status = '';
 
   if (numPeers === 0) {
@@ -42,7 +52,7 @@ const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject]
     status += '\n';
   }
 
-  lndMap.forEach((asset) => {
+  lndMap.forEach(asset => {
     if (asset[1].status !== 'Ready') {
       status += `LND-${asset[0]}: ${asset[1].status}`;
       status += '\n';
@@ -54,8 +64,10 @@ const determineXudStatus = (numPeers: number, lndMap: [string, LndInfo.AsObject]
 
 const displayGeneral = (info: GetInfoResponse.AsObject) => {
   const table = new Table() as VerticalTable;
-  const address = info.urisList[0] ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
-${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
+  const address = info.urisList[0]
+    ? `${info.urisList[0].substring(0, info.urisList[0].indexOf('@'))}
+${info.urisList[0].substring(info.urisList[0].indexOf('@'))}`
+    : '';
 
   table.push(
     { [colors.blue('Status')]: determineXudStatus(info.numPeers, info.lndMap) },
@@ -68,7 +80,11 @@ ${info.urisList[0].substring(info.urisList[0].indexOf('@'))}` : '';
     { [colors.blue('Pairs')]: info.numPairs },
     { [colors.blue('Own orders')]: info.orders ? info.orders.own : '0' },
     { [colors.blue('Peer orders')]: info.orders ? info.orders.peer : '0' },
-    { [colors.blue('Pending swaps')]: info.pendingSwapHashesList ? JSON.stringify(info.pendingSwapHashesList, undefined, 1) : '' },
+    {
+      [colors.blue('Pending swaps')]: info.pendingSwapHashesList
+        ? JSON.stringify(info.pendingSwapHashesList, undefined, 1)
+        : '',
+    }
   );
   console.log(colors.underline(colors.bold('\nGeneral XUD Info')));
   console.log(table.toString(), '\n');
@@ -81,12 +97,11 @@ const displayConnext = (info: ConnextInfo.AsObject) => {
     { [colors.blue('Status')]: info.status },
     { [colors.blue('Version')]: info.version },
     { [colors.blue('Address')]: info.address },
-    { [colors.blue('Network')] : info.chain },
+    { [colors.blue('Network')]: info.chain }
   );
 
   console.log(colors.underline(colors.bold('\nConnext info:')));
   console.log(table.toString(), '\n');
-
 };
 
 const displayGetInfo = (response: GetInfoResponse.AsObject) => {
@@ -103,5 +118,8 @@ export const command = 'getinfo';
 export const describe = 'get general info from the local xud node';
 
 export const handler = async (argv: Arguments) => {
-  (await loadXudClient(argv)).getInfo(new GetInfoRequest(), callback(argv, displayGetInfo));
+  (await loadXudClient(argv)).getInfo(
+    new GetInfoRequest(),
+    callback(argv, displayGetInfo)
+  );
 };

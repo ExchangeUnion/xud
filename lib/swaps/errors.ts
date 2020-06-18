@@ -46,7 +46,9 @@ const errors = {
     code: errorCodes.SWAP_CLIENT_WALLET_NOT_CREATED,
   }),
   SWAP_CLIENT_MISCONFIGURED: (clientLabels: string[]) => ({
-    message: `the following swap clients are misconfigured: ${clientLabels.join(', ')}`,
+    message: `the following swap clients are misconfigured: ${clientLabels.join(
+      ', '
+    )}`,
     code: errorCodes.SWAP_CLIENT_MISCONFIGURED,
   }),
   /**

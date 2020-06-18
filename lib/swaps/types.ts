@@ -69,7 +69,17 @@ export type SwapDeal = {
 };
 
 /** The result of a successful swap. */
-export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' | 'rPreimage' | 'role'> & {
+export type SwapSuccess = Pick<
+  SwapDeal,
+  | 'orderId'
+  | 'localId'
+  | 'pairId'
+  | 'rHash'
+  | 'peerPubKey'
+  | 'price'
+  | 'rPreimage'
+  | 'role'
+> & {
   /** The amount received denominated in satoshis. */
   amountReceived: number;
   /** The amount sent denominated in satoshis. */
@@ -82,57 +92,63 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
   quantity: number;
 };
 
-export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
+export type SwapFailure = Pick<
+  SwapDeal,
+  'orderId' | 'pairId' | 'quantity' | 'peerPubKey'
+> & {
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
   failureReason: SwapFailureReason;
 };
 
 export type Route = {
-  getTotalTimeLock: Function,
+  getTotalTimeLock: Function;
 };
 
 /** Tracks the state of a pending swap of 1 satoshi for 1 satoshi of a specified currency. */
-export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & {
+export type SanitySwap = Pick<
+  SwapDeal,
+  'rHash' | 'rPreimage' | 'peerPubKey'
+> & {
   /** The currency for the swap. */
   currency: string;
 };
 
 export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
-  amount: number,
-  rHash: string,
-  tokenAddress: string,
+  amount: number;
+  rHash: string;
+  tokenAddress: string;
   /** The number of blocks before the incoming payment expires. */
-  expiration: number,
-  chain_height: number,
+  expiration: number;
+  chain_height: number;
 };
 
 export type CloseChannelParams = {
   /** The remote node with which to close channels.. */
-  remoteIdentifier?: string,
+  remoteIdentifier?: string;
   /**
    * The amount to extract from the channel, if applicable. If 0 or unspecified,
    * the entire off-chain balance for the specified currency will be extracted.
    */
-  units?: number,
-  currency?: string,
+  units?: number;
+  currency?: string;
   /**
    * The on-chain address to send funds extracted from the channel. If unspecified
    * the funds return to the default wallet for the client closing the channel.
    */
-  destination?: string,
-  force?: boolean,
+  destination?: string;
+  force?: boolean;
 };
 
 export type OpenChannelParams = {
   /** The remote node with which to open the channel. */
-  remoteIdentifier?: string,
+  remoteIdentifier?: string;
   /** The size of the channel. */
-  units: number,
-  currency?: string,
+  units: number;
+  currency?: string;
   /** Uris with which to connect to the remote node. */
-  uris?: string[],
+  uris?: string[];
   /** The balance to assign to the remote node. */
-  pushUnits?: number,
+  pushUnits?: number;
 };

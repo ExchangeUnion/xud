@@ -23,7 +23,7 @@ export function getDefaultCertPath() {
 }
 
 export function shorten(key: string, length = 10) {
-  if (key.length <= (length * 2) + 3) {
+  if (key.length <= length * 2 + 3) {
     return key;
   }
   return `${key.slice(0, length)}...${key.slice(key.length - length)}`;
@@ -37,7 +37,7 @@ export function trim(key: string, length = 10) {
 }
 
 export const generateHeaders = (headers: string[]) => {
-  return headers.map((header) => {
+  return headers.map(header => {
     return colors.blue(header);
   });
 };

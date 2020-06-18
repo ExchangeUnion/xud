@@ -2,7 +2,11 @@ import Packet, { PacketDirection, ResponseType } from '../Packet';
 import PacketType from '../PacketType';
 import { NodeState } from '../../types';
 import * as pb from '../../../proto/xudp2p_pb';
-import { validateNodeState, convertNodeState, serializeNodeState } from '../utils';
+import {
+  validateNodeState,
+  convertNodeState,
+  serializeNodeState,
+} from '../utils';
 
 export type SessionInitPacketBody = {
   sign: string;
@@ -30,23 +34,30 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     return PacketType.SessionAck;
   }
 
-  public static deserialize = (binary: Uint8Array): SessionInitPacket | pb.SessionInitPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): SessionInitPacket | pb.SessionInitPacket.AsObject => {
     const obj = pb.SessionInitPacket.deserializeBinary(binary).toObject();
-    return SessionInitPacket.validate(obj) ? SessionInitPacket.convert(obj) : obj;
-  }
+    return SessionInitPacket.validate(obj)
+      ? SessionInitPacket.convert(obj)
+      : obj;
+  };
 
   private static validate = (obj: pb.SessionInitPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.sign
-      && obj.ephemeralPubKey
-      && obj.peerPubKey
-      && obj.version
-      && obj.nodePubKey
-      && validateNodeState(obj.nodeState)
+    return !!(
+      obj.id &&
+      obj.sign &&
+      obj.ephemeralPubKey &&
+      obj.peerPubKey &&
+      obj.version &&
+      obj.nodePubKey &&
+      validateNodeState(obj.nodeState)
     );
-  }
+  };
 
-  private static convert = (obj: pb.SessionInitPacket.AsObject): SessionInitPacket => {
+  private static convert = (
+    obj: pb.SessionInitPacket.AsObject
+  ): SessionInitPacket => {
     return new SessionInitPacket({
       header: {
         id: obj.id,
@@ -60,7 +71,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
         nodeState: convertNodeState(obj.nodeState!),
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SessionInitPacket();
@@ -73,7 +84,7 @@ class SessionInitPacket extends Packet<SessionInitPacketBody> {
     msg.setNodeState(serializeNodeState(this.body!.nodeState));
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SessionInitPacket;

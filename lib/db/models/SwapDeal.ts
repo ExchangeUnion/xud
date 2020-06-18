@@ -1,7 +1,10 @@
 import Sequelize from 'sequelize';
 import * as db from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
+export default (
+  sequelize: Sequelize.Sequelize,
+  DataTypes: Sequelize.DataTypes
+) => {
   const attributes: db.SequelizeAttributes<db.SwapDealAttributes> = {
     rHash: { type: DataTypes.STRING, primaryKey: true },
     role: { type: DataTypes.TINYINT, allowNull: false },
@@ -21,9 +24,9 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     localId: { type: DataTypes.STRING, allowNull: false },
     proposedQuantity: { type: DataTypes.BIGINT, allowNull: false },
     quantity: { type: DataTypes.BIGINT, allowNull: true },
-    takerAmount: { type: DataTypes.BIGINT , allowNull: false },
-    takerCurrency: { type: DataTypes.STRING , allowNull: false },
-    takerPubKey: { type: DataTypes.STRING , allowNull: true },
+    takerAmount: { type: DataTypes.BIGINT, allowNull: false },
+    takerCurrency: { type: DataTypes.STRING, allowNull: false },
+    takerPubKey: { type: DataTypes.STRING, allowNull: true },
     takerCltvDelta: { type: DataTypes.SMALLINT, allowNull: false },
     makerCltvDelta: { type: DataTypes.SMALLINT, allowNull: true },
     makerAmount: { type: DataTypes.BIGINT, allowNull: false },
@@ -38,7 +41,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     timestamps: false,
   };
 
-  const SwapDeal = sequelize.define<db.SwapDealInstance, db.SwapDealAttributes>('SwapDeal', attributes, options);
+  const SwapDeal = sequelize.define<db.SwapDealInstance, db.SwapDealAttributes>(
+    'SwapDeal',
+    attributes,
+    options
+  );
 
   SwapDeal.associate = (models: Sequelize.Models) => {
     models.SwapDeal.belongsTo(models.Order, {

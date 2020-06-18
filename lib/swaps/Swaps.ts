@@ -1,7 +1,13 @@
 import assert from 'assert';
 import poissonQuantile from 'distributions-poisson-quantile';
 import { EventEmitter } from 'events';
-import { ReputationEvent, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
+import {
+  ReputationEvent,
+  SwapFailureReason,
+  SwapPhase,
+  SwapRole,
+  SwapState,
+} from '../constants/enums';
 import { Models } from '../db/DB';
 import { SwapDealInstance } from '../db/types';
 import Logger from '../Logger';
@@ -15,9 +21,18 @@ import errors, { errorCodes } from './errors';
 import SwapClientManager from './SwapClientManager';
 import SwapRecovery from './SwapRecovery';
 import SwapRepository from './SwapRepository';
-import { ResolveRequest, Route, SanitySwap, SwapDeal, SwapSuccess } from './types';
+import {
+  ResolveRequest,
+  Route,
+  SanitySwap,
+  SwapDeal,
+  SwapSuccess,
+} from './types';
 
-export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
+export type OrderToAccept = Pick<
+  SwapDeal,
+  'quantity' | 'price' | 'localId' | 'isBuy'
+> & {
   quantity: number;
 };
 
@@ -58,10 +73,11 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
   private static readonly SANITY_SWAP_COMPLETE_TIMEOUT = 10000;
 
-  constructor(private logger: Logger,
+  constructor(
+    private logger: Logger,
     private models: Models,
     private pool: Pool,
-    public swapClientManager: SwapClientManager,
+    public swapClientManager: SwapClientManager
   ) {
     super();
 
@@ -75,11 +91,14 @@ class Swaps extends EventEmitter {
    * inconsistencies and verifies only whether the request can possibly lead to a successful swap.
    * @returns `true` if the request is valid, otherwise `false`
    */
-  public static validateSwapRequest = ({ proposedQuantity, rHash }: packets.SwapRequestPacketBody) => {
+  public static validateSwapRequest = ({
+    proposedQuantity,
+    rHash,
+  }: packets.SwapRequestPacketBody) => {
     // proposed quantity must be a positive number
     // rHash must be exactly 64 characters
     return proposedQuantity > 0 && rHash.length === 64;
-  }
+  };
 
   /**
    * Calculates the minimum expected lock delta for the final hop of the first leg to ensure a
@@ -93,13 +112,21 @@ class Swaps extends EventEmitter {
    * @returns A number of blocks for the chain of the first leg that is highly likely to take
    * more time in minutes than the provided second leg lock duration.
    */
-  private static calculateLockBuffer = (secondLegLockDuration: number, secondLegMinutesPerBlock: number, firstLegMinutesPerBlock: number) => {
+  private static calculateLockBuffer = (
+    secondLegLockDuration: number,
+    secondLegMinutesPerBlock: number,
+    firstLegMinutesPerBlock: number
+  ) => {
     /** A probabilistic upper bound for the time it will take for the second leg route time lock to expire. */
-    const secondLegLockMinutes = poissonQuantile(.9999, { lambda: secondLegLockDuration }) * secondLegMinutesPerBlock;
-    const firstLegLockBuffer = poissonQuantile(.9999, { lambda: secondLegLockMinutes / firstLegMinutesPerBlock });
+    const secondLegLockMinutes =
+      poissonQuantile(0.9999, { lambda: secondLegLockDuration }) *
+      secondLegMinutesPerBlock;
+    const firstLegLockBuffer = poissonQuantile(0.9999, {
+      lambda: secondLegLockMinutes / firstLegMinutesPerBlock,
+    });
 
     return firstLegLockBuffer;
-  }
+  };
 
   /**
    * Calculates the currencies and amounts of subunits/satoshis each side of a swap should receive.
@@ -108,9 +135,20 @@ class Swaps extends EventEmitter {
    * @param isBuy Whether the maker order in the swap is a buy
    * @returns An object with the calculated maker and taker values.
    */
-  private static calculateMakerTakerAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
-    const { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits } =
-      Swaps.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
+  private static calculateMakerTakerAmounts = (
+    quantity: number,
+    price: number,
+    isBuy: boolean,
+    pairId: string
+  ) => {
+    const {
+      inboundCurrency,
+      inboundAmount,
+      inboundUnits,
+      outboundCurrency,
+      outboundAmount,
+      outboundUnits,
+    } = Swaps.calculateInboundOutboundAmounts(quantity, price, isBuy, pairId);
     return {
       makerCurrency: inboundCurrency,
       makerAmount: inboundAmount,
@@ -119,7 +157,7 @@ class Swaps extends EventEmitter {
       takerAmount: outboundAmount,
       takerUnits: outboundUnits,
     };
-  }
+  };
 
   /**
    * Calculates the incoming and outgoing currencies and amounts of subunits/satoshis for an order if it is swapped.
@@ -129,14 +167,24 @@ class Swaps extends EventEmitter {
    * @returns An object with the calculated incoming and outgoing values. The quote currency
    * amount is returned as zero if the price is 0 or infinity, indicating a market order.
    */
-  public static calculateInboundOutboundAmounts = (quantity: number, price: number, isBuy: boolean, pairId: string) => {
+  public static calculateInboundOutboundAmounts = (
+    quantity: number,
+    price: number,
+    isBuy: boolean,
+    pairId: string
+  ) => {
     const [baseCurrency, quoteCurrency] = pairId.split('/');
     const baseCurrencyAmount = quantity;
-    const quoteCurrencyAmount = price > 0 && price < Number.POSITIVE_INFINITY ?
-      Math.round(quantity * price) :
-      0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
-    const baseCurrencyUnits = Math.floor(baseCurrencyAmount * Swaps.UNITS_PER_CURRENCY[baseCurrency]);
-    const quoteCurrencyUnits = Math.floor(quoteCurrencyAmount * Swaps.UNITS_PER_CURRENCY[quoteCurrency]);
+    const quoteCurrencyAmount =
+      price > 0 && price < Number.POSITIVE_INFINITY
+        ? Math.round(quantity * price)
+        : 0; // if price is zero or infinity, this is a market order and we can't know the quote currency amount
+    const baseCurrencyUnits = Math.floor(
+      baseCurrencyAmount * Swaps.UNITS_PER_CURRENCY[baseCurrency]
+    );
+    const quoteCurrencyUnits = Math.floor(
+      quoteCurrencyAmount * Swaps.UNITS_PER_CURRENCY[quoteCurrency]
+    );
 
     const inboundCurrency = isBuy ? baseCurrency : quoteCurrency;
     const inboundAmount = isBuy ? baseCurrencyAmount : quoteCurrencyAmount;
@@ -144,23 +192,35 @@ class Swaps extends EventEmitter {
     const outboundCurrency = isBuy ? quoteCurrency : baseCurrency;
     const outboundAmount = isBuy ? quoteCurrencyAmount : baseCurrencyAmount;
     const outboundUnits = isBuy ? quoteCurrencyUnits : baseCurrencyUnits;
-    return { inboundCurrency, inboundAmount, inboundUnits, outboundCurrency, outboundAmount, outboundUnits };
-  }
+    return {
+      inboundCurrency,
+      inboundAmount,
+      inboundUnits,
+      outboundCurrency,
+      outboundAmount,
+      outboundUnits,
+    };
+  };
 
   public init = async () => {
     // update pool with lnd pubkeys and raiden address
-    this.swapClientManager.getLndClientsMap().forEach(({ pubKey, chain, currency, uris }) => {
-      if (pubKey && chain) {
-        this.pool.updateLndState({
-          currency,
-          pubKey,
-          chain,
-          uris,
-        });
-      }
-    });
+    this.swapClientManager
+      .getLndClientsMap()
+      .forEach(({ pubKey, chain, currency, uris }) => {
+        if (pubKey && chain) {
+          this.pool.updateLndState({
+            currency,
+            pubKey,
+            chain,
+            uris,
+          });
+        }
+      });
     if (this.swapClientManager.raidenClient?.address) {
-      this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
+      this.pool.updateRaidenState(
+        this.swapClientManager.raidenClient.tokenAddresses,
+        this.swapClientManager.raidenClient.address
+      );
     }
 
     this.swapRecovery.beginTimer();
@@ -172,7 +232,7 @@ class Swaps extends EventEmitter {
         this.swapRecovery.recoverDeal(deal).catch(this.logger.error);
       }
     });
-  }
+  };
 
   private bind() {
     this.pool.on('packet.sanitySwapInit', async (packet, peer) => {
@@ -190,7 +250,9 @@ class Swaps extends EventEmitter {
         this.logger.error('could not add invoice for sanity swap', err);
         return;
       }
-      await peer.sendPacket(new packets.SanitySwapAckPacket(undefined, packet.header.id));
+      await peer.sendPacket(
+        new packets.SanitySwapAckPacket(undefined, packet.header.id)
+      );
 
       // set timeout limit for sanity swap to complete, fail it if it stalls
       await setTimeoutPromise(Swaps.SANITY_SWAP_COMPLETE_TIMEOUT);
@@ -202,19 +264,22 @@ class Swaps extends EventEmitter {
     this.pool.on('packet.swapAccepted', this.handleSwapAccepted);
     this.pool.on('packet.swapFailed', this.handleSwapFailed);
 
-    this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
-      try {
-        const rPreimage = await this.resolveHash(rHash, amount, currency);
-        await swapClient.settleInvoice(rHash, rPreimage, currency);
+    this.swapClientManager.on(
+      'htlcAccepted',
+      async (swapClient, rHash, amount, currency) => {
+        try {
+          const rPreimage = await this.resolveHash(rHash, amount, currency);
+          await swapClient.settleInvoice(rHash, rPreimage, currency);
 
-        const deal = this.getDeal(rHash);
-        if (deal) {
-          await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+          const deal = this.getDeal(rHash);
+          if (deal) {
+            await this.setDealPhase(deal, SwapPhase.PaymentReceived);
+          }
+        } catch (err) {
+          this.logger.error('could not settle invoice', err);
         }
-      } catch (err) {
-        this.logger.error('could not settle invoice', err);
       }
-    });
+    );
     this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
     this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
     this.swapClientManager.on('connextUpdate', this.pool.updateConnextState);
@@ -224,7 +289,9 @@ class Swaps extends EventEmitter {
    * Checks if there are connected swap clients for both currencies in a given trading pair.
    * @returns `undefined` if both currencies are active, otherwise the ticker symbol for an inactive currency.
    */
-  public checkInactiveCurrencyClients = (pairId: string): string | undefined => {
+  public checkInactiveCurrencyClients = (
+    pairId: string
+  ): string | undefined => {
     // TODO: these checks are happening on a per-swap basis, it would be more efficient to
     // check up front and disable currencies for inactive swap clients when we detect they
     // become disconnected, then re-enable once they reconnect.
@@ -234,28 +301,44 @@ class Swaps extends EventEmitter {
       return baseCurrency;
     }
     const quoteCurrencyClient = this.swapClientManager.get(quoteCurrency);
-    if (quoteCurrencyClient === undefined || !quoteCurrencyClient.isConnected()) {
+    if (
+      quoteCurrencyClient === undefined ||
+      !quoteCurrencyClient.isConnected()
+    ) {
       return quoteCurrency;
     }
     return;
-  }
+  };
 
   /**
    * Sends a swap failed packet to the counterparty peer in a swap with details about the error
    * that caused the failure. Sets reqId if packet is a response to a request.
    */
-  private sendErrorToPeer = async (
-    { peer, rHash, failureReason = SwapFailureReason.UnknownError, errorMessage, reqId }:
-    { peer: Peer, rHash: string, failureReason?: SwapFailureReason, errorMessage?: string, reqId?: string },
-  ) => {
+  private sendErrorToPeer = async ({
+    peer,
+    rHash,
+    failureReason = SwapFailureReason.UnknownError,
+    errorMessage,
+    reqId,
+  }: {
+    peer: Peer;
+    rHash: string;
+    failureReason?: SwapFailureReason;
+    errorMessage?: string;
+    reqId?: string;
+  }) => {
     const errorBody: packets.SwapFailedPacketBody = {
       rHash,
       failureReason,
       errorMessage,
     };
-    this.logger.debug(`Sending ${SwapFailureReason[errorBody.failureReason]} error to peer: ${JSON.stringify(errorBody)}`);
+    this.logger.debug(
+      `Sending ${
+        SwapFailureReason[errorBody.failureReason]
+      } error to peer: ${JSON.stringify(errorBody)}`
+    );
     await peer.sendPacket(new packets.SwapFailedPacket(errorBody, reqId));
-  }
+  };
 
   /**
    * Saves deal to database and deletes it from memory if it is no longer active.
@@ -266,11 +349,11 @@ class Swaps extends EventEmitter {
     if (deal.state !== SwapState.Active) {
       this.deals.delete(deal.rHash);
     }
-  }
+  };
 
   public getPendingSwapHashes = () => {
     return this.swapRecovery.getPendingSwapHashes();
-  }
+  };
 
   /**
    * Gets a deal by its rHash value.
@@ -279,13 +362,13 @@ class Swaps extends EventEmitter {
    */
   public getDeal = (rHash: string): SwapDeal | undefined => {
     return this.deals.get(rHash);
-  }
+  };
 
   public addDeal = (deal: SwapDeal) => {
     this.deals.set(deal.rHash, deal);
     this.usedHashes.add(deal.rHash);
     this.logger.debug(`New deal: ${JSON.stringify(deal)}`);
-  }
+  };
 
   /**
    * Checks if a swap for two given orders can be executed by ensuring both swap clients are active
@@ -294,7 +377,10 @@ class Swaps extends EventEmitter {
    * @param taker taker order
    * @returns `void` if the swap can be executed, throws a [[SwapFailureReason]] otherwise
    */
-  private verifyExecution = async (maker: PeerOrder, taker: OwnOrder): Promise<void> => {
+  private verifyExecution = async (
+    maker: PeerOrder,
+    taker: OwnOrder
+  ): Promise<void> => {
     if (maker.pairId !== taker.pairId) {
       throw SwapFailureReason.InvalidOrders;
     }
@@ -302,7 +388,12 @@ class Swaps extends EventEmitter {
       throw SwapFailureReason.SwapClientNotSetup;
     }
 
-    const { makerCurrency, makerUnits } = Swaps.calculateMakerTakerAmounts(taker.quantity, maker.price, maker.isBuy, maker.pairId);
+    const { makerCurrency, makerUnits } = Swaps.calculateMakerTakerAmounts(
+      taker.quantity,
+      maker.price,
+      maker.isBuy,
+      maker.pairId
+    );
 
     const swapClient = this.swapClientManager.get(makerCurrency)!;
 
@@ -322,7 +413,7 @@ class Swaps extends EventEmitter {
     if (!route) {
       throw SwapFailureReason.NoRouteFound;
     }
-  }
+  };
 
   /**
    * A promise wrapper for a swap procedure
@@ -330,7 +421,10 @@ class Swaps extends EventEmitter {
    * @param taker our local taker order
    * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
-  public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
+  public executeSwap = async (
+    maker: PeerOrder,
+    taker: OwnOrder
+  ): Promise<SwapSuccess> => {
     await this.verifyExecution(maker, taker);
     const rHash = await this.beginSwap(maker, taker);
 
@@ -354,7 +448,7 @@ class Swaps extends EventEmitter {
       this.on('swap.paid', onPaid);
       this.on('swap.failed', onFailed);
     });
-  }
+  };
 
   /**
    * Executes a sanity swap with a peer for a specified currency.
@@ -390,24 +484,34 @@ class Swaps extends EventEmitter {
       await Promise.all([
         swapClient.addInvoice({ rHash, units: 1 }),
         peer.sendPacket(sanitySwapInitPacket),
-        peer.wait(sanitySwapInitPacket.header.id, PacketType.SanitySwapAck, Swaps.SANITY_SWAP_INIT_TIMEOUT),
+        peer.wait(
+          sanitySwapInitPacket.header.id,
+          PacketType.SanitySwapAck,
+          Swaps.SANITY_SWAP_INIT_TIMEOUT
+        ),
       ]);
     } catch (err) {
-      this.logger.warn(`sanity swap could not be initiated for ${currency} using rHash ${rHash}: ${err.message}`);
+      this.logger.warn(
+        `sanity swap could not be initiated for ${currency} using rHash ${rHash}: ${err.message}`
+      );
       swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
 
     try {
       await swapClient.sendSmallestAmount(rHash, destination, currency);
-      this.logger.debug(`performed successful sanity swap with peer ${peerPubKey} for ${currency} using rHash ${rHash}`);
+      this.logger.debug(
+        `performed successful sanity swap with peer ${peerPubKey} for ${currency} using rHash ${rHash}`
+      );
       return true;
     } catch (err) {
-      this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
+      this.logger.warn(
+        `got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`
+      );
       swapClient.removeInvoice(rHash).catch(this.logger.error);
       return false;
     }
-  }
+  };
 
   /**
    * Begins a swap to fill an order by sending a [[SwapRequestPacket]] to the maker.
@@ -415,12 +519,26 @@ class Swaps extends EventEmitter {
    * @param taker Our local taker order
    * @returns The rHash for the swap, or a [[SwapFailureReason]] if the swap could not be initiated
    */
-  private beginSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<string> => {
+  private beginSwap = async (
+    maker: PeerOrder,
+    taker: OwnOrder
+  ): Promise<string> => {
     const peer = this.pool.getPeer(maker.peerPubKey);
 
     const quantity = Math.min(maker.quantity, taker.quantity);
-    const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
-      Swaps.calculateMakerTakerAmounts(quantity, maker.price, maker.isBuy, maker.pairId);
+    const {
+      makerCurrency,
+      makerAmount,
+      makerUnits,
+      takerCurrency,
+      takerAmount,
+      takerUnits,
+    } = Swaps.calculateMakerTakerAmounts(
+      quantity,
+      maker.price,
+      maker.isBuy,
+      maker.pairId
+    );
     const clientType = this.swapClientManager.get(makerCurrency)!.type;
     const destination = peer.getIdentifier(clientType, makerCurrency)!;
 
@@ -455,33 +573,59 @@ class Swaps extends EventEmitter {
       createTime: Date.now(),
     };
 
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_ACCEPT_TIMEOUT, rHash, SwapFailureReason.DealTimedOut));
+    this.timeouts.set(
+      rHash,
+      setTimeout(
+        this.handleSwapTimeout,
+        Swaps.SWAP_ACCEPT_TIMEOUT,
+        rHash,
+        SwapFailureReason.DealTimedOut
+      )
+    );
 
     this.addDeal(deal);
 
     // Make sure we are connected to both swap clients
     const inactiveCurrency = this.checkInactiveCurrencyClients(deal.pairId);
     if (inactiveCurrency) {
-      await this.failDeal({ deal, failureReason: SwapFailureReason.SwapClientNotSetup, failedCurrency: inactiveCurrency });
+      await this.failDeal({
+        deal,
+        failureReason: SwapFailureReason.SwapClientNotSetup,
+        failedCurrency: inactiveCurrency,
+      });
       throw SwapFailureReason.SwapClientNotSetup;
     }
     await peer.sendPacket(new packets.SwapRequestPacket(swapRequestBody));
 
     await this.setDealPhase(deal, SwapPhase.SwapRequested);
     return deal.rHash;
-  }
+  };
 
   /**
    * Accepts a proposed deal for a specified amount if a route and CLTV delta could be determined
    * for the swap. Stores the deal in the local collection of deals.
    * @returns A promise resolving to `true` if the deal was accepted, `false` otherwise.
    */
-  public acceptDeal = async (orderToAccept: OrderToAccept, requestPacket: packets.SwapRequestPacket, peer: Peer): Promise<boolean> => {
+  public acceptDeal = async (
+    orderToAccept: OrderToAccept,
+    requestPacket: packets.SwapRequestPacket,
+    peer: Peer
+  ): Promise<boolean> => {
     // TODO: max cltv to limit routes
     // TODO: consider the time gap between taking the routes and using them.
-    this.logger.debug(`trying to accept deal: ${JSON.stringify(orderToAccept)} from xudPubKey: ${peer.nodePubKey}`);
+    this.logger.debug(
+      `trying to accept deal: ${JSON.stringify(
+        orderToAccept
+      )} from xudPubKey: ${peer.nodePubKey}`
+    );
 
-    const { rHash, proposedQuantity, pairId, takerCltvDelta, orderId } = requestPacket.body!;
+    const {
+      rHash,
+      proposedQuantity,
+      pairId,
+      takerCltvDelta,
+      orderId,
+    } = requestPacket.body!;
     const reqId = requestPacket.header.id;
     if (this.usedHashes.has(rHash)) {
       await this.sendErrorToPeer({
@@ -495,8 +639,14 @@ class Swaps extends EventEmitter {
 
     const { quantity, price, isBuy } = orderToAccept;
 
-    const { makerCurrency, makerAmount, makerUnits, takerCurrency, takerAmount, takerUnits } =
-      Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, pairId);
+    const {
+      makerCurrency,
+      makerAmount,
+      makerUnits,
+      takerCurrency,
+      takerAmount,
+      takerUnits,
+    } = Swaps.calculateMakerTakerAmounts(quantity, price, isBuy, pairId);
 
     const makerSwapClient = this.swapClientManager.get(makerCurrency)!;
     if (!makerSwapClient) {
@@ -535,7 +685,10 @@ class Swaps extends EventEmitter {
       return false;
     }
 
-    const takerIdentifier = peer.getIdentifier(takerSwapClient.type, takerCurrency)!;
+    const takerIdentifier = peer.getIdentifier(
+      takerSwapClient.type,
+      takerCurrency
+    )!;
     const deal: SwapDeal = {
       rHash,
       pairId,
@@ -561,14 +714,27 @@ class Swaps extends EventEmitter {
       createTime: Date.now(),
     };
 
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
+    this.timeouts.set(
+      rHash,
+      setTimeout(
+        this.handleSwapTimeout,
+        Swaps.SWAP_COMPLETE_TIMEOUT,
+        rHash,
+        SwapFailureReason.SwapTimedOut
+      )
+    );
 
     // add the deal. Going forward we can "record" errors related to this deal.
     this.addDeal(deal);
 
     let makerToTakerRoute: Route | undefined;
     try {
-      makerToTakerRoute = await takerSwapClient.getRoute(takerUnits, takerIdentifier, deal.takerCurrency, deal.takerCltvDelta);
+      makerToTakerRoute = await takerSwapClient.getRoute(
+        takerUnits,
+        takerIdentifier,
+        deal.takerCurrency,
+        deal.takerCltvDelta
+      );
     } catch (err) {
       await this.failDeal({
         deal,
@@ -613,8 +779,12 @@ class Swaps extends EventEmitter {
 
       const routeTotalTimeLock = makerToTakerRoute.getTotalTimeLock();
       const routeLockDuration = routeTotalTimeLock - height;
-      const routeLockHours = Math.round(routeLockDuration * takerSwapClient.minutesPerBlock / 60);
-      this.logger.debug(`found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`);
+      const routeLockHours = Math.round(
+        (routeLockDuration * takerSwapClient.minutesPerBlock) / 60
+      );
+      this.logger.debug(
+        `found route to taker with total lock duration of ${routeLockDuration} ${takerCurrency} blocks (~${routeLockHours}h)`
+      );
       // Add an additional buffer equal to our final lock to allow for more possible routes.
       deal.takerMaxTimeLock = routeLockDuration + takerSwapClient.finalLock;
 
@@ -622,13 +792,25 @@ class Swaps extends EventEmitter {
       // the first leg of the swap. This should ensure a very high probability that the final hop
       // of the payment to us won't expire before our payment to the taker with time leftover to
       // satisfy our finalLock/cltvDelta requirement for the incoming payment swap client.
-      const lockBuffer = Swaps.calculateLockBuffer(deal.takerMaxTimeLock, takerSwapClient.minutesPerBlock, makerSwapClient.minutesPerBlock);
-      const lockBufferHours = Math.round(lockBuffer * makerSwapClient.minutesPerBlock / 60);
-      this.logger.debug(`calculated lock buffer for first leg: ${lockBuffer} ${makerCurrency} blocks (~${lockBufferHours}h)`);
+      const lockBuffer = Swaps.calculateLockBuffer(
+        deal.takerMaxTimeLock,
+        takerSwapClient.minutesPerBlock,
+        makerSwapClient.minutesPerBlock
+      );
+      const lockBufferHours = Math.round(
+        (lockBuffer * makerSwapClient.minutesPerBlock) / 60
+      );
+      this.logger.debug(
+        `calculated lock buffer for first leg: ${lockBuffer} ${makerCurrency} blocks (~${lockBufferHours}h)`
+      );
 
       deal.makerCltvDelta = lockBuffer + makerSwapClient.finalLock;
-      const makerCltvDeltaHours = Math.round(deal.makerCltvDelta * makerSwapClient.minutesPerBlock / 60);
-      this.logger.debug(`lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`);
+      const makerCltvDeltaHours = Math.round(
+        (deal.makerCltvDelta * makerSwapClient.minutesPerBlock) / 60
+      );
+      this.logger.debug(
+        `lock delta for final hop to maker: ${deal.makerCltvDelta} ${makerCurrency} blocks (~${makerCltvDeltaHours}h)`
+      );
     }
 
     if (!deal.makerCltvDelta) {
@@ -671,27 +853,40 @@ class Swaps extends EventEmitter {
       quantity: proposedQuantity,
     };
 
-    this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
-    const sendSwapAcceptedPromise = peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));
+    this.logger.debug(
+      `sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${
+        peer.nodePubKey
+      }`
+    );
+    const sendSwapAcceptedPromise = peer.sendPacket(
+      new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id)
+    );
     await Promise.all([newPhasePromise, sendSwapAcceptedPromise]);
     return true;
-  }
+  };
 
   /**
    * Handles a response from a peer to confirm a swap deal and updates the deal. If the deal is
    * accepted, initiates the swap.
    */
-  private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
+  private handleSwapAccepted = async (
+    responsePacket: packets.SwapAcceptedPacket,
+    peer: Peer
+  ) => {
     assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
     const { quantity, rHash, makerCltvDelta } = responsePacket.body;
     const deal = this.getDeal(rHash);
     if (!deal) {
-      this.logger.warn(`received swap accepted for unrecognized deal: ${rHash}`);
+      this.logger.warn(
+        `received swap accepted for unrecognized deal: ${rHash}`
+      );
       // TODO: penalize peer
       return;
     }
     if (deal.phase !== SwapPhase.SwapRequested) {
-      this.logger.warn(`received swap accepted for deal that is not in SwapRequested phase: ${rHash}`);
+      this.logger.warn(
+        `received swap accepted for deal that is not in SwapRequested phase: ${rHash}`
+      );
       // TODO: penalize peer
       return;
     }
@@ -700,14 +895,24 @@ class Swaps extends EventEmitter {
       // this swap deal may have already failed, either due to a DealTimedOut
       // error while we were waiting for the swap to be accepted, or some
       // other unexpected error or issue
-      this.logger.warn(`received swap accepted for deal that has already failed: ${rHash}`);
+      this.logger.warn(
+        `received swap accepted for deal that has already failed: ${rHash}`
+      );
       return;
     }
 
     // clear the timer waiting for acceptance of our swap offer, and set a new timer waiting for
     // the swap to be completed
     clearTimeout(this.timeouts.get(rHash));
-    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
+    this.timeouts.set(
+      rHash,
+      setTimeout(
+        this.handleSwapTimeout,
+        Swaps.SWAP_COMPLETE_TIMEOUT,
+        rHash,
+        SwapFailureReason.SwapTimedOut
+      )
+    );
 
     // update deal with maker's cltv delta
     deal.makerCltvDelta = makerCltvDelta;
@@ -728,12 +933,18 @@ class Swaps extends EventEmitter {
           deal,
           peer,
           failureReason: SwapFailureReason.InvalidSwapPacketReceived,
-          errorMessage: 'accepted quantity should not be greater than proposed quantity',
+          errorMessage:
+            'accepted quantity should not be greater than proposed quantity',
         });
         // TODO: penalize peer
         return;
       } else if (quantity < deal.proposedQuantity) {
-        const { makerAmount, takerAmount } = Swaps.calculateMakerTakerAmounts(quantity, deal.price, deal.isBuy, deal.pairId);
+        const { makerAmount, takerAmount } = Swaps.calculateMakerTakerAmounts(
+          quantity,
+          deal.price,
+          deal.isBuy,
+          deal.pairId
+        );
         deal.takerAmount = takerAmount;
         deal.makerAmount = makerAmount;
       }
@@ -773,7 +984,9 @@ class Swaps extends EventEmitter {
       // first we must handle the edge case where the maker has paid us but failed to claim our payment
       // in this case, we've already marked the swap as having been paid and completed
       if (deal.state === SwapState.Completed) {
-        this.logger.warn(`maker was unable to claim payment for ${deal.rHash} but has already paid us`);
+        this.logger.warn(
+          `maker was unable to claim payment for ${deal.rHash} but has already paid us`
+        );
         return;
       }
 
@@ -795,14 +1008,17 @@ class Swaps extends EventEmitter {
         });
       }
     }
-  }
+  };
 
   /**
    * Verifies that the resolve request is valid. Checks the received amount vs
    * the expected amount.
    * @returns `true` if the resolve request is valid, `false` otherwise
    */
-  private validateResolveRequest = (deal: SwapDeal, resolveRequest: ResolveRequest) => {
+  private validateResolveRequest = (
+    deal: SwapDeal,
+    resolveRequest: ResolveRequest
+  ) => {
     const { amount, tokenAddress, expiration, chain_height } = resolveRequest;
     const peer = this.pool.getPeer(deal.peerPubKey);
     let expectedAmount: number;
@@ -814,7 +1030,9 @@ class Swaps extends EventEmitter {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         expectedCurrency = deal.makerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.makerCurrency);
+        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(
+          deal.makerCurrency
+        );
         source = 'Taker';
         destination = 'Maker';
         const lockExpirationDelta = expiration - chain_height;
@@ -823,7 +1041,10 @@ class Swaps extends EventEmitter {
         // payment to reach the maker for validation.
         // This usually happens in simulated environments with fast mining enabled.
         const LOCK_EXPIRATION_SLIPPAGE = 3;
-        if (deal.makerCltvDelta! - LOCK_EXPIRATION_SLIPPAGE > lockExpirationDelta) {
+        if (
+          deal.makerCltvDelta! - LOCK_EXPIRATION_SLIPPAGE >
+          lockExpirationDelta
+        ) {
           this.logger.error(`
             lockExpirationDelta of ${lockExpirationDelta} does not meet
             makerCltvDelta ${deal.makerCltvDelta!} - LOCK_EXPIRATION_SLIPPAGE ${LOCK_EXPIRATION_SLIPPAGE}
@@ -842,7 +1063,9 @@ class Swaps extends EventEmitter {
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
         expectedCurrency = deal.takerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.takerCurrency);
+        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(
+          deal.takerCurrency
+        );
         source = 'Maker';
         destination = 'Taker';
         break;
@@ -857,8 +1080,13 @@ class Swaps extends EventEmitter {
         return false;
     }
 
-    if (!expectedTokenAddress || tokenAddress.toLowerCase() !== expectedTokenAddress.toLowerCase()) {
-      this.logger.error(`received token address ${tokenAddress}, expected ${expectedTokenAddress}`);
+    if (
+      !expectedTokenAddress ||
+      tokenAddress.toLowerCase() !== expectedTokenAddress.toLowerCase()
+    ) {
+      this.logger.error(
+        `received token address ${tokenAddress}, expected ${expectedTokenAddress}`
+      );
       this.failDeal({
         deal,
         peer,
@@ -882,16 +1110,26 @@ class Swaps extends EventEmitter {
     }
 
     return true;
-  }
+  };
 
   /** Attempts to resolve the preimage for the payment hash of a pending sanity swap. */
-  private resolveSanitySwap = async (rHash: string, amount: number, htlcCurrency?: string) => {
-    assert(amount === 1, 'sanity swaps must have an amount of exactly 1 of the smallest unit supported by the currency');
+  private resolveSanitySwap = async (
+    rHash: string,
+    amount: number,
+    htlcCurrency?: string
+  ) => {
+    assert(
+      amount === 1,
+      'sanity swaps must have an amount of exactly 1 of the smallest unit supported by the currency'
+    );
 
     const sanitySwap = this.sanitySwaps.get(rHash);
 
     if (sanitySwap) {
-      assert(htlcCurrency === undefined || htlcCurrency === sanitySwap.currency, 'incoming htlc does not match sanity swap currency');
+      assert(
+        htlcCurrency === undefined || htlcCurrency === sanitySwap.currency,
+        'incoming htlc does not match sanity swap currency'
+      );
       const { currency, peerPubKey, rPreimage } = sanitySwap;
       this.sanitySwaps.delete(rHash); // we don't need to track sanity swaps that we've already attempted to resolve, delete to prevent a memory leak
 
@@ -909,11 +1147,19 @@ class Swaps extends EventEmitter {
         const destination = peer.getIdentifier(swapClient.type, currency)!;
 
         try {
-          const preimage = await swapClient.sendSmallestAmount(rHash, destination, currency);
-          this.logger.debug(`performed successful sanity swap with peer ${peerPubKey} for ${currency} using rHash ${rHash}`);
+          const preimage = await swapClient.sendSmallestAmount(
+            rHash,
+            destination,
+            currency
+          );
+          this.logger.debug(
+            `performed successful sanity swap with peer ${peerPubKey} for ${currency} using rHash ${rHash}`
+          );
           return preimage;
         } catch (err) {
-          this.logger.warn(`got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`);
+          this.logger.warn(
+            `got payment error during sanity swap with ${peerPubKey} for ${currency} using rHash ${rHash}: ${err.message}`
+          );
           swapClient.removeInvoice(rHash).catch(this.logger.error);
           throw err;
         }
@@ -921,7 +1167,7 @@ class Swaps extends EventEmitter {
     } else {
       throw errors.PAYMENT_HASH_NOT_FOUND(rHash);
     }
-  }
+  };
 
   /**
    * Resolves the hash for an incoming HTLC to its preimage.
@@ -930,7 +1176,11 @@ class Swaps extends EventEmitter {
    * @param htlcCurrency the currency of the HTLC
    * @returns the preimage for the provided payment hash
    */
-  public resolveHash = async (rHash: string, amount: number, htlcCurrency?: string): Promise<string> => {
+  public resolveHash = async (
+    rHash: string,
+    amount: number,
+    htlcCurrency?: string
+  ): Promise<string> => {
     const deal = this.getDeal(rHash);
 
     if (!deal) {
@@ -946,7 +1196,10 @@ class Swaps extends EventEmitter {
 
     if (deal.role === SwapRole.Maker) {
       // As the maker, we need to forward the payment to the other chain
-      assert(htlcCurrency === undefined || htlcCurrency === deal.makerCurrency, 'incoming htlc does not match expected deal currency');
+      assert(
+        htlcCurrency === undefined || htlcCurrency === deal.makerCurrency,
+        'incoming htlc does not match expected deal currency'
+      );
 
       this.logger.debug('Executing maker code to resolve hash');
 
@@ -957,7 +1210,10 @@ class Swaps extends EventEmitter {
 
       // check to make sure we did not fail the deal for any reason. if we failed
       // the deal then we may not be able to claim our payment even if we resolve the hash
-      assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
+      assert(
+        deal.state !== SwapState.Error,
+        `cannot send payment for failed swap ${deal.rHash}`
+      );
 
       try {
         deal.rPreimage = await swapClient.sendPayment(deal);
@@ -1000,14 +1256,19 @@ class Swaps extends EventEmitter {
     } else {
       // If we are here we are the taker
       assert(deal.rPreimage, 'preimage must be known if we are the taker');
-      assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
+      assert(
+        htlcCurrency === undefined || htlcCurrency === deal.takerCurrency,
+        'incoming htlc does not match expected deal currency'
+      );
       this.logger.debug('Executing taker code to resolve hash');
 
       return deal.rPreimage;
     }
-  }
+  };
 
-  public handleResolveRequest = async (resolveRequest: ResolveRequest): Promise<string> => {
+  public handleResolveRequest = async (
+    resolveRequest: ResolveRequest
+  ): Promise<string> => {
     const { amount, rHash } = resolveRequest;
 
     this.logger.debug(`handleResolveRequest starting with hash ${rHash}`);
@@ -1018,7 +1279,9 @@ class Swaps extends EventEmitter {
       recoveredSwap.state = SwapState.Recovered;
       recoveredSwap.save().catch(this.logger.error);
       this.swapRecovery.recoveredPreimageSwaps.delete(rHash);
-      this.logger.info(`handleResolveRequest returning recovered preimage ${recoveredSwap.rPreimage} for hash ${rHash}`);
+      this.logger.info(
+        `handleResolveRequest returning recovered preimage ${recoveredSwap.rPreimage} for hash ${rHash}`
+      );
       return recoveredSwap.rPreimage;
     }
 
@@ -1044,15 +1307,20 @@ class Swaps extends EventEmitter {
       // we treat responding to a resolve request as having received payment and persist the state
       await this.setDealPhase(deal, SwapPhase.PaymentReceived);
 
-      this.logger.debug(`handleResolveRequest returning preimage ${preimage} for hash ${rHash}`);
+      this.logger.debug(
+        `handleResolveRequest returning preimage ${preimage} for hash ${rHash}`
+      );
       return preimage;
     } catch (err) {
       this.logger.error(err.message);
       throw err;
     }
-  }
+  };
 
-  private handleSwapTimeout = async (rHash: string, reason: SwapFailureReason) => {
+  private handleSwapTimeout = async (
+    rHash: string,
+    reason: SwapFailureReason
+  ) => {
     const deal = this.getDeal(rHash)!;
     const peer = this.pool.tryGetPeer(deal.peerPubKey);
 
@@ -1061,38 +1329,55 @@ class Swaps extends EventEmitter {
       peer,
       failureReason: reason,
     });
-  }
+  };
 
   /**
    * Fails a deal and optionally sends a SwapFailurePacket to a peer, if provided.
    */
-  private failDeal = async ({ deal, failureReason, failedCurrency, errorMessage, peer, reqId }:
-    {
-      deal: SwapDeal,
-      failureReason: SwapFailureReason,
-      /** The currency that was responsible for the failure. */
-      failedCurrency?: string,
-      /** Details of what caused the deal to fail/error. */
-      errorMessage?: string,
-      /** The peer we should send a SwapFailedPacket to, if not specified then no packet is sent. */
-      peer?: Peer,
-      /** An optional reqId in case the SwapFailedPacket is in response to a swap request. */
-      reqId?: string,
-    }) => {
-    assert(deal.state !== SwapState.Completed, 'Can not fail a completed deal.');
+  private failDeal = async ({
+    deal,
+    failureReason,
+    failedCurrency,
+    errorMessage,
+    peer,
+    reqId,
+  }: {
+    deal: SwapDeal;
+    failureReason: SwapFailureReason;
+    /** The currency that was responsible for the failure. */
+    failedCurrency?: string;
+    /** Details of what caused the deal to fail/error. */
+    errorMessage?: string;
+    /** The peer we should send a SwapFailedPacket to, if not specified then no packet is sent. */
+    peer?: Peer;
+    /** An optional reqId in case the SwapFailedPacket is in response to a swap request. */
+    reqId?: string;
+  }) => {
+    assert(
+      deal.state !== SwapState.Completed,
+      'Can not fail a completed deal.'
+    );
 
-    this.logger.trace(`failing deal ${deal.rHash} in state ${SwapState[deal.state]} & phase ${SwapPhase[deal.phase]} due to ${SwapFailureReason[failureReason]}`);
+    this.logger.trace(
+      `failing deal ${deal.rHash} in state ${SwapState[deal.state]} & phase ${
+        SwapPhase[deal.phase]
+      } due to ${SwapFailureReason[failureReason]}`
+    );
 
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
     if (deal.state === SwapState.Error) {
       if (errorMessage) {
-        deal.errorMessage = deal.errorMessage ? `${deal.errorMessage}; ${errorMessage}` : errorMessage;
+        deal.errorMessage = deal.errorMessage
+          ? `${deal.errorMessage}; ${errorMessage}`
+          : errorMessage;
         if (failedCurrency) {
           deal.errorMessage += ` (${failedCurrency})`;
         }
       }
-      this.logger.debug(`new deal error message for ${deal.rHash}: + ${deal.errorMessage}`);
+      this.logger.debug(
+        `new deal error message for ${deal.rHash}: + ${deal.errorMessage}`
+      );
       return;
     }
 
@@ -1108,26 +1393,39 @@ class Swaps extends EventEmitter {
     switch (failureReason) {
       case SwapFailureReason.SwapTimedOut:
         // additional penalty as timeouts cause costly delays and possibly stuck HTLC outputs
-        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapTimeout);
-        /* falls through */
+        void this.pool.addReputationEvent(
+          deal.peerPubKey,
+          ReputationEvent.SwapTimeout
+        );
+      /* falls through */
       case SwapFailureReason.SendPaymentFailure:
       case SwapFailureReason.NoRouteFound:
         // something is wrong with swaps for this currency with this peer
         if (failedCurrency) {
           try {
-            this.pool.getPeer(deal.peerPubKey).deactivateCurrency(failedCurrency);
+            this.pool
+              .getPeer(deal.peerPubKey)
+              .deactivateCurrency(failedCurrency);
           } catch (err) {
-            this.logger.debug(`could not disable currency ${failedCurrency} for peer ${deal.peerPubKey}`);
+            this.logger.debug(
+              `could not disable currency ${failedCurrency} for peer ${deal.peerPubKey}`
+            );
           }
         }
-        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapFailure);
+        void this.pool.addReputationEvent(
+          deal.peerPubKey,
+          ReputationEvent.SwapFailure
+        );
         break;
       case SwapFailureReason.InvalidResolveRequest:
       case SwapFailureReason.DealTimedOut:
       case SwapFailureReason.InvalidSwapPacketReceived:
       case SwapFailureReason.PaymentHashReuse:
         // peer misbehaving, penalize the peer
-        void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapMisbehavior);
+        void this.pool.addReputationEvent(
+          deal.peerPubKey,
+          ReputationEvent.SwapMisbehavior
+        );
         break;
       case SwapFailureReason.UnknownError:
         this.logger.warn(`swap failed due to unknown error: ${errorMessage}`);
@@ -1142,7 +1440,10 @@ class Swaps extends EventEmitter {
     deal.failureReason = failureReason;
     deal.errorMessage = errorMessage;
 
-    if (deal.phase !== SwapPhase.SwapCreated && deal.phase !== SwapPhase.SwapRequested) {
+    if (
+      deal.phase !== SwapPhase.SwapCreated &&
+      deal.phase !== SwapPhase.SwapRequested
+    ) {
       // persist the deal failure if it had been accepted
       this.persistDeal(deal).catch(this.logger.error);
     }
@@ -1155,7 +1456,10 @@ class Swaps extends EventEmitter {
         // then we should cancel the invoice for our incoming payment if one exists
         const swapClient = this.swapClientManager.get(deal.makerCurrency)!;
         swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
-      } else if (deal.phase === SwapPhase.SendingPayment && deal.role === SwapRole.Maker) {
+      } else if (
+        deal.phase === SwapPhase.SendingPayment &&
+        deal.role === SwapRole.Maker
+      ) {
         // if the swap fails while we are in the middle of sending payment as the maker
         // we need to make sure that the taker doesn't claim our payment without us having a chance
         // to claim ours. we will send this swap to recovery to monitor its outcome
@@ -1176,38 +1480,62 @@ class Swaps extends EventEmitter {
         rHash: deal.rHash,
       });
     }
-  }
+  };
 
   /**
    * Updates the phase of a swap deal and handles logic directly related to that phase change,
    * including persisting the deal state to the database.
    */
   private setDealPhase = async (deal: SwapDeal, newPhase: SwapPhase) => {
-    assert(deal.state === SwapState.Active, `deal ${deal.rHash} is not Active. Can not change deal phase`);
+    assert(
+      deal.state === SwapState.Active,
+      `deal ${deal.rHash} is not Active. Can not change deal phase`
+    );
 
     switch (newPhase) {
       case SwapPhase.SwapCreated:
         assert(false, 'can not set deal phase to SwapCreated.');
         break;
       case SwapPhase.SwapRequested:
-        assert(deal.role === SwapRole.Taker, 'SwapRequested can only be set by the taker');
-        assert(deal.phase === SwapPhase.SwapCreated, 'SwapRequested can be only be set after SwapCreated');
+        assert(
+          deal.role === SwapRole.Taker,
+          'SwapRequested can only be set by the taker'
+        );
+        assert(
+          deal.phase === SwapPhase.SwapCreated,
+          'SwapRequested can be only be set after SwapCreated'
+        );
         this.logger.debug(`Requesting deal: ${JSON.stringify(deal)}`);
         break;
       case SwapPhase.SwapAccepted:
-        assert(deal.role === SwapRole.Maker, 'SwapAccepted can only be set by the maker');
-        assert(deal.phase === SwapPhase.SwapCreated, 'SwapAccepted can be only be set after SwapCreated');
+        assert(
+          deal.role === SwapRole.Maker,
+          'SwapAccepted can only be set by the maker'
+        );
+        assert(
+          deal.phase === SwapPhase.SwapCreated,
+          'SwapAccepted can be only be set after SwapCreated'
+        );
         this.logger.debug(`Setting SwapAccepted phase for deal ${deal.rHash}`);
         break;
       case SwapPhase.SendingPayment:
-        assert(deal.role === SwapRole.Taker && deal.phase === SwapPhase.SwapRequested ||
-          deal.role === SwapRole.Maker && deal.phase === SwapPhase.SwapAccepted,
-            'SendingPayment can only be set after SwapRequested (taker) or SwapAccepted (maker)');
+        assert(
+          (deal.role === SwapRole.Taker &&
+            deal.phase === SwapPhase.SwapRequested) ||
+            (deal.role === SwapRole.Maker &&
+              deal.phase === SwapPhase.SwapAccepted),
+          'SendingPayment can only be set after SwapRequested (taker) or SwapAccepted (maker)'
+        );
         deal.executeTime = Date.now();
-        this.logger.debug(`Setting SendingPayment phase for deal ${deal.rHash}`);
+        this.logger.debug(
+          `Setting SendingPayment phase for deal ${deal.rHash}`
+        );
         break;
       case SwapPhase.PaymentReceived:
-        assert(deal.phase === SwapPhase.SendingPayment, 'PaymentReceived can be only be set after SendingPayment');
+        assert(
+          deal.phase === SwapPhase.SendingPayment,
+          'PaymentReceived can be only be set after SendingPayment'
+        );
         deal.completeTime = Date.now();
         deal.state = SwapState.Completed;
 
@@ -1232,7 +1560,9 @@ class Swaps extends EventEmitter {
         };
         this.emit('swap.paid', swapSuccess);
 
-        this.logger.debug(`Setting PaymentReceived phase for deal ${deal.rHash} - preimage is ${deal.rPreimage}`);
+        this.logger.debug(
+          `Setting PaymentReceived phase for deal ${deal.rHash} - preimage is ${deal.rPreimage}`
+        );
         break;
       default:
         assert.fail('unknown deal phase');
@@ -1245,7 +1575,7 @@ class Swaps extends EventEmitter {
       // once a deal is accepted, we persist its state to the database on every phase update
       await this.persistDeal(deal);
     }
-  }
+  };
 
   private handleSwapFailed = async (packet: packets.SwapFailedPacket) => {
     const { rHash, errorMessage, failureReason } = packet.body!;
@@ -1254,18 +1584,25 @@ class Swaps extends EventEmitter {
     if (!deal) {
       const dealInstance = await this.repository.getSwapDeal(rHash);
       if (dealInstance) {
-        if (dealInstance.state === SwapState.Error && dealInstance.failureReason === SwapFailureReason.RemoteError) {
+        if (
+          dealInstance.state === SwapState.Error &&
+          dealInstance.failureReason === SwapFailureReason.RemoteError
+        ) {
           const errorMessageWithReason = `${SwapFailureReason[failureReason]} - ${errorMessage}`;
           // update the error message for this saved deal to include the reason it failed
-          dealInstance.errorMessage = dealInstance.errorMessage ?
-            `${dealInstance.errorMessage}; ${errorMessageWithReason}` :
-            errorMessageWithReason;
+          dealInstance.errorMessage = dealInstance.errorMessage
+            ? `${dealInstance.errorMessage}; ${errorMessageWithReason}`
+            : errorMessageWithReason;
           await dealInstance.save();
         } else {
-          this.logger.warn(`received unexpected swap failed packet for deal with payment hash ${rHash}`);
+          this.logger.warn(
+            `received unexpected swap failed packet for deal with payment hash ${rHash}`
+          );
         }
       } else {
-        this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
+        this.logger.warn(
+          `received swap failed packet for unknown deal with payment hash ${rHash}`
+        );
       }
       return;
     }
@@ -1275,11 +1612,11 @@ class Swaps extends EventEmitter {
       failureReason,
       errorMessage,
     });
-  }
+  };
 
   public close = () => {
     this.swapRecovery.stopTimer();
-  }
+  };
 }
 
 export default Swaps;

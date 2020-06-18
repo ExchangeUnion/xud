@@ -6,7 +6,7 @@ These instructions will guide you on setting up Raiden compatible with developme
 
 - Linux, preferably [Ubuntu 17.04 or greater](https://wiki.ubuntu.com/Releases).
 - [Python 3.6.3](https://www.python.org/downloads/release/python-363/) (included in newer versions of Ubuntu).
-- *If installing Go Ethereum from source* - [Go 1.7 or greater](https://golang.org/doc/install), preferably the latest version.
+- _If installing Go Ethereum from source_ - [Go 1.7 or greater](https://golang.org/doc/install), preferably the latest version.
 
 ## Dependencies
 
@@ -88,7 +88,7 @@ Make sure to run `source rdnenv/bin/activate` in any terminal before starting Ra
 raiden --keystore-path  ~/.ethereum/testnet/keystore
 ```
 
-*Note:* If you encounter the error below, it can be resolved by changing `from gevent.wsgi import WSGIServer` to `from gevent.pywsgi import WSGIServer` in `raiden/api/rest.py`.
+_Note:_ If you encounter the error below, it can be resolved by changing `from gevent.wsgi import WSGIServer` to `from gevent.pywsgi import WSGIServer` in `raiden/api/rest.py`.
 
 ```bash
 Traceback (most recent call last):

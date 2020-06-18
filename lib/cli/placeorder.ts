@@ -1,49 +1,71 @@
 import { Arguments, Argv } from 'yargs';
-import { Order, OrderSide, PlaceOrderEvent, PlaceOrderRequest, PlaceOrderResponse, SwapFailure, SwapSuccess } from '../proto/xudrpc_pb';
+import {
+  Order,
+  OrderSide,
+  PlaceOrderEvent,
+  PlaceOrderRequest,
+  PlaceOrderResponse,
+  SwapFailure,
+  SwapSuccess,
+} from '../proto/xudrpc_pb';
 import { callback, loadXudClient } from './command';
 import { coinsToSats, satsToCoinsStr } from './utils';
 import { checkDecimalPlaces } from '../utils/utils';
 
 export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
   const command = side === OrderSide.BUY ? 'buy' : 'sell';
-  argv.positional('quantity', {
-    type: 'number',
-    describe: 'the quantity to trade',
-  })
-  .positional('pair_id', {
-    type: 'string',
-    describe: 'the trading pair ticker id for the order',
-  })
-  .positional('price', {
-    type: 'string',
-    describe: 'the price for limit orders, or "mkt"/"market" for market orders',
-  })
-  .option('order_id', {
-    type: 'string',
-    describe: 'the local order id for this order',
-  })
-  .option('sync', {
-    type: 'boolean',
-    describe: 'prints the outcome all at once when matching completes',
-    alias: 's',
-    default: false,
-  })
-  .option('replace_order_id', {
-    type: 'string',
-    alias: 'r',
-    describe: 'the local order id of a previous order to be replaced',
-  })
-  .option('ioc', {
-    type: 'boolean',
-    alias: 'i',
-    describe: 'immediate-or-cancel',
-  })
-  .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
-  .example(`$0 ${command} 3 LTC/BTC mkt`, `place a market order to ${command} 3 LTC for BTC`)
-  .example(`$0 ${command} 10 ZRX/GNT market`, `place a market order to ${command} 10 ZRX for GNT`);
+  argv
+    .positional('quantity', {
+      type: 'number',
+      describe: 'the quantity to trade',
+    })
+    .positional('pair_id', {
+      type: 'string',
+      describe: 'the trading pair ticker id for the order',
+    })
+    .positional('price', {
+      type: 'string',
+      describe:
+        'the price for limit orders, or "mkt"/"market" for market orders',
+    })
+    .option('order_id', {
+      type: 'string',
+      describe: 'the local order id for this order',
+    })
+    .option('sync', {
+      type: 'boolean',
+      describe: 'prints the outcome all at once when matching completes',
+      alias: 's',
+      default: false,
+    })
+    .option('replace_order_id', {
+      type: 'string',
+      alias: 'r',
+      describe: 'the local order id of a previous order to be replaced',
+    })
+    .option('ioc', {
+      type: 'boolean',
+      alias: 'i',
+      describe: 'immediate-or-cancel',
+    })
+    .example(
+      `$0 ${command} 5 LTC/BTC .01 1337`,
+      `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`
+    )
+    .example(
+      `$0 ${command} 3 LTC/BTC mkt`,
+      `place a market order to ${command} 3 LTC for BTC`
+    )
+    .example(
+      `$0 ${command} 10 ZRX/GNT market`,
+      `place a market order to ${command} 10 ZRX for GNT`
+    );
 };
 
-export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) => {
+export const placeOrderHandler = async (
+  argv: Arguments<any>,
+  side: OrderSide
+) => {
   const request = new PlaceOrderRequest();
 
   const numericPrice = Number(argv.price);
@@ -59,8 +81,10 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
     if (argv.order_id) {
       request.setOrderId(argv.order_id);
     }
-  } else if (priceStr !== ('mkt') && priceStr !== ('market')) {
-    console.log('price must be numeric for limit orders or "mkt"/"market" for market orders');
+  } else if (priceStr !== 'mkt' && priceStr !== 'market') {
+    console.log(
+      'price must be numeric for limit orders or "mkt"/"market" for market orders'
+    );
     return;
   }
 
@@ -110,7 +134,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
         console.log('no matches found');
       }
     });
-    subscription.on('error', (err) => {
+    subscription.on('error', err => {
       process.exitCode = 1;
       console.error(err.message);
     });
@@ -118,8 +142,17 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
 };
 
 const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
-  const { internalMatchesList, swapSuccessesList, swapFailuresList, remainingOrder } = response;
-  if (internalMatchesList.length === 0 && swapSuccessesList.length === 0 && swapFailuresList.length === 0) {
+  const {
+    internalMatchesList,
+    swapSuccessesList,
+    swapFailuresList,
+    remainingOrder,
+  } = response;
+  if (
+    internalMatchesList.length === 0 &&
+    swapSuccessesList.length === 0 &&
+    swapFailuresList.length === 0
+  ) {
     console.log('no matches found');
   } else {
     internalMatchesList.forEach(formatInternalMatch);
@@ -133,29 +166,54 @@ const formatPlaceOrderOutput = (response: PlaceOrderResponse.AsObject) => {
 
 const formatInternalMatch = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with own order ${order.id}`);
+  console.log(
+    `matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${
+      order.price
+    } with own order ${order.id}`
+  );
 };
 
 const formatPeerMatch = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
 
   // tslint:disable-next-line: max-line-length
-  console.log(`matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${order.price} with peer ${order.nodeIdentifier!.alias} order ${order.id}, attempting swap...`);
+  console.log(
+    `matched ${satsToCoinsStr(order.quantity)} ${baseCurrency} @ ${
+      order.price
+    } with peer ${order.nodeIdentifier!.alias} order ${
+      order.id
+    }, attempting swap...`
+  );
 };
 
 const formatSwapSuccess = (swapSuccess: SwapSuccess.AsObject) => {
   const baseCurrency = getBaseCurrency(swapSuccess.pairId);
-  console.log(`successfully swapped ${satsToCoinsStr(swapSuccess.quantity)} ${baseCurrency} with peer order ${swapSuccess.orderId}`);
+  console.log(
+    `successfully swapped ${satsToCoinsStr(
+      swapSuccess.quantity
+    )} ${baseCurrency} with peer order ${swapSuccess.orderId}`
+  );
 };
 
 const formatSwapFailure = (swapFailure: SwapFailure.AsObject) => {
   const baseCurrency = getBaseCurrency(swapFailure.pairId);
-  console.log(`failed to swap ${satsToCoinsStr(swapFailure.quantity)} ${baseCurrency} due to ${swapFailure.failureReason} with peer order ${swapFailure.orderId}, continuing with matching routine...`);
+  console.log(
+    `failed to swap ${satsToCoinsStr(
+      swapFailure.quantity
+    )} ${baseCurrency} due to ${swapFailure.failureReason} with peer order ${
+      swapFailure.orderId
+    }, continuing with matching routine...`
+  );
 };
 
 const formatRemainingOrder = (order: Order.AsObject) => {
   const baseCurrency = getBaseCurrency(order.pairId);
-  console.log(`remaining ${satsToCoinsStr(order.quantity)} ${baseCurrency} entered the order book as ${order.id}`);
+  console.log(
+    `remaining ${satsToCoinsStr(
+      order.quantity
+    )} ${baseCurrency} entered the order book as ${order.id}`
+  );
 };
 
-const getBaseCurrency = (pairId: string) => pairId.substring(0, pairId.indexOf('/'));
+const getBaseCurrency = (pairId: string) =>
+  pairId.substring(0, pairId.indexOf('/'));

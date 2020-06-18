@@ -37,7 +37,9 @@ const errorCodes = {
 
 const errors = {
   NODE_ALREADY_CONNECTED: (nodePubKey: string, address: Address) => ({
-    message: `node ${nodePubKey} at ${addressUtils.toString(address)} already connected`,
+    message: `node ${nodePubKey} at ${addressUtils.toString(
+      address
+    )} already connected`,
     code: errorCodes.NODE_ALREADY_CONNECTED,
   }),
   NOT_CONNECTED: (nodePubKey: string) => ({
@@ -45,10 +47,16 @@ const errors = {
     code: errorCodes.NOT_CONNECTED,
   }),
   NODE_TOR_ADDRESS: (nodePubKey: string, address: Address) => ({
-    message: `can't connect to node ${nodePubKey} at tor address ${addressUtils.toString(address)} because tor is disabled`,
+    message: `can't connect to node ${nodePubKey} at tor address ${addressUtils.toString(
+      address
+    )} because tor is disabled`,
     code: errorCodes.NODE_TOR_ADDRESS,
   }),
-  UNEXPECTED_NODE_PUB_KEY: (nodePubKey: string, expectedNodePubKey: string, address: string) => ({
+  UNEXPECTED_NODE_PUB_KEY: (
+    nodePubKey: string,
+    expectedNodePubKey: string,
+    address: string
+  ) => ({
     message: `node at ${address} sent pub key ${nodePubKey}, expected ${expectedNodePubKey}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
@@ -56,7 +64,11 @@ const errors = {
     message: `node at ${address} has version ${peerVersion}, which is malformed, should be in semantic format`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
-  INCOMPATIBLE_VERSION: (address: string, minCompatibleVersion: string, peerVersion: string | undefined) => ({
+  INCOMPATIBLE_VERSION: (
+    address: string,
+    minCompatibleVersion: string,
+    peerVersion: string | undefined
+  ) => ({
     message: `node at ${address} has version ${peerVersion}, expected minimum ${minCompatibleVersion}`,
     code: errorCodes.UNEXPECTED_NODE_PUB_KEY,
   }),
@@ -69,7 +81,8 @@ const errors = {
     code: errorCodes.EXTERNAL_IP_UNRETRIEVABLE,
   }),
   CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED: {
-    message: 'Connection retry attempts to peer exceeded maximum time allotment',
+    message:
+      'Connection retry attempts to peer exceeded maximum time allotment',
     code: errorCodes.CONNECTION_RETRIES_MAX_PERIOD_EXCEEDED,
   },
   CONNECTION_RETRIES_REVOKED: {
@@ -77,7 +90,9 @@ const errors = {
     code: errorCodes.CONNECTION_RETRIES_REVOKED,
   },
   COULD_NOT_CONNECT: (address: Address, err: Error) => ({
-    message: `could not connect to peer at ${addressUtils.toString(address)}: ${err.message}`,
+    message: `could not connect to peer at ${addressUtils.toString(address)}: ${
+      err.message
+    }`,
     code: errorCodes.COULD_NOT_CONNECT,
   }),
   NODE_UNKNOWN: (nodePubKey: string) => ({
@@ -133,10 +148,14 @@ const errors = {
     code: errorCodes.FRAMER_MSG_NOT_ENCRYPTED,
   },
   FRAMER_INVALID_NETWORK_MAGIC_VALUE: {
-    message: 'framer: msg has an invalid network magic value (might be encrypted)',
+    message:
+      'framer: msg has an invalid network magic value (might be encrypted)',
     code: errorCodes.FRAMER_INVALID_NETWORK_MAGIC_VALUE,
   },
-  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (expected: XuNetwork, found: XuNetwork) => ({
+  FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK: (
+    expected: XuNetwork,
+    found: XuNetwork
+  ) => ({
     message: `framer: incompatible msg origin network (expected: ${expected}, found: ${found})`,
     code: errorCodes.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK,
   }),

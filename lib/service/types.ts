@@ -32,7 +32,7 @@ export type XudInfo = {
   alias: string;
   numPeers: number;
   numPairs: number;
-  orders: { peer: number, own: number };
+  orders: { peer: number; own: number };
   lnd: Map<string, LndInfo>;
   raiden?: RaidenInfo;
   connext?: ConnextInfo;
@@ -44,7 +44,13 @@ export type NodeIdentifier = {
   alias?: string;
 };
 
-export type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBuy' | 'initialQuantity' | 'quantity' | 'price'>> & {
+export type ServiceOrder = Pick<
+  Order,
+  Exclude<
+    keyof Order,
+    'peerPubKey' | 'isBuy' | 'initialQuantity' | 'quantity' | 'price'
+  >
+> & {
   nodeIdentifier: NodeIdentifier;
   side: OrderSide;
   localId?: string;
@@ -55,23 +61,26 @@ export type ServiceOrder = Pick<Order, Exclude<keyof Order, 'peerPubKey' | 'isBu
 };
 
 export type ServiceTrade = {
-  makerOrder: ServiceOrder,
-  takerOrder?: ServiceOrder,
-  rHash?: string,
-  quantity: number,
-  pairId: string,
-  price: number,
-  role: SwapRole,
-  side: OrderSide,
-  executedAt: number,
+  makerOrder: ServiceOrder;
+  takerOrder?: ServiceOrder;
+  rHash?: string;
+  quantity: number;
+  pairId: string;
+  price: number;
+  role: SwapRole;
+  side: OrderSide;
+  executedAt: number;
   counterparty?: NodeIdentifier;
 };
 
 export type ServiceOrderSidesArrays = {
-  buyArray: ServiceOrder[],
-  sellArray: ServiceOrder[],
+  buyArray: ServiceOrder[];
+  sellArray: ServiceOrder[];
 };
 
-export type ServicePlaceOrderEvent = Pick<PlaceOrderEvent, Exclude<keyof PlaceOrderEvent, 'order'>> & {
-  order?: ServiceOrder,
+export type ServicePlaceOrderEvent = Pick<
+  PlaceOrderEvent,
+  Exclude<keyof PlaceOrderEvent, 'order'>
+> & {
+  order?: ServiceOrder;
 };

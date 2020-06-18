@@ -6,12 +6,13 @@ export const command = 'walletdeposit <currency>';
 
 export const describe = 'gets an address to deposit funds to xud';
 
-export const builder = (argv: Argv) => argv
-  .positional('currency', {
-    description: 'the ticker symbol of the currency to deposit.',
-    type: 'string',
-  })
-  .example('$0 deposit BTC', 'get a BTC deposit address');
+export const builder = (argv: Argv) =>
+  argv
+    .positional('currency', {
+      description: 'the ticker symbol of the currency to deposit.',
+      type: 'string',
+    })
+    .example('$0 deposit BTC', 'get a BTC deposit address');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new DepositRequest();

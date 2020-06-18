@@ -13,7 +13,11 @@ import SwapClient, {
   SwapClientInfo,
   PaymentStatus,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
+import {
+  SwapDeal,
+  CloseChannelParams,
+  OpenChannelParams,
+} from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -38,16 +42,36 @@ import { take, pluck, timeout, filter } from 'rxjs/operators';
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
 interface ConnextClient {
-  on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
-  on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
-  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  on(
+    event: 'preimage',
+    listener: (preimageRequest: ProvidePreimageEvent) => void
+  ): void;
+  on(
+    event: 'transferReceived',
+    listener: (transferReceivedRequest: TransferReceivedEvent) => void
+  ): void;
+  on(
+    event: 'htlcAccepted',
+    listener: (rHash: string, amount: number, currency: string) => void
+  ): this;
+  on(
+    event: 'connectionVerified',
+    listener: (swapClientInfo: SwapClientInfo) => void
+  ): this;
   once(event: 'initialized', listener: () => void): this;
-  emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
+  emit(
+    event: 'htlcAccepted',
+    rHash: string,
+    amount: number,
+    currency: string
+  ): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
-  emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
+  emit(
+    event: 'transferReceived',
+    transferReceivedRequest: TransferReceivedEvent
+  ): void;
 }
 
 /**
@@ -59,11 +83,14 @@ interface ConnextClient {
 const waitForPreimageByHash = (
   client: SwapClient,
   expectedHash: string,
-  errorTimeout = 34000,
+  errorTimeout = 34000
 ): Promise<string> => {
   // create an observable that emits values when a preimage
   // event is triggered on the client
-  const preimage$: Observable<ProvidePreimageEvent> = fromEvent(client, 'preimage');
+  const preimage$: Observable<ProvidePreimageEvent> = fromEvent(
+    client,
+    'preimage'
+  );
   const expectedPreimageReceived$ = preimage$.pipe(
     // filter out events that do not match our expected hash
     filter(preimageEvent => preimageEvent.rHash === expectedHash),
@@ -75,7 +102,7 @@ const waitForPreimageByHash = (
     take(1),
     // emit an error if the observable does not emit any values
     // for the specified duration
-    timeout(errorTimeout),
+    timeout(errorTimeout)
   );
   // convert the observable to a promise that resolves on complete
   // and rejects on error
@@ -96,7 +123,10 @@ class ConnextClient extends SwapClient {
    * This is equivalent to invoices of lnd with the difference
    * being that we're managing the state of invoice on xud level.
    */
-  private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
+  private expectedIncomingTransfers = new Map<
+    string,
+    ExpectedIncomingTransfer
+  >();
   /** The set of hashes for outgoing transfers. */
   private outgoingTransferHashes = new Set<string>();
   private port: number;
@@ -118,7 +148,7 @@ class ConnextClient extends SwapClient {
   }: {
     unitConverter: UnitConverter;
     config: ConnextClientConfig;
-    currencyInstances: CurrencyInstance[],
+    currencyInstances: CurrencyInstance[];
     logger: Logger;
   }) {
     super(logger, config.disable);
@@ -141,24 +171,25 @@ class ConnextClient extends SwapClient {
 
   public initSpecific = async () => {
     this.on('transferReceived', this.onTransferReceived.bind(this));
-  }
+  };
 
-  private onTransferReceived = (transferReceivedRequest: TransferReceivedEvent) => {
-    const {
-      tokenAddress,
-      units,
-      timelock,
-      rHash,
-    } = transferReceivedRequest;
+  private onTransferReceived = (
+    transferReceivedRequest: TransferReceivedEvent
+  ) => {
+    const { tokenAddress, units, timelock, rHash } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
       this.outgoingTransferHashes.delete(rHash);
-      this.logger.debug(`outgoing hash lock transfer with rHash ${rHash} created`);
+      this.logger.debug(
+        `outgoing hash lock transfer with rHash ${rHash} created`
+      );
       return;
     }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}`);
+      this.logger.warn(
+        `received unexpected incoming transfer created event with rHash ${rHash}`
+      );
       return;
     }
 
@@ -173,68 +204,75 @@ class ConnextClient extends SwapClient {
       units === expectedUnits &&
       timelock === expectedTimelock
     ) {
-      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
+      this.logger.debug(
+        `accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`
+      );
       this.emit('htlcAccepted', rHash, units, currency);
       this.expectedIncomingTransfers.delete(rHash);
     }
-  }
+  };
 
   // TODO: Ideally, this would be set in the constructor.
   // Related issue: https://github.com/ExchangeUnion/xud/issues/1494
   public setSeed = (seed: string) => {
     this.seed = seed;
-  }
+  };
 
   /**
    * Initiates wallet for the Connext client
    */
   public initWallet = async (seedMnemonic: string) => {
-    const res = await this.sendRequest('/mnemonic', 'POST', { mnemonic: seedMnemonic });
+    const res = await this.sendRequest('/mnemonic', 'POST', {
+      mnemonic: seedMnemonic,
+    });
     return await parseResponseBody<ConnextInitWalletResponse>(res);
-  }
+  };
 
   public initConnextClient = async () => {
     const res = await this.sendRequest('/connect', 'POST');
     return await parseResponseBody<ConnextConfigResponse>(res);
-  }
+  };
 
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
     });
-  }
+  };
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'CONDITIONAL_TRANSFER_CREATED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
-  }
+  };
 
   /**
    * Associate connext with currencies that have a token address
    */
   private setTokenAddresses = (currencyInstances: CurrencyInstance[]) => {
-    currencyInstances.forEach((currency) => {
-      if (currency.tokenAddress && currency.swapClient === SwapClientType.Connext) {
+    currencyInstances.forEach(currency => {
+      if (
+        currency.tokenAddress &&
+        currency.swapClient === SwapClientType.Connext
+      ) {
         this.tokenAddresses.set(currency.id, currency.tokenAddress);
       }
     });
-  }
+  };
 
   public totalOutboundAmount = (currency: string): number => {
     return this._totalOutboundAmount.get(currency) || 0;
-  }
+  };
 
   public maxChannelOutboundAmount = (currency: string): number => {
     return this._totalOutboundAmount.get(currency) || 0;
-  }
+  };
 
   public maxChannelInboundAmount = (_currency: string): number => {
     // assume MAX_AMOUNT since Connext will re-collaterize accordingly
     return MAX_AMOUNT;
-  }
+  };
 
   protected updateCapacity = async () => {
     try {
@@ -246,7 +284,7 @@ class ConnextClient extends SwapClient {
     } catch (e) {
       this.logger.error('failed to update total outbound capacity', e);
     }
-  }
+  };
 
   protected getTokenAddress(currency: string): string {
     const tokenAdress = this.tokenAddresses.get(currency);
@@ -288,16 +326,16 @@ class ConnextClient extends SwapClient {
     } catch (err) {
       this.logger.error(
         `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
-        err,
+        err
       );
       await this.disconnect();
     }
-  }
+  };
 
   public sendSmallestAmount = async (
     rHash: string,
     destination: string,
-    currency: string,
+    currency: string
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
 
@@ -309,7 +347,7 @@ class ConnextClient extends SwapClient {
       recipient: destination,
     });
     return secret;
-  }
+  };
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
@@ -335,7 +373,9 @@ class ConnextClient extends SwapClient {
           executeTransfer,
           waitForPreimageByHash(this, deal.rHash),
         ]);
-        this.logger.debug(`received preimage ${preimage} for payment with hash ${deal.rHash}`);
+        this.logger.debug(
+          `received preimage ${preimage} for payment with hash ${deal.rHash}`
+        );
         secret = preimage;
       } else {
         // we are the taker paying the maker
@@ -364,12 +404,19 @@ class ConnextClient extends SwapClient {
           throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
       }
     }
-  }
+  };
 
-  public addInvoice = async (
-    { rHash: expectedHash, units: expectedUnits, expiry: expectedTimelock, currency: expectedCurrency }:
-    { rHash: string, units: number, expiry?: number, currency?: string },
-  ) => {
+  public addInvoice = async ({
+    rHash: expectedHash,
+    units: expectedUnits,
+    expiry: expectedTimelock,
+    currency: expectedCurrency,
+  }: {
+    rHash: string;
+    units: number;
+    expiry?: number;
+    currency?: string;
+  }) => {
     if (!expectedCurrency) {
       throw errors.CURRENCY_MISSING;
     }
@@ -384,34 +431,51 @@ class ConnextClient extends SwapClient {
       tokenAddress: expectedTokenAddress,
     };
     this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
-  }
+  };
 
   /**
    * Resolves a HashLock Transfer on the Connext network.
    */
-  public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
-    this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
+  public settleInvoice = async (
+    rHash: string,
+    rPreimage: string,
+    currency: string
+  ) => {
+    this.logger.debug(
+      `settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`
+    );
     const assetId = this.tokenAddresses.get(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
       preImage: `0x${rPreimage}`,
     });
-  }
+  };
 
   public removeInvoice = async (rHash: string) => {
     this.expectedIncomingTransfers.delete(rHash);
-  }
+  };
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
-    const res = await this.sendRequest(`/hashlock-status/0x${lockHash}/${assetId}`, 'GET');
-    const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
+    const res = await this.sendRequest(
+      `/hashlock-status/0x${lockHash}/${assetId}`,
+      'GET'
+    );
+    const transferStatusResponse = await parseResponseBody<
+      ConnextTransferStatus
+    >(res);
     return transferStatusResponse;
   }
 
-  public lookupPayment = async (rHash: string, currency: string): Promise<PaymentStatus> => {
+  public lookupPayment = async (
+    rHash: string,
+    currency: string
+  ): Promise<PaymentStatus> => {
     try {
       const assetId = this.getTokenAddress(currency);
-      const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
+      const transferStatusResponse = await this.getHashLockStatus(
+        rHash,
+        assetId
+      );
       // TODO: Edge case. Once https://github.com/connext/rest-api-client/issues/31 is
       // implemented check for the response code 404 and set the payment as failed.
 
@@ -433,22 +497,22 @@ class ConnextClient extends SwapClient {
       this.logger.error(e);
       throw errors.SERVER_ERROR;
     }
-  }
+  };
 
   public getRoute = async () => {
     /** A placeholder route value that assumes a fixed lock time of 100 for Connext. */
     return {
       getTotalTimeLock: () => 101,
     };
-  }
+  };
 
   public canRouteToNode = async () => {
     return true;
-  }
+  };
 
   public getHeight = async () => {
     return 1; // connext's API does not tell us the height
-  }
+  };
 
   public getInfo = async (): Promise<ConnextInfo> => {
     let address: string | undefined;
@@ -460,12 +524,12 @@ class ConnextClient extends SwapClient {
       try {
         const getInfo$ = combineLatest(
           from(this.getVersion()),
-          from(this.getClientConfig()),
+          from(this.getClientConfig())
         ).pipe(
           // error if no response within 5000 ms
           timeout(5000),
           // complete the stream when we receive 1 value
-          take(1),
+          take(1)
         );
         const [streamVersion, clientConfig] = await getInfo$.toPromise();
         status = 'Ready';
@@ -477,7 +541,7 @@ class ConnextClient extends SwapClient {
     }
 
     return { status, address, version };
-  }
+  };
 
   /**
    * Gets the connext version.
@@ -486,7 +550,7 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest('/version', 'GET');
     const { version } = await parseResponseBody<ConnextVersion>(res);
     return version;
-  }
+  };
 
   /**
    * Gets the configuration of Connext client.
@@ -495,10 +559,10 @@ class ConnextClient extends SwapClient {
     const res = await this.sendRequest('/config', 'GET');
     const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
     return clientConfig;
-  }
+  };
 
   public channelBalance = async (
-    currency?: string,
+    currency?: string
   ): Promise<ChannelBalance> => {
     if (!currency) {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
@@ -517,7 +581,7 @@ class ConnextClient extends SwapClient {
       inactiveBalance: 0,
       pendingOpenBalance: 0,
     };
-  }
+  };
 
   public tradingLimits = async (currency: string): Promise<TradingLimits> => {
     await this.channelBalance(currency); // refreshes the max outbound balance
@@ -525,14 +589,12 @@ class ConnextClient extends SwapClient {
       maxSell: this.maxChannelOutboundAmount(currency),
       maxBuy: this.maxChannelInboundAmount(currency),
     };
-  }
+  };
 
   /**
    * Returns the balances available in wallet for a specified currency.
    */
-  public walletBalance = async (
-    currency?: string,
-  ): Promise<WalletBalance> => {
+  public walletBalance = async (currency?: string): Promise<WalletBalance> => {
     if (!currency) {
       return {
         totalBalance: 0,
@@ -553,19 +615,19 @@ class ConnextClient extends SwapClient {
       confirmedBalance: confirmedBalanceAmount,
       unconfirmedBalance: 0,
     };
-  }
+  };
 
   private getBalance = async (currency: string) => {
     const tokenAddress = this.getTokenAddress(currency);
     const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
     const balance = await parseResponseBody<ConnextBalanceResponse>(res);
     return balance;
-  }
+  };
 
   public deposit = async () => {
     const clientConfig = await this.getClientConfig();
     return clientConfig.signerAddress;
-  }
+  };
 
   public openChannel = async ({ currency, units }: OpenChannelParams) => {
     if (!currency) {
@@ -576,20 +638,25 @@ class ConnextClient extends SwapClient {
       assetId,
       amount: BigInt(units).toString(),
     });
-  }
+  };
 
-  public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<void> => {
+  public closeChannel = async ({
+    units,
+    currency,
+    destination,
+  }: CloseChannelParams): Promise<void> => {
     if (!currency) {
       throw errors.CURRENCY_MISSING;
     }
-    const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
+    const amount =
+      units || (await this.getBalance(currency)).freeBalanceOffChain;
 
     await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
       amount: BigInt(amount).toString(),
       assetId: this.tokenAddresses.get(currency),
     });
-  }
+  };
 
   /**
    * Create a HashLock Transfer on the Connext network.
@@ -598,13 +665,17 @@ class ConnextClient extends SwapClient {
    * @param amount
    * @param lockHash
    */
-  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
-    this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
+  private executeHashLockTransfer = async (
+    payload: TokenPaymentRequest
+  ): Promise<string> => {
+    this.logger.debug(
+      `sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`
+    );
     this.outgoingTransferHashes.add(payload.lockHash);
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
     return appId;
-  }
+  };
 
   /**
    * Deposits more of a token to an existing client.
@@ -613,18 +684,18 @@ class ConnextClient extends SwapClient {
    */
   public depositToChannel = async (
     assetId: string,
-    amount: number,
+    amount: number
   ): Promise<void> => {
     await this.sendRequest('/hashlock-transfer', 'POST', {
       assetId,
       amount: BigInt(amount).toString(),
     });
-  }
+  };
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
     this.setStatus(ClientStatus.Disconnected);
-  }
+  };
 
   /**
    * Sends a request to the Connext REST API.
@@ -632,7 +703,11 @@ class ConnextClient extends SwapClient {
    * @param method an HTTP request method
    * @param payload the request payload
    */
-  private sendRequest = (endpoint: string, method: string, payload?: object): Promise<http.IncomingMessage> => {
+  private sendRequest = (
+    endpoint: string,
+    method: string,
+    payload?: object
+  ): Promise<http.IncomingMessage> => {
     return new Promise((resolve, reject) => {
       const options: http.RequestOptions = {
         method,
@@ -651,7 +726,7 @@ class ConnextClient extends SwapClient {
       }
 
       this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
-      const req = http.request(options, async (res) => {
+      const req = http.request(options, async res => {
         switch (res.statusCode) {
           case 200:
           case 201:
@@ -669,11 +744,15 @@ class ConnextClient extends SwapClient {
             reject(body.message);
             break;
           case 500:
-            this.logger.error(`connext server error ${res.statusCode}: ${res.statusMessage}`);
+            this.logger.error(
+              `connext server error ${res.statusCode}: ${res.statusMessage}`
+            );
             reject(errors.SERVER_ERROR);
             break;
           default:
-            this.logger.error(`unexpected connext status ${res.statusCode}: ${res.statusMessage}`);
+            this.logger.error(
+              `unexpected connext status ${res.statusCode}: ${res.statusMessage}`
+            );
             reject(errors.UNEXPECTED);
             break;
         }
@@ -692,7 +771,7 @@ class ConnextClient extends SwapClient {
       }
       req.end();
     });
-  }
+  };
 }
 
 export default ConnextClient;

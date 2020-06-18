@@ -1,6 +1,9 @@
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
-import { RaidenResolveRequest, RaidenResolveResponse } from '../raidenclient/types';
+import {
+  RaidenResolveRequest,
+  RaidenResolveResponse,
+} from '../raidenclient/types';
 import {
   ConnextPreimageRequest,
   ConnextIncomingTransferRequest,
@@ -10,10 +13,20 @@ import { createHash } from 'crypto';
 class HttpService {
   constructor(private service: Service) {}
 
-  public resolveHashRaiden = async (resolveRequest: RaidenResolveRequest): Promise<RaidenResolveResponse> => {
-    const { secrethash, amount, token, expiration, chain_height } = resolveRequest;
+  public resolveHashRaiden = async (
+    resolveRequest: RaidenResolveRequest
+  ): Promise<RaidenResolveResponse> => {
+    const {
+      secrethash,
+      amount,
+      token,
+      expiration,
+      chain_height,
+    } = resolveRequest;
     if (!secrethash || typeof secrethash !== 'string') {
-      throw serviceErrors.INVALID_ARGUMENT('secrethash must be a non-empty string');
+      throw serviceErrors.INVALID_ARGUMENT(
+        'secrethash must be a non-empty string'
+      );
     }
     const secret = await this.service.resolveHash({
       amount,
@@ -23,18 +36,20 @@ class HttpService {
       tokenAddress: token,
     });
     return { secret };
-  }
+  };
 
-  public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
-    if (
-      preimageRequest.data && preimageRequest.data.transferMeta
-    ) {
+  public providePreimage = async (
+    preimageRequest: ConnextPreimageRequest
+  ): Promise<object> => {
+    if (preimageRequest.data && preimageRequest.data.transferMeta) {
       const { preImage: preimage } = preimageRequest.data.transferMeta;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
       const slicedPreimage = preimage.slice(2);
-      const rHash = createHash('sha256').update(Buffer.from(slicedPreimage, 'hex')).digest('hex');
+      const rHash = createHash('sha256')
+        .update(Buffer.from(slicedPreimage, 'hex'))
+        .digest('hex');
       await this.service.providePreimage({
         rHash,
         preimage: slicedPreimage,
@@ -43,16 +58,13 @@ class HttpService {
     } else {
       throw serviceErrors.INVALID_REQUEST;
     }
-  }
+  };
 
   public incomingTransfer = async (
-    incomingTransferRequest: ConnextIncomingTransferRequest,
+    incomingTransferRequest: ConnextIncomingTransferRequest
   ): Promise<object> => {
     if (incomingTransferRequest.data) {
-      const {
-        amount: amountHex,
-        assetId,
-      } = incomingTransferRequest.data;
+      const { amount: amountHex, assetId } = incomingTransferRequest.data;
       const {
         lockHash,
         timelock: timelockString,
@@ -70,8 +82,7 @@ class HttpService {
     } else {
       throw serviceErrors.INVALID_REQUEST;
     }
-  }
-
+  };
 }
 
 export default HttpService;

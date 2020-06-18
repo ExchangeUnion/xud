@@ -15,6 +15,7 @@ make start
 ```
 
 For logs
+
 ```bash
 bash ops/logs.sh node
 ```
@@ -28,6 +29,7 @@ npm install
 ```
 
 ### Running Connext REST API client
+
 Create environment variables file and point to the Etheruem and Connext node
 
 ```bash
@@ -59,6 +61,7 @@ port = 5040
 A restart of xud is currently required for it to show up under `xucli getbalance` call.
 
 ## Fund the Connext client address
+
 Get the Connext address from the output of
 
 `./bin/xucli getinfo`

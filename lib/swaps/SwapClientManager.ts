@@ -16,34 +16,66 @@ import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
 
-export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
-  return (swapClient.type === SwapClientType.Connext);
+export function isConnextClient(
+  swapClient: SwapClient
+): swapClient is ConnextClient {
+  return swapClient.type === SwapClientType.Connext;
 }
 
-export function isRaidenClient(swapClient: SwapClient): swapClient is RaidenClient {
-  return (swapClient.type === SwapClientType.Raiden);
+export function isRaidenClient(
+  swapClient: SwapClient
+): swapClient is RaidenClient {
+  return swapClient.type === SwapClientType.Raiden;
 }
 
 export function isLndClient(swapClient: SwapClient): swapClient is LndClient {
-  return (swapClient.type === SwapClientType.Lnd);
+  return swapClient.type === SwapClientType.Lnd;
 }
 
 type LndUpdate = {
-  currency: string,
-  pubKey: string,
-  chain?: string,
-  uris?: string[],
+  currency: string;
+  pubKey: string;
+  chain?: string;
+  uris?: string[];
 };
 
 interface SwapClientManager {
   on(event: 'lndUpdate', listener: (lndUpdate: LndUpdate) => void): this;
-  on(event: 'raidenUpdate', listener: (tokenAddresses: Map<string, string>, address?: string) => void): this;
-  on(event: 'connextUpdate', listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void): this;
-  on(event: 'htlcAccepted', listener: (swapClient: SwapClient, rHash: string, amount: number, currency: string) => void): this;
+  on(
+    event: 'raidenUpdate',
+    listener: (tokenAddresses: Map<string, string>, address?: string) => void
+  ): this;
+  on(
+    event: 'connextUpdate',
+    listener: (tokenAddresses: Map<string, string>, pubKey?: string) => void
+  ): this;
+  on(
+    event: 'htlcAccepted',
+    listener: (
+      swapClient: SwapClient,
+      rHash: string,
+      amount: number,
+      currency: string
+    ) => void
+  ): this;
   emit(event: 'lndUpdate', lndUpdate: LndUpdate): boolean;
-  emit(event: 'raidenUpdate', tokenAddresses: Map<string, string>, address?: string): boolean;
-  emit(event: 'connextUpdate', tokenAddresses: Map<string, string>, pubKey?: string): boolean;
-  emit(event: 'htlcAccepted', swapClient: SwapClient, rHash: string, amount: number, currency: string): boolean;
+  emit(
+    event: 'raidenUpdate',
+    tokenAddresses: Map<string, string>,
+    address?: string
+  ): boolean;
+  emit(
+    event: 'connextUpdate',
+    tokenAddresses: Map<string, string>,
+    pubKey?: string
+  ): boolean;
+  emit(
+    event: 'htlcAccepted',
+    swapClient: SwapClient,
+    rHash: string,
+    amount: number,
+    currency: string
+  ): boolean;
 }
 
 class SwapClientManager extends EventEmitter {
@@ -57,7 +89,7 @@ class SwapClientManager extends EventEmitter {
   constructor(
     private config: Config,
     private loggers: Loggers,
-    private unitConverter: UnitConverter,
+    private unitConverter: UnitConverter
   ) {
     super();
   }
@@ -148,7 +180,7 @@ class SwapClientManager extends EventEmitter {
         }
       }
     }
-  }
+  };
 
   // Initializes Connext client with a seed
   public initConnext = async (seed: string) => {
@@ -156,7 +188,7 @@ class SwapClientManager extends EventEmitter {
       this.connextClient.setSeed(seed);
       await this.connextClient.init();
     }
-  }
+  };
 
   /**
    * Checks to make sure all enabled lnd instances are available and waits
@@ -167,25 +199,27 @@ class SwapClientManager extends EventEmitter {
     const lndClients = this.getLndClientsMap().values();
     const lndAvailablePromises: Promise<void>[] = [];
     for (const lndClient of lndClients) {
-      lndAvailablePromises.push(new Promise<void>((resolve, reject) => {
-        if (lndClient.isDisconnected() || lndClient.isNotInitialized()) {
-          const onAvailable = () => {
-            clearTimeout(timer);
-            lndClient.removeListener('locked', onAvailable);
-            lndClient.removeListener('connectionVerified', onAvailable);
+      lndAvailablePromises.push(
+        new Promise<void>((resolve, reject) => {
+          if (lndClient.isDisconnected() || lndClient.isNotInitialized()) {
+            const onAvailable = () => {
+              clearTimeout(timer);
+              lndClient.removeListener('locked', onAvailable);
+              lndClient.removeListener('connectionVerified', onAvailable);
+              resolve();
+            };
+            lndClient.on('connectionVerified', onAvailable);
+            lndClient.on('locked', onAvailable);
+            const timer = setTimeout(() => {
+              lndClient.removeListener('connectionVerified', onAvailable);
+              lndClient.removeListener('locked', onAvailable);
+              reject(lndClient.currency);
+            }, SwapClient.RECONNECT_INTERVAL);
+          } else {
             resolve();
-          };
-          lndClient.on('connectionVerified', onAvailable);
-          lndClient.on('locked', onAvailable);
-          const timer = setTimeout(() => {
-            lndClient.removeListener('connectionVerified', onAvailable);
-            lndClient.removeListener('locked', onAvailable);
-            reject(lndClient.currency);
-          }, SwapClient.RECONNECT_INTERVAL);
-        } else {
-          resolve();
-        }
-      }));
+          }
+        })
+      );
     }
 
     try {
@@ -193,18 +227,25 @@ class SwapClientManager extends EventEmitter {
     } catch (currency) {
       throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
     }
-  }
+  };
 
   /**
    * Initializes wallets with seed and password.
    */
-  public initWallets = async ({ walletPassword, seedMnemonic, restore, lndBackups, raidenDatabase, raidenDatabasePath }: {
-    walletPassword: string,
-    seedMnemonic: string[],
-    restore?: boolean,
-    lndBackups?: Map<string, Uint8Array>,
-    raidenDatabase?: Uint8Array,
-    raidenDatabasePath?: string,
+  public initWallets = async ({
+    walletPassword,
+    seedMnemonic,
+    restore,
+    lndBackups,
+    raidenDatabase,
+    raidenDatabasePath,
+  }: {
+    walletPassword: string;
+    seedMnemonic: string[];
+    restore?: boolean;
+    lndBackups?: Map<string, Uint8Array>;
+    raidenDatabase?: Uint8Array;
+    raidenDatabasePath?: string;
   }) => {
     this.walletPassword = walletPassword;
 
@@ -217,17 +258,24 @@ class SwapClientManager extends EventEmitter {
     for (const lndClient of lndClients) {
       if (isLndClient(lndClient)) {
         if (lndClient.isWaitingUnlock()) {
-          const initWalletPromise = lndClient.initWallet(
-            walletPassword,
-            seedMnemonic,
-            restore,
-            lndBackups ? lndBackups.get(lndClient.currency) : undefined,
-          ).then(() => {
-            initializedLndWallets.push(lndClient.currency);
-          }).catch((err) => {
-            lndClient.logger.error(`could not initialize wallet: ${err.message}`);
-            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${lndClient.currency}: ${err.message}`);
-          });
+          const initWalletPromise = lndClient
+            .initWallet(
+              walletPassword,
+              seedMnemonic,
+              restore,
+              lndBackups ? lndBackups.get(lndClient.currency) : undefined
+            )
+            .then(() => {
+              initializedLndWallets.push(lndClient.currency);
+            })
+            .catch(err => {
+              lndClient.logger.error(
+                `could not initialize wallet: ${err.message}`
+              );
+              throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(
+                `could not initialize lnd-${lndClient.currency}: ${err.message}`
+              );
+            });
           initWalletPromises.push(initWalletPromise);
         }
       }
@@ -240,18 +288,28 @@ class SwapClientManager extends EventEmitter {
       // to disk in plain text
 
       if (raidenDatabase && raidenDatabase.byteLength && raidenDatabasePath) {
-        initWalletPromises.push(fs.writeFile(raidenDatabasePath, raidenDatabase).then(() => {
-          this.loggers.raiden.info(`restored raiden database to ${raidenDatabasePath}`);
-        }));
+        initWalletPromises.push(
+          fs.writeFile(raidenDatabasePath, raidenDatabase).then(() => {
+            this.loggers.raiden.info(
+              `restored raiden database to ${raidenDatabasePath}`
+            );
+          })
+        );
       }
 
-      const keystorePromise = keystore(seedMnemonic, '', keystorepath).then(() => {
-        this.raidenClient!.logger.info(`created raiden keystore with master seed and empty password in ${keystorepath}`);
-        initializedRaiden = true;
-      }).catch((err) => {
-        this.raidenClient!.logger.error('could not create keystore');
-        throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not create keystore: ${err}`);
-      });
+      const keystorePromise = keystore(seedMnemonic, '', keystorepath)
+        .then(() => {
+          this.raidenClient!.logger.info(
+            `created raiden keystore with master seed and empty password in ${keystorepath}`
+          );
+          initializedRaiden = true;
+        })
+        .catch(err => {
+          this.raidenClient!.logger.error('could not create keystore');
+          throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(
+            `could not create keystore: ${err}`
+          );
+        });
       initWalletPromises.push(keystorePromise);
     }
 
@@ -261,15 +319,17 @@ class SwapClientManager extends EventEmitter {
       initializedLndWallets,
       initializedRaiden,
     };
-  }
+  };
 
   /**
    * Unlocks wallets with a password.
    * @returns an array of currencies for each lnd client that was unlocked
    */
-  public unlockWallets = async ({ walletPassword }: {
-    walletPassword: string,
-    connextSeed: string,
+  public unlockWallets = async ({
+    walletPassword,
+  }: {
+    walletPassword: string;
+    connextSeed: string;
   }) => {
     this.walletPassword = walletPassword;
 
@@ -281,14 +341,23 @@ class SwapClientManager extends EventEmitter {
     for (const swapClient of this.swapClients.values()) {
       if (isLndClient(swapClient)) {
         if (swapClient.isWaitingUnlock()) {
-          const unlockWalletPromise = swapClient.unlockWallet(walletPassword).then(() => {
-            unlockedLndClients.push(swapClient.currency);
-          }).catch((err) => {
-            lockedLndClients.push(swapClient.currency);
-            swapClient.logger.debug(`could not unlock wallet: ${err.message}`);
-          });
+          const unlockWalletPromise = swapClient
+            .unlockWallet(walletPassword)
+            .then(() => {
+              unlockedLndClients.push(swapClient.currency);
+            })
+            .catch(err => {
+              lockedLndClients.push(swapClient.currency);
+              swapClient.logger.debug(
+                `could not unlock wallet: ${err.message}`
+              );
+            });
           unlockWalletPromises.push(unlockWalletPromise);
-        } else if (swapClient.isDisconnected() || swapClient.isMisconfigured() || swapClient.isNotInitialized()) {
+        } else if (
+          swapClient.isDisconnected() ||
+          swapClient.isMisconfigured() ||
+          swapClient.isNotInitialized()
+        ) {
           // if the swap client is not connected, we treat it as locked since lnd will likely be locked when it comes online
           lockedLndClients.push(swapClient.currency);
         }
@@ -301,7 +370,7 @@ class SwapClientManager extends EventEmitter {
     // TODO(connext): unlock Connext using connextSeed
 
     return { unlockedLndClients, lockedLndClients };
-  }
+  };
 
   /**
    * Gets a swap client instance.
@@ -310,12 +379,12 @@ class SwapClientManager extends EventEmitter {
    */
   public get = (currency: string): SwapClient | undefined => {
     return this.swapClients.get(currency);
-  }
+  };
 
   /** Gets the type of swap client for a given currency. */
   public getType = (currency: string) => {
     return this.swapClients.get(currency)?.type;
-  }
+  };
   /**
    * Returns whether the swap client for a specified currency is connected.
    * @returns `true` if a swap client exists and is connected, otherwise `false`
@@ -323,7 +392,7 @@ class SwapClientManager extends EventEmitter {
   public isConnected = (currency: string) => {
     const swapClient = this.swapClients.get(currency);
     return swapClient !== undefined && swapClient.isConnected();
-  }
+  };
 
   /**
    * Adds a new swap client and currency association.
@@ -331,10 +400,18 @@ class SwapClientManager extends EventEmitter {
    * @returns Nothing upon success, throws otherwise.
    */
   public add = (currency: Currency): void => {
-    if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress && this.raidenClient) {
+    if (
+      currency.swapClient === SwapClientType.Raiden &&
+      currency.tokenAddress &&
+      this.raidenClient
+    ) {
       this.swapClients.set(currency.id, this.raidenClient);
       this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
-      this.emit('raidenUpdate', this.raidenClient.tokenAddresses, this.raidenClient.address);
+      this.emit(
+        'raidenUpdate',
+        this.raidenClient.tokenAddresses,
+        this.raidenClient.address
+      );
     } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
       // for the specified currency
@@ -350,7 +427,7 @@ class SwapClientManager extends EventEmitter {
         throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
       }
     }
-  }
+  };
 
   /**
    * Removes a new swap client and currency association.
@@ -363,7 +440,7 @@ class SwapClientManager extends EventEmitter {
     if (swapClient && isRaidenClient(swapClient)) {
       this.raidenClient?.tokenAddresses.delete(currency);
     }
-  }
+  };
 
   /**
    * Gets a map of all lnd clients.
@@ -377,7 +454,7 @@ class SwapClientManager extends EventEmitter {
       }
     });
     return lndClients;
-  }
+  };
 
   /**
    * Gets all lnd clients' info.
@@ -393,14 +470,16 @@ class SwapClientManager extends EventEmitter {
     const getInfoPromises: Promise<void>[] = [];
     for (const [currency, swapClient] of this.swapClients.entries()) {
       if (isLndClient(swapClient) && !swapClient.isDisabled()) {
-        getInfoPromises.push(swapClient.getLndInfo().then((lndInfo) => {
-          lndInfos.set(currency, lndInfo);
-        }));
+        getInfoPromises.push(
+          swapClient.getLndInfo().then(lndInfo => {
+            lndInfos.set(currency, lndInfo);
+          })
+        );
       }
     }
     await Promise.all(getInfoPromises);
     return lndInfos;
-  }
+  };
 
   /**
    * Closes all swap client instances gracefully.
@@ -434,10 +513,14 @@ class SwapClientManager extends EventEmitter {
     }
     // we make sure to close connext client because it
     // might not be associated with any currency
-    if (this.connextClient && !this.connextClient.isDisabled() && !connextClosed) {
+    if (
+      this.connextClient &&
+      !this.connextClient.isDisabled() &&
+      !connextClosed
+    ) {
       this.connextClient.close();
     }
-  }
+  };
 
   public deposit = async (currency: string) => {
     const swapClient = this.get(currency);
@@ -447,14 +530,20 @@ class SwapClientManager extends EventEmitter {
 
     const address = await swapClient.deposit();
     return address;
-  }
+  };
 
-  public withdraw = async ({ currency, amount, destination, all, fee }: {
-    currency: string,
-    destination: string,
-    amount?: number,
-    all?: boolean,
-    fee?: number,
+  public withdraw = async ({
+    currency,
+    amount,
+    destination,
+    all,
+    fee,
+  }: {
+    currency: string;
+    destination: string;
+    amount?: number;
+    all?: boolean;
+    fee?: number;
   }) => {
     const swapClient = this.get(currency);
     if (!swapClient) {
@@ -465,9 +554,11 @@ class SwapClientManager extends EventEmitter {
       return txId;
     } else {
       // TODO: generic withdraw logic
-      throw new Error('currency currently not supported for on-chain withdrawal');
+      throw new Error(
+        'currency currently not supported for on-chain withdrawal'
+      );
     }
-  }
+  };
 
   /**
    * Closes a payment channel.
@@ -477,18 +568,29 @@ class SwapClientManager extends EventEmitter {
    * the entire off-chain balance for the specified currency will be extracted.
    * @returns Nothing upon success, throws otherwise.
    */
-  public closeChannel = async (
-    { remoteIdentifier, currency, force, destination, amount }:
-    { remoteIdentifier?: string, currency: string, force: boolean, destination?: string, amount?: number },
-  ): Promise<void> => {
+  public closeChannel = async ({
+    remoteIdentifier,
+    currency,
+    force,
+    destination,
+    amount,
+  }: {
+    remoteIdentifier?: string;
+    currency: string;
+    force: boolean;
+    destination?: string;
+    amount?: number;
+  }): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
-    const units = amount ? this.unitConverter.amountToUnits({
-      amount,
-      currency,
-    }) : undefined;
+    const units = amount
+      ? this.unitConverter.amountToUnits({
+          amount,
+          currency,
+        })
+      : undefined;
     await swapClient.closeChannel({
       remoteIdentifier,
       currency,
@@ -496,7 +598,7 @@ class SwapClientManager extends EventEmitter {
       destination,
       units,
     });
-  }
+  };
 
   /**
    * Opens a payment channel.
@@ -505,10 +607,19 @@ class SwapClientManager extends EventEmitter {
    * @param amount the size of the payment channel local balance
    * @returns Nothing upon success, throws otherwise.
    */
-  public openChannel = async (
-    { remoteIdentifier, amount, currency, pushAmount = 0, uris }:
-    { remoteIdentifier?: string, amount: number, currency: string, pushAmount?: number, uris?: string[] },
-  ): Promise<void> => {
+  public openChannel = async ({
+    remoteIdentifier,
+    amount,
+    currency,
+    pushAmount = 0,
+    uris,
+  }: {
+    remoteIdentifier?: string;
+    amount: number;
+    currency: string;
+    pushAmount?: number;
+    uris?: string[];
+  }): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -529,7 +640,7 @@ class SwapClientManager extends EventEmitter {
       uris,
       pushUnits,
     });
-  }
+  };
 
   /**
    * Checks whether it is possible to route a payment to a peer for a given currency. This does not
@@ -553,7 +664,7 @@ class SwapClientManager extends EventEmitter {
       canRoute = false; // if swap client calls are failing, we infer that we can't route payments
     }
     return canRoute;
-  }
+  };
 
   private bind = () => {
     for (const [currency, swapClient] of this.swapClients.entries()) {
@@ -574,7 +685,9 @@ class SwapClientManager extends EventEmitter {
         });
         swapClient.on('locked', () => {
           if (this.walletPassword) {
-            swapClient.unlockWallet(this.walletPassword).catch(swapClient.logger.error);
+            swapClient
+              .unlockWallet(this.walletPassword)
+              .catch(swapClient.logger.error);
           }
           // TODO(connext): unlock ConnextClient when it's implemented
         });
@@ -584,30 +697,37 @@ class SwapClientManager extends EventEmitter {
     // duplicate listeners in case raiden client is associated with
     // multiple currencies
     if (this.raidenClient?.isOperational()) {
-      this.raidenClient.on('connectionVerified', (swapClientInfo) => {
+      this.raidenClient.on('connectionVerified', swapClientInfo => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
-          this.emit('raidenUpdate', this.raidenClient!.tokenAddresses, newIdentifier);
+          this.emit(
+            'raidenUpdate',
+            this.raidenClient!.tokenAddresses,
+            newIdentifier
+          );
         }
       });
     }
-    if (this.connextClient && !this.connextClient.isDisabled() && !this.connextClient.isMisconfigured()) {
+    if (
+      this.connextClient &&
+      !this.connextClient.isDisabled() &&
+      !this.connextClient.isMisconfigured()
+    ) {
       this.connextClient.on('htlcAccepted', (rHash, amount, currency) => {
         this.emit('htlcAccepted', this.connextClient!, rHash, amount, currency);
       });
-      this.connextClient.on('connectionVerified', (swapClientInfo) => {
+      this.connextClient.on('connectionVerified', swapClientInfo => {
         const { newIdentifier } = swapClientInfo;
         if (newIdentifier) {
           this.emit(
             'connextUpdate',
             this.connextClient!.tokenAddresses,
-            newIdentifier,
+            newIdentifier
           );
         }
       });
     }
-  }
-
+  };
 }
 
 export default SwapClientManager;

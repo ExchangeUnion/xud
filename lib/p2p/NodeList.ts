@@ -1,6 +1,10 @@
 import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
-import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types';
+import {
+  NodeFactory,
+  NodeInstance,
+  ReputationEventInstance,
+} from '../db/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import P2PRepository from './P2PRepository';
@@ -23,8 +27,15 @@ export const reputationEventWeight = {
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEventInstance[]) => void): this;
-  emit(event: 'node.ban', nodePubKey: string, events: ReputationEventInstance[]): boolean;
+  on(
+    event: 'node.ban',
+    listener: (nodePubKey: string, events: ReputationEventInstance[]) => void
+  ): this;
+  emit(
+    event: 'node.ban',
+    nodePubKey: string,
+    events: ReputationEventInstance[]
+  ): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -53,33 +64,33 @@ class NodeList extends EventEmitter {
    */
   public has = (nodePubKey: string): boolean => {
     return this.nodes.has(nodePubKey);
-  }
+  };
 
   public forEach = (callback: (node: NodeInstance) => void) => {
     this.nodes.forEach(callback);
-  }
+  };
 
   /**
    * Get the internal node id for a given nodePubKey.
    */
   public getNodeById = (nodeId: number) => {
     return this.nodeIdMap.get(nodeId);
-  }
+  };
 
   /**
    * Get the alias for a given nodePubKey.
    */
   public getAlias = (nodePubKey: string) => {
     return this.pubKeyToAliasMap.get(nodePubKey);
-  }
+  };
 
   public getId = (nodePubKey: string) => {
     return this.nodes.get(nodePubKey)?.id;
-  }
+  };
 
   public getPubKeyForAlias = (alias: string) => {
     return this.aliasToPubKeyMap.get(alias);
-  }
+  };
 
   /**
    * Ban a node by nodePubKey.
@@ -87,7 +98,7 @@ class NodeList extends EventEmitter {
    */
   public ban = async (nodePubKey: string): Promise<boolean> => {
     return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
-  }
+  };
 
   /**
    * Remove ban from node by nodePubKey.
@@ -95,11 +106,11 @@ class NodeList extends EventEmitter {
    */
   public unBan = async (nodePubKey: string): Promise<boolean> => {
     return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
-  }
+  };
 
   public isBanned = (nodePubKey: string): boolean => {
     return this.nodes.get(nodePubKey)?.banned || false;
-  }
+  };
 
   /**
    * Load this NodeList from the database.
@@ -108,17 +119,19 @@ class NodeList extends EventEmitter {
     const nodes = await this.repository.getNodes();
 
     const reputationLoadPromises: Promise<void>[] = [];
-    nodes.forEach((node) => {
+    nodes.forEach(node => {
       this.addNode(node);
-      const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
-        events.forEach(({ event }) => {
-          this.updateReputationScore(node, event);
+      const reputationLoadPromise = this.repository
+        .getReputationEvents(node)
+        .then(events => {
+          events.forEach(({ event }) => {
+            this.updateReputationScore(node, event);
+          });
         });
-      });
       reputationLoadPromises.push(reputationLoadPromise);
     });
     await Promise.all(reputationLoadPromises);
-  }
+  };
 
   /**
    * Persists a node to the database and adds it to the node list.
@@ -128,18 +141,24 @@ class NodeList extends EventEmitter {
     if (node) {
       this.addNode(node);
     }
-  }
+  };
 
   /**
    * Update a node's addresses.
    * @return true if the specified node exists and was updated, false otherwise
    */
-  public updateAddresses = async (nodePubKey: string, addresses: Address[] = [], lastAddress?: Address): Promise<boolean> => {
+  public updateAddresses = async (
+    nodePubKey: string,
+    addresses: Address[] = [],
+    lastAddress?: Address
+  ): Promise<boolean> => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
       // avoid overriding the `lastConnected` field for existing matching addresses unless a new value was set
-      node.addresses = addresses.map((newAddress) => {
-        const oldAddress = node.addresses.find(address => addressUtils.areEqual(address, newAddress));
+      node.addresses = addresses.map(newAddress => {
+        const oldAddress = node.addresses.find(address =>
+          addressUtils.areEqual(address, newAddress)
+        );
         if (oldAddress && !newAddress.lastConnected) {
           return oldAddress;
         } else {
@@ -156,13 +175,16 @@ class NodeList extends EventEmitter {
     }
 
     return false;
-  }
+  };
 
   /**
    * Add a reputation event to the node's history
    * @return true if the specified node exists and the event was added, false otherwise
    */
-  public addReputationEvent = async (nodePubKey: string, event: ReputationEvent): Promise<boolean> => {
+  public addReputationEvent = async (
+    nodePubKey: string,
+    event: ReputationEvent
+  ): Promise<boolean> => {
     const node = this.nodes.get(nodePubKey);
 
     if (node) {
@@ -189,42 +211,55 @@ class NodeList extends EventEmitter {
     }
 
     return false;
-  }
+  };
 
   public removeAddress = async (nodePubKey: string, address: Address) => {
     const node = this.nodes.get(nodePubKey);
     if (node) {
-      const index = node.addresses.findIndex(existingAddress => addressUtils.areEqual(address, existingAddress));
+      const index = node.addresses.findIndex(existingAddress =>
+        addressUtils.areEqual(address, existingAddress)
+      );
       if (index > -1) {
-        node.addresses = [...node.addresses.slice(0, index), ...node.addresses.slice(index + 1)];
+        node.addresses = [
+          ...node.addresses.slice(0, index),
+          ...node.addresses.slice(index + 1),
+        ];
         await node.save();
         return true;
       }
 
       // if the lastAddress is removed, then re-assigning lastAddress with the latest connected advertised address
-      if (node.lastAddress && addressUtils.areEqual(address, node.lastAddress)) {
+      if (
+        node.lastAddress &&
+        addressUtils.areEqual(address, node.lastAddress)
+      ) {
         node.lastAddress = addressUtils.sortByLastConnected(node.addresses)[0];
       }
     }
 
     return false;
-  }
+  };
 
-  private updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
+  private updateReputationScore = (
+    node: NodeInstance,
+    event: ReputationEvent
+  ) => {
     switch (event) {
-      case (ReputationEvent.ManualBan):
-      case (ReputationEvent.ManualUnban): {
+      case ReputationEvent.ManualBan:
+      case ReputationEvent.ManualUnban: {
         node.reputationScore = reputationEventWeight[event];
         break;
       }
-      default: node.reputationScore += reputationEventWeight[event]; break;
+      default:
+        node.reputationScore += reputationEventWeight[event];
+        break;
     }
-  }
+  };
 
   private setBanStatus = (node: NodeInstance, status: boolean) => {
     node.banned = status;
     return node.save();
-  }
+  };
 
   private addNode = (node: NodeInstance) => {
     const { nodePubKey } = node;
@@ -237,7 +272,7 @@ class NodeList extends EventEmitter {
     this.nodeIdMap.set(node.id, node);
     this.pubKeyToAliasMap.set(nodePubKey, alias);
     this.aliasToPubKeyMap.set(alias, nodePubKey);
-  }
+  };
 }
 
 export default NodeList;

@@ -25,7 +25,6 @@ jest.mock('../../lib/db/DB', () => {
                 quoteCurrency: 'BTC',
               },
             ];
-
           },
         },
         Currency: {
@@ -50,7 +49,9 @@ const tokenIdentifiers: any = {
   BTC: 'bitcoin-regtest',
   LTC: 'litecoin-regtest',
 };
-const mockPeerGetTokenIdentifer = jest.fn((currency: string) => tokenIdentifiers[currency]);
+const mockPeerGetTokenIdentifer = jest.fn(
+  (currency: string) => tokenIdentifiers[currency]
+);
 jest.mock('../../lib/p2p/Peer', () => {
   return jest.fn().mockImplementation(() => {
     let currencyActive = false;
@@ -75,7 +76,8 @@ jest.mock('../../lib/p2p/Pool', () => {
       updatePairs: jest.fn(),
       on: jest.fn(),
       getNetwork: () => XuNetwork.MainNet,
-      getTokenIdentifier: (currency: string) => tokenIdentifiers[currency] as string,
+      getTokenIdentifier: (currency: string) =>
+        tokenIdentifiers[currency] as string,
     };
   });
 });
@@ -90,7 +92,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
 });
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/nodekey/NodeKey');
-const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
+const mockedNodeKey = <jest.Mock<NodeKey>>(<any>NodeKey);
 
 const logger = new Logger({});
 logger.debug = jest.fn();
@@ -126,10 +128,14 @@ describe('OrderBook', () => {
   beforeEach(async () => {
     config = new Config();
     network = new Network(XuNetwork.TestNet);
-    peer = new Peer(loggers.p2p, {
-      host: 'localhost',
-      port: 9735,
-    }, network);
+    peer = new Peer(
+      loggers.p2p,
+      {
+        host: 'localhost',
+        port: 9735,
+      },
+      network
+    );
     peer['nodeState'] = {} as any;
     db = new DB(loggers.db, config.dbpath);
     pool = new Pool({
@@ -176,24 +182,38 @@ describe('OrderBook', () => {
   });
 
   test('isPeerCurrencySupported returns true for a known currency with matching identifiers', async () => {
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(true);
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(true);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
+      true
+    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
+      true
+    );
   });
 
   test('isPeerCurrencySupported returns false for an unknown currency', async () => {
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BCH')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BCH')).toStrictEqual(
+      false
+    );
   });
 
   test('isPeerCurrencySupported returns false for a known currency with a mismatching identifier', async () => {
     mockPeerGetTokenIdentifer.mockReturnValue('fakecoin-fakenet');
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
+      false
+    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
+      false
+    );
   });
 
   test('isPeerCurrencySupported returns false for a known currency without a swap client identifier for the peer', async () => {
     mockGetIdentifier.mockReturnValue('');
-    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(false);
-    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(false);
+    expect(orderbook['isPeerCurrencySupported'](peer, 'BTC')).toStrictEqual(
+      false
+    );
+    expect(orderbook['isPeerCurrencySupported'](peer, 'LTC')).toStrictEqual(
+      false
+    );
   });
 
   test('placeOrder insufficient outbound balance does throw when balancechecks enabled', async () => {
@@ -220,8 +240,7 @@ describe('OrderBook', () => {
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       totalOutboundAmount: () => 1,
     });
-    await expect(orderbook.placeLimitOrder(order))
-      .rejects.toMatchSnapshot();
+    await expect(orderbook.placeLimitOrder(order)).rejects.toMatchSnapshot();
   });
 
   test('placeLimitOrder adds to order book', async () => {
@@ -237,7 +256,10 @@ describe('OrderBook', () => {
       maximumOutboundCapacity: () => quantity,
     });
     await orderbook.placeLimitOrder(order);
-    expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
+    expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty(
+      'localId',
+      localId
+    );
   });
 
   test('placeLimitOrder immediateOrCancel does not add to order book', async () => {
@@ -253,6 +275,8 @@ describe('OrderBook', () => {
       maximumOutboundCapacity: () => quantity,
     });
     await orderbook.placeLimitOrder(order, true);
-    expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(`order with local id ${localId} does not exist`);
+    expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(
+      `order with local id ${localId} does not exist`
+    );
   });
 });

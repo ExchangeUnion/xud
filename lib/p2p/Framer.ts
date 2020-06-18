@@ -7,14 +7,14 @@ import { magicValsXuNetwork } from '../constants/enums';
 import { randomBytes } from '../utils/utils';
 
 type WireMsgHeader = {
-  magic?: number,
-  type: number,
-  length: number,
-  checksum?: number,
+  magic?: number;
+  type: number;
+  length: number;
+  checksum?: number;
 };
 
 type WireMsg = {
-  header: WireMsgHeader,
+  header: WireMsgHeader;
   packet: Buffer;
 };
 
@@ -26,17 +26,21 @@ class Framer {
   public static readonly ENCRYPTION_KEY_LENGTH = 32;
   public static readonly ENCRYPTION_IV_LENGTH = 16;
 
-  constructor(private network: Network) {
-  }
+  constructor(private network: Network) {}
 
   /**
    * Frame a packet with a header to be used as a wire msg
    */
-  public frame = async (packet: Packet, encryptionKey?: Buffer): Promise<Buffer> => {
+  public frame = async (
+    packet: Packet,
+    encryptionKey?: Buffer
+  ): Promise<Buffer> => {
     const packetRaw = packet.toRaw();
 
     if (encryptionKey) {
-      const msg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH + packetRaw.length);
+      const msg = Buffer.allocUnsafe(
+        Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH + packetRaw.length
+      );
 
       // length
       msg.writeUInt32LE(packetRaw.length, 0);
@@ -48,7 +52,9 @@ class Framer {
       packetRaw.copy(msg, 8);
 
       const ciphertext = await this.encrypt(msg, encryptionKey);
-      const encryptedMsg = Buffer.allocUnsafe(Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length);
+      const encryptedMsg = Buffer.allocUnsafe(
+        Framer.ENCRYPTED_MSG_HEADER_LENGTH + ciphertext.length
+      );
 
       // length
       encryptedMsg.writeUInt32LE(ciphertext.length, 0);
@@ -58,7 +64,9 @@ class Framer {
 
       return encryptedMsg;
     } else {
-      const msg = Buffer.allocUnsafe(Framer.MSG_HEADER_LENGTH + packetRaw.length);
+      const msg = Buffer.allocUnsafe(
+        Framer.MSG_HEADER_LENGTH + packetRaw.length
+      );
 
       // network magic value
       msg.writeUInt32LE(this.network.magic, 0);
@@ -77,7 +85,7 @@ class Framer {
 
       return msg;
     }
-  }
+  };
 
   /**
    * Unframe a wire msg or an encrypted wire msg
@@ -106,11 +114,14 @@ class Framer {
     }
 
     if (wireMsg.header.length !== wireMsg.packet.length) {
-      throw errors.FRAMER_INVALID_MSG_LENGTH(wireMsg.header.length, wireMsg.packet.length);
+      throw errors.FRAMER_INVALID_MSG_LENGTH(
+        wireMsg.header.length,
+        wireMsg.packet.length
+      );
     }
 
     return wireMsg;
-  }
+  };
 
   /**
    * Parse the length of a wire msg or an encrypted wire msg
@@ -128,21 +139,27 @@ class Framer {
     if (value !== this.network.magic) {
       const network = magicValsXuNetwork[value];
       if (network) {
-        throw errors.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK(this.network.xuNetwork, network);
+        throw errors.FRAMER_INCOMPATIBLE_MSG_ORIGIN_NETWORK(
+          this.network.xuNetwork,
+          network
+        );
       } else {
         throw errors.FRAMER_INVALID_NETWORK_MAGIC_VALUE;
       }
     }
 
     return data.readUInt32LE(4);
-  }
+  };
 
   /**
    * Parse the header of a wire msg or an encrypted wire msg payload
    */
   public parseHeader = (msg: Buffer, encrypted: boolean): WireMsgHeader => {
     if (encrypted) {
-      assert(msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH, 'invalid msg header length: data is missing');
+      assert(
+        msg.length >= Framer.ENCRYPTED_MSG_PAYLOAD_HEADER_LENGTH,
+        'invalid msg header length: data is missing'
+      );
 
       // length
       const length = msg.readUInt32LE(0);
@@ -152,7 +169,10 @@ class Framer {
 
       return { length, type };
     } else {
-      assert(msg.length >= Framer.MSG_HEADER_LENGTH, 'invalid msg header length: data is missing');
+      assert(
+        msg.length >= Framer.MSG_HEADER_LENGTH,
+        'invalid msg header length: data is missing'
+      );
 
       // network magic value
       const magic = msg.readUInt32LE(0);
@@ -168,14 +188,14 @@ class Framer {
 
       return { magic, type, length, checksum };
     }
-  }
+  };
 
   public encrypt = async (plaintext: Buffer, key: Buffer): Promise<Buffer> => {
     const iv = await randomBytes(Framer.ENCRYPTION_IV_LENGTH);
     const cipher = createCipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([iv, cipher.update(plaintext), cipher.final()]);
-  }
+  };
 
   public decrypt = (ciphertext: Buffer, key: Buffer): Buffer => {
     const iv = ciphertext.slice(0, Framer.ENCRYPTION_IV_LENGTH);
@@ -183,7 +203,7 @@ class Framer {
     const decipher = createDecipheriv('aes-256-cbc', key, iv);
 
     return Buffer.concat([decipher.update(encrypted), decipher.final()]);
-  }
+  };
 }
 
 export default Framer;

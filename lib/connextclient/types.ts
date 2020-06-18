@@ -120,7 +120,7 @@ export type ConnextPreimageRequest = {
     transferMeta: {
       preImage: string;
     };
-  }
+  };
 };
 
 export type ConnextIncomingTransferRequest = {
@@ -134,7 +134,7 @@ export type ConnextIncomingTransferRequest = {
     meta: {
       recipient: string;
       sender: string;
-      timelock: 200
+      timelock: 200;
     };
     sender: string;
     transferMeta: {
@@ -145,14 +145,14 @@ export type ConnextIncomingTransferRequest = {
       timelock: string;
     };
     type: string;
-    paymentId: string,
+    paymentId: string;
     recipient: string;
   };
 };
 
 export type ProvidePreimageEvent = {
-  rHash: string,
-  preimage: string,
+  rHash: string;
+  preimage: string;
 };
 
 export type TransferReceivedEvent = {

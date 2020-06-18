@@ -18,20 +18,24 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): OrderInvalidationPacket | pb.OrderInvalidationPacket.AsObject => {
     const obj = pb.OrderInvalidationPacket.deserializeBinary(binary).toObject();
-    return OrderInvalidationPacket.validate(obj) ? OrderInvalidationPacket.convert(obj) : obj;
-  }
+    return OrderInvalidationPacket.validate(obj)
+      ? OrderInvalidationPacket.convert(obj)
+      : obj;
+  };
 
-  private static validate = (obj: pb.OrderInvalidationPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.orderId
-      && obj.pairId
-      && obj.quantity > 0
-    );
-  }
+  private static validate = (
+    obj: pb.OrderInvalidationPacket.AsObject
+  ): boolean => {
+    return !!(obj.id && obj.orderId && obj.pairId && obj.quantity > 0);
+  };
 
-  private static convert = (obj: pb.OrderInvalidationPacket.AsObject): OrderInvalidationPacket => {
+  private static convert = (
+    obj: pb.OrderInvalidationPacket.AsObject
+  ): OrderInvalidationPacket => {
     return new OrderInvalidationPacket({
       header: {
         id: obj.id,
@@ -42,7 +46,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
         quantity: obj.quantity,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.OrderInvalidationPacket();
@@ -52,7 +56,7 @@ class OrderInvalidationPacket extends Packet<OrderInvalidationPacketBody> {
     msg.setQuantity(this.body!.quantity);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default OrderInvalidationPacket;

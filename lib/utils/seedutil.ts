@@ -13,7 +13,11 @@ const exec = promisify(childProcessExec);
  * @param path the path in which to create the keystore directory
  */
 async function keystore(mnemonic: string[], password: string, path: string) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil keystore -pass=${password} -path=${path} ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(
+    `./seedutil/seedutil keystore -pass=${password} -path=${path} ${mnemonic.join(
+      ' '
+    )}`
+  );
 
   if (stderr) {
     throw new Error(stderr);
@@ -29,7 +33,9 @@ async function keystore(mnemonic: string[], password: string, path: string) {
  * @param mnemonic the 24 seed recovery mnemonic
  */
 async function encipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil encipher ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(
+    `./seedutil/seedutil encipher ${mnemonic.join(' ')}`
+  );
 
   if (stderr) {
     throw new Error(stderr);
@@ -40,7 +46,9 @@ async function encipher(mnemonic: string[]) {
 }
 
 async function decipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil decipher ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(
+    `./seedutil/seedutil decipher ${mnemonic.join(' ')}`
+  );
 
   if (stderr) {
     throw new Error(stderr);
@@ -58,7 +66,11 @@ async function generate() {
   }
 
   const mnemonic = stdout.trim().split(' ');
-  assert.equal(mnemonic.length, 24, 'seedutil did not generate mnemonic of exactly 24 words');
+  assert.equal(
+    mnemonic.length,
+    24,
+    'seedutil did not generate mnemonic of exactly 24 words'
+  );
   return mnemonic;
 }
 

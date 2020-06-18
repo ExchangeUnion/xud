@@ -24,21 +24,28 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     return undefined;
   }
 
-  public static deserialize = (binary: Uint8Array): SwapAcceptedPacket | pb.SwapAcceptedPacket.AsObject => {
+  public static deserialize = (
+    binary: Uint8Array
+  ): SwapAcceptedPacket | pb.SwapAcceptedPacket.AsObject => {
     const obj = pb.SwapAcceptedPacket.deserializeBinary(binary).toObject();
-    return SwapAcceptedPacket.validate(obj) ? SwapAcceptedPacket.convert(obj) : obj;
-  }
+    return SwapAcceptedPacket.validate(obj)
+      ? SwapAcceptedPacket.convert(obj)
+      : obj;
+  };
 
   private static validate = (obj: pb.SwapAcceptedPacket.AsObject): boolean => {
-    return !!(obj.id
-      && obj.reqId
-      && obj.rHash
-      && obj.quantity
-      && obj.makerCltvDelta
+    return !!(
+      obj.id &&
+      obj.reqId &&
+      obj.rHash &&
+      obj.quantity &&
+      obj.makerCltvDelta
     );
-  }
+  };
 
-  private static convert = (obj: pb.SwapAcceptedPacket.AsObject): SwapAcceptedPacket => {
+  private static convert = (
+    obj: pb.SwapAcceptedPacket.AsObject
+  ): SwapAcceptedPacket => {
     return new SwapAcceptedPacket({
       header: {
         id: obj.id,
@@ -50,7 +57,7 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
         makerCltvDelta: obj.makerCltvDelta,
       },
     });
-  }
+  };
 
   public serialize = (): Uint8Array => {
     const msg = new pb.SwapAcceptedPacket();
@@ -61,7 +68,7 @@ class SwapAcceptedPacket extends Packet<SwapAcceptedPacketBody> {
     msg.setMakerCltvDelta(this.body!.makerCltvDelta);
 
     return msg.serializeBinary();
-  }
+  };
 }
 
 export default SwapAcceptedPacket;

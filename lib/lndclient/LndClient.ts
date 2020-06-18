@@ -9,16 +9,41 @@ import * as lndinvoices from '../proto/lndinvoices_pb';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
+import SwapClient, {
+  ChannelBalance,
+  ClientStatus,
+  PaymentState,
+  SwapClientInfo,
+  TradingLimits,
+} from '../swaps/SwapClient';
+import {
+  SwapDeal,
+  CloseChannelParams,
+  OpenChannelParams,
+} from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
-import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
+import {
+  Chain,
+  ChannelCount,
+  ClientMethods,
+  LndClientConfig,
+  LndInfo,
+} from './types';
 
 interface LndClient {
-  on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
-  on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
+  on(
+    event: 'connectionVerified',
+    listener: (swapClientInfo: SwapClientInfo) => void
+  ): this;
+  on(
+    event: 'htlcAccepted',
+    listener: (rHash: string, amount: number) => void
+  ): this;
+  on(
+    event: 'channelBackup',
+    listener: (channelBackup: Uint8Array) => void
+  ): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
 
@@ -57,8 +82,13 @@ class LndClient extends SwapClient {
   private urisList?: string[];
   /** The identifier for the chain this lnd instance is using in the format [chain]-[network] like "bitcoin-testnet" */
   private chainIdentifier?: string;
-  private channelBackupSubscription?: ClientReadableStream<lndrpc.ChanBackupSnapshot>;
-  private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
+  private channelBackupSubscription?: ClientReadableStream<
+    lndrpc.ChanBackupSnapshot
+  >;
+  private invoiceSubscriptions = new Map<
+    string,
+    ClientReadableStream<lndrpc.Invoice>
+  >();
   private initRetryTimeout?: NodeJS.Timeout;
   private _totalOutboundAmount = 0;
   private _maxChannelOutboundAmount = 0;
@@ -75,10 +105,15 @@ class LndClient extends SwapClient {
   /**
    * Creates an lnd client.
    */
-  constructor(
-    { config, logger, currency }:
-    { config: LndClientConfig, logger: Logger, currency: string },
-  ) {
+  constructor({
+    config,
+    logger,
+    currency,
+  }: {
+    config: LndClientConfig;
+    logger: Logger;
+    currency: string;
+  }) {
     super(logger, config.disable);
     this.config = config;
     this.currency = currency;
@@ -87,7 +122,7 @@ class LndClient extends SwapClient {
 
   private waitForClientReady = (client: grpc.Client) => {
     return new Promise((resolve, reject) => {
-      client.waitForReady(Date.now() + this.maxClientWaitTime, (err) => {
+      client.waitForReady(Date.now() + this.maxClientWaitTime, err => {
         if (err) {
           if (err.message === 'Failed to connect before the deadline') {
             this.maxClientWaitTime *= 10; // exponentially backoff the max wait time if we reach the deadline
@@ -100,7 +135,7 @@ class LndClient extends SwapClient {
         }
       });
     });
-  }
+  };
 
   public get minutesPerBlock() {
     return LndClient.MINUTES_PER_BLOCK_BY_CURRENCY[this.currency];
@@ -129,7 +164,7 @@ class LndClient extends SwapClient {
         const certDir = path.join(certpath, '..');
         const CERT_TIMEOUT = 3000;
 
-        lndCert = await new Promise((resolve) => {
+        lndCert = await new Promise(resolve => {
           this.logger.debug(`watching ${certDir} for tls.cert to be created`);
           const timeout = setTimeout(() => {
             fsWatcher.close();
@@ -140,10 +175,12 @@ class LndClient extends SwapClient {
               this.logger.debug('tls.cert was created');
               fsWatcher.close();
               clearTimeout(timeout);
-              fs.readFile(certpath).then(resolve).catch((err) => {
-                this.logger.error(err);
-                resolve(undefined);
-              });
+              fs.readFile(certpath)
+                .then(resolve)
+                .catch(err => {
+                  this.logger.error(err);
+                  resolve(undefined);
+                });
             }
           });
         });
@@ -153,9 +190,14 @@ class LndClient extends SwapClient {
       this.logger.debug(`loaded tls cert from ${certpath}`);
       this.credentials = grpc.credentials.createSsl(lndCert);
     } else {
-      this.logger.error(`could not load tls cert from ${certpath}, is lnd installed?`);
+      this.logger.error(
+        `could not load tls cert from ${certpath}, is lnd installed?`
+      );
       this.setStatus(ClientStatus.Misconfigured);
-      this.initRetryTimeout = setTimeout(this.init, LndClient.RECONNECT_INTERVAL);
+      this.initRetryTimeout = setTimeout(
+        this.init,
+        LndClient.RECONNECT_INTERVAL
+      );
       return;
     }
 
@@ -175,7 +217,7 @@ class LndClient extends SwapClient {
       clearTimeout(this.initRetryTimeout);
       this.initRetryTimeout = undefined;
     }
-  }
+  };
 
   public get pubKey() {
     return this.identityPubKey;
@@ -191,20 +233,23 @@ class LndClient extends SwapClient {
 
   public totalOutboundAmount = () => {
     return this._totalOutboundAmount;
-  }
+  };
 
   public maxChannelOutboundAmount = () => {
     return this._maxChannelOutboundAmount;
-  }
+  };
 
   public maxChannelInboundAmount = () => {
     return this._maxChannelInboundAmount;
-  }
+  };
 
   /** Lnd specific procedure to mark the client as locked. */
   private lock = () => {
     if (!this.walletUnlocker) {
-      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      this.walletUnlocker = new WalletUnlockerClient(
+        this.uri,
+        this.credentials
+      );
     }
     if (this.lightning) {
       this.lightning.close();
@@ -216,7 +261,7 @@ class LndClient extends SwapClient {
     }
 
     this.emit('locked');
-  }
+  };
 
   /** Lnd specific procedure to mark the client as unlocked. */
   private setUnlocked = () => {
@@ -230,17 +275,22 @@ class LndClient extends SwapClient {
       this.setStatus(ClientStatus.Unlocked);
     } else {
       // we should not be calling this method we were in the WaitingUnlock status
-      this.logger.warn(`tried to set client status to WaitingUnlock from status ${this.status}`);
+      this.logger.warn(
+        `tried to set client status to WaitingUnlock from status ${this.status}`
+      );
     }
-  }
+  };
 
   protected updateCapacity = async () => {
-    await this.channelBalance().catch(async (err) => {
+    await this.channelBalance().catch(async err => {
       this.logger.error('failed to update total outbound capacity', err);
     });
-  }
+  };
 
-  private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
+  private unaryCall = <T, U>(
+    methodName: Exclude<keyof LightningClient, ClientMethods>,
+    params: T
+  ): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (!this.isOperational()) {
         reject(errors.DISABLED);
@@ -250,21 +300,25 @@ class LndClient extends SwapClient {
         reject(errors.UNAVAILABLE(this.currency, this.status));
         return;
       }
-      (this.lightning[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
-        if (err) {
-          if (err.code === grpc.status.UNAVAILABLE) {
-            this.disconnect();
-          } else if (err.code === grpc.status.UNIMPLEMENTED) {
-            this.lock();
+      (this.lightning[methodName] as Function)(
+        params,
+        this.meta,
+        (err: grpc.ServiceError, response: U) => {
+          if (err) {
+            if (err.code === grpc.status.UNAVAILABLE) {
+              this.disconnect();
+            } else if (err.code === grpc.status.UNIMPLEMENTED) {
+              this.lock();
+            }
+            this.logger.trace(`error on ${methodName}: ${err.message}`);
+            reject(err);
+          } else {
+            resolve(response);
           }
-          this.logger.trace(`error on ${methodName}: ${err.message}`);
-          reject(err);
-        } else {
-          resolve(response);
         }
-      });
+      );
     });
-  }
+  };
 
   private loadMacaroon = async () => {
     if (this.macaroonpath) {
@@ -272,9 +326,12 @@ class LndClient extends SwapClient {
       this.meta.add('macaroon', adminMacaroon.toString('hex'));
       this.logger.debug(`loaded macaroon from ${this.macaroonpath}`);
     }
-  }
+  };
 
-  private unaryInvoiceCall = <T, U>(methodName: Exclude<keyof InvoicesClient, ClientMethods>, params: T): Promise<U> => {
+  private unaryInvoiceCall = <T, U>(
+    methodName: Exclude<keyof InvoicesClient, ClientMethods>,
+    params: T
+  ): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (!this.isOperational()) {
         reject(errors.DISABLED);
@@ -284,23 +341,30 @@ class LndClient extends SwapClient {
         reject(errors.UNAVAILABLE(this.currency, this.status));
         return;
       }
-      (this.invoices[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
-        if (err) {
-          if (err.code === grpc.status.UNAVAILABLE) {
-            this.disconnect();
-          } else if (err.code === grpc.status.UNIMPLEMENTED) {
-            this.lock();
+      (this.invoices[methodName] as Function)(
+        params,
+        this.meta,
+        (err: grpc.ServiceError, response: U) => {
+          if (err) {
+            if (err.code === grpc.status.UNAVAILABLE) {
+              this.disconnect();
+            } else if (err.code === grpc.status.UNIMPLEMENTED) {
+              this.lock();
+            }
+            this.logger.trace(`error on ${methodName}: ${err.message}`);
+            reject(err);
+          } else {
+            resolve(response);
           }
-          this.logger.trace(`error on ${methodName}: ${err.message}`);
-          reject(err);
-        } else {
-          resolve(response);
         }
-      });
+      );
     });
-  }
+  };
 
-  private unaryWalletUnlockerCall = <T, U>(methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>, params: T): Promise<U> => {
+  private unaryWalletUnlockerCall = <T, U>(
+    methodName: Exclude<keyof WalletUnlockerClient, ClientMethods>,
+    params: T
+  ): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (!this.isOperational()) {
         reject(errors.DISABLED);
@@ -310,24 +374,30 @@ class LndClient extends SwapClient {
         reject(errors.UNAVAILABLE(this.currency, this.status));
         return;
       }
-      (this.walletUnlocker[methodName] as Function)(params, this.meta, (err: grpc.ServiceError, response: U) => {
-        if (err) {
-          if (err.code === grpc.status.UNAVAILABLE) {
-            this.disconnect();
-          }
-          if (err.code === grpc.status.UNIMPLEMENTED) {
-            this.logger.debug(`lnd already unlocked before ${methodName} call`);
-            resolve();
+      (this.walletUnlocker[methodName] as Function)(
+        params,
+        this.meta,
+        (err: grpc.ServiceError, response: U) => {
+          if (err) {
+            if (err.code === grpc.status.UNAVAILABLE) {
+              this.disconnect();
+            }
+            if (err.code === grpc.status.UNIMPLEMENTED) {
+              this.logger.debug(
+                `lnd already unlocked before ${methodName} call`
+              );
+              resolve();
+            } else {
+              this.logger.debug(`error on ${methodName}: ${err.message}`);
+              reject(err);
+            }
           } else {
-            this.logger.debug(`error on ${methodName}: ${err.message}`);
-            reject(err);
+            resolve(response);
           }
-        } else {
-          resolve(response);
         }
-      });
+      );
     });
-  }
+  };
 
   public getLndInfo = async (): Promise<LndInfo> => {
     let channels: ChannelCount | undefined;
@@ -377,7 +447,7 @@ class LndClient extends SwapClient {
       version,
       alias,
     };
-  }
+  };
 
   /**
    * Waits for the lnd wallet to be initialized and for its macaroons to be created then attempts
@@ -391,14 +461,14 @@ class LndClient extends SwapClient {
      * A promise that resolves to `true` when the lnd wallet is created via an InitWallet call,
      * resolves to `false` if we close the client before the lnd wallet is created.
      */
-    const isWalletInitialized = await new Promise<boolean>((resolve) => {
+    const isWalletInitialized = await new Promise<boolean>(resolve => {
       this.initWalletResolve = resolve;
     });
 
     if (isWalletInitialized) {
       // admin.macaroon will not necessarily be created by the time lnd responds to a successful
       // InitWallet call, so we watch the folder that we expect it to be in for it to be created
-      const watchMacaroonPromise = new Promise<boolean>((resolve) => {
+      const watchMacaroonPromise = new Promise<boolean>(resolve => {
         this.watchMacaroonResolve = resolve;
       });
       const macaroonDir = path.join(this.macaroonpath!, '..');
@@ -410,7 +480,9 @@ class LndClient extends SwapClient {
           }
         }
       });
-      this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
+      this.logger.debug(
+        `watching ${macaroonDir} for admin.macaroon to be created`
+      );
       const macaroonCreated = await watchMacaroonPromise;
       fsWatcher.close();
       this.watchMacaroonResolve = undefined;
@@ -422,16 +494,18 @@ class LndClient extends SwapClient {
           // once we've loaded the macaroon we can attempt to verify the conneciton
           this.verifyConnection().catch(this.logger.error);
         } catch (err) {
-          this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
+          this.logger.error(
+            `could not load macaroon from ${this.macaroonpath}`
+          );
           this.setStatus(ClientStatus.Disabled);
         }
       }
     }
-  }
+  };
 
   protected verifyConnection = async () => {
     if (!this.isOperational()) {
-      throw(errors.DISABLED);
+      throw errors.DISABLED;
     }
     if (this.isWaitingUnlock()) {
       return; // temporary workaround to prevent unexplained lnd crashes after unlock
@@ -439,8 +513,12 @@ class LndClient extends SwapClient {
 
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
       // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
-      if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
-        this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      if (!this.isWaitingUnlock()) {
+        // check that we are not already waiting for wallet init & unlock
+        this.walletUnlocker = new WalletUnlockerClient(
+          this.uri,
+          this.credentials
+        );
         await this.waitForClientReady(this.walletUnlocker);
         this.lock();
 
@@ -481,7 +559,9 @@ class LndClient extends SwapClient {
           this.logger.debug(`chain is ${chainIdentifier}`);
         } else if (this.chainIdentifier !== chainIdentifier) {
           // we switched chains for this lnd client while xud was running which is not supported
-          this.logger.error(`chain switched from ${this.chainIdentifier} to ${chainIdentifier}`);
+          this.logger.error(
+            `chain switched from ${this.chainIdentifier} to ${chainIdentifier}`
+          );
           this.setStatus(ClientStatus.Misconfigured);
         }
 
@@ -496,39 +576,54 @@ class LndClient extends SwapClient {
         await this.setConnected(newPubKey, newUris);
       } else {
         this.setStatus(ClientStatus.OutOfSync);
-        this.logger.warn(`lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_INTERVAL} ms`);
+        this.logger.warn(
+          `lnd is out of sync with chain, retrying in ${LndClient.RECONNECT_INTERVAL} ms`
+        );
       }
     } catch (err) {
-      const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
-      this.logger.error(`could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_INTERVAL} ms`);
+      const errStr = typeof err === 'string' ? err : JSON.stringify(err);
+      this.logger.error(
+        `could not verify connection at ${this.uri}, error: ${errStr}, retrying in ${LndClient.RECONNECT_INTERVAL} ms`
+      );
     }
-  }
+  };
 
   /**
    * Returns general information concerning the lightning node including it’s identity pubkey, alias, the chains it
    * is connected to, and information concerning the number of open+pending channels.
    */
   public getInfo = (): Promise<lndrpc.GetInfoResponse> => {
-    return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>('getInfo', new lndrpc.GetInfoRequest());
-  }
+    return this.unaryCall<lndrpc.GetInfoRequest, lndrpc.GetInfoResponse>(
+      'getInfo',
+      new lndrpc.GetInfoRequest()
+    );
+  };
 
   /**
    * Returns closed channels that this node was a participant in.
    */
   public getClosedChannels = (): Promise<lndrpc.ClosedChannelsResponse> => {
-    return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
-  }
+    return this.unaryCall<
+      lndrpc.ClosedChannelsRequest,
+      lndrpc.ClosedChannelsResponse
+    >('closedChannels', new lndrpc.ClosedChannelsRequest());
+  };
 
   public deposit = async () => {
     const depositAddress = await this.newAddress();
     return depositAddress;
-  }
+  };
 
-  public withdraw = async ({ amount, destination, all = false, fee }: {
-    amount?: number,
-    destination: string,
-    all?: boolean,
-    fee?: number,
+  public withdraw = async ({
+    amount,
+    destination,
+    all = false,
+    fee,
+  }: {
+    amount?: number;
+    destination: string;
+    all?: boolean;
+    fee?: number;
   }) => {
     const request = new lndrpc.SendCoinsRequest();
     request.setAddr(destination);
@@ -540,11 +635,17 @@ class LndClient extends SwapClient {
     } else if (amount) {
       request.setAmount(amount);
     }
-    const withdrawResponse = await this.unaryCall<lndrpc.SendCoinsRequest, lndrpc.SendCoinsResponse>('sendCoins', request);
+    const withdrawResponse = await this.unaryCall<
+      lndrpc.SendCoinsRequest,
+      lndrpc.SendCoinsResponse
+    >('sendCoins', request);
     return withdrawResponse.getTxid();
-  }
+  };
 
-  public sendSmallestAmount = async (rHash: string, destination: string): Promise<string> => {
+  public sendSmallestAmount = async (
+    rHash: string,
+    destination: string
+  ): Promise<string> => {
     const request = this.buildSendRequest({
       rHash,
       destination,
@@ -556,7 +657,7 @@ class LndClient extends SwapClient {
     });
     const preimage = await this.executeSendRequest(request);
     return preimage;
-  }
+  };
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
@@ -576,7 +677,10 @@ class LndClient extends SwapClient {
     } else {
       // we are the maker paying the taker
       assert(deal.takerPubKey, 'swap deal as maker must have a takerPubKey');
-      assert(deal.takerCltvDelta, 'swap deal as maker must have a takerCltvDelta');
+      assert(
+        deal.takerCltvDelta,
+        'swap deal as maker must have a takerCltvDelta'
+      );
       request = this.buildSendRequest({
         rHash: deal.rHash,
         destination: deal.takerPubKey,
@@ -589,23 +693,39 @@ class LndClient extends SwapClient {
     }
     const preimage = await this.executeSendRequest(request);
     return preimage;
-  }
+  };
 
   /**
    * Sends a payment through the Lightning Network.
    */
-  private sendPaymentSync = (request: lndrpc.SendRequest): Promise<lndrpc.SendResponse> => {
-    this.logger.trace(`sending payment with request: ${JSON.stringify(request.toObject())}`);
-    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>('sendPaymentSync', request);
-  }
+  private sendPaymentSync = (
+    request: lndrpc.SendRequest
+  ): Promise<lndrpc.SendResponse> => {
+    this.logger.trace(
+      `sending payment with request: ${JSON.stringify(request.toObject())}`
+    );
+    return this.unaryCall<lndrpc.SendRequest, lndrpc.SendResponse>(
+      'sendPaymentSync',
+      request
+    );
+  };
 
   /**
    * Builds a lndrpc.SendRequest
    */
-  private buildSendRequest = (
-    { rHash, destination, amount, finalCltvDelta, cltvLimit }:
-    { rHash: string, destination: string, amount: number, finalCltvDelta: number, cltvLimit?: number },
-  ): lndrpc.SendRequest => {
+  private buildSendRequest = ({
+    rHash,
+    destination,
+    amount,
+    finalCltvDelta,
+    cltvLimit,
+  }: {
+    rHash: string;
+    destination: string;
+    amount: number;
+    finalCltvDelta: number;
+    cltvLimit?: number;
+  }): lndrpc.SendRequest => {
     const request = new lndrpc.SendRequest();
     request.setPaymentHashString(rHash);
     request.setDestString(destination);
@@ -620,24 +740,31 @@ class LndClient extends SwapClient {
       request.setCltvLimit(cltvLimit);
     }
     return request;
-  }
+  };
 
   /**
    * Executes the provided lndrpc.SendRequest
    */
   private executeSendRequest = async (
-    request: lndrpc.SendRequest,
+    request: lndrpc.SendRequest
   ): Promise<string> => {
     if (!this.isConnected()) {
-      throw swapErrors.FINAL_PAYMENT_ERROR(errors.UNAVAILABLE(this.currency, this.status).message);
+      throw swapErrors.FINAL_PAYMENT_ERROR(
+        errors.UNAVAILABLE(this.currency, this.status).message
+      );
     }
-    this.logger.debug(`sending payment of ${request.getAmt()} with hash ${request.getPaymentHashString()} to ${request.getDestString()}`);
+    this.logger.debug(
+      `sending payment of ${request.getAmt()} with hash ${request.getPaymentHashString()} to ${request.getDestString()}`
+    );
     let sendPaymentResponse: lndrpc.SendResponse;
     try {
       sendPaymentResponse = await this.sendPaymentSync(request);
     } catch (err) {
       this.logger.error('got exception from sendPaymentSync', err);
-      if (typeof err.message === 'string' && err.message.includes('chain backend is still syncing')) {
+      if (
+        typeof err.message === 'string' &&
+        err.message.includes('chain backend is still syncing')
+      ) {
         throw swapErrors.FINAL_PAYMENT_ERROR(err.message);
       } else {
         throw swapErrors.UNKNOWN_PAYMENT_ERROR(err.message);
@@ -645,59 +772,86 @@ class LndClient extends SwapClient {
     }
     const paymentError = sendPaymentResponse.getPaymentError();
     if (paymentError) {
-      if (paymentError.includes('UnknownPaymentHash') || paymentError.includes('IncorrectOrUnknownPaymentDetails')) {
+      if (
+        paymentError.includes('UnknownPaymentHash') ||
+        paymentError.includes('IncorrectOrUnknownPaymentDetails')
+      ) {
         throw swapErrors.PAYMENT_REJECTED;
       } else {
         throw swapErrors.FINAL_PAYMENT_ERROR(paymentError);
       }
     }
-    const preimage = base64ToHex(sendPaymentResponse.getPaymentPreimage_asB64());
+    const preimage = base64ToHex(
+      sendPaymentResponse.getPaymentPreimage_asB64()
+    );
 
-    this.logger.debug(`sent payment with hash ${request.getPaymentHashString()}, preimage is ${preimage}`);
+    this.logger.debug(
+      `sent payment with hash ${request.getPaymentHashString()}, preimage is ${preimage}`
+    );
     return preimage;
-  }
+  };
 
   /**
    * Gets a new address for the internal lnd wallet.
    */
-  private newAddress = async (addressType = lndrpc.AddressType.WITNESS_PUBKEY_HASH) => {
+  private newAddress = async (
+    addressType = lndrpc.AddressType.WITNESS_PUBKEY_HASH
+  ) => {
     const request = new lndrpc.NewAddressRequest();
     request.setType(addressType);
-    const newAddressResponse = await this.unaryCall<lndrpc.NewAddressRequest, lndrpc.NewAddressResponse>('newAddress', request);
+    const newAddressResponse = await this.unaryCall<
+      lndrpc.NewAddressRequest,
+      lndrpc.NewAddressResponse
+    >('newAddress', request);
     return newAddressResponse.getAddress();
-  }
+  };
 
   /**
    * Returns the total of unspent outputs for the internal lnd wallet.
    */
-  public walletBalance = async (): Promise<lndrpc.WalletBalanceResponse.AsObject> => {
-    const walletBalanceResponse = await this.unaryCall<lndrpc.WalletBalanceRequest, lndrpc.WalletBalanceResponse>(
-      'walletBalance', new lndrpc.WalletBalanceRequest(),
-    );
+  public walletBalance = async (): Promise<
+    lndrpc.WalletBalanceResponse.AsObject
+  > => {
+    const walletBalanceResponse = await this.unaryCall<
+      lndrpc.WalletBalanceRequest,
+      lndrpc.WalletBalanceResponse
+    >('walletBalance', new lndrpc.WalletBalanceRequest());
     return walletBalanceResponse.toObject();
-  }
+  };
 
   public channelBalance = async (): Promise<ChannelBalance> => {
-    const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
-      'channelBalance', new lndrpc.ChannelBalanceRequest(),
-    );
+    const channelBalanceResponse = await this.unaryCall<
+      lndrpc.ChannelBalanceRequest,
+      lndrpc.ChannelBalanceResponse
+    >('channelBalance', new lndrpc.ChannelBalanceRequest());
     if (this._totalOutboundAmount !== channelBalanceResponse.getBalance()) {
       this._totalOutboundAmount = channelBalanceResponse.getBalance();
-      this.logger.debug(`new total outbound capacity: ${this._totalOutboundAmount}`);
+      this.logger.debug(
+        `new total outbound capacity: ${this._totalOutboundAmount}`
+      );
     }
     const channels = await this.listChannels();
-    const balance = channels.toObject().channelsList.reduce((sum, channel) => sum + (channel.active ? channel.localBalance : 0), 0);
+    const balance = channels
+      .toObject()
+      .channelsList.reduce(
+        (sum, channel) => sum + (channel.active ? channel.localBalance : 0),
+        0
+      );
     const inactiveBalance = channelBalanceResponse.getBalance() - balance;
 
-    return { balance, inactiveBalance, pendingOpenBalance: channelBalanceResponse.getPendingOpenBalance() };
-  }
+    return {
+      balance,
+      inactiveBalance,
+      pendingOpenBalance: channelBalanceResponse.getPendingOpenBalance(),
+    };
+  };
 
   public tradingLimits = async (): Promise<TradingLimits> => {
     const channels = await this.listChannels();
 
     let maxOutbound = 0;
     let maxInbound = 0;
-    channels.toObject().channelsList.forEach((channel) => {
+    channels.toObject().channelsList.forEach(channel => {
       const outbound = channel.localBalance - channel.localChanReserveSat;
       if (maxOutbound < outbound) {
         maxOutbound = outbound;
@@ -723,31 +877,40 @@ class LndClient extends SwapClient {
       maxSell: this._maxChannelOutboundAmount,
       maxBuy: this._maxChannelInboundAmount,
     };
-  }
+  };
 
   public getHeight = async () => {
     const info = await this.getInfo();
     return info.getBlockHeight();
-  }
+  };
 
   /**
    * Connects to another lnd node.
    */
-  public connectPeer = (pubkey: string, address: string): Promise<lndrpc.ConnectPeerResponse> => {
+  public connectPeer = (
+    pubkey: string,
+    address: string
+  ): Promise<lndrpc.ConnectPeerResponse> => {
     const request = new lndrpc.ConnectPeerRequest();
     const lightningAddress = new lndrpc.LightningAddress();
     lightningAddress.setHost(address);
     lightningAddress.setPubkey(pubkey);
     request.setAddr(lightningAddress);
-    return this.unaryCall<lndrpc.ConnectPeerRequest, lndrpc.ConnectPeerResponse>('connectPeer', request);
-  }
+    return this.unaryCall<
+      lndrpc.ConnectPeerRequest,
+      lndrpc.ConnectPeerResponse
+    >('connectPeer', request);
+  };
 
   /**
    * Opens a channel given peerPubKey and amount.
    */
-  public openChannel = async (
-    { remoteIdentifier, units, uris, pushUnits = 0 }: OpenChannelParams,
-  ): Promise<void> => {
+  public openChannel = async ({
+    remoteIdentifier,
+    units,
+    uris,
+    pushUnits = 0,
+  }: OpenChannelParams): Promise<void> => {
     if (!remoteIdentifier) {
       // TODO: better handling for for unrecognized peers & force closing channels
       throw new Error('peer not connected to swap client');
@@ -757,23 +920,22 @@ class LndClient extends SwapClient {
     }
 
     await this.openChannelSync(remoteIdentifier, units, pushUnits);
-  }
+  };
 
   /**
    * Tries to connect to a given list of a peer's uris in sequential order.
    * @returns `true` when successful, otherwise `false`.
    */
   private connectPeerAddresses = async (
-    peerListeningUris: string[],
+    peerListeningUris: string[]
   ): Promise<boolean> => {
-    const splitListeningUris = peerListeningUris
-      .map((uri) => {
-        const splitUri = uri.split('@');
-        return {
-          peerPubKey: splitUri[0],
-          address: splitUri[1],
-        };
-      });
+    const splitListeningUris = peerListeningUris.map(uri => {
+      const splitUri = uri.split('@');
+      return {
+        peerPubKey: splitUri[0],
+        address: splitUri[1],
+      };
+    });
     for (const uri of splitListeningUris) {
       const { peerPubKey, address } = uri;
       try {
@@ -787,27 +949,42 @@ class LndClient extends SwapClient {
       }
     }
     return false;
-  }
+  };
 
   /**
    * Opens a channel with a connected lnd node.
    */
-  private openChannelSync = (nodePubkeyString: string, localFundingAmount: number, pushSat = 0): Promise<lndrpc.ChannelPoint> => {
-    const request = new lndrpc.OpenChannelRequest;
+  private openChannelSync = (
+    nodePubkeyString: string,
+    localFundingAmount: number,
+    pushSat = 0
+  ): Promise<lndrpc.ChannelPoint> => {
+    const request = new lndrpc.OpenChannelRequest();
     request.setNodePubkeyString(nodePubkeyString);
     request.setLocalFundingAmount(localFundingAmount);
     request.setPushSat(pushSat);
-    return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint>('openChannelSync', request);
-  }
+    return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint>(
+      'openChannelSync',
+      request
+    );
+  };
 
   /**
    * Lists all open channels for this node.
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse> => {
-    return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
-  }
+    return this.unaryCall<
+      lndrpc.ListChannelsRequest,
+      lndrpc.ListChannelsResponse
+    >('listChannels', new lndrpc.ListChannelsRequest());
+  };
 
-  public getRoute = async (units: number, destination: string, _currency: string, finalLock = this.finalLock) => {
+  public getRoute = async (
+    units: number,
+    destination: string,
+    _currency: string,
+    finalLock = this.finalLock
+  ) => {
     const request = new lndrpc.QueryRoutesRequest();
     request.setAmt(units);
     request.setFinalCltvDelta(finalLock);
@@ -822,22 +999,30 @@ class LndClient extends SwapClient {
       // QueryRoutes no longer returns more than one route
       route = (await this.queryRoutes(request)).getRoutesList()[0];
     } catch (err) {
-      if (typeof err.message !== 'string' || (
-        !err.message.includes('unable to find a path to destination') &&
-        !err.message.includes('target not found')
-      )) {
-        this.logger.error(`error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalLock}`, err);
+      if (
+        typeof err.message !== 'string' ||
+        (!err.message.includes('unable to find a path to destination') &&
+          !err.message.includes('target not found'))
+      ) {
+        this.logger.error(
+          `error calling queryRoutes to ${destination}, amount ${units}, finalCltvDelta ${finalLock}`,
+          err
+        );
         throw err;
       }
     }
 
     if (route) {
-      this.logger.debug(`found a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
+      this.logger.debug(
+        `found a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`
+      );
     } else {
-      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
+      this.logger.debug(
+        `could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`
+      );
     }
     return route;
-  }
+  };
 
   public canRouteToNode = async (_destination: string) => {
     // lnd doesn't currently have a way to see if any route exists, regardless of balance
@@ -845,20 +1030,31 @@ class LndClient extends SwapClient {
     // no other routes, QueryRoutes will return nothing as of lnd v0.8.1.
     // For now we err on the side of leniency and assume a route may exist.
     return true;
-  }
+  };
 
   /**
    * Lists all routes to destination.
    */
-  private queryRoutes = (request: lndrpc.QueryRoutesRequest): Promise<lndrpc.QueryRoutesResponse> => {
-    return this.unaryCall<lndrpc.QueryRoutesRequest, lndrpc.QueryRoutesResponse>('queryRoutes', request);
-  }
+  private queryRoutes = (
+    request: lndrpc.QueryRoutesRequest
+  ): Promise<lndrpc.QueryRoutesResponse> => {
+    return this.unaryCall<
+      lndrpc.QueryRoutesRequest,
+      lndrpc.QueryRoutesResponse
+    >('queryRoutes', request);
+  };
 
-  public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
-    Promise<lndrpc.InitWalletResponse.AsObject> => {
+  public initWallet = async (
+    walletPassword: string,
+    seedMnemonic: string[],
+    restore = false,
+    backup?: Uint8Array
+  ): Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
     request.setCipherSeedMnemonicList(seedMnemonic);
-    request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
+    request.setWalletPassword(
+      Uint8Array.from(Buffer.from(walletPassword, 'utf8'))
+    );
     if (restore) {
       request.setRecoveryWindow(2500);
     }
@@ -869,9 +1065,10 @@ class LndClient extends SwapClient {
       snapshot.setMultiChanBackup(multiChanBackup);
       request.setChannelBackups(snapshot);
     }
-    const initWalletResponse = await this.unaryWalletUnlockerCall<lndrpc.InitWalletRequest, lndrpc.InitWalletResponse>(
-      'initWallet', request,
-    );
+    const initWalletResponse = await this.unaryWalletUnlockerCall<
+      lndrpc.InitWalletRequest,
+      lndrpc.InitWalletResponse
+    >('initWallet', request);
     if (this.initWalletResolve) {
       this.initWalletResolve(true);
     }
@@ -879,33 +1076,45 @@ class LndClient extends SwapClient {
 
     this.logger.info('wallet initialized');
     return initWalletResponse.toObject();
-  }
+  };
 
   public unlockWallet = async (walletPassword: string): Promise<void> => {
     const request = new lndrpc.UnlockWalletRequest();
-    request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
-    await this.unaryWalletUnlockerCall<lndrpc.UnlockWalletRequest, lndrpc.UnlockWalletResponse>(
-      'unlockWallet', request,
+    request.setWalletPassword(
+      Uint8Array.from(Buffer.from(walletPassword, 'utf8'))
     );
+    await this.unaryWalletUnlockerCall<
+      lndrpc.UnlockWalletRequest,
+      lndrpc.UnlockWalletResponse
+    >('unlockWallet', request);
     this.setUnlocked();
     this.logger.info('wallet unlocked');
-  }
+  };
 
-  public addInvoice = async (
-    { rHash, units, expiry = this.finalLock }:
-    { rHash: string, units: number, expiry?: number },
-  ) => {
+  public addInvoice = async ({
+    rHash,
+    units,
+    expiry = this.finalLock,
+  }: {
+    rHash: string;
+    units: number;
+    expiry?: number;
+  }) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
     addHoldInvoiceRequest.setValue(units);
     addHoldInvoiceRequest.setCltvExpiry(expiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
-    this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${expiry}`);
+    this.logger.debug(
+      `added invoice of ${units} for ${rHash} with cltvExpiry ${expiry}`
+    );
     this.subscribeSingleInvoice(rHash);
-  }
+  };
 
   public settleInvoice = async (rHash: string, rPreimage: string) => {
-    this.logger.debug(`settling invoice for ${rHash} with preimage ${rPreimage}`);
+    this.logger.debug(
+      `settling invoice for ${rHash} with preimage ${rPreimage}`
+    );
     const settleInvoiceRequest = new lndinvoices.SettleInvoiceMsg();
     settleInvoiceRequest.setPreimage(hexToUint8Array(rPreimage));
     await this.settleInvoiceLnd(settleInvoiceRequest);
@@ -914,7 +1123,7 @@ class LndClient extends SwapClient {
     if (invoiceSubscription) {
       invoiceSubscription.cancel();
     }
-  }
+  };
 
   public removeInvoice = async (rHash: string) => {
     const invoiceSubscription = this.invoiceSubscriptions.get(rHash);
@@ -927,16 +1136,20 @@ class LndClient extends SwapClient {
       } catch (err) {
         // handle errors due to attempting to remove an invoice that doesn't exist
         if (err.message === 'unable to locate invoice') {
-          this.logger.debug(`attempted to cancel non-existent invoice for ${rHash}`);
+          this.logger.debug(
+            `attempted to cancel non-existent invoice for ${rHash}`
+          );
         } else if (err.message === 'invoice already canceled') {
-          this.logger.debug(`attempted to cancel already canceled invoice for ${rHash}`);
+          this.logger.debug(
+            `attempted to cancel already canceled invoice for ${rHash}`
+          );
         } else {
           throw err;
         }
       }
       invoiceSubscription.cancel();
     }
-  }
+  };
 
   public lookupPayment = async (rHash: string) => {
     const payments = await this.listPayments(true);
@@ -949,8 +1162,10 @@ class LndClient extends SwapClient {
           case lndrpc.Payment.PaymentStatus.IN_FLIGHT:
             return { state: PaymentState.Pending };
           default:
-            this.logger.warn(`unexpected payment state for payment with hash ${rHash}`);
-            /* falls through */
+            this.logger.warn(
+              `unexpected payment state for payment with hash ${rHash}`
+            );
+          /* falls through */
           case lndrpc.Payment.PaymentStatus.FAILED:
             return { state: PaymentState.Failed };
         }
@@ -959,40 +1174,66 @@ class LndClient extends SwapClient {
 
     // if no payment is found, we assume that the payment was never attempted by lnd
     return { state: PaymentState.Failed };
-  }
+  };
 
-  private listPayments = (includeIncomplete?: boolean): Promise<lndrpc.ListPaymentsResponse> => {
+  private listPayments = (
+    includeIncomplete?: boolean
+  ): Promise<lndrpc.ListPaymentsResponse> => {
     const request = new lndrpc.ListPaymentsRequest();
     if (includeIncomplete) {
       request.setIncludeIncomplete(includeIncomplete);
     }
-    return this.unaryCall<lndrpc.ListPaymentsRequest, lndrpc.ListPaymentsResponse>('listPayments', request);
-  }
+    return this.unaryCall<
+      lndrpc.ListPaymentsRequest,
+      lndrpc.ListPaymentsResponse
+    >('listPayments', request);
+  };
 
   public restoreChannelBackup = (multiChannelBackup: Uint8Array) => {
     const request = new lndrpc.RestoreChanBackupRequest();
     request.setMultiChanBackup(multiChannelBackup);
-    return this.unaryCall<lndrpc.RestoreChanBackupRequest, lndrpc.RestoreBackupResponse>('restoreChannelBackups', request);
-  }
+    return this.unaryCall<
+      lndrpc.RestoreChanBackupRequest,
+      lndrpc.RestoreBackupResponse
+    >('restoreChannelBackups', request);
+  };
 
   public exportAllChannelBackup = async () => {
     const request = new lndrpc.ChanBackupExportRequest();
-    const response = await this.unaryCall<lndrpc.ChanBackupExportRequest, lndrpc.ChanBackupSnapshot>('exportAllChannelBackups', request);
+    const response = await this.unaryCall<
+      lndrpc.ChanBackupExportRequest,
+      lndrpc.ChanBackupSnapshot
+    >('exportAllChannelBackups', request);
 
     return response.getMultiChanBackup()!.getMultiChanBackup_asU8();
-  }
+  };
 
-  private addHoldInvoice = (request: lndinvoices.AddHoldInvoiceRequest): Promise<lndinvoices.AddHoldInvoiceResp> => {
-    return this.unaryInvoiceCall<lndinvoices.AddHoldInvoiceRequest, lndinvoices.AddHoldInvoiceResp>('addHoldInvoice', request);
-  }
+  private addHoldInvoice = (
+    request: lndinvoices.AddHoldInvoiceRequest
+  ): Promise<lndinvoices.AddHoldInvoiceResp> => {
+    return this.unaryInvoiceCall<
+      lndinvoices.AddHoldInvoiceRequest,
+      lndinvoices.AddHoldInvoiceResp
+    >('addHoldInvoice', request);
+  };
 
-  private cancelInvoice = (request: lndinvoices.CancelInvoiceMsg): Promise<lndinvoices.CancelInvoiceResp> => {
-    return this.unaryInvoiceCall<lndinvoices.CancelInvoiceMsg, lndinvoices.CancelInvoiceResp>('cancelInvoice', request);
-  }
+  private cancelInvoice = (
+    request: lndinvoices.CancelInvoiceMsg
+  ): Promise<lndinvoices.CancelInvoiceResp> => {
+    return this.unaryInvoiceCall<
+      lndinvoices.CancelInvoiceMsg,
+      lndinvoices.CancelInvoiceResp
+    >('cancelInvoice', request);
+  };
 
-  private settleInvoiceLnd = (request: lndinvoices.SettleInvoiceMsg): Promise<lndinvoices.SettleInvoiceResp> => {
-    return this.unaryInvoiceCall<lndinvoices.SettleInvoiceMsg, lndinvoices.SettleInvoiceResp>('settleInvoice', request);
-  }
+  private settleInvoiceLnd = (
+    request: lndinvoices.SettleInvoiceMsg
+  ): Promise<lndinvoices.SettleInvoiceResp> => {
+    return this.unaryInvoiceCall<
+      lndinvoices.SettleInvoiceMsg,
+      lndinvoices.SettleInvoiceResp
+    >('settleInvoice', request);
+  };
 
   private subscribeSingleInvoice = (rHash: string) => {
     if (!this.invoices) {
@@ -1000,21 +1241,27 @@ class LndClient extends SwapClient {
     }
     const request = new lndinvoices.SubscribeSingleInvoiceRequest();
     request.setRHash(hexToUint8Array(rHash));
-    const invoiceSubscription = this.invoices.subscribeSingleInvoice(request, this.meta);
+    const invoiceSubscription = this.invoices.subscribeSingleInvoice(
+      request,
+      this.meta
+    );
     const deleteInvoiceSubscription = () => {
       invoiceSubscription.removeAllListeners();
       this.invoiceSubscriptions.delete(rHash);
       this.logger.debug(`deleted invoice subscription for ${rHash}`);
     };
-    invoiceSubscription.on('data', (invoice: lndrpc.Invoice) => {
-      if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
-        // we have accepted an htlc for this invoice
-        this.logger.debug(`accepted htlc for invoice ${rHash}`);
-        this.emit('htlcAccepted', rHash, invoice.getValue());
-      }
-    }).on('end', deleteInvoiceSubscription).on('error', deleteInvoiceSubscription);
+    invoiceSubscription
+      .on('data', (invoice: lndrpc.Invoice) => {
+        if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
+          // we have accepted an htlc for this invoice
+          this.logger.debug(`accepted htlc for invoice ${rHash}`);
+          this.emit('htlcAccepted', rHash, invoice.getValue());
+        }
+      })
+      .on('end', deleteInvoiceSubscription)
+      .on('error', deleteInvoiceSubscription);
     this.invoiceSubscriptions.set(rHash, invoiceSubscription);
-  }
+  };
 
   /**
    * Subscribes to channel backups
@@ -1028,37 +1275,54 @@ class LndClient extends SwapClient {
       return;
     }
 
-    this.channelBackupSubscription = this.lightning.subscribeChannelBackups(new lndrpc.ChannelBackupSubscription(), this.meta)
+    this.channelBackupSubscription = this.lightning
+      .subscribeChannelBackups(
+        new lndrpc.ChannelBackupSubscription(),
+        this.meta
+      )
       .on('data', (backupSnapshot: lndrpc.ChanBackupSnapshot) => {
         const multiBackup = backupSnapshot.getMultiChanBackup()!;
         this.emit('channelBackup', multiBackup.getMultiChanBackup_asU8());
-      }).on('end', this.disconnect).on('error', this.disconnect);
-  }
+      })
+      .on('end', this.disconnect)
+      .on('error', this.disconnect);
+  };
 
   /**
    * Closes any payment channels with a specified node.
    */
-  public closeChannel = async ({ remoteIdentifier, force = false }: CloseChannelParams) => {
+  public closeChannel = async ({
+    remoteIdentifier,
+    force = false,
+  }: CloseChannelParams) => {
     if (remoteIdentifier === undefined) {
       throw swapErrors.REMOTE_IDENTIFIER_MISSING;
     }
     const channels = (await this.listChannels()).getChannelsList();
     const closePromises: Promise<void>[] = [];
-    channels.forEach((channel) => {
+    channels.forEach(channel => {
       if (channel.getRemotePubkey() === remoteIdentifier) {
         const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
-        const closePromise = this.closeChannelSync(fundingTxId, Number(outputIndex), force);
+        const closePromise = this.closeChannelSync(
+          fundingTxId,
+          Number(outputIndex),
+          force
+        );
         closePromises.push(closePromise);
       }
     });
     await Promise.all(closePromises);
-  }
+  };
 
   /** A synchronous helper method for the closeChannel call */
-  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean): Promise<void> => {
+  public closeChannelSync = (
+    fundingTxId: string,
+    outputIndex: number,
+    force: boolean
+  ): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
       if (!this.lightning) {
-        throw(errors.UNAVAILABLE(this.currency, this.status));
+        throw errors.UNAVAILABLE(this.currency, this.status);
       }
 
       // TODO: set delivery_address parameter after upgrading to 0.10+ lnd API proto definition
@@ -1069,10 +1333,13 @@ class LndClient extends SwapClient {
       request.setChannelPoint(channelPoint);
       request.setForce(force);
 
-      this.lightning.closeChannel(request, this.meta)
+      this.lightning
+        .closeChannel(request, this.meta)
         .on('data', (message: lndrpc.CloseStatusUpdate) => {
           if (message.hasClosePending()) {
-            const txId = base64ToHex(message.getClosePending()!.getTxid_asB64());
+            const txId = base64ToHex(
+              message.getClosePending()!.getTxid_asB64()
+            );
             if (txId) {
               this.logger.info(`channel closed with tx id ${txId}`);
               resolve();
@@ -1087,7 +1354,9 @@ class LndClient extends SwapClient {
           reject('channel close ended unexpectedly');
         })
         .on('status', (status: grpc.StatusObject) => {
-          this.logger.debug(`closeChannel status: ${status.code} ${status.details}`);
+          this.logger.debug(
+            `closeChannel status: ${status.code} ${status.details}`
+          );
           if (status.code !== grpc.status.OK) {
             reject(status.details);
           }
@@ -1097,7 +1366,7 @@ class LndClient extends SwapClient {
           reject(err);
         });
     });
-  }
+  };
 
   /** Lnd specific procedure to disconnect from the server. */
   protected disconnect = () => {
@@ -1132,7 +1401,7 @@ class LndClient extends SwapClient {
       clearTimeout(this.initRetryTimeout);
       this.initRetryTimeout = undefined;
     }
-  }
+  };
 }
 
 export default LndClient;

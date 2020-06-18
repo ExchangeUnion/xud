@@ -10,7 +10,9 @@ jest.mock('../../lib/db/DB', () => {
     return {
       models: {
         Currency: {
-          findAll: () => { return [{ id: 'WETH', tokenAddress: '0x1234' }]; },
+          findAll: () => {
+            return [{ id: 'WETH', tokenAddress: '0x1234' }];
+          },
         },
       },
     };
@@ -211,7 +213,8 @@ describe('Swaps.SwapClientManager', () => {
     let remoteIdentifier: string;
 
     beforeEach(() => {
-      remoteIdentifier = '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
+      remoteIdentifier =
+        '02afaef2634e5c7ca8d682b828a62bd040929b1e4b5030b21e2a0a891cf545b2e1';
     });
 
     test('it fails without swap client', async () => {
@@ -222,7 +225,11 @@ describe('Swaps.SwapClientManager', () => {
       swapClientManager.get = jest.fn().mockReturnValue(undefined);
       await swapClientManager.init(db.models);
       try {
-        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
+        await swapClientManager.openChannel({
+          remoteIdentifier,
+          currency,
+          amount,
+        });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
@@ -234,7 +241,11 @@ describe('Swaps.SwapClientManager', () => {
       swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       await swapClientManager.init(db.models);
       try {
-        await swapClientManager.openChannel({ remoteIdentifier, currency, amount });
+        await swapClientManager.openChannel({
+          remoteIdentifier,
+          currency,
+          amount,
+        });
       } catch (e) {
         expect(e).toMatchSnapshot();
       }
@@ -245,12 +256,14 @@ describe('Swaps.SwapClientManager', () => {
       const amount = 16000000;
       swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       const getClientSpy = jest.spyOn(swapClientManager, 'get');
-      const lndListeningUris = [
-        '123.456.789.321:9735',
-        '192.168.63.155:9777',
-      ];
+      const lndListeningUris = ['123.456.789.321:9735', '192.168.63.155:9777'];
       await swapClientManager.init(db.models);
-      await swapClientManager.openChannel({ remoteIdentifier, currency, amount, uris: lndListeningUris });
+      await swapClientManager.openChannel({
+        remoteIdentifier,
+        currency,
+        amount,
+        uris: lndListeningUris,
+      });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
       expect(mockLndOpenChannel).toHaveBeenCalledTimes(1);
       expect(mockLndOpenChannel).toHaveBeenCalledWith(
@@ -258,7 +271,7 @@ describe('Swaps.SwapClientManager', () => {
           remoteIdentifier,
           units: amount,
           uris: lndListeningUris,
-        }),
+        })
       );
     });
 
@@ -271,7 +284,11 @@ describe('Swaps.SwapClientManager', () => {
       swapClientManager = new SwapClientManager(config, loggers, unitConverter);
       const getClientSpy = jest.spyOn(swapClientManager, 'get');
       await swapClientManager.init(db.models);
-      await swapClientManager.openChannel({ currency, amount, remoteIdentifier: peerRaidenAddress });
+      await swapClientManager.openChannel({
+        currency,
+        amount,
+        remoteIdentifier: peerRaidenAddress,
+      });
       expect(getClientSpy).toHaveBeenCalledWith(currency);
       expect(mockRaidenOpenChannel).toHaveBeenCalledTimes(1);
       expect(mockRaidenOpenChannel).toHaveBeenCalledWith(
@@ -281,10 +298,8 @@ describe('Swaps.SwapClientManager', () => {
           remoteIdentifier: peerRaidenAddress,
           // uris: undefined,
           pushUnits: 0,
-        }),
+        })
       );
     });
-
   });
-
 });

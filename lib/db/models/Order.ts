@@ -1,7 +1,10 @@
 import Sequelize from 'sequelize';
 import * as db from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
+export default (
+  sequelize: Sequelize.Sequelize,
+  DataTypes: Sequelize.DataTypes
+) => {
   const attributes: db.SequelizeAttributes<db.OrderAttributes> = {
     id: { type: DataTypes.STRING, primaryKey: true, allowNull: false },
     nodeId: { type: DataTypes.INTEGER, allowNull: true },
@@ -28,7 +31,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     timestamps: false,
   };
 
-  const Order = sequelize.define<db.OrderInstance, db.OrderAttributes>('Order', attributes, options);
+  const Order = sequelize.define<db.OrderInstance, db.OrderAttributes>(
+    'Order',
+    attributes,
+    options
+  );
 
   Order.associate = (models: Sequelize.Models) => {
     models.Order.belongsTo(models.Node, {

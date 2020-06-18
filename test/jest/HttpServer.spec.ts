@@ -8,7 +8,7 @@ import { getUnusedPort } from '../utils';
 
 jest.mock('../../lib/Logger');
 jest.mock('../../lib/service/Service');
-const mockedService = <jest.Mock<Service>><any>Service;
+const mockedService = <jest.Mock<Service>>(<any>Service);
 
 describe('HttpServer - resolveraiden', () => {
   const httpLogger = new Logger({});
@@ -16,20 +16,22 @@ describe('HttpServer - resolveraiden', () => {
   httpLogger.debug = jest.fn();
 
   const service = new mockedService();
-  service.resolveHash = jest.fn().mockImplementation((resolveRequest: ResolveRequest) => {
-    switch (resolveRequest.rHash) {
-      case wrongHash:
-        throw errors.PAYMENT_HASH_NOT_FOUND(resolveRequest.rHash);
-      case finalErrorHash:
-        throw errors.FINAL_PAYMENT_ERROR(resolveRequest.rHash);
-      case unknownErrorHash:
-        throw errors.UNKNOWN_PAYMENT_ERROR(resolveRequest.rHash);
-      case paymentPendingHash:
-        throw errors.PAYMENT_PENDING(resolveRequest.rHash);
-      default:
-        return preimage;
-    }
-  });
+  service.resolveHash = jest
+    .fn()
+    .mockImplementation((resolveRequest: ResolveRequest) => {
+      switch (resolveRequest.rHash) {
+        case wrongHash:
+          throw errors.PAYMENT_HASH_NOT_FOUND(resolveRequest.rHash);
+        case finalErrorHash:
+          throw errors.FINAL_PAYMENT_ERROR(resolveRequest.rHash);
+        case unknownErrorHash:
+          throw errors.UNKNOWN_PAYMENT_ERROR(resolveRequest.rHash);
+        case paymentPendingHash:
+          throw errors.PAYMENT_PENDING(resolveRequest.rHash);
+        default:
+          return preimage;
+      }
+    });
 
   const httpServer = new HttpServer(httpLogger, service);
   let port: number;
@@ -49,7 +51,7 @@ describe('HttpServer - resolveraiden', () => {
     await httpServer.listen(port, 'localhost');
   });
 
-  it('should receive and parse a raiden resolve request', (done) => {
+  it('should receive and parse a raiden resolve request', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, secrethash, token })
@@ -62,7 +64,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return not found 404 when wrong secret hash provided', (done) => {
+  it('should return not found 404 when wrong secret hash provided', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, token, secrethash: `0x${wrongHash}` })
@@ -75,7 +77,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return retry=false if a final payment error is encountered internally', (done) => {
+  it('should return retry=false if a final payment error is encountered internally', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, token, secrethash: `0x${finalErrorHash}` })
@@ -88,7 +90,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return retry=true if an unknown payment error is encountered internally', (done) => {
+  it('should return retry=true if an unknown payment error is encountered internally', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, token, secrethash: `0x${unknownErrorHash}` })
@@ -101,7 +103,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return retry=true if the resolve request cannot be completed due to a pending payment', (done) => {
+  it('should return retry=true if the resolve request cannot be completed due to a pending payment', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, token, secrethash: `0x${paymentPendingHash}` })
@@ -114,7 +116,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return a bad request error if the request is malformed', (done) => {
+  it('should return a bad request error if the request is malformed', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send({ amount, token, secrethash: 1 }) // secrethash should be a string
@@ -127,7 +129,7 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should return a bad request error if the request is not valid json', (done) => {
+  it('should return a bad request error if the request is not valid json', done => {
     request(`http://localhost:${port}`)
       .post('/resolveraiden')
       .send('notjson')
@@ -140,12 +142,12 @@ describe('HttpServer - resolveraiden', () => {
       });
   });
 
-  it('should 404 if a bad path is used', (done) => {
+  it('should 404 if a bad path is used', done => {
     request(`http://localhost:${port}`)
       .post('/badendpoint')
       .send({ amount, secrethash, token })
       .expect(404)
-      .end((err) => {
+      .end(err => {
         expect(err).toBeNull();
         done();
       });

@@ -42,7 +42,11 @@ describe('Command.listorders.formatOrders', () => {
                 quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '0f9af4d1-e755-11e8-8145-13a272c3a58d',
-                nodeIdentifier: { nodePubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c', alias: '' },
+                nodeIdentifier: {
+                  nodePubKey:
+                    '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
+                  alias: '',
+                },
                 localId: '',
                 createdAt: 1542121315487,
                 side: 1,
@@ -54,7 +58,11 @@ describe('Command.listorders.formatOrders', () => {
                 quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '0fb6e141-e755-11e8-8145-13a272c3a58d',
-                nodeIdentifier: { nodePubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c', alias: '' },
+                nodeIdentifier: {
+                  nodePubKey:
+                    '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
+                  alias: '',
+                },
                 localId: '',
                 createdAt: 1542121315669,
                 side: 1,
@@ -66,7 +74,11 @@ describe('Command.listorders.formatOrders', () => {
                 quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '10b23131-e755-11e8-8145-13a272c3a58d',
-                nodeIdentifier: { nodePubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c', alias: '' },
+                nodeIdentifier: {
+                  nodePubKey:
+                    '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
+                  alias: '',
+                },
                 localId: '',
                 createdAt: 1542121317316,
                 side: 1,
@@ -78,7 +90,11 @@ describe('Command.listorders.formatOrders', () => {
                 quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '109644c1-e755-11e8-8145-13a272c3a58d',
-                nodeIdentifier: { nodePubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c', alias: '' },
+                nodeIdentifier: {
+                  nodePubKey:
+                    '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
+                  alias: '',
+                },
                 localId: '',
                 createdAt: 1542121317133,
                 side: 1,
@@ -90,7 +106,11 @@ describe('Command.listorders.formatOrders', () => {
                 quantity: 1,
                 pairId: 'LTC/BTC',
                 id: '10ce92d1-e755-11e8-8145-13a272c3a58d',
-                nodeIdentifier: { nodePubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c', alias: '' },
+                nodeIdentifier: {
+                  nodePubKey:
+                    '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
+                  alias: '',
+                },
                 localId: '',
                 createdAt: 1542121317502,
                 side: 1,

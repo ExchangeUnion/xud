@@ -4,22 +4,30 @@ import Peer from '../../../lib/p2p/Peer';
 import Logger from '../../../lib/Logger';
 import DB from '../../../lib/db/DB';
 import SwapClientManager from '../../../lib/swaps/SwapClientManager';
-import { SwapRequestPacket, SwapRequestPacketBody } from '../../../lib/p2p/packets/types';
-import { SwapFailureReason, SwapClientType } from '../../../lib/constants/enums';
+import {
+  SwapRequestPacket,
+  SwapRequestPacketBody,
+} from '../../../lib/p2p/packets/types';
+import {
+  SwapFailureReason,
+  SwapClientType,
+} from '../../../lib/constants/enums';
 import LndClient from '../../../lib/lndclient/LndClient';
 
 jest.mock('../../../lib/Logger');
-const mockedLogger = <jest.Mock<Logger>><any>Logger;
+const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 jest.mock('../../../lib/db/DB');
-const mockedDB = <jest.Mock<DB>><any>DB;
+const mockedDB = <jest.Mock<DB>>(<any>DB);
 jest.mock('../../../lib/p2p/Pool');
-const mockedPool = <jest.Mock<Pool>><any>Pool;
+const mockedPool = <jest.Mock<Pool>>(<any>Pool);
 jest.mock('../../../lib/swaps/SwapClientManager');
-const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
+const mockedSwapClientManager = <jest.Mock<SwapClientManager>>(
+  (<any>SwapClientManager)
+);
 jest.mock('../../../lib/p2p/Peer');
-const mockedPeer = <jest.Mock<Peer>><any>Peer;
+const mockedPeer = <jest.Mock<Peer>>(<any>Peer);
 jest.mock('../../../lib/lndclient/LndClient');
-const mockedLnd = <jest.Mock<LndClient>><any>LndClient;
+const mockedLnd = <jest.Mock<LndClient>>(<any>LndClient);
 jest.mock('../../../lib/swaps/SwapRepository', () => {
   return jest.fn().mockImplementation(() => {
     return {
@@ -94,7 +102,6 @@ describe('Swaps Integration', () => {
   });
 
   describe('acceptDeal', () => {
-
     test('it rejects already used hash', async () => {
       swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
@@ -102,16 +109,22 @@ describe('Swaps Integration', () => {
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['usedHashes'].add(swapRequestBody.rHash);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.PaymentHashReuse,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.PaymentHashReuse,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
     test('it rejects without taker currency swap client', async () => {
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === makerCurrency) {
           return new mockedLnd();
         }
@@ -122,16 +135,22 @@ describe('Swaps Integration', () => {
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.SwapClientNotSetup,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.SwapClientNotSetup,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
     test('it rejects without maker currency swap client', async () => {
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === takerCurrency) {
           return lndBtc;
         }
@@ -144,17 +163,23 @@ describe('Swaps Integration', () => {
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.SwapClientNotSetup,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.SwapClientNotSetup,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
     test('it rejects upon 0 maker to taker routes found', async () => {
       lndBtc.getRoute = jest.fn().mockReturnValue(undefined);
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === takerCurrency) {
           return lndBtc;
         }
@@ -170,11 +195,17 @@ describe('Swaps Integration', () => {
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.NoRouteFound,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.NoRouteFound,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
@@ -182,7 +213,7 @@ describe('Swaps Integration', () => {
       lndBtc.getRoute = jest.fn().mockReturnValue({
         getTotalTimeLock: () => 1543845,
       });
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === takerCurrency) {
           return lndBtc;
         }
@@ -198,11 +229,17 @@ describe('Swaps Integration', () => {
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.UnexpectedClientError,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.UnexpectedClientError,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
@@ -214,7 +251,7 @@ describe('Swaps Integration', () => {
         getTotalTimeLock: () => 1543845,
       });
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === takerCurrency) {
           return lndBtc;
         }
@@ -230,27 +267,38 @@ describe('Swaps Integration', () => {
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       swaps['sendErrorToPeer'] = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(swaps['sendErrorToPeer']).toHaveBeenCalledTimes(1);
-      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(expect.objectContaining({
-        failureReason: SwapFailureReason.UnexpectedClientError,
-      }));
+      expect(swaps['sendErrorToPeer']).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureReason: SwapFailureReason.UnexpectedClientError,
+        })
+      );
       expect(dealAccepted).toEqual(false);
     });
 
     test('it accepts deal', async () => {
-      const peerLndBtcPubKey = '02d9fb6c41686b7bee95958bde0ada72c249b8fa9928987c93d839225d6883e6c0';
+      const peerLndBtcPubKey =
+        '02d9fb6c41686b7bee95958bde0ada72c249b8fa9928987c93d839225d6883e6c0';
       lndBtc.getRoute = jest.fn().mockReturnValue({
         getTotalTimeLock: () => 1543845,
       });
       lndBtc.getHeight = jest.fn().mockReturnValue(1543701);
       Object.defineProperty(lndBtc, 'minutesPerBlock', {
-        get: () => { return 10; },
+        get: () => {
+          return 10;
+        },
       });
       Object.defineProperty(lndLtc, 'minutesPerBlock', {
-        get: () => { return 2.5; },
+        get: () => {
+          return 2.5;
+        },
       });
-      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+      swapClientManager.get = jest.fn().mockImplementation(currency => {
         if (currency === takerCurrency) {
           return lndBtc;
         }
@@ -260,24 +308,32 @@ describe('Swaps Integration', () => {
         return;
       });
       pool.addReputationEvent = jest.fn();
-      peer.getIdentifier = jest.fn().mockImplementation((clientType, currency) => {
-        if (clientType === SwapClientType.Lnd && currency === takerCurrency) {
-          return peerLndBtcPubKey;
-        }
-        throw new Error(`mock peer.getIdentifier does not support ${currency}`);
-      });
+      peer.getIdentifier = jest
+        .fn()
+        .mockImplementation((clientType, currency) => {
+          if (clientType === SwapClientType.Lnd && currency === takerCurrency) {
+            return peerLndBtcPubKey;
+          }
+          throw new Error(
+            `mock peer.getIdentifier does not support ${currency}`
+          );
+        });
       swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
       peer.sendPacket = jest.fn();
-      const dealAccepted = await swaps.acceptDeal(orderToAccept, swapRequestPacket, peer);
+      const dealAccepted = await swaps.acceptDeal(
+        orderToAccept,
+        swapRequestPacket,
+        peer
+      );
       expect(dealAccepted).toEqual(true);
       expect(lndBtc.getRoute).toHaveBeenCalledWith(
         1000,
         peerLndBtcPubKey,
         takerCurrency,
-        swapRequestBody.takerCltvDelta,
+        swapRequestBody.takerCltvDelta
       );
       expect(lndLtc.addInvoice).toHaveBeenCalledTimes(1);
       const expectedMakerCltvDelta = 1641;
@@ -296,7 +352,5 @@ describe('Swaps Integration', () => {
         makerCltvDelta: expectedMakerCltvDelta,
       });
     });
-
   });
-
 });
