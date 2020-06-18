@@ -29,7 +29,7 @@
     "slate": "proto2slate proto/xudrpc.proto",
     "start": "node dist/Xud.js",
     "stop": "cross-os stop",
-    "test": "npm run prettier:check && npm run test:unit && npm run test:crypto && npm run test:int && npm run test:p2p && npm run test:jest",
+    "test": "npm run test:unit && npm run test:crypto && npm run test:int && npm run test:p2p && npm run test:jest",
     "test:int": "mocha --timeout 10000 -r ts-node/register test/integration/*",
     "test:int:watch": "mocha --timeout 10000 -r ts-node/register test/integration/*  --watch --watch-extensions ts",
     "test:unit": "mocha --timeout 10000 -r ts-node/register test/unit/*",
