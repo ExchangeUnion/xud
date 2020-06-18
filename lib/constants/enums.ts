@@ -64,21 +64,26 @@ export enum SwapRole {
 }
 
 export enum SwapPhase {
-  /** The swap deal has been created locally. */
+  /** 0/5 The swap deal has been created locally. */
   SwapCreated = 0,
-  /** We've made a request to a peer to accept this swap. */
+  /** 1/5 We've made a request to a peer to accept this swap. */
   SwapRequested = 1,
-  /** The terms of the swap have been agreed to, and we will attempt to execute it. */
+  /** 2/5 The terms of the swap have been agreed to, and we will attempt to execute it. */
   SwapAccepted = 2,
   /**
-   * We have made a request to the swap client to send payment according to the agreed terms.
+   * 3/5 We have made a request to the swap client to send payment according to the agreed terms.
    * The payment (and swap) could still fail due to no route with sufficient capacity, lack of
    * cooperation from the receiver or any intermediary node along the route, or an unexpected
    * error from the swap client.
    */
   SendingPayment = 3,
   /**
-   * We have received the agreed amount of the swap and released the preimage to the
+   * 4/5 We have completed our outgoing payment and retrieved the preimage which can be used to
+   * settle the incoming payment locked by the same hash.
+   */
+  PreimageResolved = 5,
+  /**
+   * 5/5 We have received the agreed amount of the swap and released the preimage to the
    * receiving swap client so it can accept payment.
    */
   PaymentReceived = 4,

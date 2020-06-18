@@ -292,7 +292,7 @@ class Pool extends EventEmitter {
 
   private bindNodeList = () => {
     this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEventInstance[]) => {
-      this.logger.warn(`node ${nodePubKey} was banned`);
+      this.logger.info(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {

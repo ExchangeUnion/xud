@@ -15,10 +15,10 @@ index 08402caa8..c9972d258 100644
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
-index dc868b894..a9b98f814 100644
+index 090618c4b..cd33a5d58 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
-@@ -21,7 +21,15 @@ class SwapRecovery {
+@@ -28,7 +28,15 @@ class SwapRecovery extends EventEmitter {
  
    public beginTimer = () => {
      if (!this.pendingSwapsTimer) {
@@ -36,20 +36,17 @@ index dc868b894..a9b98f814 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index 1002dbb57..f7a88019c 100644
+index d236d8931..d6a8ed2a9 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
-@@ -205,9 +205,28 @@ class Swaps extends EventEmitter {
-     this.swapClientManager.on('htlcAccepted', async (swapClient, rHash, amount, currency) => {
+@@ -710,6 +710,24 @@ class Swaps extends EventEmitter {
+       // if the swap has already been failed, then we leave the swap recovery module
+       // to attempt to settle the invoice and claim funds rather than do it here
        try {
-         const rPreimage = await this.resolveHash(rHash, amount, currency);
--        await swapClient.settleInvoice(rHash, rPreimage, currency);
 +        if (rPreimage === '') {
 +          this.logger.info('NOT SETTLING INVOICE');
 +          return;
 +        }
- 
-         const deal = this.getDeal(rHash);
 +
 +        if (deal && deal.role === SwapRole.Taker && process.env.CUSTOM_SCENARIO === 'INSTABILITY::TAKER_DELAY_BEFORE_SETTLE') {
 +          this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
@@ -64,26 +61,10 @@ index 1002dbb57..f7a88019c 100644
 +        }
 +
 +        this.logger.info('SETTLING INVOICE');
-+        await swapClient.settleInvoice(rHash, rPreimage, currency);
-+
-         if (deal) {
-           await this.setDealPhase(deal, SwapPhase.PaymentReceived);
-         }
-@@ -546,7 +565,12 @@ class Swaps extends EventEmitter {
-       createTime: Date.now(),
-     };
- 
--    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, Swaps.SWAP_COMPLETE_TIMEOUT, rHash, SwapFailureReason.SwapTimedOut));
-+    let interval = Swaps.SWAP_COMPLETE_TIMEOUT;
-+    if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
-+      interval = 5000;
-+    }
-+
-+    this.timeouts.set(rHash, setTimeout(this.handleSwapTimeout, interval, rHash, SwapFailureReason.SwapTimedOut));
- 
-     // add the deal. Going forward we can "record" errors related to this deal.
-     this.addDeal(deal);
-@@ -679,6 +703,16 @@ class Swaps extends EventEmitter {
+         await swapClient.settleInvoice(rHash, rPreimage, currency);
+       } catch (err) {
+         // if we couldn't settle the invoice then we fail the deal which throws
+@@ -734,6 +752,16 @@ class Swaps extends EventEmitter {
     * accepted, initiates the swap.
     */
    private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
@@ -100,7 +81,7 @@ index 1002dbb57..f7a88019c 100644
      assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
      const { quantity, rHash, makerCltvDelta } = responsePacket.body;
      const deal = this.getDeal(rHash);
-@@ -758,6 +792,11 @@ class Swaps extends EventEmitter {
+@@ -821,6 +849,11 @@ class Swaps extends EventEmitter {
  
      try {
        await makerSwapClient.sendPayment(deal);
@@ -112,7 +93,7 @@ index 1002dbb57..f7a88019c 100644
      } catch (err) {
        // first we must handle the edge case where the maker has paid us but failed to claim our payment
        // in this case, we've already marked the swap as having been paid and completed
-@@ -939,6 +978,18 @@ class Swaps extends EventEmitter {
+@@ -1002,6 +1035,18 @@ class Swaps extends EventEmitter {
  
        this.logger.debug('Executing maker code to resolve hash');
  
@@ -131,7 +112,7 @@ index 1002dbb57..f7a88019c 100644
        const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
  
        // we update the phase persist the deal to the database before we attempt to send payment
-@@ -949,6 +1000,13 @@ class Swaps extends EventEmitter {
+@@ -1012,6 +1057,13 @@ class Swaps extends EventEmitter {
        assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
  
        try {
@@ -143,9 +124,9 @@ index 1002dbb57..f7a88019c 100644
 +        }
 +
          deal.rPreimage = await swapClient.sendPayment(deal);
-         return deal.rPreimage;
        } catch (err) {
-@@ -992,6 +1050,16 @@ class Swaps extends EventEmitter {
+         this.logger.debug(`sendPayment in resolveHash failed due to ${err.message}`);
+@@ -1073,6 +1125,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
  
@@ -162,3 +143,19 @@ index 1002dbb57..f7a88019c 100644
        return deal.rPreimage;
      }
    }
+@@ -1310,9 +1372,14 @@ class Swaps extends EventEmitter {
+ 
+         if (deal.role === SwapRole.Maker) {
+           // the maker begins execution of the swap upon accepting the deal
++
++          let interval = Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER;
++          if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++            interval = 5000;
++          }
+           this.timeouts.set(rHash, setTimeout(
+             this.handleSwapTimeout,
+-            Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER,
++            interval,
+             rHash,
+             SwapFailureReason.SwapTimedOut,
+           ));

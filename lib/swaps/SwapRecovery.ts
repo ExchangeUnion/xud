@@ -1,4 +1,5 @@
-import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
+import assert from 'assert';
+import { SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
 import { SwapDealInstance } from '../db/types';
 import Logger from '../Logger';
 import SwapClient, { PaymentState } from './SwapClient';
@@ -9,8 +10,6 @@ import SwapClientManager from './SwapClientManager';
  * ensuring that we do not lose funds on a partially completed swap.
  */
 class SwapRecovery {
-  /** A map of payment hashes to swaps where we have recovered the preimage but not used it to claim payment yet. */
-  public recoveredPreimageSwaps: Map<string, SwapDealInstance> = new Map();
   /** A map of payment hashes to swaps where we have a pending outgoing payment but don't know the preimage. */
   private pendingSwaps: Map<string, SwapDealInstance> = new Map();
   private pendingSwapsTimer?: NodeJS.Timeout;
@@ -60,14 +59,49 @@ class SwapRecovery {
   }
 
   /**
+   * Claims the incoming payment for a deal where the outgoing payment has
+   * already gone through and where we already know the preimage.
+   */
+  private claimPayment = async (deal: SwapDealInstance) => {
+    assert(deal.rPreimage);
+
+    // the maker payment is always the one that is claimed second, after the payment to taker
+    const makerSwapClient = this.swapClientManager.get(deal.makerCurrency);
+    if (!makerSwapClient || !makerSwapClient.isConnected()) {
+      this.logger.warn(`could not claim payment for ${deal.rHash} because ${deal.makerCurrency} swap client is offline`);
+      return;
+    }
+
+    try {
+      await makerSwapClient.settleInvoice(deal.rHash, deal.rPreimage, deal.makerCurrency);
+      deal.state = SwapState.Recovered;
+      this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
+      this.pendingSwaps.delete(deal.rHash);
+      await deal.save();
+    } catch (err) {
+      this.logger.error(`could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash}`, err);
+      // TODO: determine when we are permanently unable (due to htlc expiration or unknown invoice hash) to
+      // settle an invoice and fail the deal, rather than endlessly retrying settle invoice calls
+    }
+    // TODO: update order and trade in database to indicate they were executed
+  }
+
+  /**
    * Checks the status of the outgoing payment for a swap where we have begun
    * sending a payment and handles the resolution of the swap once a final
    * status for the payment is determined.
    */
   private checkPaymentStatus = async (deal: SwapDealInstance) => {
-    this.logger.debug(`checking outgoing payment status for swap ${deal.rHash}`);
     // ensure that we are tracking this pending swap
     this.pendingSwaps.set(deal.rHash, deal);
+
+    if (deal.rPreimage) {
+      // if we already have the preimage for this deal, we can attempt to claim our payment right away
+      await this.claimPayment(deal);
+      return;
+    }
+
+    this.logger.debug(`checking outgoing payment status for swap ${deal.rHash}`);
 
     const takerSwapClient = this.swapClientManager.get(deal.takerCurrency);
     if (!takerSwapClient || !takerSwapClient.isConnected()) {
@@ -81,32 +115,15 @@ class SwapRecovery {
       const makerSwapClient = this.swapClientManager.get(deal.makerCurrency);
       if (!makerSwapClient || !makerSwapClient.isConnected()) {
         this.logger.warn(`could not recover deal ${deal.rHash} because ${deal.makerCurrency} swap client is offline`);
-        this.pendingSwaps.set(deal.rHash, deal);
         return;
       }
 
       const paymentStatus = await takerSwapClient.lookupPayment(deal.rHash, deal.takerCurrency);
       if (paymentStatus.state === PaymentState.Succeeded) {
-        try {
-          deal.rPreimage = paymentStatus.preimage!;
-          if (makerSwapClient.type === SwapClientType.Raiden) {
-            this.logger.info(`recovered preimage ${deal.rPreimage} for swap ${deal.rHash}, ` +
-              'waiting for raiden to request secret and claim payment.');
-            this.recoveredPreimageSwaps.set(deal.rHash, deal);
-          } else {
-            await makerSwapClient.settleInvoice(deal.rHash, deal.rPreimage, deal.makerCurrency);
-            deal.state = SwapState.Recovered;
-            this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
-          }
+        deal.rPreimage = paymentStatus.preimage!;
+        await deal.save(); // persist the preimage to the database once we retrieve it
 
-          this.pendingSwaps.delete(deal.rHash);
-          await deal.save();
-          // TODO: update order and trade in database to indicate they were executed
-        } catch (err) {
-          // tslint:disable-next-line: max-line-length
-          this.logger.error(`could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash} and preimage ${deal.rPreimage}, **this must be resolved manually**`, err);
-          await this.failDeal(deal);
-        }
+        await this.claimPayment(deal);
       } else if (paymentStatus.state === PaymentState.Failed) {
         // the payment failed, so cancel the open invoice if we have one
         await this.failDeal(deal, makerSwapClient);
@@ -138,6 +155,7 @@ class SwapRecovery {
         await this.failDeal(deal, makerSwapClient);
         break;
       case SwapPhase.SendingPayment:
+      case SwapPhase.PreimageResolved:
         // we started sending payment but didn't claim our payment
         await this.checkPaymentStatus(deal);
         break;

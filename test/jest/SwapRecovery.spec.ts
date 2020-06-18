@@ -131,14 +131,46 @@ describe('SwapRecovery', () => {
     swapRecovery = new SwapRecovery(swapClientManager, logger);
     const preimage = 'preimage';
     lndLtc.lookupPayment = jest.fn().mockReturnValue({ preimage, state: PaymentState.Succeeded });
+    const claimPaymentSpy = jest.spyOn(swapRecovery as any, 'claimPayment');
+    const recoveredEventCallback = jest.fn();
+    swapRecovery.on('recovered', recoveredEventCallback);
 
     await swapRecovery.recoverDeal(deal);
+    expect(claimPaymentSpy).toHaveBeenCalledTimes(1);
+    expect(recoveredEventCallback).toHaveBeenCalledTimes(1);
+    expect(recoveredEventCallback).toHaveBeenCalledWith(deal);
     expect(lndLtc.lookupPayment).toHaveBeenCalledTimes(1);
     expect(lndLtc.lookupPayment).toHaveBeenCalledWith(deal.rHash, deal.takerCurrency);
     expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
     expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
     expect(deal.state).toEqual(SwapState.Recovered);
-    expect(save).toHaveBeenCalledTimes(1);
+    expect(deal.rPreimage).toEqual(preimage);
+    expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeFalsy();
+    // should save once after we retrieve preimage, once after we settle incoming payment
+    expect(save).toHaveBeenCalledTimes(2);
+  });
+
+  test('it completes a successful payment when we had resolved preimage as maker but not claimed payment', async () => {
+    const deal: any = { ...swapDealInstance };
+    deal.phase = SwapPhase.PreimageResolved;
+    swapRecovery = new SwapRecovery(swapClientManager, logger);
+    const preimage = 'preimage';
+    lndLtc.lookupPayment = jest.fn().mockReturnValue({ preimage, state: PaymentState.Succeeded });
+    const claimPaymentSpy = jest.spyOn(swapRecovery as any, 'claimPayment');
+    const recoveredEventCallback = jest.fn();
+    swapRecovery.on('recovered', recoveredEventCallback);
+
+    await swapRecovery.recoverDeal(deal);
+    expect(claimPaymentSpy).toHaveBeenCalledTimes(1);
+    expect(recoveredEventCallback).toHaveBeenCalledTimes(1);
+    expect(recoveredEventCallback).toHaveBeenCalledWith(deal);
+    expect(lndBtc.settleInvoice).toHaveBeenCalledTimes(1);
+    expect(lndBtc.settleInvoice).toHaveBeenCalledWith(deal.rHash, preimage, deal.makerCurrency);
+    expect(deal.state).toEqual(SwapState.Recovered);
+    expect(deal.rPreimage).toEqual(preimage);
+    expect(swapRecovery['pendingSwaps'].has(deal.rHash)).toBeFalsy();
+    // should save once after we retrieve preimage, once after we settle incoming payment
+    expect(save).toHaveBeenCalledTimes(2);
   });
 
   test('it fails a failed payment when we were sending payment as maker', async () => {
