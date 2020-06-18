@@ -80,6 +80,7 @@ class SwapRecovery {
       await deal.save();
     } catch (err) {
       this.logger.error(`could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash}`, err);
+      this.logger.alert(`incoming ${deal.makerCurrency} payment with hash ${deal.rHash} could not be settled with preimage ${deal.rPreimage}, **funds may be lost and this must be investigated manually**`);
       // TODO: determine when we are permanently unable (due to htlc expiration or unknown invoice hash) to
       // settle an invoice and fail the deal, rather than endlessly retrying settle invoice calls
     }

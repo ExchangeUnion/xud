@@ -709,6 +709,7 @@ class Swaps extends EventEmitter {
         // if we couldn't settle the invoice then we fail the deal which throws
         // it into recovery where we will try to settle our payment again
         this.logger.error(`could not settle invoice for deal ${rHash}`, err);
+        this.logger.alert(`incoming ${currency} payment with hash ${rHash} could not be settled with preimage ${rPreimage}, this is not expected and funds may be at risk`);
         await this.failDeal({
           deal,
           failureReason: SwapFailureReason.UnexpectedClientError,
