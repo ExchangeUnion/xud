@@ -10,9 +10,12 @@ type ConnextError struct {
 }
 
 var (
-	clientPath     = "/connext-vol/rest-api-client"
-	EthProviderURL = "http://host.docker.internal:8545"
-	NodeURL        = "http://host.docker.internal:8080"
+	clientPath = "/connext-vol/rest-api-client"
+
+	// 172.17.0.1 is the static IP equivalent of `host.docker.internal` for accessing
+	// the `localhost` of the host machine.
+	EthProviderURL = "http://172.17.0.1:8545"
+	NodeURL        = "http://172.17.0.1:8080"
 )
 
 type NetworkHarness struct {
