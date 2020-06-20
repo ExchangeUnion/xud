@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/ExchangeUnion/xud-simulation/connexttest"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -273,7 +276,43 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 	}
 }
 
+func verifyEthProviderReachability() error {
+	client, err := ethclient.Dial(connexttest.EthProviderURL)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.NetworkID(context.Background()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func verifyConnextNodeReachability() error {
+	url := connexttest.NodeURL + "/config"
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 200 {
+		data, _ := ioutil.ReadAll(res.Body)
+		return fmt.Errorf("invalid response at %v: %v", url, data)
+	}
+
+	return nil
+}
+
 func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
+	if err := verifyEthProviderReachability(); err != nil {
+		log.Fatalf("EthProvider reachability failure: %v", err)
+	}
+	if err := verifyConnextNodeReachability(); err != nil {
+		log.Fatalf("Connext node reachability failure: %v", err)
+	}
+
 	// Create XUD network instance without launching it.
 	log.Printf("xud: creating network")
 	xudHarness, err := xudtest.NewNetworkHarness()
