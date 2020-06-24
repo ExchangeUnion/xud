@@ -1,8 +1,8 @@
 // Ported from https://github.com/bitcoin/bitcoin/blob/master/src/addrman.h
 
-import => { NodeInstance } from '../db/types';
+import { NodeInstance } from '../db/types';
 
-class AddrInfo => {
+class AddrInfo {
   public node = null;
   // last try whatsoever by us
   public nLastTry = 0;
@@ -17,18 +17,18 @@ class AddrInfo => {
   // reference count in new sets
   private nRefCount = 0;
   // in tried set?
-  private fInTried = false;
+  private fintried = false;
   // position in vRandom
   private nRandomPos = -1;
 
   // Calculate in which "tried" bucket this entry belongs
-  public GetTriedBucket = (uint256 key): int => {
+  public GetTriedBucket = (key: uint256): number => {
   }
   // Calculate in which "new" bucket this entry belongs, given a certain source
-  public GetNewBucket = (uint256 key, NodeInstance src): int => {
+  public GetNewBucket = (key: uint256, src: NodeInstance): number => {
   }
   // Calculate in which position of a bucket to store this entry
-  public GetBucketPosition = (uint256 key, boolean fNew, int nBucket): int => {
+  public GetBucketPosition = (key: uint256, fNew: boolean, nBucket: number): number => {
   }
   // Determine whether the statistics about this entry are bad enough so that it can just be deleted
   public IsTerrible = (): boolean => {
@@ -39,26 +39,26 @@ class AddrInfo => {
 
 }
 
-class AddrMan => {
+class AddrMan {
   // last used nId
   public nIdCount;
   // table with informatino about all nIds
-  public mapInfo = new Map<NodeInstance, int>();
+  public mapInfo = new Map<NodeInstance, number>();
   // find an nId based on its network address
-  public mapAddr = new Map<NodeInstance, int>();
+  public mapAddr = new Map<NodeInstance, number>();
   // randomly-ordered vector of all nIds
   public vRandom = [];
   // number of "tried" entries
   public nTried = 0;
   // list of "tried" buckets
-  public vvTried[ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
+  public vvTried: AddrInfo[ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
   // number of (unique) "new" entries
   public nNew = 0;
   // list of "new" buckets
-  public vvNew[ADDRMAN_NEW_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
+  public vvNew = AddrInfo[ADDRMAN_NEW_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
   // last time Good was called
   public nLastGood;
-  // Holds addrs inserted into tried table that collide with existing entries. Test-before-evict discipline used to resolve these collisions.
+  // Holds addrs inserted int:o tried table that collide with existing entries. Test-before-evict discipline used to resolve these collisions.
   public m_tried_collisions = set();
   // secret key to randomize bucket select with
   private nKey;
@@ -95,47 +95,44 @@ class AddrMan => {
   // the maximum number of tried addr collisions to store
   private static readonly ADDRMAN_SET_TRIED_COLLISION_SIZE = 10;
   // the maximum time we'll spend trying to resolve a tried table collision, in seconds
-  private static readonly int64_t ADDRMAN_TEST_WINDOW = 40*60; // 40 minutes
+  private static readonly ADDRMAN_TEST_WINDOW = 40*60; // 40 minutes
 
   // Find an entry
-  public Find = (NodeInstance node, int pnId): CAddrInfo => {
+  public Find = (node: NodeInstance, pnId: number): AddrInfo => {
   }
   // find an entry, creating it if necessary.
   // nTime and nServices of the found node are updated, if necessary.
-  public Create = (NodeInstance addr, NodeInstance addrSource, int pnId): CAddrInfo => {
+  public Create = (addr: NodeInstance, addrSource: NodeInstance, pnId: number): AddrInfo => {
   }
   // Swap two elements in vRandom
-  public SwapRandom = (int nRandomPos1, int nRandomPos2): void => {
+  public SwapRandom = (nRandomPos1: number, nRandomPos2: number): void => {
   }
   // Move an entry from the "new" table = (s) to the "tried" table
-  public MakeTried = (NodeInstance info, int nId) => {
+  public MakeTried = (info: NodeInstance, nId: number) => {
   }
   // Delete an entry. It must not be in tried, and have refcount 0
-  public Delete = (int nId): void => {
+  public Delete = (nId: number): void => {
   }
   // Clear a position in a "new" table. This is the only place where entries are actually deleted
-  public ClearNew = (int nUBucket, int nUBucketPos): void => {
+  public ClearNew = (nUBucket: number, nUBucketPos: number): void => {
   }
   // Mark an entry "good", possibly moving it from "new" to "tried"
-  public Good = (NodeInstance addr, bool test_before_evict, int time): void => {
+  public Good = (addr: NodeInstance, test_before_evict: boolean, time: number): void => {
   }
   // Add an entry to the "new" table
-  public Add = (NodeInstance addr, NodeInstance source, int nTimePenalty): boolean => {
+  public Add = (addr: NodeInstance, source: NodeInstance, nTimePenalty: number): boolean => {
   }
   // Mark and entry as attempted to connect
-  public Attempt = (NodeInstance addr, bool fCountFailure, int nTime): void => {
+  public Attempt = (addr: NodeInstance, fCountFailure: boolean, nTime: number): void => {
   }
   // Select an address to connect to, if newOnly is set to true, only the new table is selected from
-  public Select = (bool newOnly): CAddrInfo => {
+  public Select = (newOnly: boolean): AddrInfo => {
   }
   // See if any to-be-evicted tried table entries have been tested and if so resolve the collisions
   public ResolveCollisions = (): void => {
   }
   // Return a random to-be-evicted tried table address
-  public SelectTriedCollision = (): CAddrInfo => {
+  public SelectTriedCollision = (): AddrInfo => {
   }
-
-
-
 }
 
