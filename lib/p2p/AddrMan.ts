@@ -34,7 +34,7 @@ class AddrInfo {
   public IsTerrible = (): boolean => {
   }
   // Calculate the relative chance this entry should be given when selecting nodes to connect to
-  public GetChance = (): float => {
+  public GetChance = (): number => {
   }
 
 }
@@ -50,16 +50,12 @@ class AddrMan {
   public vRandom = [];
   // number of "tried" entries
   public nTried = 0;
-  // list of "tried" buckets
-  public vvTried: AddrInfo[ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
   // number of (unique) "new" entries
   public nNew = 0;
-  // list of "new" buckets
-  public vvNew = AddrInfo[ADDRMAN_NEW_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
   // last time Good was called
   public nLastGood;
-  // Holds addrs inserted int:o tried table that collide with existing entries. Test-before-evict discipline used to resolve these collisions.
-  public m_tried_collisions = set();
+  // Holds addrs inserted into tried table that collide with existing entries. Test-before-evict discipline used to resolve these collisions.
+  public m_tried_collisions = Set();
   // secret key to randomize bucket select with
   private nKey;
   // total number of buckets for tried addresses
@@ -96,6 +92,11 @@ class AddrMan {
   private static readonly ADDRMAN_SET_TRIED_COLLISION_SIZE = 10;
   // the maximum time we'll spend trying to resolve a tried table collision, in seconds
   private static readonly ADDRMAN_TEST_WINDOW = 40*60; // 40 minutes
+
+  // list of "tried" buckets
+  public vvTried: AddrInfo[ADDRMAN_TRIED_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
+  // list of "new" buckets
+  public vvNew = AddrInfo[ADDRMAN_NEW_BUCKET_COUNT][ADDRMAN_BUCKET_SIZE];
 
   // Find an entry
   public Find = (node: NodeInstance, pnId: number): AddrInfo => {
