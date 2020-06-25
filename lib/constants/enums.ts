@@ -110,10 +110,21 @@ export enum ReputationEvent {
   SwapSuccess = 5,
   /** When a swap is accepted and is attempted to be executed but fails. */
   SwapFailure = 6,
-  /** When a swap is accepted and then fails due to exceeding time limits. */
+  /** When a swap fails due to exceeding time limits. */
   SwapTimeout = 7,
   /** When a swap fails due to unexpected or possibly malicious behavior. */
   SwapMisbehavior = 8,
+  /**
+   * The peer has behaved dishonestly during a swap in a way that strongly
+   * suggests it is running modified malicious code.
+   */
+  SwapAbuse = 9,
+  /**
+   * The peer completed a swap that was delayed beyond the expected deadline
+   * to complete or fail the swap deal, but the delay was not so long as to
+   * preclude the possibility of latency or lag.
+   */
+  SwapDelay = 10,
 }
 
 export enum SwapFailureReason {

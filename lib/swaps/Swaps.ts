@@ -1184,6 +1184,7 @@ class Swaps extends EventEmitter {
 
     switch (failureReason) {
       case SwapFailureReason.SwapTimedOut:
+      case SwapFailureReason.DealTimedOut:
         // additional penalty as timeouts cause costly delays and possibly stuck HTLC outputs
         void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapTimeout);
         /* falls through */
@@ -1200,7 +1201,6 @@ class Swaps extends EventEmitter {
         void this.pool.addReputationEvent(deal.peerPubKey, ReputationEvent.SwapFailure);
         break;
       case SwapFailureReason.InvalidResolveRequest:
-      case SwapFailureReason.DealTimedOut:
       case SwapFailureReason.InvalidSwapPacketReceived:
       case SwapFailureReason.PaymentHashReuse:
         // peer misbehaving, penalize the peer
@@ -1341,10 +1341,10 @@ class Swaps extends EventEmitter {
         // us with the free option problem
         if (elapsedMilliseconds > Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_ABUSE_TIME_LIMIT) {
           this.logger.warn(`taker accepted payment for ${rHash} after ${elapsedMilliseconds} ms, exceeding abuse threshold of ${Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER} ms`);
-          // TODO: ban peer
+          this.pool.addReputationEvent(deal.takerPubKey!, ReputationEvent.SwapAbuse).catch(this.logger.error);
         } else if (elapsedMilliseconds > Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER) {
           this.logger.warn(`taker accepted payment for ${rHash} after ${elapsedMilliseconds} ms, exceeding swap timeout of ${Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER} ms`);
-          // TODO: penalize peer
+          this.pool.addReputationEvent(deal.takerPubKey!, ReputationEvent.SwapDelay).catch(this.logger.error);
         }
 
         this.logger.debug(`Setting PreimageResolved phase for deal ${rHash}`);
