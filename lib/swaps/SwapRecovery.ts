@@ -1,22 +1,30 @@
 import assert from 'assert';
+import { EventEmitter } from 'events';
 import { SwapFailureReason, SwapPhase, SwapRole, SwapState } from '../constants/enums';
 import { SwapDealInstance } from '../db/types';
 import Logger from '../Logger';
 import SwapClient, { PaymentState } from './SwapClient';
 import SwapClientManager from './SwapClientManager';
 
+interface SwapRecovery {
+  on(event: 'recovered', listener: (recoveredSwap: SwapDealInstance) => void): this;
+  emit(event: 'recovered', recoveredSwap: SwapDealInstance): boolean;
+}
+
 /**
  * A class that's responsible for recovering swap deals that were interrupted due to a system or xud crash,
  * ensuring that we do not lose funds on a partially completed swap.
  */
-class SwapRecovery {
+class SwapRecovery extends EventEmitter {
   /** A map of payment hashes to swaps where we have a pending outgoing payment but don't know the preimage. */
   private pendingSwaps: Map<string, SwapDealInstance> = new Map();
   private pendingSwapsTimer?: NodeJS.Timeout;
   /** The time in milliseconds between checks on the status of pending swaps. */
   private static readonly PENDING_SWAP_RECHECK_INTERVAL = 300000;
 
-  constructor(private swapClientManager: SwapClientManager, private logger: Logger) { }
+  constructor(private swapClientManager: SwapClientManager, private logger: Logger) {
+    super();
+  }
 
   public beginTimer = () => {
     if (!this.pendingSwapsTimer) {
@@ -78,13 +86,13 @@ class SwapRecovery {
       this.logger.info(`recovered ${deal.makerCurrency} swap payment of ${deal.makerAmount} using preimage ${deal.rPreimage}`);
       this.pendingSwaps.delete(deal.rHash);
       await deal.save();
+      this.emit('recovered', deal);
     } catch (err) {
       this.logger.error(`could not settle ${deal.makerCurrency} invoice for payment ${deal.rHash}`, err);
       this.logger.alert(`incoming ${deal.makerCurrency} payment with hash ${deal.rHash} could not be settled with preimage ${deal.rPreimage}, **funds may be lost and this must be investigated manually**`);
       // TODO: determine when we are permanently unable (due to htlc expiration or unknown invoice hash) to
       // settle an invoice and fail the deal, rather than endlessly retrying settle invoice calls
     }
-    // TODO: update order and trade in database to indicate they were executed
   }
 
   /**

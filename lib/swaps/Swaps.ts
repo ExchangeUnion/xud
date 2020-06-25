@@ -25,8 +25,10 @@ export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'i
 interface Swaps {
   on(event: 'swap.paid', listener: (swapSuccess: SwapSuccess) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
+  on(event: 'swap.recovered', listener: (recoveredSwap: SwapDealInstance) => void): this;
   emit(event: 'swap.paid', swapSuccess: SwapSuccess): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
+  emit(event: 'swap.recovered', recoveredSwap: SwapDealInstance): boolean;
 }
 
 class Swaps extends EventEmitter {
@@ -221,6 +223,10 @@ class Swaps extends EventEmitter {
     this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
     this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
     this.swapClientManager.on('connextUpdate', this.pool.updateConnextState);
+
+    this.swapRecovery.on('recovered', (recoveredSwap) => {
+      this.emit('swap.recovered', recoveredSwap);
+    });
   }
 
   /**
@@ -1411,6 +1417,8 @@ class Swaps extends EventEmitter {
   }
 
   public close = () => {
+    this.swapClientManager.removeAllListeners();
+    this.swapRecovery.removeAllListeners();
     this.swapRecovery.stopTimer();
   }
 }
