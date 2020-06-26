@@ -104,11 +104,11 @@ class GrpcServer {
    * @returns the cerificate and its private key
    */
   private generateCertificate = async (tlsCertPath: string, tlsKeyPath: string): Promise<{ tlsCert: string, tlsKey: string }> => {
-    const keys = pki.rsa.generateKeyPair(1024);
+    const keys = pki.rsa.generateKeyPair(2048);
     const cert = pki.createCertificate();
 
     cert.publicKey = keys.publicKey;
-    cert.serialNumber = String(Math.floor(Math.random() * 1024) + 1);
+    cert.serialNumber = `2048-${String(Math.floor(Math.random() * 100000000))}`;
 
     // TODO: handle expired certificates
     const date = new Date();
