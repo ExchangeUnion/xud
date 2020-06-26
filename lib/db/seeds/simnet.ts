@@ -3,17 +3,17 @@ import { SwapClientType } from '../../constants/enums';
 
 const nodes = [
   {
-    nodePubKey: '025443023c0303eb5671522cda0d49acb0e74c77f1371bf86262bad637835eb9e4',
+    nodePubKey: '03ece33a30db1dbce4b62fa96a5e9541138a24997ef5672eebed2d332270e39542',
     addresses: [
       { host: 'xud1.simnet.exchangeunion.com', port: 28885 },
-      { host: 'xe4vwapndzzxlz47fb3n7ysqq4wynqic4cceel3pv3s6ehr6j2t663qd.onion', port: 28885 },
+      { host: 'hsfkqybnlkql5fgm3h72mqnrl5rh543hulkp7j6tzs7thq3fznjrkcid.onion', port: 28885 },
     ],
   },
   {
-    nodePubKey: '03929f9962bd8f6c108fb0f2a15024f0d11a833ee465094361b71b0e94c903cec2',
+    nodePubKey: '03ebe60e1712fe0fe526e5cbd97770c4471ae7612ea294f7d17379fd5b80d0d5f8',
     addresses: [
       { host: 'xud.kilrau.com', port: 28885 },
-      { host: 'gamd4wqbllf5ww34abgl4xiekf7slbt2kwsrbnp4rfilyav6wfcxvdyd.onion', port: 28885 },
+      { host: 'pcvnz2ion5hvhzpdmcck4gloaqahf33tzm4ospwm7p7qvn2nq3vqpiad.onionn', port: 28885 },
     ],
   },
 ] as db.NodeAttributes[];
