@@ -1,9 +1,12 @@
 // Ported from https://github.com/bitcoin/bitcoin/blob/master/src/addrman.h
 
 import { NodeInstance } from '../db/types';
+import { createHash } from "crypto";
 
 class AddrInfo {
   public node = null;
+  // time this node was added
+  public nTime = 0;
   // last try whatsoever by us
   public nLastTry = 0;
   // last counted attempt
@@ -23,18 +26,49 @@ class AddrInfo {
 
   // Calculate in which "tried" bucket this entry belongs
   public GetTriedBucket = (key: uint256): number => {
+    /*hash this.node.lastAddress and key
+    hash again
+    mod by AddrMan.ADDRMAN_TRIED_BUCKET_COUNT*/
+    return 0;
   }
   // Calculate in which "new" bucket this entry belongs, given a certain source
   public GetNewBucket = (key: uint256, src: NodeInstance): number => {
+    return 0;
   }
   // Calculate in which position of a bucket to store this entry
   public GetBucketPosition = (key: uint256, fNew: boolean, nBucket: number): number => {
+    let hash = createHash("sha256").update(key, 'utf-8').digest();
+    return hash % AddrMan.ADDRMAN_BUCKET_SIZE;
   }
+
   // Determine whether the statistics about this entry are bad enough so that it can just be deleted
   public IsTerrible = (): boolean => {
+    if (this.nLastTry && nLastTry >= time.now() - 60) {
+      return false;
+    }
+    if (this.nTime > time.now() + 10 * 60) {
+      return true;
+    }
+    if (this.nTime == 0 || time.now() - this.nTime > AddrMan.ADDRMAN_HORIZON_DAYS * 24 * 60 * 60) {
+      return true;
+    }
+    if (this.nLastSuccess == 0 && this.nAttempts >= AddrMan.ADDRMAN_RETRIES) {
+      return true;
+    }
+    if (time.now() - this.nLastSuccess > AddrMan.ADDRMAN_MIN_FAIL_DAYS * 24 * 60 * 60 && this.nAttempts >= AddrMan.ADDRMAN_MAX_FAILURES) {
+      return true;
+    }
+    return false;
   }
   // Calculate the relative chance this entry should be given when selecting nodes to connect to
   public GetChance = (): number => {
+    let fChance = 1.0;
+    let nSinceLastTry = max(time.now() - this.nLastTry, 0);
+    if (nSinceLastTry < 60 * 10) {
+      fChance *- 0.01;
+    }
+    fChance = pow(0.66, min(this.nAttempts, 8));
+    return fChance;
   }
 
 }
@@ -100,10 +134,18 @@ class AddrMan {
 
   // Find an entry
   public Find = (node: NodeInstance, pnId: number): AddrInfo => {
+    for k,v in mapAddr {
+      if (v == node) {
+        return k;
+      }
+    }
+    return null;
   }
   // find an entry, creating it if necessary.
   // nTime and nServices of the found node are updated, if necessary.
   public Create = (addr: NodeInstance, addrSource: NodeInstance, pnId: number): AddrInfo => {
+    let nId = this.nIdCount++;
+    mapInfo[nId] = CAddrInfo
   }
   // Swap two elements in vRandom
   public SwapRandom = (nRandomPos1: number, nRandomPos2: number): void => {
@@ -122,6 +164,10 @@ class AddrMan {
   }
   // Add an entry to the "new" table
   public Add = (addr: NodeInstance, source: NodeInstance, nTimePenalty: number): boolean => {
+    if (!(addr.IsRoutable())) {
+      return false;
+    }
+    return true;
   }
   // Mark and entry as attempted to connect
   public Attempt = (addr: NodeInstance, fCountFailure: boolean, nTime: number): void => {
