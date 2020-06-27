@@ -6,7 +6,7 @@ then
     pushd temp
     git clone https://github.com/ConnextProject/indra.git
     cd indra
-    git checkout ab4daf9b63726ab5ca3d1903d910a2682b8855ef
+    git checkout indra-7.0.0-alpha.6
     make
     popd
 fi
