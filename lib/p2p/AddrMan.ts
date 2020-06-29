@@ -198,6 +198,7 @@ class AddrMan {
   }
   // Clear a position in a "new" table. This is the only place where entries are actually deleted
   public ClearNew = (nUBucket: number, nUBucketPos: number): void => {
+
   }
   // Mark an entry "good", possibly moving it from "new" to "tried"
   public Good = (addr: NodeInstance, test_before_evict: boolean, time: number): void => {
