@@ -288,7 +288,7 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
+	time.Sleep(45 * time.Second)
 
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
@@ -421,7 +421,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
 	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
+	time.Sleep(45 * time.Second)
 
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
@@ -478,7 +478,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
+	time.Sleep(45 * time.Second)
 
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
@@ -602,7 +602,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
 	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
+	time.Sleep(45 * time.Second)
 
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
@@ -659,7 +659,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
+	time.Sleep(45 * time.Second)
 
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
