@@ -3,6 +3,7 @@ package main
 import (
 	"time"
 
+	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/ExchangeUnion/xud-simulation/xudtest"
 	"github.com/lightningnetwork/lnd/lnrpc"
@@ -52,6 +53,23 @@ var unsettledChannelsSecurityTests = []*testCase{
 		name: "taker shutdown after 2nd htlc",
 		test: testTakerShutdownAfter2ndHTLC,
 	},
+}
+
+func waitForChannelClose(lndNode *lntest.HarnessNode, ht *harnessTest) {
+	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
+	attempts := 0
+	chanList, err := lndNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+
+	ht.assert.NoError(err)
+
+	for len(chanList.Channels) > 0 && attempts < 60 {
+		time.Sleep(5 * time.Second)
+		chanList, err = lndNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+		attempts++
+	}
+
+	ht.assert.NoError(err)
+	ht.assert.Equal(len(chanList.Channels), 0)
 }
 
 func testTakerStallingOnSwapAccepted(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -288,12 +306,9 @@ func testMakerShutdownAfter1stHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
-
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	bobLtcChanList, err = net.Bob.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(bobLtcChanList.Channels), 0)
+	waitForChannelClose(net.Bob.LndLtcNode, ht)
 
 	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
 
@@ -421,12 +436,9 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
 	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
-
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	bobBtcChanList, err = net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(bobBtcChanList.Channels), 0)
+	waitForChannelClose(net.Bob.LndBtcNode, ht)
 
 	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
 
@@ -478,12 +490,9 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
-
 	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	aliceLtcChanList, err = net.Alice.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(aliceLtcChanList.Channels), 0)
+	waitForChannelClose(net.Alice.LndLtcNode, ht)
 
 	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
 
@@ -544,7 +553,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place an order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "taker_shutdown_after_2nd_htlc",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -557,7 +566,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Place a matching order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "taker_shutdown_after_2nd_htlc",
 		Price:    bobOrderReq.Price,
 		Quantity: bobOrderReq.Quantity,
 		PairId:   bobOrderReq.PairId,
@@ -610,12 +619,9 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
 	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
-	time.Sleep(25 * time.Second)
-
 	// Verify BTC channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	bobBtcChanList, err = net.Bob.LndBtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(bobBtcChanList.Channels), 0)
+	waitForChannelClose(net.Bob.LndBtcNode, ht)
 
 	// Wait for publishing CLTV-delayed BTC HTLC output using timeout tx.
 
@@ -647,12 +653,9 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	//err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
 	//ht.assert.NoError(err)
 
-	time.Sleep(25 * time.Second)
-
 	// Verify LTC channel was closed (by force-close, as the outgoing HTLC got expired).
 
-	aliceLtcChanList, err = net.Alice.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(aliceLtcChanList.Channels), 0)
+	waitForChannelClose(net.Alice.LndLtcNode, ht)
 
 	// Wait for publishing CLTV-delayed LTC HTLC output using timeout tx.
 
@@ -704,7 +707,7 @@ func testTakerStallingAfterSwapSucceeded(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place an order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "taker_stalling_after_swap_succeeded",
 		Price:    0.02,
 		Quantity: 1000000,
 		PairId:   "LTC/BTC",
@@ -717,7 +720,7 @@ func testTakerStallingAfterSwapSucceeded(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place a matching order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "taker_stalling_after_swap_succeeded",
 		Price:    bobOrderReq.Price,
 		Quantity: bobOrderReq.Quantity,
 		PairId:   bobOrderReq.PairId,
