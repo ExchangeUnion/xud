@@ -82,7 +82,7 @@ class Swaps extends EventEmitter {
   ) {
     super();
 
-    this.swapRecovery = new SwapRecovery(swapClientManager, logger);
+    this.swapRecovery = new SwapRecovery(swapClientManager, logger.createSubLogger('RECOVERY'));
     this.repository = new SwapRepository(this.models);
     this.bind();
   }
