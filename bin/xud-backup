@@ -77,3 +77,8 @@ delete argv.$0;
 const backup = new Backup();
 
 backup.start(argv);
+
+process.on('SIGTERM', () => {
+  backup.stop();
+  console.info('SIGTERM signal received.');
+});
