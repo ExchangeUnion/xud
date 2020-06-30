@@ -17,6 +17,8 @@ export const reputationEventWeight = {
   [ReputationEvent.InvalidAuth]: -20,
   [ReputationEvent.SwapTimeout]: -15,
   [ReputationEvent.SwapMisbehavior]: -20,
+  [ReputationEvent.SwapAbuse]: Number.NEGATIVE_INFINITY,
+  [ReputationEvent.SwapDelay]: -25,
 };
 
 // TODO: inform node about getting banned
@@ -111,6 +113,7 @@ class NodeList extends EventEmitter {
     nodes.forEach((node) => {
       this.addNode(node);
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
+        node.reputationScore = 0;
         events.forEach(({ event }) => {
           this.updateReputationScore(node, event);
         });
@@ -126,6 +129,7 @@ class NodeList extends EventEmitter {
   public createNode = async (nodeFactory: NodeFactory) => {
     const node = await this.repository.addNodeIfNotExists(nodeFactory);
     if (node) {
+      node.reputationScore = 0;
       this.addNode(node);
     }
   }
@@ -211,13 +215,12 @@ class NodeList extends EventEmitter {
   }
 
   private updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
-    switch (event) {
-      case (ReputationEvent.ManualBan):
-      case (ReputationEvent.ManualUnban): {
-        node.reputationScore = reputationEventWeight[event];
-        break;
-      }
-      default: node.reputationScore += reputationEventWeight[event]; break;
+    if (event === ReputationEvent.ManualUnban) {
+      node.reputationScore = reputationEventWeight[event];
+    } else {
+      // events that carry a negative infinity weight will set the
+      // reputationScore to negative infinity and result in a ban
+      node.reputationScore += reputationEventWeight[event];
     }
   }
 

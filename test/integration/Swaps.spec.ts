@@ -1,15 +1,15 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon, { SinonSandbox } from 'sinon';
-import Pool from '../../lib/p2p/Pool';
-import Peer from '../../lib/p2p/Peer';
-import Swaps from '../../lib/swaps/Swaps';
-import SwapClientManager from '../../lib/swaps/SwapClientManager';
-import Logger, { Level } from '../../lib/Logger';
-import DB from '../../lib/db/DB';
-import { waitForSpy } from '../utils';
 import { SwapFailureReason } from '../../lib/constants/enums';
+import DB from '../../lib/db/DB';
+import Logger, { Level } from '../../lib/Logger';
+import Peer from '../../lib/p2p/Peer';
+import Pool from '../../lib/p2p/Pool';
 import SwapClient from '../../lib/swaps/SwapClient';
+import SwapClientManager from '../../lib/swaps/SwapClientManager';
+import Swaps from '../../lib/swaps/Swaps';
+import { getValidDeal, waitForSpy } from '../utils';
 
 chai.use(chaiAsPromised);
 
@@ -55,35 +55,6 @@ const validSwapSuccess = () => {
     price: 0.008,
     peerPubKey: '020c9a0fb8dac5b91756fb21509aefc4e95b585510c4de6e6311f18348a4723cdd',
     role: 0,
-  };
-};
-
-const validSwapDeal = () => {
-  return {
-    takerCltvDelta: 144,
-    rHash: '29bcb9097a6afe26826100919917c9044062cba1d4f6ac694029f6b8af2041c7',
-    orderId: '20998481-e689-11e8-95ee-e3e71c57fbb3',
-    pairId: 'LTC/BTC',
-    proposedQuantity: 1000,
-    takerCurrency: 'BTC',
-    makerCurrency: 'LTC',
-    takerAmount: 8,
-    makerAmount: 1000,
-    takerUnits: 8,
-    makerUnits: 1000,
-    peerPubKey: '030130758847ada485520016a075833b8638c7e5a56889cb4b76e10c0f61f3520c',
-    localId: '20b63440-e689-11e8-aa83-51505ebd3ca7',
-    price: 0.008,
-    isBuy: true,
-    phase: 3,
-    state: 1,
-    rPreimage: 'eab3fe55ce502b702bca13cbb9f1e4239502911d4c8823b73708c4a4433ed87a',
-    role: 0,
-    createTime: 1542033726862,
-    makerCltvDelta: 1152,
-    quantity: 1000,
-    executeTime: 1542033726871,
-    errorMessage: 'UnknownPaymentHash',
   };
 };
 
@@ -169,7 +140,7 @@ describe('Swaps.Integration', () => {
       const swapListenersAdded = sandbox.spy(swaps, 'on');
       const addDealSpy = sandbox.spy(swaps, 'addDeal');
       const swapListenersRemoved = sandbox.spy(swaps, 'removeListener');
-      const swapDeal = validSwapDeal();
+      const swapDeal = getValidDeal();
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected;
       await waitForSpy(swapListenersAdded);
@@ -219,7 +190,5 @@ describe('Swaps.Integration', () => {
       expect(swaps.executeSwap(validMakerOrder(), validTakerOrder()))
         .to.eventually.be.rejected.and.equal(SwapFailureReason.UnexpectedClientError);
     });
-
   });
-
 });

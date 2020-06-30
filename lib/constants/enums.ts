@@ -64,21 +64,26 @@ export enum SwapRole {
 }
 
 export enum SwapPhase {
-  /** The swap deal has been created locally. */
+  /** 0/5 The swap deal has been created locally. */
   SwapCreated = 0,
-  /** We've made a request to a peer to accept this swap. */
+  /** 1/5 We've made a request to a peer to accept this swap. */
   SwapRequested = 1,
-  /** The terms of the swap have been agreed to, and we will attempt to execute it. */
+  /** 2/5 The terms of the swap have been agreed to, and we will attempt to execute it. */
   SwapAccepted = 2,
   /**
-   * We have made a request to the swap client to send payment according to the agreed terms.
+   * 3/5 We have made a request to the swap client to send payment according to the agreed terms.
    * The payment (and swap) could still fail due to no route with sufficient capacity, lack of
    * cooperation from the receiver or any intermediary node along the route, or an unexpected
    * error from the swap client.
    */
   SendingPayment = 3,
   /**
-   * We have received the agreed amount of the swap and released the preimage to the
+   * 4/5 We have completed our outgoing payment and retrieved the preimage which can be used to
+   * settle the incoming payment locked by the same hash.
+   */
+  PreimageResolved = 5,
+  /**
+   * 5/5 We have received the agreed amount of the swap and released the preimage to the
    * receiving swap client so it can accept payment.
    */
   PaymentReceived = 4,
@@ -105,10 +110,21 @@ export enum ReputationEvent {
   SwapSuccess = 5,
   /** When a swap is accepted and is attempted to be executed but fails. */
   SwapFailure = 6,
-  /** When a swap is accepted and then fails due to exceeding time limits. */
+  /** When a swap fails due to exceeding time limits. */
   SwapTimeout = 7,
   /** When a swap fails due to unexpected or possibly malicious behavior. */
   SwapMisbehavior = 8,
+  /**
+   * The peer has behaved dishonestly during a swap in a way that strongly
+   * suggests it is running modified malicious code.
+   */
+  SwapAbuse = 9,
+  /**
+   * The peer completed a swap that was delayed beyond the expected deadline
+   * to complete or fail the swap deal, but the delay was not so long as to
+   * preclude the possibility of latency or lag.
+   */
+  SwapDelay = 10,
 }
 
 export enum SwapFailureReason {

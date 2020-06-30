@@ -1,18 +1,31 @@
-import Swaps, { OrderToAccept } from '../../../lib/swaps/Swaps';
-import Pool from '../../../lib/p2p/Pool';
-import Peer from '../../../lib/p2p/Peer';
-import Logger from '../../../lib/Logger';
+import { SwapClientType, SwapFailureReason, SwapPhase, ReputationEvent } from '../../../lib/constants/enums';
 import DB from '../../../lib/db/DB';
-import SwapClientManager from '../../../lib/swaps/SwapClientManager';
-import { SwapRequestPacket, SwapRequestPacketBody } from '../../../lib/p2p/packets/types';
-import { SwapFailureReason, SwapClientType } from '../../../lib/constants/enums';
 import LndClient from '../../../lib/lndclient/LndClient';
+import Logger from '../../../lib/Logger';
+import { SwapRequestPacket, SwapRequestPacketBody } from '../../../lib/p2p/packets/types';
+import Peer from '../../../lib/p2p/Peer';
+import Pool from '../../../lib/p2p/Pool';
+import SwapClientManager from '../../../lib/swaps/SwapClientManager';
+import Swaps, { OrderToAccept } from '../../../lib/swaps/Swaps';
+import { SwapDeal } from '../../../lib/swaps/types';
+import { getValidDeal } from '../../utils';
+
+const addReputationEvent = jest.fn().mockImplementation(() => {
+  return { catch: () => {} };
+});
 
 jest.mock('../../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
 jest.mock('../../../lib/db/DB');
 const mockedDB = <jest.Mock<DB>><any>DB;
-jest.mock('../../../lib/p2p/Pool');
+jest.mock('../../../lib/p2p/Pool', () => {
+  return jest.fn().mockImplementation(() => {
+    return {
+      addReputationEvent,
+      on: jest.fn(),
+    };
+  });
+});
 const mockedPool = <jest.Mock<Pool>><any>Pool;
 jest.mock('../../../lib/swaps/SwapClientManager');
 const mockedSwapClientManager = <jest.Mock<SwapClientManager>><any>SwapClientManager;
@@ -60,6 +73,7 @@ const getSwapRequestBody = (): SwapRequestPacketBody => {
     proposedQuantity: 10000,
   };
 };
+
 describe('Swaps Integration', () => {
   let swaps: Swaps;
   let pool: Pool;
@@ -76,7 +90,9 @@ describe('Swaps Integration', () => {
     logger = new mockedLogger();
     logger.debug = jest.fn();
     logger.error = jest.fn();
+    logger.warn = jest.fn();
     logger.trace = jest.fn();
+    logger.createSubLogger = () => logger;
     db = new mockedDB();
     pool = new mockedPool();
     swapClientManager = new mockedSwapClientManager();
@@ -87,6 +103,8 @@ describe('Swaps Integration', () => {
     lndLtc = getMockedLnd(576, 2.5);
     makerCurrency = 'LTC';
     takerCurrency = 'BTC';
+
+    swaps = new Swaps(logger, db.models, pool, swapClientManager);
   });
 
   afterEach(() => {
@@ -94,9 +112,7 @@ describe('Swaps Integration', () => {
   });
 
   describe('acceptDeal', () => {
-
     test('it rejects already used hash', async () => {
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -117,7 +133,6 @@ describe('Swaps Integration', () => {
         }
         return;
       });
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -139,7 +154,6 @@ describe('Swaps Integration', () => {
       });
       pool.addReputationEvent = jest.fn();
       peer.getIdentifier = jest.fn();
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -165,7 +179,6 @@ describe('Swaps Integration', () => {
       });
       pool.addReputationEvent = jest.fn();
       peer.getIdentifier = jest.fn();
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -193,7 +206,6 @@ describe('Swaps Integration', () => {
       });
       pool.addReputationEvent = jest.fn();
       peer.getIdentifier = jest.fn();
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -225,7 +237,6 @@ describe('Swaps Integration', () => {
       });
       pool.addReputationEvent = jest.fn();
       peer.getIdentifier = jest.fn();
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -266,7 +277,6 @@ describe('Swaps Integration', () => {
         }
         throw new Error(`mock peer.getIdentifier does not support ${currency}`);
       });
-      swaps = new Swaps(logger, db.models, pool, swapClientManager);
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -296,7 +306,51 @@ describe('Swaps Integration', () => {
         makerCltvDelta: expectedMakerCltvDelta,
       });
     });
-
   });
 
+  describe('setDealPhase', () => {
+    test('it sets the phase to PreimageResolved', async () => {
+      const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
+
+      deal.executeTime = Date.now() - 1;
+      const swapPaidCallback = jest.fn();
+      swaps.on('swap.paid', swapPaidCallback);
+
+      await swaps['setDealPhase'](deal, SwapPhase.PreimageResolved);
+
+      expect(swapPaidCallback).toHaveBeenCalledTimes(1);
+      expect(addReputationEvent).toHaveBeenCalledTimes(0);
+      expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
+    });
+
+    test('it sets the phase to PreimageResolved but punishes the peer if it is late', async () => {
+      const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
+
+      deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_COMPLETE_MAKER_BUFFER'] - 1;
+      const swapPaidCallback = jest.fn();
+      swaps.on('swap.paid', swapPaidCallback);
+
+      await swaps['setDealPhase'](deal, SwapPhase.PreimageResolved);
+
+      expect(swapPaidCallback).toHaveBeenCalledTimes(1);
+      expect(addReputationEvent).toHaveBeenCalledTimes(1);
+      expect(addReputationEvent).toHaveBeenCalledWith(deal.takerPubKey, ReputationEvent.SwapDelay);
+      expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
+    });
+  });
+
+  test('it sets the phase to PreimageResolved but bans the peer if it is very late', async () => {
+    const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
+
+    deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_ABUSE_TIME_LIMIT'] - 1;
+    const swapPaidCallback = jest.fn();
+    swaps.on('swap.paid', swapPaidCallback);
+
+    await swaps['setDealPhase'](deal, SwapPhase.PreimageResolved);
+
+    expect(swapPaidCallback).toHaveBeenCalledTimes(1);
+    expect(addReputationEvent).toHaveBeenCalledTimes(1);
+    expect(addReputationEvent).toHaveBeenCalledWith(deal.takerPubKey, ReputationEvent.SwapAbuse);
+    expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
+  });
 });
