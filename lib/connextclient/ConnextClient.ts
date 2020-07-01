@@ -2,6 +2,7 @@ import assert from 'assert';
 import http from 'http';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
+import { XudError } from 'lib/types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
 import SwapClient, {
@@ -652,6 +653,7 @@ class ConnextClient extends SwapClient {
 
       this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
       const req = http.request(options, async (res) => {
+        let err: XudError | undefined;
         switch (res.statusCode) {
           case 200:
           case 201:
@@ -659,23 +661,26 @@ class ConnextClient extends SwapClient {
             resolve(res);
             break;
           case 402:
-            reject(errors.INSUFFICIENT_BALANCE);
+            err = errors.INSUFFICIENT_BALANCE;
             break;
           case 408:
-            reject(errors.TIMEOUT);
+            err = errors.TIMEOUT;
             break;
           case 409:
             const body = await parseResponseBody<ConnextErrorResponse>(res);
+            this.logger.error(`409 status error: ${body}`);
             reject(body.message);
             break;
           case 500:
-            this.logger.error(`connext server error ${res.statusCode}: ${res.statusMessage}`);
-            reject(errors.SERVER_ERROR);
+            err = errors.SERVER_ERROR(res.statusCode, res.statusMessage);
             break;
           default:
-            this.logger.error(`unexpected connext status ${res.statusCode}: ${res.statusMessage}`);
-            reject(errors.UNEXPECTED);
+            err = errors.UNEXPECTED(res.statusCode!, res.statusMessage);
             break;
+        }
+        if (err) {
+          this.logger.error(err.message);
+          reject(err);
         }
       });
 
