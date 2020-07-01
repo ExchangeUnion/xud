@@ -1,5 +1,7 @@
 /* tslint:disable no-floating-promises no-null-keyword */
-import grpc, { status } from 'grpc';
+import grpc, { ServerWritableStream, status } from 'grpc';
+import { fromEvent } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { SwapFailureReason } from '../constants/enums';
 import { LndInfo } from '../lndclient/types';
 import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult } from '../orderbook/types';
@@ -137,6 +139,12 @@ const createPlaceOrderEvent = (e: ServicePlaceOrderEvent) => {
       break;
   }
   return placeOrderEvent;
+};
+
+const getCancelled$ = (call: ServerWritableStream<any>) => {
+  return fromEvent<void>(call, 'cancelled').pipe(
+    take(1),
+  );
 };
 
 /** Class containing the available RPC methods for XUD */
@@ -343,15 +351,16 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.deposit]]
+   * See [[Service.walletDeposit]]
    */
-  public deposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
+  public walletDeposit: grpc.handleUnaryCall<xudrpc.DepositRequest, xudrpc.DepositResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      await this.service.deposit(call.request.toObject());
+      const address = await this.service.walletDeposit(call.request.toObject());
       const response = new xudrpc.DepositResponse();
+      response.setAddress(address);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -359,14 +368,14 @@ class GrpcService {
   }
 
   /**
-   * See [[Service.withdraw]]
+   * See [[Service.walletWithdraw]]
    */
-  public withdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (call, callback) => {
+  public walletWithdraw: grpc.handleUnaryCall<xudrpc.WithdrawRequest, xudrpc.WithdrawResponse> = async (call, callback) => {
     if (!this.isReady(this.service, callback)) {
       return;
     }
     try {
-      await this.service.withdraw(call.request.toObject());
+      await this.service.walletWithdraw(call.request.toObject());
       const response = new xudrpc.WithdrawResponse();
       callback(null, response);
     } catch (err) {
@@ -821,10 +830,12 @@ class GrpcService {
    * See [[Service.subscribeOrders]]
    */
   public subscribeOrders: grpc.handleServerStreamingCall<xudrpc.SubscribeOrdersRequest, xudrpc.OrderUpdate> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
+
     this.service.subscribeOrders(call.request.toObject(), (order?: Order, orderRemoval?: OrderPortion) => {
       const orderUpdate = new xudrpc.OrderUpdate();
       if (order) {
@@ -839,21 +850,22 @@ class GrpcService {
         orderUpdate.setOrderRemoval(grpcOrderRemoval);
       }
       call.write(orderUpdate);
-    });
-    this.addStream(call);
+    },
+    cancelled$);
   }
 
   /*
    * See [[Service.subscribeSwapFailures]]
    */
   public subscribeSwapFailures: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapFailure> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwapFailures(call.request.toObject(), (result: SwapFailure) => {
       call.write(createSwapFailure(result));
-    });
+    }, cancelled$);
     this.addStream(call);
   }
 
@@ -861,13 +873,14 @@ class GrpcService {
    * See [[Service.subscribeSwaps]]
    */
   public subscribeSwaps: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsRequest, xudrpc.SwapSuccess> = (call) => {
-    if (!this.service) {
-      call.emit('error', { code: status.UNAVAILABLE, message: 'xud is starting', name: 'NotReadyError' });
+    if (!this.isReady(this.service, call)) {
       return;
     }
+
+    const cancelled$ = getCancelled$(call);
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
-    });
+    }, cancelled$);
     this.addStream(call);
   }
 }

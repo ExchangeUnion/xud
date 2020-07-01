@@ -390,7 +390,7 @@ class TradingPair {
           assert(isOwnOrder(makerOrder));
 
           assert(queue.poll() === makerOrder);
-          queueRemovedOrdersWithHold.push(makerOrder as OwnOrder);
+          queueRemovedOrdersWithHold.push(makerOrder);
         }
       }
     }

@@ -1,6 +1,8 @@
+import { ServiceError, status } from 'grpc';
 import { Arguments, Argv } from 'yargs';
 import { XudClient } from '../../proto/xudrpc_grpc_pb';
 import * as xudrpc from '../../proto/xudrpc_pb';
+import { setTimeoutPromise } from '../../utils/utils';
 import { loadXudClient } from '../command';
 
 export const command = 'streamorders [existing]';
@@ -24,10 +26,15 @@ const ensureConnection = async (argv: Arguments, printError?: boolean) => {
   if (!client) {
     client = await loadXudClient(argv);
   }
-  client.waitForReady(Number.POSITIVE_INFINITY, (error: Error | null) => {
+  client.waitForReady(Date.now() + 3000, (error: Error | null) => {
     if (error) {
+      if (error.message === 'Failed to connect before the deadline') {
+        console.error(`could not connect to xud at ${argv.rpchost}:${argv.rpcport}, is xud running?`);
+        process.exit(1);
+      }
+
       if (printError) console.error(`${error.name}: ${error.message}`);
-      setTimeout(ensureConnection.bind(undefined, argv), 3000);
+      setTimeout(ensureConnection.bind(undefined, argv, printError), 3000);
     } else {
       console.log('Successfully connected, subscribing for orders');
       streamOrders(argv);
@@ -50,8 +57,13 @@ const streamOrders = (argv: Arguments<any>) => {
   // adding end, close, error events only once,
   // since they'll be thrown for three of subscriptions in the corresponding cases, catching once is enough.
   ordersSubscription.on('end', reconnect.bind(undefined, argv));
-  ordersSubscription.on('error', async (err: Error) => {
-    console.warn(`Unexpected error occured: ${err.message}, trying to reconnect`);
+  ordersSubscription.on('error', async (err: ServiceError) => {
+    if (err.code === status.UNIMPLEMENTED) {
+      console.error("xud is locked, run 'xucli unlock', 'xucli create', or 'xucli restore' then try again");
+      process.exit(1);
+    }
+    console.warn(`Unexpected error occured: ${err.message}, reconnecting in 1 second`);
+    await setTimeoutPromise(1000);
     await ensureConnection(argv);
   });
 

@@ -94,6 +94,7 @@ const mockedNodeKey = <jest.Mock<NodeKey>><any>NodeKey;
 
 const logger = new Logger({});
 logger.debug = jest.fn();
+logger.error = jest.fn();
 const loggers = {
   global: logger,
   db: logger,

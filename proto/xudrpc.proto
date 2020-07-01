@@ -74,7 +74,7 @@ service Xud {
   }
 
   /* Closes any existing payment channels with a peer for the specified currency.
-   * shell: xucli closechannel <node_identifier> <currency> [--force]*/
+   * shell: xucli closechannel <currency> [node_identifier ] [--force]*/
   rpc CloseChannel(CloseChannelRequest) returns (CloseChannelResponse) {
     option (google.api.http) = {
       post: "/v1/closechannel"
@@ -94,10 +94,10 @@ service Xud {
   }
 
   /* Gets an address to deposit a given currency into the xud wallets.
-   * shell: xucli deposit <currency> */
-  rpc Deposit(DepositRequest) returns (DepositResponse) {
+   * shell: xucli walletdeposit <currency> */
+  rpc WalletDeposit(DepositRequest) returns (DepositResponse) {
     option (google.api.http) = {
-      post: "/v1/deposit"
+      post: "/v1/walletdeposit"
       body: "*"
     };
   }
@@ -171,7 +171,7 @@ service Xud {
   }
 
   /* Opens a payment channel to a peer for the specified amount and currency.
-   * shell: xucli openchannel <node_identifier> <currency> <amount> */
+   * shell: xucli openchannel <currency> <amount> [node_identifier] [push_amount] */
   rpc OpenChannel(OpenChannelRequest) returns (OpenChannelResponse) {
     option (google.api.http) = {
       post: "/v1/openchannel"
@@ -307,10 +307,10 @@ service Xud {
   }
 
   /* Withdraws a given currency from the xud wallets to a specified address.
-   * shell: xucli withdraw <amount> <currency> <destination> [fee] */
-  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse) {
+   * shell: xucli withdraw [amount] [currency] <destination> [fee] */
+  rpc WalletWithdraw(WithdrawRequest) returns (WithdrawResponse) {
     option (google.api.http) = {
-      post: "/v1/withdraw"
+      post: "/v1/walletwithdraw"
       body: "*"
     };
   }
@@ -384,6 +384,12 @@ message CloseChannelRequest {
   string currency = 2 [json_name = "currency"];
   // Whether to force close the channel in case the peer is offline or unresponsive.
   bool force = 3 [json_name = "force"];
+  // The on-chain address to send funds extracted from the channel. If unspecified,
+  // the funds return to the default wallet for the client closing the channel.
+  string destination = 4 [json_name = "destination"];
+  // For Connext only - the amount to extract from the channel. If 0 or unspecified,
+  // the entire off-chain balance for the specified currency will be extracted.
+  uint64 amount = 5 [json_name = "amount"];
 }
 
 message CloseChannelResponse {}

@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# create the temp directories with the current user so it is the owner for permissions
+mkdir -p $PWD/temp/logs
+mkdir -p $PWD/temp/indra
+
 if [[ $@ == "TestIntegration" || $# == 0 ]]
 then
     pushd temp/indra

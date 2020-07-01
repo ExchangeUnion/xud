@@ -1,7 +1,8 @@
 # Exchange Union Daemon
 
 [![Discord](https://img.shields.io/discord/547402601885466658.svg)](https://discord.gg/YgDhMSn)
-[![Build Status](https://travis-ci.org/ExchangeUnion/xud.svg?branch=master)](https://travis-ci.org/ExchangeUnion/xud)
+[![CI Status](https://github.com/ExchangeUnion/xud/workflows/CI/badge.svg)](https://github.com/ExchangeUnion/xud/actions?query=workflow%3ACI)
+[![SimTest Status](https://github.com/ExchangeUnion/xud/workflows/Simulation%20tests/badge.svg)](https://github.com/ExchangeUnion/xud/actions?query=workflow%3A%22Simulation+tests%22)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/87238907485845eb879bd61c65561775)](https://www.codacy.com/app/sangaman/xud?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ExchangeUnion/xud&amp;utm_campaign=Badge_Grade)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 

@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import uuidv1 from 'uuid/v1';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
-import { CurrencyFactory, CurrencyInstance, PairInstance } from '../db/types';
+import { CurrencyFactory, CurrencyInstance, OrderFactory, PairInstance } from '../db/types';
 import Logger from '../Logger';
 import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
 import Peer from '../p2p/Peer';
@@ -16,8 +16,10 @@ import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
 import errors from './errors';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
-import { IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
-  OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult } from './types';
+import {
+  IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
+  OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult,
+} from './types';
 
 interface OrderBook {
   /** Adds a listener to be called when a remote order was added. */
@@ -162,6 +164,15 @@ class OrderBook extends EventEmitter {
   }
 
   private bindSwaps = () => {
+    this.swaps.on('swap.recovered', async (recoveredSwap) => {
+      // when a swap is recovered, we want to record it in the database
+      // as a trade since funds did eventually get swapped
+      await this.persistTrade({
+        quantity: recoveredSwap.quantity!,
+        makerOrderId: recoveredSwap.orderId,
+        rHash: recoveredSwap.rHash,
+      });
+    });
     this.swaps.on('swap.paid', async (swapSuccess) => {
       if (swapSuccess.role === SwapRole.Maker) {
         const { orderId, pairId, quantity, peerPubKey } = swapSuccess;
@@ -171,7 +182,11 @@ class OrderBook extends EventEmitter {
 
         const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
         this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
-        await this.persistTrade(swapSuccess.quantity, ownOrder, undefined, swapSuccess.rHash);
+        await this.persistTrade({
+          quantity: swapSuccess.quantity,
+          makerOrder: ownOrder,
+          rHash: swapSuccess.rHash,
+        });
       }
     });
     this.swaps.on('swap.failed', (deal) => {
@@ -474,7 +489,11 @@ class OrderBook extends EventEmitter {
         internalMatches.push(maker);
         this.pool.broadcastOrderInvalidation(portion);
         this.emit('ownOrder.filled', portion);
-        await this.persistTrade(portion.quantity, maker, taker);
+        await this.persistTrade({
+          quantity: portion.quantity,
+          makerOrder: maker,
+          takerOrder: taker,
+        });
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
@@ -576,7 +595,12 @@ class OrderBook extends EventEmitter {
     try {
       const swapResult = await this.swaps.executeSwap(maker, taker);
       this.emit('peerOrder.filled', maker);
-      await this.persistTrade(swapResult.quantity, maker, taker, swapResult.rHash);
+      await this.persistTrade({
+        quantity: swapResult.quantity,
+        makerOrder: maker,
+        takerOrder: taker,
+        rHash: swapResult.rHash,
+      });
       return swapResult;
     } catch (err) {
       const failureReason: number = err;
@@ -604,8 +628,19 @@ class OrderBook extends EventEmitter {
     return true;
   }
 
-  private persistTrade = async (quantity: number, makerOrder: Order, takerOrder?: OwnOrder, rHash?: string) => {
-    const addOrderPromises = [this.repository.addOrderIfNotExists(makerOrder)];
+  private persistTrade = async ({ quantity, makerOrder, takerOrder, makerOrderId, rHash }:
+  {
+    quantity: number,
+    makerOrder?: OrderFactory,
+    takerOrder?: OrderFactory,
+    makerOrderId?: string,
+    rHash?: string,
+  }) => {
+    assert(makerOrder || makerOrderId, 'either makerOrder or makerOrderId must be specified to persist a trade');
+    const addOrderPromises: Promise<any>[] = [];
+    if (makerOrder) {
+      addOrderPromises.push(this.repository.addOrderIfNotExists(makerOrder));
+    }
     if (takerOrder) {
       addOrderPromises.push(this.repository.addOrderIfNotExists(takerOrder));
     }
@@ -614,7 +649,7 @@ class OrderBook extends EventEmitter {
     await this.repository.addTrade({
       quantity,
       rHash,
-      makerOrderId: makerOrder.id,
+      makerOrderId: makerOrder ? makerOrder.id : makerOrderId!,
       takerOrderId: takerOrder ? takerOrder.id : undefined,
     });
   }
@@ -939,9 +974,9 @@ class OrderBook extends EventEmitter {
   private handleSwapRequest = async (requestPacket: SwapRequestPacket, peer: Peer) => {
     assert(requestPacket.body, 'SwapRequestPacket does not contain a body');
     assert(this.swaps, 'swaps module is disabled');
-    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body!;
+    const { rHash, proposedQuantity, orderId, pairId } = requestPacket.body;
 
-    if (!Swaps.validateSwapRequest(requestPacket.body!)) {
+    if (!Swaps.validateSwapRequest(requestPacket.body)) {
       // TODO: penalize peer for invalid swap request
       await peer.sendPacket(new SwapFailedPacket({
         rHash,

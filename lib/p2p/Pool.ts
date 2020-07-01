@@ -125,7 +125,7 @@ class Pool extends EventEmitter {
       addresses: [],
       pairs: [],
       raidenAddress: '',
-      connextAddress: '',
+      connextIdentifier: '',
       lndPubKeys: {},
       lndUris: {},
       tokenIdentifiers: {},
@@ -246,7 +246,7 @@ class Pool extends EventEmitter {
    * packet to currently connected peers to notify them of the change.
    */
   public updateConnextState = (tokenAddresses: Map<string, string>, pubKey?: string) => {
-    this.nodeState.connextAddress = pubKey || '';
+    this.nodeState.connextIdentifier = pubKey || '';
     tokenAddresses.forEach((tokenAddress, currency) => {
       this.nodeState.tokenIdentifiers[currency] = tokenAddress;
     });
@@ -292,7 +292,7 @@ class Pool extends EventEmitter {
 
   private bindNodeList = () => {
     this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEventInstance[]) => {
-      this.logger.warn(`node ${nodePubKey} was banned`);
+      this.logger.info(`node ${nodePubKey} was banned`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
@@ -835,7 +835,7 @@ class Pool extends EventEmitter {
   /** Validates a peer. If a check fails, closes the peer and throws a p2p error. */
   private validatePeer = async (peer: Peer): Promise<void> => {
     assert(peer.nodePubKey);
-    const peerPubKey = peer.nodePubKey!;
+    const peerPubKey = peer.nodePubKey;
 
     if (peerPubKey === this.nodePubKey) {
       await peer.close(DisconnectionReason.ConnectedToSelf);
@@ -1032,25 +1032,11 @@ class Pool extends EventEmitter {
    * pub key cannot be found for the provided alias.
    */
   public resolveAlias = (alias: string) => {
-    if (alias === '') {
+    const nodePubKey = this.nodes.getPubKeyForAlias(alias);
+    if (!nodePubKey) {
       throw errors.UNKNOWN_ALIAS(alias);
     }
-    let matchingNodePubKeys: string[] = [];
-    this.peers.forEach((peer) => {
-      if (peer.alias) {
-        if (peer.alias.toLowerCase() === alias.toLowerCase()) {
-          matchingNodePubKeys.push(peer.nodePubKey!);
-        }
-      }
-    });
-    matchingNodePubKeys = matchingNodePubKeys.concat(this.nodes.getBannedPubKeys(alias));
-    if (matchingNodePubKeys.length === 1) {
-      return matchingNodePubKeys[0];
-    } else if (matchingNodePubKeys.length === 0) {
-      throw errors.UNKNOWN_ALIAS(alias);
-    } else {
-      throw errors.ALIAS_CONFLICT(alias);
-    }
+    return nodePubKey;
   }
 }
 

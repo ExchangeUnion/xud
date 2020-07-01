@@ -80,7 +80,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     ban: IXudService_IBan;
     closeChannel: IXudService_ICloseChannel;
     connect: IXudService_IConnect;
-    deposit: IXudService_IDeposit;
+    walletDeposit: IXudService_IWalletDeposit;
     discoverNodes: IXudService_IDiscoverNodes;
     getBalance: IXudService_IGetBalance;
     getInfo: IXudService_IGetInfo;
@@ -103,7 +103,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     tradeHistory: IXudService_ITradeHistory;
     tradingLimits: IXudService_ITradingLimits;
     unban: IXudService_IUnban;
-    withdraw: IXudService_IWithdraw;
+    walletWithdraw: IXudService_IWalletWithdraw;
 }
 
 interface IXudService_IAddCurrency extends grpc.MethodDefinition<xudrpc_pb.Currency, xudrpc_pb.AddCurrencyResponse> {
@@ -151,8 +151,8 @@ interface IXudService_IConnect extends grpc.MethodDefinition<xudrpc_pb.ConnectRe
     responseSerialize: grpc.serialize<xudrpc_pb.ConnectResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.ConnectResponse>;
 }
-interface IXudService_IDeposit extends grpc.MethodDefinition<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse> {
-    path: string; // "/xudrpc.Xud/Deposit"
+interface IXudService_IWalletDeposit extends grpc.MethodDefinition<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse> {
+    path: string; // "/xudrpc.Xud/WalletDeposit"
     requestStream: boolean; // false
     responseStream: boolean; // false
     requestSerialize: grpc.serialize<xudrpc_pb.DepositRequest>;
@@ -358,8 +358,8 @@ interface IXudService_IUnban extends grpc.MethodDefinition<xudrpc_pb.UnbanReques
     responseSerialize: grpc.serialize<xudrpc_pb.UnbanResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.UnbanResponse>;
 }
-interface IXudService_IWithdraw extends grpc.MethodDefinition<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse> {
-    path: string; // "/xudrpc.Xud/Withdraw"
+interface IXudService_IWalletWithdraw extends grpc.MethodDefinition<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse> {
+    path: string; // "/xudrpc.Xud/WalletWithdraw"
     requestStream: boolean; // false
     responseStream: boolean; // false
     requestSerialize: grpc.serialize<xudrpc_pb.WithdrawRequest>;
@@ -376,7 +376,7 @@ export interface IXudServer {
     ban: grpc.handleUnaryCall<xudrpc_pb.BanRequest, xudrpc_pb.BanResponse>;
     closeChannel: grpc.handleUnaryCall<xudrpc_pb.CloseChannelRequest, xudrpc_pb.CloseChannelResponse>;
     connect: grpc.handleUnaryCall<xudrpc_pb.ConnectRequest, xudrpc_pb.ConnectResponse>;
-    deposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
+    walletDeposit: grpc.handleUnaryCall<xudrpc_pb.DepositRequest, xudrpc_pb.DepositResponse>;
     discoverNodes: grpc.handleUnaryCall<xudrpc_pb.DiscoverNodesRequest, xudrpc_pb.DiscoverNodesResponse>;
     getBalance: grpc.handleUnaryCall<xudrpc_pb.GetBalanceRequest, xudrpc_pb.GetBalanceResponse>;
     getInfo: grpc.handleUnaryCall<xudrpc_pb.GetInfoRequest, xudrpc_pb.GetInfoResponse>;
@@ -399,7 +399,7 @@ export interface IXudServer {
     tradeHistory: grpc.handleUnaryCall<xudrpc_pb.TradeHistoryRequest, xudrpc_pb.TradeHistoryResponse>;
     tradingLimits: grpc.handleUnaryCall<xudrpc_pb.TradingLimitsRequest, xudrpc_pb.TradingLimitsResponse>;
     unban: grpc.handleUnaryCall<xudrpc_pb.UnbanRequest, xudrpc_pb.UnbanResponse>;
-    withdraw: grpc.handleUnaryCall<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse>;
+    walletWithdraw: grpc.handleUnaryCall<xudrpc_pb.WithdrawRequest, xudrpc_pb.WithdrawResponse>;
 }
 
 export interface IXudClient {
@@ -418,9 +418,9 @@ export interface IXudClient {
     connect(request: xudrpc_pb.ConnectRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
-    deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
-    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
-    deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    walletDeposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -483,9 +483,9 @@ export interface IXudClient {
     unban(request: xudrpc_pb.UnbanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
-    withdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
-    withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
-    withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    walletWithdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    walletWithdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    walletWithdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
 }
 
 export class XudClient extends grpc.Client implements IXudClient {
@@ -505,9 +505,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public connect(request: xudrpc_pb.ConnectRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
     public connect(request: xudrpc_pb.ConnectRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.ConnectResponse) => void): grpc.ClientUnaryCall;
-    public deposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
-    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
-    public deposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public walletDeposit(request: xudrpc_pb.DepositRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
+    public walletDeposit(request: xudrpc_pb.DepositRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DepositResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
     public discoverNodes(request: xudrpc_pb.DiscoverNodesRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.DiscoverNodesResponse) => void): grpc.ClientUnaryCall;
@@ -570,7 +570,7 @@ export class XudClient extends grpc.Client implements IXudClient {
     public unban(request: xudrpc_pb.UnbanRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     public unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
     public unban(request: xudrpc_pb.UnbanRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.UnbanResponse) => void): grpc.ClientUnaryCall;
-    public withdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
-    public withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
-    public withdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    public walletWithdraw(request: xudrpc_pb.WithdrawRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    public walletWithdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
+    public walletWithdraw(request: xudrpc_pb.WithdrawRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.WithdrawResponse) => void): grpc.ClientUnaryCall;
 }

@@ -1,8 +1,9 @@
 import { Arguments, Argv } from 'yargs';
 import { WithdrawRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
+import { coinsToSats } from '../utils';
 
-export const command = 'withdraw [amount] [currency] [destination] [fee]';
+export const command = 'walletwithdraw [amount] [currency] [destination] [fee]';
 
 export const describe = 'withdraws on-chain funds from xud';
 
@@ -33,14 +34,14 @@ export const builder = (argv: Argv) => argv
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();
-  request.setCurrency(argv.currency);
+  request.setCurrency(argv.currency.toUpperCase());
   if (argv.all) {
     request.setAll(argv.all);
   } else {
-    request.setAmount(argv.amount);
+    request.setAmount(coinsToSats(argv.amount));
   }
   request.setDestination(argv.destination);
   request.setFee(argv.fee);
 
-  (await loadXudClient(argv)).withdraw(request, callback(argv));
+  (await loadXudClient(argv)).walletWithdraw(request, callback(argv));
 };

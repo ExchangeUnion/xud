@@ -1,15 +1,17 @@
+import { fromEvent, merge, Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { ProvidePreimageEvent, TransferReceivedEvent } from '../connextclient/types';
 import { OrderSide, Owner, SwapClientType, SwapRole } from '../constants/enums';
 import { OrderAttributes, TradeInstance } from '../db/types';
 import Logger from '../Logger';
 import OrderBook from '../orderbook/OrderBook';
-import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, PlaceOrderEvent } from '../orderbook/types';
+import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -211,13 +213,13 @@ class Service {
     await this.pool.addOutbound({ host, port }, nodePubKey, retryConnecting, true);
   }
 
-  public deposit = async (args: { currency: string }) => {
+  public walletDeposit = async (args: { currency: string }) => {
     const { currency } = args;
     const address = await this.swapClientManager.deposit(currency);
     return address;
   }
 
-  public withdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
+  public walletWithdraw = async (args: { currency: string, amount: number, destination: string, all: boolean, fee: number}) => {
     const txId = await this.swapClientManager.withdraw(args);
     return txId;
   }
@@ -226,18 +228,28 @@ class Service {
    * Closes any payment channels for a specified node and currency.
    */
   public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean },
+    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number },
   ) => {
-    const { nodeIdentifier, currency, force } = args;
-    argChecks.HAS_NODE_IDENTIFIER({ nodeIdentifier });
+    const { nodeIdentifier, currency, force, destination, amount } = args;
     argChecks.VALID_CURRENCY({ currency });
 
-    const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-    const peer = this.pool.getPeer(nodePubKey);
+    let remoteIdentifier: string | undefined;
+    if (nodeIdentifier) {
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+      const swapClientType = this.swapClientManager.getType(currency);
+      if (swapClientType === undefined) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
+      }
+      const peer = this.pool.getPeer(nodePubKey);
+      remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+    }
+
     await this.swapClientManager.closeChannel({
-      peer,
       currency,
       force,
+      destination,
+      amount,
+      remoteIdentifier,
     });
   }
 
@@ -250,21 +262,34 @@ class Service {
     const { nodeIdentifier, amount, currency, pushAmount } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+
+    let remoteIdentifier: string | undefined;
+    let uris: string[] | undefined;
+
     try {
-      let peer;
-      if (args.nodeIdentifier) {
-        const nodePubKey = isNodePubKey(args.nodeIdentifier) ? args.nodeIdentifier : this.pool.resolveAlias(args.nodeIdentifier);
-        peer = this.pool.getPeer(nodePubKey);
+      if (nodeIdentifier) {
+        const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+        const swapClientType = this.swapClientManager.getType(currency);
+        if (swapClientType === undefined) {
+          throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
+        }
+        const peer = this.pool.getPeer(nodePubKey);
+        remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+        if (swapClientType === SwapClientType.Lnd) {
+          uris = peer.getLndUris(currency);
+        }
       }
+
       await this.swapClientManager.openChannel({
-        peer,
+        remoteIdentifier,
+        uris,
         amount,
         currency,
         pushAmount,
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
-      throw errors.OPEN_CHANNEL_FAILURE(currency, nodeIdentifier, amount, errorMessage);
+      throw errors.OPEN_CHANNEL_FAILURE(currency, amount, errorMessage, nodeIdentifier);
     }
   }
 
@@ -643,7 +668,11 @@ class Service {
   /*
    * Subscribe to orders being added to the order book.
    */
-  public subscribeOrders = (args: { existing: boolean }, callback: (order?: Order, orderRemoval?: OrderPortion) => void) => {
+  public subscribeOrders = (
+    args: { existing: boolean },
+    callback: (order?: Order, orderRemoval?: OrderPortion) => void,
+    cancelled$: Observable<void>,
+  ) => {
     if (args.existing) {
       this.orderBook.pairIds.forEach((pair) => {
         const ownOrders = this.orderBook.getOwnOrders(pair);
@@ -655,37 +684,75 @@ class Service {
       });
     }
 
-    this.orderBook.on('peerOrder.incoming', order => callback(order));
-    this.orderBook.on('ownOrder.added', order => callback(order));
+    const orderAdded$ = merge(
+      fromEvent<PeerOrder>(this.orderBook, 'peerOrder.incoming'),
+      fromEvent<OwnOrder>(this.orderBook, 'ownOrder.added'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
 
-    this.orderBook.on('peerOrder.invalidation', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('peerOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.filled', orderRemoval => callback(undefined, orderRemoval));
-    this.orderBook.on('ownOrder.removed', orderRemoval => callback(undefined, orderRemoval));
+    orderAdded$.subscribe({
+      next: callback,
+      error: this.logger.error,
+    });
+
+    const orderRemoved$ = merge(
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.invalidation'),
+      fromEvent<OrderPortion>(this.orderBook, 'peerOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.filled'),
+      fromEvent<OrderPortion>(this.orderBook, 'ownOrder.removed'),
+    ).pipe(takeUntil(cancelled$)); // cleanup listeners when cancelled$ emits a value
+
+    orderRemoved$.subscribe({
+      next: (orderPortion) => { callback(undefined, orderPortion); },
+      error: this.logger.error,
+    });
   }
 
   /*
    * Subscribe to completed swaps.
    */
-  public subscribeSwaps = async (args: { includeTaker: boolean }, callback: (swapSuccess: SwapSuccess) => void) => {
-    this.swaps.on('swap.paid', (swapSuccess) => {
+  public subscribeSwaps = async (
+    args: { includeTaker: boolean },
+    callback: (swapSuccess: SwapSuccess) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapPaid = (swapSuccess: SwapSuccess) => {
       // always alert client for maker matches, taker matches only when specified
       if (swapSuccess.role === SwapRole.Maker || args.includeTaker) {
         callback(swapSuccess);
       }
+    };
+
+    const swapPaid$ = fromEvent<SwapSuccess>(this.swaps, 'swap.paid')
+      .pipe(takeUntil(cancelled$));
+
+    swapPaid$.subscribe({
+      next: onSwapPaid,
+      error: this.logger.error,
     });
   }
 
   /*
    * Subscribe to failed swaps.
    */
-  public subscribeSwapFailures = async (args: { includeTaker: boolean }, callback: (swapFailure: SwapFailure) => void) => {
-    this.swaps.on('swap.failed', (deal) => {
+  public subscribeSwapFailures = async (
+    args: { includeTaker: boolean },
+    callback: (swapFailure: SwapFailure) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapFailed = (deal: SwapDeal) => {
       this.logger.trace(`notifying SwapFailure subscription for ${deal.rHash} with role ${SwapRole[deal.role]}`);
       // always alert client for maker matches, taker matches only when specified
       if (deal.role === SwapRole.Maker || args.includeTaker) {
         callback(deal as SwapFailure);
       }
+    };
+
+    const swapFailed$ = fromEvent<SwapDeal>(this.swaps, 'swap.failed')
+      .pipe(takeUntil(cancelled$));
+
+    swapFailed$.subscribe({
+      next: onSwapFailed,
+      error: this.logger.error,
     });
   }
 

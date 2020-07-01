@@ -13,7 +13,7 @@ import SwapClient, {
   SwapClientInfo,
   PaymentStatus,
 } from '../swaps/SwapClient';
-import { SwapDeal } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -91,17 +91,21 @@ class ConnextClient extends SwapClient {
   public address?: string;
   /** A map of currency symbols to token addresses. */
   public tokenAddresses = new Map<string, string>();
-  /** A map of expected invoices by hash.
+  /**
+   * A map of expected invoices by hash.
    * This is equivalent to invoices of lnd with the difference
    * being that we're managing the state of invoice on xud level.
    */
   private expectedIncomingTransfers = new Map<string, ExpectedIncomingTransfer>();
+  /** The set of hashes for outgoing transfers. */
+  private outgoingTransferHashes = new Set<string>();
   private port: number;
   private host: string;
   private webhookport: number;
   private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
+  private _totalOutboundAmount = new Map<string, number>();
 
   /**
    * Creates a connext client.
@@ -146,11 +150,18 @@ class ConnextClient extends SwapClient {
       timelock,
       rHash,
     } = transferReceivedRequest;
+
+    if (this.outgoingTransferHashes.has(rHash)) {
+      this.outgoingTransferHashes.delete(rHash);
+      this.logger.debug(`outgoing hash lock transfer with rHash ${rHash} created`);
+      return;
+    }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
       this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}`);
       return;
     }
+
     const {
       units: expectedUnits,
       expiry: expectedTimelock,
@@ -212,17 +223,15 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public totalOutboundAmount = (): number => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
-    return MAX_AMOUNT;
+  public totalOutboundAmount = (currency: string): number => {
+    return this._totalOutboundAmount.get(currency) || 0;
   }
 
-  public maxChannelOutboundAmount = (): number => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
-    return MAX_AMOUNT;
+  public maxChannelOutboundAmount = (currency: string): number => {
+    return this._totalOutboundAmount.get(currency) || 0;
   }
 
-  public maxChannelInboundAmount = (): number => {
+  public maxChannelInboundAmount = (_currency: string): number => {
     // assume MAX_AMOUNT since Connext will re-collaterize accordingly
     return MAX_AMOUNT;
   }
@@ -319,13 +328,14 @@ class ConnextClient extends SwapClient {
           assetId: tokenAddress,
           timelock: deal.takerCltvDelta.toString(),
           lockHash: `0x${deal.rHash}`,
-          recipient: deal.destination!,
+          recipient: deal.destination,
         });
         // @ts-ignore
         const [executeTransferResponse, preimage] = await Promise.all([
           executeTransfer,
           waitForPreimageByHash(this, deal.rHash),
         ]);
+        this.logger.debug(`received preimage ${preimage} for payment with hash ${deal.rHash}`);
         secret = preimage;
       } else {
         // we are the taker paying the maker
@@ -338,7 +348,7 @@ class ConnextClient extends SwapClient {
           assetId: tokenAddress,
           timelock: lockTimeout.toString(),
           lockHash: `0x${deal.rHash}`,
-          recipient: deal.destination!,
+          recipient: deal.destination,
         });
         await executeTransfer;
       }
@@ -377,9 +387,10 @@ class ConnextClient extends SwapClient {
   }
 
   /**
-   * Resolve a HashLock Transfer on the Connext network.
+   * Resolves a HashLock Transfer on the Connext network.
    */
-  public settleInvoice = async (_rHash: string, rPreimage: string, currency: string) => {
+  public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
+    this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
     const assetId = this.tokenAddresses.get(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
@@ -401,6 +412,8 @@ class ConnextClient extends SwapClient {
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
+      // TODO: Edge case. Once https://github.com/connext/rest-api-client/issues/31 is
+      // implemented check for the response code 404 and set the payment as failed.
 
       switch (transferStatusResponse.status) {
         case 'PENDING':
@@ -414,10 +427,11 @@ class ConnextClient extends SwapClient {
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          return { state: PaymentState.Failed };
+          return { state: PaymentState.Pending };
       }
     } catch (e) {
-      throw errors.PAYMENT_NOT_FOUND;
+      this.logger.error(e);
+      throw errors.SERVER_ERROR;
     }
   }
 
@@ -490,29 +504,26 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const tokenAddress = this.getTokenAddress(currency);
-
-    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const { freeBalanceOffChain } = await parseResponseBody<ConnextBalanceResponse>(res);
+    const { freeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalanceOffChain),
     });
-    const balance = freeBalanceAmount;
 
+    this._totalOutboundAmount.set(currency, freeBalanceAmount);
     return {
-      balance,
+      balance: freeBalanceAmount,
       inactiveBalance: 0,
       pendingOpenBalance: 0,
     };
   }
 
-  public tradingLimits = async (): Promise<TradingLimits> => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
+  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
+    await this.channelBalance(currency); // refreshes the max outbound balance
     return {
-      maxSell: MAX_AMOUNT,
-      maxBuy: MAX_AMOUNT,
+      maxSell: this.maxChannelOutboundAmount(currency),
+      maxBuy: this.maxChannelInboundAmount(currency),
     };
   }
 
@@ -530,10 +541,7 @@ class ConnextClient extends SwapClient {
       };
     }
 
-    const tokenAddress = this.getTokenAddress(currency);
-
-    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const { freeBalanceOnChain } = await parseResponseBody<ConnextBalanceResponse>(res);
+    const { freeBalanceOnChain } = await this.getBalance(currency);
 
     const confirmedBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
@@ -547,13 +555,22 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  /**
-   * Deposits funds to a node
-   */
-  public deposit = async (
-    { currency, units }:
-    { currency: string, units: number },
-  ) => {
+  private getBalance = async (currency: string) => {
+    const tokenAddress = this.getTokenAddress(currency);
+    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
+    const balance = await parseResponseBody<ConnextBalanceResponse>(res);
+    return balance;
+  }
+
+  public deposit = async () => {
+    const clientConfig = await this.getClientConfig();
+    return clientConfig.signerAddress;
+  }
+
+  public openChannel = async ({ currency, units }: OpenChannelParams) => {
+    if (!currency) {
+      throw errors.CURRENCY_MISSING;
+    }
     const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/deposit', 'POST', {
       assetId,
@@ -561,14 +578,17 @@ class ConnextClient extends SwapClient {
     });
   }
 
-  public async openChannel() {}
+  public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<void> => {
+    if (!currency) {
+      throw errors.CURRENCY_MISSING;
+    }
+    const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
 
-  /**
-   * Closes a payment client.
-   * @param multisigAddress the address of the client to close
-   */
-  public closeChannel = async (): Promise<void> => {
-    // not relevant for connext
+    await this.sendRequest('/withdraw', 'POST', {
+      recipient: destination,
+      amount: BigInt(amount).toString(),
+      assetId: this.tokenAddresses.get(currency),
+    });
   }
 
   /**
@@ -579,6 +599,8 @@ class ConnextClient extends SwapClient {
    * @param lockHash
    */
   private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
+    this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
+    this.outgoingTransferHashes.add(payload.lockHash);
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
     const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
     return appId;

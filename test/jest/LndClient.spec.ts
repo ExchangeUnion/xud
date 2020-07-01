@@ -76,7 +76,7 @@ describe('LndClient', () => {
         });
       await lnd.openChannel({
         units,
-        peerIdentifier: peerPubKey,
+        remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(2);
@@ -96,7 +96,7 @@ describe('LndClient', () => {
         .mockImplementation(alreadyConnected);
       await lnd.openChannel({
         units,
-        peerIdentifier: peerPubKey,
+        remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
@@ -118,7 +118,7 @@ describe('LndClient', () => {
       await lnd.openChannel({
         units,
         pushUnits,
-        peerIdentifier: peerPubKey,
+        remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
@@ -138,7 +138,7 @@ describe('LndClient', () => {
         });
       await lnd.openChannel({
         units,
-        peerIdentifier: peerPubKey,
+        remoteIdentifier: peerPubKey,
         uris: lndListeningUris,
       });
       expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
@@ -157,7 +157,7 @@ describe('LndClient', () => {
       try {
         await lnd.openChannel({
           units,
-          peerIdentifier: peerPubKey,
+          remoteIdentifier: peerPubKey,
           uris: lndListeningUris,
         });
       } catch (e) {

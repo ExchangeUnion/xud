@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { promises as fs } from 'fs';
 import Config from '../Config';
+import ConnextClient from '../connextclient/ConnextClient';
 import { SwapClientType } from '../constants/enums';
 import { Models } from '../db/DB';
 import lndErrors from '../lndclient/errors';
@@ -10,7 +11,6 @@ import { Loggers } from '../Logger';
 import { Currency } from '../orderbook/types';
 import Peer from '../p2p/Peer';
 import RaidenClient from '../raidenclient/RaidenClient';
-import ConnextClient from '../connextclient/ConnextClient';
 import { keystore } from '../utils/seedutil';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
@@ -312,6 +312,10 @@ class SwapClientManager extends EventEmitter {
     return this.swapClients.get(currency);
   }
 
+  /** Gets the type of swap client for a given currency. */
+  public getType = (currency: string) => {
+    return this.swapClients.get(currency)?.type;
+  }
   /**
    * Returns whether the swap client for a specified currency is connected.
    * @returns `true` if a swap client exists and is connected, otherwise `false`
@@ -440,19 +444,15 @@ class SwapClientManager extends EventEmitter {
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
-    if (isLndClient(swapClient)) {
-      const address = await swapClient.newAddress();
-      return address;
-    } else {
-      // TODO: generic deposit logic
-      throw new Error('currency currently not supported for fetching deposit addresses');
-    }
+
+    const address = await swapClient.deposit();
+    return address;
   }
 
   public withdraw = async ({ currency, amount, destination, all, fee }: {
     currency: string,
     destination: string,
-    amount: number,
+    amount?: number,
     all?: boolean,
     fee?: number,
   }) => {
@@ -470,49 +470,44 @@ class SwapClientManager extends EventEmitter {
   }
 
   /**
-   * Closes any payment channels with a peer for a given currency.
-   * @param peer a peer to open the payment channel with.
+   * Closes a payment channel.
+   * @param remoteIdentifier the identifier for the remote side of the channel.
    * @param currency a currency for the payment channel.
-   * @param amount the size of the payment channel local balance
+   * @param amount the amount to extract from the channel. If 0 or unspecified,
+   * the entire off-chain balance for the specified currency will be extracted.
    * @returns Nothing upon success, throws otherwise.
    */
   public closeChannel = async (
-    { peer, currency, force }:
-    { peer: Peer, currency: string, force: boolean },
+    { remoteIdentifier, currency, force, destination, amount }:
+    { remoteIdentifier?: string, currency: string, force: boolean, destination?: string, amount?: number },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
-    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
-    if (!peerIdentifier) {
-      throw new Error('peer not connected to swap client');
-    }
-    // TODO: temporarily we only support closing lnd channels, make this logic generic
-    if (isLndClient(swapClient)) {
-      const lndChannels = (await swapClient.listChannels()).getChannelsList();
-      const closePromises: Promise<void>[] = [];
-      lndChannels.forEach((channel) => {
-        if (channel.getRemotePubkey() === peerIdentifier) {
-          const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
-          const closePromise = swapClient.closeChannel(fundingTxId, Number(outputIndex), force);
-          closePromises.push(closePromise);
-        }
-      });
-      await Promise.all(closePromises);
-    }
+    const units = amount ? this.unitConverter.amountToUnits({
+      amount,
+      currency,
+    }) : undefined;
+    await swapClient.closeChannel({
+      remoteIdentifier,
+      currency,
+      force,
+      destination,
+      units,
+    });
   }
 
   /**
    * Opens a payment channel.
-   * @param peer a peer to open the payment channel with.
+   * @param remoteIdentifier the identifier for the remote side of the channel.
    * @param currency a currency for the payment channel.
    * @param amount the size of the payment channel local balance
    * @returns Nothing upon success, throws otherwise.
    */
   public openChannel = async (
-    { peer, amount, currency, pushAmount = 0 }:
-    { peer?: Peer, amount: number, currency: string, pushAmount?: number },
+    { remoteIdentifier, amount, currency, pushAmount = 0, uris }:
+    { remoteIdentifier?: string, amount: number, currency: string, pushAmount?: number, uris?: string[] },
   ): Promise<void> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
@@ -527,23 +522,13 @@ class SwapClientManager extends EventEmitter {
       amount: pushAmount,
     });
 
-    if (!peer) {
-      if (isConnextClient(swapClient)) {
-        await swapClient.deposit({ currency, units });
-        return;
-      } else {
-        throw new Error('peerPubKey or alias must be specified');
-      }
-    }
-    const peerIdentifier = peer.getIdentifier(swapClient.type, currency);
-    if (!peerIdentifier) {
-      throw new Error('peer not connected to swap client');
-    }
-    let uris: string[] | undefined;
-    if (isLndClient(swapClient)) {
-      uris = peer.getLndUris(currency);
-    }
-    await swapClient.openChannel({ peerIdentifier, currency, units, uris, pushUnits });
+    await swapClient.openChannel({
+      remoteIdentifier,
+      currency,
+      units,
+      uris,
+      pushUnits,
+    });
   }
 
   /**

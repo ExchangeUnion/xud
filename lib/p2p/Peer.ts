@@ -32,7 +32,7 @@ type PeerInfo = {
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
   raidenAddress?: string,
-  connextAddress?: string,
+  connextIdentifier?: string,
 };
 
 enum PeerStatus {
@@ -162,8 +162,8 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.raidenAddress : undefined;
   }
 
-  public get connextAddress(): string | undefined {
-    return this.nodeState ? this.nodeState.connextAddress : undefined;
+  public get connextIdentifier(): string | undefined {
+    return this.nodeState ? this.nodeState.connextIdentifier : undefined;
   }
 
   /** Returns a list of trading pairs advertised by this peer. */
@@ -189,7 +189,7 @@ class Peer extends EventEmitter {
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
       raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
-      connextAddress: this.nodeState ? this.nodeState.connextAddress : undefined,
+      connextIdentifier: this.nodeState ? this.nodeState.connextIdentifier : undefined,
     };
   }
 
@@ -242,7 +242,7 @@ class Peer extends EventEmitter {
     switch (clientType) {
       case SwapClientType.Lnd: return this.getLndPubKey(currency);
       case SwapClientType.Raiden: return this.raidenAddress;
-      case SwapClientType.Connext: return this.connextAddress;
+      case SwapClientType.Connext: return this.connextIdentifier;
       default: return;
     }
   }
@@ -724,11 +724,11 @@ class Peer extends EventEmitter {
   private bindSocket = () => {
     assert(this.socket);
 
-    this.socket!.once('error', (err) => {
+    this.socket.once('error', (err) => {
       this.logger.error(`Peer (${this.label}) error`, err);
     });
 
-    this.socket!.once('close', async (hadError) => {
+    this.socket.once('close', async (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake with ${this.label}`);
@@ -740,9 +740,9 @@ class Peer extends EventEmitter {
       await this.close();
     });
 
-    this.socket!.on('data', this.parser.feed);
+    this.socket.on('data', this.parser.feed);
 
-    this.socket!.setNoDelay(true);
+    this.socket.setNoDelay(true);
   }
 
   private bindParser = (parser: Parser): void => {
@@ -924,7 +924,7 @@ class Peer extends EventEmitter {
     if (!this.inbound) {
       // outbound handshake
       assert(this.expectedNodePubKey);
-      await this.initSession(ownNodeState, ownNodeKey, ownVersion, this.expectedNodePubKey!);
+      await this.initSession(ownNodeState, ownNodeKey, ownVersion, this.expectedNodePubKey);
       sessionInit = await this.waitSessionInit();
       await this.authenticateSessionInit(sessionInit, ownNodeKey.pubKey, this.expectedNodePubKey);
     } else {

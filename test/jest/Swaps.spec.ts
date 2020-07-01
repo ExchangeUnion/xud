@@ -1,5 +1,5 @@
-import Swaps from '../../lib/swaps/Swaps';
 import LndClient from '../../lib/lndclient/LndClient';
+import Swaps from '../../lib/swaps/Swaps';
 
 describe('Swaps', () => {
   describe('calculateLockBuffer', () => {
