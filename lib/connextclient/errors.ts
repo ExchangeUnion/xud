@@ -40,14 +40,14 @@ const errors = {
     message: 'request timed out',
     code: errorCodes.TIMEOUT,
   },
-  SERVER_ERROR: {
-    message: 'connext server error',
+  SERVER_ERROR: (statusCode: number, statusMessage?: string) => ({
+    message: `connext server error ${statusCode}: ${statusMessage ?? ''}`,
     code: errorCodes.SERVER_ERROR,
-  },
-  UNEXPECTED: {
-    message: 'unexpected error during connext request',
+  }),
+  UNEXPECTED: (statusCode: number, statusMessage?: string) => ({
+    message: `unexpected status from connext request ${statusCode}: ${statusMessage ?? ''}`,
     code: errorCodes.UNEXPECTED,
-  },
+  }),
   TOKEN_ADDRESS_NOT_FOUND: {
     message: 'connext token address not found',
     code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,

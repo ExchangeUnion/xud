@@ -939,22 +939,27 @@ class LndClient extends SwapClient {
   }
 
   public lookupPayment = async (rHash: string) => {
-    const payments = await this.listPayments(true);
-    for (const payment of payments.getPaymentsList()) {
-      if (payment.getPaymentHash() === rHash) {
-        switch (payment.getStatus()) {
-          case lndrpc.Payment.PaymentStatus.SUCCEEDED:
-            const preimage = payment.getPaymentPreimage();
-            return { preimage, state: PaymentState.Succeeded };
-          case lndrpc.Payment.PaymentStatus.IN_FLIGHT:
-            return { state: PaymentState.Pending };
-          default:
-            this.logger.warn(`unexpected payment state for payment with hash ${rHash}`);
-            /* falls through */
-          case lndrpc.Payment.PaymentStatus.FAILED:
-            return { state: PaymentState.Failed };
+    try {
+      const payments = await this.listPayments(true);
+      for (const payment of payments.getPaymentsList()) {
+        if (payment.getPaymentHash() === rHash) {
+          switch (payment.getStatus()) {
+            case lndrpc.Payment.PaymentStatus.SUCCEEDED:
+              const preimage = payment.getPaymentPreimage();
+              return { preimage, state: PaymentState.Succeeded };
+            default:
+              this.logger.warn(`unexpected payment state for payment with hash ${rHash}`);
+              /* falls through */
+            case lndrpc.Payment.PaymentStatus.IN_FLIGHT:
+              return { state: PaymentState.Pending };
+            case lndrpc.Payment.PaymentStatus.FAILED:
+              return { state: PaymentState.Failed };
+          }
         }
       }
+    } catch (err) {
+      this.logger.error(`could not lookup payment for ${rHash}`, err);
+      return { state: PaymentState.Pending };
     }
 
     // if no payment is found, we assume that the payment was never attempted by lnd
