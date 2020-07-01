@@ -36,7 +36,7 @@ index 090618c4b..cd33a5d58 100644
    }
  
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index d236d8931..d6a8ed2a9 100644
+index 7fd02cbb8..2bc60fe51 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
 @@ -710,6 +710,24 @@ class Swaps extends EventEmitter {
@@ -143,7 +143,21 @@ index d236d8931..d6a8ed2a9 100644
        return deal.rPreimage;
      }
    }
-@@ -1310,9 +1372,14 @@ class Swaps extends EventEmitter {
+@@ -1248,8 +1310,11 @@ class Swaps extends EventEmitter {
+         await this.swapRecovery.recoverDeal(swapDealInstance!);
+       }
+     } else if (deal.phase === SwapPhase.SendingPayment) {
+-      const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
+-      swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
++      // don't cancel any invoices if the taker is stalling
++      if (process.env.CUSTOM_SCENARIO !== 'SECURITY::TAKER_2ND_HTLC_STALL') {
++        const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
++        swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
++      }
+     }
+ 
+     this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
+@@ -1313,9 +1378,14 @@ class Swaps extends EventEmitter {
  
          if (deal.role === SwapRole.Maker) {
            // the maker begins execution of the swap upon accepting the deal

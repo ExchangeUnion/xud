@@ -1247,6 +1247,9 @@ class Swaps extends EventEmitter {
         const swapDealInstance = await this.repository.getSwapDeal(deal.rHash);
         await this.swapRecovery.recoverDeal(swapDealInstance!);
       }
+    } else if (deal.phase === SwapPhase.SendingPayment) {
+      const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
+      swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
     }
 
     this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
