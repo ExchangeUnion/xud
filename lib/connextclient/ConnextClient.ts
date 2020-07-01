@@ -430,9 +430,9 @@ class ConnextClient extends SwapClient {
         default:
           return { state: PaymentState.Pending };
       }
-    } catch (e) {
-      this.logger.error(e);
-      throw errors.SERVER_ERROR;
+    } catch (err) {
+      this.logger.error(`could not lookup payment for ${rHash}`, err);
+      return { state: PaymentState.Pending }; // return pending if we hit an error
     }
   }
 
