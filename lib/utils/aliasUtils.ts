@@ -7,19 +7,20 @@ import errors from '../service/errors';
  * @param pubkey a public key in hex format to convert to an alias
  */
 export const pubKeyToAlias = (pubkey: string): string => {
-  const getWord = (substring: string): string | undefined => {
+  const getAlias = (substring: string): string | undefined => {
     const asNumber = parseInt(substring, 16);
     if (!isNaN(asNumber)) {
-      const index = asNumber % wordlist.length;
-      return wordlist[index];
+      const length = wordlist.length;
+      const index = asNumber % (length * length);
+      const alias = wordlist[Math.floor(index / length)] + wordlist[index % length];
+      return alias;
     }
     return undefined;
   };
   if (pubkey.length === 66) {
-    const a = getWord(pubkey.slice(0, 33));
-    const b = getWord(pubkey.slice(33));
-    if (a && b) {
-      return a + b;
+    const alias = getAlias(pubkey);
+    if (alias) {
+      return alias;
     }
   }
   throw errors.INVALID_ARGUMENT('Not a valid public key');
