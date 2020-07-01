@@ -1,4 +1,4 @@
-import { SwapClientType, SwapFailureReason, SwapPhase, ReputationEvent } from '../../../lib/constants/enums';
+import { SwapClientType, SwapFailureReason, SwapPhase, ReputationEvent, SwapRole, SwapState } from '../../../lib/constants/enums';
 import DB from '../../../lib/db/DB';
 import LndClient from '../../../lib/lndclient/LndClient';
 import Logger from '../../../lib/Logger';
@@ -337,20 +337,47 @@ describe('Swaps Integration', () => {
       expect(addReputationEvent).toHaveBeenCalledWith(deal.takerPubKey, ReputationEvent.SwapDelay);
       expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
     });
+
+    test('it sets the phase to PreimageResolved but bans the peer if it is very late', async () => {
+      const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
+
+      deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_ABUSE_TIME_LIMIT'] - 1;
+      const swapPaidCallback = jest.fn();
+      swaps.on('swap.paid', swapPaidCallback);
+
+      await swaps['setDealPhase'](deal, SwapPhase.PreimageResolved);
+
+      expect(swapPaidCallback).toHaveBeenCalledTimes(1);
+      expect(addReputationEvent).toHaveBeenCalledTimes(1);
+      expect(addReputationEvent).toHaveBeenCalledWith(deal.takerPubKey, ReputationEvent.SwapAbuse);
+      expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
+    });
   });
 
-  test('it sets the phase to PreimageResolved but bans the peer if it is very late', async () => {
-    const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment);
+  describe('failDeal', () => {
+    test('it fails a deal in SendingPayment phase as taker', async () => {
+      const deal: SwapDeal = getValidDeal(SwapPhase.SendingPayment, SwapRole.Taker);
 
-    deal.executeTime = Date.now() - Swaps['SWAP_COMPLETE_TIMEOUT'] - Swaps['SWAP_ABUSE_TIME_LIMIT'] - 1;
-    const swapPaidCallback = jest.fn();
-    swaps.on('swap.paid', swapPaidCallback);
+      swapClientManager.get = jest.fn().mockImplementation((currency) => {
+        if (currency === deal.takerCurrency) {
+          return lndBtc;
+        }
+        return;
+      });
 
-    await swaps['setDealPhase'](deal, SwapPhase.PreimageResolved);
+      const swapFailedCallback = jest.fn();
+      swaps.on('swap.failed', swapFailedCallback);
 
-    expect(swapPaidCallback).toHaveBeenCalledTimes(1);
-    expect(addReputationEvent).toHaveBeenCalledTimes(1);
-    expect(addReputationEvent).toHaveBeenCalledWith(deal.takerPubKey, ReputationEvent.SwapAbuse);
-    expect(deal.phase).toEqual(SwapPhase.PreimageResolved);
+      await swaps['failDeal']({
+        deal,
+        failureReason: SwapFailureReason.UnknownError,
+      });
+
+      expect(swapFailedCallback).toHaveBeenCalledTimes(1);
+      expect(swapFailedCallback).toHaveBeenCalledWith(deal);
+      expect(lndBtc.removeInvoice).toHaveBeenCalledTimes(1);
+      expect(lndBtc.removeInvoice).toHaveBeenCalledWith(deal.rHash);
+      expect(deal.state).toEqual(SwapState.Error);
+    });
   });
 });
