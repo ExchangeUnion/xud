@@ -3,6 +3,7 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/connexttest"
 	"net"
 	"os"
 	"os/exec"
@@ -12,11 +13,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"context"
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/go-errors/errors"
 	"github.com/phayes/freeport"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -97,6 +98,9 @@ func (cfg nodeConfig) genArgs() []string {
 	if !cfg.ConnextDisable {
 		args = append(args, fmt.Sprintf("--connext.host=%v", cfg.ConnextHost))
 		args = append(args, fmt.Sprintf("--connext.port=%v", cfg.ConnextPort))
+		args = append(args, "--connext.webhookhost=127.0.0.1")
+		args = append(args, fmt.Sprintf("--connext.webhookport=%v", cfg.HTTPPort))
+
 	} else {
 		args = append(args, "--connext.disable")
 	}
@@ -116,8 +120,9 @@ type HarnessNode struct {
 	ID     int
 	pubKey string
 
-	LndBtcNode *lntest.HarnessNode
-	LndLtcNode *lntest.HarnessNode
+	LndBtcNode    *lntest.HarnessNode
+	LndLtcNode    *lntest.HarnessNode
+	ConnextClient *connexttest.HarnessClient
 
 	// processExit is a channel that's closed once it's detected that the
 	// process this instance of HarnessNode is bound to has exited.
@@ -151,7 +156,6 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 		XUDPath:         xudPath,
 		NoBalanceChecks: noBalanceChecks,
 		RaidenDisable:   true,
-		ConnextDisable:  true,
 	}
 	epoch := time.Now().Unix()
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
@@ -199,6 +203,12 @@ func (hn *HarnessNode) SetLnd(lndNode *lntest.HarnessNode, chain string) {
 		hn.Cfg.LndLtcMacPath = lndNode.Cfg.AdminMacPath
 		hn.LndLtcNode = lndNode
 	}
+}
+
+func (hn *HarnessNode) SetConnextClient(client *connexttest.HarnessClient) {
+	hn.Cfg.ConnextHost = "0.0.0.0"
+	hn.Cfg.ConnextPort = client.Cfg.Port
+	hn.ConnextClient = client
 }
 
 func (hn *HarnessNode) SetEnvVars(envVars []string) {

@@ -2,6 +2,7 @@ package xudtest
 
 import (
 	"context"
+	"github.com/ExchangeUnion/xud-simulation/connexttest"
 	"sync"
 	"time"
 
@@ -23,8 +24,9 @@ type NetworkHarness struct {
 	Carol *HarnessNode
 	Dave  *HarnessNode
 
-	LndBtcNetwork *lntest.NetworkHarness
-	LndLtcNetwork *lntest.NetworkHarness
+	LndBtcNetwork  *lntest.NetworkHarness
+	LndLtcNetwork  *lntest.NetworkHarness
+	ConnextNetwork *connexttest.NetworkHarness
 
 	errorChan chan *XudError
 
@@ -173,6 +175,14 @@ func (n *NetworkHarness) SetLnd(ln *lntest.NetworkHarness, chain string) {
 	n.Dave.SetLnd(ln.Dave, chain)
 }
 
+func (n *NetworkHarness) SetConnext(net *connexttest.NetworkHarness) {
+	n.ConnextNetwork = net
+	n.Alice.SetConnextClient(net.Alice)
+	n.Bob.SetConnextClient(net.Bob)
+	n.Carol.SetConnextClient(net.Carol)
+	n.Dave.SetConnextClient(net.Dave)
+}
+
 // ProcessErrors returns a channel used for reporting any fatal process errors.
 // If any of the active nodes within the harness' test network incur a fatal
 // error, that error is sent over this channel.
@@ -194,4 +204,13 @@ func (n *NetworkHarness) TearDownAll(kill bool, cleanup bool) error {
 	close(n.quit)
 
 	return nil
+}
+
+func (n *NetworkHarness) RestartNode(node *HarnessNode) error {
+	err := node.shutdown(true, false)
+	if err != nil {
+		return err
+	}
+
+	return node.Start(n.errorChan)
 }
