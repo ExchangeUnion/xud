@@ -206,6 +206,14 @@ const { argv } = require('yargs')
       type: 'number',
       alias: 'r',
     },
+    'rpc.tlsextradomains': {
+      describe: 'gRPC TLS certificate extra DNS names',
+      type: 'array',
+    },
+    'rpc.tlsextraips': {
+      describe: 'gRPC TLS certificate extra IP addresses',
+      type: 'array',
+    },
     'webproxy.disable': {
       describe: 'Disable web proxy server',
       type: 'boolean',

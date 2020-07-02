@@ -97,6 +97,8 @@ class Xud extends EventEmitter {
           this.config.rpc.host,
           path.join(this.config.xudir, 'tls.cert'),
           path.join(this.config.xudir, 'tls.key'),
+          this.config.rpc.tlsextradomains,
+          this.config.rpc.tlsextraips,
         );
 
         if (!this.config.webproxy.disable) {

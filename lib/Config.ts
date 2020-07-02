@@ -51,7 +51,7 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
-  public rpc: { disable: boolean, host: string, port: number };
+  public rpc: { disable: boolean, host: string, port: number, tlsextradomains: string[], tlsextraips: string[] };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
   public raiden: RaidenClientConfig;
@@ -131,6 +131,8 @@ class Config {
       disable: false,
       host: 'localhost',
       port: this.getDefaultRpcPort(),
+      tlsextradomains: [],
+      tlsextraips: [],
     };
     this.http = {
       host: 'localhost',

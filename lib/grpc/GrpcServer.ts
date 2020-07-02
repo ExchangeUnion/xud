@@ -49,7 +49,8 @@ class GrpcServer {
    * Start the server and begin listening on the provided port
    * @returns true if the server started listening successfully, false otherwise
    */
-  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string): Promise<void> => {
+  public listen = async (port: number, host: string, tlsCertPath: string, tlsKeyPath: string,
+                         tlsExtraDomains: string[] = [], tlsExtraIps: string[] = []): Promise<void> => {
     assert(Number.isInteger(port) && port > 1023 && port < 65536, 'port must be an integer between 1024 and 65535');
 
     let certificate: Buffer;
@@ -59,7 +60,7 @@ class GrpcServer {
       [certificate, privateKey] = await Promise.all([fs.readFile(tlsCertPath), fs.readFile(tlsKeyPath)]);
     } catch (err) {
       this.logger.debug('Could not load gRPC TLS certificate. Generating new one');
-      const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
+      const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath, tlsExtraDomains, tlsExtraIps);
       this.logger.debug('gRPC TLS certificate created');
 
       certificate = Buffer.from(tlsCert);
@@ -103,7 +104,8 @@ class GrpcServer {
    * Generate a new certificate and save it to the disk
    * @returns the cerificate and its private key
    */
-  private generateCertificate = async (tlsCertPath: string, tlsKeyPath: string): Promise<{ tlsCert: string, tlsKey: string }> => {
+  private generateCertificate = async (tlsCertPath: string, tlsKeyPath: string,
+                                       tlsExtraDomains: string[], tlsExtraIps: string[]): Promise<{ tlsCert: string, tlsKey: string }> => {
     const keys = pki.rsa.generateKeyPair(1024);
     const cert = pki.createCertificate();
 
@@ -129,19 +131,22 @@ class GrpcServer {
     cert.setSubject(attributes);
     cert.setIssuer(attributes);
 
-    // TODO: add tlsextradomain and tlsextraip options
+    const domains = tlsExtraDomains.filter(i => i !== 'localhost');
+    domains.unshift('localhost');
+    const ips = tlsExtraIps.filter(i => i !== '127.0.0.1');
+    ips.unshift('127.0.0.1');
     cert.setExtensions([
       {
         name: 'subjectAltName',
         altNames: [
-          {
+          ...domains.map(i => ({
             type: 2,
-            value: 'localhost',
-          },
-          {
+            value: i,
+          })),
+          ...ips.map(i => ({
             type: 7,
-            ip: '127.0.0.1',
-          },
+            ip: i,
+          })),
         ],
       },
     ]);
