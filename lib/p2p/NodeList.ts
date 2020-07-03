@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
-import { NodeFactory, NodeInstance, ReputationEventInstance } from '../db/types';
+import { NodeFactory, NodeInstance } from '../db/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
+import errors from './errors';
 import P2PRepository from './P2PRepository';
 import { Address } from './types';
-import errors from './errors';
 
 export const reputationEventWeight = {
   [ReputationEvent.ManualBan]: Number.NEGATIVE_INFINITY,
@@ -25,8 +25,8 @@ export const reputationEventWeight = {
 // TODO: remove reputation events after certain amount of time
 
 interface NodeList {
-  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEventInstance[]) => void): this;
-  emit(event: 'node.ban', nodePubKey: string, events: ReputationEventInstance[]): boolean;
+  on(event: 'node.ban', listener: (nodePubKey: string, events: ReputationEvent[]) => void): this;
+  emit(event: 'node.ban', nodePubKey: string, events: ReputationEvent[]): boolean;
 }
 
 /** Represents a list of nodes for managing network peers activity */
@@ -163,6 +163,24 @@ class NodeList extends EventEmitter {
   }
 
   /**
+   * Retrieves up to 10 of the most recent negative reputation events for a node
+   * from the repository.
+   * @param node the node for which to retrieve events
+   * @param newEvent a reputation event that hasn't been added to the repository yet
+   */
+  private getNegativeReputationEvents = async (node: NodeInstance, newEvent?: ReputationEvent) => {
+    const reputationEvents = await this.repository.getReputationEvents(node);
+    const negativeReputationEvents = reputationEvents
+      .filter(e => reputationEventWeight[e.event] < 0).slice(0, 9)
+      .map(e => e.event);
+
+    if (newEvent) {
+      negativeReputationEvents.unshift(newEvent);
+    }
+    return negativeReputationEvents;
+  }
+
+  /**
    * Add a reputation event to the node's history
    * @return true if the specified node exists and the event was added, false otherwise
    */
@@ -170,22 +188,22 @@ class NodeList extends EventEmitter {
     const node = this.nodes.get(nodePubKey);
 
     if (node) {
-      const promises: PromiseLike<any>[] = [
-        this.repository.addReputationEvent({ event, nodeId: node.id }),
-      ];
+      const promises: PromiseLike<any>[] = [];
 
       this.updateReputationScore(node, event);
 
-      if (node.reputationScore < NodeList.BAN_THRESHOLD) {
+      if (node.reputationScore < NodeList.BAN_THRESHOLD && !node.banned) {
         promises.push(this.setBanStatus(node, true));
 
-        const events = await this.repository.getReputationEvents(node);
-        this.emit('node.ban', nodePubKey, events);
-      } else if (node.banned) {
+        const negativeReputationEvents = await this.getNegativeReputationEvents(node);
+        this.emit('node.ban', nodePubKey, negativeReputationEvents);
+      } else if (node.reputationScore >= NodeList.BAN_THRESHOLD && node.banned) {
         // If the reputationScore is not below the banThreshold but node.banned
         // is true that means that the node was unbanned
         promises.push(this.setBanStatus(node, false));
       }
+
+      promises.push(this.repository.addReputationEvent({ event, nodeId: node.id }));
 
       await Promise.all(promises);
 

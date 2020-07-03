@@ -22,6 +22,7 @@ class P2PRepository {
       where: {
         nodeId: node.id,
       },
+      order: [['createdAt', 'DESC']],
     });
   }
 
