@@ -1,6 +1,9 @@
 import assert from 'assert';
 import { exec as childProcessExec } from 'child_process';
+import path from 'path';
 import { promisify } from 'util';
+
+const seedutilPath = path.join(__dirname, '..', '..', 'seedutil', 'seedutil');
 
 /** A promisified wrapped for the NodeJS `child_process.exec` method. */
 const exec = promisify(childProcessExec);
@@ -10,10 +13,10 @@ const exec = promisify(childProcessExec);
  * mnemonic and password at the specified path.
  * @param mnemonic the 24 seed recovery mnemonic
  * @param password the password to protect the keystore
- * @param path the path in which to create the keystore directory
+ * @param pathVal the path in which to create the keystore directory
  */
-async function keystore(mnemonic: string[], password: string, path: string) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil keystore -pass=${password} -path=${path} ${mnemonic.join(' ')}`);
+async function keystore(mnemonic: string[], password: string, pathVal: string) {
+  const { stdout, stderr } = await exec(`${seedutilPath} keystore -pass=${password} -path=${pathVal} ${mnemonic.join(' ')}`);
 
   if (stderr) {
     throw new Error(stderr);
@@ -29,7 +32,7 @@ async function keystore(mnemonic: string[], password: string, path: string) {
  * @param mnemonic the 24 seed recovery mnemonic
  */
 async function encipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil encipher ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(`${seedutilPath} encipher ${mnemonic.join(' ')}`);
 
   if (stderr) {
     throw new Error(stderr);
@@ -40,7 +43,7 @@ async function encipher(mnemonic: string[]) {
 }
 
 async function decipher(mnemonic: string[]) {
-  const { stdout, stderr } = await exec(`./seedutil/seedutil decipher ${mnemonic.join(' ')}`);
+  const { stdout, stderr } = await exec(`${seedutilPath} decipher ${mnemonic.join(' ')}`);
 
   if (stderr) {
     throw new Error(stderr);
@@ -51,7 +54,7 @@ async function decipher(mnemonic: string[]) {
 }
 
 async function generate() {
-  const { stdout, stderr } = await exec('./seedutil/seedutil generate');
+  const { stdout, stderr } = await exec(`${seedutilPath} generate`);
 
   if (stderr) {
     throw new Error(stderr);
