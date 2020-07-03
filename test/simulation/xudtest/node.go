@@ -63,6 +63,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--initdb=false")
 	args = append(args, "--regtest")
 	args = append(args, "--loglevel=trace")
+	args = append(args, "--noencrypt")
 
 	if cfg.NoBalanceChecks {
 		args = append(args, "--nobalancechecks=true")

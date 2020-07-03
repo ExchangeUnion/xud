@@ -26,6 +26,7 @@ describe('API Service', () => {
   before(async () => {
     const config = {
       initdb: false,
+      noencrypt: true,
       nosanityswaps: true,
       nobalancechecks: true,
       dbpath: ':memory:',

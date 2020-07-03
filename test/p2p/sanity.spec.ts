@@ -12,6 +12,7 @@ export const createConfig = (instanceid: number, p2pPort: number, uniqueXudir = 
   instanceid,
   network,
   initdb: false,
+  noencrypt: true,
   xudir: getTempDir(uniqueXudir),
   dbpath: ':memory:',
   loglevel: 'error',
