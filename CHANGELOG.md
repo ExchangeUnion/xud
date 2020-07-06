@@ -1,3 +1,59 @@
+# [1.0.0-beta.5](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.3...v1.0.0-beta.5) (2020-07-06)
+
+
+### Bug Fixes
+
+* **cli:** accept lower case currencies ([#1629](https://github.com/ExchangeUnion/xud/issues/1629)) ([105ed51](https://github.com/ExchangeUnion/xud/commit/105ed518e7b476d1b4749a0d10c26f0d3a899740)), closes [#1626](https://github.com/ExchangeUnion/xud/issues/1626)
+* **connext:** set default lookupPayment status as pending ([#1603](https://github.com/ExchangeUnion/xud/issues/1603)) ([141bcc5](https://github.com/ExchangeUnion/xud/commit/141bcc543e3e70dd6a26346bb517832973d78f48))
+* **swaps:** cancel taker invoice on swap fail ([#1704](https://github.com/ExchangeUnion/xud/issues/1704)) ([b13ecdb](https://github.com/ExchangeUnion/xud/commit/b13ecdb3b7ec2c242466acaa70ac36dca85ab786)), closes [#1695](https://github.com/ExchangeUnion/xud/issues/1695)
+* **swaps:** lookupPayment return Pending on error ([3d78a55](https://github.com/ExchangeUnion/xud/commit/3d78a55ce9d8cf5f7a07c71d8282633d43318bcd)), closes [#1701](https://github.com/ExchangeUnion/xud/issues/1701)
+* remove old exchangeunion.com seed nodes ([#1669](https://github.com/ExchangeUnion/xud/issues/1669)) ([be62fd0](https://github.com/ExchangeUnion/xud/commit/be62fd027b8143866a61d309389149aa9d794ed7))
+* **cli:** streamorders handling xud not ready ([#1663](https://github.com/ExchangeUnion/xud/issues/1663)) ([1f9e82f](https://github.com/ExchangeUnion/xud/commit/1f9e82f9e20b710a706af9e6caa620f40cbc425e))
+* **p2p:** change connext_address to connext_identifier ([13157b0](https://github.com/ExchangeUnion/xud/commit/13157b050cd9a79961cdf9feaa69eb9fc1fdce48))
+* **rpc:** close listeners for streaming calls ([b18d4d7](https://github.com/ExchangeUnion/xud/commit/b18d4d77eb28f90393a460bd36cb3cff4507bcf1)), closes [#1640](https://github.com/ExchangeUnion/xud/issues/1640)
+* **swaps:** cancel timer immediately on complete ([883be70](https://github.com/ExchangeUnion/xud/commit/883be70d20cc9c54d6c3deb409068c3f4ac2fe00)), closes [#1634](https://github.com/ExchangeUnion/xud/issues/1634)
+* **swaps:** don't try to accept a failed deal ([d827957](https://github.com/ExchangeUnion/xud/commit/d82795759653505c6a3a5fa54c57cb74a5c58c3a)), closes [#1614](https://github.com/ExchangeUnion/xud/issues/1614)
+* **swaps:** go to recovery for all failures ([43f38d2](https://github.com/ExchangeUnion/xud/commit/43f38d2816226f91e75ba023ba609b399a4a2ba0)), closes [#1606](https://github.com/ExchangeUnion/xud/issues/1606)
+* format ([e32d33c](https://github.com/ExchangeUnion/xud/commit/e32d33c2ef93ae35d42a4a7ecf847529ff957a1c))
+* resolve alias for all known nodes ([3cbd2d8](https://github.com/ExchangeUnion/xud/commit/3cbd2d88bd40014a6ac62c7035900415423be77c))
+
+
+### Features
+
+* **backup:** stop backup on sigterm ([6745f08](https://github.com/ExchangeUnion/xud/commit/6745f08705157b39d01c8f6d3facfc542ba89733))
+* **connext:** log all request errors ([54d449e](https://github.com/ExchangeUnion/xud/commit/54d449e8ed80b26e318d490bb2f6ad4014ca19df))
+* penalize peers for delaying preimage release ([06a6bde](https://github.com/ExchangeUnion/xud/commit/06a6bdec1af51b79e2fc33d10215558560ee33e5))
+* record recovered swap as a trade in db ([b322e2c](https://github.com/ExchangeUnion/xud/commit/b322e2cd0e30c4c5cd516701892b45220decb814))
+* SwapRecovery sublogger ([92a423f](https://github.com/ExchangeUnion/xud/commit/92a423ffeb7f24d351116fb0cc58e012a1a459fb))
+* **backup:** change log level debug to trace ([2df88c5](https://github.com/ExchangeUnion/xud/commit/2df88c5bd30b9dea5ee984730b592d71f30a8995))
+* **backup:** write xud db every 3 minutes max ([#1655](https://github.com/ExchangeUnion/xud/issues/1655)) ([4306fba](https://github.com/ExchangeUnion/xud/commit/4306fba37b65cb903fb15e17b90316a4ea92405e)), closes [#1652](https://github.com/ExchangeUnion/xud/issues/1652) [#1368](https://github.com/ExchangeUnion/xud/issues/1368)
+* **config:** enable xud encryption by default ([4f1bc4d](https://github.com/ExchangeUnion/xud/commit/4f1bc4d4386234499d50765177413676862f5795))
+* **connext:** log created outgoing hashlock xfers ([84f4d58](https://github.com/ExchangeUnion/xud/commit/84f4d5845f6f31f2ba488957c97c510bb9126a78))
+* **connext:** use channel balance as max outgoing ([aea7c2a](https://github.com/ExchangeUnion/xud/commit/aea7c2a1b61413845cc43a355f917f9de1db2fea)), closes [#1609](https://github.com/ExchangeUnion/xud/issues/1609)
+* **lnd:** log htlc acceptance ([fa7b13c](https://github.com/ExchangeUnion/xud/commit/fa7b13c9142d64086d0f9edda9eb904e47295ae4))
+* **logger:** alert level logging for risk of loss ([a518c3f](https://github.com/ExchangeUnion/xud/commit/a518c3fa82aac625fc46c7a87899796f555ff3e5))
+* **swaps:** log when sending payments ([46e2d4e](https://github.com/ExchangeUnion/xud/commit/46e2d4ebf9c54becfe360ff7ff722aff4c05b77e))
+* **swaps:** log when we attempt settleInvoice ([90b8d83](https://github.com/ExchangeUnion/xud/commit/90b8d834cfbebb3327cf13add09f5ab03ff328df))
+* **swaps:** new PreimageResolved swap phase ([d9d6bb5](https://github.com/ExchangeUnion/xud/commit/d9d6bb5cd743e16197972ff1d2e3e59c477e0c6e)), closes [#1654](https://github.com/ExchangeUnion/xud/issues/1654) [#1659](https://github.com/ExchangeUnion/xud/issues/1659)
+* add additional simnet,testnet bootstrap node ([9a03146](https://github.com/ExchangeUnion/xud/commit/9a03146e9deabb43b556648693ee1830feb63046))
+* add xud.kilrau.com:8885 mainnet seed ([f249489](https://github.com/ExchangeUnion/xud/commit/f249489c0d07984c211b9be44ce1844c1ee8dc24))
+* improve open channel fail logging ([704072e](https://github.com/ExchangeUnion/xud/commit/704072e668f1737479617bad7b1db3478ff6e67f))
+* log preimage when revealed from sent payment ([#1664](https://github.com/ExchangeUnion/xud/issues/1664)) ([f3d3b69](https://github.com/ExchangeUnion/xud/commit/f3d3b69c9e0eb3ecdc5ceb8f96920b300ba817cd))
+* travis ci badge -> github action badges ([#1682](https://github.com/ExchangeUnion/xud/issues/1682)) ([da1b307](https://github.com/ExchangeUnion/xud/commit/da1b307a5c4739f3c9e86836822a837507f29d4c))
+* **rpc/connext:** deposit & openchannel calls ([#1577](https://github.com/ExchangeUnion/xud/issues/1577)) ([ebb715e](https://github.com/ExchangeUnion/xud/commit/ebb715e45aeba8ea42bde26cfd3b7ce54f167912)), closes [#1472](https://github.com/ExchangeUnion/xud/issues/1472) [#1473](https://github.com/ExchangeUnion/xud/issues/1473)
+* **swaps:** check payment immediately on recovery ([#1600](https://github.com/ExchangeUnion/xud/issues/1600)) ([6bea4a6](https://github.com/ExchangeUnion/xud/commit/6bea4a61dad128205f184256f1ab1c2460188af3)), closes [#1598](https://github.com/ExchangeUnion/xud/issues/1598)
+
+
+### BREAKING CHANGES
+
+* **p2p:** `connext_address` field in `NodeState` has been renamed
+to `connext_identifier`.
+
+Related: https://github.com/opendexnetwork/opendex/issues/28
+Closes: https://github.com/ExchangeUnion/xud/issues/1611
+
+
+
 # [1.0.0-beta.4](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.3...v1.0.0-beta.4) (2020-06-09)
 
 
