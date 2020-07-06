@@ -32,19 +32,11 @@ const currencies = [
     decimalPlaces: 18,
     tokenAddress: '0x0000000000000000000000000000000000000000',
   },
-  {
-    id: 'USDT',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 6,
-    tokenAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-  },
 ] as db.CurrencyAttributes[];
 
 const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
-  { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
-  { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
 ] as db.PairAttributes[];
 
 export {
