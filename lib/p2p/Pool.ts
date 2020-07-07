@@ -2,9 +2,8 @@ import assert from 'assert';
 import { EventEmitter } from 'events';
 import net, { Server, Socket } from 'net';
 import semver from 'semver';
-import { DisconnectionReason, ReputationEvent, XuNetwork, SwapFailureReason } from '../constants/enums';
+import { DisconnectionReason, ReputationEvent, SwapFailureReason, XuNetwork } from '../constants/enums';
 import { Models } from '../db/DB';
-import { ReputationEventInstance } from '../db/types';
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
 import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
@@ -13,7 +12,7 @@ import { pubKeyToAlias } from '../utils/aliasUtils';
 import { getExternalIp } from '../utils/utils';
 import errors, { errorCodes } from './errors';
 import Network from './Network';
-import NodeList, { reputationEventWeight } from './NodeList';
+import NodeList from './NodeList';
 import P2PRepository from './P2PRepository';
 import { Packet, PacketType } from './packets';
 import * as packets from './packets/types';
@@ -291,13 +290,12 @@ class Pool extends EventEmitter {
   }
 
   private bindNodeList = () => {
-    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEventInstance[]) => {
-      this.logger.info(`node ${nodePubKey} was banned`);
+    this.nodes.on('node.ban', (nodePubKey: string, events: ReputationEvent[]) => {
+      this.logger.info(`node ${nodePubKey} was banned due to ${ReputationEvent[events[0]]}`);
 
       const peer = this.peers.get(nodePubKey);
       if (peer) {
-        const lastNegativeEvents = events.filter(e => reputationEventWeight[e.event] < 0).slice(0, 10);
-        return peer.close(DisconnectionReason.Banned, JSON.stringify(lastNegativeEvents));
+        return peer.close(DisconnectionReason.Banned, JSON.stringify(events));
       }
       return;
     });
