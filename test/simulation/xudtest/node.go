@@ -255,7 +255,6 @@ func (hn *HarnessNode) Start(errorChan chan<- *XudError) error {
 
 		// Signal any onlookers that this process has exited.
 		close(hn.ProcessExit)
-		hn.Client = nil
 	}()
 
 	// Since Stop uses the XudClient to stop the node, if we fail to get a
@@ -377,7 +376,6 @@ func (hn *HarnessNode) stop(kill bool) error {
 
 	hn.quit = nil
 	hn.ProcessExit = nil
-	hn.Client = nil
 	return nil
 }
 
