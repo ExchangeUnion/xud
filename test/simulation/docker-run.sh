@@ -16,4 +16,7 @@ pushd temp/indra
 make reset
 popd
 
+if [ res -ne 0 ]; then
+    ./logs.sh
+fi
 exit $res
