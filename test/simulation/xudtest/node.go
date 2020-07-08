@@ -352,11 +352,7 @@ func (hn *HarnessNode) stop(kill bool) error {
 	}
 
 	if hn.Client != nil {
-		ctx := context.Background()
-		req := xudrpc.ShutdownRequest{}
-		if _, err := hn.Client.Shutdown(ctx, &req); err != nil {
-			return fmt.Errorf("RPC Shutdown failure: %v", err)
-		}
+		_, _ = hn.Client.Shutdown(context.Background(), &xudrpc.ShutdownRequest{})
 	}
 
 	// Wait for xud process and other goroutines to exit.
