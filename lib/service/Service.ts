@@ -266,20 +266,20 @@ class Service {
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
 
-    try {
-      if (nodeIdentifier) {
-        const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
-        const swapClientType = this.swapClientManager.getType(currency);
-        if (swapClientType === undefined) {
-          throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-        }
-        const peer = this.pool.getPeer(nodePubKey);
-        remoteIdentifier = peer.getIdentifier(swapClientType, currency);
-        if (swapClientType === SwapClientType.Lnd) {
-          uris = peer.getLndUris(currency);
-        }
+    if (nodeIdentifier) {
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+      const swapClientType = this.swapClientManager.getType(currency);
+      if (swapClientType === undefined) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
+      const peer = this.pool.getPeer(nodePubKey);
+      remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+      if (swapClientType === SwapClientType.Lnd) {
+        uris = peer.getLndUris(currency);
+      }
+    }
 
+    try {
       await this.swapClientManager.openChannel({
         remoteIdentifier,
         uris,
