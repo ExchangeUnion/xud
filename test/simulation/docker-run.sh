@@ -9,11 +9,16 @@ popd
 
 export DOCKER_CLIENT_TIMEOUT=120
 export COMPOSE_HTTP_TIMEOUT=120
-docker-compose run -v $PWD/temp/logs:/app/temp/logs test go test -v -timeout 20m -run=$@
-res=$?
+docker-compose run -v $PWD/temp/logs:/app/temp/logs test go test -v -timeout 30m -run=$@
+retVal=$?
 
 pushd temp/indra
 make reset
 popd
 
-exit $res
+if [[ retVal != 0 ]]
+then
+    ./logs.sh
+fi
+
+exit $retVal
