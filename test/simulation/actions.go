@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/roasbeef/btcutil"
@@ -55,6 +56,37 @@ func (a *actions) init(node *xudtest.HarnessNode) {
 		a.assert.False(time.Now().After(timeout), "waiting for synced chains timeout")
 		// retry interval
 		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func (a *actions) initConnext(net *xudtest.NetworkHarness, node *xudtest.HarnessNode, fund bool) {
+	// Wait for node's connext connection to catch-up.
+	err := waitConnextReady(node)
+	a.assert.NoError(err)
+
+	// Fund node's wallet.
+	if fund {
+		resInfo, err := node.Client.GetInfo(context.Background(), &xudrpc.GetInfoRequest{})
+		a.assert.NoError(err)
+		amount := big.NewInt(2000000000000000000)
+		err = net.ConnextNetwork.Wallet.SendEth(resInfo.Connext.Address, amount)
+		a.assert.NoError(err)
+
+		time.Sleep(15 * time.Second)
+	}
+
+	// Init node.
+	ETHTokenAddress := "0x0000000000000000000000000000000000000000"
+	a.addCurrency(node, "ETH", 2, ETHTokenAddress, 18)
+	a.addPair(node, "BTC", "ETH")
+	err = net.RestartNode(node)
+	a.assert.NoError(err)
+
+	// Verify node's ETH balance.
+	if fund {
+		resBal, err := node.Client.GetBalance(a.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+		a.assert.NoError(err)
+		a.assert.Equal(uint64(200000000), resBal.Balances["ETH"].WalletBalance)
 	}
 }
 

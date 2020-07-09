@@ -66,6 +66,7 @@ func (n *NetworkHarness) SetCustomXud(ctx context.Context, ctxSetter CtxSetter, 
 	customNode.SetEnvVars(envVars)
 	customNode.SetLnd(node.LndBtcNode, "BTC")
 	customNode.SetLnd(node.LndLtcNode, "LTC")
+	customNode.SetConnextClient(node.ConnextClient)
 
 	var wg sync.WaitGroup
 	wg.Add(1)

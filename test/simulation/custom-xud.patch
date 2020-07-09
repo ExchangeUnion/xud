@@ -5,7 +5,7 @@ index 08402caa8..c9972d258 100644
 @@ -87,6 +87,11 @@ class Xud extends EventEmitter {
        this.logger.info('config file loaded');
      }
- 
+
 +    this.logger.info('CUSTOM-XUD');
 +    if (process.env.CUSTOM_SCENARIO) {
 +      this.logger.info(`CUSTOM_SCENARIO=${process.env.CUSTOM_SCENARIO}`);
@@ -19,12 +19,12 @@ index 090618c4b..cd33a5d58 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
 @@ -28,7 +28,15 @@ class SwapRecovery extends EventEmitter {
- 
+
    public beginTimer = () => {
      if (!this.pendingSwapsTimer) {
 -      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL);
 +      let interval = SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL;
-+      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE') {
 +        interval = 5000;
 +      }
 +      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
@@ -34,7 +34,7 @@ index 090618c4b..cd33a5d58 100644
 +      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, interval);
      }
    }
- 
+
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
 index 7fd02cbb8..2bc60fe51 100644
 --- a/lib/swaps/Swaps.ts
@@ -53,10 +53,10 @@ index 7fd02cbb8..2bc60fe51 100644
 +          await setTimeoutPromise(5000);
 +        }
 +
-+        if (deal && deal.role === SwapRole.Maker && process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++        if (deal && deal.role === SwapRole.Maker && process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE') {
 +          this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
-+          this.logger.info(`LNDLTC_PID: ${process.env.LNDLTC_PID}`);
-+          process.kill(parseInt(process.env.LNDLTC_PID!, 10));
++          this.logger.info(`CLIENT_TYPE ${process.env.CLIENT_TYPE}, CLIENT_PID: ${process.env.CLIENT_PID}`);
++          process.kill(parseInt(process.env.CLIENT_PID!, 10));
 +          await setTimeoutPromise(1000);
 +        }
 +
@@ -82,7 +82,7 @@ index 7fd02cbb8..2bc60fe51 100644
      const { quantity, rHash, makerCltvDelta } = responsePacket.body;
      const deal = this.getDeal(rHash);
 @@ -821,6 +849,11 @@ class Swaps extends EventEmitter {
- 
+
      try {
        await makerSwapClient.sendPayment(deal);
 +
@@ -94,9 +94,9 @@ index 7fd02cbb8..2bc60fe51 100644
        // first we must handle the edge case where the maker has paid us but failed to claim our payment
        // in this case, we've already marked the swap as having been paid and completed
 @@ -1002,6 +1035,18 @@ class Swaps extends EventEmitter {
- 
+
        this.logger.debug('Executing maker code to resolve hash');
- 
+
 +      if (process.env.CUSTOM_SCENARIO === 'SECURITY::MAKER_1ST_HTLC_STALL') {
 +        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
 +        const makerSwapClient = this.swapClientManager.get(deal.makerCurrency)!;
@@ -110,11 +110,11 @@ index 7fd02cbb8..2bc60fe51 100644
 +      }
 +
        const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
- 
+
        // we update the phase persist the deal to the database before we attempt to send payment
 @@ -1012,6 +1057,13 @@ class Swaps extends EventEmitter {
        assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
- 
+
        try {
 +        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
 +          setTimeout(() => {
@@ -129,7 +129,7 @@ index 7fd02cbb8..2bc60fe51 100644
 @@ -1073,6 +1125,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
- 
+
 +      if (process.env.CUSTOM_SCENARIO === 'SECURITY::TAKER_2ND_HTLC_STALL') {
 +        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
 +        return '';
@@ -155,15 +155,15 @@ index 7fd02cbb8..2bc60fe51 100644
 +        swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
 +      }
      }
- 
+
      this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
 @@ -1313,9 +1378,14 @@ class Swaps extends EventEmitter {
- 
+
          if (deal.role === SwapRole.Maker) {
            // the maker begins execution of the swap upon accepting the deal
 +
 +          let interval = Swaps.SWAP_COMPLETE_TIMEOUT + Swaps.SWAP_COMPLETE_MAKER_BUFFER;
-+          if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_LND_CRASHED_BEFORE_SETTLE') {
++          if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE') {
 +            interval = 5000;
 +          }
            this.timeouts.set(rHash, setTimeout(
