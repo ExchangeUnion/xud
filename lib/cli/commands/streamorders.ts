@@ -74,6 +74,12 @@ const streamOrders = (argv: Arguments<any>) => {
     console.log(`Order swapped: ${JSON.stringify(swapSuccess.toObject())}`);
   });
 
+  const swapsAcceptedRequest = new xudrpc.SubscribeSwapsAcceptedRequest();
+  const swapsAcceptedSubscription = client.subscribeSwapsAccepted(swapsAcceptedRequest);
+  swapsAcceptedSubscription.on('data', (swapAccepted: xudrpc.SwapAccepted) => {
+    console.log(`Swap deal accepted: ${JSON.stringify(swapAccepted.toObject())}`);
+  });
+
   const swapFailuresSubscription = client.subscribeSwapFailures(swapsRequest);
   swapFailuresSubscription.on('data', (swapFailure: xudrpc.SwapFailure) => {
     console.log(`Swap failed: ${JSON.stringify(swapFailure.toObject())}`);
@@ -81,6 +87,7 @@ const streamOrders = (argv: Arguments<any>) => {
 
   // prevent exiting and do nothing, it's already caught above.
   swapsSubscription.on('error', () => {});
+  swapsAcceptedSubscription.on('error', () => {});
   swapFailuresSubscription.on('error', () => {});
 };
 

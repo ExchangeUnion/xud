@@ -1726,6 +1726,23 @@ export namespace SubscribeOrdersRequest {
     }
 }
 
+export class SubscribeSwapsAcceptedRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SubscribeSwapsAcceptedRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: SubscribeSwapsAcceptedRequest): SubscribeSwapsAcceptedRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SubscribeSwapsAcceptedRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SubscribeSwapsAcceptedRequest;
+    static deserializeBinaryFromReader(message: SubscribeSwapsAcceptedRequest, reader: jspb.BinaryReader): SubscribeSwapsAcceptedRequest;
+}
+
+export namespace SubscribeSwapsAcceptedRequest {
+    export type AsObject = {
+    }
+}
+
 export class SubscribeSwapsRequest extends jspb.Message { 
     getIncludeTaker(): boolean;
     setIncludeTaker(value: boolean): void;
@@ -1744,6 +1761,67 @@ export class SubscribeSwapsRequest extends jspb.Message {
 export namespace SubscribeSwapsRequest {
     export type AsObject = {
         includeTaker: boolean,
+    }
+}
+
+export class SwapAccepted extends jspb.Message { 
+    getOrderId(): string;
+    setOrderId(value: string): void;
+
+    getLocalId(): string;
+    setLocalId(value: string): void;
+
+    getPairId(): string;
+    setPairId(value: string): void;
+
+    getQuantity(): number;
+    setQuantity(value: number): void;
+
+    getPrice(): number;
+    setPrice(value: number): void;
+
+    getPeerPubKey(): string;
+    setPeerPubKey(value: string): void;
+
+    getRHash(): string;
+    setRHash(value: string): void;
+
+    getAmountReceiving(): number;
+    setAmountReceiving(value: number): void;
+
+    getAmountSending(): number;
+    setAmountSending(value: number): void;
+
+    getCurrencyReceiving(): string;
+    setCurrencyReceiving(value: string): void;
+
+    getCurrencySending(): string;
+    setCurrencySending(value: string): void;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): SwapAccepted.AsObject;
+    static toObject(includeInstance: boolean, msg: SwapAccepted): SwapAccepted.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: SwapAccepted, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): SwapAccepted;
+    static deserializeBinaryFromReader(message: SwapAccepted, reader: jspb.BinaryReader): SwapAccepted;
+}
+
+export namespace SwapAccepted {
+    export type AsObject = {
+        orderId: string,
+        localId: string,
+        pairId: string,
+        quantity: number,
+        price: number,
+        peerPubKey: string,
+        rHash: string,
+        amountReceiving: number,
+        amountSending: number,
+        currencyReceiving: string,
+        currencySending: string,
     }
 }
 

@@ -11,7 +11,7 @@ import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess, SwapAccepted } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -727,6 +727,27 @@ class Service {
 
     swapPaid$.subscribe({
       next: onSwapPaid,
+      error: this.logger.error,
+    });
+  }
+
+  /*
+   * Subscribe to completed swaps.
+   */
+  public subscribeSwapsAccepted = async (
+    _args: { },
+    callback: (swapAccepted: SwapAccepted) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapAccepted = (swapSuccess: SwapAccepted) => {
+      callback(swapSuccess);
+    };
+
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted')
+      .pipe(takeUntil(cancelled$));
+
+    swapAccepted.subscribe({
+      next: onSwapAccepted,
       error: this.logger.error,
     });
   }
