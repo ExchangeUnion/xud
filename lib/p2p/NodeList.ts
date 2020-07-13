@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
-import { NodeFactory, NodeInstance } from '../db/types';
+import { NodeCreationAttributes, NodeInstance } from '../db/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import errors from './errors';
@@ -137,8 +137,8 @@ class NodeList extends EventEmitter {
   /**
    * Persists a node to the database and adds it to the node list.
    */
-  public createNode = async (nodeFactory: NodeFactory) => {
-    const node = await this.repository.addNodeIfNotExists(nodeFactory);
+  public createNode = async (nodeCreationAttributes: NodeCreationAttributes) => {
+    const node = await this.repository.addNodeIfNotExists(nodeCreationAttributes);
     if (node) {
       node.reputationScore = 0;
       this.addNode(node);

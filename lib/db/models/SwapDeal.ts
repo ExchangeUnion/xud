@@ -1,8 +1,8 @@
-import Sequelize from 'sequelize';
-import * as db from '../types';
+import { DataTypes, ModelAttributes, ModelOptions, Sequelize } from 'sequelize';
+import { SwapDealInstance } from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
-  const attributes: db.SequelizeAttributes<db.SwapDealAttributes> = {
+export default function ReputationEvent(sequelize: Sequelize) {
+  const attributes: ModelAttributes<SwapDealInstance> = {
     rHash: { type: DataTypes.STRING, primaryKey: true },
     role: { type: DataTypes.TINYINT, allowNull: false },
     state: { type: DataTypes.TINYINT, allowNull: false },
@@ -12,7 +12,7 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     rPreimage: { type: DataTypes.STRING, allowNull: true },
     peerPubKey: {
       type: DataTypes.VIRTUAL,
-      get(this: db.SwapDealInstance) {
+      get(this: SwapDealInstance) {
         return this.Node ? this.Node.nodePubKey : undefined;
       },
     },
@@ -33,23 +33,11 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     completeTime: { type: DataTypes.BIGINT, allowNull: true },
   };
 
-  const options: Sequelize.DefineOptions<db.SwapDealInstance> = {
+  const options: ModelOptions = {
     tableName: 'swapdeals',
     timestamps: false,
   };
 
-  const SwapDeal = sequelize.define<db.SwapDealInstance, db.SwapDealAttributes>('SwapDeal', attributes, options);
-
-  SwapDeal.associate = (models: Sequelize.Models) => {
-    models.SwapDeal.belongsTo(models.Order, {
-      foreignKey: 'orderId',
-      constraints: true,
-    });
-    models.SwapDeal.belongsTo(models.Node, {
-      foreignKey: 'nodeId',
-      constraints: true,
-    });
-  };
-
+  const SwapDeal = sequelize.define<SwapDealInstance>('SwapDeal', attributes, options);
   return SwapDeal;
-};
+}
