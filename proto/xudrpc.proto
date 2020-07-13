@@ -259,6 +259,16 @@ service Xud {
     };
   }
 
+  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
+   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
+   * the client to get real-time notifications when swap attempts are failing. It can be used for
+   * status monitoring, debugging, and testing purposes. */
+  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+    option (google.api.http) = {
+      get: "/v1/subscribeswapfailures"
+    };
+  }
+
   /* Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are
    * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
    * the client to get real-time notifications when its orders are filled by a peer. It can be used
@@ -270,13 +280,11 @@ service Xud {
     };
   }
 
-  /* Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are
-   * transmitted unless a flag is set to include swaps initiated by the local node. This call allows
-   * the client to get real-time notifications when swap attempts are failing. It can be used for
-   * status monitoring, debugging, and testing purposes. */
-  rpc SubscribeSwapFailures(SubscribeSwapsRequest) returns (stream SwapFailure) {
+  /* Subscribes to accepted swaps. This stream emits a message when the local xud node 
+   * accepts a swap request from a peer, but before the swap has actually succeeded. */
+  rpc SubscribeSwapsAccepted(SubscribeSwapsAcceptedRequest) returns (stream SwapAccepted) {
     option (google.api.http) = {
-      get: "/v1/subscribeswapfailures"
+      get: "/v1/subscribeswapsaccepted"
     };
   }
 
@@ -770,10 +778,37 @@ message SubscribeOrdersRequest {
   bool existing = 1 [json_name = "existing"];
 }
 
+message SubscribeSwapsAcceptedRequest { }
+
 message SubscribeSwapsRequest {
   // Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls.
   // These swap results are also returned in the responses for the respective calls.
   bool include_taker = 1 [json_name = "include_taker"];
+}
+
+message SwapAccepted {
+  // The global UUID for the order that was accepted to be swapped.
+  string order_id = 1;
+  // The local id for the order that was accepted to be swapped.
+  string local_id = 2 [json_name = "local_id"];
+  // The trading pair that the swap is for.
+  string pair_id = 3 [json_name = "pair_id"];
+  // The order quantity that was accepted to be swapped.
+  uint64 quantity = 4 [json_name = "quantity"];
+  // The price for the swap.
+  double price = 5 [json_name = "price"];
+  // The node pub key of the peer that executed this order.
+  string peer_pub_key = 6 [json_name = "peer_pub_key"];
+  // The hex-encoded payment hash for the swap.
+  string r_hash = 7 [json_name = "r_hash"];
+  // The amount received denominated in satoshis.
+  uint64 amount_receiving = 8 [json_name = "amount_receiving"];
+  // The amount sent denominated in satoshis.
+  uint64 amount_sending = 9 [json_name = "amount_sending"];
+  // The ticker symbol of the currency received.
+  string currency_receiving = 10 [json_name = "currency_receiving"];
+  // The ticker symbol of the currency sent.
+  string currency_sending = 11 [json_name = "currency_sending"];
 }
 
 message SwapFailure {

@@ -69,7 +69,9 @@
     - [ShutdownRequest](#xudrpc.ShutdownRequest)
     - [ShutdownResponse](#xudrpc.ShutdownResponse)
     - [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest)
+    - [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest)
     - [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest)
+    - [SwapAccepted](#xudrpc.SwapAccepted)
     - [SwapFailure](#xudrpc.SwapFailure)
     - [SwapSuccess](#xudrpc.SwapSuccess)
     - [Trade](#xudrpc.Trade)
@@ -91,11 +93,9 @@
     - [OrderSide](#xudrpc.OrderSide)
     - [Role](#xudrpc.Role)
   
-  
     - [Xud](#xudrpc.Xud)
     - [XudInit](#xudrpc.XudInit)
   
-
 - [Scalar Value Types](#scalar-value-types)
 
 
@@ -1114,6 +1114,16 @@
 
 
 
+<a name="xudrpc.SubscribeSwapsAcceptedRequest"></a>
+
+### SubscribeSwapsAcceptedRequest
+
+
+
+
+
+
+
 <a name="xudrpc.SubscribeSwapsRequest"></a>
 
 ### SubscribeSwapsRequest
@@ -1123,6 +1133,31 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | include_taker | [bool](#bool) |  | Whether to include the results for swaps initiated via the PlaceOrder or ExecuteSwap calls. These swap results are also returned in the responses for the respective calls. |
+
+
+
+
+
+
+<a name="xudrpc.SwapAccepted"></a>
+
+### SwapAccepted
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| order_id | [string](#string) |  | The global UUID for the order that was accepted to be swapped. |
+| local_id | [string](#string) |  | The local id for the order that was accepted to be swapped. |
+| pair_id | [string](#string) |  | The trading pair that the swap is for. |
+| quantity | [uint64](#uint64) |  | The order quantity that was accepted to be swapped. |
+| price | [double](#double) |  | The price for the swap. |
+| peer_pub_key | [string](#string) |  | The node pub key of the peer that executed this order. |
+| r_hash | [string](#string) |  | The hex-encoded payment hash for the swap. |
+| amount_receiving | [uint64](#uint64) |  | The amount received denominated in satoshis. |
+| amount_sending | [uint64](#uint64) |  | The amount sent denominated in satoshis. |
+| currency_receiving | [string](#string) |  | The ticker symbol of the currency received. |
+| currency_sending | [string](#string) |  | The ticker symbol of the currency sent. |
 
 
 
@@ -1470,8 +1505,9 @@ The primary service for interacting with a running xud node.
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. shell: xucli removepair &lt;pair_id&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |
-| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
 | SubscribeSwapFailures | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapFailure](#xudrpc.SwapFailure) stream | Subscribes to failed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when swap attempts are failing. It can be used for status monitoring, debugging, and testing purposes. |
+| SubscribeSwaps | [SubscribeSwapsRequest](#xudrpc.SubscribeSwapsRequest) | [SwapSuccess](#xudrpc.SwapSuccess) stream | Subscribes to completed swaps. By default, only swaps that are initiated by a remote peer are transmitted unless a flag is set to include swaps initiated by the local node. This call allows the client to get real-time notifications when its orders are filled by a peer. It can be used for tracking order executions, updating balances, and informing a trader when one of their orders is settled through the Exchange Union network. |
+| SubscribeSwapsAccepted | [SubscribeSwapsAcceptedRequest](#xudrpc.SubscribeSwapsAcceptedRequest) | [SwapAccepted](#xudrpc.SwapAccepted) stream | Subscribes to accepted swaps. This stream emits a message when the local xud node accepts a swap request from a peer, but before the swap has actually succeeded. |
 | TradeHistory | [TradeHistoryRequest](#xudrpc.TradeHistoryRequest) | [TradeHistoryResponse](#xudrpc.TradeHistoryResponse) | Gets a list of completed trades. shell: xucli tradehistory [limit] |
 | TradingLimits | [TradingLimitsRequest](#xudrpc.TradingLimitsRequest) | [TradingLimitsResponse](#xudrpc.TradingLimitsResponse) | Gets the trading limits for one or all currencies. shell: xucli tradinglimits [currency] |
 | Unban | [UnbanRequest](#xudrpc.UnbanRequest) | [UnbanResponse](#xudrpc.UnbanResponse) | Removes a ban from a node manually and, optionally, attempts to connect to it. shell: xucli unban &lt;node_identifier&gt; [reconnect] |

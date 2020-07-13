@@ -16,16 +16,18 @@ import SwapClient, { PaymentState } from './SwapClient';
 import SwapClientManager from './SwapClientManager';
 import SwapRecovery from './SwapRecovery';
 import SwapRepository from './SwapRepository';
-import { ResolveRequest, Route, SanitySwap, SwapDeal, SwapSuccess } from './types';
+import { ResolveRequest, Route, SanitySwap, SwapAccepted, SwapDeal, SwapSuccess } from './types';
 
 export type OrderToAccept = Pick<SwapDeal, 'quantity' | 'price' | 'localId' | 'isBuy'> & {
   quantity: number;
 };
 
 interface Swaps {
+  on(event: 'swap.accepted', listener: (swapSuccess: SwapAccepted) => void): this;
   on(event: 'swap.paid', listener: (swapSuccess: SwapSuccess) => void): this;
   on(event: 'swap.failed', listener: (deal: SwapDeal) => void): this;
   on(event: 'swap.recovered', listener: (recoveredSwap: SwapDealInstance) => void): this;
+  emit(event: 'swap.accepted', swapSuccess: SwapAccepted): boolean;
   emit(event: 'swap.paid', swapSuccess: SwapSuccess): boolean;
   emit(event: 'swap.failed', deal: SwapDeal): boolean;
   emit(event: 'swap.recovered', recoveredSwap: SwapDealInstance): boolean;
@@ -675,6 +677,15 @@ class Swaps extends EventEmitter {
       makerCltvDelta: deal.makerCltvDelta || 1,
       quantity: proposedQuantity,
     };
+
+    this.emit('swap.accepted', {
+      ...deal,
+      currencySending: deal.takerCurrency,
+      currencyReceiving: deal.makerCurrency,
+      amountSending: deal.takerAmount,
+      amountReceiving: deal.makerAmount,
+      quantity: deal.quantity!,
+    });
 
     this.logger.debug(`sending swap accepted packet: ${JSON.stringify(responseBody)} to peer: ${peer.nodePubKey}`);
     const sendSwapAcceptedPromise = peer.sendPacket(new packets.SwapAcceptedPacket(responseBody, requestPacket.header.id));

@@ -629,6 +629,23 @@
         ]
       }
     },
+    "/v1/subscribeswapsaccepted": {
+      "get": {
+        "summary": "Subscribes to accepted swaps. This stream emits a message when the local xud node \naccepts a swap request from a peer, but before the swap has actually succeeded.",
+        "operationId": "SubscribeSwapsAccepted",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/xudrpcSwapAccepted"
+            }
+          }
+        },
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
     "/v1/tradehistory": {
       "post": {
         "summary": "Gets a list of completed trades.\nshell: xucli tradehistory [limit]",
@@ -1612,6 +1629,59 @@
     "xudrpcShutdownResponse": {
       "type": "object"
     },
+    "xudrpcSwapAccepted": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "The global UUID for the order that was accepted to be swapped."
+        },
+        "local_id": {
+          "type": "string",
+          "description": "The local id for the order that was accepted to be swapped."
+        },
+        "pair_id": {
+          "type": "string",
+          "description": "The trading pair that the swap is for."
+        },
+        "quantity": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The order quantity that was accepted to be swapped."
+        },
+        "price": {
+          "type": "number",
+          "format": "double",
+          "description": "The price for the swap."
+        },
+        "peer_pub_key": {
+          "type": "string",
+          "description": "The node pub key of the peer that executed this order."
+        },
+        "r_hash": {
+          "type": "string",
+          "description": "The hex-encoded payment hash for the swap."
+        },
+        "amount_receiving": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The amount received denominated in satoshis."
+        },
+        "amount_sending": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The amount sent denominated in satoshis."
+        },
+        "currency_receiving": {
+          "type": "string",
+          "description": "The ticker symbol of the currency received."
+        },
+        "currency_sending": {
+          "type": "string",
+          "description": "The ticker symbol of the currency sent."
+        }
+      }
+    },
     "xudrpcSwapFailure": {
       "type": "object",
       "properties": {
@@ -1898,6 +1968,18 @@
         }
       },
       "title": "Stream result of xudrpcPlaceOrderEvent"
+    },
+    "xudrpcSwapAccepted": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/xudrpcSwapAccepted"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of xudrpcSwapAccepted"
     },
     "xudrpcSwapFailure": {
       "type": "object",

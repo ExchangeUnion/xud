@@ -82,6 +82,16 @@ export type SwapSuccess = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHa
   quantity: number;
 };
 
+/** A swap that has been accepted. */
+export type SwapAccepted = Pick<SwapDeal, 'orderId' | 'localId' | 'pairId' | 'rHash' | 'peerPubKey' | 'price' > & {
+  amountReceiving: number;
+  amountSending: number;
+  currencyReceiving: string;
+  currencySending: string;
+  /** The quantity that was accepted. */
+  quantity: number;
+};
+
 export type SwapFailure = Pick<SwapDeal, 'orderId' | 'pairId' | 'quantity' | 'peerPubKey' > & {
   /** The quantity that was attempted and failed for the swap. */
   quantity: number;
