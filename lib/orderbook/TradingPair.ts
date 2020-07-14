@@ -141,7 +141,7 @@ class TradingPair {
     }
 
     map.set(order.id, order);
-    this.logger.debug(`order added: ${JSON.stringify(order)}`);
+    this.logger.trace(`order added: ${JSON.stringify(order)}`);
 
     if (!this.nomatching) {
       const queue = order.isBuy ? this.queues!.buyQueue : this.queues!.sellQueue;
@@ -229,7 +229,7 @@ class TradingPair {
         assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
       }
       order.quantity = order.quantity - quantityToRemove;
-      this.logger.debug(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
+      this.logger.trace(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
       return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
     } else {
       // otherwise, remove the order entirely
@@ -244,7 +244,7 @@ class TradingPair {
         queue.remove(order);
       }
 
-      this.logger.debug(`order removed: ${orderId}`);
+      this.logger.trace(`order removed: ${orderId}`);
       return { order: order as T, fullyRemoved: true };
     }
   }
