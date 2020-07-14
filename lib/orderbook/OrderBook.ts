@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import uuidv1 from 'uuid/v1';
 import { SwapClientType, SwapFailureReason, SwapPhase, SwapRole } from '../constants/enums';
 import { Models } from '../db/DB';
-import { CurrencyFactory, CurrencyInstance, OrderFactory, PairInstance } from '../db/types';
+import { CurrencyCreationAttributes, CurrencyInstance, OrderCreationAttributes, PairInstance } from '../db/types';
 import Logger from '../Logger';
 import { SwapFailedPacket, SwapRequestPacket } from '../p2p/packets';
 import Peer from '../p2p/Peer';
@@ -137,12 +137,12 @@ class OrderBook extends EventEmitter {
    * and that their token identifier matches ours.
    */
   private isPeerCurrencySupported = (peer: Peer, currency: string) => {
-    const currencyAttributes = this.getCurrencyAttributes(currency);
-    if (!currencyAttributes) {
+    const currencyInstance = this.currencyInstances.get(currency);
+    if (!currencyInstance) {
       return false; // we don't know about this currency
     }
 
-    if (!peer.getIdentifier(currencyAttributes.swapClient, currency)) {
+    if (!peer.getIdentifier(currencyInstance.swapClient, currency)) {
       return false; // peer did not provide a swap client identifier for this currency
     }
 
@@ -209,11 +209,6 @@ class OrderBook extends EventEmitter {
     });
 
     this.pool.updatePairs(this.pairIds);
-  }
-
-  public getCurrencyAttributes(currency: string) {
-    const currencyInstance = this.currencyInstances.get(currency);
-    return currencyInstance ? currencyInstance.toJSON() : undefined;
   }
 
   /**
@@ -291,7 +286,7 @@ class OrderBook extends EventEmitter {
     return pairInstance;
   }
 
-  public addCurrency = async (currency: CurrencyFactory) => {
+  public addCurrency = async (currency: CurrencyCreationAttributes) => {
     if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
@@ -631,8 +626,8 @@ class OrderBook extends EventEmitter {
   private persistTrade = async ({ quantity, makerOrder, takerOrder, makerOrderId, rHash }:
   {
     quantity: number,
-    makerOrder?: OrderFactory,
-    takerOrder?: OrderFactory,
+    makerOrder?: OrderCreationAttributes,
+    takerOrder?: OrderCreationAttributes,
     makerOrderId?: string,
     rHash?: string,
   }) => {
