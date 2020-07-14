@@ -26,10 +26,10 @@ var instabilityTestCases = []*testCase{
 	//	name: "maker lnd crashed before order settlement", // replacing Alice
 	//	test: testMakerLndCrashedBeforeSettlement,
 	//},
-	{
-		name: "maker connext client crashed before order settlement", // replacing Alice
-		test: testMakerConnextClientCrashedBeforeSettlement,
-	},
+	//{
+	//	name: "maker connext client crashed before order settlement", // replacing Alice
+	//	test: testMakerConnextClientCrashedBeforeSettlement,
+	//},
 	//{
 	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
 	//	test: testMakerCrashedAfterSendDelayedSettlement,
@@ -38,10 +38,10 @@ var instabilityTestCases = []*testCase{
 	//	name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
 	//	test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
 	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
-	//},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
+	},
 }
 
 // testMakerLndCrashedBeforeSettlement
