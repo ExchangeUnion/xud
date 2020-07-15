@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { ReputationEvent } from '../constants/enums';
-import { NodeFactory, NodeInstance } from '../db/types';
+import { NodeCreationAttributes, NodeInstance } from '../db/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import errors from './errors';
@@ -79,8 +79,19 @@ class NodeList extends EventEmitter {
     return this.nodes.get(nodePubKey)?.id;
   }
 
+  public get = (nodePubKey: string) => {
+    return this.nodes.get(nodePubKey);
+  }
+
   public getPubKeyForAlias = (alias: string) => {
-    return this.aliasToPubKeyMap.get(alias);
+    const nodePubKey = this.aliasToPubKeyMap.get(alias);
+    if (!nodePubKey) {
+      throw errors.UNKNOWN_ALIAS(alias);
+    }
+    if (nodePubKey === 'CONFLICT') {
+      throw errors.ALIAS_CONFLICT(alias);
+    }
+    return nodePubKey;
   }
 
   /**
@@ -88,7 +99,7 @@ class NodeList extends EventEmitter {
    * @returns true if the node was banned, false otherwise
    */
   public ban = async (nodePubKey: string): Promise<boolean> => {
-    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
+    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualBan);
   }
 
   /**
@@ -96,7 +107,7 @@ class NodeList extends EventEmitter {
    * @returns true if ban was removed, false otherwise
    */
   public unBan = async (nodePubKey: string): Promise<boolean> => {
-    return this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
+    return await this.addReputationEvent(nodePubKey, ReputationEvent.ManualUnban);
   }
 
   public isBanned = (nodePubKey: string): boolean => {
@@ -126,8 +137,8 @@ class NodeList extends EventEmitter {
   /**
    * Persists a node to the database and adds it to the node list.
    */
-  public createNode = async (nodeFactory: NodeFactory) => {
-    const node = await this.repository.addNodeIfNotExists(nodeFactory);
+  public createNode = async (nodeCreationAttributes: NodeCreationAttributes) => {
+    const node = await this.repository.addNodeIfNotExists(nodeCreationAttributes);
     if (node) {
       node.reputationScore = 0;
       this.addNode(node);
@@ -251,13 +262,14 @@ class NodeList extends EventEmitter {
     const { nodePubKey } = node;
     const alias = pubKeyToAlias(nodePubKey);
     if (this.aliasToPubKeyMap.has(alias)) {
-      throw errors.ALIAS_CONFLICT(alias);
+      this.aliasToPubKeyMap.set(alias, 'CONFLICT');
+    } else {
+      this.aliasToPubKeyMap.set(alias, nodePubKey);
     }
 
     this.nodes.set(nodePubKey, node);
     this.nodeIdMap.set(node.id, node);
     this.pubKeyToAliasMap.set(nodePubKey, alias);
-    this.aliasToPubKeyMap.set(alias, nodePubKey);
   }
 }
 

@@ -7,7 +7,7 @@ import Pool from '../p2p/Pool';
 import { RaidenInfo } from '../raidenclient/types';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import Logger from 'lib/Logger';
+import Logger from '../Logger';
 
 /**
  * The components required by the API service layer.

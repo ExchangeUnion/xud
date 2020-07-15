@@ -11,7 +11,7 @@ import swapsErrors from '../swaps/errors';
 import { TradingLimits } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapDeal, SwapFailure, SwapSuccess, SwapAccepted } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -266,20 +266,20 @@ class Service {
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
 
-    try {
-      if (nodeIdentifier) {
-        const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
-        const swapClientType = this.swapClientManager.getType(currency);
-        if (swapClientType === undefined) {
-          throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-        }
-        const peer = this.pool.getPeer(nodePubKey);
-        remoteIdentifier = peer.getIdentifier(swapClientType, currency);
-        if (swapClientType === SwapClientType.Lnd) {
-          uris = peer.getLndUris(currency);
-        }
+    if (nodeIdentifier) {
+      const nodePubKey = isNodePubKey(nodeIdentifier) ? nodeIdentifier : this.pool.resolveAlias(nodeIdentifier);
+      const swapClientType = this.swapClientManager.getType(currency);
+      if (swapClientType === undefined) {
+        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
       }
+      const peer = this.pool.getPeer(nodePubKey);
+      remoteIdentifier = peer.getIdentifier(swapClientType, currency);
+      if (swapClientType === SwapClientType.Lnd) {
+        uris = peer.getLndUris(currency);
+      }
+    }
 
+    try {
       await this.swapClientManager.openChannel({
         remoteIdentifier,
         uris,
@@ -727,6 +727,27 @@ class Service {
 
     swapPaid$.subscribe({
       next: onSwapPaid,
+      error: this.logger.error,
+    });
+  }
+
+  /*
+   * Subscribe to completed swaps.
+   */
+  public subscribeSwapsAccepted = async (
+    _args: { },
+    callback: (swapAccepted: SwapAccepted) => void,
+    cancelled$: Observable<void>,
+  ) => {
+    const onSwapAccepted = (swapSuccess: SwapAccepted) => {
+      callback(swapSuccess);
+    };
+
+    const swapAccepted = fromEvent<SwapAccepted>(this.swaps, 'swap.accepted')
+      .pipe(takeUntil(cancelled$));
+
+    swapAccepted.subscribe({
+      next: onSwapAccepted,
       error: this.logger.error,
     });
   }

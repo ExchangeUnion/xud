@@ -412,7 +412,7 @@ class Pool extends EventEmitter {
    * @return true if the specified node exists and the event was added, false otherwise
    */
   public getNodeReputation = async (nodePubKey: string): Promise<NodeReputationInfo> => {
-    const node = await this.repository.getNode(nodePubKey);
+    const node = this.nodes.get(nodePubKey);
     if (node) {
       const { reputationScore, banned } = node;
       return {
@@ -645,7 +645,7 @@ class Pool extends EventEmitter {
         throw errors.NODE_UNKNOWN(nodePubKey);
       }
 
-      const node = await this.repository.getNode(nodePubKey);
+      const node = this.nodes.get(nodePubKey);
       if (node) {
         const Node: NodeConnectionInfo = {
           nodePubKey,
@@ -1030,11 +1030,7 @@ class Pool extends EventEmitter {
    * pub key cannot be found for the provided alias.
    */
   public resolveAlias = (alias: string) => {
-    const nodePubKey = this.nodes.getPubKeyForAlias(alias);
-    if (!nodePubKey) {
-      throw errors.UNKNOWN_ALIAS(alias);
-    }
-    return nodePubKey;
+    return this.nodes.getPubKeyForAlias(alias);
   }
 }
 

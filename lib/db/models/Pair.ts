@@ -1,37 +1,18 @@
-import Sequelize from 'sequelize';
-import * as db from '../types';
-import { derivePairId } from '../../utils/utils';
+import { DataTypes, ModelAttributes, ModelOptions, Sequelize } from 'sequelize';
+import { PairInstance } from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
-  const attributes: db.SequelizeAttributes<db.PairAttributes> = {
+export default function Pair(sequelize: Sequelize) {
+  const attributes: ModelAttributes<PairInstance> = {
     id: { type: DataTypes.STRING, primaryKey: true },
     baseCurrency: { type: DataTypes.STRING, allowNull: false },
     quoteCurrency: { type: DataTypes.STRING, allowNull: false },
   };
 
-  const options: Sequelize.DefineOptions<db.PairInstance> = {
+  const options: ModelOptions = {
     tableName: 'pairs',
     timestamps: false,
   };
 
-  const Pair = sequelize.define<db.PairInstance, db.PairAttributes>('Pair', attributes, options);
-
-  Pair.associate = (models: Sequelize.Models) => {
-    models.Pair.belongsTo(models.Currency, {
-      as: 'baseCurrencyInstance',
-      constraints: true,
-      foreignKey: 'baseCurrency',
-    });
-
-    models.Pair.belongsTo(models.Currency, {
-      as: 'takerCurrencyInstance',
-      constraints: true,
-      foreignKey: 'quoteCurrency',
-    });
-
-    models.Pair.beforeBulkCreate(pairs => pairs.forEach(pair => pair.id = derivePairId(pair)));
-    models.Pair.beforeCreate(pair => pair.id = derivePairId(pair));
-  };
-
+  const Pair = sequelize.define<PairInstance>('Pair', attributes, options);
   return Pair;
-};
+}

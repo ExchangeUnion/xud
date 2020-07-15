@@ -91,13 +91,14 @@ describe('Service', () => {
       expect.assertions(1);
       service = new Service(components);
       const args = getArgs();
+      const peerNotFoundError = new Error('peer not found');
       components.pool.getPeer = jest.fn().mockImplementation(() => {
-        throw new Error('peer not found');
+        throw peerNotFoundError;
       });
       try {
         await service.openChannel(args);
       } catch (e) {
-        expect(e).toMatchSnapshot();
+        expect(e).toEqual(peerNotFoundError);
       }
     });
 
