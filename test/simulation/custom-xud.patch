@@ -25,10 +25,10 @@ index 090618c4b..cd33a5d58 100644
 -      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL);
 +      let interval = SwapRecovery.PENDING_SWAP_RECHECK_INTERVAL;
 +      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE') {
-+        interval = 5000;
++        interval = 2000;
 +      }
 +      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
-+        interval = 5000;
++        interval = 2000;
 +      }
 +
 +      this.pendingSwapsTimer = setInterval(this.checkPendingSwaps, interval);

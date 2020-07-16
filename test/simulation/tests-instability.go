@@ -18,30 +18,30 @@ var instabilityTestCases = []*testCase{
 		name: "network initialization", // must be the first test case to be run
 		test: testNetworkInit,
 	},
-	//{
-	//	name: "maker crashed after send payment", // replacing Alice
-	//	test: testMakerCrashedAfterSend,
-	//},
-	//{
-	//	name: "maker lnd crashed before order settlement", // replacing Alice
-	//	test: testMakerLndCrashedBeforeSettlement,
-	//},
+	{
+		name: "maker crashed after send payment", // replacing Alice
+		test: testMakerCrashedAfterSend,
+	},
+	{
+		name: "maker lnd crashed before order settlement", // replacing Alice
+		test: testMakerLndCrashedBeforeSettlement,
+	},
 	{
 		name: "maker connext client crashed before order settlement", // replacing Alice
 		test: testMakerConnextClientCrashedBeforeSettlement,
 	},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlement,
-	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
-	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
-	//},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlement,
+	},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
+	},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
+	},
 }
 
 // testMakerLndCrashedBeforeSettlement
@@ -101,8 +101,8 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
 		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE",
+		"CLIENT_TYPE=LndLtc",
 		fmt.Sprintf("CLIENT_PID=%d", net.Alice.LndLtcNode.Cmd.Process.Pid),
-		fmt.Sprintf("CLIENT_TYPE=%s", "LndLtc"),
 	})
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
@@ -162,9 +162,11 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
 		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE",
-		fmt.Sprintf("CLIENT_PID=%d", net.Alice.ConnextClient.Cmd.Process.Pid),
-		fmt.Sprintf("CLIENT_TYPE=%s", "ConnextClient"),
+		"CLIENT_TYPE=ConnextClient",
+		// connext-client should be replaced, so we're not specifying its current PID,
+		// as in other client types.
 	})
+
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -183,9 +185,9 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	ht.assert.NoError(err)
 	alicePrevEthBalance := alicePrevBalance.Balances["ETH"]
 
-	//bobPrevBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
-	//ht.assert.NoError(err)
-	//bobPrevBtcBalance := bobPrevBalance.Balances["BTC"]
+	bobPrevBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	bobPrevBtcBalance := bobPrevBalance.Balances["BTC"]
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
@@ -207,13 +209,13 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	}
 	go net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
 
-	// Alice's connext client is expected to be killed by Alice's custom xud.
+	// Alice's connext-client is expected to be killed by Alice's custom xud.
 	<-net.Alice.ConnextClient.ProcessExit
 
-	// Wait a bit so that Alice's call to connext client for settlement would fail.
+	// Wait a bit so that Alice's call to connext-client for settlement would fail.
 	time.Sleep(5 * time.Second)
 
-	// Restart Alice's connext client.
+	// Restart Alice's connext-client.
 	err = net.Alice.ConnextClient.Start(nil)
 	ht.assert.NoError(err)
 
@@ -225,17 +227,17 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	// Alice's custom xud to 5s (as well as the swap completion timeout interval).
 	time.Sleep(10 * time.Second)
 
-	// <DEBUG>
-	info, err := net.Alice.Client.GetInfo(ht.ctx, &xudrpc.GetInfoRequest{})
-	fmt.Printf("info: %v\n", info.PendingSwapHashes)
-	//time.Sleep(600 * time.Second)
-	// </DEBUG>
+	// Verify that both parties received their payment.
+	bobBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	bobBtcBalance := bobBalance.Balances["BTC"]
+	diff := bobOrderReq.Quantity
+	ht.assert.Equal(bobPrevBtcBalance.ChannelBalance+diff, bobBtcBalance.ChannelBalance)
 
-	// Verify that alice received her ETH.
 	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
 	ht.assert.NoError(err)
 	aliceEthBalance := aliceBalance.Balances["ETH"]
-	diff := uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
+	diff = uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
 	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
 }
 
@@ -376,17 +378,17 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	time.Sleep(10 * time.Second)
 
 	// Verify that both parties received their payment.
-	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
-	ht.assert.NoError(err)
-	aliceBtcBalance := aliceBalance.Balances["BTC"]
-	diff := aliceOrderReq.Quantity
-	ht.assert.Equal(alicePrevBtcBalance.ChannelBalance+diff, aliceBtcBalance.ChannelBalance, "alice did not recover BTC funds")
-
 	bobBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
 	ht.assert.NoError(err)
 	bobEthBalance := bobBalance.Balances["ETH"]
-	diff = uint64(float64(bobOrderReq.Quantity) * bobOrderReq.Price)
+	diff := uint64(float64(bobOrderReq.Quantity) * bobOrderReq.Price)
 	ht.assert.Equal(bobPrevEthBalance.ChannelBalance+diff, bobEthBalance.ChannelBalance)
+
+	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	aliceBtcBalance := aliceBalance.Balances["BTC"]
+	diff = aliceOrderReq.Quantity
+	ht.assert.Equal(alicePrevBtcBalance.ChannelBalance+diff, aliceBtcBalance.ChannelBalance, "alice did not recover BTC funds")
 }
 
 func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -464,15 +466,15 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	time.Sleep(10 * time.Second)
 
 	// Verify that both parties received their payment.
-	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.NoError(err)
-	aliceEthBalance := aliceBalance.Balances["ETH"]
-	diff := uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
-	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
-
 	bobBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
 	ht.assert.NoError(err)
 	bobBtcBalance := bobBalance.Balances["BTC"]
-	diff = bobOrderReq.Quantity
+	diff := bobOrderReq.Quantity
 	ht.assert.Equal(bobPrevBtcBalance.ChannelBalance+diff, bobBtcBalance.ChannelBalance)
+
+	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	aliceEthBalance := aliceBalance.Balances["ETH"]
+	diff = uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
+	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
 }
