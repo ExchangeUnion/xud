@@ -756,7 +756,7 @@ class Pool extends EventEmitter {
     switch (packet.type) {
       case PacketType.Order: {
         const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
-        this.logger.verbose(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
+        this.logger.trace(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
         const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
 
         if (peer.isPairActive(incomingOrder.pairId)) {
@@ -768,7 +768,7 @@ class Pool extends EventEmitter {
       }
       case PacketType.OrderInvalidation: {
         const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.verbose(`received order invalidation from ${peer.label}: ${JSON.stringify(orderPortion)}`);
+        this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderPortion)}`);
         this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
         break;
       }
