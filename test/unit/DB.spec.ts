@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai';
 import { SwapClientType, SwapPhase, SwapRole, SwapState } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
-import { TradeFactory } from '../../lib/db/types';
+import { TradeCreationAttributes } from '../../lib/db/types';
 import Logger, { Level } from '../../lib/Logger';
 import OrderBookRepository from '../../lib/orderbook/OrderBookRepository';
 import P2PRepository from '../../lib/p2p/P2PRepository';
@@ -106,7 +106,7 @@ describe('Database', () => {
   it('should add a swap and a trade for the order', async () => {
     await orderBookRepo.addOrderIfNotExists(order);
     const { rHash } = deal;
-    const trade: TradeFactory = { rHash, quantity: deal.quantity!, makerOrderId: order.id };
+    const trade: TradeCreationAttributes = { rHash, quantity: deal.quantity!, makerOrderId: order.id };
     await orderBookRepo.addTrade(trade);
     await swapRepo.saveSwapDeal(deal);
 
@@ -148,7 +148,7 @@ describe('Database', () => {
     const maker = createOwnOrder(price, tradeQuantity, true);
     const taker = createOwnOrder(price, tradeQuantity, false);
     await Promise.all([orderBookRepo.addOrderIfNotExists(maker), orderBookRepo.addOrderIfNotExists(taker)]);
-    const trade: TradeFactory = { quantity: tradeQuantity, makerOrderId: maker.id, takerOrderId: taker.id };
+    const trade: TradeCreationAttributes = { quantity: tradeQuantity, makerOrderId: maker.id, takerOrderId: taker.id };
     await orderBookRepo.addTrade(trade);
   });
 

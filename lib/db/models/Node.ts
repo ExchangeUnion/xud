@@ -1,18 +1,18 @@
-import Sequelize from 'sequelize';
-import * as db from '../types';
+import { DataTypes, IndexesOptions, ModelAttributes, ModelOptions, Sequelize } from 'sequelize';
 import { Address } from '../../p2p/types';
+import { NodeInstance } from '../types';
 
-export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) => {
-  const attributes: db.SequelizeAttributes<db.NodeAttributes> = {
+export default function Node(sequelize: Sequelize) {
+  const attributes: ModelAttributes<NodeInstance> = {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     nodePubKey: { type: DataTypes.STRING, unique: true, allowNull: false },
-    addressesText: { type: Sequelize.TEXT, allowNull: false },
+    addressesText: { type: DataTypes.TEXT, allowNull: false },
     addresses: {
-      type: Sequelize.VIRTUAL,
-      get(this: db.NodeInstance) {
+      type: DataTypes.VIRTUAL,
+      get(this: NodeInstance) {
         return JSON.parse(this.addressesText);
       },
-      set(this: db.NodeInstance, value: Address[]) {
+      set(this: NodeInstance, value: Address[]) {
         if (value) {
           this.setDataValue('addressesText', JSON.stringify(value));
         } else {
@@ -20,14 +20,14 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
         }
       },
     },
-    lastAddressText: { type: Sequelize.TEXT, allowNull: true },
+    lastAddressText: { type: DataTypes.TEXT, allowNull: true },
     lastAddress: {
-      type: Sequelize.VIRTUAL,
+      type: DataTypes.VIRTUAL,
       allowNull: true,
-      get(this: db.NodeInstance) {
+      get(this: NodeInstance) {
         return this.lastAddressText ? JSON.parse(this.lastAddressText) : undefined;
       },
-      set(this: db.NodeInstance, value: Address) {
+      set(this: NodeInstance, value: Address) {
         if (value) {
           this.setDataValue('lastAddressText', JSON.stringify(value));
         }
@@ -36,24 +36,16 @@ export default (sequelize: Sequelize.Sequelize, DataTypes: Sequelize.DataTypes) 
     banned: { type: DataTypes.BOOLEAN, allowNull: true },
   };
 
-  const indexes: Sequelize.DefineIndexesOptions[] = [{
+  const indexes: IndexesOptions[] = [{
     unique: true,
     fields: ['nodePubKey'],
   }];
 
-  const options: Sequelize.DefineOptions<db.NodeInstance> = {
+  const options: ModelOptions = {
     indexes,
     tableName: 'nodes',
   };
 
-  const Node = sequelize.define<db.NodeInstance, db.NodeAttributes>('Node', attributes, options);
-
-  Node.associate = (models: Sequelize.Models) => {
-    models.Node.hasMany(models.ReputationEvent, {
-      foreignKey: 'nodeId',
-      constraints: true,
-    });
-  };
-
+  const Node = sequelize.define<NodeInstance>('Node', attributes, options);
   return Node;
-};
+}

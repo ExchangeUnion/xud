@@ -2,7 +2,7 @@ import assert from 'assert';
 import http from 'http';
 import { SwapClientType, SwapRole, SwapState } from '../constants/enums';
 import { CurrencyInstance } from '../db/types';
-import { XudError } from 'lib/types';
+import { XudError } from '../types';
 import Logger from '../Logger';
 import swapErrors from '../swaps/errors';
 import SwapClient, {

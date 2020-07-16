@@ -8,7 +8,7 @@ import { isOwnOrder, Order, OrderPortion, PlaceOrderEventType, PlaceOrderResult 
 import * as xudrpc from '../proto/xudrpc_pb';
 import Service from '../service/Service';
 import { ServiceOrder, ServicePlaceOrderEvent } from '../service/types';
-import { SwapFailure, SwapSuccess } from '../swaps/types';
+import { SwapAccepted, SwapFailure, SwapSuccess } from '../swaps/types';
 import getGrpcError from './getGrpcError';
 
 /**
@@ -95,6 +95,25 @@ const createSwapFailure = (swapFailure: SwapFailure) => {
   grpcSwapFailure.setQuantity(swapFailure.quantity);
   grpcSwapFailure.setFailureReason(SwapFailureReason[swapFailure.failureReason]);
   return grpcSwapFailure;
+};
+
+/**
+ * Creates an xudrpc SwapAccepted message from a [[SwapAccepted]].
+ */
+const createSwapAccepted = (swapAccepted: SwapAccepted) => {
+  const grpcSwapAccepted = new xudrpc.SwapAccepted();
+  grpcSwapAccepted.setOrderId(swapAccepted.orderId);
+  grpcSwapAccepted.setLocalId(swapAccepted.localId);
+  grpcSwapAccepted.setQuantity(swapAccepted.quantity);
+  grpcSwapAccepted.setRHash(swapAccepted.rHash);
+  grpcSwapAccepted.setPrice(swapAccepted.price);
+  grpcSwapAccepted.setAmountReceiving(swapAccepted.amountReceiving);
+  grpcSwapAccepted.setAmountSending(swapAccepted.amountSending);
+  grpcSwapAccepted.setCurrencyReceiving(swapAccepted.currencyReceiving);
+  grpcSwapAccepted.setCurrencySending(swapAccepted.currencySending);
+  grpcSwapAccepted.setPeerPubKey(swapAccepted.peerPubKey);
+  grpcSwapAccepted.setPairId(swapAccepted.pairId);
+  return grpcSwapAccepted;
 };
 
 /**
@@ -880,6 +899,21 @@ class GrpcService {
     const cancelled$ = getCancelled$(call);
     this.service.subscribeSwaps(call.request.toObject(), (result: SwapSuccess) => {
       call.write(createSwapSuccess(result));
+    }, cancelled$);
+    this.addStream(call);
+  }
+
+  /*
+   * See [[Service.subscribeSwapFailures]]
+   */
+  public subscribeSwapsAccepted: grpc.handleServerStreamingCall<xudrpc.SubscribeSwapsAcceptedRequest, xudrpc.SwapAccepted> = (call) => {
+    if (!this.isReady(this.service, call)) {
+      return;
+    }
+
+    const cancelled$ = getCancelled$(call);
+    this.service.subscribeSwapsAccepted(call.request.toObject(), (result: SwapAccepted) => {
+      call.write(createSwapAccepted(result));
     }, cancelled$);
     this.addStream(call);
   }
