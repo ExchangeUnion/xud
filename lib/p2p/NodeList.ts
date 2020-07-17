@@ -41,6 +41,7 @@ class NodeList extends EventEmitter {
   private aliasToPubKeyMap = new Map<string, string>();
 
   private static readonly BAN_THRESHOLD = -50;
+  private static readonly MAX_REPUTATION_SCORE = 100;
 
   public get count() {
     return this.nodes.size;
@@ -48,6 +49,18 @@ class NodeList extends EventEmitter {
 
   constructor(private repository: P2PRepository) {
     super();
+  }
+
+  private static updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
+    if (event === ReputationEvent.ManualUnban) {
+      node.reputationScore = reputationEventWeight[event];
+    } else {
+      // events that carry a negative infinity weight will set the
+      // reputationScore to negative infinity and result in a ban
+      node.reputationScore += reputationEventWeight[event];
+      // reputation score for a node cannot exceed the maximum
+      node.reputationScore = Math.min(node.reputationScore, NodeList.MAX_REPUTATION_SCORE);
+    }
   }
 
   /**
@@ -126,7 +139,7 @@ class NodeList extends EventEmitter {
       const reputationLoadPromise = this.repository.getReputationEvents(node).then((events) => {
         node.reputationScore = 0;
         events.forEach(({ event }) => {
-          this.updateReputationScore(node, event);
+          NodeList.updateReputationScore(node, event);
         });
       });
       reputationLoadPromises.push(reputationLoadPromise);
@@ -201,7 +214,7 @@ class NodeList extends EventEmitter {
     if (node) {
       const promises: PromiseLike<any>[] = [];
 
-      this.updateReputationScore(node, event);
+      NodeList.updateReputationScore(node, event);
 
       if (node.reputationScore < NodeList.BAN_THRESHOLD && !node.banned) {
         promises.push(this.setBanStatus(node, true));
@@ -241,16 +254,6 @@ class NodeList extends EventEmitter {
     }
 
     return false;
-  }
-
-  private updateReputationScore = (node: NodeInstance, event: ReputationEvent) => {
-    if (event === ReputationEvent.ManualUnban) {
-      node.reputationScore = reputationEventWeight[event];
-    } else {
-      // events that carry a negative infinity weight will set the
-      // reputationScore to negative infinity and result in a ban
-      node.reputationScore += reputationEventWeight[event];
-    }
   }
 
   private setBanStatus = (node: NodeInstance, status: boolean) => {
