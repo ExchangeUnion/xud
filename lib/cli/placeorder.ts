@@ -80,6 +80,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
   } else {
     const subscription = client.placeOrder(request);
     let noMatches = true;
+    let lastEventIsSwapFailure = false;
     subscription.on('data', (response: PlaceOrderEvent) => {
       if (argv.json) {
         console.log(JSON.stringify(response.toObject(), undefined, 2));
@@ -97,10 +98,13 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
           }
         } else if (swapSuccess) {
           noMatches = false;
+          lastEventIsSwapFailure = false;
           formatSwapSuccess(swapSuccess.toObject());
         } else if (remainingOrder) {
+          lastEventIsSwapFailure = false;
           formatRemainingOrder(remainingOrder.toObject());
         } else if (swapFailure) {
+          lastEventIsSwapFailure = true;
           formatSwapFailure(swapFailure.toObject());
         }
       }
@@ -108,6 +112,10 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
     subscription.on('end', () => {
       if (noMatches) {
         console.log('no matches found');
+      } else if (lastEventIsSwapFailure) {
+        // if we ended on a swap failure, it means we had a market order that
+        // did not get fully match, we should let user know
+        console.log('no more matches found');
       }
     });
     subscription.on('error', (err) => {

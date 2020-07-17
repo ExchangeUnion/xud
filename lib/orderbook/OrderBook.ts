@@ -548,6 +548,7 @@ class OrderBook extends EventEmitter {
 
     if (remainingOrder) {
       if (discardRemaining) {
+        this.logger.verbose(`no more matches found for order ${order.id}, remaining order will be discarded`);
         remainingOrder = undefined;
       } else if (!retry) {
         // on recursive retries of placeOrder, we don't add remaining orders to the orderbook
