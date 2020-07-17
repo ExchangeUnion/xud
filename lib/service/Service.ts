@@ -108,7 +108,7 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
   }
 
-  /** Gets the total lightning network balance for a given currency. */
+  /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
     const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number }>();
@@ -119,9 +119,11 @@ class Service {
 
       const swapClient = this.swapClientManager.get(currency.toUpperCase());
       if (swapClient) {
-        const channelBalance = await swapClient.channelBalance(currency);
+        const [channelBalance, walletBalance] = await Promise.all([
+          await swapClient.channelBalance(currency),
+          await swapClient.walletBalance(currency),
+        ]);
         channelBalances.set(currency, channelBalance);
-        const walletBalance = await swapClient.walletBalance(currency);
         walletBalances.set(currency, walletBalance);
       } else {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -132,10 +134,10 @@ class Service {
         if (swapClient.isConnected()) {
           balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
             channelBalances.set(currency, channelBalance);
-          }));
+          }).catch(this.logger.error));
           balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
             walletBalances.set(currency, walletBalance);
-          }));
+          }).catch(this.logger.error));
         }
       });
       await Promise.all(balancePromises);
@@ -146,12 +148,14 @@ class Service {
       totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
-      const walletBalance = walletBalances.get(currency) as { confirmedBalance: number, unconfirmedBalance: number };
-      const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
-        walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
-      balances.set(
-        currency,
-        {
+      const walletBalance = walletBalances.get(currency);
+      if (walletBalance) {
+        // check to make sure we have a wallet balance, which isn't guaranteed since it may involve
+        // a separate call from the one to get channel balance. unless we have both wallet and
+        // channel balances for a given currency, we don't want to return any balance for it
+        const totalBalance = channelBalance.balance + channelBalance.pendingOpenBalance + channelBalance.inactiveBalance +
+          walletBalance.confirmedBalance + walletBalance.unconfirmedBalance;
+        balances.set(currency, {
           totalBalance,
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
@@ -159,6 +163,7 @@ class Service {
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
         });
+      }
     });
     return balances;
   }
