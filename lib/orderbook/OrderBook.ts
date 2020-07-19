@@ -13,7 +13,7 @@ import Swaps from '../swaps/Swaps';
 import { SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import { derivePairId, ms, setTimeoutPromise } from '../utils/utils';
-import errors from './errors';
+import errors, { errorCodes } from './errors';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
 import {
@@ -522,8 +522,23 @@ class OrderBook extends EventEmitter {
               peerPubKey: maker.peerPubKey,
             };
             swapFailures.push(swapFailure);
-            if (this.testing) {
-              failedMakerOrders.push(maker);
+
+            try {
+              // we remove orders from the order book when they fail a swap so that we don't immediately retry them
+              const removedOrder = this.removePeerOrder(maker.id, maker.pairId, maker.peerPubKey).order;
+
+              // we want to try matching with this order again at a later time so we add
+              // the failed quantity back to the order and preserve the order to add it
+              // back to the order book after matching is complete for this taker order.
+              removedOrder.quantity += portion.quantity;
+              failedMakerOrders.push(removedOrder);
+            } catch (err) {
+              if (err.code !== errorCodes.ORDER_NOT_FOUND) {
+                // if the order has already been removed, either it was removed fully during
+                // matching or it's been invalidated by a peer or filled by a separate order
+                // we can safely ignore this exception, otherwise we throw
+                throw err;
+              }
             }
             onUpdate && onUpdate({ swapFailure, type: PlaceOrderEventType.SwapFailure });
             await retryFailedSwap(portion.quantity);
@@ -559,12 +574,9 @@ class OrderBook extends EventEmitter {
       }
     }
 
-    if (this.testing) {
-      // in testing/debug mode, we add orders that failed swaps back to the order book to retry them
-      failedMakerOrders.forEach((peerOrder) => {
-        this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
-      });
-    }
+    failedMakerOrders.forEach((peerOrder) => {
+      this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+    });
 
     return {
       internalMatches,
