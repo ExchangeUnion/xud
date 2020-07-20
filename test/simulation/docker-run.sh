@@ -16,9 +16,4 @@ pushd temp/indra
 make reset
 popd
 
-if [[ retVal != 0 ]]
-then
-    ./logs.sh
-fi
-
 exit $retVal
