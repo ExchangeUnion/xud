@@ -1,5 +1,5 @@
 diff --git a/lib/Xud.ts b/lib/Xud.ts
-index 08402caa8..c9972d258 100644
+index 08402caa..c9972d25 100644
 --- a/lib/Xud.ts
 +++ b/lib/Xud.ts
 @@ -87,6 +87,11 @@ class Xud extends EventEmitter {
@@ -15,10 +15,10 @@ index 08402caa8..c9972d258 100644
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
-index 090618c4b..cd33a5d58 100644
+index 090618c4..820f8909 100644
 --- a/lib/swaps/SwapRecovery.ts
 +++ b/lib/swaps/SwapRecovery.ts
-@@ -28,7 +28,15 @@ class SwapRecovery extends EventEmitter {
+@@ -28,7 +28,21 @@ class SwapRecovery extends EventEmitter {
 
    public beginTimer = () => {
      if (!this.pendingSwapsTimer) {
@@ -27,7 +27,13 @@ index 090618c4b..cd33a5d58 100644
 +      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE') {
 +        interval = 2000;
 +      }
-+      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_WHILE_SENDING') {
++        interval = 2000;
++      }
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED') {
++        interval = 2000;
++      }
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED') {
 +        interval = 2000;
 +      }
 +
@@ -36,10 +42,10 @@ index 090618c4b..cd33a5d58 100644
    }
 
 diff --git a/lib/swaps/Swaps.ts b/lib/swaps/Swaps.ts
-index 7fd02cbb8..2bc60fe51 100644
+index 908f4cc3..b72ab4dc 100644
 --- a/lib/swaps/Swaps.ts
 +++ b/lib/swaps/Swaps.ts
-@@ -710,6 +710,24 @@ class Swaps extends EventEmitter {
+@@ -721,6 +721,24 @@ class Swaps extends EventEmitter {
        // if the swap has already been failed, then we leave the swap recovery module
        // to attempt to settle the invoice and claim funds rather than do it here
        try {
@@ -64,7 +70,7 @@ index 7fd02cbb8..2bc60fe51 100644
          await swapClient.settleInvoice(rHash, rPreimage, currency);
        } catch (err) {
          // if we couldn't settle the invoice then we fail the deal which throws
-@@ -734,6 +752,16 @@ class Swaps extends EventEmitter {
+@@ -745,6 +763,16 @@ class Swaps extends EventEmitter {
     * accepted, initiates the swap.
     */
    private handleSwapAccepted = async (responsePacket: packets.SwapAcceptedPacket, peer: Peer) => {
@@ -81,7 +87,7 @@ index 7fd02cbb8..2bc60fe51 100644
      assert(responsePacket.body, 'SwapAcceptedPacket does not contain a body');
      const { quantity, rHash, makerCltvDelta } = responsePacket.body;
      const deal = this.getDeal(rHash);
-@@ -821,6 +849,11 @@ class Swaps extends EventEmitter {
+@@ -832,6 +860,11 @@ class Swaps extends EventEmitter {
 
      try {
        await makerSwapClient.sendPayment(deal);
@@ -93,7 +99,7 @@ index 7fd02cbb8..2bc60fe51 100644
      } catch (err) {
        // first we must handle the edge case where the maker has paid us but failed to claim our payment
        // in this case, we've already marked the swap as having been paid and completed
-@@ -1002,6 +1035,18 @@ class Swaps extends EventEmitter {
+@@ -1013,6 +1046,18 @@ class Swaps extends EventEmitter {
 
        this.logger.debug('Executing maker code to resolve hash');
 
@@ -112,11 +118,11 @@ index 7fd02cbb8..2bc60fe51 100644
        const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
 
        // we update the phase persist the deal to the database before we attempt to send payment
-@@ -1012,6 +1057,13 @@ class Swaps extends EventEmitter {
+@@ -1023,6 +1068,13 @@ class Swaps extends EventEmitter {
        assert(deal.state !== SwapState.Error, `cannot send payment for failed swap ${deal.rHash}`);
 
        try {
-+        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND') {
++        if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_WHILE_SENDING') {
 +          setTimeout(() => {
 +            this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
 +            process.exit();
@@ -126,7 +132,30 @@ index 7fd02cbb8..2bc60fe51 100644
          deal.rPreimage = await swapClient.sendPayment(deal);
        } catch (err) {
          this.logger.debug(`sendPayment in resolveHash failed due to ${err.message}`);
-@@ -1073,6 +1125,16 @@ class Swaps extends EventEmitter {
+@@ -1073,10 +1125,21 @@ class Swaps extends EventEmitter {
+         }
+       }
+
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        process.exit();
++      }
++
+       // we update the deal phase but we don't wait for the updated deal to be persisted
+       // to the database because we don't want to delay claiming the incoming payment
+       // using the preimage we've just resolved
+-      this.setDealPhase(deal, SwapPhase.PreimageResolved).catch(this.logger.error);
++      await this.setDealPhase(deal, SwapPhase.PreimageResolved).catch(this.logger.error);
++
++      if (process.env.CUSTOM_SCENARIO === 'INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED') {
++        this.logger.info(`CUSTOM_SCENARIO: ${process.env.CUSTOM_SCENARIO}`);
++        process.exit();
++      }
++
+       return deal.rPreimage;
+     } else {
+       // If we are here we are the taker
+@@ -1084,6 +1147,16 @@ class Swaps extends EventEmitter {
        assert(htlcCurrency === undefined || htlcCurrency === deal.takerCurrency, 'incoming htlc does not match expected deal currency');
        this.logger.debug('Executing taker code to resolve hash');
 
@@ -143,7 +172,7 @@ index 7fd02cbb8..2bc60fe51 100644
        return deal.rPreimage;
      }
    }
-@@ -1248,8 +1310,11 @@ class Swaps extends EventEmitter {
+@@ -1259,8 +1332,11 @@ class Swaps extends EventEmitter {
          await this.swapRecovery.recoverDeal(swapDealInstance!);
        }
      } else if (deal.phase === SwapPhase.SendingPayment) {
@@ -157,7 +186,7 @@ index 7fd02cbb8..2bc60fe51 100644
      }
 
      this.logger.trace(`emitting swap.failed event for ${deal.rHash}`);
-@@ -1313,9 +1378,14 @@ class Swaps extends EventEmitter {
+@@ -1324,9 +1400,14 @@ class Swaps extends EventEmitter {
 
          if (deal.role === SwapRole.Maker) {
            // the maker begins execution of the swap upon accepting the deal
