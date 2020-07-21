@@ -99,7 +99,7 @@ class NodeList extends EventEmitter {
   public getPubKeyForAlias = (alias: string) => {
     const nodePubKey = this.aliasToPubKeyMap.get(alias);
     if (!nodePubKey) {
-      throw errors.UNKNOWN_ALIAS(alias);
+      throw errors.ALIAS_NOT_FOUND(alias);
     }
     if (nodePubKey === 'CONFLICT') {
       throw errors.ALIAS_CONFLICT(alias);

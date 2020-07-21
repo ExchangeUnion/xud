@@ -80,8 +80,8 @@ const errors = {
     message: `could not connect to peer at ${addressUtils.toString(address)}: ${err.message}`,
     code: errorCodes.COULD_NOT_CONNECT,
   }),
-  NODE_UNKNOWN: (nodePubKey: string) => ({
-    message: `node ${nodePubKey} is unknown`,
+  NODE_NOT_FOUND: (nodePubKey: string) => ({
+    message: `node with pub key ${nodePubKey} not found`,
     code: errorCodes.NODE_UNKNOWN,
   }),
   NODE_ALREADY_BANNED: (nodePubKey: string) => ({
@@ -152,8 +152,8 @@ const errors = {
     message: `alias ${alias} refers to more than one node`,
     code: errorCodes.ALIAS_CONFLICT,
   }),
-  UNKNOWN_ALIAS: (alias: string) => ({
-    message: `alias ${alias} is unknown`,
+  ALIAS_NOT_FOUND: (alias: string) => ({
+    message: `node with alias ${alias} not found`,
     code: errorCodes.UNKNOWN_ALIAS,
   }),
 };
