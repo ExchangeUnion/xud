@@ -106,6 +106,8 @@ class ConnextClient extends SwapClient {
   private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
+  /** A map of currencies to promises representing balance requests. */
+  private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
   private _totalOutboundAmount = new Map<string, number>();
 
   /**
@@ -556,11 +558,23 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  private getBalance = async (currency: string) => {
-    const tokenAddress = this.getTokenAddress(currency);
-    const res = await this.sendRequest(`/balance/${tokenAddress}`, 'GET');
-    const balance = await parseResponseBody<ConnextBalanceResponse>(res);
-    return balance;
+  private getBalance = (currency: string): Promise<ConnextBalanceResponse> => {
+    // check if we already have a balance request that we are waiting a response for
+    // it's not helpful to have simultaneous requests for the current balance, as they
+    // should return the same info.
+    let getBalancePromise = this.getBalancePromises.get(currency);
+    if (!getBalancePromise) {
+      // if not make a new balance request and store the promise that's waiting for a response
+      const tokenAddress = this.getTokenAddress(currency);
+      getBalancePromise = this.sendRequest(`/balance/${tokenAddress}`, 'GET').then((res) => {
+        return parseResponseBody<ConnextBalanceResponse>(res);
+      }).finally(() => {
+        this.getBalancePromises.delete(currency); // clear the stored promise
+      });
+      this.getBalancePromises.set(currency, getBalancePromise);
+    }
+
+    return getBalancePromise;
   }
 
   public deposit = async () => {
