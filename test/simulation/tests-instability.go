@@ -175,7 +175,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	ht.assert.NoError(err)
 
 	// Brief delay to allow for swap to be recovered consistently.
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	// Verify that Alice recovered ETH funds.
 	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
