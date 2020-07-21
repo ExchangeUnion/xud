@@ -52,6 +52,7 @@ class HttpService {
       const {
         amount: amountHex,
         assetId,
+        paymentId,
       } = incomingTransferRequest.data;
       const {
         lockHash,
@@ -64,6 +65,7 @@ class HttpService {
         rHash,
         timelock,
         units,
+        paymentId,
         tokenAddress: assetId,
       });
       return {};

@@ -152,6 +152,7 @@ class ConnextClient extends SwapClient {
       units,
       timelock,
       rHash,
+      paymentId,
     } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
@@ -176,9 +177,9 @@ class ConnextClient extends SwapClient {
       units === expectedUnits &&
       timelock === expectedTimelock
     ) {
-      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock} and currency ${currency}`);
+      expectedIncomingTransfer.paymentId = paymentId;
+      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
       this.emit('htlcAccepted', rHash, units, currency);
-      this.expectedIncomingTransfers.delete(rHash);
     }
   }
 
@@ -399,10 +400,27 @@ class ConnextClient extends SwapClient {
       assetId,
       preImage: `0x${rPreimage}`,
     });
+    this.expectedIncomingTransfers.delete(rHash);
   }
 
   public removeInvoice = async (rHash: string) => {
-    this.expectedIncomingTransfers.delete(rHash);
+    const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
+    if (expectedIncomingTransfer) {
+      const { paymentId } = expectedIncomingTransfer;
+      if (paymentId) {
+        // resolve a hashlock with a paymentId but no preimage to cancel it
+        await this.sendRequest('/hashlock-resolve', 'POST', {
+          paymentId,
+          assetId: expectedIncomingTransfer.tokenAddress,
+        });
+        this.logger.debug(`canceled incoming transfer with rHash ${rHash}`);
+      } else {
+        this.logger.warn(`could not find paymentId for incoming transfer with hash ${rHash}`);
+      }
+      this.expectedIncomingTransfers.delete(rHash);
+    } else {
+      this.logger.warn(`could not find expected incoming transfer with hash ${rHash}`);
+    }
   }
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
