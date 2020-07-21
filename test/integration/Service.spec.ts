@@ -172,13 +172,13 @@ describe('API Service', () => {
   it('should fail to ban a node by alias that does not exist', async () => {
     const alias = 'doesNotExist';
     const banNodePromise = service.ban({ nodeIdentifier: alias });
-    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.UNKNOWN_ALIAS(alias).message);
+    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.ALIAS_NOT_FOUND(alias).message);
   });
 
   it('should fail to ban a node by nodePubKey that does not exist', async () => {
     const nodePubKey = '028599d05b18c0c3f8028915a17d603416f7276c822b6b2d20e71a3502bd0f9e0b';
     const banNodePromise = service.ban({ nodeIdentifier: nodePubKey });
-    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.NODE_UNKNOWN(nodePubKey).message);
+    await expect(banNodePromise).to.be.rejectedWith(p2pErrors.NODE_NOT_FOUND(nodePubKey).message);
   });
 
   it('should shutdown', async () => {

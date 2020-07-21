@@ -421,7 +421,7 @@ class Pool extends EventEmitter {
       };
     } else {
       this.logger.warn(`node ${nodePubKey} (${pubKeyToAlias(nodePubKey)}) not found`);
-      throw errors.NODE_UNKNOWN(nodePubKey);
+      throw errors.NODE_NOT_FOUND(nodePubKey);
     }
   }
 
@@ -633,7 +633,7 @@ class Pool extends EventEmitter {
     } else {
       const banned = await this.nodes.ban(nodePubKey);
       if (!banned) {
-        throw errors.NODE_UNKNOWN(nodePubKey);
+        throw errors.NODE_NOT_FOUND(nodePubKey);
       }
     }
   }
@@ -642,7 +642,7 @@ class Pool extends EventEmitter {
     if (this.nodes.isBanned(nodePubKey)) {
       const unbanned = await this.nodes.unBan(nodePubKey);
       if (!unbanned) {
-        throw errors.NODE_UNKNOWN(nodePubKey);
+        throw errors.NODE_NOT_FOUND(nodePubKey);
       }
 
       const node = this.nodes.get(nodePubKey);
