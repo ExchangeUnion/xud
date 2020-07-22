@@ -196,8 +196,8 @@ class ConnextClient extends SwapClient {
     return await parseResponseBody<ConnextInitWalletResponse>(res);
   }
 
-  public initConnextClient = async () => {
-    const res = await this.sendRequest('/connect', 'POST');
+  public initConnextClient = async (seedMnemonic: string) => {
+    const res = await this.sendRequest('/connect', 'POST', { mnemonic: seedMnemonic });
     return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
@@ -280,7 +280,7 @@ class ConnextClient extends SwapClient {
       }
       await this.sendRequest('/health', 'GET');
       await this.initWallet(this.seed);
-      const config = await this.initConnextClient();
+      const config = await this.initConnextClient(this.seed);
       await this.subscribePreimage();
       await this.subscribeIncomingTransfer();
       const { userIdentifier } = config;
