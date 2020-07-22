@@ -163,7 +163,7 @@
     "express": "^4.17.1",
     "fastpriorityqueue": "^0.6.3",
     "google-protobuf": "^3.10.0",
-    "grpc": "^1.24.2",
+    "grpc": "^1.24.3",
     "gulp": "^4.0.2",
     "json-stable-stringify": "^1.0.1",
     "keccak": "^2.0.0",
