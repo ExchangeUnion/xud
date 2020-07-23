@@ -295,7 +295,7 @@ class OrderBook extends EventEmitter {
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
-    this.swaps.swapClientManager.add(currencyInstance);
+    await this.swaps.swapClientManager.add(currencyInstance);
   }
 
   public removeCurrency = async (currencyId: string) => {

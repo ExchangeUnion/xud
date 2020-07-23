@@ -330,25 +330,38 @@ class SwapClientManager extends EventEmitter {
    * @param currency a currency that should be linked with a swap client.
    * @returns Nothing upon success, throws otherwise.
    */
-  public add = (currency: Currency): void => {
-    if (currency.swapClient === SwapClientType.Raiden && currency.tokenAddress && this.raidenClient) {
-      this.swapClients.set(currency.id, this.raidenClient);
-      this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
-      this.emit('raidenUpdate', this.raidenClient.tokenAddresses, this.raidenClient.address);
+  public add = async (currency: Currency) => {
+    if (currency.tokenAddress) {
+      if (currency.swapClient === SwapClientType.Connext) {
+        if (!this.connextClient) {
+          throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
+        }
+        this.swapClients.set(currency.id, this.connextClient);
+        this.connextClient.tokenAddresses.set(currency.id, currency.tokenAddress);
+        this.emit('connextUpdate', this.connextClient.tokenAddresses, this.connextClient.address);
+      } else if (currency.swapClient === SwapClientType.Raiden) {
+        if (!this.raidenClient) {
+          throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
+        }
+        this.swapClients.set(currency.id, this.raidenClient);
+        this.raidenClient.tokenAddresses.set(currency.id, currency.tokenAddress);
+        this.emit('raidenUpdate', this.raidenClient.tokenAddresses, this.raidenClient.address);
+      }
     } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
       // for the specified currency
-      let isCurrencyConfigured = false;
-      for (const lndCurrency in this.config.lnd) {
-        if (lndCurrency === currency.id) {
-          isCurrencyConfigured = true;
-          break;
-        }
-      }
-      // adding a new lnd client at runtime is currently not supported
-      if (!isCurrencyConfigured) {
+      const config = this.config.lnd[currency.id];
+      if (!config) {
         throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
       }
+
+      const lndClient = new LndClient({
+        config,
+        logger: this.loggers.lnd.createSubLogger(currency.id),
+        currency: currency.id,
+      });
+      this.swapClients.set(currency.id, lndClient);
+      await lndClient.init();
     }
   }
 
