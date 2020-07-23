@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# create the temp directory with the current user so it is the owner for permissions
+# create the temp directories with the current user so it is the owner for permissions
 mkdir -p $PWD/temp/logs
+mkdir -p $PWD/temp/indra
 
 pushd temp/indra
 make start
