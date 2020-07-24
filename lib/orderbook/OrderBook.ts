@@ -576,7 +576,11 @@ class OrderBook extends EventEmitter {
     }
 
     failedMakerOrders.forEach((peerOrder) => {
-      this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+      const peer = this.pool.getPeer(peerOrder.peerPubKey);
+      if (peer?.active && peer?.isPairActive(peerOrder.pairId)) {
+        // if this peer and its trading pair is still active then we add the order back to the book
+        this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+      }
     });
 
     return {
