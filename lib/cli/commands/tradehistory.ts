@@ -79,11 +79,19 @@ export const builder = (argv: Argv) => argv
     type: 'number',
     default: 15,
   })
+  .option('all', {
+    description: 'whether to display the complete trade history',
+    type: 'boolean',
+    default: false,
+  })
   .example('$0 tradehistory', 'list most recent trades')
   .example('$0 tradehistory 50', 'list the 50 most recent trades');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new TradeHistoryRequest();
-  request.setLimit(argv.limit);
+  if (!argv.all) {
+    // don't set a limit if the --all flag is specified
+    request.setLimit(argv.limit);
+  }
   (await loadXudClient(argv)).tradeHistory(request, callback(argv, displayTrades));
 };

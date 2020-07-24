@@ -527,7 +527,7 @@ class Service {
    */
   public tradeHistory = async (args: { limit: number }): Promise<ServiceTrade[]> => {
     const { limit } = args;
-    const trades = await this.orderBook.getTrades(limit);
+    const trades = await this.orderBook.getTrades(limit || undefined);
 
     const orderInstanceToServiceOrder = (order: OrderAttributes, quantity: number): ServiceOrder => {
       const isOwnOrder = !!order.localId;
