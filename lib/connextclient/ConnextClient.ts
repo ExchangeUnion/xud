@@ -665,7 +665,7 @@ class ConnextClient extends SwapClient {
         };
       }
 
-      this.logger.trace(`sending request to ${endpoint}: ${payloadStr}`);
+      this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
       const req = http.request(options, async (res) => {
         let err: XudError | undefined;
         switch (res.statusCode) {
