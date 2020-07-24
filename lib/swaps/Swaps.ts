@@ -34,8 +34,13 @@ interface Swaps {
 }
 
 class Swaps extends EventEmitter {
+  public swapClientManager: SwapClientManager;
   /** A map between payment hashes and pending sanity swaps. */
-  public sanitySwaps = new Map<string, SanitySwap>();
+  private sanitySwaps = new Map<string, SanitySwap>();
+  private logger: Logger;
+  private models: Models;
+  private pool: Pool;
+  private testing: boolean;
   /** A map between payment hashes and swap deals. */
   private deals = new Map<string, SwapDeal>();
   private swapRecovery: SwapRecovery;
@@ -77,13 +82,20 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
   private static readonly SANITY_SWAP_COMPLETE_TIMEOUT = 10000;
 
-  constructor(private logger: Logger,
-    private models: Models,
-    private pool: Pool,
-    public swapClientManager: SwapClientManager,
-  ) {
+  constructor({ logger, models, pool, swapClientManager, testing = false }: {
+    logger: Logger,
+    models: Models,
+    pool: Pool,
+    swapClientManager: SwapClientManager,
+    testing?: boolean,
+  }) {
     super();
 
+    this.logger = logger;
+    this.models = models;
+    this.pool = pool;
+    this.swapClientManager = swapClientManager;
+    this.testing = testing;
     this.swapRecovery = new SwapRecovery(swapClientManager, logger.createSubLogger('RECOVERY'));
     this.repository = new SwapRepository(this.models);
     this.bind();
@@ -1208,7 +1220,7 @@ class Swaps extends EventEmitter {
       case SwapFailureReason.SendPaymentFailure:
       case SwapFailureReason.NoRouteFound:
         // something is wrong with swaps for this currency with this peer
-        if (failedCurrency) {
+        if (failedCurrency && !this.testing) { // don't deactivate currencies due to failed swaps in testing mode
           try {
             this.pool.getPeer(deal.peerPubKey).deactivateCurrency(failedCurrency);
           } catch (err) {

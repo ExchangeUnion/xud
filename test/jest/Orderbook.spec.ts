@@ -146,7 +146,12 @@ describe('OrderBook', () => {
     unitConverter = new UnitConverter();
     unitConverter.init();
     swapClientManager = new SwapClientManager(config, loggers, unitConverter);
-    swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
+    swaps = new Swaps({
+      pool,
+      swapClientManager,
+      logger: loggers.swaps,
+      models: db.models,
+    });
     swaps.swapClientManager = swapClientManager;
     orderbook = new Orderbook({
       pool,
