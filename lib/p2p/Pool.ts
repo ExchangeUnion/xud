@@ -929,7 +929,7 @@ class Pool extends EventEmitter {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
         if (this.testing && event !== ReputationEvent.ManualBan && event !== ReputationEvent.ManualUnban) {
-          // we don't add non-manual reputation events when in debug/testing mode to preven unintentional bans
+          // we don't add non-manual reputation events when in debug/testing mode to prevent unintentional bans
           return;
         }
         await this.addReputationEvent(peer.nodePubKey, event);

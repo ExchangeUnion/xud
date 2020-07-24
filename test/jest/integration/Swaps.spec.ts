@@ -104,7 +104,12 @@ describe('Swaps Integration', () => {
     makerCurrency = 'LTC';
     takerCurrency = 'BTC';
 
-    swaps = new Swaps(logger, db.models, pool, swapClientManager);
+    swaps = new Swaps({
+      logger,
+      pool,
+      swapClientManager,
+      models: db.models,
+    });
   });
 
   afterEach(() => {

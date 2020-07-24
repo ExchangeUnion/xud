@@ -113,7 +113,12 @@ describe('Swaps.Integration', () => {
       }
       return client;
     };
-    swaps = new Swaps(loggers.swaps, db.models, pool, swapClientManager);
+    swaps = new Swaps({
+      pool,
+      swapClientManager,
+      logger: loggers.swaps,
+      models: db.models,
+    });
   });
 
   afterEach(() => {
