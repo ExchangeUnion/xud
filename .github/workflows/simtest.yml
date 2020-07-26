@@ -32,20 +32,20 @@ jobs:
       - name: Build simulation tests
         run: npm run test:sim:build
 
-#      - name: Run simulation tests
-#        run: npm run test:sim:run:integration
-#
-#      - name: Print simulation test logs
-#        if: ${{ failure() }}
-#        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
-#
-#      - name: Run simulation security tests
-#        if: ${{ always() }}
-#        run: rm -rf test/simulation/temp/logs && npm run test:sim:run:security
-#
-#      - name: Print simulation security test logs
-#        if: ${{ failure() }}
-#        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
+      - name: Run simulation tests
+        run: npm run test:sim:run:integration
+
+      - name: Print simulation test logs
+        if: ${{ failure() }}
+        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
+
+      - name: Run simulation security tests
+        if: ${{ always() }}
+        run: rm -rf test/simulation/temp/logs && npm run test:sim:run:security
+
+      - name: Print simulation security test logs
+        if: ${{ failure() }}
+        run: npm run test:sim:logs && rm -rf test/simulation/temp/logs
 
       - name: Run simulation instability tests
         if: ${{ always() }}

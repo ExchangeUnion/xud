@@ -18,42 +18,42 @@ var instabilityTestCases = []*testCase{
 		name: "network initialization", // must be the first test case to be run
 		test: testNetworkInit,
 	},
-	//{
-	//	name: "maker crashed after send payment before preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
-	//	test: testMakerCrashedAfterSendBeforePreimageResolved,
-	//},
-	//{
-	//	name: "maker crashed after send payment before preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
-	//	test: testMakerCrashedAfterSendBeforePreimageResolvedConnextIn,
-	//},
-	//{
-	//	name: "maker crashed after send payment after preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
-	//	test: testMakerCrashedAfterSendAfterPreimageResolved,
-	//},
-	//{
-	//	name: "maker crashed after send payment after preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
-	//	test: testMakerCrashedAfterSendAfterPreimageResolvedConnextIn,
-	//},
-	//{
-	//	name: "maker lnd crashed before maker order settlement", // replacing Alice
-	//	test: testMakerLndCrashedBeforeMakerSettlement,
-	//},
-	//{
-	//	name: "maker connext client crashed before maker order settlement", // replacing Alice
-	//	test: testMakerConnextClientCrashedBeforeMakerSettlement,
-	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlement,
-	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
-	//},
-	//{
-	//	name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
-	//	test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
-	//},
+	{
+		name: "maker crashed after send payment before preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendBeforePreimageResolved,
+	},
+	{
+		name: "maker crashed after send payment before preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendBeforePreimageResolvedConnextIn,
+	},
+	{
+		name: "maker crashed after send payment after preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendAfterPreimageResolved,
+	},
+	{
+		name: "maker crashed after send payment after preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendAfterPreimageResolvedConnextIn,
+	},
+	{
+		name: "maker lnd crashed before maker order settlement", // replacing Alice
+		test: testMakerLndCrashedBeforeMakerSettlement,
+	},
+	{
+		name: "maker connext client crashed before maker order settlement", // replacing Alice
+		test: testMakerConnextClientCrashedBeforeMakerSettlement,
+	},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlement,
+	},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: connext, outgoing: lnd", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlementConnextIn,
+	},
+	{
+		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
+		test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
+	},
 	{
 		name: "maker connext client crashed before taker order settlement", // replacing Alice + Bob
 		test: testMakerConnextClientCrashedBeforeTakerSettlement,
@@ -334,7 +334,7 @@ func testMakerConnextClientCrashedBeforeTakerSettlement(net *xudtest.NetworkHarn
 	ht.assert.NoError(err)
 
 	// Wait to allow the Alice to recover.
-	time.Sleep(20 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
 	ht.assert.NoError(err)
