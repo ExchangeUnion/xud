@@ -928,8 +928,15 @@ class Pool extends EventEmitter {
     peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        // we only add manual reputation events when not in strict mode to prevent unintentional bans
-        if (this.strict || event === ReputationEvent.ManualBan || event === ReputationEvent.ManualUnban) {
+        // when in strict mode, we add all reputation events
+        // otherwise, we only add manual or severe reputation events to prevent unintentional bans
+        if (this.strict
+          || event === ReputationEvent.ManualBan
+          || event === ReputationEvent.ManualUnban
+          || event === ReputationEvent.SwapAbuse
+          || event === ReputationEvent.SwapMisbehavior
+          || event === ReputationEvent.WireProtocolErr
+          || event === ReputationEvent.InvalidAuth) {
           await this.addReputationEvent(peer.nodePubKey, event);
         }
       }
