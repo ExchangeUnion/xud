@@ -590,6 +590,7 @@ class ConnextClient extends SwapClient {
     await this.sendRequest('/deposit', 'POST', {
       assetId,
       amount: BigInt(units).toString(),
+      requestCollateral: true,
     });
   }
 
