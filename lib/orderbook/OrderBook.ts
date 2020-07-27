@@ -75,7 +75,7 @@ class OrderBook extends EventEmitter {
   private logger: Logger;
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
-  private testing: boolean;
+  private strict: boolean;
   private pool: Pool;
   private swaps: Swaps;
 
@@ -93,7 +93,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, testing = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, strict = true }:
   {
     logger: Logger,
     models: Models,
@@ -103,7 +103,7 @@ class OrderBook extends EventEmitter {
     nosanityswaps: boolean,
     nobalancechecks: boolean,
     nomatching?: boolean,
-    testing?: boolean,
+    strict?: boolean,
   }) {
     super();
 
@@ -114,7 +114,7 @@ class OrderBook extends EventEmitter {
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
     this.thresholds = thresholds;
-    this.testing = testing;
+    this.strict = strict;
 
     this.repository = new OrderBookRepository(models);
 
@@ -922,7 +922,7 @@ class OrderBook extends EventEmitter {
 
     // activate verified currencies
     currenciesToVerify.forEach((swappable, currency) => {
-      if (swappable || this.testing) { // always activate currencies if in debug/testing mode
+      if (swappable || !this.strict) { // always activate currencies if not in strict mode
         peer.activateCurrency(currency);
       }
     });
