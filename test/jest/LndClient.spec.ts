@@ -233,14 +233,25 @@ describe('LndClient', () => {
     test('fetch and persist trading limits', async () => {
       expect.assertions(5);
 
+      lnd['pendingChannels'] = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          toObject: () => {
+            return {
+              pendingOpenChannelsList: [],
+            };
+          },
+        });
+      });
+
       lnd['listChannels'] = jest.fn().mockImplementation(() => {
         return Promise.resolve({
           toObject: () => {
             return {
               channelsList: [
-                { localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
-                { localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
-                { localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
+                { active: false, localBalance: 50, localChanReserveSat: 2, remoteBalance: 50, remoteChanReserveSat: 2 },
               ],
             };
           },

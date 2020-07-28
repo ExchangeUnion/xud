@@ -677,35 +677,31 @@ class LndClient extends SwapClient {
     return walletBalanceResponse.toObject();
   }
 
-  public channelBalance = async (): Promise<ChannelBalance> => {
-    const channelBalanceResponse = await this.unaryCall<lndrpc.ChannelBalanceRequest, lndrpc.ChannelBalanceResponse>(
-      'channelBalance', new lndrpc.ChannelBalanceRequest(),
-    );
-    if (this._totalOutboundAmount !== channelBalanceResponse.getBalance()) {
-      this._totalOutboundAmount = channelBalanceResponse.getBalance();
-      this.logger.debug(`new total outbound capacity: ${this._totalOutboundAmount}`);
-    }
-    const channels = await this.listChannels();
-    const balance = channels.toObject().channelsList.reduce((sum, channel) => sum + (channel.active ? channel.localBalance : 0), 0);
-    const inactiveBalance = channelBalanceResponse.getBalance() - balance;
-
-    return { balance, inactiveBalance, pendingOpenBalance: channelBalanceResponse.getPendingOpenBalance() };
-  }
-
-  public tradingLimits = async (): Promise<TradingLimits> => {
-    const channels = await this.listChannels();
+  /**
+   * Updates all balances related to channels including active, inactive, and pending balances.
+   * Sets trading limits for this client accordingly.
+   */
+  private updateChannelBalances = async () => {
+    const [channels, pendingChannels] = await Promise.all([this.listChannels(), this.pendingChannels()]);
 
     let maxOutbound = 0;
     let maxInbound = 0;
+    let balance = 0;
+    let inactiveBalance = 0;
     channels.toObject().channelsList.forEach((channel) => {
-      const outbound = channel.localBalance - channel.localChanReserveSat;
-      if (maxOutbound < outbound) {
-        maxOutbound = outbound;
-      }
+      if (channel.active) {
+        balance += channel.localBalance;
+        const outbound = channel.localBalance - channel.localChanReserveSat;
+        if (maxOutbound < outbound) {
+          maxOutbound = outbound;
+        }
 
-      const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
-      if (maxInbound < inbound) {
-        maxInbound = inbound;
+        const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+        if (maxInbound < inbound) {
+          maxInbound = inbound;
+        }
+      } else {
+        inactiveBalance += channel.localBalance;
       }
     });
 
@@ -719,9 +715,28 @@ class LndClient extends SwapClient {
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
     }
 
+    const pendingOpenBalance = pendingChannels.toObject().pendingOpenChannelsList.
+      reduce((sum, pendingChannel) => sum + (pendingChannel.channel?.localBalance ?? 0), 0);
+
     return {
-      maxSell: this._maxChannelOutboundAmount,
-      maxBuy: this._maxChannelInboundAmount,
+      maxOutbound,
+      maxInbound,
+      balance,
+      inactiveBalance,
+      pendingOpenBalance,
+    };
+  }
+
+  public channelBalance = async (): Promise<ChannelBalance> => {
+    const { balance, inactiveBalance, pendingOpenBalance } = await this.updateChannelBalances();
+    return { balance, inactiveBalance, pendingOpenBalance };
+  }
+
+  public tradingLimits = async (): Promise<TradingLimits> => {
+    const { maxOutbound, maxInbound } = await this.updateChannelBalances();
+    return {
+      maxSell: maxOutbound,
+      maxBuy: maxInbound,
     };
   }
 
@@ -805,6 +820,13 @@ class LndClient extends SwapClient {
    */
   public listChannels = (): Promise<lndrpc.ListChannelsResponse> => {
     return this.unaryCall<lndrpc.ListChannelsRequest, lndrpc.ListChannelsResponse>('listChannels', new lndrpc.ListChannelsRequest());
+  }
+
+  /**
+   * Lists all pending channels for this node.
+   */
+  private pendingChannels = (): Promise<lndrpc.PendingChannelsResponse> => {
+    return this.unaryCall<lndrpc.PendingChannelsRequest, lndrpc.PendingChannelsResponse>('pendingChannels', new lndrpc.PendingChannelsRequest());
   }
 
   public getRoute = async (units: number, destination: string, _currency: string, finalLock = this.finalLock) => {
