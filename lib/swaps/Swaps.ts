@@ -40,7 +40,7 @@ class Swaps extends EventEmitter {
   private logger: Logger;
   private models: Models;
   private pool: Pool;
-  private testing: boolean;
+  private strict: boolean;
   /** A map between payment hashes and swap deals. */
   private deals = new Map<string, SwapDeal>();
   private swapRecovery: SwapRecovery;
@@ -82,12 +82,12 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
   private static readonly SANITY_SWAP_COMPLETE_TIMEOUT = 10000;
 
-  constructor({ logger, models, pool, swapClientManager, testing = false }: {
+  constructor({ logger, models, pool, swapClientManager, strict = true }: {
     logger: Logger,
     models: Models,
     pool: Pool,
     swapClientManager: SwapClientManager,
-    testing?: boolean,
+    strict?: boolean,
   }) {
     super();
 
@@ -95,7 +95,7 @@ class Swaps extends EventEmitter {
     this.models = models;
     this.pool = pool;
     this.swapClientManager = swapClientManager;
-    this.testing = testing;
+    this.strict = strict;
     this.swapRecovery = new SwapRecovery(swapClientManager, logger.createSubLogger('RECOVERY'));
     this.repository = new SwapRepository(this.models);
     this.bind();
@@ -1220,7 +1220,7 @@ class Swaps extends EventEmitter {
       case SwapFailureReason.SendPaymentFailure:
       case SwapFailureReason.NoRouteFound:
         // something is wrong with swaps for this currency with this peer
-        if (failedCurrency && !this.testing) { // don't deactivate currencies due to failed swaps in testing mode
+        if (failedCurrency && !this.strict) { // only deactivate currencies due to failed swaps in strict mode
           try {
             this.pool.getPeer(deal.peerPubKey).deactivateCurrency(failedCurrency);
           } catch (err) {

@@ -92,20 +92,20 @@ class Pool extends EventEmitter {
   private listenPort?: number;
   /** Points to config comes during construction. */
   private config: PoolConfig;
-  private testing: boolean;
+  private strict: boolean;
   private repository: P2PRepository;
   private network: Network;
   private logger: Logger;
   private nodeKey: NodeKey;
 
-  constructor({ config, xuNetwork, logger, models, nodeKey, version, testing = false }: {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version, strict = true }: {
     config: PoolConfig,
     xuNetwork: XuNetwork,
     logger: Logger,
     models: Models,
     nodeKey: NodeKey,
     version: string,
-    testing?: boolean,
+    strict?: boolean,
   }) {
     super();
 
@@ -115,7 +115,7 @@ class Pool extends EventEmitter {
     this.alias = pubKeyToAlias(nodeKey.pubKey);
     this.version = version;
     this.config = config;
-    this.testing = testing;
+    this.strict = strict;
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
@@ -928,11 +928,17 @@ class Pool extends EventEmitter {
     peer.on('reputation', async (event) => {
       this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        if (this.testing && event !== ReputationEvent.ManualBan && event !== ReputationEvent.ManualUnban) {
-          // we don't add non-manual reputation events when in debug/testing mode to prevent unintentional bans
-          return;
+        // when in strict mode, we add all reputation events
+        // otherwise, we only add manual or severe reputation events to prevent unintentional bans
+        if (this.strict
+          || event === ReputationEvent.ManualBan
+          || event === ReputationEvent.ManualUnban
+          || event === ReputationEvent.SwapAbuse
+          || event === ReputationEvent.SwapMisbehavior
+          || event === ReputationEvent.WireProtocolErr
+          || event === ReputationEvent.InvalidAuth) {
+          await this.addReputationEvent(peer.nodePubKey, event);
         }
-        await this.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }

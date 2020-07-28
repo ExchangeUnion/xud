@@ -51,6 +51,7 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
+  public strict: boolean;
   public rpc: { disable: boolean, host: string, port: number };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
@@ -59,7 +60,6 @@ class Config {
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
   public debug: {
-    testing: boolean,
     raidenDirectChannelChecks: boolean,
   };
   public instanceid = 0;
@@ -116,6 +116,7 @@ class Config {
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = XuNetwork.SimNet;
     this.dbpath = this.getDefaultDbPath();
+    this.strict = false;
 
     this.p2p = {
       listen: true,
@@ -141,7 +142,6 @@ class Config {
       port: 8080,
     };
     this.debug = {
-      testing: false,
       raidenDirectChannelChecks: true,
     };
     // TODO: add dynamic max/min price limits

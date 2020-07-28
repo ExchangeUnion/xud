@@ -3,7 +3,6 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/connexttest"
 	"net"
 	"os"
 	"os/exec"
@@ -13,7 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ExchangeUnion/xud-simulation/connexttest"
+
 	"context"
+
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/go-errors/errors"
@@ -64,6 +66,7 @@ func (cfg nodeConfig) genArgs() []string {
 	args = append(args, "--regtest")
 	args = append(args, "--loglevel=trace")
 	args = append(args, "--noencrypt")
+	args = append(args, "--strict")
 
 	if cfg.NoBalanceChecks {
 		args = append(args, "--nobalancechecks=true")
