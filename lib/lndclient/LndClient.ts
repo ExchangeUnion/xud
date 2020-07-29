@@ -164,7 +164,7 @@ class LndClient extends SwapClient {
       try {
         await this.loadMacaroon();
       } catch (err) {
-        this.logger.warn(`could not load macaroon at ${macaroonpath}`);
+        this.logger.info(`could not load macaroon at ${macaroonpath}, this is normal before creating a new wallet`);
       }
     } else {
       this.logger.info('macaroons are disabled');
@@ -384,16 +384,27 @@ class LndClient extends SwapClient {
    * to verify the connection to lnd.
    */
   private awaitWalletInit = async () => {
-    // we are waiting for lnd to be initialized by xud and for the lnd macaroons to be created
-    this.logger.info('waiting for wallet to be initialized...');
-
     /**
-     * A promise that resolves to `true` when the lnd wallet is created via an InitWallet call,
-     * resolves to `false` if we close the client before the lnd wallet is created.
+     * Whether the lnd wallet has been created via an InitWallet call,
+     * `false` if we close the client before the lnd wallet is created.
      */
-    const isWalletInitialized = await new Promise<boolean>((resolve) => {
-      this.initWalletResolve = resolve;
-    });
+    let isWalletInitialized: boolean;
+    if (this.status === ClientStatus.Initialized) {
+      // we are waiting for the lnd wallet to be initialized by xud and for the lnd macaroons to be created
+      this.logger.info('waiting for wallet to be initialized...');
+      this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
+      await this.waitForClientReady(this.walletUnlocker);
+      this.lock();
+
+      isWalletInitialized = await new Promise<boolean>((resolve) => {
+        this.initWalletResolve = resolve;
+      });
+    } else if (this.status === ClientStatus.Unlocked) {
+      // the lnd wallet has been created but its macaroons have not been written to the file system yet
+      isWalletInitialized = true;
+    } else {
+      assert.fail('awaitWalletInit should not be called from a status besides Initialized or Unlocked');
+    }
 
     if (isWalletInitialized) {
       // admin.macaroon will not necessarily be created by the time lnd responds to a successful
@@ -439,11 +450,7 @@ class LndClient extends SwapClient {
 
     if (this.macaroonpath && this.meta.get('macaroon').length === 0) {
       // we have not loaded the macaroon yet - it is not created until the lnd wallet is initialized
-      if (!this.isWaitingUnlock()) { // check that we are not already waiting for wallet init & unlock
-        this.walletUnlocker = new WalletUnlockerClient(this.uri, this.credentials);
-        await this.waitForClientReady(this.walletUnlocker);
-        this.lock();
-
+      if (!this.isWaitingUnlock() && !this.initWalletResolve) { // check that we are not already waiting for wallet init & unlock
         this.awaitWalletInit().catch(this.logger.error);
       }
       return;
