@@ -10,8 +10,8 @@ import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
 import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
-import { base64ToHex, hexToUint8Array } from '../utils/utils';
+import { CloseChannelParams, OpenChannelParams, SwapDeal } from '../swaps/types';
+import { base64ToHex, hexToUint8Array, setTimeoutPromise } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
 
@@ -34,6 +34,7 @@ interface LndClient {
 
 const MAXFEE = 0.03;
 const BASE_MAX_CLIENT_WAIT_TIME = 6000;
+const MAX_MACAROON_WAIT_TIME = 60000;
 
 /** A class representing a client to interact with lnd. */
 class LndClient extends SwapClient {
@@ -409,34 +410,60 @@ class LndClient extends SwapClient {
     if (isWalletInitialized) {
       // admin.macaroon will not necessarily be created by the time lnd responds to a successful
       // InitWallet call, so we watch the folder that we expect it to be in for it to be created
-      const watchMacaroonPromise = new Promise<boolean>((resolve) => {
-        this.watchMacaroonResolve = resolve;
-      });
-      const macaroonDir = path.join(this.macaroonpath!, '..');
-      const fsWatcher = watch(macaroonDir, (event, filename) => {
-        if (event === 'change' && filename === 'admin.macaroon') {
-          this.logger.debug('admin.macaroon was created');
-          if (this.watchMacaroonResolve) {
-            this.watchMacaroonResolve(true);
-          }
-        }
-      });
-      this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
-      const macaroonCreated = await watchMacaroonPromise;
-      fsWatcher.close();
-      this.watchMacaroonResolve = undefined;
+      const macaroonLoaded = await this.waitForMacaroon();
+      if (macaroonLoaded) {
+        // once we've loaded the macaroon we can attempt to verify the conneciton
+        this.verifyConnection().catch(this.logger.error);
+      } else {
+        this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
+        this.setStatus(ClientStatus.Disabled);
+      }
+    }
+  }
 
-      if (macaroonCreated) {
-        try {
-          await this.loadMacaroon();
+  /**
+   * Waits for the admin.macaroon to be created and loaded.
+   * @returns `true` if the macaroon was loaded, `false` if it could not be loaded
+   */
+  private waitForMacaroon = async () => {
+    try {
+      await this.loadMacaroon();
+      return true;
+    } catch (err) {
+      // if we can't load the macaroon right away, we ignore the error and wait for it to be created
+    }
 
-          // once we've loaded the macaroon we can attempt to verify the conneciton
-          this.verifyConnection().catch(this.logger.error);
-        } catch (err) {
-          this.logger.error(`could not load macaroon from ${this.macaroonpath}`);
-          this.setStatus(ClientStatus.Disabled);
+    const watchMacaroonPromise = new Promise<boolean>((resolve) => {
+      this.watchMacaroonResolve = resolve;
+    });
+    const macaroonDir = path.join(this.macaroonpath!, '..');
+    const fsWatcher = watch(macaroonDir, (event, filename) => {
+      if (event === 'change' && filename === 'admin.macaroon') {
+        this.logger.debug('admin.macaroon was created');
+        if (this.watchMacaroonResolve) {
+          this.watchMacaroonResolve(true);
         }
       }
+    });
+    this.logger.debug(`watching ${macaroonDir} for admin.macaroon to be created`);
+    // we wait up to MAX_MACAROON_WAIT_TIME for the macaroons to be created, otherwise
+    const macaroonCreated = await Promise.race([
+      watchMacaroonPromise,
+      setTimeoutPromise(MAX_MACAROON_WAIT_TIME, false),
+    ]);
+    fsWatcher.close();
+    this.watchMacaroonResolve = undefined;
+
+    if (macaroonCreated) {
+      try {
+        await this.loadMacaroon();
+        return true;
+      } catch (err) {
+        return false;
+      }
+    } else {
+      this.logger.error('macaroon was not created within time limit');
+      return false;
     }
   }
 
@@ -904,10 +931,15 @@ class LndClient extends SwapClient {
     if (this.initWalletResolve) {
       this.initWalletResolve(true);
     }
-    this.setUnlocked();
+    const macaroonLoaded = await this.waitForMacaroon();
+    if (macaroonLoaded) {
+      this.setUnlocked();
 
-    this.logger.info('wallet initialized');
-    return initWalletResponse.toObject();
+      this.logger.info('wallet initialized');
+      return initWalletResponse.toObject();
+    } else {
+      throw Error('could not load admin.macaroon');
+    }
   }
 
   public unlockWallet = async (walletPassword: string): Promise<void> => {
