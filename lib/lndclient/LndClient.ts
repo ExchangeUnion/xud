@@ -870,7 +870,7 @@ class LndClient extends SwapClient {
     if (route) {
       this.logger.debug(`found a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
     } else {
-      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}: ${route}`);
+      this.logger.debug(`could not find a route to ${destination} for ${units} units with finalCltvDelta ${finalLock}`);
     }
     return route;
   }
