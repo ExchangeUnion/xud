@@ -695,10 +695,12 @@ class LndClient extends SwapClient {
     let maxInbound = 0;
     let balance = 0;
     let inactiveBalance = 0;
+    let totalOutboundAmount = 0;
     channels.toObject().channelsList.forEach((channel) => {
       if (channel.active) {
         balance += channel.localBalance;
         const outbound = channel.localBalance - channel.localChanReserveSat;
+        totalOutboundAmount += outbound;
         if (maxOutbound < outbound) {
           maxOutbound = outbound;
         }
@@ -714,12 +716,17 @@ class LndClient extends SwapClient {
 
     if (this._maxChannelOutboundAmount !== maxOutbound) {
       this._maxChannelOutboundAmount = maxOutbound;
-      this.logger.debug(`new channel outbound capacity: ${maxOutbound}`);
+      this.logger.debug(`new channel maximum outbound capacity: ${maxOutbound}`);
     }
 
     if (this._maxChannelInboundAmount !== maxInbound) {
       this._maxChannelInboundAmount = maxInbound;
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
+    }
+
+    if (this._totalOutboundAmount !== totalOutboundAmount) {
+      this._totalOutboundAmount = totalOutboundAmount;
+      this.logger.debug(`new channel total outbound capacity: ${maxOutbound}`);
     }
 
     const pendingOpenBalance = pendingChannels.toObject().pendingOpenChannelsList.
