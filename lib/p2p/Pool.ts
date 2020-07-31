@@ -450,6 +450,8 @@ class Pool extends EventEmitter {
       throw errors.NODE_ALREADY_CONNECTED(nodePubKey, address);
     }
 
+    this.logger.debug(`creating new outbound socket connection to ${address.host}:${address.port}`);
+
     const pendingPeer = this.pendingOutboundPeers.get(nodePubKey);
     if (pendingPeer) {
       if (revokeConnectionRetries) {
@@ -729,6 +731,8 @@ class Pool extends EventEmitter {
   }
 
   private addInbound = async (socket: Socket) => {
+    const address = addressUtils.fromSocket(socket);
+    this.logger.debug(`new inbound socket connection from ${address.host}:${address.port}`);
     const peer = Peer.fromInbound(socket, this.logger, this.network);
     this.bindPeer(peer);
     this.pendingInboundPeers.add(peer);
