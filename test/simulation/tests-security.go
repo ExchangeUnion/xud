@@ -460,6 +460,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	// Closing taker LTC channel and checking balance.
 	// It has no pending HTLC because the maker cancelled his invoice during his the swap recovery procedure.
+	time.Sleep(10 * time.Second) // wait a bit more for Bob to cancel the invoice.
 	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
 	ht.assert.NoError(err)
 
