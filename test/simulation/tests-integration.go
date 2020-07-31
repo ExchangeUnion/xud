@@ -323,8 +323,8 @@ func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTes
 
 	// Verify Alice ETH balance.
 	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.Equal(uint64(199979000), resBal.Balances["ETH"].TotalBalance)
-	ht.assert.Equal(uint64(199978600), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(199997900), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-400, resBal.Balances["ETH"].WalletBalance)
 	ht.assert.Equal(uint64(400), resBal.Balances["ETH"].ChannelBalance)
 
 	// Place an order on Alice.
@@ -351,8 +351,8 @@ func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTes
 
 	// Verify Alice ETH balance.
 	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.Equal(uint64(199978960), resBal.Balances["ETH"].TotalBalance)
-	ht.assert.Equal(uint64(199978600), resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(199997860), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-360, resBal.Balances["ETH"].WalletBalance)
 	ht.assert.Equal(uint64(360), resBal.Balances["ETH"].ChannelBalance)
 
 	// Verify Bob ETH balance.
