@@ -401,19 +401,29 @@ class Peer extends EventEmitter {
 
   public sendPacket = async (packet: Packet): Promise<void> => {
     const data = await this.framer.frame(packet, this.outEncryptionKey);
-    if (this.socket && !this.socket.destroyed) {
-      try {
-        this.socket.write(data);
-        this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+    try {
+      await new Promise((resolve, reject) => {
+        if (this.socket && !this.socket.destroyed) {
+          this.socket.write(data, (err) => {
+            if (err) {
+              this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+              reject(err);
+            } else {
+              this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
 
-        if (packet.direction === PacketDirection.Request) {
-          this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+              if (packet.direction === PacketDirection.Request) {
+                this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+              }
+              resolve();
+            }
+          });
+        } else {
+          this.logger.warn(`could not send packet to ${this.label} because socket is nonexistent or destroyed`);
+          resolve();
         }
-      } catch (err) {
-        this.logger.error(`failed sending data to ${this.label}`, err);
-      }
-    } else {
-      this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+      });
+    } catch (err) {
+      this.logger.error(`failed sending data to ${this.label}`, err);
     }
   }
 
