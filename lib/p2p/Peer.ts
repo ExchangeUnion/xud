@@ -340,6 +340,7 @@ class Peer extends EventEmitter {
     this.status = PeerStatus.Closed;
 
     if (this.socket) {
+      this.socket.removeAllListeners();
       if (!this.socket.destroyed) {
         if (reason !== undefined) {
           this.logger.debug(`Peer ${this.label}: closing socket. reason: ${DisconnectionReason[reason]}`);
@@ -724,11 +725,11 @@ class Peer extends EventEmitter {
   private bindSocket = () => {
     assert(this.socket);
 
-    this.socket.once('error', (err) => {
+    this.socket.on('error', (err) => {
       this.logger.error(`Peer (${this.label}) error`, err);
     });
 
-    this.socket.once('close', async (hadError) => {
+    this.socket.on('close', async (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake with ${this.label}`);
