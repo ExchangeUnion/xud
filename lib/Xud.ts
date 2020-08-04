@@ -240,23 +240,11 @@ class Xud extends EventEmitter {
               // minimum channelBalance threshold
               minChannelAmount: 100000000,
             },
-            /*
-            {
-              currency: 'XUC',
-              channelAmount: 37500000000,
-              minChannelAmount: 1000000000,
-            },
-            {
-              currency: 'DAI',
-              channelAmount: 100000000000,
-              minChannelAmount: 1000000000,
-            },
             {
               currency: 'USDT',
               channelAmount: 100000000000,
-              minChannelAmount: 1000000000,
+              minChannelAmount: 100000000,
             },
-            */
           ],
           // we check the channel and on-chain balance every 10 seconds
           // and refund from faucet if below the walletAmount
