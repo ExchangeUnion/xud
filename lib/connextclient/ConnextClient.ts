@@ -591,6 +591,13 @@ class ConnextClient extends SwapClient {
       assetId,
       amount: BigInt(units).toString(),
     });
+    this.sendRequest('/request-collateral', 'POST', {
+      assetId,
+    }).then(() => {
+      this.logger.verbose(`collateralized channel for ${currency}`);
+    }).catch((err) => {
+      this.logger.error(`failed requesting collateral for ${currency}`, err);
+    });
   }
 
   public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<void> => {
