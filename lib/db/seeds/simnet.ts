@@ -27,6 +27,12 @@ const currencies = [
     decimalPlaces: 18,
     tokenAddress: '0x0000000000000000000000000000000000000000',
   },
+  {
+    id: 'USDT',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0x813D0464E6372912353B0B159E1735BDaA0654f5',
+  },
   /*
   {
     id: 'XUC',
@@ -52,12 +58,12 @@ const currencies = [
 const pairs = [
   { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-  // { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
+  { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
+  { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
   // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
   // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
   // { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   // { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'XUC', quoteCurrency: 'USDT' },
   // { baseCurrency: 'XUC', quoteCurrency: 'DAI' },

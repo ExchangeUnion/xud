@@ -1,9 +1,19 @@
-import { from, of, empty, Observable, combineLatest, throwError } from 'rxjs';
-import { mergeMap, concat, map, mapTo, catchError, delay, repeat, retryWhen, take, concatAll } from 'rxjs/operators';
-import { XudClient } from '../proto/xudrpc_grpc_pb';
 import grpc from 'grpc';
 import http from 'http';
+import { defer, empty, from, Observable, of, throwError } from 'rxjs';
+import {
+  catchError,
+  concat,
+  concatAll,
+  delay,
+  mapTo,
+  mergeMap,
+  retryWhen,
+  share,
+  take,
+} from 'rxjs/operators';
 import { loadXudClient } from '../cli/command';
+import { XudClient } from '../proto/xudrpc_grpc_pb';
 import {
   GetBalanceRequest,
   GetBalanceResponse,
@@ -11,7 +21,7 @@ import {
   GetInfoResponse,
   OpenChannelRequest,
   OpenChannelResponse,
- } from '../proto/xudrpc_pb';
+} from '../proto/xudrpc_pb';
 
 type Balances = {
   channelBalance: number;
@@ -19,7 +29,7 @@ type Balances = {
 };
 
 type ChannelsConfig = {
-  channels: ChannelConfig[],
+  channels: ChannelConfig[];
   retryInterval: number;
 };
 
@@ -39,7 +49,10 @@ const processResponse = (resolve: Function, reject: Function) => {
   };
 };
 
-const getBalance = async (client: XudClient, currency?: string): Promise<GetBalanceResponse> => {
+const getBalance = async (
+  client: XudClient,
+  currency?: string,
+): Promise<GetBalanceResponse> => {
   const request = new GetBalanceRequest();
   if (currency) {
     request.setCurrency(currency.toUpperCase());
@@ -50,7 +63,11 @@ const getBalance = async (client: XudClient, currency?: string): Promise<GetBala
   return balances as GetBalanceResponse;
 };
 
-const openConnextChannel = async (client: XudClient, currency: string, amount: number): Promise<OpenChannelResponse> => {
+const openConnextChannel = async (
+  client: XudClient,
+  currency: string,
+  amount: number,
+): Promise<OpenChannelResponse> => {
   const request = new OpenChannelRequest();
   request.setCurrency(currency.toUpperCase());
   request.setAmount(amount);
@@ -60,19 +77,20 @@ const openConnextChannel = async (client: XudClient, currency: string, amount: n
   return openChannelResponse as OpenChannelResponse;
 };
 
-const checkBalanceObservable = (client: XudClient, currency: string, minimumBalance: number): Observable<Balances> => {
-  return from(
-    getBalance(client, currency),
-  ).pipe(
-    map((balanceResponse: GetBalanceResponse) => {
+const checkBalanceObservable = (
+  client: XudClient,
+  currency: string,
+  minimumBalance: number,
+  getBalance$: Observable<GetBalanceResponse>,
+): Observable<Balances> => {
+  return getBalance$.pipe(
+    mergeMap((balanceResponse: GetBalanceResponse) => {
       const balancesMap = balanceResponse.getBalancesMap();
-      const balances = balancesMap.get(currency);
-      return {
-        walletBalance: balances.getWalletBalance(),
-        channelBalance: balances.getChannelBalance(),
+      const currencyBalance = balancesMap.get(currency);
+      const balances = {
+        walletBalance: currencyBalance.getWalletBalance(),
+        channelBalance: currencyBalance.getChannelBalance(),
       };
-    }),
-    mergeMap((balances) => {
       if (balances.walletBalance < minimumBalance) {
         // the balance is under our specified threshold
         // we'll hit the faucet with our connext address
@@ -82,7 +100,14 @@ const checkBalanceObservable = (client: XudClient, currency: string, minimumBala
             return from(faucetRequest(connextAddress)).pipe(
               // we wait 31 seconds (~2 blocks) before checking the balance again
               delay(31000),
-              mergeMap(() => checkBalanceObservable(client, currency, minimumBalance)),
+              mergeMap(() =>
+                checkBalanceObservable(
+                  client,
+                  currency,
+                  minimumBalance,
+                  getBalance$,
+                ),
+              ),
             );
           }),
         );
@@ -157,59 +182,76 @@ const faucetRequest = (connextAddress: string) => {
   });
 };
 
-const createSimnetChannel = (
-  { currency, minChannelAmount, channelAmount, retryInterval }:
-  { currency: string, minChannelAmount: number, channelAmount: number, retryInterval: number },
-) => {
-  const client$ = from(loadXudClient({}));
-  const balances$ = client$.pipe(
-    // once we have the client we'll attempt to check the balances
-    mergeMap(client => checkBalanceObservable(client, currency, channelAmount)),
+const createSimnetChannel = ({
+  client,
+  currency,
+  minChannelAmount,
+  channelAmount,
+  retryInterval,
+  getBalance$,
+}: {
+  client: XudClient;
+  currency: string;
+  minChannelAmount: number;
+  channelAmount: number;
+  retryInterval: number;
+  getBalance$: Observable<GetBalanceResponse>;
+}) => {
+  const balances$ = checkBalanceObservable(
+    client,
+    currency,
+    channelAmount,
+    getBalance$,
   );
-  const simnetChannel$ = combineLatest(balances$, client$)
-    .pipe(
-      mergeMap(([balances, client]) => {
-        if (balances.channelBalance >= minChannelAmount) {
-          // in case we already have enough channelBalance we won't attempt
-          // to open a channel
-          return empty();
-        } else {
-          return from(
-            openConnextChannel(client, currency, channelAmount))
-              .pipe(mapTo(currency),
-          );
-        }
-      }),
-      // when error happens
-      retryWhen(errors =>
-        errors.pipe(
-          // we wait for retryInterval and attempt again
-          delay(retryInterval),
-          // for a maximum of 10 times
-          take(10),
-          // until we give up completely
-          concat(throwError('unrecoverable error happened - giving up')),
-        ),
+  const simnetChannel$ = balances$.pipe(
+    mergeMap((balances) => {
+      if (balances.channelBalance >= minChannelAmount) {
+        // in case we already have enough channelBalance we won't attempt
+        // to open a channel
+        return empty();
+      } else {
+        return from(openConnextChannel(client, currency, channelAmount)).pipe(
+          mapTo(currency),
+        );
+      }
+    }),
+    // when error happens
+    retryWhen(errors =>
+      errors.pipe(
+        // we wait for retryInterval and attempt again
+        delay(retryInterval),
+        // for a maximum of 10 times
+        take(10),
+        // until we give up completely
+        concat(throwError('unrecoverable error happened - giving up')),
       ),
-      // complete the observable when the flow is successful
-      take(1),
-    );
+    ),
+    // complete the observable when the flow is successful
+    take(1),
+  );
   return simnetChannel$;
 };
 
 const createSimnetChannels = (config: ChannelsConfig): Observable<any> => {
-  return from(
-    // we map our channels config into observables
-    config.channels.map(
-      channelConfig => createSimnetChannel({ ...channelConfig, retryInterval: config.retryInterval }),
-    ),
-  ).pipe(
-    // execute them in order
-    concatAll(),
-    // when the flow is completed we wait until the retryInterval
-    delay(config.retryInterval),
-    // and repeat the process
-    repeat(),
+  const client$ = defer(() => from(loadXudClient({}))).pipe(share());
+  return client$.pipe(
+    mergeMap((client) => {
+      const getBalance$ = defer(() => from(getBalance(client))).pipe(share());
+      return from(
+        // we map our channels config into observables
+        config.channels.map(channelConfig =>
+          createSimnetChannel({
+            ...channelConfig,
+            client,
+            getBalance$,
+            retryInterval: config.retryInterval,
+          }),
+        ),
+      ).pipe(
+        // execute them in order
+        concatAll(),
+      );
+    }),
   );
 };
 
