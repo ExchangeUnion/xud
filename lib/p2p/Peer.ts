@@ -340,7 +340,6 @@ class Peer extends EventEmitter {
     this.status = PeerStatus.Closed;
 
     if (this.socket) {
-      this.socket.removeAllListeners();
       if (!this.socket.destroyed) {
         if (reason !== undefined) {
           this.logger.debug(`Peer ${this.label}: closing socket. reason: ${DisconnectionReason[reason]}`);
@@ -349,6 +348,7 @@ class Peer extends EventEmitter {
         }
 
         this.socket.destroy();
+        this.socket.removeAllListeners();
       }
       delete this.socket;
     }
@@ -555,7 +555,7 @@ class Peer extends EventEmitter {
         } else {
           this.socket = net.connect(this.address.port, this.address.host);
           this.socket.once('connect', onConnect);
-          this.socket.once('error', onError);
+          this.socket.on('error', onError);
         }
       };
 
