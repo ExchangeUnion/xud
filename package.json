@@ -58,7 +58,7 @@
     "test:sim:clean:connext": "(cd test/simulation && ./docker-clean.sh connext)",
     "test:sim:clean:custom-xud": "(cd test/simulation && ./docker-clean.sh custom-xud)",
     "test:sim:logs": "cd test/simulation && ./logs.sh",
-    "test:jest": "jest --rootDir test/jest",
+    "test:jest": "jest --unhandled-rejections=strict --rootDir test/jest",
     "test:seedutil": "jest --rootDir seedutil",
     "test:jest:watch": "jest --watch",
     "typedoc": "typedoc --out typedoc --module commonjs --target es6 lib --readme none",
