@@ -183,7 +183,6 @@
     "yargs": "^14.2.0"
   },
   "devDependencies": {
-    "@types/bluebird": "^3.5.28",
     "@types/chai": "^4.2.12",
     "@types/chai-as-promised": "^7.1.3",
     "@types/distributions-poisson-quantile": "0.0.0",
