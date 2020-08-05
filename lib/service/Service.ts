@@ -168,7 +168,7 @@ class Service {
     return balances;
   }
 
-  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for a given currency. */
+  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for one or all currencies. */
   public tradingLimits = async (args: { currency: string }) => {
     const { currency } = args;
     const tradingLimitsMap = new Map<string, TradingLimits>();
@@ -189,7 +189,7 @@ class Service {
         if (swapClient.isConnected()) {
           promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
-          }));
+          }).catch(this.logger.error));
         }
       });
       await Promise.all(promises);
