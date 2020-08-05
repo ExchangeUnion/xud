@@ -39,8 +39,8 @@ export const placeOrderBuilder = (argv: Argv, side: OrderSide) => {
     describe: 'immediate-or-cancel',
   })
   .example(`$0 ${command} 5 LTC/BTC .01 1337`, `place a limit order to ${command} 5 LTC @ 0.01 BTC with local order id 1337`)
-  .example(`$0 ${command} 3 LTC/BTC mkt`, `place a market order to ${command} 3 LTC for BTC`)
-  .example(`$0 ${command} 10 ZRX/GNT market`, `place a market order to ${command} 10 ZRX for GNT`);
+  .example(`$0 ${command} 3 BTC/USDT mkt`, `place a market order to ${command} 3 BTC for USDT`)
+  .example(`$0 ${command} 1 BTC/USDT market`, `place a market order to ${command} 1 BTC for USDT`);
 };
 
 export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) => {
