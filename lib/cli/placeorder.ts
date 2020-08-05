@@ -49,7 +49,8 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
   const numericPrice = Number(argv.price);
   const priceStr = argv.price.toLowerCase();
 
-  request.setQuantity(coinsToSats(argv.quantity));
+  const quantity = coinsToSats(argv.quantity);
+  request.setQuantity(quantity);
   request.setSide(side);
   request.setPairId(argv.pair_id.toUpperCase());
   request.setImmediateOrCancel(argv.ioc);
@@ -80,7 +81,7 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
   } else {
     const subscription = client.placeOrder(request);
     let noMatches = true;
-    let lastEventIsSwapFailure = false;
+    let remainingQuantity = quantity;
     subscription.on('data', (response: PlaceOrderEvent) => {
       if (argv.json) {
         console.log(JSON.stringify(response.toObject(), undefined, 2));
@@ -92,19 +93,19 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
         if (orderMatch) {
           noMatches = false;
           if (orderMatch.getIsOwnOrder()) {
+            remainingQuantity -= orderMatch.getQuantity();
             formatInternalMatch(orderMatch.toObject());
           } else {
             formatPeerMatch(orderMatch.toObject());
           }
         } else if (swapSuccess) {
           noMatches = false;
-          lastEventIsSwapFailure = false;
+          remainingQuantity -= swapSuccess.getQuantity();
           formatSwapSuccess(swapSuccess.toObject());
         } else if (remainingOrder) {
-          lastEventIsSwapFailure = false;
           formatRemainingOrder(remainingOrder.toObject());
+          remainingQuantity = 0;
         } else if (swapFailure) {
-          lastEventIsSwapFailure = true;
           formatSwapFailure(swapFailure.toObject());
         }
       }
@@ -112,10 +113,8 @@ export const placeOrderHandler = async (argv: Arguments<any>, side: OrderSide) =
     subscription.on('end', () => {
       if (noMatches) {
         console.log('no matches found');
-      } else if (lastEventIsSwapFailure) {
-        // if we ended on a swap failure, it means we had a market order that
-        // did not get fully match, we should let user know
-        console.log('no more matches found');
+      } else if (remainingQuantity > 0) {
+        console.log(`no more matches found, ${satsToCoinsStr(remainingQuantity)} qty will be discarded`);
       }
     });
     subscription.on('error', (err) => {
