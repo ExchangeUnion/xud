@@ -30,7 +30,7 @@ interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
   on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
-  on(event: 'peer.active', listener: (peerPubKey?: string) => void): this;
+  on(event: 'peer.active', listener: (peerPubKey: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
   /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
   on(event: 'peer.verifyPairs', listener: (peer: Peer) => void): this;
@@ -44,7 +44,7 @@ interface Pool {
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
   emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
-  emit(event: 'peer.active', peerPubKey?: string): boolean;
+  emit(event: 'peer.active', peerPubKey: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
   /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
   emit(event: 'peer.verifyPairs', peer: Peer): boolean;
@@ -575,11 +575,12 @@ class Pool extends EventEmitter {
 
     this.peers.set(peerPubKey, peer);
     peer.active = true;
-    this.emit('peer.active', peerPubKey);
     this.logger.verbose(`opened connection to ${peer.label} at ${addressUtils.toString(peer.address)}`);
 
     // begin the process to handle a just opened peer, but return from this method immediately
-    this.handleOpenedPeer(peer).catch(this.logger.error);
+    this.handleOpenedPeer(peer).then(() => {
+      this.emit('peer.active', peerPubKey);
+    }).catch(this.logger.error);
   }
 
   private handleOpenedPeer = async (peer: Peer) => {
