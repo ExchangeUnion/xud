@@ -100,6 +100,7 @@ export type ExpectedIncomingTransfer = {
   units: number;
   expiry: number;
   tokenAddress: string;
+  paymentId?: string;
 };
 
 export type ConnextPreimageRequest = {
@@ -160,4 +161,5 @@ export type TransferReceivedEvent = {
   rHash: string;
   timelock: number;
   units: number;
+  paymentId: string;
 };
