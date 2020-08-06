@@ -50,11 +50,11 @@
         ]
       }
     ],
-    "no-floating-promises": [true, "Bluebird"],
+    "no-floating-promises": [true],
     "no-null-keyword": true,
     "jsdoc-format": true,
     "no-unnecessary-type-assertion": true,
-    "await-promise": [true, "Bluebird"],
+    "await-promise": [true],
     "no-inferrable-types": true,
     "space-before-function-paren": [true,
       {
