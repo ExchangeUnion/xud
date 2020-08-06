@@ -1429,8 +1429,13 @@ class Swaps extends EventEmitter {
         this.logger.warn(`received swap failed packet for unknown deal with payment hash ${rHash}`);
       }
       return;
-    } else if (deal.phase === SwapPhase.PreimageResolved || deal.phase === SwapPhase.PaymentReceived) {
+    }
+
+    if (deal.phase === SwapPhase.PreimageResolved
+      || deal.phase === SwapPhase.PaymentReceived
+      || (deal.role === SwapRole.Maker && deal.phase === SwapPhase.SendingPayment)) {
       // we don't want to fail a deal if any one of its payments is already completed
+      // or if we are the maker sending a payment that may be claimed by taker
       this.logger.warn(`received swap failed packet for deal in phase ${SwapPhase[deal.phase]} with payment hash ${rHash}`);
       return;
     }
