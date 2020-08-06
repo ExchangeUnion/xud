@@ -30,8 +30,8 @@ const currencies = [
   {
     id: 'USDT',
     swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0x813D0464E6372912353B0B159E1735BDaA0654f5',
+    decimalPlaces: 6,
+    tokenAddress: '0xCaded8c4143cC3cf74da8EB8A2d928E42D447Df3',
   },
   /*
   {
