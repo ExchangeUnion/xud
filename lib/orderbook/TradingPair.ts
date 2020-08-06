@@ -353,6 +353,9 @@ class TradingPair {
       if (matchingQuantity <= 0) {
         // there's no match with the best available maker order, so end the matching routine
         break;
+      } else if (makerOrder.quantity * makerOrder.price < 1) {
+        // there's a match but it doesn't meet the 1 satoshi minimum on both sides of the trade
+        break;
       } else {
         /** Whether the maker order is fully matched and should be removed from the queue. */
         const makerFullyMatched = makerOrder.quantity === matchingQuantity;

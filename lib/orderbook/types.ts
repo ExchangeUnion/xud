@@ -38,7 +38,7 @@ export enum PlaceOrderEventType {
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
-  /** The number of currently satoshis (or equivalent) for the order. */
+  /** The quantity denominated in satoshis (or equivalent) for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;

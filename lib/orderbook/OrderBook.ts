@@ -124,7 +124,7 @@ class OrderBook extends EventEmitter {
 
   private static createOutgoingOrder = (order: OwnOrder): OutgoingOrder => {
     const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
-    return outgoingOrder ;
+    return outgoingOrder;
   }
 
   private checkThresholdCompliance = (order: OwnOrder | IncomingOrder) => {
@@ -330,6 +330,12 @@ class OrderBook extends EventEmitter {
   public placeLimitOrder = async (order: OwnLimitOrder, immediateOrCancel = false,
     onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order);
+
+    if (order.quantity * order.price < 1) {
+      const quoteCurrency = order.pairId.split('/')[1];
+      throw errors.MIN_QUANTITY_VIOLATED(1, quoteCurrency);
+    }
+
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
       onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: stampedOrder });
@@ -393,7 +399,7 @@ class OrderBook extends EventEmitter {
     // Check if order complies to thresholds
     if (this.thresholds.minQuantity > 0) {
       if (!this.checkThresholdCompliance(order)) {
-        throw errors.MIN_QUANTITY_VIOLATED(order.id);
+        throw errors.MIN_QUANTITY_VIOLATED(this.thresholds.minQuantity, '');
       }
     }
 
@@ -674,10 +680,15 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: IncomingOrder): boolean => {
     if (this.thresholds.minQuantity > 0) {
       if (!this.checkThresholdCompliance(order)) {
-        this.removePeerOrder(order.id, order.pairId, order.peerPubKey, order.quantity);
         this.logger.debug('incoming peer order does not comply with configured threshold');
         return false;
       }
+    }
+
+    // TODO: penalize peers for sending ordes too small to swap?
+    if (order.quantity * order.price < 1) {
+      this.logger.warn('incoming peer order is too small to swap');
+      return false;
     }
 
     const tp = this.tradingPairs.get(order.pairId);
