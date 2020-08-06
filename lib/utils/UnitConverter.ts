@@ -4,7 +4,7 @@ class UnitConverter {
     BTC: 1,
     LTC: 1,
     ETH: 10 ** 10,
-    USDT: 10 ** 10,
+    USDT: 10 ** -2,
     WETH: 10 ** 10,
     DAI: 10 ** 10,
     XUC: 10 ** 10,
