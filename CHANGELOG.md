@@ -1,3 +1,37 @@
+# [1.0.0-beta.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2020-08-07)
+
+
+### Bug Fixes
+
+* **swaps:** no remote fail when sending payment ([dc7e4d2](https://github.com/ExchangeUnion/xud/commit/dc7e4d21652e6b7b86b158ac3ef2282ea882148d)), closes [#1749](https://github.com/ExchangeUnion/xud/issues/1749)
+* **utils:** USDT units per currency ([ab7f95b](https://github.com/ExchangeUnion/xud/commit/ab7f95bb714b99df673cbec73b06de655a488039))
+* change buy/sell command examples to btc/usdt ([d233ebb](https://github.com/ExchangeUnion/xud/commit/d233ebbc49e06dbb0273a1e609ee9b9b4395926c))
+* change buy/sell command examples to btc/usdt ([#1786](https://github.com/ExchangeUnion/xud/issues/1786)) ([116ffc0](https://github.com/ExchangeUnion/xud/commit/116ffc0fe8e479ab0afdacc76808ef16b9db8f4f))
+* **lnd:** totalOutboundAmount ([caf3782](https://github.com/ExchangeUnion/xud/commit/caf37823c2a8363dc7c493f241caa93f6b95c49e))
+* **p2p:** handle multiple socket errors ([716f5d3](https://github.com/ExchangeUnion/xud/commit/716f5d3883244a6ef90637ecd2a2a1ee31d3151d)), closes [#1773](https://github.com/ExchangeUnion/xud/issues/1773)
+* **p2p:** handle socket write callback errors ([79134fe](https://github.com/ExchangeUnion/xud/commit/79134fe47f4f862697843a51479404766af44f01))
+* **p2p:** remove socket listeners after destroy ([8ec4d45](https://github.com/ExchangeUnion/xud/commit/8ec4d45d0b7d0ea049b52f762a0abd5b48525392))
+* **rpc:** don't block TradingLimits on failure ([#1784](https://github.com/ExchangeUnion/xud/issues/1784)) ([43ae535](https://github.com/ExchangeUnion/xud/commit/43ae535531ced90a3dba6741de9e33a315625a40)), closes [#1766](https://github.com/ExchangeUnion/xud/issues/1766)
+* **swaps:** don't log non-existent route ([#1772](https://github.com/ExchangeUnion/xud/issues/1772)) ([2ff63b9](https://github.com/ExchangeUnion/xud/commit/2ff63b9f4a3f7d69494c4ade5fdc1ac7ee2cd239))
+
+
+### Features
+
+* **cli:** print no more matches on partial mkt ([2f407d0](https://github.com/ExchangeUnion/xud/commit/2f407d00aac5f1974fee92b76be88aa21daa52d0)), closes [#1596](https://github.com/ExchangeUnion/xud/issues/1596)
+* **config:** rename debug.testing to strict ([2a5f74c](https://github.com/ExchangeUnion/xud/commit/2a5f74c6464c159d41c4c92fe877ec5626096f61)), closes [#1757](https://github.com/ExchangeUnion/xud/issues/1757)
+* **connext:** add USDT pairs to mainnet ([bf17eab](https://github.com/ExchangeUnion/xud/commit/bf17eab191d880034b53d838dad5d7a850d57ffd))
+* **connext:** removeInvoice ([ee56800](https://github.com/ExchangeUnion/xud/commit/ee568003c389ed97ad7287fc3d28663ccfbc9c00)), closes [#1730](https://github.com/ExchangeUnion/xud/issues/1730)
+* **connext:** request collateral after deposit ([#1783](https://github.com/ExchangeUnion/xud/issues/1783)) ([728b391](https://github.com/ExchangeUnion/xud/commit/728b391709ab561c48b36960bb28457c7e35897f)), closes [#1756](https://github.com/ExchangeUnion/xud/issues/1756)
+* **lnd:** handle delayed macaroon creation ([c15f3db](https://github.com/ExchangeUnion/xud/commit/c15f3db2208af1fde3df95903ed0f08c4d152899))
+* **lnd:** no inactive balance in trading limits ([#1764](https://github.com/ExchangeUnion/xud/issues/1764)) ([235dab3](https://github.com/ExchangeUnion/xud/commit/235dab36803b45ced018fe5aece0d9f772b9b046)), closes [#1636](https://github.com/ExchangeUnion/xud/issues/1636)
+* **orderbook:** prevent sub-satoshi order & match ([#1785](https://github.com/ExchangeUnion/xud/issues/1785)) ([8a479db](https://github.com/ExchangeUnion/xud/commit/8a479dbc85262085bcfcaafb0d6a9d938639d979)), closes [#1594](https://github.com/ExchangeUnion/xud/issues/1594)
+* **p2p:** log whether socket is inbound/outbound ([#1775](https://github.com/ExchangeUnion/xud/issues/1775)) ([87687a5](https://github.com/ExchangeUnion/xud/commit/87687a57d2c410b1bc27af7e061d0fbfb497e7e9))
+* **p2p:** non-strict severe reputation events ([6f39fff](https://github.com/ExchangeUnion/xud/commit/6f39fff827e7cd02158c1af5c4c5d7d216d60233))
+* **simnet:** add USDT ([69e556b](https://github.com/ExchangeUnion/xud/commit/69e556be1bf56e7eb6d7a2b8a72b2e4497cb6999))
+* **simnet:** update USDT contract ([595b2df](https://github.com/ExchangeUnion/xud/commit/595b2df6ae67bdf376e01aa6033edbc54224cd4a))
+
+
+
 # [1.0.0-beta.5](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.3...v1.0.0-beta.5) (2020-07-06)
 
 
