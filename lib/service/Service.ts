@@ -621,7 +621,7 @@ class Service {
     argChecks.HAS_PAIR_ID(args);
 
     if (replaceOrderId) {
-      this.orderBook.removeOwnOrderByLocalId(orderId, false);
+      this.orderBook.removeOwnOrderByLocalId(replaceOrderId, false);
     }
 
     const order: OwnMarketOrder | OwnLimitOrder = {
