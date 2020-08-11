@@ -675,8 +675,19 @@ class Pool extends EventEmitter {
   }
 
   // A wrapper for [[NodeList.addReputationEvent]].
-  public addReputationEvent = (nodePubKey: string, event: ReputationEvent) => {
-    return this.nodes.addReputationEvent(nodePubKey, event);
+  public addReputationEvent = async (nodePubKey: string, event: ReputationEvent) => {
+    // when in strict mode, we add all reputation events
+    // otherwise, we only add manual or severe reputation events to prevent unintentional bans
+    if (this.strict
+      || event === ReputationEvent.ManualBan
+      || event === ReputationEvent.ManualUnban
+      || event === ReputationEvent.SwapAbuse
+      || event === ReputationEvent.SwapMisbehavior
+      || event === ReputationEvent.WireProtocolErr
+      || event === ReputationEvent.InvalidAuth) {
+      this.logger.debug(`Peer (${nodePubKey}): reputation event: ${ReputationEvent[event]}`);
+      await this.nodes.addReputationEvent(nodePubKey, event);
+    }
   }
 
   public sendToPeer = async (nodePubKey: string, packet: Packet) => {
@@ -931,19 +942,8 @@ class Pool extends EventEmitter {
     peer.once('close', () => this.handlePeerClose(peer));
 
     peer.on('reputation', async (event) => {
-      this.logger.debug(`Peer (${peer.label}): reputation event: ${ReputationEvent[event]}`);
       if (peer.nodePubKey) {
-        // when in strict mode, we add all reputation events
-        // otherwise, we only add manual or severe reputation events to prevent unintentional bans
-        if (this.strict
-          || event === ReputationEvent.ManualBan
-          || event === ReputationEvent.ManualUnban
-          || event === ReputationEvent.SwapAbuse
-          || event === ReputationEvent.SwapMisbehavior
-          || event === ReputationEvent.WireProtocolErr
-          || event === ReputationEvent.InvalidAuth) {
-          await this.addReputationEvent(peer.nodePubKey, event);
-        }
+        await this.addReputationEvent(peer.nodePubKey, event);
       }
     });
   }
