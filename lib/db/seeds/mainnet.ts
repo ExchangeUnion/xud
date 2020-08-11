@@ -9,16 +9,16 @@ const nodes = [
     ],
   },
   {
-    nodePubKey: '02d167d1fe523d4ea777e06cf34c7d19a8a278165f68b4033224f05a8c678e982c',
+    nodePubKey: '036553224025f2a4ad562686718895ae0ba99d8b2fa26b8cb0f81abd8e6260d9ff',
     addresses: [
       { host: 'xud.kilrau.com', port: 8885 },
-      { host: 'fsq22euwtdh6dshiq4ewq2k7zy6iyzykacqlad54z4ixunftkjqc3vad.onion', port: 8885 },
+      { host: '256d4llrbzvnya237nvyptdkfmmj7cros4mgfmioxlkpi6xu6gzzisyd.onion', port: 8885 },
     ],
   },
   {
-    nodePubKey: '030084542e5dfda849095e12fc56040b9d01cd4120f41457d49abac6273e52e9f1',
+    nodePubKey: '03a4196edd6475d24088f806b2a3425bb63f65ee4125363eaa1d3db6764459e27a',
     addresses: [
-      { host: '4z72tnfp453b2jahwjw2t7v24q6obv2bb3qc4czpgxvyjpojbrx4qbid.onion', port: 8885 },
+      { host: 'h3jxbox7cuje73rktuejyabkcefoimp7ylfn3qnzpvoo7acxoz3p3gad.onion', port: 8885 },
     ],
   },
 ] as db.NodeAttributes[];
