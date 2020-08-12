@@ -21,6 +21,7 @@ describe('API Service', () => {
     quantity: 1,
     side: OrderSide.Buy,
     immediateOrCancel: false,
+    replaceOrderId: '',
   };
 
   before(async () => {

@@ -13,6 +13,7 @@ message Order {
     double price = 3;
     uint64 quantity = 4;
     bool is_buy = 5;
+    string replace_order_id = 6;
 }
 
 message Node {

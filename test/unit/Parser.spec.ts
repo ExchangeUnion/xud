@@ -272,7 +272,8 @@ describe('Parser', () => {
       isBuy: false,
     };
     testValidPacket(new packets.OrderPacket(orderPacketBody));
-    testValidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, isBuy: true })));
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, isBuy: true }));
+    testValidPacket(new packets.OrderPacket({ ...orderPacketBody, replaceOrderId: uuid() }));
     testInvalidPacket(new packets.OrderPacket(orderPacketBody, uuid()));
     testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, id: undefined })));
     testInvalidPacket(new packets.OrderPacket(removeUndefinedProps({ ...orderPacketBody, pairId: undefined })));
