@@ -1220,7 +1220,7 @@ class Swaps extends EventEmitter {
       case SwapFailureReason.SendPaymentFailure:
       case SwapFailureReason.NoRouteFound:
         // something is wrong with swaps for this currency with this peer
-        if (failedCurrency && !this.strict) { // only deactivate currencies due to failed swaps in strict mode
+        if (failedCurrency && this.strict) { // only deactivate currencies due to failed swaps in strict mode
           try {
             this.pool.getPeer(deal.peerPubKey).deactivateCurrency(failedCurrency);
           } catch (err) {
