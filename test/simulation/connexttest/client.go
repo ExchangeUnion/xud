@@ -3,6 +3,7 @@ package connexttest
 import (
 	"bytes"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/shared"
 	"io"
 	"os"
 	"os/exec"
@@ -11,8 +12,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/phayes/freeport"
 )
 
 var numActiveNodes int32
@@ -63,7 +62,7 @@ func newClient(name, path, ethProviderURL, nodeURL string) (*HarnessClient, erro
 		return nil, err
 	}
 
-	port, err := freeport.GetFreePort()
+	port, err := shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}

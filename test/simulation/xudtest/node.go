@@ -3,6 +3,7 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/shared"
 	"net"
 	"os"
 	"os/exec"
@@ -19,7 +20,6 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/lntest"
 	"github.com/ExchangeUnion/xud-simulation/xudrpc"
 	"github.com/go-errors/errors"
-	"github.com/phayes/freeport"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -165,21 +165,21 @@ func newNode(name string, xudPath string, noBalanceChecks bool) (*HarnessNode, e
 	cfg.LogPath = fmt.Sprintf("./temp/logs/xud-%s-%d.log", name, epoch)
 
 	cfg.TLSCertPath = filepath.Join(cfg.DataDir, "tls.cert")
-	cfg.P2PPort, err = freeport.GetFreePort()
+	cfg.P2PPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.RPCPort, err = freeport.GetFreePort()
+	cfg.RPCPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
-	cfg.HTTPPort, err = freeport.GetFreePort()
+	cfg.HTTPPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.RaidenHost = "127.0.0.1"
-	cfg.RaidenPort, err = freeport.GetFreePort()
+	cfg.RaidenPort, err = shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}
