@@ -49,9 +49,12 @@ class P2PRepository {
   public addNodes = async (nodes: NodeFactory[]) => {
     return this.models.Node.bulkCreate(<NodeAttributes[]>nodes);
   }
-  public deleteNode = async (nodePubKey: string) => {
-    return;
-  }
+  /*public deleteNode = async (nodePubKey: string) => {
+    let node = await this.getNode(nodePubKey);
+    if (node) { // TODO actually delete the node
+      return this.models.Node.deleteOne({"NodeInstance": node});
+    }
+  }*/
 }
 
 export default P2PRepository;

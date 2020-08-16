@@ -181,13 +181,17 @@ class NodeList extends EventEmitter {
    * Persists a node to the database and adds it to the address manager.
    */
   public createNode = async (nodeFactory: NodeFactory, sourceIP: string) => {
-    let node = await this.repository.getNode(nodeFactory.nodePubKey);
-    if (!node) {
-      node = await this.repository.addNodeIfNotExists(nodeFactory);
-    }
-    // duplicates are okay because nodes seen multiple times get greater representation in Address Manager
-    this.addNode(node, sourceIP);
-    //}
+    // fetch node if already exists
+    let existingNode = await this.repository.getNode(nodeFactory.nodePubKey);
+    if (existingNode) {
+      // duplicates are okay because nodes seen multiple times get greater representation in Address Manager
+      this.addNode(existingNode, sourceIP);
+    } else {
+      let node = await this.repository.addNodeIfNotExists(nodeFactory);
+      if (node) {
+        this.addNode(node,sourceIP);
+      }
+    } 
   }
   /**
    * Delete node from NodeList, Address Manager, and DB
@@ -202,7 +206,7 @@ class NodeList extends EventEmitter {
     if (nodeId) {
       this.addrManager.Delete(nodeId);
     }
-    this.repository.deleteNode(pubKey);
+    // this.repository.deleteNode(pubKey); // TODO actually delete node
   }
 
 

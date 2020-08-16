@@ -489,7 +489,7 @@ class Pool extends EventEmitter {
     } finally {
       this.pendingOutboundPeers.delete(nodePubKey);
     }
-    let nodeInstance = this.nodes.getFromDB(nodePubKey);
+    let nodeInstance = await this.nodes.getFromDB(nodePubKey);
     assert(nodeInstance);
     if (nodeInstance) {
       this.nodes.outbound.set(nodePubKey, nodeInstance);
