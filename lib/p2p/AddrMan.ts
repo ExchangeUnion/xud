@@ -327,6 +327,8 @@ class AddrMan {
     let nUBucket = -1;
     for (let n = 0; n < AddrMan.NEW_BUCKET_COUNT; n++) {
       let nB = (n + nRnd) % AddrMan.NEW_BUCKET_COUNT;
+      console.log(nB);
+      console.log(this.vvNew);
       let nBpos = entry.GetBucketPosition(this.nKey, true, nB);
       if (this.vvNew[nB][nBpos] == nId) {
         nUBucket = nB;

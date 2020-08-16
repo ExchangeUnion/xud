@@ -118,7 +118,7 @@ class LndClient extends SwapClient {
     const { certpath, macaroonpath, nomacaroons, host, port } = this.config;
 
     let lndCert: Buffer | undefined;
-    try {
+    /*try {
       lndCert = await fs.readFile(certpath);
     } catch (err) {
       if (err.code === 'ENOENT') {
@@ -148,7 +148,7 @@ class LndClient extends SwapClient {
           });
         });
       }
-    }
+    }*/
     if (lndCert) {
       this.logger.debug(`loaded tls cert from ${certpath}`);
       this.credentials = grpc.credentials.createSsl(lndCert);
