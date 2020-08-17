@@ -46,6 +46,9 @@ export class Order extends jspb.Message {
     getIsBuy(): boolean;
     setIsBuy(value: boolean): void;
 
+    getReplaceOrderId(): string;
+    setReplaceOrderId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Order.AsObject;
@@ -64,6 +67,7 @@ export namespace Order {
         price: number,
         quantity: number,
         isBuy: boolean,
+        replaceOrderId: string,
     }
 }
 

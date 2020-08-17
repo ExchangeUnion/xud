@@ -611,25 +611,21 @@ class Service {
    */
   public placeOrder = async (
     args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
-      replaceOrderId?: string, immediateOrCancel: boolean },
+      replaceOrderId: string, immediateOrCancel: boolean },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.POSITIVE_QUANTITY(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-
-    if (replaceOrderId) {
-      this.orderBook.removeOwnOrderByLocalId(replaceOrderId, false);
-    }
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
       price,
       quantity,
       isBuy: side === OrderSide.Buy,
-      localId: orderId,
+      localId: orderId || replaceOrderId,
     };
 
     /** Modified callback that converts Order to ServiceOrder before passing to callback. */
@@ -643,8 +639,14 @@ class Service {
       });
     } : undefined;
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, serviceCallback) :
-      await this.orderBook.placeMarketOrder(order, serviceCallback);
+    const placeOrderRequest = {
+      order,
+      immediateOrCancel,
+      replaceOrderId,
+      onUpdate: serviceCallback,
+    };
+    return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
+      await this.orderBook.placeMarketOrder(placeOrderRequest);
   }
 
   /** Removes a currency. */

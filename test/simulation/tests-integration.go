@@ -24,6 +24,10 @@ var integrationTestCases = []*testCase{
 		test: testOrderMatchingAndSwapConnext,
 	},
 	{
+		name: "order replacement",
+		test: testOrderReplacement,
+	},
+	{
 		name: "internal match and invalidation",
 		test: testInternalMatchAndInvalidation,
 	},
@@ -249,6 +253,86 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	ht.act.placeOrderAndSwap(net.Bob, net.Alice, req)
 
 	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
+func testOrderReplacement(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	var originalQuantity uint64 = 1000000
+	originalPrice := 0.02
+	var newQuantity uint64 = 2000000
+	newPrice := 0.03
+	var replacedOrderID = "replaced_order_id"
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  replacedOrderID,
+		Price:    originalPrice,
+		Quantity: originalQuantity,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Subscribe to orders on Bob
+	bobOrderChan := subscribeOrders(ht.ctx, net.Bob)
+
+	// Replace the order on Alice
+	req = &xudrpc.PlaceOrderRequest{
+		ReplaceOrderId: replacedOrderID,
+		Price:          newPrice,
+		Quantity:       newQuantity,
+		PairId:         req.PairId,
+		Side:           req.Side,
+	}
+	res, err := net.Alice.Client.PlaceOrderSync(ht.ctx, req)
+	order := res.RemainingOrder
+	ht.assert.NoError(err)
+	ht.assert.Len(res.InternalMatches, 0)
+	ht.assert.Len(res.SwapSuccesses, 0)
+	ht.assert.Len(res.SwapFailures, 0)
+	ht.assert.NotNil(res.RemainingOrder)
+	ht.assert.True(order.IsOwnOrder)
+	ht.assert.Equal(replacedOrderID, order.LocalId)
+
+	// Retrieve and verify the removed order event on Bob.
+	e := <-bobOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
+	ht.assert.NotNil(orderRemoval)
+	ht.assert.Equal(originalQuantity, orderRemoval.Quantity)
+	ht.assert.Equal(req.PairId, orderRemoval.PairId)
+	ht.assert.False(orderRemoval.IsOwnOrder)
+
+	// Retrieve and verify the added order event on Bob.
+	e = <-bobOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	peerOrder := e.orderUpdate.GetOrder()
+	ht.assert.NotNil(peerOrder)
+
+	// Verify the peer order.
+	ht.assert.Equal(newPrice, peerOrder.Price)
+	ht.assert.Equal(req.PairId, peerOrder.PairId)
+	ht.assert.Equal(newQuantity, peerOrder.Quantity)
+	ht.assert.Equal(req.Side, peerOrder.Side)
+	ht.assert.False(peerOrder.IsOwnOrder)
+	ht.assert.Equal(net.Alice.PubKey(), peerOrder.NodeIdentifier.NodePubKey)
+
+	// Verify that only the replaced order is in the order books
+	srcNodeCount, destNodeCount, err := getOrdersCount(ht.ctx, net.Alice, net.Bob)
+	ht.assert.NoError(err)
+	ht.assert.Equal(1, int(srcNodeCount.Own))
+	ht.assert.Equal(0, int(srcNodeCount.Peer))
+	ht.assert.Equal(0, int(destNodeCount.Own))
+	ht.assert.Equal(1, int(destNodeCount.Peer))
+
+	// Cleanup.
+	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
 	ht.act.disconnect(net.Alice, net.Bob)
 }
 

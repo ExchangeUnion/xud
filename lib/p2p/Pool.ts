@@ -6,7 +6,7 @@ import { DisconnectionReason, ReputationEvent, SwapFailureReason, XuNetwork } fr
 import { Models } from '../db/DB';
 import Logger from '../Logger';
 import NodeKey from '../nodekey/NodeKey';
-import { IncomingOrder, OrderPortion, OutgoingOrder } from '../orderbook/types';
+import { IncomingOrder, OrderInvalidation, OrderPortion, OutgoingOrder } from '../orderbook/types';
 import addressUtils from '../utils/addressUtils';
 import { pubKeyToAlias } from '../utils/aliasUtils';
 import { getExternalIp } from '../utils/utils';
@@ -29,7 +29,7 @@ type NodeReputationInfo = {
 interface Pool {
   on(event: 'packet.order', listener: (order: IncomingOrder) => void): this;
   on(event: 'packet.getOrders', listener: (peer: Peer, reqId: string, pairIds: string[]) => void): this;
-  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderPortion, peer: string) => void): this;
+  on(event: 'packet.orderInvalidation', listener: (orderInvalidation: OrderInvalidation, peer: string) => void): this;
   on(event: 'peer.active', listener: (peerPubKey: string) => void): this;
   on(event: 'peer.close', listener: (peerPubKey?: string) => void): this;
   /** Adds a listener to be called when a peer's advertised but inactive pairs should be verified. */
@@ -43,7 +43,7 @@ interface Pool {
   on(event: 'packet.swapFailed', listener: (packet: packets.SwapFailedPacket) => void): this;
   emit(event: 'packet.order', order: IncomingOrder): boolean;
   emit(event: 'packet.getOrders', peer: Peer, reqId: string, pairIds: string[]): boolean;
-  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderPortion, peer: string): boolean;
+  emit(event: 'packet.orderInvalidation', orderInvalidation: OrderInvalidation, peer: string): boolean;
   emit(event: 'peer.active', peerPubKey: string): boolean;
   emit(event: 'peer.close', peerPubKey?: string): boolean;
   /** Notifies listeners that a peer's advertised but inactive pairs should be verified. */
@@ -773,19 +773,28 @@ class Pool extends EventEmitter {
       case PacketType.Order: {
         const receivedOrder: OutgoingOrder = (packet as packets.OrderPacket).body!;
         this.logger.trace(`received order from ${peer.label}: ${JSON.stringify(receivedOrder)}`);
-        const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
+        const { id, pairId } = receivedOrder;
 
-        if (peer.isPairActive(incomingOrder.pairId)) {
+        if (peer.isPairActive(pairId)) {
+          if (receivedOrder.replaceOrderId) {
+            const orderInvalidation: OrderInvalidation = {
+              pairId,
+              id: receivedOrder.replaceOrderId,
+            };
+            this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey!);
+          }
+
+          const incomingOrder: IncomingOrder = { ...receivedOrder, peerPubKey: peer.nodePubKey! };
           this.emit('packet.order', incomingOrder);
         } else {
-          this.logger.debug(`received order ${incomingOrder.id} for deactivated trading pair`);
+          this.logger.debug(`received order ${id} for deactivated trading pair`);
         }
         break;
       }
       case PacketType.OrderInvalidation: {
-        const orderPortion = (packet as packets.OrderInvalidationPacket).body!;
-        this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderPortion)}`);
-        this.emit('packet.orderInvalidation', orderPortion, peer.nodePubKey as string);
+        const orderInvalidation = (packet as packets.OrderInvalidationPacket).body!;
+        this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
+        this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey as string);
         break;
       }
       case PacketType.GetOrders: {

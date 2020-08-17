@@ -99,7 +99,9 @@ export type PeerOrder = LimitOrder & Stamp & Remote;
 export type Order = OwnOrder | PeerOrder;
 
 /** An outgoing local order which only includes fields that are relevant to peers. */
-export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>>;
+export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>> & {
+  replaceOrderId?: string;
+};
 
 /** An incoming peer order which only includes fields that are relevant to us. */
 export type IncomingOrder = OutgoingOrder & Remote;
@@ -108,6 +110,11 @@ export type IncomingOrder = OutgoingOrder & Remote;
 export type OrderPortion = OrderIdentifier & {
   quantity: number;
   localId?: string;
+};
+
+export type OrderInvalidation = OrderIdentifier & {
+  /** The quantity of the order being removed, or the entire order if quantity is undefined */
+  quantity?: number;
 };
 
 export type Currency = {

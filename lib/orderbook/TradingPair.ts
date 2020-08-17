@@ -308,20 +308,35 @@ class TradingPair {
     return maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
   }
 
-  public addOrderHold = (orderId: string, holdAmount: number) => {
+  public addOrderHold = (orderId: string, holdAmount?: number) => {
     const order = this.getOwnOrder(orderId);
-    assert(holdAmount > 0);
-    assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
-    order.hold += holdAmount;
-    this.logger.debug(`added hold of ${holdAmount} on order ${orderId}`);
+    if (holdAmount === undefined) {
+      if (order.hold > 0) {
+        // we can't put an entire order on hold if part of it is already on hold
+        throw errors.QUANTITY_ON_HOLD(order.localId, order.hold);
+      }
+      order.hold = order.quantity;
+      this.logger.debug(`placed entire order ${orderId} on hold`);
+    } else {
+      assert(holdAmount > 0);
+      assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
+      order.hold += holdAmount;
+      this.logger.debug(`added hold of ${holdAmount} on order ${orderId}`);
+    }
   }
 
-  public removeOrderHold = (orderId: string, holdAmount: number) => {
+  public removeOrderHold = (orderId: string, holdAmount?: number) => {
     const order = this.getOwnOrder(orderId);
-    assert(holdAmount > 0);
-    assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
-    order.hold -= holdAmount;
-    this.logger.debug(`removed hold of ${holdAmount} on order ${orderId}`);
+    if (holdAmount === undefined) {
+      assert(order.hold > 0);
+      order.hold = 0;
+      this.logger.debug(`removed entire hold on order ${orderId}`);
+    } else {
+      assert(holdAmount > 0);
+      assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
+      order.hold -= holdAmount;
+      this.logger.debug(`removed hold of ${holdAmount} on order ${orderId}`);
+    }
   }
 
   /**

@@ -76,6 +76,7 @@ jest.mock('../../lib/p2p/Pool', () => {
       on: jest.fn(),
       getNetwork: () => XuNetwork.MainNet,
       getTokenIdentifier: (currency: string) => tokenIdentifiers[currency] as string,
+      broadcastOrderInvalidation: jest.fn(),
     };
   });
 });
@@ -85,6 +86,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
     return {
       canRouteToPeer: jest.fn().mockReturnValue(true),
       isConnected: jest.fn().mockReturnValue(true),
+      get: jest.fn().mockReturnValue({ maximumOutboundCapacity: () => Number.MAX_SAFE_INTEGER }),
     };
   });
 });
@@ -227,7 +229,7 @@ describe('OrderBook', () => {
     swaps.swapClientManager.get = jest.fn().mockReturnValue({
       totalOutboundAmount: () => 1,
     });
-    await expect(orderbook.placeLimitOrder(order))
+    await expect(orderbook.placeLimitOrder({ order }))
       .rejects.toMatchSnapshot();
   });
 
@@ -240,10 +242,7 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.swapClientManager.get = jest.fn().mockReturnValue({
-      maximumOutboundCapacity: () => quantity,
-    });
-    await orderbook.placeLimitOrder(order);
+    await orderbook.placeLimitOrder({ order });
     expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
   });
 
@@ -256,10 +255,59 @@ describe('OrderBook', () => {
       price: 0.01,
       isBuy: false,
     };
-    swaps.swapClientManager.get = jest.fn().mockReturnValue({
-      maximumOutboundCapacity: () => quantity,
+    await orderbook.placeLimitOrder({
+      order,
+      immediateOrCancel: true,
     });
-    await orderbook.placeLimitOrder(order, true);
     expect(() => orderbook.getOwnOrderByLocalId(localId)).toThrow(`order with local id ${localId} does not exist`);
+  });
+
+  test('placeLimitOrder with replaceOrderId replaces an order ', async () => {
+    pool.broadcastOrderInvalidation = jest.fn();
+    pool.broadcastOrder = jest.fn();
+    const oldQuantity = 10000;
+    const oldPrice = 0.01;
+    const newQuantity = 20000;
+    const newPrice = 0.02;
+    const order: OwnLimitOrder = {
+      pairId,
+      localId,
+      quantity: oldQuantity,
+      price: oldPrice,
+      isBuy: false,
+    };
+
+    const oldOrder = await orderbook.placeLimitOrder({
+      order,
+    });
+    expect(orderbook.getOwnOrders(pairId).sellArray.length).toEqual(1);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(oldQuantity);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(oldPrice);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(localId);
+
+    const newOrder = await orderbook.placeLimitOrder({
+      order: {
+        ...order,
+        price: newPrice,
+        quantity: newQuantity,
+      },
+      replaceOrderId: localId,
+    });
+
+    expect(orderbook.getOwnOrders(pairId).sellArray.length).toEqual(1);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].quantity).toEqual(newQuantity);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].price).toEqual(newPrice);
+    expect(orderbook.getOwnOrders(pairId).sellArray[0].localId).toEqual(localId);
+
+    expect(pool.broadcastOrderInvalidation).toHaveBeenCalledTimes(0);
+    expect(pool.broadcastOrder).toHaveBeenCalledTimes(2);
+    expect(pool.broadcastOrder).toHaveBeenCalledWith({
+      id: newOrder.remainingOrder!.id,
+      isBuy: false,
+      pairId: 'LTC/BTC',
+      price: 0.02,
+      quantity: 20000,
+      replaceOrderId: oldOrder.remainingOrder!.id,
+    });
   });
 });
