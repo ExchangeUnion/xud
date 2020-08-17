@@ -24,13 +24,13 @@ class GrpcServer {
     this.server.addService(XudService, this.grpcService);
 
     this.server.use(async (ctx: any, next: any) => {
-      logger.debug(`received call ${ctx.service.path}`);
+      logger.trace(`received call ${ctx.service.path}`);
 
       await next();
 
       const status = ctx.status || ctx.call.status;
       if (!status) {
-        logger.debug(`unknown status for call ${ctx.service.path}`);
+        logger.trace(`unknown status for call ${ctx.service.path}`);
       } else if (status.code !== 0) {
         if (typeof status.details === 'object') {
           logger.error(`call ${ctx.service.path} errored with code ${status.details.code}: ${status.details.message}`);
@@ -58,9 +58,9 @@ class GrpcServer {
     try {
       [certificate, privateKey] = await Promise.all([fs.readFile(tlsCertPath), fs.readFile(tlsKeyPath)]);
     } catch (err) {
-      this.logger.debug('Could not load gRPC TLS certificate. Generating new one');
+      this.logger.info('Could not load gRPC TLS certificate. Generating new one');
       const { tlsCert, tlsKey } = await this.generateCertificate(tlsCertPath, tlsKeyPath);
-      this.logger.debug('gRPC TLS certificate created');
+      this.logger.info('gRPC TLS certificate created');
 
       certificate = Buffer.from(tlsCert);
       privateKey = Buffer.from(tlsKey);
