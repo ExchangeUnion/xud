@@ -81,7 +81,7 @@ class Service {
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
 
     let address = tokenAddress;
-    if (args.swapClient === SwapClientType.Raiden && address) {
+    if (args.swapClient === SwapClientType.Connext && address) {
       address = toEip55Address(address);
     }
 
