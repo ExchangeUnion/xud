@@ -32,7 +32,6 @@ const argChecks = {
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
-  POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
     if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
@@ -615,7 +614,6 @@ class Service {
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     argChecks.PRICE_NON_NEGATIVE(args);
-    argChecks.POSITIVE_QUANTITY(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
     const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;

@@ -211,7 +211,7 @@ class OrderBook extends EventEmitter {
     currencies.forEach(currency => this.currencyInstances.set(currency.id, currency));
     pairs.forEach((pair) => {
       this.pairInstances.set(pair.id, pair);
-      this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
+      this.addTradingPair(pair.id);
     });
 
     this.pool.updatePairs(this.pairIds);
@@ -286,10 +286,25 @@ class OrderBook extends EventEmitter {
 
     const pairInstance = await this.repository.addPair(pair);
     this.pairInstances.set(pairInstance.id, pairInstance);
-    this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
+    this.addTradingPair(pairInstance.id);
 
     this.pool.updatePairs(this.pairIds);
     return pairInstance;
+  }
+
+  private addTradingPair = (pairId: string) => {
+    const tp = new TradingPair(this.logger, pairId, this.nomatching);
+    this.tradingPairs.set(pairId, tp);
+    tp.on('peerOrder.dust', (order) => {
+      this.removePeerOrder(order.id, order.pairId);
+    });
+    tp.on('ownOrder.dust', (order) => {
+      this.removeOwnOrder({
+        orderId: order.id,
+        pairId: order.pairId,
+        quantityToRemove: order.quantity,
+      });
+    });
   }
 
   public addCurrency = async (currency: CurrencyCreationAttributes) => {
@@ -342,9 +357,13 @@ class OrderBook extends EventEmitter {
     }): Promise<PlaceOrderResult> => {
     const stampedOrder = this.stampOwnOrder(order, replaceOrderId);
 
-    if (order.quantity * order.price < 1) {
+    if (order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
+      const baseCurrency = order.pairId.split('/')[0];
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, baseCurrency);
+    }
+    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT) {
       const quoteCurrency = order.pairId.split('/')[1];
-      throw errors.MIN_QUANTITY_VIOLATED(1, quoteCurrency);
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, quoteCurrency);
     }
 
     if (this.nomatching) {
@@ -374,6 +393,11 @@ class OrderBook extends EventEmitter {
   }): Promise<PlaceOrderResult> => {
     if (this.nomatching) {
       throw errors.MARKET_ORDERS_NOT_ALLOWED();
+    }
+
+    if (order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
+      const baseCurrency = order.pairId.split('/')[0];
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, baseCurrency);
     }
 
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.POSITIVE_INFINITY : 0 });
@@ -609,8 +633,14 @@ class OrderBook extends EventEmitter {
         // instead we preserve the remainder and return it to the parent caller, which will sum
         // up any remaining orders and add them to the order book as a single order once
         // matching is complete
-        this.addOwnOrder(remainingOrder, replacedOrderIdentifier?.id);
-        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
+        if (remainingOrder.quantity < TradingPair.QUANTITY_DUST_LIMIT ||
+            remainingOrder.quantity * remainingOrder.price < TradingPair.QUANTITY_DUST_LIMIT) {
+          remainingOrder = undefined;
+          this.logger.verbose(`remainder for order ${order.id} does not meet dust limit and will be discarded`);
+        } else {
+          this.addOwnOrder(remainingOrder, replacedOrderIdentifier?.id);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
+        }
       }
     } else if (replacedOrderIdentifier) {
       // we tried to replace an order but the replacement order was fully matched, so simply remove the original order
@@ -637,8 +667,7 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
-   * succeeds and `peerOrder.invalidation` if the swap fails.
+   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap succeeds.
    * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
@@ -661,7 +690,6 @@ class OrderBook extends EventEmitter {
       return swapResult;
     } catch (err) {
       const failureReason: number = err;
-      this.emit('peerOrder.invalidation', maker);
       this.logger.error(`swap between orders ${maker.id} & ${taker.id} failed due to ${SwapFailureReason[failureReason]}`);
       throw failureReason;
     }
@@ -735,7 +763,7 @@ class OrderBook extends EventEmitter {
     }
 
     // TODO: penalize peers for sending ordes too small to swap?
-    if (order.quantity * order.price < 1) {
+    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT) {
       this.logger.warn('incoming peer order is too small to swap');
       return false;
     }

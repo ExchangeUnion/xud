@@ -310,4 +310,31 @@ describe('OrderBook', () => {
       replaceOrderId: oldOrder.remainingOrder!.id,
     });
   });
+
+  test('removeOwnOrder removes entire order if dust would have remained', async (done) => {
+    const quantity = 10000;
+    const order: OwnLimitOrder = {
+      quantity,
+      pairId,
+      localId,
+      price: 0.01,
+      isBuy: false,
+    };
+    const { remainingOrder } = await orderbook.placeLimitOrder({ order });
+    expect(remainingOrder!.quantity).toEqual(quantity);
+
+    orderbook.on('ownOrder.removed', (orderPortion) => {
+      expect(orderPortion.quantity).toEqual(quantity);
+      expect(orderPortion.id).toEqual(remainingOrder!.id);
+      expect(orderPortion.pairId).toEqual(pairId);
+      done();
+    });
+
+    const removedOrder = orderbook['removeOwnOrder']({
+      pairId,
+      orderId: remainingOrder!.id,
+      quantityToRemove: quantity - 1,
+    });
+    expect(removedOrder.quantity).toEqual(quantity);
+  });
 });
