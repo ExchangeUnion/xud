@@ -31,7 +31,6 @@ type PeerInfo = {
   xudVersion?: string,
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
-  raidenAddress?: string,
   connextIdentifier?: string,
 };
 
@@ -81,7 +80,7 @@ class Peer extends EventEmitter {
   /**
    * Currencies that we cannot swap because we are missing a swap client identifier or because the
    * peer's token identifier for this currency does not match ours - for example this may happen
-   * because a peer is using a different raiden token contract address for a currency than we are.
+   * because a peer is using a different token contract address for a currency than we are.
    */
   public disabledCurrencies = new Set<string>();
   /** Interval to check required responses from peer. */
@@ -158,10 +157,6 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.addresses : undefined;
   }
 
-  public get raidenAddress(): string | undefined {
-    return this.nodeState ? this.nodeState.raidenAddress : undefined;
-  }
-
   public get connextIdentifier(): string | undefined {
     return this.nodeState ? this.nodeState.connextIdentifier : undefined;
   }
@@ -188,7 +183,6 @@ class Peer extends EventEmitter {
       xudVersion: this.version,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
-      raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
       connextIdentifier: this.nodeState ? this.nodeState.connextIdentifier : undefined,
     };
   }
@@ -241,7 +235,6 @@ class Peer extends EventEmitter {
     }
     switch (clientType) {
       case SwapClientType.Lnd: return this.getLndPubKey(currency);
-      case SwapClientType.Raiden: return this.raidenAddress;
       case SwapClientType.Connext: return this.connextIdentifier;
       default: return;
     }

@@ -82,11 +82,6 @@ const { argv } = require('yargs')
       type: 'string',
       alias: 'x',
     },
-    'debug.raidenDirectChannelChecks': {
-      describe: 'Whether to require direct channels for raiden payments',
-      type: 'boolean',
-      default: undefined,
-    },
     'http.port': {
       describe: 'Port to listen for http requests',
       type: 'number',
@@ -161,19 +156,6 @@ const { argv } = require('yargs')
     },
     'p2p.torport': {
       describe: 'Port that Tor\'s exposed SOCKS5 proxy is listening on.',
-      type: 'number',
-    },
-    'raiden.disable': {
-      describe: 'Disable raiden integration',
-      type: 'boolean',
-      default: undefined,
-    },
-    'raiden.keystorepath': {
-      describe: 'Path containing keystore dir',
-      type: 'string',
-    },
-    'raiden.port': {
-      describe: 'Port for raiden REST service',
       type: 'number',
     },
     'connext.disable': {

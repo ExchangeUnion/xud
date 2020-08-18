@@ -122,7 +122,7 @@ Below is a list of implemented (checked) and planned (unchecked) test cases.
 
 ### Node State
 
-- [ ] Removed pair or swap client (lnd/raiden) disconnected (after timeout elapsed) should trigger order removal for all the pair's orders, and removed from connected peers' order books.
+- [ ] Removed pair or swap client (lnd/connext) disconnected (after timeout elapsed) should trigger order removal for all the pair's orders, and removed from connected peers' order books.
 - [ ] Updated `LND-BTC`/`LND-LTC` public keys should propagate over the network.
 
 ### Swaps

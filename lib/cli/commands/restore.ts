@@ -7,7 +7,7 @@ import { RestoreNodeRequest, RestoreNodeResponse } from '../../proto/xudrpc_pb';
 import { callback, loadXudInitClient } from '../command';
 import { getDefaultCertPath, waitForCert } from '../utils';
 
-export const command = 'restore [backup_directory] [raiden_database_path]';
+export const command = 'restore [backup_directory]';
 
 export const describe = 'restore an xud instance from seed';
 
@@ -16,10 +16,6 @@ export const builder = {
     description:
 `The directory to which backups were written,
 uses the default directory if unspecified`,
-    type: 'string',
-  },
-  raiden_database_path: {
-    description: 'The path to the database of Raiden ("23_log.db")',
     type: 'string',
   },
 };
@@ -34,14 +30,6 @@ const formatOutput = (response: RestoreNodeResponse.AsObject) => {
 
   if (response.restoredLndsList.length) {
     walletRestoredMessage += response.restoredLndsList.join(', ');
-  }
-
-  if (response.restoredRaiden) {
-    if (!walletRestoredMessage.endsWith(' ')) {
-      walletRestoredMessage += ', ';
-    }
-
-    walletRestoredMessage += 'ERC20(ETH)';
   }
 
   console.log(walletRestoredMessage);
@@ -87,16 +75,6 @@ export const handler = async (argv: Arguments<any>) => {
         switch (filename) {
           case 'xud':
             request.setXudDatabase(fileContent);
-            break;
-
-          case 'raiden':
-            request.setRaidenDatabase(fileContent);
-
-            if (argv.raiden_database_path) {
-              request.setRaidenDatabasePath(argv.raiden_database_path);
-            } else {
-              exitWithError('Raiden database path not specified');
-            }
             break;
         }
 

@@ -786,7 +786,7 @@
       "type": "string",
       "enum": [
         "LND",
-        "RAIDEN"
+        "CONNEXT"
       ],
       "default": "LND"
     },
@@ -988,11 +988,6 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were initialized."
-        },
-        "initialized_raiden": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "Whether raiden was initialized."
         }
       }
     },
@@ -1125,9 +1120,6 @@
           "additionalProperties": {
             "$ref": "#/definitions/xudrpcLndInfo"
           }
-        },
-        "raiden": {
-          "$ref": "#/definitions/xudrpcRaidenInfo"
         },
         "alias": {
           "type": "string",
@@ -1432,10 +1424,6 @@
           "format": "int64",
           "description": "The time in seconds that we have been connected to this peer."
         },
-        "raiden_address": {
-          "type": "string",
-          "title": "The raiden address for this peer"
-        },
         "alias": {
           "type": "string",
           "title": "The alias for this peer's public key"
@@ -1529,26 +1517,6 @@
         }
       }
     },
-    "xudrpcRaidenInfo": {
-      "type": "object",
-      "properties": {
-        "status": {
-          "type": "string"
-        },
-        "address": {
-          "type": "string"
-        },
-        "channels": {
-          "$ref": "#/definitions/xudrpcChannels"
-        },
-        "version": {
-          "type": "string"
-        },
-        "chain": {
-          "type": "string"
-        }
-      }
-    },
     "xudrpcRemoveCurrencyRequest": {
       "type": "object",
       "properties": {
@@ -1606,11 +1574,6 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were initialized."
-        },
-        "restored_raiden": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "Whether raiden was initialized."
         }
       }
     },
@@ -1891,11 +1854,6 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were unlocked."
-        },
-        "unlocked_raiden": {
-          "type": "boolean",
-          "format": "boolean",
-          "description": "Whether raiden was unlocked."
         },
         "locked_lnds": {
           "type": "array",
