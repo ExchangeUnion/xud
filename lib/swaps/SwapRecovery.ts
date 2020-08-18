@@ -16,11 +16,12 @@ interface SwapRecovery {
  * ensuring that we do not lose funds on a partially completed swap.
  */
 class SwapRecovery extends EventEmitter {
+  public static readonly PENDING_SWAP_RECHECK_INTERVAL = 300000;
+
   /** A map of payment hashes to swaps where we have a pending outgoing payment but don't know the preimage. */
   private pendingSwaps: Map<string, SwapDealInstance> = new Map();
   private pendingSwapsTimer?: NodeJS.Timeout;
   /** The time in milliseconds between checks on the status of pending swaps. */
-  private static readonly PENDING_SWAP_RECHECK_INTERVAL = 300000;
 
   constructor(private swapClientManager: SwapClientManager, private logger: Logger) {
     super();
