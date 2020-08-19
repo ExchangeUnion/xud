@@ -72,15 +72,15 @@ const { argv } = require('yargs')
       type: 'boolean',
       default: undefined,
     },
+    strict: {
+      describe: 'strict mode for production use',
+      type: 'boolean',
+      default: undefined,
+    },
     xudir: {
       describe: 'Data directory for xud',
       type: 'string',
       alias: 'x',
-    },
-    'debug.testing': {
-      describe: 'Developer mode to facilitate testing swaps',
-      type: 'boolean',
-      default: undefined,
     },
     'debug.raidenDirectChannelChecks': {
       describe: 'Whether to require direct channels for raiden payments',
