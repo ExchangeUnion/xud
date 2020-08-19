@@ -28,14 +28,6 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
       walletInitializedMessage += response.initializedLndsList.join(', ');
     }
 
-    if (response.initializedRaiden) {
-      if (!walletInitializedMessage.endsWith(' ')) {
-        walletInitializedMessage += ', ';
-      }
-
-      walletInitializedMessage += 'ERC20(ETH)';
-    }
-
     console.log(walletInitializedMessage);
 
     console.log(`

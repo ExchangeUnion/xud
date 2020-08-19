@@ -1,9 +1,7 @@
 import http from 'http';
+import Logger from '../Logger';
 import Service from '../service/Service';
 import HttpService from './HttpService';
-import Logger from '../Logger';
-import { errorCodes } from '../service/errors';
-import { errorCodes as swapErrorCodes } from '../swaps/errors';
 
 class HttpServer {
   private server: http.Server;
@@ -12,55 +10,6 @@ class HttpServer {
   constructor(private logger: Logger, service: Service) {
     this.server = http.createServer(this.requestListener);
     this.httpService = new HttpService(service);
-  }
-
-  private resolveRaidenHandler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    let statusCode = 200;
-    let resJson: any;
-    let reqJson: any;
-
-    try {
-      reqJson = await this.reqToJson(req);
-    } catch (err) {
-      statusCode = 400;
-      resJson = { message: JSON.stringify(err), retry: false };
-    }
-    // TODO: Refactor code above this point so we don't need to
-    // keep repeating it when adding new endpoints.
-
-    if (reqJson) {
-      try {
-        resJson = await this.httpService.resolveHashRaiden(reqJson);
-      } catch (err) {
-        switch (err.code) {
-          case swapErrorCodes.INVALID_RESOLVE_REQUEST:
-          case errorCodes.INVALID_ARGUMENT:
-            statusCode = 400;
-            resJson = { message: err.message, retry: false };
-            break;
-          case swapErrorCodes.PAYMENT_HASH_NOT_FOUND:
-            statusCode = 404;
-            resJson = { message: err.message, retry: false };
-            break;
-          case swapErrorCodes.FINAL_PAYMENT_ERROR:
-          case swapErrorCodes.PAYMENT_REJECTED:
-            statusCode = 500;
-            resJson = { message: err.message, retry: false };
-            break;
-          case swapErrorCodes.UNKNOWN_PAYMENT_ERROR:
-          case swapErrorCodes.PAYMENT_PENDING:
-            statusCode = 503;
-            resJson = { message: err.message, retry: true };
-            break;
-          default:
-            statusCode = 503;
-            resJson = { err, retry: true };
-            break;
-        }
-      }
-    }
-    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(resJson));
   }
 
   private incomingTransfer = async (req: http.IncomingMessage, res: http.ServerResponse) => {
@@ -132,9 +81,6 @@ class HttpServer {
         break;
       case '/incoming-transfer':
         await this.incomingTransfer(req, res);
-        break;
-      case '/resolveraiden':
-        await this.resolveRaidenHandler(req, res);
         break;
       default:
         res.writeHead(404);

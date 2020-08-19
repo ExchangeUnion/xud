@@ -74,7 +74,7 @@ interface SwapClient {
 }
 
 /**
- * A base class to represent an external swap client such as lnd or Raiden.
+ * A base class to represent an external swap client such as lnd or connext.
  */
 abstract class SwapClient extends EventEmitter {
   /**

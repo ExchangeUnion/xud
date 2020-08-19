@@ -179,7 +179,7 @@ class Swaps extends EventEmitter {
   }
 
   public init = async () => {
-    // update pool with lnd pubkeys and raiden address
+    // update pool with lnd pubkeys
     this.swapClientManager.getLndClientsMap().forEach(({ pubKey, chain, currency, uris }) => {
       if (pubKey && chain) {
         this.pool.updateLndState({
@@ -190,9 +190,6 @@ class Swaps extends EventEmitter {
         });
       }
     });
-    if (this.swapClientManager.raidenClient?.address) {
-      this.pool.updateRaidenState(this.swapClientManager.raidenClient.tokenAddresses, this.swapClientManager.raidenClient.address);
-    }
 
     this.swapRecovery.beginTimer();
     const swapDealInstances = await this.repository.getSwapDeals();
@@ -235,7 +232,6 @@ class Swaps extends EventEmitter {
 
     this.swapClientManager.on('htlcAccepted', this.handleHtlcAccepted);
     this.swapClientManager.on('lndUpdate', this.pool.updateLndState);
-    this.swapClientManager.on('raidenUpdate', this.pool.updateRaidenState);
     this.swapClientManager.on('connextUpdate', this.pool.updateConnextState);
 
     this.swapRecovery.on('recovered', (recoveredSwap) => {
@@ -889,7 +885,7 @@ class Swaps extends EventEmitter {
       case SwapRole.Maker:
         expectedAmount = deal.makerUnits;
         expectedCurrency = deal.makerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.makerCurrency);
+        expectedTokenAddress = this.swapClientManager.connextClient?.tokenAddresses.get(deal.makerCurrency);
         source = 'Taker';
         destination = 'Maker';
         const lockExpirationDelta = expiration - chain_height;
@@ -917,7 +913,7 @@ class Swaps extends EventEmitter {
       case SwapRole.Taker:
         expectedAmount = deal.takerUnits;
         expectedCurrency = deal.takerCurrency;
-        expectedTokenAddress = this.swapClientManager.raidenClient?.tokenAddresses.get(deal.takerCurrency);
+        expectedTokenAddress = this.swapClientManager.connextClient?.tokenAddresses.get(deal.takerCurrency);
         source = 'Maker';
         destination = 'Taker';
         break;

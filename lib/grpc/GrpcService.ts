@@ -531,22 +531,6 @@ class GrpcService {
         lndMap.set(currency, getLndInfo(lndInfo));
       });
 
-      if (getInfoResponse.raiden) {
-        const raiden = new xudrpc.RaidenInfo();
-        raiden.setStatus(getInfoResponse.raiden.status);
-        if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) {
-          const channels = new xudrpc.Channels();
-          channels.setActive(getInfoResponse.raiden.channels.active);
-          // channels.setSettled(getInfoResponse.raiden.channels.settled);
-          channels.setClosed(getInfoResponse.raiden.channels.closed);
-          raiden.setChannels(channels);
-        }
-        if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
-        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
-        response.setRaiden(raiden);
-      }
-
       if (getInfoResponse.connext) {
         const connext = new xudrpc.ConnextInfo();
         connext.setStatus(getInfoResponse.connext.status);
@@ -735,7 +719,6 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
-        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);

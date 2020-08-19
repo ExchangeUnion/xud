@@ -51,9 +51,6 @@ describe('API Service', () => {
           disable: true,
         },
       },
-      raiden: {
-        disable: true,
-      },
       connext: {
         disable: true,
       },

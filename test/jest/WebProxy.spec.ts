@@ -31,9 +31,6 @@ describe('WebProxy', () => {
           disable: true,
         },
       },
-      raiden: {
-        disable: true,
-      },
       connext: {
         disable: true,
       },

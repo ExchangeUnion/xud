@@ -1,8 +1,7 @@
 /** An enumeration of payment channel network clients that support token swaps. */
 export enum SwapClientType {
-  Lnd,
-  Raiden,
-  Connext,
+  Lnd = 0,
+  Connext = 2,
 }
 
 export enum OrderingDirection {

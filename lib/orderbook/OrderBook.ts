@@ -296,7 +296,7 @@ class OrderBook extends EventEmitter {
     if (this.currencyInstances.has(currency.id)) {
       throw errors.CURRENCY_ALREADY_EXISTS(currency.id);
     }
-    if (currency.swapClient === SwapClientType.Raiden && !currency.tokenAddress) {
+    if (currency.swapClient === SwapClientType.Connext && !currency.tokenAddress) {
       throw errors.CURRENCY_MISSING_ETHEREUM_CONTRACT_ADDRESS(currency.id);
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });

@@ -52,8 +52,7 @@ ${address}`,
       `inbound: ${peer.inbound}\
 \nversion: ${peer.xudVersion}\
 \ntime connected: ${peer.secondsConnected.toString()} seconds\
-\n${formatLndPubKeys(peer.lndPubKeysMap)}\
-${peer.raidenAddress ? `\nraiden address: ${shorten(peer.raidenAddress)}` : ''}`,
+\n${formatLndPubKeys(peer.lndPubKeysMap)}`,
     ];
     formattedPeers.push(details);
   });

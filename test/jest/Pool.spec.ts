@@ -105,19 +105,6 @@ describe('P2P Pool', () => {
     expect(pool['nodeState'].lndPubKeys['BTC']).toEqual(lndPubKey);
   });
 
-  test('updateRaidenState sets Raiden address and token identifiers', async () => {
-    const tokenAddresses = new Map();
-    const raidenAddress = 'raidenAddress';
-    const wethTokenAddress = 'wethtokenaddress';
-    const daiTokenAddress = 'daitokenaddress';
-    tokenAddresses.set('WETH', wethTokenAddress);
-    tokenAddresses.set('DAI', daiTokenAddress);
-    pool.updateRaidenState(tokenAddresses, raidenAddress);
-    expect(pool.getTokenIdentifier('WETH')).toEqual(wethTokenAddress);
-    expect(pool.getTokenIdentifier('DAI')).toEqual(daiTokenAddress);
-    expect(pool['nodeState'].raidenAddress).toEqual(raidenAddress);
-  });
-
   test('should open a connection with a new peer and add to node list', async () => {
     const createNodeSpy = jest.spyOn(pool['nodes'], 'createNode');
     await pool.addOutbound(pool2address, pool2nodeKey.pubKey, true, false);
@@ -146,7 +133,6 @@ describe('P2P Pool', () => {
     const ownNodeState = {
       addresses: [{ host: '1.1.1.1', port: poolPort }, { host: '2.2.2.2', port: poolPort }],
       pairs: [uuid()],
-      raidenAddress: uuid(),
       connextIdentifier: uuid(),
       lndPubKeys: { BTC: uuid(), LTC: uuid() },
       lndUris: { BTC: [''], LTC: [''] },
@@ -168,7 +154,6 @@ describe('P2P Pool', () => {
     const ownNodeState = {
       addresses: [{ host: '1.1.1.1', port: poolPort }, { host: '2.2.2.2', port: poolPort }],
       pairs: [uuid()],
-      raidenAddress: uuid(),
       connextIdentifier: uuid(),
       lndPubKeys: { BTC: uuid(), LTC: uuid() },
       lndUris: { BTC: [''], LTC: [''] },

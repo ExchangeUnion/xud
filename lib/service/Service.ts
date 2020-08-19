@@ -377,10 +377,6 @@ class Service {
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
-    const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
-    if (raiden) {
-      raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
-    }
     const connext = await this.swapClientManager.connextClient?.getInfo();
     if (connext) {
       connext.chain = `${connext.chain ? connext.chain : ''}connext ${this.pool.getNetwork()}`;
@@ -388,7 +384,6 @@ class Service {
 
     return {
       lnd,
-      raiden,
       connext,
       nodePubKey,
       uris,

@@ -132,9 +132,6 @@ export class NodeState extends jspb.Message {
     setPairsList(value: Array<string>): void;
     addPairs(value: string, index?: number): string;
 
-    getRaidenAddress(): string;
-    setRaidenAddress(value: string): void;
-
 
     getLndPubKeysMap(): jspb.Map<string, string>;
     clearLndPubKeysMap(): void;
@@ -165,7 +162,6 @@ export namespace NodeState {
     export type AsObject = {
         addressesList: Array<Address.AsObject>,
         pairsList: Array<string>,
-        raidenAddress: string,
 
         lndPubKeysMap: Array<[string, string]>,
 

@@ -106,7 +106,6 @@ const loggers = {
   p2p: logger,
   orderbook: logger,
   lnd: logger,
-  raiden: logger,
   connext: logger,
   swaps: logger,
   http: logger,
