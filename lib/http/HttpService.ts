@@ -1,7 +1,11 @@
-import { createHash } from 'crypto';
-import { ConnextIncomingTransferRequest, ConnextPreimageRequest } from '../connextclient/types';
-import serviceErrors from '../service/errors';
 import Service from '../service/Service';
+import serviceErrors from '../service/errors';
+import {
+  ConnextPreimageRequest,
+  ConnextIncomingTransferRequest,
+  ConnextDepositConfirmedRequest,
+} from '../connextclient/types';
+import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
@@ -49,6 +53,17 @@ class HttpService {
         paymentId,
         tokenAddress: assetId,
       });
+      return {};
+    } else {
+      throw serviceErrors.INVALID_REQUEST;
+    }
+  }
+
+  public depositConfirmed = (
+    depositConfirmedRequest: ConnextDepositConfirmedRequest,
+  ): object => {
+    if (depositConfirmedRequest.data && depositConfirmedRequest.data.hash) {
+      this.service.depositConfirmed(depositConfirmedRequest.data.hash);
       return {};
     } else {
       throw serviceErrors.INVALID_REQUEST;

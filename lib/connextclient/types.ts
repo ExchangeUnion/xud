@@ -76,6 +76,13 @@ export type ConnextTransferResponse = {
 };
 
 /**
+ * The response for deposit call.
+ */
+export type ConnextDepositResponse = {
+  txhash: string;
+};
+
+/**
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
@@ -148,6 +155,17 @@ export type ConnextIncomingTransferRequest = {
     type: string;
     paymentId: string,
     recipient: string;
+  };
+};
+
+export type ConnextDepositConfirmedRequest = {
+  id: string;
+  data?: {
+    amount: {
+      _hex: string;
+    };
+    assetId: string;
+    hash: string;
   };
 };
 

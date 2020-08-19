@@ -31,10 +31,11 @@ import {
   ExpectedIncomingTransfer,
   ProvidePreimageEvent,
   TransferReceivedEvent,
+  ConnextDepositResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest } from 'rxjs';
-import { take, pluck, timeout, filter } from 'rxjs/operators';
+import { Observable, fromEvent, from, combineLatest, defer } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap } from 'rxjs/operators';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
@@ -43,12 +44,14 @@ interface ConnextClient {
   on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
   on(event: 'htlcAccepted', listener: (rHash: string, amount: number, currency: string) => void): this;
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
+  on(event: 'depositConfirmed', listener: (hash: string) => void): this;
   once(event: 'initialized', listener: () => void): this;
   emit(event: 'htlcAccepted', rHash: string, amount: number, currency: string): boolean;
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
   emit(event: 'initialized'): boolean;
   emit(event: 'preimage', preimageRequest: ProvidePreimageEvent): void;
   emit(event: 'transferReceived', transferReceivedRequest: TransferReceivedEvent): void;
+  emit(event: 'depositConfirmed', hash: string): void;
 }
 
 /**
@@ -202,6 +205,13 @@ class ConnextClient extends SwapClient {
     return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
+  private subscribeDeposit = async () => {
+    await this.sendRequest('/subscribe', 'POST', {
+      event: 'DEPOSIT_CONFIRMED_EVENT',
+      webhook: `http://${this.webhookhost}:${this.webhookport}/deposit-confirmed`,
+    });
+  }
+
   private subscribePreimage = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
@@ -284,6 +294,7 @@ class ConnextClient extends SwapClient {
       const config = await this.initConnextClient(this.seed);
       await this.subscribePreimage();
       await this.subscribeIncomingTransfer();
+      await this.subscribeDeposit();
       const { userIdentifier } = config;
       this.emit('connectionVerified', {
         newIdentifier: userIdentifier,
@@ -606,16 +617,33 @@ class ConnextClient extends SwapClient {
       throw errors.CURRENCY_MISSING;
     }
     const assetId = this.getTokenAddress(currency);
-    await this.sendRequest('/deposit', 'POST', {
+    const depositResponse = await this.sendRequest('/deposit', 'POST', {
       assetId,
       amount: BigInt(units).toString(),
     });
-    this.sendRequest('/request-collateral', 'POST', {
-      assetId,
-    }).then(() => {
-      this.logger.verbose(`collateralized channel for ${currency}`);
-    }).catch((err) => {
-      this.logger.error(`failed requesting collateral for ${currency}`, err);
+    const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
+    const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
+      filter(hash => hash === txhash), // only proceed if the incoming hash matches our expected txhash
+      take(1), // complete the stream after 1 matching event
+      timeout(86400000), // clear up the listener after 1 day
+      mergeMap(() => {
+        // use defer to only create the inner observable when the outer one subscribes
+        return defer(() => {
+          return from(
+            this.sendRequest('/request-collateral', 'POST', {
+              assetId,
+            }),
+          );
+        });
+      }),
+    );
+    channelCollateralized$.subscribe({
+      complete: () => {
+        this.logger.verbose(`collateralized channel for ${currency}`);
+      },
+      error: (err) => {
+        this.logger.error(`failed requesting collateral for ${currency}`, err);
+      },
     });
   }
 
