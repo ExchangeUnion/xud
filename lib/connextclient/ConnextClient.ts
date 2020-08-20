@@ -433,8 +433,6 @@ class ConnextClient extends SwapClient {
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
-      // TODO: Edge case. Once https://github.com/connext/rest-api-client/issues/31 is
-      // implemented check for the response code 404 and set the payment as failed.
 
       switch (transferStatusResponse.status) {
         case 'PENDING':
@@ -451,6 +449,9 @@ class ConnextClient extends SwapClient {
           return { state: PaymentState.Pending };
       }
     } catch (err) {
+      if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
+        return { state: PaymentState.Failed };
+      }
       this.logger.error(`could not lookup payment for ${rHash}`, err);
       return { state: PaymentState.Pending }; // return pending if we hit an error
     }
@@ -701,6 +702,9 @@ class ConnextClient extends SwapClient {
             break;
           case 402:
             err = errors.INSUFFICIENT_BALANCE;
+            break;
+          case 404:
+            err = errors.PAYMENT_NOT_FOUND;
             break;
           case 408:
             err = errors.TIMEOUT;
