@@ -802,5 +802,12 @@ class Service {
     this.swapClientManager.connextClient?.emit('transferReceived', event);
   }
 
+  /**
+   * Notifies Connext client that a deposit has been confirmed.
+   */
+  public depositConfirmed = (hash: string) => {
+    this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
+  }
+
 }
 export default Service;
