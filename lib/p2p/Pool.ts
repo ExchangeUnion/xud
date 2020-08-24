@@ -19,8 +19,6 @@ import * as packets from './packets/types';
 import Peer, { PeerInfo } from './Peer';
 import { Address, NodeConnectionInfo, NodeState, PoolConfig } from './types';
 
-const minCompatibleVersion: string = require('../../package.json').minCompatibleVersion;
-
 type NodeReputationInfo = {
   reputationScore: ReputationEvent;
   banned?: boolean;
@@ -97,8 +95,10 @@ class Pool extends EventEmitter {
   private network: Network;
   private logger: Logger;
   private nodeKey: NodeKey;
+  /** The minimum version of xud we accept for peers */
+  private minCompatibleVersion: string;
 
-  constructor({ config, xuNetwork, logger, models, nodeKey, version, strict = true }: {
+  constructor({ config, xuNetwork, logger, models, nodeKey, version, strict = true, minCompatibleVersion }: {
     config: PoolConfig,
     xuNetwork: XuNetwork,
     logger: Logger,
@@ -106,6 +106,7 @@ class Pool extends EventEmitter {
     nodeKey: NodeKey,
     version: string,
     strict?: boolean,
+    minCompatibleVersion?: string,
   }) {
     super();
 
@@ -119,6 +120,11 @@ class Pool extends EventEmitter {
     this.network = new Network(xuNetwork);
     this.repository = new P2PRepository(models);
     this.nodes = new NodeList(this.repository);
+
+    // we use the provided minCompatibleVersion if one is specified
+    // otherwise we attempt to read the minCompatibleVersion from package.json
+    // otherwise we use our own version as the minimum
+    this.minCompatibleVersion = minCompatibleVersion ?? require('../../package.json').minCompatibleVersion ?? version;
 
     this.nodeState = {
       addresses: [],
@@ -858,9 +864,9 @@ class Pool extends EventEmitter {
       throw errors.MALFORMED_VERSION(addressUtils.toString(peer.address), peer.version);
     }
     // dev.note: compare returns 0 if v1 == v2, or 1 if v1 is greater, or -1 if v2 is greater.
-    if (semver.compare(peer.version, minCompatibleVersion) === -1) {
+    if (semver.compare(peer.version, this.minCompatibleVersion) === -1) {
       await peer.close(DisconnectionReason.IncompatibleProtocolVersion);
-      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), minCompatibleVersion, peer.version);
+      throw errors.INCOMPATIBLE_VERSION(addressUtils.toString(peer.address), this.minCompatibleVersion, peer.version);
     }
 
     if (!this.connected) {
