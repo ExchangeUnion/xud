@@ -404,12 +404,17 @@ func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTes
 	// Open channel from Alice.
 	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
 	ht.assert.NoError(err)
+	// wait for 1 block for the deposit transaction to confirm
+	time.Sleep(15 * time.Second)
 
 	// Verify Alice ETH balance.
 	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
 	ht.assert.Equal(uint64(199997900), resBal.Balances["ETH"].TotalBalance)
 	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-400, resBal.Balances["ETH"].WalletBalance)
 	ht.assert.Equal(uint64(400), resBal.Balances["ETH"].ChannelBalance)
+
+	// wait for 1 block for node to collateralize ETH channel
+	time.Sleep(15 * time.Second)
 
 	// Place an order on Alice.
 	req := &xudrpc.PlaceOrderRequest{
