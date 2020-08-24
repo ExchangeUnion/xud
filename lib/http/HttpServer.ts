@@ -41,7 +41,7 @@ class HttpServer {
         }
       } catch (err) {
         const msg = `processing request to ${req.url} failed`;
-        this.logger.error(`${msg}: ${err}`);
+        this.logger.error(msg, err);
         statusCode = 500;
         resJson = { message: msg };
       }
