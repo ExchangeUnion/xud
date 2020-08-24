@@ -9,16 +9,22 @@ const nodes = [
     ],
   },
   {
-    nodePubKey: '036553224025f2a4ad562686718895ae0ba99d8b2fa26b8cb0f81abd8e6260d9ff',
+    nodePubKey: '03c7a8cdc3cf7203c1ba1ad5602622d551ae84a8e2aec5b6e50df73c287a6097f7',
     addresses: [
       { host: 'xud.kilrau.com', port: 8885 },
-      { host: '256d4llrbzvnya237nvyptdkfmmj7cros4mgfmioxlkpi6xu6gzzisyd.onion', port: 8885 },
+      { host: 'omo6nzhpcq3lsnicotyoufxst4iy57o5g2mjjp3weztots5azhcc5gad.onion', port: 8885 },
     ],
   },
   {
-    nodePubKey: '03a4196edd6475d24088f806b2a3425bb63f65ee4125363eaa1d3db6764459e27a',
+    nodePubKey: '02f9cd8fbe9c115d399a6d616ae241d1e6a3c437a91de229dc7bfdb42dd3df21c3',
     addresses: [
-      { host: 'h3jxbox7cuje73rktuejyabkcefoimp7ylfn3qnzpvoo7acxoz3p3gad.onion', port: 8885 },
+      { host: 'vpecld6ehywi4opa6t2zvo42cgl2wyh5ji4ryx76ghrqdl56m76zdbad.onion', port: 8885 },
+    ],
+  },
+  {
+    nodePubKey: '024efa32a46533258d9f6497b3927c34b01bff7ceb927f8f789b56a8601dde993a',
+    addresses: [
+      { host: 'wkoyje5mlrlzlgrdbqwscsyotr7hcv4423nnmu2tbgtwmmk3lb6mmwid.onion', port: 8885 },
     ],
   },
 ] as db.NodeAttributes[];
