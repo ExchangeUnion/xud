@@ -1,3 +1,36 @@
+# [1.0.0-rc.1](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.8...v1.0.0-rc.1) (2020-08-24)
+
+
+### Bug Fixes
+
+* **orderbook:** add back fully matched orders ([1024b72](https://github.com/ExchangeUnion/xud/commit/1024b7223d96c9ee47da8cbe4357bcdad22f1873)), closes [#1816](https://github.com/ExchangeUnion/xud/issues/1816)
+* improve HttpServer error logging ([67ddfa4](https://github.com/ExchangeUnion/xud/commit/67ddfa4d910f3573a8b8de1f66858bbd44ccf717))
+* strict command arg ([a26d67d](https://github.com/ExchangeUnion/xud/commit/a26d67d970cd52a5d44a106e70773ab14c188986))
+* **connext:** convert contract addresses to eip55 standard ([e08d43c](https://github.com/ExchangeUnion/xud/commit/e08d43c7179f26af6871be4e4d90b512f7f41131))
+* restrict reputation events in non-strict mode ([#1808](https://github.com/ExchangeUnion/xud/issues/1808)) ([0d20cd3](https://github.com/ExchangeUnion/xud/commit/0d20cd3ef8c117d90c64b03deedd12a7a8d9b65c)), closes [#1802](https://github.com/ExchangeUnion/xud/issues/1802)
+* **service:** replace order id ([582a49b](https://github.com/ExchangeUnion/xud/commit/582a49b9846f9e700e4bb26425b22d732d111e28))
+
+
+### Code Refactoring
+
+* remove raiden support ([#1824](https://github.com/ExchangeUnion/xud/issues/1824)) ([9afe7d1](https://github.com/ExchangeUnion/xud/commit/9afe7d1d06bc14946eca15e8a1a0bd799d7003f4)), closes [#1516](https://github.com/ExchangeUnion/xud/issues/1516)
+
+
+### Features
+
+* **connext:** mark payment as failed when receiving 404 status ([d1f1f2c](https://github.com/ExchangeUnion/xud/commit/d1f1f2c5cc2ef17ef889f5a04bfc28a264654cd7))
+* **connext:** request collateral after DEPOSIT_CONFIRMED_EVENT ([#1825](https://github.com/ExchangeUnion/xud/issues/1825)) ([dc6de05](https://github.com/ExchangeUnion/xud/commit/dc6de05e486fc57b1de90c9df426ebf669e0ad92))
+* **p2p:** replace order in single packet ([#1812](https://github.com/ExchangeUnion/xud/issues/1812)) ([de691b2](https://github.com/ExchangeUnion/xud/commit/de691b2f0a0bd70743121a6924cafa2035132eed)), closes [#1805](https://github.com/ExchangeUnion/xud/issues/1805) [#1806](https://github.com/ExchangeUnion/xud/issues/1806)
+* **rpc:** log each call with trace not debug ([#1819](https://github.com/ExchangeUnion/xud/issues/1819)) ([eda2f8d](https://github.com/ExchangeUnion/xud/commit/eda2f8d4bdc53077c13b8b665fed2b5e9b7f903d)), closes [#1817](https://github.com/ExchangeUnion/xud/issues/1817)
+* **simnet:** change USDT contract address ([91e73b0](https://github.com/ExchangeUnion/xud/commit/91e73b0505c81862e143293db8019037b1dcc85a))
+
+
+### BREAKING CHANGES
+
+* removes raiden support & p2p packet fields
+
+
+
 # [1.0.0-beta.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2020-08-07)
 
 
