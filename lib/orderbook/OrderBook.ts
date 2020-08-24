@@ -569,10 +569,13 @@ class OrderBook extends EventEmitter {
               removedOrder.quantity += portion.quantity;
               failedMakerOrders.push(removedOrder);
             } catch (err) {
-              if (err.code !== errorCodes.ORDER_NOT_FOUND) {
+              if (err.code === errorCodes.ORDER_NOT_FOUND) {
                 // if the order has already been removed, either it was removed fully during
                 // matching or it's been invalidated by a peer or filled by a separate order
-                // we can safely ignore this exception, otherwise we throw
+                // in this case we want to add back the order removed during matching
+                failedMakerOrders.push(maker);
+              } else {
+                // for other errors we throw
                 throw err;
               }
             }
@@ -621,8 +624,8 @@ class OrderBook extends EventEmitter {
     }
 
     failedMakerOrders.forEach((peerOrder) => {
-      const peer = this.pool.getPeer(peerOrder.peerPubKey);
-      if (peer?.active && peer?.isPairActive(peerOrder.pairId)) {
+      const peer = this.pool.tryGetPeer(peerOrder.peerPubKey);
+      if (peer?.active && peer.isPairActive(peerOrder.pairId)) {
         // if this peer and its trading pair is still active then we add the order back to the book
         this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
       }
