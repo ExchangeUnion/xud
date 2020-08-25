@@ -32,6 +32,7 @@ func (cfg Config) genEnvVars() []string {
 	args = append(args, fmt.Sprintf("CONNEXT_NODE_URL=%v", cfg.NodeURL))
 	args = append(args, fmt.Sprintf("PORT=%v", cfg.Port))
 	args = append(args, fmt.Sprintf("CONNEXT_STORE_DIR=%v", cfg.DataDir))
+	args = append(args, fmt.Sprintf("LEGACY_MODE=true"))
 
 	return args
 }
