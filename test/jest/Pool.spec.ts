@@ -26,6 +26,7 @@ describe('P2P Pool', () => {
   const logger3 = Logger.createLoggers(Level.Error, undefined, 3).p2p;
   let poolPort: number;
   let pool2Port: number;
+  const version = '1.0.0';
 
   const awaitInboundPeer = (pool: Pool) => {
     return new Promise<void>((resolve, reject) => {
@@ -54,6 +55,7 @@ describe('P2P Pool', () => {
     await pool2db.init(XuNetwork.RegTest);
 
     pool = new Pool({
+      version,
       logger: logger1,
       config: {
         ...config.p2p,
@@ -62,13 +64,13 @@ describe('P2P Pool', () => {
       xuNetwork: XuNetwork.RegTest,
       models: pool1db.models,
       nodeKey: pool1nodeKey,
-      version: '1.0.0',
     });
 
     await pool.init();
     poolPort = pool['listenPort']!;
 
     pool2 = new Pool({
+      version,
       logger: logger2,
       config: {
         ...config.p2p,
@@ -77,7 +79,6 @@ describe('P2P Pool', () => {
       xuNetwork: XuNetwork.RegTest,
       models: pool2db.models,
       nodeKey: pool2nodeKey,
-      version: '1.0.0',
     });
 
     await pool2.init();
@@ -144,7 +145,7 @@ describe('P2P Pool', () => {
       ownNodeState,
       ownNodeKey,
       expectedNodePubKey,
-      ownVersion: '1.0.0-mainnet',
+      ownVersion: version,
       torport: 0,
     })).rejects.toHaveProperty(
       'message', expect.stringContaining('AuthFailureInvalidTarget'));
@@ -165,7 +166,7 @@ describe('P2P Pool', () => {
       ownNodeState,
       ownNodeKey,
       expectedNodePubKey,
-      ownVersion: '1.0.0-mainnet',
+      ownVersion: version,
       torport: 0,
     });
     expect(sessionInitPacket).toBeTruthy();
