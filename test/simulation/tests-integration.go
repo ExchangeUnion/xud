@@ -24,6 +24,10 @@ var integrationTestCases = []*testCase{
 		test: testOrderMatchingAndSwapConnext,
 	},
 	{
+		name: "dust order discarded",
+		test: testDustOrderDiscarded,
+	},
+	{
 		name: "order replacement",
 		test: testOrderReplacement,
 	},
@@ -256,6 +260,60 @@ func testOrderMatchingAndSwap(net *xudtest.NetworkHarness, ht *harnessTest) {
 	ht.act.disconnect(net.Alice, net.Bob)
 }
 
+func testDustOrderDiscarded(net *xudtest.NetworkHarness, ht *harnessTest) {
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	// Place an order on Alice.
+	req := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    0.02,
+		Quantity: 10000,
+		PairId:   "LTC/BTC",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
+
+	// Place a matching order on Bob.
+	req = &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    req.Price,
+		Quantity: 10099,
+		PairId:   req.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+
+	aliceOrderChan := subscribeOrders(ht.ctx, net.Alice)
+	res, err := net.Bob.Client.PlaceOrderSync(ht.ctx, req)
+
+	// verify that there is no remaining order
+	ht.assert.NoError(err)
+	ht.assert.Len(res.InternalMatches, 0)
+	ht.assert.Len(res.SwapFailures, 0)
+	ht.assert.Len(res.SwapSuccesses, 1)
+	ht.assert.Nil(res.RemainingOrder)
+
+	e := <-aliceOrderChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.orderUpdate)
+	orderRemoval := e.orderUpdate.GetOrderRemoval()
+	ht.assert.NotNil(orderRemoval)
+	ht.assert.Equal(req.PairId, orderRemoval.PairId)
+	ht.assert.True(orderRemoval.IsOwnOrder)
+
+	// verify that the order books are empty
+	srcNodeCount, destNodeCount, err := getOrdersCount(ht.ctx, net.Alice, net.Bob)
+	ht.assert.NoError(err)
+	ht.assert.Equal(0, int(srcNodeCount.Own))
+	ht.assert.Equal(0, int(srcNodeCount.Peer))
+	ht.assert.Equal(0, int(destNodeCount.Own))
+	ht.assert.Equal(0, int(destNodeCount.Peer))
+
+	// Cleanup.
+	ht.act.disconnect(net.Alice, net.Bob)
+}
+
 func testOrderReplacement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
@@ -402,20 +460,20 @@ func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTes
 	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].ChannelBalance)
 
 	// Open channel from Alice.
-	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Verify Alice ETH balance.
 	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
 	ht.assert.Equal(uint64(199997900), resBal.Balances["ETH"].TotalBalance)
-	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-400, resBal.Balances["ETH"].WalletBalance)
-	ht.assert.Equal(uint64(400), resBal.Balances["ETH"].ChannelBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-40000, resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(40000), resBal.Balances["ETH"].ChannelBalance)
 
 	// Place an order on Alice.
 	req := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_BUY,
 	}
@@ -435,15 +493,15 @@ func testOrderMatchingAndSwapConnext(net *xudtest.NetworkHarness, ht *harnessTes
 
 	// Verify Alice ETH balance.
 	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.Equal(uint64(199997860), resBal.Balances["ETH"].TotalBalance)
-	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-360, resBal.Balances["ETH"].WalletBalance)
-	ht.assert.Equal(uint64(360), resBal.Balances["ETH"].ChannelBalance)
+	ht.assert.Equal(uint64(199993900), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(resBal.Balances["ETH"].TotalBalance-36000, resBal.Balances["ETH"].WalletBalance)
+	ht.assert.Equal(uint64(36000), resBal.Balances["ETH"].ChannelBalance)
 
 	// Verify Bob ETH balance.
 	resBal, err = net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
-	ht.assert.Equal(uint64(40), resBal.Balances["ETH"].TotalBalance)
+	ht.assert.Equal(uint64(4000), resBal.Balances["ETH"].TotalBalance)
 	ht.assert.Equal(uint64(0), resBal.Balances["ETH"].WalletBalance)
-	ht.assert.Equal(uint64(40), resBal.Balances["ETH"].ChannelBalance)
+	ht.assert.Equal(uint64(4000), resBal.Balances["ETH"].ChannelBalance)
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)

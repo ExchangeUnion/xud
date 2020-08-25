@@ -149,7 +149,7 @@ describe('OrderBook', () => {
   });
 
   it('should not add a new own order with a duplicated localId', async () => {
-    const order: orders.OwnOrder = createOwnOrder(0.01, 1000, false);
+    const order: orders.OwnOrder = createOwnOrder(0.01, 100000, false);
 
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
 
@@ -221,71 +221,71 @@ describe('nomatching OrderBook', () => {
   });
 
   it('should accept but not match limit orders', async () => {
-    const buyOrder = createOwnOrder(0.01, 1000, true);
+    const buyOrder = createOwnOrder(0.01, 100000, true);
     const buyOrderResult = await orderBook.placeLimitOrder({ order: buyOrder });
     expect(buyOrderResult.remainingOrder!.localId).to.be.equal(buyOrder.localId);
     expect(buyOrderResult.remainingOrder!.quantity).to.be.equal(buyOrder.quantity);
 
-    const sellOrder = createOwnOrder(0.01, 1000, false);
+    const sellOrder = createOwnOrder(0.01, 100000, false);
     const sellOrderResult = await orderBook.placeLimitOrder({ order: sellOrder });
     expect(sellOrderResult.remainingOrder!.localId).to.be.equal(sellOrder.localId);
     expect(sellOrderResult.remainingOrder!.quantity).to.be.equal(sellOrder.quantity);
   });
 
   it('should not place the same order twice', async () => {
-    const order = createOwnOrder(0.01, 1000, true);
+    const order = createOwnOrder(0.01, 100000, true);
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
     await expect(orderBook.placeLimitOrder({ order })).to.be.rejected;
   });
 
   it('should not remove the same order twice', async () => {
-    const order = createOwnOrder(0.01, 1000, true);
+    const order = createOwnOrder(0.01, 100000, true);
     await expect(orderBook.placeLimitOrder({ order })).to.be.fulfilled;
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.not.throw();
     expect(() => orderBook.removeOwnOrderByLocalId(order.localId)).to.throw();
   });
 
   it('should allow own order partial removal, but should not find the order localId after it was fully removed', async () => {
-    const order = createOwnOrder(0.01, 1000, true);
+    const order = createOwnOrder(0.01, 100000, true);
     const { remainingOrder } = await orderBook.placeLimitOrder({ order });
 
     orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: remainingOrder!.quantity - 100,
+      quantityToRemove: remainingOrder!.quantity - 10000,
     });
     orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: 100,
+      quantityToRemove: 10000,
     });
 
     expect(() => orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: 100,
+      quantityToRemove: 10000,
     })).to.throw;
   });
 
   it('should allow own order partial removal, but should not find the order id after it was fully removed', async () => {
-    const order = createOwnOrder(0.01, 1000, true);
+    const order = createOwnOrder(0.01, 100000, true);
     const { remainingOrder } = await orderBook.placeLimitOrder({ order });
 
     orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: remainingOrder!.quantity - 100,
+      quantityToRemove: remainingOrder!.quantity - 10000,
     });
     orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: 100,
+      quantityToRemove: 10000,
     });
 
     expect(() => orderBook['removeOwnOrder']({
       orderId: remainingOrder!.id,
       pairId: order.pairId,
-      quantityToRemove: 100,
+      quantityToRemove: 10000,
     })).to.throw;
   });
 
