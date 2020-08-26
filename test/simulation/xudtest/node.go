@@ -3,7 +3,6 @@ package xudtest
 import (
 	"bytes"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/shared"
 	"net"
 	"os"
 	"os/exec"
@@ -12,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/ExchangeUnion/xud-simulation/shared"
 
 	"github.com/ExchangeUnion/xud-simulation/connexttest"
 
@@ -314,7 +315,7 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 
 	opts := []grpc.DialOption{
 		grpc.WithBlock(),
-		grpc.WithTimeout(time.Second * 20),
+		grpc.WithTimeout(time.Second * 40),
 	}
 
 	tlsCreds, err := credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
@@ -324,7 +325,7 @@ func (hn *HarnessNode) ConnectRPC(useMacs bool) (*grpc.ClientConn, error) {
 		}
 
 		fmt.Printf("Failed to read TLS certificate: %v, remaining tries: %v\n", err, tries-1)
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 		tlsCreds, err = credentials.NewClientTLSFromFile(hn.Cfg.TLSCertPath, "")
 	}
 
