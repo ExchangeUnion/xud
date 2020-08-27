@@ -33,6 +33,10 @@ export const builder = (argv: Argv) => argv
   .example('$0 withdraw --all --currency BTC --address 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
+  if (!argv.currency) {
+    throw 'currency is not valid';
+  }
+
   const request = new WithdrawRequest();
   request.setCurrency(argv.currency.toUpperCase());
   if (argv.all) {
