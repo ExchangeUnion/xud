@@ -766,7 +766,8 @@ class OrderBook extends EventEmitter {
     }
 
     // TODO: penalize peers for sending ordes too small to swap?
-    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT) {
+    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT ||
+        order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
       this.logger.warn('incoming peer order is too small to swap');
       return false;
     }
