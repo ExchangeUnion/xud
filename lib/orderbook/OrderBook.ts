@@ -444,19 +444,6 @@ class OrderBook extends EventEmitter {
       }
     }
 
-    assert(!(replaceOrderId && discardRemaining), 'can not replace order and discard remaining order');
-
-    let replacedOrderIdentifier: OrderIdentifier | undefined;
-    if (replaceOrderId) {
-      // put the order we are replacing on hold while we place the new order
-      replacedOrderIdentifier = this.localIdMap.get(replaceOrderId);
-      if (!replacedOrderIdentifier) {
-        throw errors.ORDER_NOT_FOUND(replaceOrderId);
-      }
-      assert(replacedOrderIdentifier.pairId === order.pairId);
-      this.addOrderHold(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId);
-    }
-
     // this method can be called recursively on swap failures retries.
     // if max time exceeded, don't try to match
     if (maxTime && Date.now() > maxTime) {
@@ -491,6 +478,18 @@ class OrderBook extends EventEmitter {
       if (outboundAmount > totalOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
       }
+    }
+
+    assert(!(replaceOrderId && discardRemaining), 'can not replace order and discard remaining order');
+    let replacedOrderIdentifier: OrderIdentifier | undefined;
+    if (replaceOrderId) {
+      // put the order we are replacing on hold while we place the new order
+      replacedOrderIdentifier = this.localIdMap.get(replaceOrderId);
+      if (!replacedOrderIdentifier) {
+        throw errors.ORDER_NOT_FOUND(replaceOrderId);
+      }
+      assert(replacedOrderIdentifier.pairId === order.pairId);
+      this.addOrderHold(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId);
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.
