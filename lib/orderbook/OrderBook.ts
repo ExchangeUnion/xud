@@ -507,6 +507,17 @@ class OrderBook extends EventEmitter {
     const swapFailures: SwapFailure[] = [];
     /** Maker orders that we attempted to swap with but failed. */
     const failedMakerOrders: PeerOrder[] = [];
+    /** Maker orders that were invalidated while we were attempting swaps. */
+    const invalidatedMakerOrderIds = new Set<string>();
+
+    // we add a handler here to track orders that were invalidated while we were trying to swap
+    // them so that we don't accidentally add them back to the order book after they fail a swap
+    const handlePeerOrderInvalidation = (invalidatedOrder: OrderInvalidation) => {
+      if (invalidatedOrder.pairId === order.pairId) {
+        invalidatedMakerOrderIds.add(invalidatedOrder.id);
+      }
+    };
+    this.pool.on('packet.orderInvalidation', handlePeerOrderInvalidation);
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -597,7 +608,10 @@ class OrderBook extends EventEmitter {
                 // if the order has already been removed, either it was removed fully during
                 // matching or it's been invalidated by a peer or filled by a separate order
                 // in this case we want to add back the order removed during matching
-                failedMakerOrders.push(maker);
+                // but only if it was not invalidated by the peer in the same time period
+                if (!invalidatedMakerOrderIds.has(maker.id)) {
+                  failedMakerOrders.push(maker);
+                }
               } else {
                 // for other errors we throw
                 throw err;
@@ -660,6 +674,7 @@ class OrderBook extends EventEmitter {
         this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
       }
     });
+    this.pool.removeListener('packet.orderInvalidation', handlePeerOrderInvalidation);
 
     return {
       internalMatches,
