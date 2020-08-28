@@ -445,6 +445,7 @@ class ConnextClient extends SwapClient {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
 
+      this.logger.trace(`hashlock status for payment with hash ${rHash} is ${transferStatusResponse.status}`);
       switch (transferStatusResponse.status) {
         case 'PENDING':
           return { state: PaymentState.Pending };
@@ -457,6 +458,7 @@ class ConnextClient extends SwapClient {
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
+          this.logger.debug(`no hashlock status for payment with hash ${rHash}: ${JSON.stringify(transferStatusResponse)}`);
           return { state: PaymentState.Pending };
       }
     } catch (err) {
