@@ -726,8 +726,6 @@ class Swaps extends EventEmitter {
       await swapClient.settleInvoice(rHash, rPreimage, currency).catch(this.logger.error);
     } else if (deal.state === SwapState.Active) {
       // we check that the deal is still active before we try to settle the invoice
-      // if the swap has already been failed, then we leave the swap recovery module
-      // to attempt to settle the invoice and claim funds rather than do it here
       try {
         await swapClient.settleInvoice(rHash, rPreimage, currency);
       } catch (err) {

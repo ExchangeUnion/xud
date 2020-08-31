@@ -165,7 +165,7 @@ class ConnextClient extends SwapClient {
     }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}`);
+      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
       return;
     }
 
@@ -182,7 +182,18 @@ class ConnextClient extends SwapClient {
     ) {
       expectedIncomingTransfer.paymentId = paymentId;
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
+      this.expectedIncomingTransfers.delete(rHash);
       this.emit('htlcAccepted', rHash, units, currency);
+    } else {
+      if (tokenAddress !== expectedTokenAddress) {
+        this.logger.warn(`incoming transfer for rHash ${rHash} with token address ${tokenAddress} does not match expected ${expectedTokenAddress}`);
+      }
+      if (units !== expectedUnits) {
+        this.logger.warn(`incoming transfer for rHash ${rHash} with value ${units} does not match expected ${expectedUnits}`);
+      }
+      if (timelock !== expectedTimelock) {
+        this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} does not match expected ${expectedTimelock}`);
+      }
     }
   }
 
@@ -411,7 +422,6 @@ class ConnextClient extends SwapClient {
       assetId,
       preImage: `0x${rPreimage}`,
     });
-    this.expectedIncomingTransfers.delete(rHash);
   }
 
   public removeInvoice = async (rHash: string) => {
