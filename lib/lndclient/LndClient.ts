@@ -9,7 +9,7 @@ import * as lndinvoices from '../proto/lndinvoices_pb';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits } from '../swaps/SwapClient';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits, WithdrawArguments } from '../swaps/SwapClient';
 import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
@@ -531,12 +531,7 @@ class LndClient extends SwapClient {
     return depositAddress;
   }
 
-  public withdraw = async ({ amount, destination, all = false, fee }: {
-    amount?: number,
-    destination: string,
-    all?: boolean,
-    fee?: number,
-  }) => {
+  public withdraw = async ({ amount, destination, all = false, fee }: WithdrawArguments) => {
     const request = new lndrpc.SendCoinsRequest();
     request.setAddr(destination);
     if (fee) {
