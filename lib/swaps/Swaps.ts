@@ -726,8 +726,6 @@ class Swaps extends EventEmitter {
       await swapClient.settleInvoice(rHash, rPreimage, currency).catch(this.logger.error);
     } else if (deal.state === SwapState.Active) {
       // we check that the deal is still active before we try to settle the invoice
-      // if the swap has already been failed, then we leave the swap recovery module
-      // to attempt to settle the invoice and claim funds rather than do it here
       try {
         await swapClient.settleInvoice(rHash, rPreimage, currency);
       } catch (err) {
@@ -1226,7 +1224,10 @@ class Swaps extends EventEmitter {
       /** An optional reqId in case the SwapFailedPacket is in response to a swap request. */
       reqId?: string,
     }) => {
-    assert(deal.state !== SwapState.Completed, 'Can not fail a completed deal.');
+    if (deal.state === SwapState.Completed) {
+      this.logger.error(`Can not fail completed deal ${deal.rHash}`);
+      return;
+    }
 
     // If we are already in error state and got another error report we
     // aggregate all error reasons by concatenation
