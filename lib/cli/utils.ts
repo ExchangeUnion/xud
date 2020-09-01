@@ -80,3 +80,12 @@ export const waitForCert = (certPath: string) => {
     }
   });
 };
+
+export const argChecks = {
+  NUMBER_CHECK: ({ param, paramName, allowedValues }: { param: any, paramName: string, allowedValues?: string[] }) => {
+    if (!param || (isNaN(param) && allowedValues?.indexOf(param) === -1)) {
+      console.log(`TEST ${param} ${allowedValues} ${allowedValues?.indexOf(param)} ${isNaN(param)}`);
+      throw `${paramName} is not a valid number`;
+    }
+  },
+};
