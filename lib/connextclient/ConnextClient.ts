@@ -34,8 +34,9 @@ import {
   ConnextDepositResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest, defer } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap } from 'rxjs/operators';
+import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
+import { sha256 } from '@ethersproject/solidity';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
@@ -406,10 +407,11 @@ class ConnextClient extends SwapClient {
    */
   public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
     this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
-    const assetId = this.tokenAddresses.get(currency);
+    const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
       preImage: `0x${rPreimage}`,
+      paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
     });
     this.expectedIncomingTransfers.delete(rHash);
   }
@@ -455,6 +457,21 @@ class ConnextClient extends SwapClient {
             preimage: transferStatusResponse.preImage?.slice(2),
           };
         case 'EXPIRED':
+          // in case the connext transfer is expired we'll attempt to unlock the funds from this transfer
+          const expiredTransferUnlocked$ = defer(() => from(this.settleInvoice(rHash, '', currency))).pipe(
+            catchError((e, caught) => {
+              const RETRY_INTERVAL = 30000;
+              this.logger.error(`failed to unlock an expired connext transfer with rHash: ${rHash} - retrying in ${RETRY_INTERVAL}ms`, e);
+              return timer(RETRY_INTERVAL).pipe(mergeMapTo(caught));
+            }),
+            take(1),
+          );
+          expiredTransferUnlocked$.subscribe({
+            complete: () => {
+              this.logger.debug(`successfully unlocked an expired connext transfer with rHash: ${rHash}`);
+            },
+          });
+          return { state: PaymentState.Failed };
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
