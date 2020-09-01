@@ -703,24 +703,28 @@ class ConnextClient extends SwapClient {
   }: WithdrawArguments): Promise<string> => {
     if (fee) {
       // TODO: allow overwriting gas price
-      throw Error('Setting fee of Ethereum withdrawals is not supported yet');
+      throw Error('setting fee for Ethereum withdrawals is not supported yet');
     }
 
     let units = '';
 
+    const { freeBalanceOnChain } = await this.getBalance(currency);
+
     if (all) {
       if (currency === 'ETH') {
         // TODO: query Ether balance, subtract gas price times 21000 (gas usage of transferring Ether), and set that as amount
-        throw Error('Withdrawing all ETH is not supported yet');
+        throw Error('withdrawing all ETH is not supported yet');
       }
-
-      const balance = await this.getBalance(currency);
-      units = balance.freeBalanceOnChain;
+      units = freeBalanceOnChain;
     } else if (argAmount) {
-      units = this.unitConverter.amountToUnits({
+      const argUnits = this.unitConverter.amountToUnits({
         currency,
         amount: argAmount,
-      }).toString();
+      })
+      if (Number(freeBalanceOnChain) < argUnits) {
+        throw new Error('amount cannot be greater than wallet balance');
+      }
+      units = argUnits.toString();
     }
 
     const res = await this.sendRequest('/onchain-transfer', 'POST', {
