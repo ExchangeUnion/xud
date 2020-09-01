@@ -28,9 +28,9 @@ export const builder = (argv: Argv) => argv
     description: 'whether to withdraw all available funds',
     type: 'boolean',
   })
-  .example('$0 withdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
-  .example('$0 withdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20', 'withdraws 0.1 BTC using 20 sats/byte')
-  .example('$0 withdraw --all --currency BTC --address 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
+  .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws 0.1 BTC')
+  .example('$0 walletwithdraw 0.1 BTC 1BitcoinEaterAddressDontSendf59kuE 20', 'withdraws 0.1 BTC using 20 sats/byte')
+  .example('$0 walletwithdraw --all --currency BTC --address 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
   const request = new WithdrawRequest();

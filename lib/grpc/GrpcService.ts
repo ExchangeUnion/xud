@@ -394,8 +394,9 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.walletWithdraw(call.request.toObject());
+      const txId = await this.service.walletWithdraw(call.request.toObject());
       const response = new xudrpc.WithdrawResponse();
+      response.setTransactionId(txId);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);

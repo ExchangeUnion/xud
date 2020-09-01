@@ -66,6 +66,14 @@ export type PaymentStatus = {
   preimage?: string,
 };
 
+export type WithdrawArguments = {
+  currency: string,
+  destination: string,
+  amount?: number,
+  all?: boolean,
+  fee?: number,
+};
+
 interface SwapClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
   once(event: 'initialized', listener: () => void): this;
@@ -330,6 +338,9 @@ abstract class SwapClient extends EventEmitter {
 
   /** Gets a deposit address. */
   public abstract async deposit(): Promise<string>;
+
+  /** Withdraws from the onchain wallet of the client and returns the transaction id or transaction hash in case of Ethereum */
+  public abstract async withdraw(args: WithdrawArguments): Promise<string>;
 
   public isConnected(): boolean {
     return this.status === ClientStatus.ConnectionVerified;

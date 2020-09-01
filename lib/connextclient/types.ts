@@ -181,3 +181,7 @@ export type TransferReceivedEvent = {
   units: number;
   paymentId: string;
 };
+
+export type OnchainTransferResponse = {
+  txhash: string;
+};
