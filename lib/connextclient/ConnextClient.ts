@@ -706,7 +706,7 @@ class ConnextClient extends SwapClient {
       throw Error('Setting fee of Ethereum withdrawals is not supported yet');
     }
 
-    let amount = '';
+    let units = '';
 
     if (all) {
       if (currency === 'ETH') {
@@ -715,20 +715,20 @@ class ConnextClient extends SwapClient {
       }
 
       const balance = await this.getBalance(currency);
-      amount = balance.freeBalanceOnChain;
+      units = balance.freeBalanceOnChain;
     } else if (argAmount) {
-      amount = BigInt(argAmount).toString();
+      units = this.unitConverter.amountToUnits({
+        currency,
+        amount: argAmount,
+      }).toString();
     }
 
-    const assetId = this.getTokenAddress(currency);
-
     const res = await this.sendRequest('/onchain-transfer', 'POST', {
-      amount,
-      assetId,
+      assetId: this.getTokenAddress(currency),
+      amount: units,
       recipient: destination,
     });
     const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);
-
     return txhash;
   }
 
