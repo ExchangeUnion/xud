@@ -13,6 +13,7 @@ import SwapClient, {
   TradingLimits,
   SwapClientInfo,
   PaymentStatus,
+  WithdrawArguments,
 } from '../swaps/SwapClient';
 import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
@@ -32,6 +33,7 @@ import {
   ProvidePreimageEvent,
   TransferReceivedEvent,
   ConnextDepositResponse,
+  OnchainTransferResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, combineLatest, defer } from 'rxjs';
@@ -690,6 +692,48 @@ class ConnextClient extends SwapClient {
       assetId,
       amount: BigInt(amount).toString(),
     });
+  }
+
+  public withdraw = async ({
+    all,
+    currency,
+    amount: argAmount,
+    destination,
+    fee,
+  }: WithdrawArguments): Promise<string> => {
+    if (fee) {
+      // TODO: allow overwriting gas price
+      throw Error('setting fee for Ethereum withdrawals is not supported yet');
+    }
+
+    let units = '';
+
+    const { freeBalanceOnChain } = await this.getBalance(currency);
+
+    if (all) {
+      if (currency === 'ETH') {
+        // TODO: query Ether balance, subtract gas price times 21000 (gas usage of transferring Ether), and set that as amount
+        throw Error('withdrawing all ETH is not supported yet');
+      }
+      units = freeBalanceOnChain;
+    } else if (argAmount) {
+      const argUnits = this.unitConverter.amountToUnits({
+        currency,
+        amount: argAmount,
+      });
+      if (Number(freeBalanceOnChain) < argUnits) {
+        throw new Error('amount cannot be greater than wallet balance');
+      }
+      units = argUnits.toString();
+    }
+
+    const res = await this.sendRequest('/onchain-transfer', 'POST', {
+      assetId: this.getTokenAddress(currency),
+      amount: units,
+      recipient: destination,
+    });
+    const { txhash } = await parseResponseBody<OnchainTransferResponse>(res);
+    return txhash;
   }
 
   /** Connext client specific cleanup. */

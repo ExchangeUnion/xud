@@ -380,13 +380,8 @@ class SwapClientManager extends EventEmitter {
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
-    if (isLndClient(swapClient)) {
-      const txId = await swapClient.withdraw({ amount, destination, all, fee });
-      return txId;
-    } else {
-      // TODO: generic withdraw logic
-      throw new Error('currency currently not supported for on-chain withdrawal');
-    }
+
+    return await swapClient.withdraw({ currency, amount, destination, all, fee });
   }
 
   /**
