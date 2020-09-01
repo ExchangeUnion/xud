@@ -720,7 +720,7 @@ class ConnextClient extends SwapClient {
       const argUnits = this.unitConverter.amountToUnits({
         currency,
         amount: argAmount,
-      })
+      });
       if (Number(freeBalanceOnChain) < argUnits) {
         throw new Error('amount cannot be greater than wallet balance');
       }
