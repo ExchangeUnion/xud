@@ -341,12 +341,12 @@ class TradingPair extends EventEmitter {
         throw errors.QUANTITY_ON_HOLD(order.localId, order.hold);
       }
       order.hold = order.quantity;
-      this.logger.debug(`placed entire order ${orderId} on hold`);
+      this.logger.trace(`placed entire order ${orderId} on hold`);
     } else {
       assert(holdAmount > 0);
       assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
       order.hold += holdAmount;
-      this.logger.debug(`added hold of ${holdAmount} on order ${orderId}`);
+      this.logger.trace(`added hold of ${holdAmount} on order ${orderId}`);
     }
   }
 
@@ -355,12 +355,12 @@ class TradingPair extends EventEmitter {
     if (holdAmount === undefined) {
       assert(order.hold > 0);
       order.hold = 0;
-      this.logger.debug(`removed entire hold on order ${orderId}`);
+      this.logger.trace(`removed entire hold on order ${orderId}`);
     } else {
       assert(holdAmount > 0);
       assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
       order.hold -= holdAmount;
-      this.logger.debug(`removed hold of ${holdAmount} on order ${orderId}`);
+      this.logger.trace(`removed hold of ${holdAmount} on order ${orderId}`);
     }
   }
 
