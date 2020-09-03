@@ -470,8 +470,17 @@ class ConnextClient extends SwapClient {
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for payment with hash ${rHash}: ${JSON.stringify(transferStatusResponse)}`);
-          return { state: PaymentState.Pending };
+          this.logger.debug(`no hashlock status for payment with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install`);
+          try {
+            await this.sendRequest('/reject-install', 'POST', {
+              appIdentityHash: transferStatusResponse.appIdentityHash,
+            });
+            return { state: PaymentState.Failed };
+          } catch (e) {
+            // in case of error we're still consider the payment as pending
+            this.logger.error('failed to reject app install', e);
+            return { state: PaymentState.Pending };
+          }
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {

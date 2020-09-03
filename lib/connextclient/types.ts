@@ -86,6 +86,7 @@ export type ConnextDepositResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
+  appIdentityHash: string;
   receiverIdentifier: string;
   senderIdentifier: string;
   assetId: string;
