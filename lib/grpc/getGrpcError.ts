@@ -49,6 +49,7 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
     case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
     case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+    case orderErrorCodes.QUANTITY_ON_HOLD:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
     case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:
       code = status.FAILED_PRECONDITION;
