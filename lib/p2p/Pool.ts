@@ -728,10 +728,8 @@ class Pool extends EventEmitter {
     const orderInvalidationPacket = new packets.OrderInvalidationPacket({ id, pairId, quantity });
     this.peers.forEach(async (peer) => {
       if (!nodeToExclude || peer.nodePubKey !== nodeToExclude) {
-        if (peer.advertisedPairs.includes(pairId)) {
+        if (peer.isPairActive(pairId)) {
           await peer.sendPacket(orderInvalidationPacket);
-        } else {
-          this.logger.trace(`skipping to send order invalidation to ${peer.address} since pair is not found`);
         }
       }
     });
@@ -790,11 +788,11 @@ class Pool extends EventEmitter {
       }
       case PacketType.OrderInvalidation: {
         const orderInvalidation = (packet as packets.OrderInvalidationPacket).body!;
-        if (!this.nodeState.pairs.includes(orderInvalidation.pairId)) {
-          this.logger.trace(`received order invalidation for unrelated pair from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
-        } else {
+        if (peer.isPairActive(orderInvalidation.pairId)) {
           this.logger.trace(`received order invalidation from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
           this.emit('packet.orderInvalidation', orderInvalidation, peer.nodePubKey as string);
+        } else {
+          this.logger.trace(`received order invalidation for inactive pair from ${peer.label}: ${JSON.stringify(orderInvalidation)}`);
         }
         break;
       }
