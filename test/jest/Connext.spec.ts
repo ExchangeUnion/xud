@@ -6,6 +6,14 @@ import { CurrencyInstance } from '../../lib/db/types';
 import { PaymentState } from '../../lib/swaps/SwapClient';
 import errors from '../../lib/connextclient/errors';
 
+const MOCK_TX_HASH = '0x5544332211';
+jest.mock('../../lib/utils/utils', () => {
+  return {
+    parseResponseBody: () => {
+      return { txhash: MOCK_TX_HASH };
+    },
+  };
+});
 jest.mock('../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>>(<any>Logger);
 
@@ -27,6 +35,7 @@ jest.mock('http', () => {
 });
 
 const ETH_ASSET_ID = '0x0000000000000000000000000000000000000000';
+const USDT_ASSET_ID = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
 
 describe('ConnextClient', () => {
   let connext: ConnextClient;
@@ -48,12 +57,133 @@ describe('ConnextClient', () => {
         tokenAddress: ETH_ASSET_ID,
         swapClient: SwapClientType.Connext,
       },
+      {
+        id: 'USDT',
+        tokenAddress: USDT_ASSET_ID,
+        swapClient: SwapClientType.Connext,
+      },
     ] as CurrencyInstance[];
     connext = new ConnextClient({
       config,
       currencyInstances,
       logger,
       unitConverter: new UnitConverter(),
+    });
+  });
+
+  describe('withdraw', () => {
+    const MOCK_FREE_BALANCE_ON_CHAIN = 10000;
+    const DESTINATION_ADDRESS = '0x12345';
+
+    beforeEach(() => {
+      connext['getBalance'] = jest.fn().mockReturnValue({
+        freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN,
+      });
+      connext['sendRequest'] = jest.fn();
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    }),
+
+    it('fails with custom fee', async () => {
+      expect.assertions(1);
+      try {
+        await connext.withdraw({
+          currency: 'ETH',
+          destination: DESTINATION_ADDRESS,
+          amount: 123,
+          fee: 1,
+        });
+      } catch (e) {
+        expect(e).toMatchSnapshot();
+      }
+    });
+
+    it('fails to withdraw all ETH', async () => {
+      expect.assertions(1);
+      try {
+        await connext.withdraw({
+          currency: 'ETH',
+          destination: DESTINATION_ADDRESS,
+          all: true,
+        });
+      } catch (e) {
+        expect(e).toMatchSnapshot();
+      }
+    });
+
+    it('fails when amount bigger than wallet balance', async () => {
+      expect.assertions(1);
+      try {
+        await connext.withdraw({
+          currency: 'ETH',
+          destination: DESTINATION_ADDRESS,
+          amount: 0.0000011,
+        });
+      } catch (e) {
+        expect(e).toMatchSnapshot();
+      }
+    });
+
+    it('withdraws all USDT', async () => {
+      expect.assertions(3);
+      const txhash = await connext.withdraw({
+        currency: 'USDT',
+        destination: DESTINATION_ADDRESS,
+        all: true,
+      });
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/onchain-transfer',
+        'POST',
+        expect.objectContaining({
+          assetId: USDT_ASSET_ID,
+          amount: MOCK_FREE_BALANCE_ON_CHAIN,
+          recipient: DESTINATION_ADDRESS,
+        }),
+      );
+      expect(txhash).toEqual(MOCK_TX_HASH);
+    });
+
+    it('withdraws 5000 USDT amount', async () => {
+      expect.assertions(3);
+      const txhash = await connext.withdraw({
+        currency: 'USDT',
+        destination: DESTINATION_ADDRESS,
+        amount: 5000,
+      });
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/onchain-transfer',
+        'POST',
+        expect.objectContaining({
+          assetId: USDT_ASSET_ID,
+          amount: '50',
+          recipient: DESTINATION_ADDRESS,
+        }),
+      );
+      expect(txhash).toEqual(MOCK_TX_HASH);
+    });
+
+    it('withdraws 0.000001 ETH amount', async () => {
+      expect.assertions(3);
+      const txhash = await connext.withdraw({
+        currency: 'ETH',
+        destination: DESTINATION_ADDRESS,
+        amount: 0.0000005,
+      });
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/onchain-transfer',
+        'POST',
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          amount: '5000',
+          recipient: DESTINATION_ADDRESS,
+        }),
+      );
+      expect(txhash).toEqual(MOCK_TX_HASH);
     });
   });
 
