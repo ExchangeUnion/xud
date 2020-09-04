@@ -72,7 +72,7 @@ const errors = {
     code: errorCodes.MIN_QUANTITY_VIOLATED,
   }),
   QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
-    message: `order with local id ${localId} has a quantity of ${holdQuantity} on hold`,
+    message: `order with local id ${localId} has a quantity of ${holdQuantity} satoshis on hold, try again later`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),
 };
