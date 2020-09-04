@@ -798,14 +798,17 @@ class Pool extends EventEmitter {
       }
       case PacketType.Orders: {
         const receivedOrders = (packet as packets.OrdersPacket).body!;
-        this.logger.verbose(`received ${receivedOrders.length} orders from ${peer.label}`);
-        receivedOrders.forEach((order) => {
-          if (peer.isPairActive(order.pairId)) {
-            this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
-          } else {
-            this.logger.debug(`received order ${order.id} for deactivated trading pair`);
-          }
-        });
+        if (receivedOrders.length > 0) {
+          this.logger.debug(`received ${receivedOrders.length} orders from ${peer.label}`);
+          receivedOrders.forEach((order) => {
+            if (peer.isPairActive(order.pairId)) {
+              this.emit('packet.order', { ...order, peerPubKey: peer.nodePubKey! });
+            } else {
+              this.logger.debug(`received order ${order.id} for deactivated trading pair`);
+            }
+          });
+        }
+
         break;
       }
       case PacketType.GetNodes: {
