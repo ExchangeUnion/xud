@@ -723,7 +723,7 @@ class ConnextClient extends SwapClient {
     if (all) {
       if (currency === 'ETH') {
         // TODO: query Ether balance, subtract gas price times 21000 (gas usage of transferring Ether), and set that as amount
-        throw Error('withdrawing all ETH is not supported yet');
+        throw new Error('withdrawing all ETH is not supported yet');
       }
       units = freeBalanceOnChain;
     } else if (argAmount) {
@@ -732,7 +732,7 @@ class ConnextClient extends SwapClient {
         amount: argAmount,
       });
       if (Number(freeBalanceOnChain) < argUnits) {
-        throw new Error('amount cannot be greater than wallet balance');
+        throw errors.INSUFFICIENT_BALANCE;
       }
       units = argUnits.toString();
     }

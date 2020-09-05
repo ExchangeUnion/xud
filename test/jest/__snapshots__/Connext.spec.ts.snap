@@ -6,3 +6,14 @@ Object {
   "message": "connext payment not found",
 }
 `;
+
+exports[`ConnextClient withdraw fails to withdraw all ETH 1`] = `[Error: withdrawing all ETH is not supported yet]`;
+
+exports[`ConnextClient withdraw fails when amount bigger than wallet balance 1`] = `
+Object {
+  "code": "8.2",
+  "message": "insufficient balance to perform request",
+}
+`;
+
+exports[`ConnextClient withdraw fails with custom fee 1`] = `[Error: setting fee for Ethereum withdrawals is not supported yet]`;
