@@ -110,7 +110,7 @@ class Service {
   /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;
-    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number }>();
+    const channelBalances = new Map<string, { balance: number, pendingOpenBalance: number, inactiveBalance: number, noChannels: boolean }>();
     const walletBalances = new Map<string, { confirmedBalance: number, unconfirmedBalance: number }>();
 
     if (currency) {
@@ -144,7 +144,7 @@ class Service {
     const balances = new Map<string, {
       channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
       walletBalance: number, unconfirmedWalletBalance: number,
-      totalBalance: number,
+      totalBalance: number, noChannels: boolean,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
       const walletBalance = walletBalances.get(currency);
@@ -161,6 +161,7 @@ class Service {
           inactiveChannelBalance: channelBalance.inactiveBalance,
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
+          noChannels: channelBalance.noChannels,
         });
       }
     });

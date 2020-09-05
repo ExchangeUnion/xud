@@ -691,7 +691,9 @@ class LndClient extends SwapClient {
     let balance = 0;
     let inactiveBalance = 0;
     let totalOutboundAmount = 0;
+    let noChannels = true;
     channels.toObject().channelsList.forEach((channel) => {
+      noChannels = false;
       if (channel.active) {
         balance += channel.localBalance;
         const outbound = channel.localBalance - channel.localChanReserveSat;
@@ -733,12 +735,13 @@ class LndClient extends SwapClient {
       balance,
       inactiveBalance,
       pendingOpenBalance,
+      noChannels,
     };
   }
 
   public channelBalance = async (): Promise<ChannelBalance> => {
-    const { balance, inactiveBalance, pendingOpenBalance } = await this.updateChannelBalances();
-    return { balance, inactiveBalance, pendingOpenBalance };
+    const { balance, inactiveBalance, pendingOpenBalance, noChannels } = await this.updateChannelBalances();
+    return { balance, inactiveBalance, pendingOpenBalance, noChannels };
   }
 
   public tradingLimits = async (): Promise<TradingLimits> => {

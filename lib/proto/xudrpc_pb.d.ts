@@ -84,6 +84,9 @@ export class Balance extends jspb.Message {
     getUnconfirmedWalletBalance(): number;
     setUnconfirmedWalletBalance(value: number): void;
 
+    getNoChannels(): boolean;
+    setNoChannels(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Balance.AsObject;
@@ -103,6 +106,7 @@ export namespace Balance {
         inactiveChannelBalance: number,
         walletBalance: number,
         unconfirmedWalletBalance: number,
+        noChannels: boolean,
     }
 }
 

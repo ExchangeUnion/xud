@@ -887,6 +887,11 @@
           "type": "string",
           "format": "uint64",
           "description": "Unconfirmed wallet balance in satoshis."
+        },
+        "no_channels": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Indicates that if there were no channels to calculate balances."
         }
       }
     },

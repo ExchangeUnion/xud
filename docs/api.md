@@ -156,6 +156,7 @@
 | inactive_channel_balance | [uint64](#uint64) |  | Sum of inactive channel balances denominated in satoshis. |
 | wallet_balance | [uint64](#uint64) |  | Confirmed wallet balance in satoshis. |
 | unconfirmed_wallet_balance | [uint64](#uint64) |  | Unconfirmed wallet balance in satoshis. |
+| no_channels | [bool](#bool) |  | Indicates that if there were no channels to calculate balances. |
 
 
 
