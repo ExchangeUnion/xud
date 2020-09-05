@@ -229,14 +229,8 @@ class Pool extends EventEmitter {
    * peers to notify them of the change.
    */
   public updatePairs = (pairIds: string[]) => {
-    const differentPairs = this.nodeState.pairs.concat(pairIds).filter((val, _index, arr) => {
-      return arr.indexOf(val) === arr.lastIndexOf(val);
-    });
-
     this.nodeState.pairs = pairIds;
-    this.sendNodeStateUpdate((peer: Peer) => {
-      return differentPairs.some(pair => peer.isPairActive(pair));
-    });
+    this.sendNodeStateUpdate();
   }
 
   /**
@@ -267,12 +261,10 @@ class Pool extends EventEmitter {
     this.sendNodeStateUpdate();
   }
 
-  private sendNodeStateUpdate = (condition?: Function) => {
+  private sendNodeStateUpdate = () => {
     const packet = new packets.NodeStateUpdatePacket(this.nodeState);
     this.peers.forEach(async (peer) => {
-      if (!condition || condition(peer)) {
-        await peer.sendPacket(packet);
-      }
+      await peer.sendPacket(packet);
     });
   }
 
