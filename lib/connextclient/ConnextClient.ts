@@ -473,7 +473,7 @@ class ConnextClient extends SwapClient {
           this.logger.debug(`no hashlock status for connext transfer with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install proposal`);
           try {
             await this.sendRequest('/reject-install', 'POST', {
-              appIdentityHash: transferStatusResponse.appIdentityHash,
+              appIdentityHash: transferStatusResponse.senderAppIdentityHash,
             });
             this.logger.debug(`connext transfer proposal with hash ${rHash} successfully rejected - transfer state is now failed`);
             return { state: PaymentState.Failed };
