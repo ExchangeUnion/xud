@@ -93,31 +93,39 @@ describe('ConnextClient', () => {
 
     it('returns PaymentState.Failed when rejected app install for payment without status field', async () => {
       expect.assertions(3);
-      const appIdentityHash = '12345';
+      const senderAppIdentityHash = '12345';
       connext['getHashLockStatus'] = jest
         .fn()
         .mockReturnValue({
-          appIdentityHash,
+          senderAppIdentityHash,
         });
       connext['sendRequest'] = jest.fn().mockReturnValue(Promise.resolve());
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith('/reject-install', 'POST', expect.objectContaining({ appIdentityHash }));
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/reject-install',
+        'POST',
+        expect.objectContaining({ appIdentityHash: senderAppIdentityHash }),
+      );
       expect(result).toEqual({ state: PaymentState.Failed });
     });
 
     it('returns PaymentState.Pending when failing to reject app install for payment without status field', async () => {
       expect.assertions(3);
-      const appIdentityHash = '12345';
+      const senderAppIdentityHash = '12345';
       connext['getHashLockStatus'] = jest
         .fn()
         .mockReturnValue({
-          appIdentityHash,
+          senderAppIdentityHash,
         });
       connext['sendRequest'] = jest.fn().mockReturnValue(Promise.reject());
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith('/reject-install', 'POST', expect.objectContaining({ appIdentityHash }));
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/reject-install',
+        'POST',
+        expect.objectContaining({ appIdentityHash: senderAppIdentityHash }),
+      );
       expect(result).toEqual({ state: PaymentState.Pending });
     });
 
