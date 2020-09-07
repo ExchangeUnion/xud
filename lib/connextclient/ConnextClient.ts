@@ -458,7 +458,7 @@ class ConnextClient extends SwapClient {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
 
-      this.logger.trace(`hashlock status for payment with hash ${rHash} is ${transferStatusResponse.status}`);
+      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatusResponse.status}`);
       switch (transferStatusResponse.status) {
         case 'PENDING':
           return { state: PaymentState.Pending };
@@ -494,14 +494,24 @@ class ConnextClient extends SwapClient {
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for payment with hash ${rHash}: ${JSON.stringify(transferStatusResponse)}`);
-          return { state: PaymentState.Pending };
+          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install proposal`);
+          try {
+            await this.sendRequest('/reject-install', 'POST', {
+              appIdentityHash: transferStatusResponse.senderAppIdentityHash,
+            });
+            this.logger.debug(`connext transfer proposal with hash ${rHash} successfully rejected - transfer state is now failed`);
+            return { state: PaymentState.Failed };
+          } catch (e) {
+            // in case of error we're still consider the payment as pending
+            this.logger.error('failed to reject connext app install proposal', e);
+            return { state: PaymentState.Pending };
+          }
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
         return { state: PaymentState.Failed };
       }
-      this.logger.error(`could not lookup payment for ${rHash}`, err);
+      this.logger.error(`could not lookup connext transfer for ${rHash}`, err);
       return { state: PaymentState.Pending }; // return pending if we hit an error
     }
   }
