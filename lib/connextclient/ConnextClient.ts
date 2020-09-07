@@ -411,7 +411,6 @@ class ConnextClient extends SwapClient {
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
       preImage: `0x${rPreimage}`,
-      paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
     });
     this.expectedIncomingTransfers.delete(rHash);
   }
@@ -457,8 +456,16 @@ class ConnextClient extends SwapClient {
             preimage: transferStatusResponse.preImage?.slice(2),
           };
         case 'EXPIRED':
-          // in case the connext transfer is expired we'll attempt to unlock the funds from this transfer
-          const expiredTransferUnlocked$ = defer(() => from(this.settleInvoice(rHash, '', currency))).pipe(
+          const expiredTransferUnlocked$ = defer(() => from(
+            // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
+            // in order to unlock the funds we'll need to call /hashlock-resolve with the paymentId
+            this.sendRequest('/hashlock-resolve', 'POST', {
+              assetId,
+              // providing a placeholder preImage for rest-api-client because it's a required field
+              preImage: '0x',
+              paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
+            }),
+          )).pipe(
             catchError((e, caught) => {
               const RETRY_INTERVAL = 30000;
               this.logger.error(`failed to unlock an expired connext transfer with rHash: ${rHash} - retrying in ${RETRY_INTERVAL}ms`, e);

@@ -72,24 +72,6 @@ describe('ConnextClient', () => {
     });
   });
 
-  describe('settleInvoice', () => {
-    it('includes paymentId', async () => {
-      expect.assertions(2);
-      connext['sendRequest'] = jest.fn();
-      await connext['settleInvoice']('8f28fb27a164ae992fb4808b11c137d06e8e7d9304043a6b7163323f7cf53920', '', 'ETH');
-      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith(
-        '/hashlock-resolve',
-        'POST',
-        expect.objectContaining({
-          assetId: ETH_ASSET_ID,
-          preImage: '0x',
-          paymentId: '0xb2c0648834d105f3b372c6a05d11b0f19d88a8909f6315c8535e383e59991f8e',
-        }),
-      );
-    });
-  });
-
   describe('lookupPayment', () => {
     it('returns PaymentState.Pending', async () => {
       expect.assertions(1);
@@ -114,13 +96,21 @@ describe('ConnextClient', () => {
       connext['getHashLockStatus'] = jest
         .fn()
         .mockReturnValue({ status: 'EXPIRED' });
-      connext['settleInvoice'] = jest.fn().mockReturnValue(Promise.resolve());
-      const hash = '0x12345';
+      connext['sendRequest'] = jest.fn().mockReturnValue(Promise.resolve());
+      const hash = '8f28fb27a164ae992fb4808b11c137d06e8e7d9304043a6b7163323f7cf53920';
       const currency = 'ETH';
       const result = await connext['lookupPayment'](hash, currency);
       expect(result).toEqual({ state: PaymentState.Failed });
-      expect(connext['settleInvoice']).toHaveBeenCalledTimes(1);
-      expect(connext['settleInvoice']).toHaveBeenCalledWith(hash, '', currency);
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/hashlock-resolve',
+        'POST',
+        expect.objectContaining({
+          assetId: ETH_ASSET_ID,
+          preImage: '0x',
+          paymentId: '0xb2c0648834d105f3b372c6a05d11b0f19d88a8909f6315c8535e383e59991f8e',
+        }),
+      );
     });
 
     it('returns PaymentState.Failed when FAILED', async () => {
