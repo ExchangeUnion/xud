@@ -84,8 +84,13 @@ export const waitForCert = (certPath: string) => {
 export const argChecks = {
   NUMBER_CHECK: ({ param, paramName, allowedValues }: { param: any, paramName: string, allowedValues?: string[] }) => {
     if (!param || (isNaN(param) && allowedValues?.indexOf(param) === -1)) {
-      console.log(`TEST ${param} ${allowedValues} ${allowedValues?.indexOf(param)} ${isNaN(param)}`);
       throw `${paramName} is not a valid number`;
+    }
+  },
+  PAIR_ID_CHECK: ({ pairId }: { pairId: string }) => {
+    const [firstCurrency, secondCurrency] = pairId.split('/');
+    if (!firstCurrency || !secondCurrency) {
+      throw `${pairId} is not a valid pair`;
     }
   },
 };

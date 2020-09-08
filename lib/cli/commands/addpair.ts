@@ -1,6 +1,7 @@
 import { Arguments, Argv } from 'yargs';
 import { AddPairRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
+import { argChecks } from '../utils';
 
 export const command = 'addpair <pair_id|base_currency> [quote_currency]';
 
@@ -26,6 +27,7 @@ export const handler = async (argv: Arguments<any>) => {
     baseCurrency = argv.base_currency;
     quoteCurrency = argv.quote_currency;
   } else {
+    argChecks.PAIR_ID_CHECK({ pairId: argv.pair_id });
     [baseCurrency, quoteCurrency] = argv.pair_id.split('/');
   }
   request.setBaseCurrency(baseCurrency.toUpperCase());

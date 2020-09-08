@@ -3,16 +3,16 @@ import { WithdrawRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { argChecks, coinsToSats } from '../utils';
 
-export const command = 'walletwithdraw <amount> <currency> <destination> [fee]';
+export const command = 'walletwithdraw <amount> <currency> [destination] [fee]';
 
 export const describe = 'withdraws on-chain funds from xud';
 
 export const builder = (argv: Argv) => argv
-  .option('amount', {
-    description: 'the amount to withdraw',
+  .positional('amount', {
+    description: 'the amount to withdraw, `all` withdraws everything',
     type: 'string',
   })
-  .option('currency', {
+  .positional('currency', {
     description: 'the ticker symbol of the currency to withdraw.',
     type: 'string',
   })
@@ -36,7 +36,7 @@ export const handler = async (argv: Arguments<any>) => {
   if (argv.amount === 'all') {
     request.setAll(true);
   } else {
-    request.setAmount(coinsToSats(argv.amount));
+    request.setAmount(coinsToSats(parseFloat(argv.amount)));
   }
   request.setDestination(argv.destination);
   request.setFee(argv.fee);
