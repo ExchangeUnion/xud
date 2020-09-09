@@ -29,10 +29,8 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
 
 const formatBalance = (confirmedBalance: number, unconfirmedBalance: number, inactiveBalance = 0) => {
   const confirmedBalanceStr = confirmedBalance === -1 ? 'timeout' : satsToCoinsStr(confirmedBalance);
-  const unconfirmedBalanceStr = unconfirmedBalance === -1 ? 'timeout' :
-      (unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined);
-  const inactiveBalanceStr = inactiveBalance === -1 ? 'timeout' :
-      (inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined);
+  const unconfirmedBalanceStr = unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined;
+  const inactiveBalanceStr = inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
     let str = `${confirmedBalanceStr} (`;
     if (unconfirmedBalanceStr) {
