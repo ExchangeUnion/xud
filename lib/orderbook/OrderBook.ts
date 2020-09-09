@@ -480,9 +480,10 @@ class OrderBook extends EventEmitter {
       }
     }
 
-    assert(!(replaceOrderId && discardRemaining), 'can not replace order and discard remaining order');
     let replacedOrderIdentifier: OrderIdentifier | undefined;
     if (replaceOrderId) {
+      assert(!discardRemaining, 'can not replace order and discard remaining order');
+
       // put the order we are replacing on hold while we place the new order
       replacedOrderIdentifier = this.localIdMap.get(replaceOrderId);
       if (!replacedOrderIdentifier) {

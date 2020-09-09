@@ -1,6 +1,6 @@
 {
   "name": "xud",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "lockfileVersion": 1,
   "requires": true,
   "dependencies": {
@@ -444,6 +444,89 @@
       "requires": {
         "exec-sh": "^0.3.2",
         "minimist": "^1.2.0"
+      }
+    },
+    "@ethersproject/bignumber": {
+      "version": "5.0.6",
+      "resolved": "https://registry.npmjs.org/@ethersproject/bignumber/-/bignumber-5.0.6.tgz",
+      "integrity": "sha512-fLilYOSH3DJXBrimx7PwrJdY/zAI5MGp229Mvhtcur76Lgt4qNWu9HTiwMGHP01Tkm3YP5gweF83GrQrA2tYUA==",
+      "requires": {
+        "@ethersproject/bytes": "^5.0.4",
+        "@ethersproject/logger": "^5.0.5",
+        "bn.js": "^4.4.0"
+      }
+    },
+    "@ethersproject/bytes": {
+      "version": "5.0.4",
+      "resolved": "https://registry.npmjs.org/@ethersproject/bytes/-/bytes-5.0.4.tgz",
+      "integrity": "sha512-9R6A6l9JN8x1U4s1dJCR+9h3MZTT3xQofr/Xx8wbDvj6NnY4CbBB0o8ZgHXvR74yV90pY2EzCekpkMBJnRzkSw==",
+      "requires": {
+        "@ethersproject/logger": "^5.0.5"
+      }
+    },
+    "@ethersproject/constants": {
+      "version": "5.0.3",
+      "resolved": "https://registry.npmjs.org/@ethersproject/constants/-/constants-5.0.3.tgz",
+      "integrity": "sha512-iN7KBrA0zNFybDyrkcAPOcyU3CHXYFMd+KM2Jr07Kjg+DVB5wPpEXsOdd/K1KWFsFtGfNdPZ7QP8siLtCePXrQ==",
+      "requires": {
+        "@ethersproject/bignumber": "^5.0.6"
+      }
+    },
+    "@ethersproject/keccak256": {
+      "version": "5.0.3",
+      "resolved": "https://registry.npmjs.org/@ethersproject/keccak256/-/keccak256-5.0.3.tgz",
+      "integrity": "sha512-VhW3mgZMBZlETV6AyOmjNeNG+Pg68igiKkPpat8/FZl0CKnfgQ+KZQZ/ee1vT+X0IUM8/djqnei6btmtbA27Ug==",
+      "requires": {
+        "@ethersproject/bytes": "^5.0.4",
+        "js-sha3": "0.5.7"
+      }
+    },
+    "@ethersproject/logger": {
+      "version": "5.0.5",
+      "resolved": "https://registry.npmjs.org/@ethersproject/logger/-/logger-5.0.5.tgz",
+      "integrity": "sha512-gJj72WGzQhUtCk6kfvI8elTaPOQyMvrMghp/nbz0ivTo39fZ7IjypFh/ySDeUSdBNplAwhzWKKejQhdpyefg/w=="
+    },
+    "@ethersproject/sha2": {
+      "version": "5.0.3",
+      "resolved": "https://registry.npmjs.org/@ethersproject/sha2/-/sha2-5.0.3.tgz",
+      "integrity": "sha512-B1U9UkgxhUlC1J4sFUL2GwTo33bM2i/aaD3aiYdTh1FEXtGfqYA89KN1DJ83n+Em8iuvyiBRk6u30VmgqlHeHA==",
+      "requires": {
+        "@ethersproject/bytes": "^5.0.4",
+        "@ethersproject/logger": "^5.0.5",
+        "hash.js": "1.1.3"
+      },
+      "dependencies": {
+        "hash.js": {
+          "version": "1.1.3",
+          "resolved": "https://registry.npmjs.org/hash.js/-/hash.js-1.1.3.tgz",
+          "integrity": "sha512-/UETyP0W22QILqS+6HowevwhEFJ3MBJnwTf75Qob9Wz9t0DPuisL8kW8YZMK62dHAKE1c1p+gY1TtOLY+USEHA==",
+          "requires": {
+            "inherits": "^2.0.3",
+            "minimalistic-assert": "^1.0.0"
+          }
+        }
+      }
+    },
+    "@ethersproject/solidity": {
+      "version": "5.0.3",
+      "resolved": "https://registry.npmjs.org/@ethersproject/solidity/-/solidity-5.0.3.tgz",
+      "integrity": "sha512-a6ni4OIj1e+JrvDiuLVqygYmAh53Ljk5iErkjzPgFBY8dz9xQfDxhpASjOZY0lzCf+N125yeK9N7Vm3HI7OLzQ==",
+      "requires": {
+        "@ethersproject/bignumber": "^5.0.6",
+        "@ethersproject/bytes": "^5.0.4",
+        "@ethersproject/keccak256": "^5.0.3",
+        "@ethersproject/sha2": "^5.0.3",
+        "@ethersproject/strings": "^5.0.3"
+      }
+    },
+    "@ethersproject/strings": {
+      "version": "5.0.3",
+      "resolved": "https://registry.npmjs.org/@ethersproject/strings/-/strings-5.0.3.tgz",
+      "integrity": "sha512-8kEx3+Z6cMn581yh093qnaSa8H7XzmLn6g8YFDHUpzXM7+bvXvnL2ciHrJ+EbvaMQZpej6nNtl0nm7XF4PmQHA==",
+      "requires": {
+        "@ethersproject/bytes": "^5.0.4",
+        "@ethersproject/constants": "^5.0.3",
+        "@ethersproject/logger": "^5.0.5"
       }
     },
     "@exchangeunion/grpc-dynamic-gateway": {
@@ -9773,6 +9856,11 @@
         "merge-stream": "^2.0.0",
         "supports-color": "^7.0.0"
       }
+    },
+    "js-sha3": {
+      "version": "0.5.7",
+      "resolved": "https://registry.npmjs.org/js-sha3/-/js-sha3-0.5.7.tgz",
+      "integrity": "sha1-DU/9gALVMzqrr0oj7tL2N0yfKOc="
     },
     "js-tokens": {
       "version": "4.0.0",

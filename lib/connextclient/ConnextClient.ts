@@ -36,8 +36,9 @@ import {
   OnchainTransferResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest, defer } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap } from 'rxjs/operators';
+import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
+import { sha256 } from '@ethersproject/solidity';
 
 const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
 
@@ -419,7 +420,7 @@ class ConnextClient extends SwapClient {
    */
   public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
     this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
-    const assetId = this.tokenAddresses.get(currency);
+    const assetId = this.getTokenAddress(currency);
     await this.sendRequest('/hashlock-resolve', 'POST', {
       assetId,
       preImage: `0x${rPreimage}`,
@@ -457,7 +458,7 @@ class ConnextClient extends SwapClient {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
 
-      this.logger.trace(`hashlock status for payment with hash ${rHash} is ${transferStatusResponse.status}`);
+      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatusResponse.status}`);
       switch (transferStatusResponse.status) {
         case 'PENDING':
           return { state: PaymentState.Pending };
@@ -467,17 +468,50 @@ class ConnextClient extends SwapClient {
             preimage: transferStatusResponse.preImage?.slice(2),
           };
         case 'EXPIRED':
+          const expiredTransferUnlocked$ = defer(() => from(
+            // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
+            // in order to unlock the funds we'll need to call /hashlock-resolve with the paymentId
+            this.sendRequest('/hashlock-resolve', 'POST', {
+              assetId,
+              // providing a placeholder preImage for rest-api-client because it's a required field
+              preImage: '0x',
+              paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
+            }),
+          )).pipe(
+            catchError((e, caught) => {
+              const RETRY_INTERVAL = 30000;
+              this.logger.error(`failed to unlock an expired connext transfer with rHash: ${rHash} - retrying in ${RETRY_INTERVAL}ms`, e);
+              return timer(RETRY_INTERVAL).pipe(mergeMapTo(caught));
+            }),
+            take(1),
+          );
+          expiredTransferUnlocked$.subscribe({
+            complete: () => {
+              this.logger.debug(`successfully unlocked an expired connext transfer with rHash: ${rHash}`);
+            },
+          });
+          return { state: PaymentState.Failed };
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for payment with hash ${rHash}: ${JSON.stringify(transferStatusResponse)}`);
-          return { state: PaymentState.Pending };
+          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install proposal`);
+          try {
+            await this.sendRequest('/reject-install', 'POST', {
+              appIdentityHash: transferStatusResponse.senderAppIdentityHash,
+            });
+            this.logger.debug(`connext transfer proposal with hash ${rHash} successfully rejected - transfer state is now failed`);
+            return { state: PaymentState.Failed };
+          } catch (e) {
+            // in case of error we're still consider the payment as pending
+            this.logger.error('failed to reject connext app install proposal', e);
+            return { state: PaymentState.Pending };
+          }
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
         return { state: PaymentState.Failed };
       }
-      this.logger.error(`could not lookup payment for ${rHash}`, err);
+      this.logger.error(`could not lookup connext transfer for ${rHash}`, err);
       return { state: PaymentState.Pending }; // return pending if we hit an error
     }
   }
