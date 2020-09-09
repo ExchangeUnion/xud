@@ -150,12 +150,12 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| total_balance | [uint64](#uint64) |  | Total balance denominated in satoshis. |
-| channel_balance | [uint64](#uint64) |  | Sum of confirmed channel balances denominated in satoshis. |
-| pending_channel_balance | [uint64](#uint64) |  | Sum of pending channel balances denominated in satoshis. |
-| inactive_channel_balance | [uint64](#uint64) |  | Sum of inactive channel balances denominated in satoshis. |
-| wallet_balance | [uint64](#uint64) |  | Confirmed wallet balance in satoshis. |
-| unconfirmed_wallet_balance | [uint64](#uint64) |  | Unconfirmed wallet balance in satoshis. |
+| total_balance | [sint64](#sint64) |  | Total balance denominated in satoshis. |
+| channel_balance | [sint64](#sint64) |  | Sum of confirmed channel balances denominated in satoshis. |
+| pending_channel_balance | [sint64](#sint64) |  | Sum of pending channel balances denominated in satoshis. |
+| inactive_channel_balance | [sint64](#sint64) |  | Sum of inactive channel balances denominated in satoshis. |
+| wallet_balance | [sint64](#sint64) |  | Confirmed wallet balance in satoshis. |
+| unconfirmed_wallet_balance | [sint64](#sint64) |  | Unconfirmed wallet balance in satoshis. |
 
 
 

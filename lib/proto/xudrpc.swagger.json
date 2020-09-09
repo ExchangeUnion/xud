@@ -860,32 +860,32 @@
       "properties": {
         "total_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Total balance denominated in satoshis."
         },
         "channel_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Sum of confirmed channel balances denominated in satoshis."
         },
         "pending_channel_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Sum of pending channel balances denominated in satoshis."
         },
         "inactive_channel_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Sum of inactive channel balances denominated in satoshis."
         },
         "wallet_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Confirmed wallet balance in satoshis."
         },
         "unconfirmed_wallet_balance": {
           "type": "string",
-          "format": "uint64",
+          "format": "int64",
           "description": "Unconfirmed wallet balance in satoshis."
         }
       }
