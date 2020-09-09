@@ -153,7 +153,7 @@ describe('Service', () => {
     test('returns balance for all connected clients when currency is not specified', async () => {
       setup();
       const result = await service.getBalance({ currency: '' });
-      expect(result.size).toEqual(2);
+      expect(result.size).toEqual(3);
 
       const btcBalance = result.get('BTC')!;
       expect(btcBalance).toBeTruthy();
@@ -172,6 +172,15 @@ describe('Service', () => {
       expect(ltcBalance.walletBalance).toEqual(1500);
       expect(ltcBalance.unconfirmedWalletBalance).toEqual(500);
       expect(ltcBalance.totalBalance).toEqual(14345);
+
+      const bchBalance = result.get('BCH')!;
+      expect(bchBalance).toBeTruthy();
+      expect(bchBalance.channelBalance).toEqual(-1);
+      expect(bchBalance.pendingChannelBalance).toEqual(-1);
+      expect(bchBalance.inactiveChannelBalance).toEqual(-1);
+      expect(bchBalance.walletBalance).toEqual(-1);
+      expect(bchBalance.unconfirmedWalletBalance).toEqual(-1);
+      expect(bchBalance.totalBalance).toEqual(-1);
     });
 
     test('returns balance for specified currency', async () => {
