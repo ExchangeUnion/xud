@@ -359,8 +359,6 @@ message Balance {
   uint64 wallet_balance = 5 [json_name = "wallet_balance"];
   // Unconfirmed wallet balance in satoshis.
   uint64 unconfirmed_wallet_balance = 6 [json_name = "unconfirmed_wallet_balance"];
-  // Indicates that if there were no channels to calculate balances.
-  bool no_channels = 7 [json_name = "no_channels"];
 }
 
 message BanRequest {

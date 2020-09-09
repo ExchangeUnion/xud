@@ -582,7 +582,7 @@ class ConnextClient extends SwapClient {
     currency?: string,
   ): Promise<ChannelBalance> => {
     if (!currency) {
-      return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0, noChannels: true };
+      return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
     const { freeBalanceOffChain } = await this.getBalance(currency);
@@ -597,7 +597,6 @@ class ConnextClient extends SwapClient {
       balance: freeBalanceAmount,
       inactiveBalance: 0,
       pendingOpenBalance: 0,
-      noChannels: false,
     };
   }
 

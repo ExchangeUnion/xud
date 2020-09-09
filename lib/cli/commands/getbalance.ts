@@ -18,8 +18,8 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
     const element = [];
     element.push(
       balance[0],
-      balance[1].noChannels ? '?' : `${satsToCoinsStr(balance[1].totalBalance)}`,
-      formatBalance(balance[1].channelBalance, balance[1].pendingChannelBalance, balance[1].inactiveChannelBalance, balance[1].noChannels),
+      balance[1].totalBalance === -1 ? 'timeout' : `${satsToCoinsStr(balance[1].totalBalance)}`,
+      formatBalance(balance[1].channelBalance, balance[1].pendingChannelBalance, balance[1].inactiveChannelBalance),
       formatBalance(balance[1].walletBalance, balance[1].unconfirmedWalletBalance),
     );
     formatted.push(element);
@@ -27,10 +27,12 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   return formatted;
 };
 
-const formatBalance = (confirmedBalance: number, unconfirmedBalance: number, inactiveBalance = 0, noChannels = false) => {
-  const confirmedBalanceStr = noChannels ? '?' : satsToCoinsStr(confirmedBalance);
-  const unconfirmedBalanceStr = unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined;
-  const inactiveBalanceStr = noChannels ? '?' : (inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined);
+const formatBalance = (confirmedBalance: number, unconfirmedBalance: number, inactiveBalance = 0) => {
+  const confirmedBalanceStr = confirmedBalance === -1 ? 'timeout' : satsToCoinsStr(confirmedBalance);
+  const unconfirmedBalanceStr = unconfirmedBalance === -1 ? 'timeout' :
+      (unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined);
+  const inactiveBalanceStr = inactiveBalance === -1 ? 'timeout' :
+      (inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined);
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
     let str = `${confirmedBalanceStr} (`;
     if (unconfirmedBalanceStr) {
