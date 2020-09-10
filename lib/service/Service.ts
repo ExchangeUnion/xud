@@ -471,8 +471,8 @@ class Service {
       sellArray = sortOrders(sellArray, false);
 
       if (limit > 0) {
-        buyArray = buyArray.slice(0, limit);
-        sellArray = sellArray.slice(0, limit);
+        buyArray = buyArray.slice(-limit);
+        sellArray = sellArray.slice(-limit);
       }
 
       return {

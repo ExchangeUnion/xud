@@ -1,9 +1,9 @@
 import { Arguments, Argv } from 'yargs';
 import { WithdrawRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
-import { argChecks, coinsToSats } from '../utils';
+import { coinsToSats } from '../utils';
 
-export const command = 'walletwithdraw <amount> <currency> [destination] [fee]';
+export const command = 'walletwithdraw <amount> <currency> <destination> [fee]';
 
 export const describe = 'withdraws on-chain funds from xud';
 
@@ -29,13 +29,15 @@ export const builder = (argv: Argv) => argv
   .example('$0 walletwithdraw all BTC 1BitcoinEaterAddressDontSendf59kuE', 'withdraws all BTC');
 
 export const handler = async (argv: Arguments<any>) => {
-  argChecks.NUMBER_CHECK({ param: argv.amount, paramName: 'amount', allowedValues: ['all'] });
-
   const request = new WithdrawRequest();
   request.setCurrency(argv.currency.toUpperCase());
   if (argv.amount === 'all') {
     request.setAll(true);
   } else {
+    if (isNaN(argv.amount)) {
+      console.error('amount is not a valid number');
+      process.exit(1);
+    }
     request.setAmount(coinsToSats(parseFloat(argv.amount)));
   }
   request.setDestination(argv.destination);
