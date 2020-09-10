@@ -3,7 +3,7 @@ import { CloseChannelRequest } from '../../proto/xudrpc_pb';
 import { callback, loadXudClient } from '../command';
 import { coinsToSats } from '../utils';
 
-export const command = 'closechannel <currency> [node_identifier ] [--force]';
+export const command = 'closechannel <currency> [node_identifier] [--force]';
 
 export const describe = 'close any payment channels with a peer';
 
