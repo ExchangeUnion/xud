@@ -197,8 +197,8 @@ class LndClient extends SwapClient {
     return this._maxChannelOutboundAmount;
   }
 
-  public maxChannelInboundAmount = () => {
-    return this._maxChannelInboundAmount;
+  public checkInboundCapacity = (_inboundAmount: number) => {
+    return; // we do not currently check inbound capacities for lnd
   }
 
   /** Lnd specific procedure to mark the client as locked. */

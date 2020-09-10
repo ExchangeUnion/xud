@@ -17,6 +17,7 @@ const errorCodes = {
   CURRENCY_MISSING: codesPrefix.concat('.14'),
   EXPIRY_MISSING: codesPrefix.concat('.15'),
   MISSING_SEED: codesPrefix.concat('.16'),
+  INSUFFICIENT_COLLATERAL: codesPrefix.concat('.17'),
 };
 
 const errors = {
@@ -75,6 +76,10 @@ const errors = {
   MISSING_SEED: {
     message: 'seed is missing',
     code: errorCodes.MISSING_SEED,
+  },
+  INSUFFICIENT_COLLATERAL: {
+    message: 'channel collateralization in progress, please try again in ~1 minute',
+    code: errorCodes.INSUFFICIENT_COLLATERAL,
   },
 };
 
