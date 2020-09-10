@@ -175,13 +175,11 @@ describe('OrderBook', () => {
   test('nosanityswaps enabled adds pairs and requests orders', async () => {
     orderbook['nosanityswaps'] = true;
     await orderbook['verifyPeerPairs'](peer);
-    expect(mockActivateCurrency).toHaveBeenCalledTimes(3);
+    expect(mockActivateCurrency).toHaveBeenCalledTimes(2);
     expect(mockActivateCurrency).toHaveBeenCalledWith('BTC');
     expect(mockActivateCurrency).toHaveBeenCalledWith('LTC');
-    expect(mockActivateCurrency).toHaveBeenCalledWith('WETH');
-    expect(mockActivatePair).toHaveBeenCalledTimes(2);
+    expect(mockActivatePair).toHaveBeenCalledTimes(1);
     expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[0]);
-    expect(mockActivatePair).toHaveBeenCalledWith(advertisedPairs[1]);
   });
 
   test('isPeerCurrencySupported returns true for a known currency with matching identifiers', async () => {
