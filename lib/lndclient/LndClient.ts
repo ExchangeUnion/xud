@@ -771,7 +771,7 @@ class LndClient extends SwapClient {
    */
   public openChannel = async (
     { remoteIdentifier, units, uris, pushUnits = 0 }: OpenChannelParams,
-  ): Promise<void> => {
+  ): Promise<string> => {
     if (!remoteIdentifier) {
       // TODO: better handling for for unrecognized peers & force closing channels
       throw new Error('peer not connected to swap client');
@@ -780,7 +780,8 @@ class LndClient extends SwapClient {
       await this.connectPeerAddresses(uris);
     }
 
-    await this.openChannelSync(remoteIdentifier, units, pushUnits);
+    const openResponse = await this.openChannelSync(remoteIdentifier, units, pushUnits);
+    return openResponse.hasFundingTxidStr() ? openResponse.getFundingTxidStr() : base64ToHex(openResponse.getFundingTxidBytes_asB64());
   }
 
   /**
@@ -1079,7 +1080,7 @@ class LndClient extends SwapClient {
       throw swapErrors.REMOTE_IDENTIFIER_MISSING;
     }
     const channels = (await this.listChannels()).getChannelsList();
-    const closePromises: Promise<void>[] = [];
+    const closePromises: Promise<string>[] = [];
     channels.forEach((channel) => {
       if (channel.getRemotePubkey() === remoteIdentifier) {
         const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
@@ -1087,12 +1088,13 @@ class LndClient extends SwapClient {
         closePromises.push(closePromise);
       }
     });
-    await Promise.all(closePromises);
+
+    return Promise.all(closePromises);
   }
 
   /** A synchronous helper method for the closeChannel call */
-  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
+  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean): Promise<string> => {
+    return new Promise<string>((resolve, reject) => {
       if (!this.lightning) {
         throw(errors.UNAVAILABLE(this.currency, this.status));
       }
@@ -1111,7 +1113,7 @@ class LndClient extends SwapClient {
             const txId = base64ToHex(message.getClosePending()!.getTxid_asB64());
             if (txId) {
               this.logger.info(`channel closed with tx id ${txId}`);
-              resolve();
+              resolve(txId);
             }
           }
         })

@@ -248,7 +248,7 @@ class Service {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    await this.swapClientManager.closeChannel({
+    return await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
@@ -284,7 +284,7 @@ class Service {
     }
 
     try {
-      await this.swapClientManager.openChannel({
+      return await this.swapClientManager.openChannel({
         remoteIdentifier,
         uris,
         amount,

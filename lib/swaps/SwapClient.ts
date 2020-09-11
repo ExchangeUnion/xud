@@ -327,14 +327,14 @@ abstract class SwapClient extends EventEmitter {
    */
   public abstract async openChannel(
     { remoteIdentifier, units, currency, uris, pushUnits }: OpenChannelParams,
-  ): Promise<void>;
+  ): Promise<string>;
 
   /**
    * Closes a payment channel.
    */
   public abstract async closeChannel(
     { remoteIdentifier, units, currency, destination, force }: CloseChannelParams,
-  ): Promise<void>;
+  ): Promise<string[]>;
 
   /** Gets a deposit address. */
   public abstract async deposit(): Promise<string>;

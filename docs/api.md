@@ -246,6 +246,11 @@
 
 
 
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_ids | [string](#string) | repeated | The id of the transaction per channel close. |
+
+
 
 
 
@@ -731,6 +736,11 @@
 
 ### OpenChannelResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_id | [string](#string) |  | The id of the transaction that opened the channel. |
 
 
 
