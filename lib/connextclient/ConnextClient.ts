@@ -33,6 +33,7 @@ import {
   ProvidePreimageEvent,
   TransferReceivedEvent,
   ConnextDepositResponse,
+  ConnextWithdrawResponse,
   OnchainTransferResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
@@ -693,19 +694,25 @@ class ConnextClient extends SwapClient {
         this.logger.error(`failed requesting collateral for ${currency}`, err);
       },
     });
+
+    return txhash;
   }
 
-  public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<void> => {
+  public closeChannel = async ({ units, currency, destination }: CloseChannelParams): Promise<string[]> => {
     if (!currency) {
       throw errors.CURRENCY_MISSING;
     }
     const amount = units || (await this.getBalance(currency)).freeBalanceOffChain;
 
-    await this.sendRequest('/withdraw', 'POST', {
+    const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
       amount: BigInt(amount).toString(),
       assetId: this.tokenAddresses.get(currency),
     });
+
+    const { txhash } = await parseResponseBody<ConnextWithdrawResponse>(withdrawResponse);
+
+    return [txhash];
   }
 
   /**

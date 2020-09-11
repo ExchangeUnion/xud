@@ -76,6 +76,13 @@ export type ConnextTransferResponse = {
 };
 
 /**
+ * The response for withdraw call.
+ */
+export type ConnextWithdrawResponse = {
+  txhash: string;
+};
+
+/**
  * The response for deposit call.
  */
 export type ConnextDepositResponse = {

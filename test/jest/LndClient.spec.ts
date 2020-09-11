@@ -5,6 +5,11 @@ import { getValidDeal } from '../utils';
 import { SwapRole } from '../../lib/constants/enums';
 import { ClientStatus } from '../../lib/swaps/SwapClient';
 
+const openChannelSyncResponse = {
+  hasFundingTxidStr: () => { return true; },
+  getFundingTxidStr: () => 'some_tx_id',
+};
+
 const getSendPaymentSyncResponse = () => {
   return {
     getPaymentError: () => {},
@@ -65,7 +70,7 @@ describe('LndClient', () => {
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
       };
@@ -88,7 +93,7 @@ describe('LndClient', () => {
 
     test('it does succeed when connecting to already connected peer', async () => {
       expect.assertions(4);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const alreadyConnected = () => {
         throw new Error('already connected');
       };
@@ -110,7 +115,7 @@ describe('LndClient', () => {
     test('it pushes satoshis to the peer when specified', async () => {
       expect.assertions(4);
       const pushUnits = 481824;
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
           return Promise.resolve();
@@ -131,7 +136,7 @@ describe('LndClient', () => {
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
           return Promise.resolve();

@@ -941,7 +941,16 @@
       }
     },
     "xudrpcCloseChannelResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "transaction_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The id of the transaction per channel close."
+        }
+      }
     },
     "xudrpcConnectRequest": {
       "type": "object",
@@ -1250,7 +1259,13 @@
       }
     },
     "xudrpcOpenChannelResponse": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "transaction_id": {
+          "type": "string",
+          "description": "The id of the transaction that opened the channel."
+        }
+      }
     },
     "xudrpcOrder": {
       "type": "object",

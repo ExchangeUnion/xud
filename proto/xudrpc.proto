@@ -400,7 +400,10 @@ message CloseChannelRequest {
   uint64 amount = 5 [json_name = "amount"];
 }
 
-message CloseChannelResponse {}
+message CloseChannelResponse {
+  // The id of the transaction per channel close.
+  repeated string transaction_ids = 1 [json_name = "transaction_ids"];
+}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
@@ -579,7 +582,10 @@ message OpenChannelRequest {
   uint64 push_amount = 4 [json_name = "push_amount"];
 }
 
-message OpenChannelResponse {}
+message OpenChannelResponse {
+  // The id of the transaction that opened the channel.
+  string transaction_id = 1 [json_name = "transaction_id"];
+}
 
 message Order {
   // The price of the order.

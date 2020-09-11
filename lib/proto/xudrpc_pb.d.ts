@@ -240,6 +240,11 @@ export namespace CloseChannelRequest {
 }
 
 export class CloseChannelResponse extends jspb.Message { 
+    clearTransactionIdsList(): void;
+    getTransactionIdsList(): Array<string>;
+    setTransactionIdsList(value: Array<string>): void;
+    addTransactionIds(value: string, index?: number): string;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CloseChannelResponse.AsObject;
@@ -253,6 +258,7 @@ export class CloseChannelResponse extends jspb.Message {
 
 export namespace CloseChannelResponse {
     export type AsObject = {
+        transactionIdsList: Array<string>,
     }
 }
 
@@ -974,6 +980,9 @@ export namespace OpenChannelRequest {
 }
 
 export class OpenChannelResponse extends jspb.Message { 
+    getTransactionId(): string;
+    setTransactionId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OpenChannelResponse.AsObject;
@@ -987,6 +996,7 @@ export class OpenChannelResponse extends jspb.Message {
 
 export namespace OpenChannelResponse {
     export type AsObject = {
+        transactionId: string,
     }
 }
 

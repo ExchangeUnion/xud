@@ -261,8 +261,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.closeChannel(call.request.toObject());
+      const txIds = await this.service.closeChannel(call.request.toObject());
       const response = new xudrpc.CloseChannelResponse();
+      response.setTransactionIdsList(txIds);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -344,8 +346,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.openChannel(call.request.toObject());
+      const txId = await this.service.openChannel(call.request.toObject());
       const response = new xudrpc.OpenChannelResponse();
+      response.setTransactionId(txId);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);

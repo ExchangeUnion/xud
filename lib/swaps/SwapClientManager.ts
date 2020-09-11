@@ -395,7 +395,7 @@ class SwapClientManager extends EventEmitter {
   public closeChannel = async (
     { remoteIdentifier, currency, force, destination, amount }:
     { remoteIdentifier?: string, currency: string, force: boolean, destination?: string, amount?: number },
-  ): Promise<void> => {
+  ): Promise<string[]> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -404,7 +404,8 @@ class SwapClientManager extends EventEmitter {
       amount,
       currency,
     }) : undefined;
-    await swapClient.closeChannel({
+
+    return swapClient.closeChannel({
       remoteIdentifier,
       currency,
       force,
@@ -423,7 +424,7 @@ class SwapClientManager extends EventEmitter {
   public openChannel = async (
     { remoteIdentifier, amount, currency, pushAmount = 0, uris }:
     { remoteIdentifier?: string, amount: number, currency: string, pushAmount?: number, uris?: string[] },
-  ): Promise<void> => {
+  ): Promise<string> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
       throw errors.SWAP_CLIENT_NOT_FOUND(currency);
@@ -437,7 +438,7 @@ class SwapClientManager extends EventEmitter {
       amount: pushAmount,
     });
 
-    await swapClient.openChannel({
+    return swapClient.openChannel({
       remoteIdentifier,
       currency,
       units,
