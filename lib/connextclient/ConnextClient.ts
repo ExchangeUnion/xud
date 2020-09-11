@@ -350,7 +350,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = BigInt(deal.takerUnits).toString();
+        amount = deal.takerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const executeTransfer = this.executeHashLockTransfer({
           amount,
@@ -368,7 +368,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = BigInt(deal.makerUnits).toString();
+        amount = deal.makerUnits.toString();
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
         secret = deal.rPreimage!;
@@ -667,7 +667,7 @@ class ConnextClient extends SwapClient {
     const assetId = this.getTokenAddress(currency);
     const depositResponse = await this.sendRequest('/deposit', 'POST', {
       assetId,
-      amount: BigInt(units).toString(),
+      amount: units.toString(),
     });
     const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
     const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
@@ -703,7 +703,7 @@ class ConnextClient extends SwapClient {
 
     await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
-      amount: BigInt(amount).toString(),
+      amount: amount.toString(),
       assetId: this.tokenAddresses.get(currency),
     });
   }
@@ -734,7 +734,7 @@ class ConnextClient extends SwapClient {
   ): Promise<void> => {
     await this.sendRequest('/hashlock-transfer', 'POST', {
       assetId,
-      amount: BigInt(amount).toString(),
+      amount: amount.toString(),
     });
   }
 
