@@ -247,6 +247,15 @@ class SwapClientManager extends EventEmitter {
     return this.swapClients.get(currency);
   }
 
+  /**
+   * Returns whether the swap client manager has a client for a given currency.
+   * @param currency the currency that the swap client is linked to.
+   * @returns `true` if a swap client exists, false otherwise.
+   */
+  public has = (currency: string): boolean => {
+    return this.swapClients.has(currency);
+  }
+
   /** Gets the type of swap client for a given currency. */
   public getType = (currency: string) => {
     return this.swapClients.get(currency)?.type;

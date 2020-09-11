@@ -994,6 +994,11 @@ class OrderBook extends EventEmitter {
       if (peer.isPairActive(pairId)) {
         return false; // don't verify a pair that is already active
       }
+      if (!this.tradingPairs.has(pairId)) {
+        // if we don't support the trading pair locally, then we don't want to verify or activate it
+        return false;
+      }
+
       const [baseCurrency, quoteCurrency] = pairId.split('/');
       const peerCurrenciesEnabled = !peer.disabledCurrencies.has(baseCurrency)
         && !peer.disabledCurrencies.has(quoteCurrency);
@@ -1050,7 +1055,9 @@ class OrderBook extends EventEmitter {
 
     // activate verified currencies
     currenciesToVerify.forEach((swappable, currency) => {
-      if (swappable || !this.strict) { // always activate currencies if not in strict mode
+      // in strict mode, we only activate "swappable" currencies where a route to peer is possible or a sanity swap has completed
+      // in non-strict mode, we activate any currency which we also support locally
+      if (swappable || (!this.strict && this.swaps.swapClientManager.has(currency))) {
         peer.activateCurrency(currency);
       }
     });
