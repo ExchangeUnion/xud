@@ -179,7 +179,7 @@ class Peer extends EventEmitter {
       alias: this.alias,
       nodePubKey: this.nodePubKey,
       inbound: this.inbound,
-      pairs: Array.from(this.activePairs),
+      pairs: this.nodeState ? this.nodeState.pairs : [],
       xudVersion: this.version,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
