@@ -997,6 +997,11 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were initialized."
+        },
+        "initialized_connext": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether the connext wallet was initialized."
         }
       }
     },
@@ -1589,6 +1594,11 @@
             "type": "string"
           },
           "description": "The list of lnd clients that were initialized."
+        },
+        "restored_connext": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "Whether the connext wallet was initialized."
         }
       }
     },

@@ -323,6 +323,7 @@
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| initialized_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 
@@ -1057,6 +1058,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
+| restored_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 

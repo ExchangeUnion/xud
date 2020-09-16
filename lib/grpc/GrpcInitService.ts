@@ -45,11 +45,13 @@ class GrpcInitService {
       return;
     }
     try {
-      const { mnemonic, initializedLndWallets } = await this.initService.createNode(call.request.toObject());
+      const { mnemonic, initializedLndWallets, initializedConnext } = await this.initService.createNode(call.request.toObject());
       const response = new xudrpc.CreateNodeResponse();
       if (mnemonic) {
         response.setSeedMnemonicList(mnemonic);
       }
+
+      response.setInitializedConnext(initializedConnext);
       response.setInitializedLndsList(initializedLndWallets);
 
       callback(null, response);
@@ -89,14 +91,16 @@ class GrpcInitService {
       const lndBackupsMap = call.request.getLndBackupsMap();
       const seedMnemonicList = call.request.getSeedMnemonicList();
       const xudDatabase = call.request.getXudDatabase_asU8();
-      const { restoredLndWallets } = await this.initService.restoreNode({
+      const { initializedConnext, initializedLndWallets } = await this.initService.restoreNode({
         password,
         seedMnemonicList,
         xudDatabase,
         lndBackupsMap,
       });
+
       const response = new xudrpc.RestoreNodeResponse();
-      response.setRestoredLndsList(restoredLndWallets);
+      response.setRestoredConnext(initializedConnext);
+      response.setRestoredLndsList(initializedLndWallets);
 
       callback(null, response);
     } catch (err) {

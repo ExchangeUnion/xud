@@ -169,26 +169,28 @@ class SwapClientManager extends EventEmitter {
     this.walletPassword = walletPassword;
 
     // loop through swap clients to initialize locked lnd clients
-    const lndClients = this.getLndClientsMap().values();
     const initWalletPromises: Promise<any>[] = [];
     const initializedLndWallets: string[] = [];
+    let initializedConnext = false;
 
-    for (const lndClient of lndClients) {
-      if (isLndClient(lndClient)) {
-        if (lndClient.isWaitingUnlock()) {
-          const initWalletPromise = lndClient.initWallet(
+    for (const client of this.swapClients.values()) {
+      if (isLndClient(client)) {
+        if (client.isWaitingUnlock()) {
+          const initWalletPromise = client.initWallet(
             walletPassword,
             seedMnemonic,
             restore,
-            lndBackups ? lndBackups.get(lndClient.currency) : undefined,
+            lndBackups ? lndBackups.get(client.currency) : undefined,
           ).then(() => {
-            initializedLndWallets.push(lndClient.currency);
+            initializedLndWallets.push(client.currency);
           }).catch((err) => {
-            lndClient.logger.error(`could not initialize wallet: ${err.message}`);
-            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${lndClient.currency}: ${err.message}`);
+            client.logger.error(`could not initialize lnd wallet: ${err.message}`);
+            throw errors.SWAP_CLIENT_WALLET_NOT_CREATED(`could not initialize lnd-${client.currency}: ${err.message}`);
           });
           initWalletPromises.push(initWalletPromise);
         }
+      } else if (isConnextClient(client)) {
+        initializedConnext = true;
       }
     }
 
@@ -196,6 +198,7 @@ class SwapClientManager extends EventEmitter {
 
     return {
       initializedLndWallets,
+      initializedConnext,
     };
   }
 
