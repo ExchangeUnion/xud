@@ -13,10 +13,11 @@ import Pool from '../../lib/p2p/Pool';
 import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import Swaps from '../../lib/swaps/Swaps';
+import { UnitConverter } from '../../lib/utils/UnitConverter';
 import { createOwnOrder } from '../utils';
 
 const PAIR_ID = 'LTC/BTC';
-const currencies = PAIR_ID.split('/');
+const currencyIds = PAIR_ID.split('/');
 const loggers = Logger.createLoggers(Level.Warn);
 
 const getMockPool = (sandbox: sinon.SinonSandbox) => {
@@ -50,14 +51,16 @@ const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
   return swaps;
 };
 
+const currencies = [
+  { id: currencyIds[0], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
+  { id: currencyIds[1], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
+];
+
 const initValues = async (db: DB) => {
   const orderBookRepository = new OrderBookRepository(db.models);
 
-  await orderBookRepository.addCurrencies([
-    { id: currencies[0], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
-    { id: currencies[1], swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
-  ]);
-  await orderBookRepository.addPairs([{ baseCurrency: currencies[0], quoteCurrency: currencies[1] }]);
+  await orderBookRepository.addCurrencies(currencies);
+  await orderBookRepository.addPairs([{ baseCurrency: currencyIds[0], quoteCurrency: currencyIds[1] }]);
 };
 
 describe('OrderBook', () => {
@@ -81,6 +84,7 @@ describe('OrderBook', () => {
     orderBook = new OrderBook({
       pool,
       swaps,
+      unitConverter: new UnitConverter(currencies),
       thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,
@@ -233,6 +237,7 @@ describe('nomatching OrderBook', () => {
     orderBook = new OrderBook({
       pool,
       swaps,
+      unitConverter: new UnitConverter(currencies),
       thresholds: config.orderthresholds,
       logger: loggers.orderbook,
       models: db.models,

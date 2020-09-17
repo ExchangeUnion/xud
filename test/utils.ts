@@ -6,6 +6,7 @@ import { SinonSpy } from 'sinon';
 import uuidv1 from 'uuid';
 import { SwapPhase, SwapRole, SwapState } from '../lib/constants/enums';
 import { OwnOrder, PeerOrder } from '../lib/orderbook/types';
+import { UnitConverter } from '../lib/utils/UnitConverter';
 import { ms } from '../lib/utils/utils';
 
 /**
@@ -112,9 +113,9 @@ export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.M
     isBuy: true,
     quantity: 10000,
     makerAmount: 10000,
-    makerUnits: 10000,
+    makerUnits: 10000n,
     takerAmount: 1000,
-    takerUnits: 1000,
+    takerUnits: 1000n,
     makerCurrency: 'LTC',
     takerCurrency: 'BTC',
     destination: '034c5266591bff232d1647f45bcf6bbc548d3d6f70b2992d28aba0afae067880ac',
@@ -125,3 +126,12 @@ export const getValidDeal = (phase = SwapPhase.SendingPayment, role = SwapRole.M
     takerMaxTimeLock: 100,
   };
 };
+
+export const getUnitConverter = (): UnitConverter =>
+  new UnitConverter([
+    { id: 'BTC', decimalPlaces: 8, swapClient: 0 },
+    { id: 'LTC', decimalPlaces: 8, swapClient: 0 },
+    { id: 'ETH', decimalPlaces: 18, swapClient: 2 },
+    { id: 'USDT', decimalPlaces: 6, swapClient: 2 },
+    { id: 'XUC', decimalPlaces: 18, swapClient: 2 },
+  ]);

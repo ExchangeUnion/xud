@@ -1,10 +1,10 @@
 import ConnextClient from '../../lib/connextclient/ConnextClient';
-import { UnitConverter } from '../../lib/utils/UnitConverter';
-import Logger from '../../lib/Logger';
+import errors from '../../lib/connextclient/errors';
 import { SwapClientType } from '../../lib/constants/enums';
 import { CurrencyInstance } from '../../lib/db/types';
+import Logger from '../../lib/Logger';
 import { PaymentState } from '../../lib/swaps/SwapClient';
-import errors from '../../lib/connextclient/errors';
+import { getUnitConverter } from '../utils';
 
 const MOCK_TX_HASH = '0x5544332211';
 jest.mock('../../lib/utils/utils', () => {
@@ -84,17 +84,27 @@ describe('ConnextClient', () => {
       config,
       currencyInstances,
       logger,
-      unitConverter: new UnitConverter(),
+      unitConverter: getUnitConverter(),
       network: 'mainnet',
     });
   });
 
   describe('withdraw', () => {
-    const MOCK_FREE_BALANCE_ON_CHAIN = 10000;
+    const MOCK_ETH_FREE_BALANCE_ON_CHAIN = 10n ** 18n; // 1 ETH
+    const MOCK_USDT_FREE_BALANCE_ON_CHAIN = 10000n * 10n ** 6n; // 10000 USDT
     const DESTINATION_ADDRESS = '0x12345';
 
     beforeEach(() => {
-      connext['getBalance'] = jest.fn().mockReturnValue({ freeBalanceOnChain: MOCK_FREE_BALANCE_ON_CHAIN });
+      connext['getBalance'] = jest.fn().mockImplementation((currency: string) => {
+        switch (currency) {
+          case 'ETH':
+            return { freeBalanceOnChain: MOCK_ETH_FREE_BALANCE_ON_CHAIN };
+          case 'USDT':
+            return { freeBalanceOnChain: MOCK_USDT_FREE_BALANCE_ON_CHAIN };
+          default:
+            return { freeBalanceOnChain: 0 };
+        }
+      });
       connext['sendRequest'] = jest.fn();
     });
 
@@ -134,7 +144,7 @@ describe('ConnextClient', () => {
         await connext.withdraw({
           currency: 'ETH',
           destination: DESTINATION_ADDRESS,
-          amount: 0.0000011,
+          amount: 2 * 10 ** 8,
         });
       } catch (e) {
         expect(e).toMatchSnapshot();
@@ -154,7 +164,7 @@ describe('ConnextClient', () => {
         'POST',
         expect.objectContaining({
           assetId: USDT_ASSET_ID,
-          amount: MOCK_FREE_BALANCE_ON_CHAIN,
+          amount: MOCK_USDT_FREE_BALANCE_ON_CHAIN,
           recipient: DESTINATION_ADDRESS,
         }),
       );
@@ -166,7 +176,7 @@ describe('ConnextClient', () => {
       const txhash = await connext.withdraw({
         currency: 'USDT',
         destination: DESTINATION_ADDRESS,
-        amount: 5000,
+        amount: 5000 * 10 ** 8,
       });
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
@@ -174,7 +184,7 @@ describe('ConnextClient', () => {
         'POST',
         expect.objectContaining({
           assetId: USDT_ASSET_ID,
-          amount: '50',
+          amount: '5000000000',
           recipient: DESTINATION_ADDRESS,
         }),
       );
@@ -186,7 +196,7 @@ describe('ConnextClient', () => {
       const txhash = await connext.withdraw({
         currency: 'ETH',
         destination: DESTINATION_ADDRESS,
-        amount: 0.0000005,
+        amount: 1 * 10 ** 2,
       });
       expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
@@ -194,7 +204,7 @@ describe('ConnextClient', () => {
         'POST',
         expect.objectContaining({
           assetId: ETH_ASSET_ID,
-          amount: '5000',
+          amount: '1000000000000',
           recipient: DESTINATION_ADDRESS,
         }),
       );

@@ -30,7 +30,7 @@ import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './
 
 interface LndClient {
   on(event: 'connectionVerified', listener: (swapClientInfo: SwapClientInfo) => void): this;
-  on(event: 'htlcAccepted', listener: (rHash: string, amount: number) => void): this;
+  on(event: 'htlcAccepted', listener: (rHash: string, units: bigint) => void): this;
   on(event: 'channelBackup', listener: (channelBackup: Uint8Array) => void): this;
   on(event: 'channelBackupEnd', listener: () => void): this;
   on(event: 'locked', listener: () => void): this;
@@ -38,7 +38,7 @@ interface LndClient {
   once(event: 'initialized', listener: () => void): this;
 
   emit(event: 'connectionVerified', swapClientInfo: SwapClientInfo): boolean;
-  emit(event: 'htlcAccepted', rHash: string, amount: number): boolean;
+  emit(event: 'htlcAccepted', rHash: string, units: bigint): boolean;
   emit(event: 'channelBackup', channelBackup: Uint8Array): boolean;
   emit(event: 'channelBackupEnd'): boolean;
   emit(event: 'locked'): boolean;
@@ -502,7 +502,7 @@ class LndClient extends SwapClient {
           const randomHash = crypto.randomBytes(32).toString('hex');
           this.logger.debug(`checking hold invoice support with hash: ${randomHash}`);
 
-          await this.addInvoice({ rHash: randomHash, units: 1 });
+          await this.addInvoice({ rHash: randomHash, units: 1n });
           await this.removeInvoice(randomHash);
         } catch (err) {
           if (err.code !== grpc.status.UNAVAILABLE) {
@@ -846,7 +846,7 @@ class LndClient extends SwapClient {
     remoteIdentifier,
     units,
     uris,
-    pushUnits = 0,
+    pushUnits = 0n,
     fee = 0,
   }: OpenChannelParams): Promise<string> => {
     if (!remoteIdentifier) {
@@ -857,7 +857,7 @@ class LndClient extends SwapClient {
       await this.connectPeerAddresses(uris);
     }
 
-    const openResponse = await this.openChannelSync(remoteIdentifier, units, pushUnits, fee);
+    const openResponse = await this.openChannelSync(remoteIdentifier, Number(units), Number(pushUnits), fee);
     return openResponse.hasFundingTxidStr()
       ? openResponse.getFundingTxidStr()
       : base64ToHex(openResponse.getFundingTxidBytes_asB64());
@@ -927,9 +927,9 @@ class LndClient extends SwapClient {
     );
   };
 
-  public getRoute = async (units: number, destination: string, _currency: string, finalLock = this.finalLock) => {
+  public getRoute = async (units: bigint, destination: string, _currency: string, finalLock = this.finalLock) => {
     const request = new lndrpc.QueryRoutesRequest();
-    request.setAmt(units);
+    request.setAmt(Number(units));
     request.setFinalCltvDelta(finalLock);
     request.setPubKey(destination);
     const fee = new lndrpc.FeeLimit();
@@ -1090,12 +1090,12 @@ class LndClient extends SwapClient {
     expiry = this.finalLock,
   }: {
     rHash: string;
-    units: number;
+    units: bigint;
     expiry?: number;
   }) => {
     const addHoldInvoiceRequest = new lndinvoices.AddHoldInvoiceRequest();
     addHoldInvoiceRequest.setHash(hexToUint8Array(rHash));
-    addHoldInvoiceRequest.setValue(units);
+    addHoldInvoiceRequest.setValue(Number(units));
     addHoldInvoiceRequest.setCltvExpiry(expiry);
     await this.addHoldInvoice(addHoldInvoiceRequest);
     this.logger.debug(`added invoice of ${units} for ${rHash} with cltvExpiry ${expiry}`);
@@ -1224,7 +1224,7 @@ class LndClient extends SwapClient {
         if (invoice.getState() === lndrpc.Invoice.InvoiceState.ACCEPTED) {
           // we have accepted an htlc for this invoice
           this.logger.debug(`accepted htlc for invoice ${rHash}`);
-          this.emit('htlcAccepted', rHash, invoice.getValue());
+          this.emit('htlcAccepted', rHash, BigInt(invoice.getValue()));
         }
       })
       .on('end', deleteInvoiceSubscription)
