@@ -351,7 +351,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits.toString();
+        amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const executeTransfer = this.executeHashLockTransfer({
           amount,
@@ -369,7 +369,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits.toString();
+        amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
         secret = deal.rPreimage!;
@@ -668,7 +668,7 @@ class ConnextClient extends SwapClient {
     const assetId = this.getTokenAddress(currency);
     const depositResponse = await this.sendRequest('/deposit', 'POST', {
       assetId,
-      amount: units.toString(),
+      amount: units.toLocaleString('fullwide', { useGrouping: false }), // toLocaleString avoids scientific notation
     });
     const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
     const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
@@ -706,7 +706,7 @@ class ConnextClient extends SwapClient {
 
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
-      amount: amount.toString(),
+      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
       assetId: this.tokenAddresses.get(currency),
     });
 
@@ -741,7 +741,7 @@ class ConnextClient extends SwapClient {
   ): Promise<void> => {
     await this.sendRequest('/hashlock-transfer', 'POST', {
       assetId,
-      amount: amount.toString(),
+      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
     });
   }
 
