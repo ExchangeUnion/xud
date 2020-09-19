@@ -166,13 +166,20 @@ class DB {
       SwapDeal.sync(),
     ]);
 
-    if (shouldInitDb) {
+    if (initDb) {
       // initialize database with the seed nodes for the configured network
       const nodes = defaultNodes(network);
       if (nodes) {
-        await Node.bulkCreate(nodes);
-      }
+        const existingNodes = await Models.Node(this.sequelize).findAll();
+        const newNodes = nodes.filter(node => (!existingNodes.find(n => (n.nodePubKey === node.nodePubKey))));
 
+        if (newNodes.length > 0) {
+          await Node.bulkCreate(newNodes);
+        }
+      }
+    }
+
+    if (shouldInitDb) {
       // initialize database with the default currencies for the configured network
       const currencies = defaultCurrencies(network);
       if (currencies) {
