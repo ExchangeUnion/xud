@@ -463,6 +463,7 @@ class GrpcService {
             // these cases suggest something went very wrong with our swap request
             code = status.INTERNAL;
             break;
+          case SwapFailureReason.InsufficientBalance:
           case SwapFailureReason.NoRouteFound:
           case SwapFailureReason.SendPaymentFailure:
           case SwapFailureReason.SwapClientNotSetup:
