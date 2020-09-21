@@ -95,6 +95,7 @@ interface IXudService extends grpc.ServiceDefinition<grpc.UntypedServiceImplemen
     executeSwap: IXudService_IExecuteSwap;
     removeCurrency: IXudService_IRemoveCurrency;
     removeOrder: IXudService_IRemoveOrder;
+    cancelAllOrders: IXudService_ICancelAllOrders;
     removePair: IXudService_IRemovePair;
     shutdown: IXudService_IShutdown;
     subscribeOrders: IXudService_ISubscribeOrders;
@@ -287,6 +288,15 @@ interface IXudService_IRemoveOrder extends grpc.MethodDefinition<xudrpc_pb.Remov
     responseSerialize: grpc.serialize<xudrpc_pb.RemoveOrderResponse>;
     responseDeserialize: grpc.deserialize<xudrpc_pb.RemoveOrderResponse>;
 }
+interface IXudService_ICancelAllOrders extends grpc.MethodDefinition<xudrpc_pb.CancelAllOrdersRequest, xudrpc_pb.CancelAllOrdersResponse> {
+    path: string; // "/xudrpc.Xud/CancelAllOrders"
+    requestStream: boolean; // false
+    responseStream: boolean; // false
+    requestSerialize: grpc.serialize<xudrpc_pb.CancelAllOrdersRequest>;
+    requestDeserialize: grpc.deserialize<xudrpc_pb.CancelAllOrdersRequest>;
+    responseSerialize: grpc.serialize<xudrpc_pb.CancelAllOrdersResponse>;
+    responseDeserialize: grpc.deserialize<xudrpc_pb.CancelAllOrdersResponse>;
+}
 interface IXudService_IRemovePair extends grpc.MethodDefinition<xudrpc_pb.RemovePairRequest, xudrpc_pb.RemovePairResponse> {
     path: string; // "/xudrpc.Xud/RemovePair"
     requestStream: boolean; // false
@@ -401,6 +411,7 @@ export interface IXudServer {
     executeSwap: grpc.handleUnaryCall<xudrpc_pb.ExecuteSwapRequest, xudrpc_pb.SwapSuccess>;
     removeCurrency: grpc.handleUnaryCall<xudrpc_pb.RemoveCurrencyRequest, xudrpc_pb.RemoveCurrencyResponse>;
     removeOrder: grpc.handleUnaryCall<xudrpc_pb.RemoveOrderRequest, xudrpc_pb.RemoveOrderResponse>;
+    cancelAllOrders: grpc.handleUnaryCall<xudrpc_pb.CancelAllOrdersRequest, xudrpc_pb.CancelAllOrdersResponse>;
     removePair: grpc.handleUnaryCall<xudrpc_pb.RemovePairRequest, xudrpc_pb.RemovePairResponse>;
     shutdown: grpc.handleUnaryCall<xudrpc_pb.ShutdownRequest, xudrpc_pb.ShutdownResponse>;
     subscribeOrders: grpc.handleServerStreamingCall<xudrpc_pb.SubscribeOrdersRequest, xudrpc_pb.OrderUpdate>;
@@ -473,6 +484,9 @@ export interface IXudClient {
     removeOrder(request: xudrpc_pb.RemoveOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
+    cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
+    cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
@@ -562,6 +576,9 @@ export class XudClient extends grpc.Client implements IXudClient {
     public removeOrder(request: xudrpc_pb.RemoveOrderRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     public removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
     public removeOrder(request: xudrpc_pb.RemoveOrderRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemoveOrderResponse) => void): grpc.ClientUnaryCall;
+    public cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
+    public cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
+    public cancelAllOrders(request: xudrpc_pb.CancelAllOrdersRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.CancelAllOrdersResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;
     public removePair(request: xudrpc_pb.RemovePairRequest, metadata: grpc.Metadata, options: Partial<grpc.CallOptions>, callback: (error: grpc.ServiceError | null, response: xudrpc_pb.RemovePairResponse) => void): grpc.ClientUnaryCall;

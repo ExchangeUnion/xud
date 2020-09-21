@@ -1512,6 +1512,46 @@ export namespace RemoveOrderResponse {
     }
 }
 
+export class CancelAllOrdersRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CancelAllOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: CancelAllOrdersRequest): CancelAllOrdersRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CancelAllOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CancelAllOrdersRequest;
+    static deserializeBinaryFromReader(message: CancelAllOrdersRequest, reader: jspb.BinaryReader): CancelAllOrdersRequest;
+}
+
+export namespace CancelAllOrdersRequest {
+    export type AsObject = {
+    }
+}
+
+export class CancelAllOrdersResponse extends jspb.Message { 
+    clearRemovedOrderIdsList(): void;
+    getRemovedOrderIdsList(): Array<string>;
+    setRemovedOrderIdsList(value: Array<string>): void;
+    addRemovedOrderIds(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): CancelAllOrdersResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: CancelAllOrdersResponse): CancelAllOrdersResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: CancelAllOrdersResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): CancelAllOrdersResponse;
+    static deserializeBinaryFromReader(message: CancelAllOrdersResponse, reader: jspb.BinaryReader): CancelAllOrdersResponse;
+}
+
+export namespace CancelAllOrdersResponse {
+    export type AsObject = {
+        removedOrderIdsList: Array<string>,
+    }
+}
+
 export class RemovePairRequest extends jspb.Message { 
     getPairId(): string;
     setPairId(value: string): void;
