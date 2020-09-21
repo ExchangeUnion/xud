@@ -481,7 +481,7 @@ message GetBalanceRequest {
 }
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
+  map<string, Balance> balances = 1 [json_name = "balances"];
 }
 
 message GetInfoRequest {}
