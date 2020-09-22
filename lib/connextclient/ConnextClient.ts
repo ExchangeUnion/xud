@@ -819,11 +819,17 @@ class ConnextClient extends SwapClient {
       this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
       const req = http.request(options, async (res) => {
         let err: XudError | undefined;
+        let body;
         switch (res.statusCode) {
           case 200:
           case 201:
           case 204:
             resolve(res);
+            break;
+          case 400:
+            body = await parseResponseBody<ConnextErrorResponse>(res);
+            this.logger.error(`400 status error: ${JSON.stringify(body)}`);
+            reject(body);
             break;
           case 402:
             err = errors.INSUFFICIENT_BALANCE;
@@ -835,9 +841,9 @@ class ConnextClient extends SwapClient {
             err = errors.TIMEOUT;
             break;
           case 409:
-            const body = await parseResponseBody<ConnextErrorResponse>(res);
-            this.logger.error(`409 status error: ${body}`);
-            reject(body.message);
+            body = await parseResponseBody<ConnextErrorResponse>(res);
+            this.logger.error(`409 status error: ${JSON.stringify(body)}`);
+            reject(body);
             break;
           case 500:
             err = errors.SERVER_ERROR(res.statusCode, res.statusMessage);
