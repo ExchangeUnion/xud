@@ -402,8 +402,8 @@ class SwapClientManager extends EventEmitter {
    * @returns Nothing upon success, throws otherwise.
    */
   public closeChannel = async (
-    { remoteIdentifier, currency, force, destination, amount }:
-    { remoteIdentifier?: string, currency: string, force: boolean, destination?: string, amount?: number },
+    { remoteIdentifier, currency, force, destination, amount, fee }:
+    { remoteIdentifier?: string, currency: string, force: boolean, destination?: string, amount?: number, fee?: number },
   ): Promise<string[]> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
@@ -420,6 +420,7 @@ class SwapClientManager extends EventEmitter {
       force,
       destination,
       units,
+      fee,
     });
   }
 
@@ -431,8 +432,8 @@ class SwapClientManager extends EventEmitter {
    * @returns Nothing upon success, throws otherwise.
    */
   public openChannel = async (
-    { remoteIdentifier, amount, currency, pushAmount = 0, uris }:
-    { remoteIdentifier?: string, amount: number, currency: string, pushAmount?: number, uris?: string[] },
+    { remoteIdentifier, amount, currency, pushAmount = 0, fee = 0, uris }:
+    { remoteIdentifier?: string, amount: number, currency: string, pushAmount?: number, fee?: number, uris?: string[] },
   ): Promise<string> => {
     const swapClient = this.get(currency);
     if (!swapClient) {
@@ -453,6 +454,7 @@ class SwapClientManager extends EventEmitter {
       units,
       uris,
       pushUnits,
+      fee,
     });
   }
 
