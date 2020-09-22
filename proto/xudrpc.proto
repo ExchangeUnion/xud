@@ -398,6 +398,9 @@ message CloseChannelRequest {
   // For Connext only - the amount to extract from the channel. If 0 or unspecified,
   // the entire off-chain balance for the specified currency will be extracted.
   uint64 amount = 5 [json_name = "amount"];
+  // A manual fee rate set in sat/byte that should be used when crafting the closure
+  // transaction.
+  uint64 fee = 6 [json_name = "fee"];
 }
 
 message CloseChannelResponse {
@@ -480,7 +483,7 @@ message GetBalanceRequest {
 }
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
+  map<string, Balance> balances = 1 [json_name = "balances"];
 }
 
 message GetInfoRequest {}
@@ -582,6 +585,8 @@ message OpenChannelRequest {
   uint64 amount = 3 [json_name = "amount"];
   // The balance amount to be pushed to the remote side of the channel denominated in satoshis.
   uint64 push_amount = 4 [json_name = "push_amount"];
+  // The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel.
+  uint64 fee = 5 [json_name = "fee"];
 }
 
 message OpenChannelResponse {

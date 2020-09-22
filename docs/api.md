@@ -234,6 +234,7 @@
 | force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
 | destination | [string](#string) |  | The on-chain address to send funds extracted from the channel. If unspecified, the funds return to the default wallet for the client closing the channel. |
 | amount | [uint64](#uint64) |  | For Connext only - the amount to extract from the channel. If 0 or unspecified, the entire off-chain balance for the specified currency will be extracted. |
+| fee | [uint64](#uint64) |  | A manual fee rate set in sat/byte that should be used when crafting the closure transaction. |
 
 
 
@@ -727,6 +728,7 @@
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
 | amount | [uint64](#uint64) |  | The amount to be deposited into the channel denominated in satoshis. |
 | push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
+| fee | [uint64](#uint64) |  | The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel. |
 
 
 

@@ -351,7 +351,7 @@ class ConnextClient extends SwapClient {
       let secret;
       if (deal.role === SwapRole.Maker) {
         // we are the maker paying the taker
-        amount = deal.takerUnits.toString();
+        amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const executeTransfer = this.executeHashLockTransfer({
           amount,
@@ -369,7 +369,7 @@ class ConnextClient extends SwapClient {
         secret = preimage;
       } else {
         // we are the taker paying the maker
-        amount = deal.makerUnits.toString();
+        amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
         lockTimeout = deal.makerCltvDelta!;
         secret = deal.rPreimage!;
@@ -668,7 +668,7 @@ class ConnextClient extends SwapClient {
     const assetId = this.getTokenAddress(currency);
     const depositResponse = await this.sendRequest('/deposit', 'POST', {
       assetId,
-      amount: units.toString(),
+      amount: units.toLocaleString('fullwide', { useGrouping: false }), // toLocaleString avoids scientific notation
     });
     const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
     const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
@@ -706,7 +706,7 @@ class ConnextClient extends SwapClient {
 
     const withdrawResponse = await this.sendRequest('/withdraw', 'POST', {
       recipient: destination,
-      amount: amount.toString(),
+      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
       assetId: this.tokenAddresses.get(currency),
     });
 
@@ -741,7 +741,7 @@ class ConnextClient extends SwapClient {
   ): Promise<void> => {
     await this.sendRequest('/hashlock-transfer', 'POST', {
       assetId,
-      amount: amount.toString(),
+      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
     });
   }
 
@@ -819,11 +819,17 @@ class ConnextClient extends SwapClient {
       this.logger.trace(`sending request to ${endpoint}${payloadStr ? `: ${payloadStr}` : ''}`);
       const req = http.request(options, async (res) => {
         let err: XudError | undefined;
+        let body;
         switch (res.statusCode) {
           case 200:
           case 201:
           case 204:
             resolve(res);
+            break;
+          case 400:
+            body = await parseResponseBody<ConnextErrorResponse>(res);
+            this.logger.error(`400 status error: ${JSON.stringify(body)}`);
+            reject(body);
             break;
           case 402:
             err = errors.INSUFFICIENT_BALANCE;
@@ -835,9 +841,9 @@ class ConnextClient extends SwapClient {
             err = errors.TIMEOUT;
             break;
           case 409:
-            const body = await parseResponseBody<ConnextErrorResponse>(res);
-            this.logger.error(`409 status error: ${body}`);
-            reject(body.message);
+            body = await parseResponseBody<ConnextErrorResponse>(res);
+            this.logger.error(`409 status error: ${JSON.stringify(body)}`);
+            reject(body);
             break;
           case 500:
             err = errors.SERVER_ERROR(res.statusCode, res.statusMessage);
