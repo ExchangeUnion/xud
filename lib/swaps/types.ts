@@ -133,6 +133,8 @@ export type CloseChannelParams = {
    */
   destination?: string,
   force?: boolean,
+  /** The fee in sat per byte. */
+  fee?: number,
 };
 
 export type OpenChannelParams = {
@@ -145,4 +147,6 @@ export type OpenChannelParams = {
   uris?: string[],
   /** The balance to assign to the remote node. */
   pushUnits?: number,
+  /** The fee in sat per byte. */
+  fee?: number,
 };

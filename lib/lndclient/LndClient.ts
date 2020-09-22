@@ -770,7 +770,7 @@ class LndClient extends SwapClient {
    * Opens a channel given peerPubKey and amount.
    */
   public openChannel = async (
-    { remoteIdentifier, units, uris, pushUnits = 0 }: OpenChannelParams,
+    { remoteIdentifier, units, uris, pushUnits = 0, fee = 0 }: OpenChannelParams,
   ): Promise<string> => {
     if (!remoteIdentifier) {
       // TODO: better handling for for unrecognized peers & force closing channels
@@ -780,7 +780,7 @@ class LndClient extends SwapClient {
       await this.connectPeerAddresses(uris);
     }
 
-    const openResponse = await this.openChannelSync(remoteIdentifier, units, pushUnits);
+    const openResponse = await this.openChannelSync(remoteIdentifier, units, pushUnits, fee);
     return openResponse.hasFundingTxidStr() ? openResponse.getFundingTxidStr() : base64ToHex(openResponse.getFundingTxidBytes_asB64());
   }
 
@@ -817,11 +817,13 @@ class LndClient extends SwapClient {
   /**
    * Opens a channel with a connected lnd node.
    */
-  private openChannelSync = (nodePubkeyString: string, localFundingAmount: number, pushSat = 0): Promise<lndrpc.ChannelPoint> => {
+  private openChannelSync = (nodePubkeyString: string, localFundingAmount: number,
+                             pushSat = 0, fee = 0): Promise<lndrpc.ChannelPoint> => {
     const request = new lndrpc.OpenChannelRequest;
     request.setNodePubkeyString(nodePubkeyString);
     request.setLocalFundingAmount(localFundingAmount);
     request.setPushSat(pushSat);
+    request.setSatPerByte(fee);
     return this.unaryCall<lndrpc.OpenChannelRequest, lndrpc.ChannelPoint>('openChannelSync', request);
   }
 
@@ -1075,7 +1077,7 @@ class LndClient extends SwapClient {
   /**
    * Closes any payment channels with a specified node.
    */
-  public closeChannel = async ({ remoteIdentifier, force = false }: CloseChannelParams) => {
+  public closeChannel = async ({ remoteIdentifier, force = false, fee = 0 }: CloseChannelParams) => {
     if (remoteIdentifier === undefined) {
       throw swapErrors.REMOTE_IDENTIFIER_MISSING;
     }
@@ -1084,7 +1086,7 @@ class LndClient extends SwapClient {
     channels.forEach((channel) => {
       if (channel.getRemotePubkey() === remoteIdentifier) {
         const [fundingTxId, outputIndex] = channel.getChannelPoint().split(':');
-        const closePromise = this.closeChannelSync(fundingTxId, Number(outputIndex), force);
+        const closePromise = this.closeChannelSync(fundingTxId, Number(outputIndex), force, fee);
         closePromises.push(closePromise);
       }
     });
@@ -1093,7 +1095,7 @@ class LndClient extends SwapClient {
   }
 
   /** A synchronous helper method for the closeChannel call */
-  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean): Promise<string> => {
+  public closeChannelSync = (fundingTxId: string, outputIndex: number, force: boolean, fee = 0): Promise<string> => {
     return new Promise<string>((resolve, reject) => {
       if (!this.lightning) {
         throw(errors.UNAVAILABLE(this.currency, this.status));
@@ -1106,6 +1108,7 @@ class LndClient extends SwapClient {
       channelPoint.setOutputIndex(outputIndex);
       request.setChannelPoint(channelPoint);
       request.setForce(force);
+      request.setSatPerByte(fee);
 
       this.lightning.closeChannel(request, this.meta)
         .on('data', (message: lndrpc.CloseStatusUpdate) => {

@@ -218,6 +218,9 @@ export class CloseChannelRequest extends jspb.Message {
     getAmount(): number;
     setAmount(value: number): void;
 
+    getFee(): number;
+    setFee(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CloseChannelRequest.AsObject;
@@ -236,6 +239,7 @@ export namespace CloseChannelRequest {
         force: boolean,
         destination: string,
         amount: number,
+        fee: number,
     }
 }
 
@@ -959,6 +963,9 @@ export class OpenChannelRequest extends jspb.Message {
     getPushAmount(): number;
     setPushAmount(value: number): void;
 
+    getFee(): number;
+    setFee(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OpenChannelRequest.AsObject;
@@ -976,6 +983,7 @@ export namespace OpenChannelRequest {
         currency: string,
         amount: number,
         pushAmount: number,
+        fee: number,
     }
 }
 
