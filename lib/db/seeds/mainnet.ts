@@ -58,7 +58,7 @@ const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
-  { baseCurrency: 'DAI', quoteCurrency: 'USDT' },
+  { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
 ] as db.PairAttributes[];
 
 export {
