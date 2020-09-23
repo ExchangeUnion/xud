@@ -10,8 +10,6 @@
     - [Balance](#xudrpc.Balance)
     - [BanRequest](#xudrpc.BanRequest)
     - [BanResponse](#xudrpc.BanResponse)
-    - [CancelAllOrdersRequest](#xudrpc.CancelAllOrdersRequest)
-    - [CancelAllOrdersResponse](#xudrpc.CancelAllOrdersResponse)
     - [Chain](#xudrpc.Chain)
     - [Channels](#xudrpc.Channels)
     - [CloseChannelRequest](#xudrpc.CloseChannelRequest)
@@ -58,6 +56,8 @@
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
+    - [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest)
+    - [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
     - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
@@ -189,31 +189,6 @@
 
 
 
-<a name="xudrpc.CancelAllOrdersRequest"></a>
-
-### CancelAllOrdersRequest
-
-
-
-
-
-
-
-<a name="xudrpc.CancelAllOrdersResponse"></a>
-
-### CancelAllOrdersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| removed_order_ids | [string](#string) | repeated | The local order ids that were successfully removed. |
-
-
-
-
-
-
 <a name="xudrpc.Chain"></a>
 
 ### Chain
@@ -261,6 +236,7 @@
 | force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
 | destination | [string](#string) |  | The on-chain address to send funds extracted from the channel. If unspecified, the funds return to the default wallet for the client closing the channel. |
 | amount | [uint64](#uint64) |  | For Connext only - the amount to extract from the channel. If 0 or unspecified, the entire off-chain balance for the specified currency will be extracted. |
+| fee | [uint64](#uint64) |  | A manual fee rate set in sat/byte that should be used when crafting the closure transaction. |
 
 
 
@@ -753,6 +729,7 @@
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
 | amount | [uint64](#uint64) |  | The amount to be deposited into the channel denominated in satoshis. |
 | push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
+| fee | [uint64](#uint64) |  | The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel. |
 
 
 
@@ -954,6 +931,32 @@
 | swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 | swap_failures | [SwapFailure](#xudrpc.SwapFailure) | repeated | A list of swap attempts that failed. |
+
+
+
+
+
+
+<a name="xudrpc.RemoveAllOrdersRequest"></a>
+
+### RemoveAllOrdersRequest
+
+
+
+
+
+
+
+<a name="xudrpc.RemoveAllOrdersResponse"></a>
+
+### RemoveAllOrdersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| removed_order_ids | [string](#string) | repeated | The local order ids that were successfully removed. |
+| on_hold_order_ids | [string](#string) | repeated | The local order ids that were on hold and failed to be removed. |
 
 
 
@@ -1512,7 +1515,7 @@ The primary service for interacting with a running xud node.
 | ExecuteSwap | [ExecuteSwapRequest](#xudrpc.ExecuteSwapRequest) | [SwapSuccess](#xudrpc.SwapSuccess) | Executes a swap on a maker peer order. |
 | RemoveCurrency | [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest) | [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse) | Removes a currency from the list of supported currencies. Only currencies that are not in use for any currently supported trading pairs may be removed. Once removed, the currency can no longer be used for any supported trading pairs. shell: xucli removecurrency &lt;currency&gt; |
 | RemoveOrder | [RemoveOrderRequest](#xudrpc.RemoveOrderRequest) | [RemoveOrderResponse](#xudrpc.RemoveOrderResponse) | Removes an order from the order book by its local id. This should be called when an order is canceled or filled outside of xud. Removed orders become immediately unavailable for swaps, and peers are notified that the order is no longer valid. Any portion of the order that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeorder &lt;order_id&gt; [quantity] |
-| CancelAllOrders | [CancelAllOrdersRequest](#xudrpc.CancelAllOrdersRequest) | [CancelAllOrdersResponse](#xudrpc.CancelAllOrdersResponse) | Removes all orders from the order book. Removed orders become immediately unavailable for swaps, and peers are notified that the orders are no longer valid. Any portion of the orders that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli cancelallorders |
+| RemoveAllOrders | [RemoveAllOrdersRequest](#xudrpc.RemoveAllOrdersRequest) | [RemoveAllOrdersResponse](#xudrpc.RemoveAllOrdersResponse) | Removes all orders from the order book. Removed orders become immediately unavailable for swaps, and peers are notified that the orders are no longer valid. Any portion of the orders that is on hold due to ongoing swaps will not be removed until after the swap attempts complete. shell: xucli removeallorders |
 | RemovePair | [RemovePairRequest](#xudrpc.RemovePairRequest) | [RemovePairResponse](#xudrpc.RemovePairResponse) | Removes a trading pair from the list of currently supported trading pair. This call will effectively cancel any standing orders for that trading pair. Peers are informed when a pair is no longer supported so that they will know to stop sending orders for it. shell: xucli removepair &lt;pair_id&gt; |
 | Shutdown | [ShutdownRequest](#xudrpc.ShutdownRequest) | [ShutdownResponse](#xudrpc.ShutdownResponse) | Begin gracefully shutting down xud. shell: xucli shutdown |
 | SubscribeOrders | [SubscribeOrdersRequest](#xudrpc.SubscribeOrdersRequest) | [OrderUpdate](#xudrpc.OrderUpdate) stream | Subscribes to orders being added to and removed from the order book. This call allows the client to maintain an up-to-date view of the order book. For example, an exchange that wants to show its users a real time view of the orders available to them would subscribe to this streaming call to be alerted as new orders are added and expired orders are removed. |

@@ -122,33 +122,6 @@
         ]
       }
     },
-    "/v1/cancelallorders": {
-      "post": {
-        "summary": "Removes all orders from the order book. Removed orders become immediately unavailable for swaps,\nand peers are notified that the orders are no longer valid. Any portion of the orders that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.\nshell: xucli cancelallorders",
-        "operationId": "CancelAllOrders",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/xudrpcCancelAllOrdersResponse"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/xudrpcCancelAllOrdersRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Xud"
-        ]
-      }
-    },
     "/v1/closechannel": {
       "post": {
         "summary": "Closes any existing payment channels with a peer for the specified currency.\nshell: xucli closechannel \u003ccurrency\u003e [node_identifier ] [--force]",
@@ -459,6 +432,33 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/xudrpcPlaceOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Xud"
+        ]
+      }
+    },
+    "/v1/removeallorders": {
+      "post": {
+        "summary": "Removes all orders from the order book. Removed orders become immediately unavailable for swaps,\nand peers are notified that the orders are no longer valid. Any portion of the orders that is\non hold due to ongoing swaps will not be removed until after the swap attempts complete.\nshell: xucli removeallorders",
+        "operationId": "RemoveAllOrders",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveAllOrdersResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/xudrpcRemoveAllOrdersRequest"
             }
           }
         ],
@@ -928,21 +928,6 @@
     },
     "xudrpcBanResponse": {
       "type": "object"
-    },
-    "xudrpcCancelAllOrdersRequest": {
-      "type": "object"
-    },
-    "xudrpcCancelAllOrdersResponse": {
-      "type": "object",
-      "properties": {
-        "removed_order_ids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "The local order ids that were successfully removed."
-        }
-      }
     },
     "xudrpcChain": {
       "type": "object",
@@ -1571,6 +1556,28 @@
             "$ref": "#/definitions/xudrpcSwapFailure"
           },
           "description": "A list of swap attempts that failed."
+        }
+      }
+    },
+    "xudrpcRemoveAllOrdersRequest": {
+      "type": "object"
+    },
+    "xudrpcRemoveAllOrdersResponse": {
+      "type": "object",
+      "properties": {
+        "removed_order_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The local order ids that were successfully removed."
+        },
+        "on_hold_order_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The local order ids that were on hold and failed to be removed."
         }
       }
     },

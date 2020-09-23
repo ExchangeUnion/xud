@@ -818,13 +818,18 @@ class OrderBook extends EventEmitter {
 
   public removeOwnOrders = () => {
     const removedOrderLocalIds = [];
+    const onHoldOrderLocalIds = [];
 
     for (const localId of this.localIdMap.keys()) {
-      this.removeOwnOrderByLocalId(localId, true);
-      removedOrderLocalIds.push(localId);
+      try {
+        this.removeOwnOrderByLocalId(localId, true);
+        removedOrderLocalIds.push(localId);
+      } catch (ex) {
+        onHoldOrderLocalIds.push(localId);
+      }
     }
 
-    return { removedOrderLocalIds };
+    return { removedOrderLocalIds, onHoldOrderLocalIds };
   }
 
   /**

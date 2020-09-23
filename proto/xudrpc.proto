@@ -232,10 +232,10 @@ service Xud {
   /* Removes all orders from the order book. Removed orders become immediately unavailable for swaps,
    * and peers are notified that the orders are no longer valid. Any portion of the orders that is
    * on hold due to ongoing swaps will not be removed until after the swap attempts complete.
-   * shell: xucli cancelallorders */
-  rpc CancelAllOrders(CancelAllOrdersRequest) returns (CancelAllOrdersResponse) {
+   * shell: xucli removeallorders */
+  rpc RemoveAllOrders(RemoveAllOrdersRequest) returns (RemoveAllOrdersResponse) {
     option (google.api.http) = {
-      post: "/v1/cancelallorders"
+      post: "/v1/removeallorders"
       body: "*"
     };
   }
@@ -409,6 +409,9 @@ message CloseChannelRequest {
   // For Connext only - the amount to extract from the channel. If 0 or unspecified,
   // the entire off-chain balance for the specified currency will be extracted.
   uint64 amount = 5 [json_name = "amount"];
+  // A manual fee rate set in sat/byte that should be used when crafting the closure
+  // transaction.
+  uint64 fee = 6 [json_name = "fee"];
 }
 
 message CloseChannelResponse {
@@ -489,7 +492,7 @@ message GetBalanceRequest {
 }
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
+  map<string, Balance> balances = 1 [json_name = "balances"];
 }
 
 message GetInfoRequest {}
@@ -591,6 +594,8 @@ message OpenChannelRequest {
   uint64 amount = 3 [json_name = "amount"];
   // The balance amount to be pushed to the remote side of the channel denominated in satoshis.
   uint64 push_amount = 4 [json_name = "push_amount"];
+  // The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel.
+  uint64 fee = 5 [json_name = "fee"];
 }
 
 message OpenChannelResponse {
@@ -743,11 +748,13 @@ message RemoveOrderResponse {
   uint64 quantity_on_hold = 1 [json_name = "hold"];
 }
 
-message CancelAllOrdersRequest {}
+message RemoveAllOrdersRequest {}
 
-message CancelAllOrdersResponse {
+message RemoveAllOrdersResponse {
   // The local order ids that were successfully removed.
   repeated string removed_order_ids = 1 [json_name = "removed_order_ids"];
+  // The local order ids that were on hold and failed to be removed.
+  repeated string on_hold_order_ids = 2 [json_name = "on_hold_order_ids"];
 }
 
 message RemovePairRequest {

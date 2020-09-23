@@ -47,6 +47,9 @@ const argChecks = {
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
   },
+  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType, fee?: number }) => {
+    if (swapClient === SwapClientType.Connext && fee) throw errors.INVALID_ARGUMENT('fee is not valid for connext');
+  },
 };
 
 /** A class containing the available RPC methods for an unlocked, running instance of xud. */
@@ -110,7 +113,7 @@ class Service {
   /*
    * Removes all placed orders from the orderbook.
    */
-  public cancelAllOrders = async () => {
+  public removeAllOrders = async () => {
     return this.orderBook.removeOwnOrders();
   }
 
@@ -239,9 +242,9 @@ class Service {
    * Closes any payment channels for a specified node and currency.
    */
   public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number },
+    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number, fee?: number },
   ) => {
-    const { nodeIdentifier, currency, force, destination, amount } = args;
+    const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
     let remoteIdentifier: string | undefined;
@@ -261,6 +264,7 @@ class Service {
       destination,
       amount,
       remoteIdentifier,
+      fee,
     });
   }
 
@@ -268,11 +272,12 @@ class Service {
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (
-    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
+    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number, fee?: number },
   ) => {
-    const { nodeIdentifier, amount, currency, pushAmount } = args;
+    const { nodeIdentifier, amount, currency, pushAmount, fee } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+    argChecks.VALID_FEE({ fee, swapClient: this.swapClientManager.getType(currency) });
 
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
@@ -297,6 +302,7 @@ class Service {
         amount,
         currency,
         pushAmount,
+        fee,
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
