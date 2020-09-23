@@ -33,24 +33,18 @@ const currencies = [
     decimalPlaces: 6,
     tokenAddress: '0x292Ba2F10dbFB8925A209d3AdF09C2D2b1f491d4',
   },
+  {
+    id: 'DAI',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0x5CF98f1782117a20D8613Bf42701026c86061857',
+  },
   /*
   {
     id: 'XUC',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
     tokenAddress: '0x468ee988fD0228A79f6CcC33fEc04249cdfD809E',
-  },
-  {
-    id: 'DAI',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0x302171031c4fB3cca3395DDb489AC7c0E5Bf5D96',
-  },
-  {
-    id: 'USDT',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0xc3d29467bfe09d061764F2D841FeD98fBF23c088',
   },
   */
 ] as db.CurrencyAttributes[];
