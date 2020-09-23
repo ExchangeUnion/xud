@@ -54,7 +54,7 @@ const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
-  // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
+  { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
   // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
   // { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
