@@ -44,6 +44,12 @@ const currencies = [
     decimalPlaces: 6,
     tokenAddress: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
   },
+  {
+    id: 'DAI',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+  },
 ] as db.CurrencyAttributes[];
 
 const pairs = [
@@ -51,6 +57,8 @@ const pairs = [
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
+  { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
+  { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
 ] as db.PairAttributes[];
 
 export {
