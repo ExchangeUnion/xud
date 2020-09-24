@@ -856,6 +856,10 @@ class LndClient extends SwapClient {
       // QueryRoutes no longer returns more than one route
       route = (await this.queryRoutes(request)).getRoutesList()[0];
     } catch (err) {
+      if (typeof err.message === 'string' && err.message.includes('insufficient local balance')) {
+        throw swapErrors.INSUFFICIENT_BALANCE;
+      }
+
       if (typeof err.message !== 'string' || (
         !err.message.includes('unable to find a path to destination') &&
         !err.message.includes('target not found')

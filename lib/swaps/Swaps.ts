@@ -335,6 +335,9 @@ class Swaps extends EventEmitter {
     try {
       route = await swapClient.getRoute(makerUnits, destination, makerCurrency);
     } catch (err) {
+      if (err === errors.INSUFFICIENT_BALANCE) {
+        throw SwapFailureReason.InsufficientBalance;
+      }
       throw SwapFailureReason.UnexpectedClientError;
     }
 
@@ -589,7 +592,7 @@ class Swaps extends EventEmitter {
         deal,
         peer,
         reqId,
-        failureReason: SwapFailureReason.UnexpectedClientError,
+        failureReason: (err === errors.INSUFFICIENT_BALANCE) ? SwapFailureReason.InsufficientBalance : SwapFailureReason.UnexpectedClientError,
         errorMessage: err.message,
         failedCurrency: deal.takerCurrency,
       });
