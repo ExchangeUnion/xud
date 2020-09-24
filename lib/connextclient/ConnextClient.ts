@@ -41,8 +41,6 @@ import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
 import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
-const MAX_AMOUNT = Number.MAX_SAFE_INTEGER;
-
 interface ConnextClient {
   on(event: 'preimage', listener: (preimageRequest: ProvidePreimageEvent) => void): void;
   on(event: 'transferReceived', listener: (transferReceivedRequest: TransferReceivedEvent) => void): void;
@@ -115,7 +113,17 @@ class ConnextClient extends SwapClient {
   private seed: string | undefined;
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
+  /** A map of currencies to promises representing collateral requests. */
+  private requestCollateralPromises = new Map<string, Promise<any>>();
   private _totalOutboundAmount = new Map<string, number>();
+  private _maxChannelInboundAmount = new Map<string, number>();
+
+  /** The minimum incremental quantity that we may use for collateral requests. */
+  private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
+    ETH: 0.1 * 10 ** 8,
+    USDT: 100 * 10 ** 8,
+    DAI: 100 * 10 ** 8,
+  };
 
   /**
    * Creates a connext client.
@@ -260,9 +268,34 @@ class ConnextClient extends SwapClient {
     return this._totalOutboundAmount.get(currency) || 0;
   }
 
-  public maxChannelInboundAmount = (_currency: string): number => {
-    // assume MAX_AMOUNT since Connext will re-collaterize accordingly
-    return MAX_AMOUNT;
+  public checkInboundCapacity = (inboundAmount: number, currency: string) => {
+    const inboundCapacity = this._maxChannelInboundAmount.get(currency) || 0;
+    if (inboundCapacity < inboundAmount) {
+      // we do not have enough inbound capacity to receive the specified inbound amount so we must request collateral
+      this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for order amount ${inboundAmount}`);
+
+      // we want to make a request for the current collateral plus the greater of any
+      // minimum request size for the currency or the capacity shortage + 5% buffer
+      const quantityToRequest = inboundCapacity + Math.max(
+        inboundAmount * 1.05 - inboundCapacity,
+        ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0,
+      );
+      const unitsToRequest = this.unitConverter.amountToUnits({ currency, amount: quantityToRequest });
+
+      // first check whether we already have a pending collateral request for this currency
+      // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
+      const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
+        assetId: this.tokenAddresses.get(currency),
+        amount: unitsToRequest.toLocaleString('fullwide', { useGrouping: false }),
+      }).then(() => {
+        this.logger.debug(`completed collateral request of ${unitsToRequest} ${currency} units`);
+        this.requestCollateralPromises.delete(currency);
+        return this.channelBalance(currency);
+      }).catch(this.logger.error);
+      this.requestCollateralPromises.set(currency, requestCollateralPromise);
+
+      throw errors.INSUFFICIENT_COLLATERAL;
+    }
   }
 
   protected updateCapacity = async () => {
@@ -586,14 +619,20 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const { freeBalanceOffChain } = await this.getBalance(currency);
+    const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalanceOffChain),
     });
+    const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
+      currency,
+      units: Number(nodeFreeBalanceOffChain),
+    });
 
     this._totalOutboundAmount.set(currency, freeBalanceAmount);
+    this._maxChannelInboundAmount.set(currency, nodeFreeBalanceAmount);
+    this.logger.trace(`new inbound capacity (collateral) for ${currency} of ${nodeFreeBalanceAmount}`);
     return {
       balance: freeBalanceAmount,
       inactiveBalance: 0,
@@ -605,7 +644,7 @@ class ConnextClient extends SwapClient {
     await this.channelBalance(currency); // refreshes the max outbound balance
     return {
       maxSell: this.maxChannelOutboundAmount(currency),
-      maxBuy: this.maxChannelInboundAmount(currency),
+      maxBuy: this._maxChannelInboundAmount.get(currency) ?? 0,
     };
   }
 
@@ -671,29 +710,35 @@ class ConnextClient extends SwapClient {
       amount: units.toLocaleString('fullwide', { useGrouping: false }), // toLocaleString avoids scientific notation
     });
     const { txhash } = await parseResponseBody<ConnextDepositResponse>(depositResponse);
-    const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
-      filter(hash => hash === txhash), // only proceed if the incoming hash matches our expected txhash
-      take(1), // complete the stream after 1 matching event
-      timeout(86400000), // clear up the listener after 1 day
-      mergeMap(() => {
-        // use defer to only create the inner observable when the outer one subscribes
-        return defer(() => {
-          return from(
-            this.sendRequest('/request-collateral', 'POST', {
-              assetId,
-            }),
-          );
-        });
-      }),
-    );
-    channelCollateralized$.subscribe({
-      complete: () => {
-        this.logger.verbose(`collateralized channel for ${currency}`);
-      },
-      error: (err) => {
-        this.logger.error(`failed requesting collateral for ${currency}`, err);
-      },
-    });
+
+    const minCollateralRequestQuantity = ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency];
+    if (minCollateralRequestQuantity !== undefined) {
+      const minCollateralRequestUnits = this.unitConverter.amountToUnits({ currency, amount: minCollateralRequestQuantity });
+      const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
+        filter(hash => hash === txhash), // only proceed if the incoming hash matches our expected txhash
+        take(1), // complete the stream after 1 matching event
+        timeout(86400000), // clear up the listener after 1 day
+        mergeMap(() => {
+          // use defer to only create the inner observable when the outer one subscribes
+          return defer(() => {
+            return from(
+              this.sendRequest('/request-collateral', 'POST', {
+                assetId,
+                amount: (minCollateralRequestUnits.toLocaleString('fullwide', { useGrouping: false })),
+              }),
+            );
+          });
+        }),
+      );
+      channelCollateralized$.subscribe({
+        complete: () => {
+          this.logger.verbose(`collateralized channel for ${currency}`);
+        },
+        error: (err) => {
+          this.logger.error(`failed requesting collateral for ${currency}`, err);
+        },
+      });
+    }
 
     return txhash;
   }

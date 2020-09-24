@@ -40,6 +40,7 @@ const getGrpcError = (err: any) => {
       code = status.ALREADY_EXISTS;
       break;
     case connextErrorCodes.INSUFFICIENT_BALANCE:
+    case connextErrorCodes.INSUFFICIENT_COLLATERAL:
     case p2pErrorCodes.NOT_CONNECTED:
     case p2pErrorCodes.NODE_NOT_BANNED:
     case p2pErrorCodes.NODE_IS_BANNED:
