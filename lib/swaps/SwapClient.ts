@@ -140,6 +140,7 @@ abstract class SwapClient extends EventEmitter {
    * and throws an error if there isn't, otherwise does nothing.
    */
   public abstract checkInboundCapacity(inboundAmount: number, currency?: string): void;
+  public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {

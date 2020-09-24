@@ -202,6 +202,10 @@ class LndClient extends SwapClient {
     return; // we do not currently check inbound capacities for lnd
   }
 
+  public setReservedInboundAmount = (_reservedInboundAmount: number) => {
+    return; // not currently used for lnd
+  }
+
   /** Lnd specific procedure to mark the client as locked. */
   private lock = () => {
     if (!this.walletUnlocker) {
