@@ -53,12 +53,19 @@ const currencies = [
 ] as db.CurrencyAttributes[];
 
 const pairs = [
-  { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
-  { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-  { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
+//{ baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
-  { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
+  { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
+//{ baseCurrency: 'ETH', quoteCurrency: 'DAI' },
+//{ baseCurrency: 'ETH', quoteCurrency: 'USDT' },
+  { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
+//{ baseCurrency: 'LTC', quoteCurrency: 'DAI' },
+//{ baseCurrency: 'LTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
+//{ baseCurrency: 'XUC', quoteCurrency: 'BTC' },
+//{ baseCurrency: 'XUC', quoteCurrency: 'ETH' },
+//{ baseCurrency: 'XUC', quoteCurrency: 'DAI' }, 
+//{ baseCurrency: 'XUC', quoteCurrency: 'USDT' },
 ] as db.PairAttributes[];
 
 export {
