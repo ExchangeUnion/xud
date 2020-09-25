@@ -336,6 +336,9 @@ export class CreateNodeResponse extends jspb.Message {
     setInitializedLndsList(value: Array<string>): void;
     addInitializedLnds(value: string, index?: number): string;
 
+    getInitializedConnext(): boolean;
+    setInitializedConnext(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CreateNodeResponse.AsObject;
@@ -351,6 +354,7 @@ export namespace CreateNodeResponse {
     export type AsObject = {
         seedMnemonicList: Array<string>,
         initializedLndsList: Array<string>,
+        initializedConnext: boolean,
     }
 }
 
@@ -1603,6 +1607,9 @@ export class RestoreNodeResponse extends jspb.Message {
     setRestoredLndsList(value: Array<string>): void;
     addRestoredLnds(value: string, index?: number): string;
 
+    getRestoredConnext(): boolean;
+    setRestoredConnext(value: boolean): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): RestoreNodeResponse.AsObject;
@@ -1617,6 +1624,7 @@ export class RestoreNodeResponse extends jspb.Message {
 export namespace RestoreNodeResponse {
     export type AsObject = {
         restoredLndsList: Array<string>,
+        restoredConnext: boolean,
     }
 }
 

@@ -64,6 +64,7 @@ export type ConnextConfigResponse = {
  */
 export type ConnextBalanceResponse = {
   freeBalanceOffChain: string;
+  nodeFreeBalanceOffChain: string;
   freeBalanceOnChain: string;
 };
 

@@ -6,7 +6,7 @@ const errorCodes = {
   DISABLED: codesPrefix.concat('.1'),
   UNAVAILABLE: codesPrefix.concat('.2'),
   NO_ACTIVE_CHANNELS: codesPrefix.concat('.3'),
-  NO_INVOICE_SUPPORT: codesPrefix.concat('.4'),
+  NO_HOLD_INVOICE_SUPPORT: codesPrefix.concat('.4'),
 };
 
 const errors = {
@@ -22,9 +22,9 @@ const errors = {
     message: `lnd-${currency} has no active channels`,
     code: errorCodes.NO_ACTIVE_CHANNELS,
   }),
-  NO_INVOICE_SUPPORT: (currency: string) => ({
-    message: `lnd-${currency} has no invoice support`,
-    code: errorCodes.NO_INVOICE_SUPPORT,
+  NO_HOLD_INVOICE_SUPPORT: (currency: string) => ({
+    message: `lnd-${currency} has no hold invoice support`,
+    code: errorCodes.NO_HOLD_INVOICE_SUPPORT,
   }),
 };
 

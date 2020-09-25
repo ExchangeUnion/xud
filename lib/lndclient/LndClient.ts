@@ -198,8 +198,8 @@ class LndClient extends SwapClient {
     return this._maxChannelOutboundAmount;
   }
 
-  public maxChannelInboundAmount = () => {
-    return this._maxChannelInboundAmount;
+  public checkInboundCapacity = (_inboundAmount: number) => {
+    return; // we do not currently check inbound capacities for lnd
   }
 
   /** Lnd specific procedure to mark the client as locked. */
@@ -244,7 +244,7 @@ class LndClient extends SwapClient {
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
       if (this.hasNoInvoiceSupport()) {
-        reject(errors.NO_INVOICE_SUPPORT);
+        reject(errors.NO_HOLD_INVOICE_SUPPORT);
         return;
       }
       if (!this.isOperational()) {
@@ -343,7 +343,7 @@ class LndClient extends SwapClient {
     let alias: string | undefined;
     let status = 'Ready';
     if (this.hasNoInvoiceSupport()) {
-      status = errors.NO_INVOICE_SUPPORT(this.currency).message;
+      status = errors.NO_HOLD_INVOICE_SUPPORT(this.currency).message;
     } else if (!this.isOperational()) {
       status = errors.DISABLED(this.currency).message;
     } else if (this.isDisconnected()) {
@@ -502,7 +502,7 @@ class LndClient extends SwapClient {
         this.invoices = new InvoicesClient(this.uri, this.credentials);
         try {
           const randomHash = crypto.randomBytes(32).toString('hex');
-          this.logger.info(`checking hold invoice support with hash: ${randomHash}`);
+          this.logger.debug(`checking hold invoice support with hash: ${randomHash}`);
 
           await this.addInvoice({ rHash: randomHash, units: 1 });
           await this.removeInvoice(randomHash);
@@ -875,6 +875,10 @@ class LndClient extends SwapClient {
       // QueryRoutes no longer returns more than one route
       route = (await this.queryRoutes(request)).getRoutesList()[0];
     } catch (err) {
+      if (typeof err.message === 'string' && err.message.includes('insufficient local balance')) {
+        throw swapErrors.INSUFFICIENT_BALANCE;
+      }
+
       if (typeof err.message !== 'string' || (
         !err.message.includes('unable to find a path to destination') &&
         !err.message.includes('target not found')
