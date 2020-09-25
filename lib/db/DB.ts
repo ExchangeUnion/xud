@@ -1,4 +1,3 @@
-import { promises as fs } from 'fs';
 import { derivePairId } from '../utils/utils';
 import { ModelCtor, Sequelize } from 'sequelize';
 import { XuNetwork } from '../constants/enums';
@@ -137,8 +136,6 @@ class DB {
    * @param initDb whether to intialize a new database with default values if no database exists
    */
   public init = async (network = XuNetwork.SimNet, initDb = false): Promise<void> => {
-    const shouldInitDb = initDb && await this.isNewDb();
-
     try {
       await this.sequelize.authenticate();
       this.logger.info(`connected to database ${this.storage ? this.storage : 'in memory'}`);
@@ -177,41 +174,29 @@ class DB {
           await Node.bulkCreate(newNodes);
         }
       }
-    }
-
-    if (shouldInitDb) {
       // initialize database with the default currencies for the configured network
       const currencies = defaultCurrencies(network);
       if (currencies) {
-        await Currency.bulkCreate(currencies);
+        const existingCurrencies = await Models.Currency(this.sequelize).findAll();
+        const newCurrencies = currencies.filter(currency => (!existingCurrencies.find(n => (n.id === currency.id))));
+
+        if (newCurrencies.length > 0) {
+          await Currency.bulkCreate(newCurrencies);
+        }
       }
 
       // initialize database with the default trading pairs for the configured network
       const pairs = defaultPairs(network);
       if (pairs) {
-        await Pair.bulkCreate(pairs);
-      }
-    }
-  }
+        const existingPairs = await Models.Pair(this.sequelize).findAll();
+        const newPairs = pairs.filter(pair => (!existingPairs.find(n => (n.baseCurrency === pair.baseCurrency &&
+            n.quoteCurrency === pair.quoteCurrency))));
 
-  /**
-   * Checks whether the database is new, in other words whether we are not
-   * loading a preexisting database from disk.
-   */
-  private isNewDb = async () => {
-    if (this.storage && this.storage !== ':memory:') {
-      // check if database file exists
-      try {
-        await fs.access(this.storage);
-        return false;
-      } catch (err) {
-        if (err.code !== 'ENOENT') {
-          // we ignore errors due to file not existing, otherwise throw
-          throw err;
+        if (newPairs.length > 0) {
+          await Pair.bulkCreate(newPairs);
         }
       }
     }
-    return true;
   }
 
   public close = () => {
