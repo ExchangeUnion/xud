@@ -688,6 +688,9 @@ message PlaceOrderRequest {
   string replace_order_id = 6 [json_name = "replace_order_id"];
   // Whether the order must be filled immediately and not allowed to enter the order book.
   bool immediate_or_cancel = 7 [json_name = "immediate_or_cancel"];
+  // Whether to trade all available funds.
+  // If true, the quantity field is ignored.
+  bool all = 8 [json_name = "all"];
 }
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.
