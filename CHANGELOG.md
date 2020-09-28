@@ -1,7 +1,7 @@
 # [1.1.0](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.1.0) (2020-09-28)
 
 Most notable features of this release:
-- Xud now prevents orders from entering the orderbook if there's insufficient inbound liquidity for Connext currencies (ETH/ERC20). Inbound liquidity is automatically requested from the Connext node. This smart collateralization feature considerably increases the likelihood that the orders can be executed.
+- Xud now automatically requests inbound liquidity for connext currencies (ETH/ERC20) and prevents orders from entering the orderbook until there is sufficient inbound liquidity to cover the order. This "smart collateralization" feature considerably increases the likelihood that the orders can be executed successfully.
 - [DAI](https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f) token and `USDT/DAI` trading pair has been enabled by default.
 
 ### Bug Fixes
@@ -792,6 +792,5 @@ command line arguments.
 * **p2p/orderbook:** update supported pairs ([1014cbd](https://github.com/ExchangeUnion/xud/commit/1014cbd))
 * **rpc:** add GetNodeInfo call ([#570](https://github.com/ExchangeUnion/xud/issues/570)) ([1a038a2](https://github.com/ExchangeUnion/xud/commit/1a038a2)), closes [#529](https://github.com/ExchangeUnion/xud/issues/529)
 * **swaps:** store swapdeals in database ([#569](https://github.com/ExchangeUnion/xud/pull/569)) ([9a7a629a](https://github.com/ExchangeUnion/xud/commit/9a7a629a9b2c9b8d28d035dc32543aed5e30be47)), closes [#562](https://github.com/ExchangeUnion/xud/issues/562)
-
 
 
