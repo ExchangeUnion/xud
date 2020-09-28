@@ -22,12 +22,6 @@ const currencies = [
   { id: 'BTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   { id: 'LTC', swapClient: SwapClientType.Lnd, decimalPlaces: 8 },
   {
-    id: 'ETH',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0x0000000000000000000000000000000000000000',
-  },
-  {
     id: 'USDT',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 6,
@@ -37,25 +31,25 @@ const currencies = [
     id: 'DAI',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
-    tokenAddress: '0x5CF98f1782117a20D8613Bf42701026c86061857',
+    tokenAddress: '0x5CF98f1782117a20D8613Bf42701026c86061111',
   },
-  /*
   {
     id: 'XUC',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
     tokenAddress: '0x468ee988fD0228A79f6CcC33fEc04249cdfD809E',
   },
-  */
+  
 ] as db.CurrencyAttributes[];
 
 const pairs = [
   { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
   { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
-  { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
+  //{ baseCurrency: 'BTC', quoteCurrency: 'USDT' },
   { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
   { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
+  { baseCurrency: 'DAI', quoteCurrency: 'USDT' },
   // { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
   // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
   // { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
