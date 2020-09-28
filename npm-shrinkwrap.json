@@ -5970,7 +5970,7 @@
       "dependencies": {
         "camelcase-keys": {
           "version": "2.1.0",
-          "resolved": "https://registry.npmjs.org/camelcase-keys/-/camelcase-keys-2.1.0.tgz",
+          "resolved": "http://registry.npmjs.org/camelcase-keys/-/camelcase-keys-2.1.0.tgz",
           "integrity": "sha1-MIvur/3ygRkFHvodkyITyRuPkuc=",
           "dev": true,
           "requires": {
@@ -5995,7 +5995,7 @@
         },
         "meow": {
           "version": "3.7.0",
-          "resolved": "https://registry.npmjs.org/meow/-/meow-3.7.0.tgz",
+          "resolved": "http://registry.npmjs.org/meow/-/meow-3.7.0.tgz",
           "integrity": "sha1-cstmi0JSKCkKu/qFaJJYcwioAfs=",
           "dev": true,
           "requires": {
@@ -6300,7 +6300,7 @@
       "dependencies": {
         "pify": {
           "version": "2.3.0",
-          "resolved": "https://registry.npmjs.org/pify/-/pify-2.3.0.tgz",
+          "resolved": "http://registry.npmjs.org/pify/-/pify-2.3.0.tgz",
           "integrity": "sha1-7RQaasBDqEnqWISY59yosVMw6Qw=",
           "dev": true
         }
