@@ -459,13 +459,21 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    const { outboundCurrency, inboundCurrency, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-    const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
-    const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+    const tp = this.getTradingPair(order.pairId);
 
     if (!this.nobalancechecks) {
+      // for limit orders, we use the price of our order to calculate inbound/outbound amounts
+      // for market orders, we use the price of the best matching order in the order book
+      const price = (order.price === 0 || order.price === Number.POSITIVE_INFINITY) ?
+        (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
+        order.price;
+
+      const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, price, order.isBuy, order.pairId);
+
       // check if clients exists
+      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
       if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
@@ -478,6 +486,9 @@ class OrderBook extends EventEmitter {
       if (outboundAmount > totalOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
       }
+
+      // check if sufficient inbound channel capacity exists
+      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
     }
 
     let replacedOrderIdentifier: OrderIdentifier | undefined;
@@ -494,7 +505,6 @@ class OrderBook extends EventEmitter {
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.
-    const tp = this.getTradingPair(order.pairId);
     const matchingResult = tp.match(order);
 
     /** Any portion of the placed order that could not be swapped or matched internally. */

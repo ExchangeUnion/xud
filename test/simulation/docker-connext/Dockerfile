@@ -8,5 +8,5 @@ WORKDIR /app
 ADD https://api.github.com/repos/connext/rest-api-client/commits/master /dev/null
 RUN git clone https://github.com/connext/rest-api-client.git
 RUN cd rest-api-client && git pull
-RUN cd rest-api-client && git checkout 9dafbfb914415f70a14123de9e295df175633c24
+RUN cd rest-api-client && git checkout dd1ecf905645bdcb2b47e133ce68146ab70f50e9
 RUN cd rest-api-client && npm install && npm run build

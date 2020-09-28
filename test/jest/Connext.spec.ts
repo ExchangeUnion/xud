@@ -1,3 +1,5 @@
+
+// tslint:disable: max-line-length
 import ConnextClient from '../../lib/connextclient/ConnextClient';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 import Logger from '../../lib/Logger';
@@ -36,6 +38,7 @@ jest.mock('http', () => {
 
 const ETH_ASSET_ID = '0x0000000000000000000000000000000000000000';
 const USDT_ASSET_ID = '0xdAC17F958D2ee523a2206206994597C13D831ec7';
+const XUC_ASSET_ID = '0x9999999999999999999999999999999999999999';
 
 describe('ConnextClient', () => {
   let connext: ConnextClient;
@@ -61,6 +64,11 @@ describe('ConnextClient', () => {
       {
         id: 'USDT',
         tokenAddress: USDT_ASSET_ID,
+        swapClient: SwapClientType.Connext,
+      },
+      {
+        id: 'XUC',
+        tokenAddress: XUC_ASSET_ID,
         swapClient: SwapClientType.Connext,
       },
     ] as CurrencyInstance[];
@@ -310,6 +318,78 @@ describe('ConnextClient', () => {
         });
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Failed });
+    });
+  });
+
+  describe('checkInboundCapacity', () => {
+    const quantity = 20000000;
+    const smallQuantity = 100;
+    beforeEach(() => {
+      connext['sendRequest'] = jest.fn().mockResolvedValue(undefined);
+      connext['_maxChannelInboundAmount'].set('ETH', 0);
+    });
+
+    it('requests collateral plus 5% buffer when there is none', async () => {
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/request-collateral',
+        'POST',
+        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+      );
+    });
+
+    it('does not request collateral when there is a pending request', async () => {
+      connext['requestCollateralPromises'].set('ETH', Promise.resolve());
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(0);
+    });
+
+    it('requests the full collateral amount even when there is some existing collateral', async () => {
+      const partialCollateral = 5000;
+      connext['_maxChannelInboundAmount'].set('ETH', partialCollateral);
+
+      expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/request-collateral',
+        'POST',
+        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: (quantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+      );
+    });
+
+    it('requests the hardcoded minimum if the collateral shortage is below it', async () => {
+      const minCollateralRequestUnits = ConnextClient['MIN_COLLATERAL_REQUEST_SIZES']['ETH']! * 10 ** 10;
+
+      expect(() => connext.checkInboundCapacity(smallQuantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/request-collateral',
+        'POST',
+        expect.objectContaining({ assetId: ETH_ASSET_ID, amount: minCollateralRequestUnits.toLocaleString('fullwide', { useGrouping: false }) }),
+      );
+    });
+
+    it('requests collateral plus 5% buffer for a small shortage when there is no hardcoded minimum for the currency', async () => {
+      expect(() => connext.checkInboundCapacity(smallQuantity, 'XUC')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
+      expect(connext['sendRequest']).toHaveBeenCalledWith(
+        '/request-collateral',
+        'POST',
+        expect.objectContaining({ assetId: XUC_ASSET_ID, amount: (smallQuantity * 1.05 * 10 ** 10).toLocaleString('fullwide', { useGrouping: false }) }),
+      );
+    });
+
+    it('does not request collateral or throw when there is sufficient collateral', async () => {
+      connext['_maxChannelInboundAmount'].set('ETH', quantity);
+      connext.checkInboundCapacity(quantity, 'ETH');
+
+      expect(connext['sendRequest']).toHaveBeenCalledTimes(0);
     });
   });
 });

@@ -291,7 +291,7 @@ describe('LndClient', () => {
 
       expect(lnd['listChannels']).toHaveBeenCalledTimes(1);
       expect(lnd.maxChannelOutboundAmount()).toEqual(98);
-      expect(lnd.maxChannelInboundAmount()).toEqual(295);
+      expect(lnd['_maxChannelInboundAmount']).toEqual(295);
     });
   });
 });

@@ -25,7 +25,9 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
     let walletInitializedMessage = 'The following wallets were initialized: ';
 
     if (response.initializedLndsList.length) {
-      walletInitializedMessage += response.initializedLndsList.join(', ');
+      walletInitializedMessage += response.initializedLndsList.join(', ') + (response.initializedConnext ? ', ETH' : '');
+    } else if (response.initializedConnext) {
+      walletInitializedMessage += 'ETH';
     }
 
     console.log(walletInitializedMessage);

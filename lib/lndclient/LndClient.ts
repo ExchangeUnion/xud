@@ -197,8 +197,8 @@ class LndClient extends SwapClient {
     return this._maxChannelOutboundAmount;
   }
 
-  public maxChannelInboundAmount = () => {
-    return this._maxChannelInboundAmount;
+  public checkInboundCapacity = (_inboundAmount: number) => {
+    return; // we do not currently check inbound capacities for lnd
   }
 
   /** Lnd specific procedure to mark the client as locked. */
@@ -856,6 +856,10 @@ class LndClient extends SwapClient {
       // QueryRoutes no longer returns more than one route
       route = (await this.queryRoutes(request)).getRoutesList()[0];
     } catch (err) {
+      if (typeof err.message === 'string' && err.message.includes('insufficient local balance')) {
+        throw swapErrors.INSUFFICIENT_BALANCE;
+      }
+
       if (typeof err.message !== 'string' || (
         !err.message.includes('unable to find a path to destination') &&
         !err.message.includes('target not found')

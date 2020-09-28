@@ -46,12 +46,12 @@ class InitService extends EventEmitter {
         seedMnemonic,
         walletPassword: password,
       });
-      const initializedLndWallets = initWalletResult.initializedLndWallets;
 
       await nodeKey.toFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
       return {
-        initializedLndWallets,
+        initializedLndWallets: initWalletResult.initializedLndWallets,
+        initializedConnext: initWalletResult.initializedConnext,
         mnemonic: seedMnemonic,
       };
     } finally {
@@ -120,7 +120,6 @@ class InitService extends EventEmitter {
         seedMnemonic: seedMnemonicList,
         restore: true,
       });
-      const restoredLndWallets = initWalletResult.initializedLndWallets;
 
       if (xudDatabase.byteLength) {
         await fs.writeFile(this.databasePath, xudDatabase);
@@ -128,7 +127,8 @@ class InitService extends EventEmitter {
       await nodeKey.toFile(this.nodeKeyPath, password);
       this.emit('nodekey', nodeKey);
       return {
-        restoredLndWallets,
+        initializedLndWallets: initWalletResult.initializedLndWallets,
+        initializedConnext: initWalletResult.initializedConnext,
       };
     } finally {
       this.pendingCall = false;

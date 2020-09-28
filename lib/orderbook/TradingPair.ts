@@ -364,6 +364,14 @@ class TradingPair extends EventEmitter {
     }
   }
 
+  public quoteBid = () => {
+    return this.queues?.buyQueue.peek()?.price ?? 0;
+  }
+
+  public quoteAsk = () => {
+    return this.queues?.sellQueue.peek()?.price ?? Number.POSITIVE_INFINITY;
+  }
+
   /**
    * Matches an order against its opposite queue. Matched maker orders are removed immediately.
    * @returns a [[MatchingResult]] with the matches as well as the remaining, unmatched portion of the order

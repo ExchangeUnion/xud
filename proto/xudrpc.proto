@@ -436,6 +436,8 @@ message CreateNodeResponse {
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
+  // Whether the connext wallet was initialized.
+  bool initialized_connext = 3;
 }
 
 message Currency {
@@ -779,6 +781,9 @@ message RestoreNodeRequest {
 message RestoreNodeResponse {
   // The list of lnd clients that were initialized.
   repeated string restored_lnds = 1;
+
+  // Whether the connext wallet was initialized.
+  bool restored_connext = 2;
 }
 
 message ShutdownRequest {}
