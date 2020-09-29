@@ -690,7 +690,7 @@ message PlaceOrderRequest {
   bool immediate_or_cancel = 7 [json_name = "immediate_or_cancel"];
   // Whether to trade all available funds.
   // If true, the quantity field is ignored.
-  bool all = 8 [json_name = "all"];
+  bool max = 8 [json_name = "max"];
 }
 message PlaceOrderResponse {
   // A list of own orders (or portions thereof) that matched the newly placed order.

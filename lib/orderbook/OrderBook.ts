@@ -860,12 +860,15 @@ class OrderBook extends EventEmitter {
         throw errors.QUANTITY_ON_HOLD(localId, order.hold);
       }
 
-      this.removeOwnOrder({
-        orderId: order.id,
-        pairId: order.pairId,
-        quantityToRemove: removableQuantity,
-      });
-      remainingQuantityToRemove -= removableQuantity;
+      if (removableQuantity > 0) {
+        // we can remove any portion of the order that's not on hold up front
+        this.removeOwnOrder({
+          orderId: order.id,
+          pairId: order.pairId,
+          quantityToRemove: removableQuantity,
+        });
+        remainingQuantityToRemove -= removableQuantity;
+      }
 
       const failedHandler = (deal: SwapDeal) => {
         if (deal.orderId === order.id) {

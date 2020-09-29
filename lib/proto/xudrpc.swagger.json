@@ -1505,7 +1505,7 @@
           "format": "boolean",
           "description": "Whether the order must be filled immediately and not allowed to enter the order book."
         },
-        "all": {
+        "max": {
           "type": "boolean",
           "format": "boolean",
           "description": "Whether to trade all available funds.\nIf true, the quantity field is ignored."

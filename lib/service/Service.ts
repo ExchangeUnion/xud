@@ -611,15 +611,29 @@ class Service {
    */
   public placeOrder = async (
     args: { pairId: string, price: number, quantity?: number, orderId: string, side: number,
-      replaceOrderId: string, immediateOrCancel: boolean, all?: boolean },
+      replaceOrderId: string, immediateOrCancel: boolean, max?: boolean },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
     argChecks.PRICE_NON_NEGATIVE(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel, all } = args;
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel, max } = args;
 
-    const calculatedQuantity = this.calculateQuantity(all, pairId, price, side, quantity);
+    let calculatedQuantity: number;
+
+    if (max) {
+      if (side === OrderSide.Sell) {
+        const currency = pairId.split('/')[0];
+        calculatedQuantity = (await this.getBalance({ currency })).get(currency)?.channelBalance || 0;
+      } else {
+        // TODO
+        calculatedQuantity = 0;
+      }
+
+      this.logger.debug(`max flag is true to place order, calculated quantity from balance is ${calculatedQuantity}`);
+    } else {
+      calculatedQuantity = quantity || 0;
+    }
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
@@ -648,36 +662,6 @@ class Service {
     };
     return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
       await this.orderBook.placeMarketOrder(placeOrderRequest);
-  }
-
-  private calculateQuantity(all: boolean | undefined, pairId: string, price: number, side: number, quantity: number | undefined) {
-    let calculatedQuantity: number;
-
-    if (all) {
-      calculatedQuantity = 0;
-      this.listOrders({ pairId, owner: Owner.Both, limit: 0, includeAliases: false }).forEach((orderArrays, _) => {
-        function iterateOrdersAndAddQuantity(orderArray: ServiceOrder[]) {
-          for (const order of orderArray) {
-            if (order.quantity) {
-              if (!price || order.price === price) {
-                calculatedQuantity += order.quantity;
-              }
-            }
-          }
-        }
-
-        if (side === OrderSide.Buy) {
-          iterateOrdersAndAddQuantity(orderArrays.sellArray);
-        } else if (side === OrderSide.Sell) {
-          iterateOrdersAndAddQuantity(orderArrays.buyArray);
-        }
-      });
-
-      this.logger.debug(`all flag is true to place order, calculated quantity from orderbook is ${calculatedQuantity}`);
-    } else {
-      calculatedQuantity = quantity || 0;
-    }
-    return calculatedQuantity;
   }
 
   /** Removes a currency. */

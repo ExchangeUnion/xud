@@ -1281,8 +1281,8 @@ export class PlaceOrderRequest extends jspb.Message {
     getImmediateOrCancel(): boolean;
     setImmediateOrCancel(value: boolean): void;
 
-    getAll(): boolean;
-    setAll(value: boolean): void;
+    getMax(): boolean;
+    setMax(value: boolean): void;
 
 
     serializeBinary(): Uint8Array;
@@ -1304,7 +1304,7 @@ export namespace PlaceOrderRequest {
         side: OrderSide,
         replaceOrderId: string,
         immediateOrCancel: boolean,
-        all: boolean,
+        max: boolean,
     }
 }
 
