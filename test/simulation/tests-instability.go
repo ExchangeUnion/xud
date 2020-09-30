@@ -35,12 +35,12 @@ var instabilityTestCases = []*testCase{
 		test: testMakerCrashedAfterSendAfterPreimageResolvedConnextIn,
 	},
 	{
-		name: "maker lnd crashed before order settlement", // replacing Alice
-		test: testMakerLndCrashedBeforeSettlement,
+		name: "maker lnd crashed before maker order settlement", // replacing Alice
+		test: testMakerLndCrashedBeforeMakerSettlement,
 	},
 	{
-		name: "maker connext client crashed before order settlement", // replacing Alice
-		test: testMakerConnextClientCrashedBeforeSettlement,
+		name: "maker connext client crashed before maker order settlement", // replacing Alice
+		test: testMakerConnextClientCrashedBeforeMakerSettlement,
 	},
 	{
 		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: lnd", // replacing Alice + Bob
@@ -53,6 +53,10 @@ var instabilityTestCases = []*testCase{
 	{
 		name: "maker crashed after send payment with delayed settlement; incoming: lnd, outgoing: connext", // replacing Alice + Bob
 		test: testMakerCrashedAfterSendDelayedSettlementConnextOut,
+	},
+	{
+		name: "maker connext client crashed before taker order settlement", // replacing Alice + Bob
+		test: testMakerConnextClientCrashedBeforeTakerSettlement,
 	},
 }
 
@@ -185,7 +189,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
 }
 
-func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
+func testMakerLndCrashedBeforeMakerSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
 		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE",
@@ -246,12 +250,105 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not recover LTC funds")
 }
 
-func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
+func testMakerConnextClientCrashedBeforeTakerSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
+	var err error
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
+		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASH_WHILE_SENDING",
+		"CLIENT_TYPE=ConnextClient",
+		// connext-client would be replaced, so we're not specifying its current PID,
+		// as in other client types.
+	})
+
+	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, []string{"CUSTOM_SCENARIO=INSTABILITY::TAKER_DELAY_BEFORE_SETTLE"})
+	ht.assert.NoError(err)
+
+	ht.act.init(net.Alice)
+	ht.act.initConnext(net, net.Alice, true)
+
+	ht.act.init(net.Bob)
+	ht.act.initConnext(net, net.Bob, false)
+
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
+	ht.assert.NoError(err)
+
+	// Save the initial balances.
+	alicePrevBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	alicePrevBtcBalance := alicePrevBalance.Balances["BTC"]
+
+	bobPrevBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	bobPrevEthBalance := bobPrevBalance.Balances["ETH"]
+
+	// Place an order on Alice.
+	aliceOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "maker_order_id",
+		Price:    40,
+		Quantity: 100,
+		PairId:   "BTC/ETH",
+		Side:     xudrpc.OrderSide_BUY,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
+
+	// Place a matching order on Bob.
+	bobOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "taker_order_id",
+		Price:    aliceOrderReq.Price,
+		Quantity: aliceOrderReq.Quantity,
+		PairId:   aliceOrderReq.PairId,
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	go net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
+
+	// Alice's connext-client is expected to be killed by Alice's custom xud.
+	<-net.Alice.ConnextClient.ProcessExit
+
+	// Verify that both Alice and Bob didn't claim their payments yet, since Bob
+	// settlement is being intentionally delayed.
+	aliceIntermediateBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	aliceIntermediateBtcBalance := aliceIntermediateBalance.Balances["BTC"]
+	ht.assert.Equal(alicePrevBtcBalance.ChannelBalance, aliceIntermediateBtcBalance.ChannelBalance)
+
+	bobIntermediateBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	bobIntermediateEthBalance := bobIntermediateBalance.Balances["ETH"]
+	ht.assert.Equal(bobPrevEthBalance.ChannelBalance, bobIntermediateEthBalance.ChannelBalance)
+
+	// Wait a bit and verify that Bob has settled and claimed his payment.
+	time.Sleep(5 * time.Second)
+	bobBalance, err := net.Bob.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	bobEthBalance := bobBalance.Balances["ETH"]
+	diff := uint64(float64(bobOrderReq.Quantity) * bobOrderReq.Price)
+	ht.assert.Equal(bobPrevEthBalance.ChannelBalance+diff, bobEthBalance.ChannelBalance)
+
+	// Restart Alice's connext-client.
+	err = net.Alice.ConnextClient.Start(nil)
+	ht.assert.NoError(err)
+	err = waitConnextReady(net.Alice)
+	ht.assert.NoError(err)
+
+	// Wait to allow the Alice to recover.
+	time.Sleep(30 * time.Second)
+
+	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	ht.assert.NoError(err)
+	aliceBtcBalance := aliceBalance.Balances["BTC"]
+	diff = aliceOrderReq.Quantity
+	ht.assert.Equal(alicePrevBtcBalance.ChannelBalance+diff, aliceBtcBalance.ChannelBalance, "alice did not recover BTC funds")
+}
+
+func testMakerConnextClientCrashedBeforeMakerSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
 		"CUSTOM_SCENARIO=INSTABILITY::MAKER_CLIENT_CRASHED_BEFORE_SETTLE",
 		"CLIENT_TYPE=ConnextClient",
-		// connext-client should be replaced, so we're not specifying its current PID,
+		// connext-client would be replaced, so we're not specifying its current PID,
 		// as in other client types.
 	})
 
