@@ -347,7 +347,7 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	amt := int64(15000000)
 	pushAmt := int64(7500000)
-	_, err = openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
 	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
@@ -397,21 +397,9 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.Equal(res.RemainingOrder.GetLocalId(), aliceOrderReq.OrderId)
 	ht.assert.Equal(res.RemainingOrder.Quantity, aliceOrderReq.Quantity)
 
-	e := <-bobSwapFailuresChan
-	ht.assert.NoError(e.err)
-	ht.assert.NotNil(e.swapFailure)
-	ht.assert.Equal(e.swapFailure.PeerPubKey, net.Alice.PubKey())
-	ht.assert.Equal(e.swapFailure.FailureReason, "SwapTimedOut")
-	ht.assert.Equal(e.swapFailure.OrderId, bobOrder.Id)
-
 	// Cleanup.
 
-	removalRes, err := net.Bob.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: bobOrderReq.OrderId})
-	ht.assert.NoError(err)
-	ht.assert.NotNil(removalRes)
-	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
-
-	removalRes, err = net.Alice.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: aliceOrderReq.OrderId})
+	removalRes, err := net.Alice.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: aliceOrderReq.OrderId})
 	ht.assert.NoError(err)
 	ht.assert.NotNil(removalRes)
 	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
@@ -463,52 +451,30 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"bob Btc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.btc.wallet.TotalBalance, bobBalance.btc.wallet.TotalBalance)
 
-	// TODO: return the cooperative channel closure once the maker invoice cancellation is enabled
-	//// Closing taker LTC channel and checking balance.
-	//// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
-	//
-	//err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
-	//ht.assert.NoError(err)
+	e := <-bobSwapFailuresChan
+	ht.assert.NoError(e.err)
+	ht.assert.NotNil(e.swapFailure)
+	ht.assert.Equal(e.swapFailure.PeerPubKey, net.Alice.PubKey())
+	ht.assert.Equal(e.swapFailure.FailureReason, "SendPaymentFailure")
+	ht.assert.Equal(e.swapFailure.OrderId, bobOrder.Id)
 
-	// Closing taker LTC channel and checking balance.
-	// First, find the pending HTLC expiration height.
+	// After Bob's outgoing BTC payment fails, he should cancel the invoice
+	// for the incoming LTC payment since he's no longer at risk of losing funds
 
 	aliceLtcChanList, err := net.Alice.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
 	ht.assert.Equal(len(aliceLtcChanList.Channels), 1)
 	aliceLtcChan := aliceLtcChanList.Channels[0]
-	ht.assert.Greater(alicePrevLtcChan.LocalBalance-aliceLtcChan.LocalBalance, int64(float64(aliceOrderReq.Quantity)*aliceOrderReq.Price))
-	ht.assert.Equal(aliceLtcChan.RemoteBalance, aliceLtcChan.RemoteBalance)
-	ht.assert.Equal(len(aliceLtcChan.PendingHtlcs), 1)
-	expirationHeight = aliceLtcChan.PendingHtlcs[0].ExpirationHeight
+	ht.assert.Equal(alicePrevLtcChan.LocalBalance, aliceLtcChan.LocalBalance)
+	ht.assert.Equal(alicePrevLtcChan.RemoteBalance, aliceLtcChan.RemoteBalance)
+	ht.assert.Equal(len(aliceLtcChan.PendingHtlcs), 0)
 
-	// Expire the HTLC.
+	// Closing taker LTC channel and checking balance.
+	// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
 
-	ltcInfo, err := net.LndLtcNetwork.LtcMiner.Node.GetInfo()
-	ht.assert.NoError(err)
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(expirationHeight - uint32(ltcInfo.Blocks))
-	ht.assert.NoError(err)
-	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
-	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
-
-	// Verify channel was closed (by force-close, as the outgoing HTLC got expired).
-
-	waitForChannelClose(net.Alice.LndLtcNode, ht)
-
-	// Wait for publishing CLTV-delayed HTLC output using timeout tx.
-
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1)
+	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
 	ht.assert.NoError(err)
 
-	time.Sleep(5 * time.Second)
-
-	// Wait for HTLC output to be fully confirmed.
-
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(6)
-	ht.assert.NoError(err)
-
-	time.Sleep(35 * time.Second)
-
-	// Check balance.
+	// Check LTC balance
 
 	onchainFeesThreshold = int64(200000)
 	aliceBalance, err := getBalance(ht.ctx, net.Alice)
@@ -517,6 +483,10 @@ func testTakerStallingAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
 
+	removalRes, err = net.Bob.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: bobOrderReq.OrderId})
+	ht.assert.NoError(err)
+	ht.assert.NotNil(removalRes)
+	ht.assert.Equal(removalRes.QuantityOnHold, uint64(0))
 }
 
 func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest) {
@@ -532,7 +502,7 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 
 	amt := int64(15000000)
 	pushAmt := int64(7500000)
-	_, err = openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
+	aliceLtcChanPoint, err := openLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, net.Bob.LndLtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
 	_, err = openBtcChannel(ht.ctx, net.LndBtcNetwork, net.Bob.LndBtcNode, net.Alice.LndBtcNode, amt, pushAmt)
 	ht.assert.NoError(err)
@@ -575,8 +545,6 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	_, err = net.Alice.Client.PlaceOrderSync(ht.ctx, aliceOrderReq)
 	ht.assert.Error(err)
 
-	//<-net.Alice.ProcessExit
-
 	// Cleanup.
 
 	// Closing maker BTC channel and checking balance.
@@ -598,26 +566,6 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.NoError(err)
 	btcInfo, err = net.LndBtcNetwork.BtcMiner.Node.GetInfo()
 	ht.assert.True(btcInfo.Blocks >= int32(expirationHeight))
-
-	// Closing taker LTC channel and checking balance.
-	// First, find the pending HTLC expiration height.
-
-	aliceLtcChanList, err := net.Alice.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
-	ht.assert.Equal(len(aliceLtcChanList.Channels), 1)
-	aliceLtcChan := aliceLtcChanList.Channels[0]
-	ht.assert.Greater(alicePrevLtcChan.LocalBalance-aliceLtcChan.LocalBalance, int64(float64(aliceOrderReq.Quantity)*aliceOrderReq.Price))
-	ht.assert.Equal(aliceLtcChan.RemoteBalance, aliceLtcChan.RemoteBalance)
-	ht.assert.Equal(len(aliceLtcChan.PendingHtlcs), 1)
-	expirationHeight = aliceLtcChan.PendingHtlcs[0].ExpirationHeight
-
-	// Expire the LTC HTLC.
-
-	ltcInfo, err := net.LndLtcNetwork.LtcMiner.Node.GetInfo()
-	ht.assert.NoError(err)
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(expirationHeight - uint32(ltcInfo.Blocks))
-	ht.assert.NoError(err)
-	ltcInfo, err = net.LndLtcNetwork.LtcMiner.Node.GetInfo()
-	ht.assert.True(ltcInfo.Blocks >= int32(expirationHeight))
 
 	// Verify BTC channel was closed (by force-close, as the outgoing HTLC got expired).
 
@@ -646,40 +594,6 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.True(walletDiff < onchainFeesThreshold,
 		"bob Btc wallet balance mismatch (prev: %v, current: %v)", bobPrevBalance.btc.wallet.TotalBalance, bobBalance.btc.wallet.TotalBalance)
 
-	// TODO: return the cooperative channel closure once the maker invoice cancellation is enabled
-	//// Closing taker LTC channel and checking balance.
-	//// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
-	//
-	//err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
-	//ht.assert.NoError(err)
-
-	// Verify LTC channel was closed (by force-close, as the outgoing HTLC got expired).
-
-	waitForChannelClose(net.Alice.LndLtcNode, ht)
-
-	// Wait for publishing CLTV-delayed LTC HTLC output using timeout tx.
-
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(1)
-	ht.assert.NoError(err)
-
-	time.Sleep(5 * time.Second)
-
-	// Wait for LTC HTLC output to be fully confirmed.
-
-	_, err = net.LndLtcNetwork.LtcMiner.Node.Generate(6)
-	ht.assert.NoError(err)
-
-	time.Sleep(35 * time.Second)
-
-	// Check balance.
-
-	onchainFeesThreshold = int64(200000)
-	aliceBalance, err := getBalance(ht.ctx, net.Alice)
-	ht.assert.NoError(err)
-	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance - pushAmt
-	ht.assert.True(walletDiff < onchainFeesThreshold,
-		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
-
 	// Wait for swap to fail
 
 	e := <-bobSwapFailuresChan
@@ -688,6 +602,31 @@ func testTakerShutdownAfter2ndHTLC(net *xudtest.NetworkHarness, ht *harnessTest)
 	ht.assert.Equal(e.swapFailure.PeerPubKey, net.Alice.PubKey())
 	ht.assert.Equal(e.swapFailure.FailureReason, "SendPaymentFailure")
 	ht.assert.Equal(e.swapFailure.OrderId, bobOrder.Id)
+
+	// After Bob's outgoing BTC payment fails, he should cancel the invoice
+	// for the incoming LTC payment since he's no longer at risk of losing funds
+
+	aliceLtcChanList, err := net.Alice.LndLtcNode.ListChannels(ht.ctx, &lnrpc.ListChannelsRequest{})
+	ht.assert.Equal(len(aliceLtcChanList.Channels), 1)
+	aliceLtcChan := aliceLtcChanList.Channels[0]
+	ht.assert.Equal(alicePrevLtcChan.LocalBalance, aliceLtcChan.LocalBalance)
+	ht.assert.Equal(alicePrevLtcChan.RemoteBalance, aliceLtcChan.RemoteBalance)
+	ht.assert.Equal(len(aliceLtcChan.PendingHtlcs), 0)
+
+	// Closing taker LTC channel and checking balance.
+	// It has no pending HTLC because the maker cancelled his invoice after the swap timeout.
+
+	err = closeLtcChannel(ht.ctx, net.LndLtcNetwork, net.Alice.LndLtcNode, aliceLtcChanPoint, false)
+	ht.assert.NoError(err)
+
+	// Check LTC balance
+
+	onchainFeesThreshold = int64(200000)
+	aliceBalance, err := getBalance(ht.ctx, net.Alice)
+	ht.assert.NoError(err)
+	walletDiff = alicePrevBalance.ltc.wallet.TotalBalance - aliceBalance.ltc.wallet.TotalBalance - pushAmt
+	ht.assert.True(walletDiff < onchainFeesThreshold,
+		"alice ltc wallet balance mismatch (prev: %v, current: %v)", alicePrevBalance.ltc.wallet.TotalBalance, aliceBalance.ltc.wallet.TotalBalance)
 
 	removalRes, err := net.Bob.Client.RemoveOrder(ht.ctx, &xudrpc.RemoveOrderRequest{OrderId: bobOrderReq.OrderId})
 	ht.assert.NoError(err)

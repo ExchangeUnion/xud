@@ -42,6 +42,7 @@ class OrderPacket extends Packet<OutgoingOrder> {
         price: obj.order!.price,
         quantity: obj.order!.quantity,
         isBuy: obj.order!.isBuy,
+        replaceOrderId: obj.order!.replaceOrderId || undefined,
       },
     });
   }
@@ -53,6 +54,9 @@ class OrderPacket extends Packet<OutgoingOrder> {
     pbOrder.setPrice(this.body!.price);
     pbOrder.setQuantity(this.body!.quantity);
     pbOrder.setIsBuy(this.body!.isBuy);
+    if (this.body?.replaceOrderId) {
+      pbOrder.setReplaceOrderId(this.body.replaceOrderId);
+    }
 
     const msg = new pb.OrderPacket();
     msg.setId(this.header.id);

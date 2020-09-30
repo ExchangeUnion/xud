@@ -13,6 +13,7 @@ message Order {
     double price = 3;
     uint64 quantity = 4;
     bool is_buy = 5;
+    string replace_order_id = 6;
 }
 
 message Node {
@@ -27,7 +28,6 @@ message LndUris {
 message NodeState {
     repeated Address addresses = 3;
     repeated string pairs = 4;
-    string raiden_address = 5;
     map<string, string> lnd_pub_keys = 6;
     map<string, string> token_identifiers = 7;
     map<string, LndUris> lnd_uris = 8;

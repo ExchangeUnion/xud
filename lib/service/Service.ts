@@ -32,7 +32,6 @@ const argChecks = {
   HAS_PAIR_ID: ({ pairId }: { pairId: string }) => { if (pairId === '') throw errors.INVALID_ARGUMENT('pairId must be specified'); },
   HAS_RHASH: ({ rHash }: { rHash: string }) => { if (rHash === '') throw errors.INVALID_ARGUMENT('rHash must be specified'); },
   POSITIVE_AMOUNT: ({ amount }: { amount: number }) => { if (amount <= 0) throw errors.INVALID_ARGUMENT('amount must be greater than 0'); },
-  POSITIVE_QUANTITY: ({ quantity }: { quantity: number }) => { if (quantity <= 0) throw errors.INVALID_ARGUMENT('quantity must be greater than 0'); },
   PRICE_NON_NEGATIVE: ({ price }: { price: number }) => { if (price < 0) throw errors.INVALID_ARGUMENT('price cannot be negative'); },
   PRICE_MAX_DECIMAL_PLACES: ({ price }: { price: number }) => {
     if (checkDecimalPlaces(price)) throw errors.INVALID_ARGUMENT('price cannot have more than 12 decimal places');
@@ -47,6 +46,9 @@ const argChecks = {
   },
   VALID_SWAP_CLIENT: ({ swapClient }: { swapClient: number }) => {
     if (!SwapClientType[swapClient]) throw errors.INVALID_ARGUMENT('swap client is not recognized');
+  },
+  VALID_FEE: ({ swapClient, fee }: { swapClient?: SwapClientType, fee?: number }) => {
+    if (swapClient === SwapClientType.Connext && fee) throw errors.INVALID_ARGUMENT('fee is not valid for connext');
   },
 };
 
@@ -81,7 +83,7 @@ class Service {
     const { currency, swapClient, tokenAddress, decimalPlaces } = args;
 
     let address = tokenAddress;
-    if (args.swapClient === SwapClientType.Raiden && address) {
+    if (args.swapClient === SwapClientType.Connext && address) {
       address = toEip55Address(address);
     }
 
@@ -168,7 +170,7 @@ class Service {
     return balances;
   }
 
-  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for a given currency. */
+  /** Gets the trading limits (max outbound and inbound capacities for a distinct channel) for one or all currencies. */
   public tradingLimits = async (args: { currency: string }) => {
     const { currency } = args;
     const tradingLimitsMap = new Map<string, TradingLimits>();
@@ -189,7 +191,7 @@ class Service {
         if (swapClient.isConnected()) {
           promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
-          }));
+          }).catch(this.logger.error));
         }
       });
       await Promise.all(promises);
@@ -233,9 +235,9 @@ class Service {
    * Closes any payment channels for a specified node and currency.
    */
   public closeChannel = async (
-    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number },
+    args: { nodeIdentifier: string, currency: string, force: boolean, destination: string, amount: number, fee?: number },
   ) => {
-    const { nodeIdentifier, currency, force, destination, amount } = args;
+    const { nodeIdentifier, currency, force, destination, amount, fee } = args;
     argChecks.VALID_CURRENCY({ currency });
 
     let remoteIdentifier: string | undefined;
@@ -249,12 +251,13 @@ class Service {
       remoteIdentifier = peer.getIdentifier(swapClientType, currency);
     }
 
-    await this.swapClientManager.closeChannel({
+    return await this.swapClientManager.closeChannel({
       currency,
       force,
       destination,
       amount,
       remoteIdentifier,
+      fee,
     });
   }
 
@@ -262,11 +265,12 @@ class Service {
    * Opens a payment channel to a specified node, currency and amount.
    */
   public openChannel = async (
-    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number },
+    args: { nodeIdentifier: string, amount: number, currency: string, pushAmount?: number, fee?: number },
   ) => {
-    const { nodeIdentifier, amount, currency, pushAmount } = args;
+    const { nodeIdentifier, amount, currency, pushAmount, fee } = args;
     argChecks.POSITIVE_AMOUNT({ amount });
     argChecks.VALID_CURRENCY({ currency });
+    argChecks.VALID_FEE({ fee, swapClient: this.swapClientManager.getType(currency) });
 
     let remoteIdentifier: string | undefined;
     let uris: string[] | undefined;
@@ -285,12 +289,13 @@ class Service {
     }
 
     try {
-      await this.swapClientManager.openChannel({
+      return await this.swapClientManager.openChannel({
         remoteIdentifier,
         uris,
         amount,
         currency,
         pushAmount,
+        fee,
       });
     } catch (e) {
       const errorMessage = e.message || 'unknown';
@@ -377,10 +382,6 @@ class Service {
     }
 
     const lnd = await this.swapClientManager.getLndClientsInfo();
-    const raiden = await this.swapClientManager.raidenClient?.getRaidenInfo();
-    if (raiden) {
-      raiden.chain = `${raiden.chain ? raiden.chain : ''} ${this.pool.getNetwork()}`;
-    }
     const connext = await this.swapClientManager.connextClient?.getInfo();
     if (connext) {
       connext.chain = `${connext.chain ? connext.chain : ''}connext ${this.pool.getNetwork()}`;
@@ -388,7 +389,6 @@ class Service {
 
     return {
       lnd,
-      raiden,
       connext,
       nodePubKey,
       uris,
@@ -477,8 +477,8 @@ class Service {
       sellArray = sortOrders(sellArray, false);
 
       if (limit > 0) {
-        buyArray = buyArray.slice(0, limit);
-        sellArray = sellArray.slice(0, limit);
+        buyArray = buyArray.slice(-limit);
+        sellArray = sellArray.slice(-limit);
       }
 
       return {
@@ -611,25 +611,20 @@ class Service {
    */
   public placeOrder = async (
     args: { pairId: string, price: number, quantity: number, orderId: string, side: number,
-      replaceOrderId?: string, immediateOrCancel: boolean },
+      replaceOrderId: string, immediateOrCancel: boolean },
     callback?: (e: ServicePlaceOrderEvent) => void,
   ) => {
-    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
     argChecks.PRICE_NON_NEGATIVE(args);
-    argChecks.POSITIVE_QUANTITY(args);
     argChecks.PRICE_MAX_DECIMAL_PLACES(args);
     argChecks.HAS_PAIR_ID(args);
-
-    if (replaceOrderId) {
-      this.orderBook.removeOwnOrderByLocalId(orderId, false);
-    }
+    const { pairId, price, quantity, orderId, side, replaceOrderId, immediateOrCancel } = args;
 
     const order: OwnMarketOrder | OwnLimitOrder = {
       pairId,
       price,
       quantity,
       isBuy: side === OrderSide.Buy,
-      localId: orderId,
+      localId: orderId || replaceOrderId,
     };
 
     /** Modified callback that converts Order to ServiceOrder before passing to callback. */
@@ -643,8 +638,14 @@ class Service {
       });
     } : undefined;
 
-    return price > 0 ? await this.orderBook.placeLimitOrder(order, immediateOrCancel, serviceCallback) :
-      await this.orderBook.placeMarketOrder(order, serviceCallback);
+    const placeOrderRequest = {
+      order,
+      immediateOrCancel,
+      replaceOrderId,
+      onUpdate: serviceCallback,
+    };
+    return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
+      await this.orderBook.placeMarketOrder(placeOrderRequest);
   }
 
   /** Removes a currency. */
@@ -803,6 +804,13 @@ class Service {
    */
   public transferReceived = async (event: TransferReceivedEvent) => {
     this.swapClientManager.connextClient?.emit('transferReceived', event);
+  }
+
+  /**
+   * Notifies Connext client that a deposit has been confirmed.
+   */
+  public depositConfirmed = (hash: string) => {
+    this.swapClientManager.connextClient?.emit('depositConfirmed', hash);
   }
 
 }

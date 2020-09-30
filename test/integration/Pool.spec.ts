@@ -71,8 +71,10 @@ describe('P2P Pool Tests', async () => {
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
     const openPromise = pool['openPeer'](peer, nodeKeyOne.pubKey);
-    expect(openPromise).to.be.fulfilled;
-    await openPromise;
+    await Promise.all([
+      openPromise,
+      new Promise(resolve => pool.on('peer.active', resolve)),
+    ]);
   });
 
   it('should close a peer', async () => {
@@ -91,7 +93,10 @@ describe('P2P Pool Tests', async () => {
     const addresses = [{ host: '86.75.30.9', port: 8885 }];
     const peer = createPeer(nodeKeyOne.pubKey, addresses);
 
-    await pool['openPeer'](peer, nodeKeyOne.pubKey);
+    await Promise.all([
+      await pool['openPeer'](peer, nodeKeyOne.pubKey),
+      new Promise(resolve => pool.on('peer.active', resolve)),
+    ]);
 
     const nodeInstance = await db.models.Node.findOne({
       where: {
@@ -114,8 +119,10 @@ describe('P2P Pool Tests', async () => {
       tryConnectNodeStub = sinon.stub();
       pool['tryConnectNode'] = tryConnectNodeStub;
       const openPromise = pool['openPeer'](dcPeer, nodeKeyOne.pubKey);
-      expect(openPromise).to.be.fulfilled;
-      await openPromise;
+      await Promise.all([
+        openPromise,
+        new Promise(resolve => pool.on('peer.active', resolve)),
+      ]);
     });
 
     it('should not reconnect upon shutdown inbound', async () => {

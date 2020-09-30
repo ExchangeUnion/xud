@@ -164,7 +164,7 @@ class Xud extends EventEmitter {
         xuNetwork: this.config.network,
         logger: loggers.p2p,
         models: this.db.models,
-        testing: this.config.debug.testing,
+        strict: this.config.strict,
       });
 
       const initPromises: Promise<any>[] = [];
@@ -174,7 +174,7 @@ class Xud extends EventEmitter {
         models: this.db.models,
         pool: this.pool,
         swapClientManager: this.swapClientManager,
-        testing: this.config.debug.testing,
+        strict: this.config.strict,
       });
       initPromises.push(this.swaps.init());
 
@@ -187,7 +187,7 @@ class Xud extends EventEmitter {
         swaps: this.swaps,
         nosanityswaps: this.config.nosanityswaps,
         nobalancechecks: this.config.nobalancechecks,
-        testing: this.config.debug.testing,
+        strict: this.config.strict,
       });
       initPromises.push(this.orderBook.init());
 
@@ -213,10 +213,7 @@ class Xud extends EventEmitter {
         shutdown: this.beginShutdown,
       });
 
-      if (
-        this.swapClientManager.raidenClient?.isOperational() ||
-        this.swapClientManager.connextClient?.isOperational()
-      ) {
+      if (this.swapClientManager.connextClient?.isOperational()) {
         this.httpServer = new HttpServer(loggers.http, this.service);
         await this.httpServer.listen(
           this.config.http.port,
@@ -240,23 +237,16 @@ class Xud extends EventEmitter {
               // minimum channelBalance threshold
               minChannelAmount: 100000000,
             },
-            /*
-            {
-              currency: 'XUC',
-              channelAmount: 37500000000,
-              minChannelAmount: 1000000000,
-            },
-            {
-              currency: 'DAI',
-              channelAmount: 100000000000,
-              minChannelAmount: 1000000000,
-            },
             {
               currency: 'USDT',
               channelAmount: 100000000000,
-              minChannelAmount: 1000000000,
+              minChannelAmount: 100000000,
             },
-            */
+            {
+              currency: 'DAI',
+              channelAmount: 150000000000,
+              minChannelAmount: 100000000,
+            },
           ],
           // we check the channel and on-chain balance every 10 seconds
           // and refund from faucet if below the walletAmount

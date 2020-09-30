@@ -12,8 +12,6 @@ require (
 	github.com/ltcsuite/ltcd v0.0.0-20191214120725-004941532b74
 	github.com/ltcsuite/ltcutil v0.0.0-20190507133322-23cdfa9fcc3d
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.0-20200123000308-a60dcd172b4c
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/roasbeef/btcd v0.0.0-20180418012700-a03db407e40d
 	github.com/roasbeef/btcutil v0.0.0-20180406014609-dfb640c57141

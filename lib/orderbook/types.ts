@@ -38,7 +38,7 @@ export enum PlaceOrderEventType {
 
 /** An order without a price that is intended to match against any available orders on the opposite side of the book for its trading pair. */
 type MarketOrder = {
-  /** The number of currently satoshis (or equivalent) for the order. */
+  /** The quantity denominated in satoshis (or equivalent) for the order. */
   quantity: number;
   /** A trading pair symbol with the base currency first followed by a '/' separator and the quote currency */
   pairId: string;
@@ -99,7 +99,9 @@ export type PeerOrder = LimitOrder & Stamp & Remote;
 export type Order = OwnOrder | PeerOrder;
 
 /** An outgoing local order which only includes fields that are relevant to peers. */
-export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>>;
+export type OutgoingOrder = Pick<OwnOrder, Exclude<keyof OwnOrder, 'localId' | 'createdAt' | 'hold' | 'initialQuantity'>> & {
+  replaceOrderId?: string;
+};
 
 /** An incoming peer order which only includes fields that are relevant to us. */
 export type IncomingOrder = OutgoingOrder & Remote;
@@ -108,6 +110,11 @@ export type IncomingOrder = OutgoingOrder & Remote;
 export type OrderPortion = OrderIdentifier & {
   quantity: number;
   localId?: string;
+};
+
+export type OrderInvalidation = OrderIdentifier & {
+  /** The quantity of the order being removed, or the entire order if quantity is undefined */
+  quantity?: number;
 };
 
 export type Currency = {

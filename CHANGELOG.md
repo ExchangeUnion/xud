@@ -1,3 +1,134 @@
+# [1.1.0](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.1.0) (2020-09-28)
+
+Most notable features of this release:
+- Xud now automatically requests inbound liquidity for connext currencies (ETH/ERC20) and prevents orders from entering the orderbook until there is sufficient inbound liquidity to cover the order. This "smart collateralization" feature considerably increases the likelihood that the orders can be executed successfully.
+- The [DAI](https://etherscan.io/token/0x6b175474e89094c44da98b954eedeac495271d0f) token and `USDT/DAI` trading pair have been enabled by default.
+
+### Bug Fixes
+
+* bold link, mm link ([#1873](https://github.com/ExchangeUnion/xud/issues/1873)) ([54bd9ce](https://github.com/ExchangeUnion/xud/commit/54bd9ce11fc6297319b4c48c7fe9537b3031817b))
+* don't activate unsupported pairs with peers ([0fe2d66](https://github.com/ExchangeUnion/xud/commit/0fe2d66d85c2fcc2d559740662977750ddae21e1))
+* grpc throws error for addpair/withdraw for wrong argument ([#1844](https://github.com/ExchangeUnion/xud/issues/1844)) ([48a0a33](https://github.com/ExchangeUnion/xud/commit/48a0a33811c2ba52f3791b73f1eef8b8933e09cc))
+* handling insufficient balance errors for swap clients ([246889b](https://github.com/ExchangeUnion/xud/commit/246889b89f7f9fa27ba47a31d1a2408d7a4a58a7))
+* implemented showing all pairs instead of active ones for listpeers ([206dad0](https://github.com/ExchangeUnion/xud/commit/206dad04b0151e3514f7883e066c361c034defca))
+* listorders limit displays first orders instead of last ([#1883](https://github.com/ExchangeUnion/xud/issues/1883)) ([e101e6f](https://github.com/ExchangeUnion/xud/commit/e101e6fb3d0ede2cf6439d10dafa410b533035da))
+* order invalidation only be sent to peers with active pair ([#1530](https://github.com/ExchangeUnion/xud/issues/1530)) ([#1890](https://github.com/ExchangeUnion/xud/issues/1890)) ([0dc85bd](https://github.com/ExchangeUnion/xud/commit/0dc85bd83ad0514241e85ae3a958bb01d31594b0))
+* propagating nodes on database if initDB true even DB is filled ([#1907](https://github.com/ExchangeUnion/xud/issues/1907)) ([246136e](https://github.com/ExchangeUnion/xud/commit/246136e3d2992711ce5e09d132cf79348bf99e6e))
+* xudrpc GetBalanceResponse json_name ([#1909](https://github.com/ExchangeUnion/xud/issues/1909)) ([26f89e6](https://github.com/ExchangeUnion/xud/commit/26f89e6d01cce2ec9d66dc39c0538d142a5af18c))
+* **connext:** avoid scientific notation for amount ([#1905](https://github.com/ExchangeUnion/xud/issues/1905)) ([cc1e689](https://github.com/ExchangeUnion/xud/commit/cc1e689181bfe4bafa19112d634a6eb12178cbe9))
+* **connext:** display error message for 400 status code ([#1911](https://github.com/ExchangeUnion/xud/issues/1911)) ([b4e1858](https://github.com/ExchangeUnion/xud/commit/b4e1858fd78005b43dcedf4ec5b5425c727639c5))
+* **connext:** remove BigInt to avoid precision loss ([#1893](https://github.com/ExchangeUnion/xud/issues/1893)) ([d9ddd1c](https://github.com/ExchangeUnion/xud/commit/d9ddd1cfa16614fc914c61ded2c5e84fd7bd743c))
+
+
+### Features
+
+* **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
+* **connext:** request collateral for order amount ([75078c0](https://github.com/ExchangeUnion/xud/commit/75078c059bfd752ae47c4530a671bd7a95568975)), closes [#1845](https://github.com/ExchangeUnion/xud/issues/1845)
+* **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
+* **rpc:** show connext status on create/restore node ([#1902](https://github.com/ExchangeUnion/xud/issues/1902)) ([82e16a5](https://github.com/ExchangeUnion/xud/commit/82e16a5e4ed4fa91e481eac638b16eb10e5bb7de))
+* **simnet:** add DAI ([#1915](https://github.com/ExchangeUnion/xud/issues/1915)) ([35e85b3](https://github.com/ExchangeUnion/xud/commit/35e85b31bfbfa72430f5db982b7f64f19b346f2a))
+* sat_per_byte custom fee for openchannel ([#1832](https://github.com/ExchangeUnion/xud/issues/1832)) ([b56ad98](https://github.com/ExchangeUnion/xud/commit/b56ad98ecb31f94d304a31d3c060693506ae829a)), closes [#1829](https://github.com/ExchangeUnion/xud/issues/1829)
+* **connext:** unlock expired transfer apps ([#1857](https://github.com/ExchangeUnion/xud/issues/1857)) ([023434d](https://github.com/ExchangeUnion/xud/commit/023434de1eabe4811986b9156beef7a5a670c047))
+* **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
+* **orderbook:** log error message on remove order ([#1901](https://github.com/ExchangeUnion/xud/issues/1901)) ([788490f](https://github.com/ExchangeUnion/xud/commit/788490f430691e2e93a28e4aab39aa260213e5b3))
+* **p2p:** don't log empty order packets ([#1871](https://github.com/ExchangeUnion/xud/issues/1871)) ([1b6d6d6](https://github.com/ExchangeUnion/xud/commit/1b6d6d6cf522517dbe138b8c7dda908b36f2d1a4))
+* **p2p:** increase reconnection delay backoff ([#1870](https://github.com/ExchangeUnion/xud/issues/1870)) ([44af197](https://github.com/ExchangeUnion/xud/commit/44af19722ced03fa2fd89702fea88d07ef51ae08))
+* **rpc:** add txid to open/close channel response ([0669a3f](https://github.com/ExchangeUnion/xud/commit/0669a3f41f6a8de9cc6afcf4d8d58c91d18d5b58)), closes [#1860](https://github.com/ExchangeUnion/xud/issues/1860)
+* **simnet:** change USDT contract address ([#1912](https://github.com/ExchangeUnion/xud/issues/1912)) ([0a2bdfd](https://github.com/ExchangeUnion/xud/commit/0a2bdfdba3507cbd0bba1a0af6d6f8b8b92c3272))
+* **simnet:** upgrade simnet USDT contract address ([#1906](https://github.com/ExchangeUnion/xud/issues/1906)) ([7e5f8ef](https://github.com/ExchangeUnion/xud/commit/7e5f8ef30a1d01a4405757d4359b827ef86cf750))
+
+
+
+## [1.0.1](https://github.com/ExchangeUnion/xud/compare/v1.0.0...v1.0.1) (2020-09-08)
+
+
+### Features
+
+* **connext:** reject app install for transfers without status field ([#1863](https://github.com/ExchangeUnion/xud/issues/1863)) ([519aa54](https://github.com/ExchangeUnion/xud/commit/519aa54fa9bfd138d6086f0de0406462a62a57bc))
+* **connext:** unlock expired transfer apps ([#1857](https://github.com/ExchangeUnion/xud/issues/1857)) ([023434d](https://github.com/ExchangeUnion/xud/commit/023434de1eabe4811986b9156beef7a5a670c047))
+* **logging:** order holds on trace level ([#1865](https://github.com/ExchangeUnion/xud/issues/1865)) ([5e3ad04](https://github.com/ExchangeUnion/xud/commit/5e3ad04ed8f2e35cb06479d2172d25bffa002768))
+* **orderbook:** better replace order hold message ([b7fa00a](https://github.com/ExchangeUnion/xud/commit/b7fa00a7afc8ab0fe4e4f495395434e49e00f357))
+* **p2p:** don't log empty order packets ([#1871](https://github.com/ExchangeUnion/xud/issues/1871)) ([1b6d6d6](https://github.com/ExchangeUnion/xud/commit/1b6d6d6cf522517dbe138b8c7dda908b36f2d1a4))
+* **p2p:** increase reconnection delay backoff ([#1870](https://github.com/ExchangeUnion/xud/issues/1870)) ([44af197](https://github.com/ExchangeUnion/xud/commit/44af19722ced03fa2fd89702fea88d07ef51ae08))
+
+
+
+# [1.0.0](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.8...v1.0.0) (2020-09-01)
+
+
+### Bug Fixes
+
+* **connext:** convert contract addresses to eip55 standard ([e08d43c](https://github.com/ExchangeUnion/xud/commit/e08d43c7179f26af6871be4e4d90b512f7f41131))
+* **connext:** prevent duplicate htlcAccepted evts ([#1854](https://github.com/ExchangeUnion/xud/issues/1854)) ([aa3027a](https://github.com/ExchangeUnion/xud/commit/aa3027a6a6301e21b203a9b901fc89337a4f2cee)), closes [#1851](https://github.com/ExchangeUnion/xud/issues/1851)
+* **orderbook:** add back fully matched orders ([1024b72](https://github.com/ExchangeUnion/xud/commit/1024b7223d96c9ee47da8cbe4357bcdad22f1873)), closes [#1816](https://github.com/ExchangeUnion/xud/issues/1816)
+* **orderbook:** prevent stuck replace order holds ([#1842](https://github.com/ExchangeUnion/xud/issues/1842)) ([984e064](https://github.com/ExchangeUnion/xud/commit/984e06460466f82b661ccc9b41e7221be56625c9)), closes [#1835](https://github.com/ExchangeUnion/xud/issues/1835)
+* **orderbook:** reject all dust peer orders ([8a1c816](https://github.com/ExchangeUnion/xud/commit/8a1c81618d74c289a15ff14c4f09b1ddf5192147))
+* improve HttpServer error logging ([67ddfa4](https://github.com/ExchangeUnion/xud/commit/67ddfa4d910f3573a8b8de1f66858bbd44ccf717))
+* restrict reputation events in non-strict mode ([#1808](https://github.com/ExchangeUnion/xud/issues/1808)) ([0d20cd3](https://github.com/ExchangeUnion/xud/commit/0d20cd3ef8c117d90c64b03deedd12a7a8d9b65c)), closes [#1802](https://github.com/ExchangeUnion/xud/issues/1802)
+* strict command arg ([a26d67d](https://github.com/ExchangeUnion/xud/commit/a26d67d970cd52a5d44a106e70773ab14c188986))
+* **service:** replace order id ([582a49b](https://github.com/ExchangeUnion/xud/commit/582a49b9846f9e700e4bb26425b22d732d111e28))
+
+
+### Code Refactoring
+
+* remove raiden support ([#1824](https://github.com/ExchangeUnion/xud/issues/1824)) ([9afe7d1](https://github.com/ExchangeUnion/xud/commit/9afe7d1d06bc14946eca15e8a1a0bd799d7003f4)), closes [#1516](https://github.com/ExchangeUnion/xud/issues/1516)
+
+
+### Features
+
+* implement Connext wallet withdrawals ([#1853](https://github.com/ExchangeUnion/xud/issues/1853)) ([6f97783](https://github.com/ExchangeUnion/xud/commit/6f97783301eb4618be6e2011753351d14c22cb35))
+* **connext:** mark payment as failed when receiving 404 status ([d1f1f2c](https://github.com/ExchangeUnion/xud/commit/d1f1f2c5cc2ef17ef889f5a04bfc28a264654cd7))
+* **connext:** request collateral after DEPOSIT_CONFIRMED_EVENT ([#1825](https://github.com/ExchangeUnion/xud/issues/1825)) ([dc6de05](https://github.com/ExchangeUnion/xud/commit/dc6de05e486fc57b1de90c9df426ebf669e0ad92))
+* **orderbook:** automatically remove dust orders ([0d8435f](https://github.com/ExchangeUnion/xud/commit/0d8435f38f5facb673978cc0e09d553e478a7696)), closes [#1798](https://github.com/ExchangeUnion/xud/issues/1798) [#1785](https://github.com/ExchangeUnion/xud/issues/1785)
+* **orderbook:** don't add back invalidated orders ([#1839](https://github.com/ExchangeUnion/xud/issues/1839)) ([ed43416](https://github.com/ExchangeUnion/xud/commit/ed4341672463f15c0c02d61723f9950ee109577b)), closes [#1838](https://github.com/ExchangeUnion/xud/issues/1838)
+* **p2p:** replace order in single packet ([#1812](https://github.com/ExchangeUnion/xud/issues/1812)) ([de691b2](https://github.com/ExchangeUnion/xud/commit/de691b2f0a0bd70743121a6924cafa2035132eed)), closes [#1805](https://github.com/ExchangeUnion/xud/issues/1805) [#1806](https://github.com/ExchangeUnion/xud/issues/1806)
+* **rpc:** log each call with trace not debug ([#1819](https://github.com/ExchangeUnion/xud/issues/1819)) ([eda2f8d](https://github.com/ExchangeUnion/xud/commit/eda2f8d4bdc53077c13b8b665fed2b5e9b7f903d)), closes [#1817](https://github.com/ExchangeUnion/xud/issues/1817)
+* **simnet:** change USDT contract address ([91e73b0](https://github.com/ExchangeUnion/xud/commit/91e73b0505c81862e143293db8019037b1dcc85a))
+* **swaps:** monitor pending payments before fail ([#1822](https://github.com/ExchangeUnion/xud/issues/1822)) ([1a4ee6e](https://github.com/ExchangeUnion/xud/commit/1a4ee6e9faf77e88d68464fe9026cca3c1524309)), closes [#1799](https://github.com/ExchangeUnion/xud/issues/1799) [#1794](https://github.com/ExchangeUnion/xud/issues/1794) [#1799](https://github.com/ExchangeUnion/xud/issues/1799) [#1794](https://github.com/ExchangeUnion/xud/issues/1794) [#1708](https://github.com/ExchangeUnion/xud/issues/1708)
+* **tests:** upgrade connext simtests to 7.3.6 ([#1833](https://github.com/ExchangeUnion/xud/issues/1833)) ([57269d8](https://github.com/ExchangeUnion/xud/commit/57269d88e6953ca8ed8e48b2bf6482e89021ee8c))
+* **tests:** upgrade connext simtests to 7.3.8 ([b067d14](https://github.com/ExchangeUnion/xud/commit/b067d14afcef745cf6c1b468f4dca104f057eded))
+
+
+### BREAKING CHANGES
+
+* removes raiden support & p2p packet fields
+
+
+
+# [1.0.0-beta.8](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.7...v1.0.0-beta.8) (2020-08-07)
+
+
+### Bug Fixes
+
+* **swaps:** no remote fail when sending payment ([dc7e4d2](https://github.com/ExchangeUnion/xud/commit/dc7e4d21652e6b7b86b158ac3ef2282ea882148d)), closes [#1749](https://github.com/ExchangeUnion/xud/issues/1749)
+* **utils:** USDT units per currency ([ab7f95b](https://github.com/ExchangeUnion/xud/commit/ab7f95bb714b99df673cbec73b06de655a488039))
+* change buy/sell command examples to btc/usdt ([d233ebb](https://github.com/ExchangeUnion/xud/commit/d233ebbc49e06dbb0273a1e609ee9b9b4395926c))
+* change buy/sell command examples to btc/usdt ([#1786](https://github.com/ExchangeUnion/xud/issues/1786)) ([116ffc0](https://github.com/ExchangeUnion/xud/commit/116ffc0fe8e479ab0afdacc76808ef16b9db8f4f))
+* **lnd:** totalOutboundAmount ([caf3782](https://github.com/ExchangeUnion/xud/commit/caf37823c2a8363dc7c493f241caa93f6b95c49e))
+* **p2p:** handle multiple socket errors ([716f5d3](https://github.com/ExchangeUnion/xud/commit/716f5d3883244a6ef90637ecd2a2a1ee31d3151d)), closes [#1773](https://github.com/ExchangeUnion/xud/issues/1773)
+* **p2p:** handle socket write callback errors ([79134fe](https://github.com/ExchangeUnion/xud/commit/79134fe47f4f862697843a51479404766af44f01))
+* **p2p:** remove socket listeners after destroy ([8ec4d45](https://github.com/ExchangeUnion/xud/commit/8ec4d45d0b7d0ea049b52f762a0abd5b48525392))
+* **rpc:** don't block TradingLimits on failure ([#1784](https://github.com/ExchangeUnion/xud/issues/1784)) ([43ae535](https://github.com/ExchangeUnion/xud/commit/43ae535531ced90a3dba6741de9e33a315625a40)), closes [#1766](https://github.com/ExchangeUnion/xud/issues/1766)
+* **swaps:** don't log non-existent route ([#1772](https://github.com/ExchangeUnion/xud/issues/1772)) ([2ff63b9](https://github.com/ExchangeUnion/xud/commit/2ff63b9f4a3f7d69494c4ade5fdc1ac7ee2cd239))
+
+
+### Features
+
+* **cli:** print no more matches on partial mkt ([2f407d0](https://github.com/ExchangeUnion/xud/commit/2f407d00aac5f1974fee92b76be88aa21daa52d0)), closes [#1596](https://github.com/ExchangeUnion/xud/issues/1596)
+* **config:** rename debug.testing to strict ([2a5f74c](https://github.com/ExchangeUnion/xud/commit/2a5f74c6464c159d41c4c92fe877ec5626096f61)), closes [#1757](https://github.com/ExchangeUnion/xud/issues/1757)
+* **connext:** add USDT pairs to mainnet ([bf17eab](https://github.com/ExchangeUnion/xud/commit/bf17eab191d880034b53d838dad5d7a850d57ffd))
+* **connext:** removeInvoice ([ee56800](https://github.com/ExchangeUnion/xud/commit/ee568003c389ed97ad7287fc3d28663ccfbc9c00)), closes [#1730](https://github.com/ExchangeUnion/xud/issues/1730)
+* **connext:** request collateral after deposit ([#1783](https://github.com/ExchangeUnion/xud/issues/1783)) ([728b391](https://github.com/ExchangeUnion/xud/commit/728b391709ab561c48b36960bb28457c7e35897f)), closes [#1756](https://github.com/ExchangeUnion/xud/issues/1756)
+* **lnd:** handle delayed macaroon creation ([c15f3db](https://github.com/ExchangeUnion/xud/commit/c15f3db2208af1fde3df95903ed0f08c4d152899))
+* **lnd:** no inactive balance in trading limits ([#1764](https://github.com/ExchangeUnion/xud/issues/1764)) ([235dab3](https://github.com/ExchangeUnion/xud/commit/235dab36803b45ced018fe5aece0d9f772b9b046)), closes [#1636](https://github.com/ExchangeUnion/xud/issues/1636)
+* **orderbook:** prevent sub-satoshi order & match ([#1785](https://github.com/ExchangeUnion/xud/issues/1785)) ([8a479db](https://github.com/ExchangeUnion/xud/commit/8a479dbc85262085bcfcaafb0d6a9d938639d979)), closes [#1594](https://github.com/ExchangeUnion/xud/issues/1594)
+* **p2p:** log whether socket is inbound/outbound ([#1775](https://github.com/ExchangeUnion/xud/issues/1775)) ([87687a5](https://github.com/ExchangeUnion/xud/commit/87687a57d2c410b1bc27af7e061d0fbfb497e7e9))
+* **p2p:** non-strict severe reputation events ([6f39fff](https://github.com/ExchangeUnion/xud/commit/6f39fff827e7cd02158c1af5c4c5d7d216d60233))
+* **simnet:** add USDT ([69e556b](https://github.com/ExchangeUnion/xud/commit/69e556be1bf56e7eb6d7a2b8a72b2e4497cb6999))
+* **simnet:** update USDT contract ([595b2df](https://github.com/ExchangeUnion/xud/commit/595b2df6ae67bdf376e01aa6033edbc54224cd4a))
+
+
+
 # [1.0.0-beta.5](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.3...v1.0.0-beta.5) (2020-07-06)
 
 
@@ -661,6 +792,4 @@ command line arguments.
 * **p2p/orderbook:** update supported pairs ([1014cbd](https://github.com/ExchangeUnion/xud/commit/1014cbd))
 * **rpc:** add GetNodeInfo call ([#570](https://github.com/ExchangeUnion/xud/issues/570)) ([1a038a2](https://github.com/ExchangeUnion/xud/commit/1a038a2)), closes [#529](https://github.com/ExchangeUnion/xud/issues/529)
 * **swaps:** store swapdeals in database ([#569](https://github.com/ExchangeUnion/xud/pull/569)) ([9a7a629a](https://github.com/ExchangeUnion/xud/commit/9a7a629a9b2c9b8d28d035dc32543aed5e30be47)), closes [#562](https://github.com/ExchangeUnion/xud/issues/562)
-
-
 

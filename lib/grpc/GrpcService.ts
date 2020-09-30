@@ -261,8 +261,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.closeChannel(call.request.toObject());
+      const txIds = await this.service.closeChannel(call.request.toObject());
       const response = new xudrpc.CloseChannelResponse();
+      response.setTransactionIdsList(txIds);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -344,8 +346,10 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.openChannel(call.request.toObject());
+      const txId = await this.service.openChannel(call.request.toObject());
       const response = new xudrpc.OpenChannelResponse();
+      response.setTransactionId(txId);
+
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -394,8 +398,9 @@ class GrpcService {
       return;
     }
     try {
-      await this.service.walletWithdraw(call.request.toObject());
+      const txId = await this.service.walletWithdraw(call.request.toObject());
       const response = new xudrpc.WithdrawResponse();
+      response.setTransactionId(txId);
       callback(null, response);
     } catch (err) {
       callback(getGrpcError(err), null);
@@ -458,6 +463,7 @@ class GrpcService {
             // these cases suggest something went very wrong with our swap request
             code = status.INTERNAL;
             break;
+          case SwapFailureReason.InsufficientBalance:
           case SwapFailureReason.NoRouteFound:
           case SwapFailureReason.SendPaymentFailure:
           case SwapFailureReason.SwapClientNotSetup:
@@ -530,22 +536,6 @@ class GrpcService {
       getInfoResponse.lnd.forEach((lndInfo, currency) => {
         lndMap.set(currency, getLndInfo(lndInfo));
       });
-
-      if (getInfoResponse.raiden) {
-        const raiden = new xudrpc.RaidenInfo();
-        raiden.setStatus(getInfoResponse.raiden.status);
-        if (getInfoResponse.raiden.address) raiden.setAddress(getInfoResponse.raiden.address);
-        if (getInfoResponse.raiden.channels) {
-          const channels = new xudrpc.Channels();
-          channels.setActive(getInfoResponse.raiden.channels.active);
-          // channels.setSettled(getInfoResponse.raiden.channels.settled);
-          channels.setClosed(getInfoResponse.raiden.channels.closed);
-          raiden.setChannels(channels);
-        }
-        if (getInfoResponse.raiden.version) raiden.setVersion(getInfoResponse.raiden.version);
-        if (getInfoResponse.raiden.chain) raiden.setChain(getInfoResponse.raiden.chain);
-        response.setRaiden(raiden);
-      }
 
       if (getInfoResponse.connext) {
         const connext = new xudrpc.ConnextInfo();
@@ -735,7 +725,6 @@ class GrpcService {
         grpcPeer.setPairsList(peer.pairs || []);
         grpcPeer.setSecondsConnected(peer.secondsConnected);
         grpcPeer.setXudVersion(peer.xudVersion || '');
-        grpcPeer.setRaidenAddress(peer.raidenAddress || '');
         peers.push(grpcPeer);
       });
       response.setPeersList(peers);

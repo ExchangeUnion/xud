@@ -8,7 +8,6 @@ import { LndClientConfig } from './lndclient/types';
 import { Level } from './Logger';
 import { OrderBookThresholds } from './orderbook/types';
 import { PoolConfig } from './p2p/types';
-import { RaidenClientConfig } from './raidenclient/types';
 import { ConnextClientConfig } from './connextclient/types';
 import { deepMerge } from './utils/utils';
 
@@ -51,17 +50,13 @@ class Config {
   public logpath: string;
   public logdateformat: string;
   public network: XuNetwork;
+  public strict: boolean;
   public rpc: { disable: boolean, host: string, port: number };
   public http: { host: string, port: number };
   public lnd: { [currency: string]: LndClientConfig | undefined } = {};
-  public raiden: RaidenClientConfig;
   public connext: ConnextClientConfig;
   public orderthresholds: OrderBookThresholds;
   public webproxy: { port: number, disable: boolean };
-  public debug: {
-    testing: boolean,
-    raidenDirectChannelChecks: boolean,
-  };
   public instanceid = 0;
   /** Whether to intialize a new database with default values. */
   public initdb = true;
@@ -85,27 +80,23 @@ class Config {
   constructor() {
     const platform = os.platform();
     let lndDefaultDatadir: string;
-    let raidenDefaultKeystorePath: string;
     switch (platform) {
       case 'win32': { // windows
         const homeDir = process.env.LOCALAPPDATA!;
         this.xudir = path.join(homeDir, 'Xud');
         lndDefaultDatadir = path.join(homeDir, 'Lnd');
-        raidenDefaultKeystorePath = path.join(homeDir, 'Ethereum');
         break;
       }
       case 'darwin': { // mac
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, 'Library', 'Application Support', 'Lnd');
-        raidenDefaultKeystorePath = path.join(homeDir, 'Library', 'Ethereum');
         break;
       }
       default: { // linux
         const homeDir = process.env.HOME!;
         this.xudir = path.join(homeDir, '.xud');
         lndDefaultDatadir = path.join(homeDir, '.lnd');
-        raidenDefaultKeystorePath = path.join(homeDir, '.ethereum');
         break;
       }
     }
@@ -116,6 +107,7 @@ class Config {
     this.logdateformat = 'DD/MM/YYYY HH:mm:ss.SSS';
     this.network = XuNetwork.SimNet;
     this.dbpath = this.getDefaultDbPath();
+    this.strict = false;
 
     this.p2p = {
       listen: true,
@@ -140,10 +132,6 @@ class Config {
       disable: true,
       port: 8080,
     };
-    this.debug = {
-      testing: false,
-      raidenDirectChannelChecks: true,
-    };
     // TODO: add dynamic max/min price limits
     this.orderthresholds = {
       minQuantity: 0, // 0 = disabled
@@ -165,12 +153,6 @@ class Config {
       port: 10010,
       nomacaroons: false,
       cltvdelta: 576,
-    };
-    this.raiden = {
-      disable: false,
-      host: 'localhost',
-      port: 5001,
-      keystorepath: raidenDefaultKeystorePath,
     };
     this.connext = {
       disable: false,

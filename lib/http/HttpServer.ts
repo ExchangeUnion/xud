@@ -2,8 +2,6 @@ import http from 'http';
 import Service from '../service/Service';
 import HttpService from './HttpService';
 import Logger from '../Logger';
-import { errorCodes } from '../service/errors';
-import { errorCodes as swapErrorCodes } from '../swaps/errors';
 
 class HttpServer {
   private server: http.Server;
@@ -14,7 +12,7 @@ class HttpServer {
     this.httpService = new HttpService(service);
   }
 
-  private resolveRaidenHandler = async (req: http.IncomingMessage, res: http.ServerResponse) => {
+  private processRequest = async (req: http.IncomingMessage, res: http.ServerResponse) => {
     let statusCode = 200;
     let resJson: any;
     let reqJson: any;
@@ -25,92 +23,25 @@ class HttpServer {
       statusCode = 400;
       resJson = { message: JSON.stringify(err), retry: false };
     }
-    // TODO: Refactor code above this point so we don't need to
-    // keep repeating it when adding new endpoints.
 
     if (reqJson) {
       try {
-        resJson = await this.httpService.resolveHashRaiden(reqJson);
-      } catch (err) {
-        switch (err.code) {
-          case swapErrorCodes.INVALID_RESOLVE_REQUEST:
-          case errorCodes.INVALID_ARGUMENT:
-            statusCode = 400;
-            resJson = { message: err.message, retry: false };
+        switch (req.url) {
+          case '/preimage':
+            resJson = await this.httpService.providePreimage(reqJson);
             break;
-          case swapErrorCodes.PAYMENT_HASH_NOT_FOUND:
-            statusCode = 404;
-            resJson = { message: err.message, retry: false };
+          case '/incoming-transfer':
+            resJson = await this.httpService.incomingTransfer(reqJson);
             break;
-          case swapErrorCodes.FINAL_PAYMENT_ERROR:
-          case swapErrorCodes.PAYMENT_REJECTED:
-            statusCode = 500;
-            resJson = { message: err.message, retry: false };
-            break;
-          case swapErrorCodes.UNKNOWN_PAYMENT_ERROR:
-          case swapErrorCodes.PAYMENT_PENDING:
-            statusCode = 503;
-            resJson = { message: err.message, retry: true };
+          case '/deposit-confirmed':
+            reqJson = this.httpService.depositConfirmed(reqJson);
             break;
           default:
-            statusCode = 503;
-            resJson = { err, retry: true };
-            break;
+            throw new Error(`unable to process request to ${req.url}`);
         }
-      }
-    }
-    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(resJson));
-  }
-
-  private incomingTransfer = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    let statusCode = 200;
-    let resJson: any;
-    let reqJson: any;
-
-    try {
-      reqJson = await this.reqToJson(req);
-    } catch (err) {
-      statusCode = 400;
-      resJson = { message: JSON.stringify(err), retry: false };
-    }
-    // TODO: Refactor code above this point so we don't need to
-    // keep repeating it when adding new endpoints.
-
-    if (reqJson) {
-      try {
-        resJson = await this.httpService.incomingTransfer(reqJson);
       } catch (err) {
-        const msg = 'incomingTransfer request failed';
-        this.logger.error(`${msg}: ${err}`);
-        statusCode = 500;
-        resJson = { message: msg };
-      }
-    }
-    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(resJson));
-  }
-
-  private providePreimage = async (req: http.IncomingMessage, res: http.ServerResponse) => {
-    let statusCode = 200;
-    let resJson: any;
-    let reqJson: any;
-
-    try {
-      reqJson = await this.reqToJson(req);
-    } catch (err) {
-      statusCode = 400;
-      resJson = { message: JSON.stringify(err), retry: false };
-    }
-    // TODO: Refactor code above this point so we don't need to
-    // keep repeating it when adding new endpoints.
-
-    if (reqJson) {
-      try {
-        resJson = await this.httpService.providePreimage(reqJson);
-      } catch (err) {
-        const msg = 'providing preimage to xud failed';
-        this.logger.error(`${msg}: ${err}`);
+        const msg = `processing request to ${req.url} failed`;
+        this.logger.error(msg, err);
         statusCode = 500;
         resJson = { message: msg };
       }
@@ -126,20 +57,17 @@ class HttpServer {
       return;
     }
 
-    switch (req.url) {
-      case '/preimage':
-        await this.providePreimage(req, res);
-        break;
-      case '/incoming-transfer':
-        await this.incomingTransfer(req, res);
-        break;
-      case '/resolveraiden':
-        await this.resolveRaidenHandler(req, res);
-        break;
-      default:
-        res.writeHead(404);
-        res.end();
-        break;
+    const SUPPORTED_ENDPOINTS = [
+      '/preimage',
+      '/incoming-transfer',
+      '/deposit-confirmed',
+    ];
+
+    if (req.url && SUPPORTED_ENDPOINTS.includes(req.url)) {
+      await this.processRequest(req, res);
+    } else {
+      res.writeHead(404);
+      res.end();
     }
   }
 

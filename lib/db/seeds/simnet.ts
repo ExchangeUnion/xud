@@ -10,10 +10,10 @@ const nodes = [
     ],
   },
   {
-    nodePubKey: '03ebe60e1712fe0fe526e5cbd97770c4471ae7612ea294f7d17379fd5b80d0d5f8',
+    nodePubKey: '03df4f36fa35bd242263e8d09d6b422108dab1f08d91237bb3aa2dad957cf08a71',
     addresses: [
       { host: 'xud.kilrau.com', port: 28885 },
-      { host: 'pcvnz2ion5hvhzpdmcck4gloaqahf33tzm4ospwm7p7qvn2nq3vqpiad.onionn', port: 28885 },
+      { host: 'ri3khz45h25dzxh32z2r7f3s2fgque6f77zygtanldio3z3ps3b3s3id.onion', port: 28885 },
     ],
   },
 ] as db.NodeAttributes[];
@@ -27,6 +27,18 @@ const currencies = [
     decimalPlaces: 18,
     tokenAddress: '0x0000000000000000000000000000000000000000',
   },
+  {
+    id: 'USDT',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 6,
+    tokenAddress: '0x292Ba2F10dbFB8925A209d3AdF09C2D2b1f491d4',
+  },
+  {
+    id: 'DAI',
+    swapClient: SwapClientType.Connext,
+    decimalPlaces: 18,
+    tokenAddress: '0x5CF98f1782117a20D8613Bf42701026c86061857',
+  },
   /*
   {
     id: 'XUC',
@@ -34,34 +46,23 @@ const currencies = [
     decimalPlaces: 18,
     tokenAddress: '0x468ee988fD0228A79f6CcC33fEc04249cdfD809E',
   },
-  {
-    id: 'DAI',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0x302171031c4fB3cca3395DDb489AC7c0E5Bf5D96',
-  },
-  {
-    id: 'USDT',
-    swapClient: SwapClientType.Connext,
-    decimalPlaces: 18,
-    tokenAddress: '0xc3d29467bfe09d061764F2D841FeD98fBF23c088',
-  },
   */
 ] as db.CurrencyAttributes[];
 
 const pairs = [
-  { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
-  { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
-  // { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
   // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
-  // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
+     { baseCurrency: 'BTC', quoteCurrency: 'USDT' },
+     { baseCurrency: 'ETH', quoteCurrency: 'BTC' },
   // { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
+  // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
+     { baseCurrency: 'LTC', quoteCurrency: 'BTC' },
   // { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'XUC', quoteCurrency: 'USDT' },
+  // { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
+     { baseCurrency: 'USDT', quoteCurrency: 'DAI' },
+  // { baseCurrency: 'XUC', quoteCurrency: 'BTC' },
+  // { baseCurrency: 'XUC', quoteCurrency: 'ETH' },
   // { baseCurrency: 'XUC', quoteCurrency: 'DAI' },
-  // { baseCurrency: 'DAI', quoteCurrency: 'USDT' },
+  // { baseCurrency: 'XUC', quoteCurrency: 'USDT' },
 ] as db.PairAttributes[];
 
 export {

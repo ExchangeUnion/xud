@@ -56,7 +56,6 @@
     - [PlaceOrderEvent](#xudrpc.PlaceOrderEvent)
     - [PlaceOrderRequest](#xudrpc.PlaceOrderRequest)
     - [PlaceOrderResponse](#xudrpc.PlaceOrderResponse)
-    - [RaidenInfo](#xudrpc.RaidenInfo)
     - [RemoveCurrencyRequest](#xudrpc.RemoveCurrencyRequest)
     - [RemoveCurrencyResponse](#xudrpc.RemoveCurrencyResponse)
     - [RemoveOrderRequest](#xudrpc.RemoveOrderRequest)
@@ -235,6 +234,7 @@
 | force | [bool](#bool) |  | Whether to force close the channel in case the peer is offline or unresponsive. |
 | destination | [string](#string) |  | The on-chain address to send funds extracted from the channel. If unspecified, the funds return to the default wallet for the client closing the channel. |
 | amount | [uint64](#uint64) |  | For Connext only - the amount to extract from the channel. If 0 or unspecified, the entire off-chain balance for the specified currency will be extracted. |
+| fee | [uint64](#uint64) |  | A manual fee rate set in sat/byte that should be used when crafting the closure transaction. |
 
 
 
@@ -245,6 +245,11 @@
 
 ### CloseChannelResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_ids | [string](#string) | repeated | The id of the transaction per channel close. |
 
 
 
@@ -319,7 +324,7 @@
 | ----- | ---- | ----- | ----------- |
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | initialized_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
-| initialized_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+| initialized_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 
@@ -493,7 +498,6 @@
 | num_pairs | [uint32](#uint32) |  | The number of supported trading pairs. |
 | orders | [OrdersCount](#xudrpc.OrdersCount) |  | The number of active, standing orders in the order book. |
 | lnd | [GetInfoResponse.LndEntry](#xudrpc.GetInfoResponse.LndEntry) | repeated |  |
-| raiden | [RaidenInfo](#xudrpc.RaidenInfo) |  |  |
 | alias | [string](#string) |  | The alias of this instance of xud. |
 | network | [string](#string) |  | The network of this node. |
 | pending_swap_hashes | [string](#string) | repeated |  |
@@ -724,6 +728,7 @@
 | currency | [string](#string) |  | The ticker symbol of the currency to open the channel for. |
 | amount | [uint64](#uint64) |  | The amount to be deposited into the channel denominated in satoshis. |
 | push_amount | [uint64](#uint64) |  | The balance amount to be pushed to the remote side of the channel denominated in satoshis. |
+| fee | [uint64](#uint64) |  | The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel. |
 
 
 
@@ -734,6 +739,11 @@
 
 ### OpenChannelResponse
 
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| transaction_id | [string](#string) |  | The id of the transaction that opened the channel. |
 
 
 
@@ -846,7 +856,6 @@
 | pairs | [string](#string) | repeated | A list of trading pair tickers supported by this peer. |
 | xud_version | [string](#string) |  | The version of xud being used by the peer. |
 | seconds_connected | [uint32](#uint32) |  | The time in seconds that we have been connected to this peer. |
-| raiden_address | [string](#string) |  | The raiden address for this peer |
 | alias | [string](#string) |  | The alias for this peer&#39;s public key |
 
 
@@ -921,25 +930,6 @@
 | swap_successes | [SwapSuccess](#xudrpc.SwapSuccess) | repeated | A list of successful swaps of peer orders that matched the newly placed order. |
 | remaining_order | [Order](#xudrpc.Order) |  | The remaining portion of the order, after matches, that enters the order book. |
 | swap_failures | [SwapFailure](#xudrpc.SwapFailure) | repeated | A list of swap attempts that failed. |
-
-
-
-
-
-
-<a name="xudrpc.RaidenInfo"></a>
-
-### RaidenInfo
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  |  |
-| address | [string](#string) |  |  |
-| channels | [Channels](#xudrpc.Channels) |  |  |
-| version | [string](#string) |  |  |
-| chain | [string](#string) |  |  |
 
 
 
@@ -1038,8 +1028,6 @@
 | seed_mnemonic | [string](#string) | repeated | The 24 word mnemonic to recover the xud identity key and underlying wallets |
 | password | [string](#string) |  | The password in utf-8 with which to encrypt the restored xud node key as well as any restored underlying wallets. |
 | lnd_backups | [RestoreNodeRequest.LndBackupsEntry](#xudrpc.RestoreNodeRequest.LndBackupsEntry) | repeated | A map between the currency of the LND and its multi channel SCB |
-| raiden_database | [bytes](#bytes) |  | The Raiden database backup |
-| raiden_database_path | [string](#string) |  | Path to where the Raiden database backup should be written |
 | xud_database | [bytes](#bytes) |  | The XUD database backup |
 
 
@@ -1072,7 +1060,7 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | restored_lnds | [string](#string) | repeated | The list of lnd clients that were initialized. |
-| restored_raiden | [bool](#bool) |  | Whether raiden was initialized. |
+| restored_connext | [bool](#bool) |  | Whether the connext wallet was initialized. |
 
 
 
@@ -1376,7 +1364,6 @@
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | unlocked_lnds | [string](#string) | repeated | The list of lnd clients that were unlocked. |
-| unlocked_raiden | [bool](#bool) |  | Whether raiden was unlocked. |
 | locked_lnds | [string](#string) | repeated | The list of lnd clients that could not be unlocked. |
 
 
@@ -1428,7 +1415,7 @@
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | LND | 0 |  |
-| RAIDEN | 1 |  |
+| CONNEXT | 2 |  |
 
 
 
@@ -1522,7 +1509,7 @@ A service for interacting with a locked or uninitalized xud node.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateNode | [CreateNodeRequest](#xudrpc.CreateNodeRequest) | [CreateNodeResponse](#xudrpc.CreateNodeResponse) | Creates an xud identity node key and underlying wallets. The node key and wallets are derived from a single seed and encrypted using a single password provided as a parameter to the call. shell: xucli create |
-| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. shell: xucli restore [backup_directory] [raiden_database_path] |
+| RestoreNode | [RestoreNodeRequest](#xudrpc.RestoreNodeRequest) | [RestoreNodeResponse](#xudrpc.RestoreNodeResponse) | Restores an xud instance and underlying wallets from a seed. shell: xucli restore [backup_directory] |
 | UnlockNode | [UnlockNodeRequest](#xudrpc.UnlockNodeRequest) | [UnlockNodeResponse](#xudrpc.UnlockNodeResponse) | Unlocks and decrypts the xud node key and any underlying wallets. shell: xucli unlock |
 
  

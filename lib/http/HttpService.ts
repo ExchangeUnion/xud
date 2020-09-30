@@ -1,29 +1,14 @@
 import Service from '../service/Service';
 import serviceErrors from '../service/errors';
-import { RaidenResolveRequest, RaidenResolveResponse } from '../raidenclient/types';
 import {
   ConnextPreimageRequest,
   ConnextIncomingTransferRequest,
+  ConnextDepositConfirmedRequest,
 } from '../connextclient/types';
 import { createHash } from 'crypto';
 
 class HttpService {
   constructor(private service: Service) {}
-
-  public resolveHashRaiden = async (resolveRequest: RaidenResolveRequest): Promise<RaidenResolveResponse> => {
-    const { secrethash, amount, token, expiration, chain_height } = resolveRequest;
-    if (!secrethash || typeof secrethash !== 'string') {
-      throw serviceErrors.INVALID_ARGUMENT('secrethash must be a non-empty string');
-    }
-    const secret = await this.service.resolveHash({
-      amount,
-      expiration,
-      chain_height,
-      rHash: secrethash.slice(2),
-      tokenAddress: token,
-    });
-    return { secret };
-  }
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
@@ -52,6 +37,7 @@ class HttpService {
       const {
         amount: amountHex,
         assetId,
+        paymentId,
       } = incomingTransferRequest.data;
       const {
         lockHash,
@@ -64,8 +50,20 @@ class HttpService {
         rHash,
         timelock,
         units,
+        paymentId,
         tokenAddress: assetId,
       });
+      return {};
+    } else {
+      throw serviceErrors.INVALID_REQUEST;
+    }
+  }
+
+  public depositConfirmed = (
+    depositConfirmedRequest: ConnextDepositConfirmedRequest,
+  ): object => {
+    if (depositConfirmedRequest.data && depositConfirmedRequest.data.hash) {
+      this.service.depositConfirmed(depositConfirmedRequest.data.hash);
       return {};
     } else {
       throw serviceErrors.INVALID_REQUEST;

@@ -27,6 +27,10 @@ export const handler = async (argv: Arguments<any>) => {
     quoteCurrency = argv.quote_currency;
   } else {
     [baseCurrency, quoteCurrency] = argv.pair_id.split('/');
+    if (!baseCurrency || !quoteCurrency) {
+      console.error(`${argv.pair_id} is not a valid pair`);
+      process.exit(1);
+    }
   }
   request.setBaseCurrency(baseCurrency.toUpperCase());
   request.setQuoteCurrency(quoteCurrency.toUpperCase());

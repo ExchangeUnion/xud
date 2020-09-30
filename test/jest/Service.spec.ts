@@ -349,9 +349,9 @@ describe('Service', () => {
       const result = service.listOrders({ pairId: pairIds[0], owner: Owner.Both, limit: 2, includeAliases: false });
       expect(result.size).toEqual(1);
       expect(result.get(pairIds[0])!.buyArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 1)).toBeTruthy();
+      expect(result.get(pairIds[0])!.buyArray.some(val => val.price === 2)).toBeTruthy();
       expect(result.get(pairIds[0])!.sellArray.length).toEqual(2);
-      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 6)).toBeTruthy();
+      expect(result.get(pairIds[0])!.sellArray.some(val => val.price === 5)).toBeTruthy();
     });
 
   });

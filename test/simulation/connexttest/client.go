@@ -3,6 +3,7 @@ package connexttest
 import (
 	"bytes"
 	"fmt"
+	"github.com/ExchangeUnion/xud-simulation/shared"
 	"io"
 	"os"
 	"os/exec"
@@ -11,8 +12,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/phayes/freeport"
 )
 
 var numActiveNodes int32
@@ -33,6 +32,7 @@ func (cfg Config) genEnvVars() []string {
 	args = append(args, fmt.Sprintf("CONNEXT_NODE_URL=%v", cfg.NodeURL))
 	args = append(args, fmt.Sprintf("PORT=%v", cfg.Port))
 	args = append(args, fmt.Sprintf("CONNEXT_STORE_DIR=%v", cfg.DataDir))
+	args = append(args, fmt.Sprintf("LEGACY_MODE=true"))
 
 	return args
 }
@@ -63,7 +63,7 @@ func newClient(name, path, ethProviderURL, nodeURL string) (*HarnessClient, erro
 		return nil, err
 	}
 
-	port, err := freeport.GetFreePort()
+	port, err := shared.GetFreePort()
 	if err != nil {
 		return nil, err
 	}

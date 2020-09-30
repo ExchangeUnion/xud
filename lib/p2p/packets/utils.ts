@@ -17,7 +17,6 @@ export const convertNodeState = (nodeState: pb.NodeState.AsObject) => {
   return removeUndefinedProps({
     pairs: nodeState.pairsList,
     addresses: nodeState.addressesList,
-    raidenAddress: nodeState.raidenAddress,
     connextIdentifier: nodeState.connextIdentifier,
     lndPubKeys: convertKvpArrayToKvps(nodeState.lndPubKeysMap),
     lndUris: convertLndUris(nodeState.lndUrisMap),
@@ -55,7 +54,6 @@ export const serializeNodeState = (nodeState: NodeState): pb.NodeState => {
     pbAddr.setPort(addr.port);
     return pbAddr;
   }));
-  pbNodeState.setRaidenAddress(nodeState.raidenAddress);
   pbNodeState.setConnextIdentifier(nodeState.connextIdentifier);
   if (nodeState.lndPubKeys) {
     setObjectToMap(nodeState.lndPubKeys, pbNodeState.getLndPubKeysMap());

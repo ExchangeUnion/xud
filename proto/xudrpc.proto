@@ -33,7 +33,7 @@ service XudInit {
   rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse) { }
 
   /* Restores an xud instance and underlying wallets from a seed.
-   * shell: xucli restore [backup_directory] [raiden_database_path] */
+   * shell: xucli restore [backup_directory] */
   rpc RestoreNode(RestoreNodeRequest) returns (RestoreNodeResponse) { }
 
   /* Unlocks and decrypts the xud node key and any underlying wallets.
@@ -398,9 +398,15 @@ message CloseChannelRequest {
   // For Connext only - the amount to extract from the channel. If 0 or unspecified,
   // the entire off-chain balance for the specified currency will be extracted.
   uint64 amount = 5 [json_name = "amount"];
+  // A manual fee rate set in sat/byte that should be used when crafting the closure
+  // transaction.
+  uint64 fee = 6 [json_name = "fee"];
 }
 
-message CloseChannelResponse {}
+message CloseChannelResponse {
+  // The id of the transaction per channel close.
+  repeated string transaction_ids = 1 [json_name = "transaction_ids"];
+}
 
 message ConnectRequest {
   // The uri of the node to connect to in "[nodePubKey]@[host]:[port]" format.
@@ -419,8 +425,8 @@ message CreateNodeResponse {
   repeated string seed_mnemonic = 1;
   // The list of lnd clients that were initialized.
   repeated string initialized_lnds = 2;
-  // Whether raiden was initialized.
-  bool initialized_raiden = 3;
+  // Whether the connext wallet was initialized.
+  bool initialized_connext = 3;
 }
 
 message Currency {
@@ -428,7 +434,7 @@ message Currency {
   string currency = 1 [json_name = "currency"];
   enum SwapClient {
     LND = 0;
-    RAIDEN = 1;
+    CONNEXT = 2;
   }
   // The payment channel network client to use for executing swaps.
   SwapClient swap_client = 2 [json_name = "swap_client"];
@@ -477,7 +483,7 @@ message GetBalanceRequest {
 }
 message GetBalanceResponse {
   // A map between currency ticker symbols and their balances.
-  map<string, Balance> balances = 1 [json_name = "orders"];
+  map<string, Balance> balances = 1 [json_name = "balances"];
 }
 
 message GetInfoRequest {}
@@ -495,7 +501,6 @@ message GetInfoResponse {
   // The number of active, standing orders in the order book.
   OrdersCount orders = 6 [json_name = "orders"];
   map<string, LndInfo> lnd = 7 [json_name = "lnd"];
-  RaidenInfo raiden = 8 [json_name = "raiden"];
   // The alias of this instance of xud.
   string alias = 9 [json_name = "alias"];
   // The network of this node.
@@ -580,9 +585,14 @@ message OpenChannelRequest {
   uint64 amount = 3 [json_name = "amount"];
   // The balance amount to be pushed to the remote side of the channel denominated in satoshis.
   uint64 push_amount = 4 [json_name = "push_amount"];
+  // The manual fee rate set in sat/byte that should be used when crafting the funding transaction in the channel.
+  uint64 fee = 5 [json_name = "fee"];
 }
 
-message OpenChannelResponse {}
+message OpenChannelResponse {
+  // The id of the transaction that opened the channel.
+  string transaction_id = 1 [json_name = "transaction_id"];
+}
 
 message Order {
   // The price of the order.
@@ -658,8 +668,6 @@ message Peer {
   string xud_version = 6 [json_name = "xud_version"];
   // The time in seconds that we have been connected to this peer.
   uint32 seconds_connected = 7 [json_name = "seconds_connected"];
-  // The raiden address for this peer
-  string raiden_address = 8 [json_name = "raiden_address"];
   // The alias for this peer's public key
   string alias = 9 [json_name = "alias"];
 }
@@ -705,14 +713,6 @@ message PlaceOrderEvent {
   }
 }
 
-message RaidenInfo {
-  string status = 1 [json_name = "status"];
-  string address = 2 [json_name = "address"];
-  Channels channels = 3 [json_name = "channels"];
-  string version = 4 [json_name = "version"];
-  string chain = 5 [json_name = "chain"];
-}
-
 message ConnextInfo {
   string status = 1 [json_name = "status"];
   string address = 2 [json_name = "address"];
@@ -755,19 +755,15 @@ message RestoreNodeRequest {
   // A map between the currency of the LND and its multi channel SCB
   map<string, bytes> lnd_backups = 3;
 
-  // The Raiden database backup
-  bytes raiden_database = 4;
-  // Path to where the Raiden database backup should be written
-  string raiden_database_path = 5;
-
   // The XUD database backup
   bytes xud_database = 6;
 }
 message RestoreNodeResponse {
   // The list of lnd clients that were initialized.
   repeated string restored_lnds = 1;
-  // Whether raiden was initialized.
-  bool restored_raiden = 2;
+
+  // Whether the connext wallet was initialized.
+  bool restored_connext = 2;
 }
 
 message ShutdownRequest {}
@@ -920,8 +916,6 @@ message UnlockNodeRequest {
 message UnlockNodeResponse {
   // The list of lnd clients that were unlocked.
   repeated string unlocked_lnds = 1;
-  // Whether raiden was unlocked.
-  bool unlocked_raiden = 2;
   // The list of lnd clients that could not be unlocked.
   repeated string locked_lnds = 3;
 }

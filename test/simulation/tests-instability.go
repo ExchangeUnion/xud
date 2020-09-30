@@ -140,7 +140,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Bob, 400, 0)
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -152,7 +152,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_SELL,
 	}
@@ -362,7 +362,7 @@ func testMakerConnextClientCrashedBeforeMakerSettlement(net *xudtest.NetworkHarn
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Bob, 400, 0)
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -378,7 +378,7 @@ func testMakerConnextClientCrashedBeforeMakerSettlement(net *xudtest.NetworkHarn
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_SELL,
 	}
@@ -506,7 +506,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -522,7 +522,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_BUY,
 	}
@@ -594,7 +594,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Bob, 400, 0)
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -610,7 +610,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_SELL,
 	}

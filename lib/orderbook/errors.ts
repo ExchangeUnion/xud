@@ -67,12 +67,12 @@ const errors = {
     message: `${currency} outbound balance of ${availableAmount} is not sufficient for order amount of ${amount}`,
     code: errorCodes.INSUFFICIENT_OUTBOUND_BALANCE,
   }),
-  MIN_QUANTITY_VIOLATED: (id: string) => ({
-    message: `order ${id} has surpassed the minimum quantity`,
+  MIN_QUANTITY_VIOLATED: (quantity: number, currency: string) => ({
+    message: `order does not meet the minimum ${currency} quantity of ${quantity} satoshis`,
     code: errorCodes.MIN_QUANTITY_VIOLATED,
   }),
   QUANTITY_ON_HOLD: (localId: string, holdQuantity: number) => ({
-    message: `order with local id ${localId} has a quantity of ${holdQuantity} on hold`,
+    message: `order with local id ${localId} has a quantity of ${holdQuantity} satoshis on hold, try again later`,
     code: errorCodes.QUANTITY_DOES_NOT_MATCH,
   }),
 };
