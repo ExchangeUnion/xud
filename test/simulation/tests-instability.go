@@ -272,7 +272,7 @@ func testMakerConnextClientCrashedBeforeTakerSettlement(net *xudtest.NetworkHarn
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -288,7 +288,7 @@ func testMakerConnextClientCrashedBeforeTakerSettlement(net *xudtest.NetworkHarn
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
 		OrderId:  "maker_order_id",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_BUY,
 	}
