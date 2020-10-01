@@ -887,6 +887,11 @@
           "type": "string",
           "format": "uint64",
           "description": "Unconfirmed wallet balance in satoshis."
+        },
+        "reserved_balance": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The balance that's reserved for open orders."
         }
       }
     },

@@ -34,6 +34,8 @@ type ChannelBalance = {
   pendingOpenBalance: number,
   /** The cumulative balance of inactive channels denominated in satoshis. */
   inactiveBalance: number,
+  /** The balance that is reserved for open orders denominated in satoshis. */
+  reservedBalance?: number,
 };
 
 type WalletBalance = {

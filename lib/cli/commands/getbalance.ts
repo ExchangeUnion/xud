@@ -8,40 +8,46 @@ import { satsToCoinsStr } from '../utils';
 const HEADERS = [
   colors.blue('Currency'),
   colors.blue('Total Balance'),
-  colors.blue('Channel Balance (Tradable)'),
   colors.blue('Wallet Balance (Not Tradable)'),
+  colors.blue('Channel Balance (Tradable)'),
+  colors.blue('In Orders'),
 ];
 
 const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   const formatted: any[] = [];
-  balances.balancesMap.forEach((balance) => {
+  balances.balancesMap.forEach((balanceElement) => {
+    const currency = balanceElement[0];
+    const balance = balanceElement[1];
     const element = [];
     element.push(
-      balance[0],
-      `${satsToCoinsStr(balance[1].totalBalance)}`,
-      formatBalance(balance[1].channelBalance, balance[1].pendingChannelBalance, balance[1].inactiveChannelBalance),
-      formatBalance(balance[1].walletBalance, balance[1].unconfirmedWalletBalance),
+      currency,
+      satsToCoinsStr(balance.totalBalance),
+      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
+      formatBalance(balance.walletBalance, balance.unconfirmedWalletBalance),
+      satsToCoinsStr(balance.reservedBalance),
     );
     formatted.push(element);
   });
   return formatted;
 };
 
-const formatBalance = (confirmedBalance: number, unconfirmedBalance: number, inactiveBalance = 0) => {
-  const confirmedBalanceStr = satsToCoinsStr(confirmedBalance);
-  const unconfirmedBalanceStr = unconfirmedBalance > 0 ? `${satsToCoinsStr(unconfirmedBalance)} pending` : undefined;
+const formatBalance = (availableBalance: number, pendingBalance: number, inactiveBalance = 0) => {
+  const availableBalanceStr = satsToCoinsStr(availableBalance);
+  const unconfirmedBalanceStr = pendingBalance > 0 ? `${satsToCoinsStr(pendingBalance)} pending` : undefined;
   const inactiveBalanceStr = inactiveBalance > 0 ? `${satsToCoinsStr(inactiveBalance)} inactive` : undefined;
   if (unconfirmedBalanceStr || inactiveBalanceStr) {
-    let str = `${confirmedBalanceStr} (`;
+    let str = availableBalanceStr;
+    let paranthetical = '';
     if (unconfirmedBalanceStr) {
-      str += inactiveBalanceStr ? `${inactiveBalanceStr} | ${unconfirmedBalanceStr}` : unconfirmedBalanceStr;
-    } else {
-      str += inactiveBalanceStr;
+      paranthetical += paranthetical ? ` | ${unconfirmedBalanceStr}` : unconfirmedBalanceStr;
     }
-    str += ')';
+    if (inactiveBalanceStr) {
+      paranthetical += paranthetical ? ` | ${inactiveBalanceStr}` : inactiveBalanceStr;
+    }
+    str += ` (${paranthetical})`;
     return str;
   }
-  return confirmedBalanceStr;
+  return availableBalanceStr;
 };
 
 const createTable = () => {
@@ -51,7 +57,7 @@ const createTable = () => {
   return table;
 };
 
-const displayBalances = (balances: GetBalanceResponse.AsObject) => {
+export const displayBalances = (balances: GetBalanceResponse.AsObject) => {
   const table = createTable();
   const formatted = formatBalances(balances);
   formatted.forEach(balance => table.push(balance));
