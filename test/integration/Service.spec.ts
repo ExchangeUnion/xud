@@ -1,10 +1,12 @@
 import chai, { expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import sinon from 'sinon';
 import { OrderSide, Owner, SwapClientType } from '../../lib/constants/enums';
 import p2pErrors from '../../lib/p2p/errors';
 import Service from '../../lib/service/Service';
 import Xud from '../../lib/Xud';
 import { getTempDir } from '../utils';
+import { ServiceOrderSidesArrays } from '../../lib/service/types';
 
 chai.use(chaiAsPromised);
 
@@ -185,5 +187,64 @@ describe('API Service', () => {
       xud.on('shutdown', () => resolve());
     });
     await expect(shutdownPromise).to.be.fulfilled;
+  });
+
+  describe('Max Quantity Calculation', () => {
+    before(async () => {
+      const map = new Map<string, ServiceOrderSidesArrays>();
+      map.set('BTC/DAI', {
+        buyArray: [],
+        sellArray: [
+          { quantity: 0.01, price: 20000, pairId: 'BTC/DAI', id: 'test_1', createdAt: 1, side: OrderSide.Sell,
+            isOwnOrder: false, nodeIdentifier: { nodePubKey: 'some_key' } },
+          { quantity: 0.01, price: 50000, pairId: 'BTC/DAI', id: 'test_2', createdAt: 1, side: OrderSide.Sell,
+            isOwnOrder: false, nodeIdentifier: { nodePubKey: 'some_key2' } },
+          { quantity: 0.05, price: 100000, pairId: 'BTC/DAI', id: 'test_2', createdAt: 1, side: OrderSide.Sell,
+            isOwnOrder: false, nodeIdentifier: { nodePubKey: 'some_key2' } },
+        ],
+      });
+
+      sinon.createSandbox().stub(service, 'listOrders').returns(map);
+    });
+
+    it('should return `0` for 0 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 0);
+      await expect(number).to.equal(0);
+    });
+
+    it('should return `0.005` for 100 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 100);
+      await expect(number).to.equal(0.005);
+    });
+
+    it('should return `0.01` for 200 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 200);
+      await expect(number).to.equal(0.01);
+    });
+
+    it('should return `0.016` for 500 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 500);
+      await expect(number).to.equal(0.016);
+    });
+
+    it('should return `0.02` for 700 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 700);
+      await expect(number).to.equal(0.02);
+    });
+
+    it('should return `0.021` for 800 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 800);
+      await expect(number).to.equal(0.021);
+    });
+
+    it('should return `0.07` for 5700 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 5700);
+      await expect(number).to.equal(0.07);
+    });
+
+    it('should return `0.07` for 10000 balance mkt', async () => {
+      const number = service['calculateBuyMaxMarketQuantity']('BTC/DAI', 10000);
+      await expect(number).to.equal(0.07);
+    });
   });
 });

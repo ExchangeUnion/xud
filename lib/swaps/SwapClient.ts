@@ -23,6 +23,8 @@ enum ClientStatus {
   Unlocked,
   /** The client could not be initialized due to faulty configuration. */
   Misconfigured,
+  /** The server is reachable but hold invoices are not supported. */
+  NoHoldInvoiceSupport,
 }
 
 type ChannelBalance = {
@@ -216,6 +218,7 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.Disconnected:
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
+      case ClientStatus.NoHoldInvoiceSupport:
         // these statuses can only be set on an operational, initalized client
         validStatusTransition = this.isOperational();
         break;
@@ -359,7 +362,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
@@ -372,6 +375,9 @@ abstract class SwapClient extends EventEmitter {
   }
   public isOutOfSync(): boolean {
     return this.status === ClientStatus.OutOfSync;
+  }
+  public hasNoInvoiceSupport(): boolean {
+    return this.status === ClientStatus.NoHoldInvoiceSupport;
   }
 
   /** Ends all connections, subscriptions, and timers for for this client. */

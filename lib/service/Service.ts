@@ -626,8 +626,14 @@ class Service {
         const currency = pairId.split('/')[0];
         calculatedQuantity = (await this.getBalance({ currency })).get(currency)?.channelBalance || 0;
       } else {
-        // TODO
-        calculatedQuantity = 0;
+        const currency = pairId.split('/')[1];
+        const balance = (await this.getBalance({ currency })).get(currency)?.channelBalance || 0;
+
+        if (!price) {
+          calculatedQuantity = this.calculateBuyMaxMarketQuantity(pairId, balance);
+        } else {
+          calculatedQuantity = balance / price;
+        }
       }
 
       this.logger.debug(`max flag is true to place order, calculated quantity from balance is ${calculatedQuantity}`);
@@ -662,6 +668,30 @@ class Service {
     };
     return price > 0 ? await this.orderBook.placeLimitOrder(placeOrderRequest) :
       await this.orderBook.placeMarketOrder(placeOrderRequest);
+  }
+
+  private calculateBuyMaxMarketQuantity(pairId: string, balance: number) {
+    let result = 0;
+    let currentBalance = balance;
+
+    this.listOrders({ pairId, owner: Owner.Both, limit: 0, includeAliases: false }).forEach((orderArrays, _) => {
+      for (const order of orderArrays.sellArray) {
+        if (order.quantity && order.price) {
+            // market buy max calculation
+          const maxBuyableFromThisPrice = currentBalance / order.price;
+          const calculatedQuantity = (maxBuyableFromThisPrice > order.quantity) ? order.quantity : maxBuyableFromThisPrice;
+          result += calculatedQuantity;
+          currentBalance -= order.price * calculatedQuantity;
+
+          if (currentBalance === 0) {
+             // we filled our buy quantity with this order
+            break;
+          }
+        }
+      }
+    });
+
+    return result;
   }
 
   /** Removes a currency. */

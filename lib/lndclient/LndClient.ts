@@ -1,4 +1,5 @@
 import assert from 'assert';
+import crypto from 'crypto';
 import { promises as fs, watch } from 'fs';
 import grpc, { ChannelCredentials, ClientReadableStream } from 'grpc';
 import path from 'path';
@@ -242,6 +243,10 @@ class LndClient extends SwapClient {
 
   private unaryCall = <T, U>(methodName: Exclude<keyof LightningClient, ClientMethods>, params: T): Promise<U> => {
     return new Promise((resolve, reject) => {
+      if (this.hasNoInvoiceSupport()) {
+        reject(errors.NO_HOLD_INVOICE_SUPPORT);
+        return;
+      }
       if (!this.isOperational()) {
         reject(errors.DISABLED);
         return;
@@ -337,7 +342,9 @@ class LndClient extends SwapClient {
     let version: string | undefined;
     let alias: string | undefined;
     let status = 'Ready';
-    if (!this.isOperational()) {
+    if (this.hasNoInvoiceSupport()) {
+      status = errors.NO_HOLD_INVOICE_SUPPORT(this.currency).message;
+    } else if (!this.isOperational()) {
       status = errors.DISABLED(this.currency).message;
     } else if (this.isDisconnected()) {
       status = errors.UNAVAILABLE(this.currency, this.status).message;
@@ -493,6 +500,18 @@ class LndClient extends SwapClient {
         }
 
         this.invoices = new InvoicesClient(this.uri, this.credentials);
+        try {
+          const randomHash = crypto.randomBytes(32).toString('hex');
+          this.logger.debug(`checking hold invoice support with hash: ${randomHash}`);
+
+          await this.addInvoice({ rHash: randomHash, units: 1 });
+          await this.removeInvoice(randomHash);
+        } catch (err) {
+          const errStr = typeof(err) === 'string' ? err : JSON.stringify(err);
+
+          this.logger.error(`could not add hold invoice, error: ${errStr}`);
+          this.setStatus(ClientStatus.NoHoldInvoiceSupport);
+        }
 
         if (this.walletUnlocker) {
           // WalletUnlocker service is disabled when the main Lightning service is available
