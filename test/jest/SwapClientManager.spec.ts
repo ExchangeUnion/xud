@@ -169,6 +169,57 @@ describe('Swaps.SwapClientManager', () => {
     expect(closeMock).toHaveBeenCalledTimes(2);
   });
 
+  describe('reserved amounts', () => {
+    const currency = 'BTC';
+    const amount = 10000;
+    const setReservedInboundBtcAmount = jest.fn();
+
+    beforeEach(async () => {
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
+      await swapClientManager.init(db.models);
+      swapClientManager.swapClients.get(currency)!.setReservedInboundAmount = setReservedInboundBtcAmount;
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('it adds outbound reserved amounts', () => {
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount);
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+    });
+
+    test('it subtracts outbound reserved amounts', () => {
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount);
+      swapClientManager.subtractOutboundReservedAmount(currency, amount);
+      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(0);
+    });
+
+    test('it adds inbound reserved amounts and sets amount on swap client', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount * 2, currency);
+    });
+
+    test('it subtracts inbound reserved amounts', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.subtractInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(0);
+    });
+  });
+
   describe('openChannel', () => {
     let remoteIdentifier: string;
 

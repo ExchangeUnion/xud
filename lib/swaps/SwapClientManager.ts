@@ -12,6 +12,7 @@ import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
+import assert from 'assert';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
   return (swapClient.type === SwapClientType.Connext);
@@ -43,6 +44,11 @@ class SwapClientManager extends EventEmitter {
   public connextClient?: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
+
+  /** A map of supported currency tickers to the inbound amount that is reserved by existing orders. */
+  private inboundReservedAmounts = new Map<string, number>();
+  /** A map of supported currency tickers to the outbound amount that is reserved by existing orders. */
+  private outboundReservedAmounts = new Map<string, number>();
 
   constructor(
     private config: Config,
@@ -155,6 +161,32 @@ class SwapClientManager extends EventEmitter {
     } catch (currency) {
       throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
     }
+  }
+
+  public addOutboundReservedAmount = (currency: string, amount: number) => {
+    const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
+    const newOutboundReservedAmount = (outboundReservedAmount ?? 0) + amount;
+    this.outboundReservedAmounts.set(currency, newOutboundReservedAmount);
+  }
+
+  public addInboundReservedAmount = (currency: string, amount: number) => {
+    const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
+    const newInboundReservedAmount = (inboundReservedAmount ?? 0) + amount;
+    this.inboundReservedAmounts.set(currency, newInboundReservedAmount);
+
+    this.swapClients.get(currency)?.setReservedInboundAmount(newInboundReservedAmount, currency);
+  }
+
+  public subtractOutboundReservedAmount = (currency: string, amount: number) => {
+    const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
+    assert(outboundReservedAmount && outboundReservedAmount >= amount);
+    this.outboundReservedAmounts.set(currency, (outboundReservedAmount ?? 0) - amount);
+  }
+
+  public subtractInboundReservedAmount = (currency: string, amount: number) => {
+    const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
+    assert(inboundReservedAmount && inboundReservedAmount >= amount);
+    this.inboundReservedAmounts.set(currency, (inboundReservedAmount ?? 0) - amount);
   }
 
   /**

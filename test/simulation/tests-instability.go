@@ -90,7 +90,7 @@ func testMakerCrashedDuringSwap(net *xudtest.NetworkHarness, ht *harnessTest, cu
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedDuringSwap",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -100,7 +100,7 @@ func testMakerCrashedDuringSwap(net *xudtest.NetworkHarness, ht *harnessTest, cu
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedDuringSwap",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -146,7 +146,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedDuringSwapConnextIn",
 		Price:    40,
 		Quantity: 100,
 		PairId:   "BTC/ETH",
@@ -156,7 +156,7 @@ func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedDuringSwapConnextIn",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -206,7 +206,7 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerLndCrashedBeforeSettlement",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -216,7 +216,7 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerLndCrashedBeforeSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -279,7 +279,7 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
 		Price:    40,
 		Quantity: 100,
 		PairId:   "BTC/ETH",
@@ -289,7 +289,7 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -351,7 +351,7 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlement",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -361,7 +361,7 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -423,7 +423,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextOut",
 		Price:    40,
 		Quantity: 100,
 		PairId:   "BTC/ETH",
@@ -433,7 +433,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextOut",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -511,7 +511,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextIn",
 		Price:    40,
 		Quantity: 100,
 		PairId:   "BTC/ETH",
@@ -521,7 +521,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextIn",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
