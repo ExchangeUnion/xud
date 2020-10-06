@@ -134,97 +134,111 @@ describe('TradingPair.match', () => {
   beforeEach(init);
 
   it('should fully match with two maker orders', () => {
-    tp.addPeerOrder(createPeerOrder(5, 5, false));
-    tp.addPeerOrder(createPeerOrder(5, 5, false));
-    const { remainingOrder } = tp.match(createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+    const { remainingOrder } = tp.match(createOwnOrder(5, 10000, true));
     expect(remainingOrder).to.be.undefined;
   });
 
   it('should match with own order if equivalent peer order exists', () => {
-    const peerOrder = createPeerOrder(5, 5, false);
-    const ownOrder = createOwnOrder(5, 5, false);
+    const peerOrder = createPeerOrder(5, 5000, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addPeerOrder(peerOrder);
     tp.addOwnOrder(ownOrder);
-    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5000, true));
     expect(remainingOrder).to.be.undefined;
     expect(matches[0].maker).to.not.equal(peerOrder);
     expect(matches[0].maker).to.equal(ownOrder);
   });
 
   it('should split taker order when makers are insufficient', () => {
-    tp.addPeerOrder(createPeerOrder(5, 4, false));
-    tp.addPeerOrder(createPeerOrder(5, 5, false));
-    const { remainingOrder } = tp.match(createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 4000, false));
+    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+    const { remainingOrder } = tp.match(createOwnOrder(5, 10000, true));
     expect(remainingOrder).to.not.be.undefined;
-    expect(remainingOrder!.quantity).to.equal(1);
+    expect(remainingOrder!.quantity).to.equal(1000);
   });
 
   it('should split one maker order when taker is insufficient', () => {
-    tp.addPeerOrder(createPeerOrder(5, 5, false));
-    tp.addPeerOrder(createPeerOrder(5, 6, false));
-    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 10, true));
+    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+    tp.addPeerOrder(createPeerOrder(5, 6000, false));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 10000, true));
     expect(remainingOrder).to.be.undefined;
     matches.forEach((match) => {
-      expect(match.maker.quantity).to.equal(5);
+      expect(match.maker.quantity).to.equal(5000);
     });
     const peekResult = tp.queues!.sellQueue.peek();
     expect(peekResult).to.not.be.undefined;
-    expect(peekResult!.quantity).to.equal(1);
+    expect(peekResult!.quantity).to.equal(1000);
+  });
+
+  it('should mark split maker order as dust', (done) => {
+    tp.on('peerOrder.dust', (orderPortion) => {
+      expect(orderPortion.quantity).to.equal(1);
+      done();
+    });
+
+    tp.addPeerOrder(createPeerOrder(5, 5000, false));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 4999, true));
+    expect(remainingOrder).to.be.undefined;
+    matches.forEach((match) => {
+      expect(match.maker.quantity).to.equal(4999);
+    });
   });
 
   it('should not match maker own order hold quantity', () => {
-    const ownOrder = createOwnOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addOwnOrder(ownOrder);
-    tp.addOrderHold(ownOrder.id, 5);
+    tp.addOrderHold(ownOrder.id, 5000);
 
-    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5000, true));
     expect(remainingOrder).to.not.be.undefined;
-    expect(remainingOrder!.quantity).to.equal(5);
+    expect(remainingOrder!.quantity).to.equal(5000);
     expect(matches.length).to.be.equal(0);
   });
 
   it('should not match maker own order hold quantity, and should split the taker order', () => {
-    const ownOrder = createOwnOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addOwnOrder(ownOrder);
-    tp.addOrderHold(ownOrder.id, 3);
+    tp.addOrderHold(ownOrder.id, 3000);
 
-    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5, true));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 5000, true));
     expect(remainingOrder).to.not.be.undefined;
-    expect(remainingOrder!.quantity).to.equal(3);
+    expect(remainingOrder!.quantity).to.equal(3000);
     expect(matches.length).to.be.equal(1);
-    expect(matches[0].maker.quantity).to.be.equal(2);
-    expect(matches[0].taker.quantity).to.be.equal(2);
+    expect(matches[0].maker.quantity).to.be.equal(2000);
+    expect(matches[0].taker.quantity).to.be.equal(2000);
   });
 
   it('should not match maker own order hold quantity, and should fully match the taker order', () => {
-    const ownOrder = createOwnOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addOwnOrder(ownOrder);
-    tp.addOrderHold(ownOrder.id, 3);
+    tp.addOrderHold(ownOrder.id, 3000);
 
-    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 2, true));
+    const { matches, remainingOrder } = tp.match(createOwnOrder(5, 2000, true));
     expect(remainingOrder).to.be.undefined;
     expect(matches.length).to.be.equal(1);
-    expect(matches[0].maker.quantity).to.be.equal(2);
-    expect(matches[0].taker.quantity).to.be.equal(2);
+    expect(matches[0].maker.quantity).to.be.equal(2000);
+    expect(matches[0].taker.quantity).to.be.equal(2000);
   });
 
   it('should not match maker own order hold quantity, but keep the order for the next match', () => {
-    const ownOrder = createOwnOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addOwnOrder(ownOrder);
-    tp.addOrderHold(ownOrder.id, 5);
+    tp.addOrderHold(ownOrder.id, 5000);
 
-    let mr = tp.match(createOwnOrder(5, 5, true));
+    let mr = tp.match(createOwnOrder(5, 5000, true));
     expect(mr.remainingOrder).to.not.be.undefined;
-    expect(mr.remainingOrder!.quantity).to.equal(5);
+    expect(mr.remainingOrder!.quantity).to.equal(5000);
     expect(mr.matches.length).to.be.equal(0);
 
-    tp.removeOrderHold(ownOrder.id, 5);
+    tp.removeOrderHold(ownOrder.id, 5000);
 
-    mr = tp.match(createOwnOrder(5, 5, true));
+    mr = tp.match(createOwnOrder(5, 5000, true));
     expect(mr.remainingOrder).to.be.undefined;
     expect(mr.matches.length).to.be.equal(1);
-    expect(mr.matches[0].maker.quantity).to.be.equal(5);
-    expect(mr.matches[0].taker.quantity).to.be.equal(5);
+    expect(mr.matches[0].maker.quantity).to.be.equal(5000);
+    expect(mr.matches[0].taker.quantity).to.be.equal(5000);
   });
 });
 
@@ -232,7 +246,7 @@ describe('TradingPair.removeOwnOrder', () => {
   beforeEach(init);
 
   it('should add a new ownOrder and then remove it', async () => {
-    const ownOrder = createOwnOrder(5, 5, false);
+    const ownOrder = createOwnOrder(5, 5000, false);
     tp.addOwnOrder(ownOrder);
     tp.removeOwnOrder(ownOrder.id);
     isEmpty(tp);
@@ -246,11 +260,11 @@ describe('TradingPair.removePeerOrders', () => {
     const firstPeerPubKey = '026a848ebd1792001ff10c6e212f6077aec5669af3de890e1ae196b4e9730d75b9';
     const secondPeerPubKey = '029a96c975d301c1c8787fcb4647b5be65a3b8d8a70153ff72e3eac73759e5e345';
 
-    const firstHostOrders = [createPeerOrder(0.01, 5, false, ms(), firstPeerPubKey),
-      createPeerOrder(0.01, 5, false, ms(), firstPeerPubKey)];
+    const firstHostOrders = [createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey),
+      createPeerOrder(0.01, 50000, false, ms(), firstPeerPubKey)];
     tp.addPeerOrder(firstHostOrders[0]);
     tp.addPeerOrder(firstHostOrders[1]);
-    tp.addPeerOrder(createPeerOrder(0.01, 5, false, ms(), secondPeerPubKey));
+    tp.addPeerOrder(createPeerOrder(0.01, 50000, false, ms(), secondPeerPubKey));
     expect(tp.getPeersOrders().sellArray.length).to.equal(3);
 
     const removedOrders = tp.removePeerOrders(firstPeerPubKey);
@@ -259,14 +273,14 @@ describe('TradingPair.removePeerOrders', () => {
     expect(tp.queues!.sellQueue.size).to.equal(1);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
-    const matchingResult = tp.match(createOwnOrder(0.01, 15, true));
+    const matchingResult = tp.match(createOwnOrder(0.01, 150000, true));
     expect(matchingResult.remainingOrder).to.not.be.undefined;
-    expect(matchingResult.remainingOrder!.quantity).to.equal(10);
+    expect(matchingResult.remainingOrder!.quantity).to.equal(100000);
   });
 
   it('should add a new peerOrder and then remove it partially', () => {
-    const quantity = 5;
-    const quantityToRemove = 3;
+    const quantity = 5000;
+    const quantityToRemove = 3000;
 
     const order = createPeerOrder(5, quantity, false);
     tp.addPeerOrder(order);
@@ -319,41 +333,41 @@ describe('TradingPair queues and maps integrity', () => {
   });
 
   it('queue and map should have the same order instance after a partial peer order removal', () => {
-    const peerOrder = createPeerOrder(0.01, 10, false, ms());
+    const peerOrder = createPeerOrder(0.01, 100000, false, ms());
     tp.addPeerOrder(peerOrder);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
-    const removeResult = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 3);
-    expect(removeResult.order.quantity).to.equal(3);
+    const removeResult = tp.removePeerOrder(peerOrder.id, peerOrder.peerPubKey, 30000);
+    expect(removeResult.order.quantity).to.equal(30000);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
     const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
     const queueRemainingOrder = tp.queues!.sellQueue.peek();
-    expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
+    expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(70000);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
 
   it('queue and map should have the same order instance after a partial match / maker order split', () => {
-    const peerOrder = createPeerOrder(0.01, 10, false, ms());
+    const peerOrder = createPeerOrder(0.01, 100000, false, ms());
     tp.addPeerOrder(peerOrder);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
-    const ownOrder = createOwnOrder(0.01, 3, true);
+    const ownOrder = createOwnOrder(0.01, 30000, true);
     const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 
     const listRemainingOrder = tp.getPeerOrder(peerOrder.id, peerOrder.peerPubKey);
     const queueRemainingOrder = tp.queues!.sellQueue.peek();
-    expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(7);
+    expect(listRemainingOrder && listRemainingOrder.quantity).to.equal(70000);
     expect(listRemainingOrder).to.equal(queueRemainingOrder);
   });
 
   it('queue and map should both have the maker order removed after a full match', () => {
-    const peerOrder = createPeerOrder(0.01, 10, false, ms());
+    const peerOrder = createPeerOrder(0.01, 100000, false, ms());
     tp.addPeerOrder(peerOrder);
     expect(tp.getPeersOrders().sellArray.length).to.equal(1);
 
-    const ownOrder = createOwnOrder(0.01, 10, true);
+    const ownOrder = createOwnOrder(0.01, 100000, true);
     const matchingResult = tp.match(ownOrder);
     expect(matchingResult.remainingOrder).to.be.undefined;
 

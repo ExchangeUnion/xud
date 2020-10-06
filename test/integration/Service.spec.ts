@@ -17,10 +17,11 @@ describe('API Service', () => {
   const placeOrderArgs = {
     pairId,
     orderId: '1',
-    price: 100,
-    quantity: 1,
+    price: 1,
+    quantity: 100,
     side: OrderSide.Buy,
     immediateOrCancel: false,
+    replaceOrderId: '',
   };
 
   before(async () => {
@@ -49,9 +50,6 @@ describe('API Service', () => {
         BTC: {
           disable: true,
         },
-      },
-      raiden: {
-        disable: true,
       },
       connext: {
         disable: true,

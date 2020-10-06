@@ -17,7 +17,8 @@ import errors, { errorCodes } from './errors';
 import OrderBookRepository from './OrderBookRepository';
 import TradingPair from './TradingPair';
 import {
-  IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
+  IncomingOrder, isOwnOrder, Order, OrderBookThresholds, OrderIdentifier,
+  OrderInvalidation, OrderPortion, OutgoingOrder, OwnLimitOrder, OwnMarketOrder,
   OwnOrder, Pair, PeerOrder, PlaceOrderEvent, PlaceOrderEventType, PlaceOrderResult,
 } from './types';
 
@@ -28,14 +29,14 @@ interface OrderBook {
   on(event: 'peerOrder.invalidation', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a remote order was filled by an own order and removed */
   on(event: 'peerOrder.filled', listener: (order: OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a local order was swapped and removed, after it was filled and executed remotely */
+  /** Adds a listener to be called when all or part of a local order was swapped after being filled and executed remotely */
   on(event: 'ownOrder.swapped', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a local order was filled by an own order and removed */
-  on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
+  on(event: 'ownOrder.filled', listener: (order: OwnOrder) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
   /** Adds a listener to be called when a local order was removed */
-  on(event: 'ownOrder.removed', listener: (order: OrderPortion) => void): this;
+  on(event: 'ownOrder.removed', listener: (order: OwnOrder) => void): this;
 
   /** Notifies listeners that a remote order was added */
   emit(event: 'peerOrder.incoming', order: PeerOrder): boolean;
@@ -46,11 +47,11 @@ interface OrderBook {
   /** Notifies listeners that all or part of a local order was swapped and removed, after it was filled and executed remotely */
   emit(event: 'ownOrder.swapped', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a local order was filled by an own order and removed */
-  emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
+  emit(event: 'ownOrder.filled', order: OwnOrder): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
   /** Notifies listeners that a local order was removed */
-  emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
+  emit(event: 'ownOrder.removed', order: OwnOrder): boolean;
 }
 
 /**
@@ -75,7 +76,7 @@ class OrderBook extends EventEmitter {
   private logger: Logger;
   private nosanityswaps: boolean;
   private nobalancechecks: boolean;
-  private testing: boolean;
+  private strict: boolean;
   private pool: Pool;
   private swaps: Swaps;
 
@@ -93,7 +94,7 @@ class OrderBook extends EventEmitter {
     return this.currencyInstances;
   }
 
-  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, testing = false }:
+  constructor({ logger, models, thresholds, pool, swaps, nosanityswaps, nobalancechecks, nomatching = false, strict = true }:
   {
     logger: Logger,
     models: Models,
@@ -103,7 +104,7 @@ class OrderBook extends EventEmitter {
     nosanityswaps: boolean,
     nobalancechecks: boolean,
     nomatching?: boolean,
-    testing?: boolean,
+    strict?: boolean,
   }) {
     super();
 
@@ -114,17 +115,33 @@ class OrderBook extends EventEmitter {
     this.nosanityswaps = nosanityswaps;
     this.nobalancechecks = nobalancechecks;
     this.thresholds = thresholds;
-    this.testing = testing;
+    this.strict = strict;
 
     this.repository = new OrderBookRepository(models);
+
+    const onOrderRemoved = (order: OwnOrder) => {
+      const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
+      this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
+    };
+    this.on('ownOrder.removed', onOrderRemoved);
+    this.on('ownOrder.filled', onOrderRemoved);
+
+    this.on('ownOrder.added', (order) => {
+      const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
+      this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
+    });
 
     this.bindPool();
     this.bindSwaps();
   }
 
-  private static createOutgoingOrder = (order: OwnOrder): OutgoingOrder => {
+  private static createOutgoingOrder = (order: OwnOrder, replaceOrderId?: string): OutgoingOrder => {
     const { createdAt, localId, initialQuantity, hold, ...outgoingOrder } = order;
-    return outgoingOrder ;
+    return replaceOrderId ? { ...outgoingOrder, replaceOrderId } : outgoingOrder;
   }
 
   private checkThresholdCompliance = (order: OwnOrder | IncomingOrder) => {
@@ -180,7 +197,12 @@ class OrderBook extends EventEmitter {
         // we must remove the amount that was put on hold while the swap was pending for the remaining order
         this.removeOrderHold(orderId, pairId, quantity);
 
-        const ownOrder = this.removeOwnOrder(orderId, pairId, quantity, peerPubKey);
+        const ownOrder = this.removeOwnOrder({
+          orderId,
+          pairId,
+          takerPubKey: peerPubKey,
+          quantityToRemove: quantity,
+        });
         this.emit('ownOrder.swapped', { pairId, quantity, id: orderId });
         await this.persistTrade({
           quantity: swapSuccess.quantity,
@@ -205,7 +227,7 @@ class OrderBook extends EventEmitter {
     currencies.forEach(currency => this.currencyInstances.set(currency.id, currency));
     pairs.forEach((pair) => {
       this.pairInstances.set(pair.id, pair);
-      this.tradingPairs.set(pair.id, new TradingPair(this.logger, pair.id, this.nomatching));
+      this.addTradingPair(pair.id);
     });
 
     this.pool.updatePairs(this.pairIds);
@@ -280,10 +302,25 @@ class OrderBook extends EventEmitter {
 
     const pairInstance = await this.repository.addPair(pair);
     this.pairInstances.set(pairInstance.id, pairInstance);
-    this.tradingPairs.set(pairInstance.id, new TradingPair(this.logger, pairInstance.id, this.nomatching));
+    this.addTradingPair(pairInstance.id);
 
     this.pool.updatePairs(this.pairIds);
     return pairInstance;
+  }
+
+  private addTradingPair = (pairId: string) => {
+    const tp = new TradingPair(this.logger, pairId, this.nomatching);
+    this.tradingPairs.set(pairId, tp);
+    tp.on('peerOrder.dust', (order) => {
+      this.removePeerOrder(order.id, order.pairId);
+    });
+    tp.on('ownOrder.dust', (order) => {
+      this.removeOwnOrder({
+        orderId: order.id,
+        pairId: order.pairId,
+        quantityToRemove: order.quantity,
+      });
+    });
   }
 
   public addCurrency = async (currency: CurrencyCreationAttributes) => {
@@ -328,9 +365,24 @@ class OrderBook extends EventEmitter {
     return pair.destroy();
   }
 
-  public placeLimitOrder = async (order: OwnLimitOrder, immediateOrCancel = false,
-    onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
-    const stampedOrder = this.stampOwnOrder(order);
+  public placeLimitOrder = async ({ order, immediateOrCancel = false, replaceOrderId, onUpdate }:
+    {
+      order: OwnLimitOrder,
+      immediateOrCancel?: boolean,
+      replaceOrderId?: string,
+      onUpdate?: (e: PlaceOrderEvent) => void,
+    }): Promise<PlaceOrderResult> => {
+    const stampedOrder = this.stampOwnOrder(order, replaceOrderId);
+
+    if (order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
+      const baseCurrency = order.pairId.split('/')[0];
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, baseCurrency);
+    }
+    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT) {
+      const quoteCurrency = order.pairId.split('/')[1];
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, quoteCurrency);
+    }
+
     if (this.nomatching) {
       this.addOwnOrder(stampedOrder);
       onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: stampedOrder });
@@ -345,15 +397,24 @@ class OrderBook extends EventEmitter {
 
     return this.placeOrder({
       onUpdate,
+      replaceOrderId,
       order: stampedOrder,
       discardRemaining: immediateOrCancel,
       maxTime: Date.now() + OrderBook.MAX_PLACEORDER_ITERATIONS_TIME,
     });
   }
 
-  public placeMarketOrder = async (order: OwnMarketOrder, onUpdate?: (e: PlaceOrderEvent) => void): Promise<PlaceOrderResult> => {
+  public placeMarketOrder = async ({ order, onUpdate }: {
+    order: OwnMarketOrder,
+    onUpdate?: (e: PlaceOrderEvent) => void,
+  }): Promise<PlaceOrderResult> => {
     if (this.nomatching) {
       throw errors.MARKET_ORDERS_NOT_ALLOWED();
+    }
+
+    if (order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
+      const baseCurrency = order.pairId.split('/')[0];
+      throw errors.MIN_QUANTITY_VIOLATED(TradingPair.QUANTITY_DUST_LIMIT, baseCurrency);
     }
 
     const stampedOrder = this.stampOwnOrder({ ...order, price: order.isBuy ? Number.POSITIVE_INFINITY : 0 });
@@ -384,17 +445,19 @@ class OrderBook extends EventEmitter {
     retry = false,
     onUpdate,
     maxTime,
+    replaceOrderId,
   }: {
     order: OwnOrder,
     discardRemaining?: boolean,
     retry?: boolean,
     onUpdate?: (e: PlaceOrderEvent) => void,
     maxTime?: number,
+    replaceOrderId?: string,
   }): Promise<PlaceOrderResult> => {
     // Check if order complies to thresholds
     if (this.thresholds.minQuantity > 0) {
       if (!this.checkThresholdCompliance(order)) {
-        throw errors.MIN_QUANTITY_VIOLATED(order.id);
+        throw errors.MIN_QUANTITY_VIOLATED(this.thresholds.minQuantity, '');
       }
     }
 
@@ -413,13 +476,21 @@ class OrderBook extends EventEmitter {
       };
     }
 
-    const { outboundCurrency, inboundCurrency, outboundAmount } =
-        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
-    const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
-    const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
+    const tp = this.getTradingPair(order.pairId);
 
     if (!this.nobalancechecks) {
+      // for limit orders, we use the price of our order to calculate inbound/outbound amounts
+      // for market orders, we use the price of the best matching order in the order book
+      const price = (order.price === 0 || order.price === Number.POSITIVE_INFINITY) ?
+        (order.isBuy ? tp.quoteAsk() : tp.quoteBid()) :
+        order.price;
+
+      const { outboundCurrency, inboundCurrency, outboundAmount, inboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, price, order.isBuy, order.pairId);
+
       // check if clients exists
+      const outboundSwapClient = this.swaps.swapClientManager.get(outboundCurrency);
+      const inboundSwapClient = this.swaps.swapClientManager.get(inboundCurrency);
       if (!outboundSwapClient) {
         throw swapsErrors.SWAP_CLIENT_NOT_FOUND(outboundCurrency);
       }
@@ -432,10 +503,25 @@ class OrderBook extends EventEmitter {
       if (outboundAmount > totalOutboundAmount) {
         throw errors.INSUFFICIENT_OUTBOUND_BALANCE(outboundCurrency, outboundAmount, totalOutboundAmount);
       }
+
+      // check if sufficient inbound channel capacity exists
+      inboundSwapClient.checkInboundCapacity(inboundAmount, inboundCurrency);
+    }
+
+    let replacedOrderIdentifier: OrderIdentifier | undefined;
+    if (replaceOrderId) {
+      assert(!discardRemaining, 'can not replace order and discard remaining order');
+
+      // put the order we are replacing on hold while we place the new order
+      replacedOrderIdentifier = this.localIdMap.get(replaceOrderId);
+      if (!replacedOrderIdentifier) {
+        throw errors.ORDER_NOT_FOUND(replaceOrderId);
+      }
+      assert(replacedOrderIdentifier.pairId === order.pairId);
+      this.addOrderHold(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId);
     }
 
     // perform matching routine. maker orders that are matched will be removed from the order book.
-    const tp = this.getTradingPair(order.pairId);
     const matchingResult = tp.match(order);
 
     /** Any portion of the placed order that could not be swapped or matched internally. */
@@ -448,6 +534,17 @@ class OrderBook extends EventEmitter {
     const swapFailures: SwapFailure[] = [];
     /** Maker orders that we attempted to swap with but failed. */
     const failedMakerOrders: PeerOrder[] = [];
+    /** Maker orders that were invalidated while we were attempting swaps. */
+    const invalidatedMakerOrderIds = new Set<string>();
+
+    // we add a handler here to track orders that were invalidated while we were trying to swap
+    // them so that we don't accidentally add them back to the order book after they fail a swap
+    const handlePeerOrderInvalidation = (invalidatedOrder: OrderInvalidation) => {
+      if (invalidatedOrder.pairId === order.pairId) {
+        invalidatedMakerOrderIds.add(invalidatedOrder.id);
+      }
+    };
+    this.pool.on('packet.orderInvalidation', handlePeerOrderInvalidation);
 
     /**
      * The routine for retrying a portion of the order that failed a swap attempt.
@@ -477,22 +574,21 @@ class OrderBook extends EventEmitter {
      */
     const handleMatch = async (maker: Order, taker: OwnOrder) => {
       onUpdate && onUpdate({ type: PlaceOrderEventType.Match, order: maker });
-      const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (isOwnOrder(maker)) {
         // this is an internal match which is effectively executed immediately upon being found
         this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-        portion.localId = maker.localId;
         internalMatches.push(maker);
-        this.pool.broadcastOrderInvalidation(portion);
-        this.emit('ownOrder.filled', portion);
+        this.pool.broadcastOrderInvalidation(maker);
+        this.emit('ownOrder.filled', maker);
         await this.persistTrade({
-          quantity: portion.quantity,
+          quantity: maker.quantity,
           makerOrder: maker,
           takerOrder: taker,
         });
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
+        const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
         const alias = pubKeyToAlias(maker.peerPubKey);
         this.logger.debug(`matched with peer ${maker.peerPubKey} (${alias}), executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         try {
@@ -534,10 +630,16 @@ class OrderBook extends EventEmitter {
               removedOrder.quantity += portion.quantity;
               failedMakerOrders.push(removedOrder);
             } catch (err) {
-              if (err.code !== errorCodes.ORDER_NOT_FOUND) {
+              if (err.code === errorCodes.ORDER_NOT_FOUND) {
                 // if the order has already been removed, either it was removed fully during
                 // matching or it's been invalidated by a peer or filled by a separate order
-                // we can safely ignore this exception, otherwise we throw
+                // in this case we want to add back the order removed during matching
+                // but only if it was not invalidated by the peer in the same time period
+                if (!invalidatedMakerOrderIds.has(maker.id)) {
+                  failedMakerOrders.push(maker);
+                }
+              } else {
+                // for other errors we throw
                 throw err;
               }
             }
@@ -562,6 +664,9 @@ class OrderBook extends EventEmitter {
     // failed swaps will be added to the remaining order which may be added to the order book.
     await Promise.all(matchPromises);
 
+    if (replacedOrderIdentifier) {
+      this.removeOrderHold(replacedOrderIdentifier.id, replacedOrderIdentifier.pairId);
+    }
     if (remainingOrder) {
       if (discardRemaining) {
         this.logger.verbose(`no more matches found for order ${order.id}, remaining order will be discarded`);
@@ -571,14 +676,31 @@ class OrderBook extends EventEmitter {
         // instead we preserve the remainder and return it to the parent caller, which will sum
         // up any remaining orders and add them to the order book as a single order once
         // matching is complete
-        this.addOwnOrder(remainingOrder);
-        onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
+        if (remainingOrder.quantity < TradingPair.QUANTITY_DUST_LIMIT ||
+            remainingOrder.quantity * remainingOrder.price < TradingPair.QUANTITY_DUST_LIMIT) {
+          remainingOrder = undefined;
+          this.logger.verbose(`remainder for order ${order.id} does not meet dust limit and will be discarded`);
+        } else {
+          this.addOwnOrder(remainingOrder, replacedOrderIdentifier?.id);
+          onUpdate && onUpdate({ type: PlaceOrderEventType.RemainingOrder, order: remainingOrder });
+        }
       }
+    } else if (replacedOrderIdentifier) {
+      // we tried to replace an order but the replacement order was fully matched, so simply remove the original order
+      this.removeOwnOrder({
+        orderId: replacedOrderIdentifier.id,
+        pairId: replacedOrderIdentifier.pairId,
+      });
     }
 
     failedMakerOrders.forEach((peerOrder) => {
-      this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+      const peer = this.pool.tryGetPeer(peerOrder.peerPubKey);
+      if (peer?.active && peer.isPairActive(peerOrder.pairId)) {
+        // if this peer and its trading pair is still active then we add the order back to the book
+        this.tradingPairs.get(peerOrder.pairId)?.addPeerOrder(peerOrder);
+      }
     });
+    this.pool.removeListener('packet.orderInvalidation', handlePeerOrderInvalidation);
 
     return {
       internalMatches,
@@ -589,8 +711,7 @@ class OrderBook extends EventEmitter {
   }
 
   /**
-   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap
-   * succeeds and `peerOrder.invalidation` if the swap fails.
+   * Executes a swap between maker and taker orders. Emits the `peerOrder.filled` event if the swap succeeds.
    * @returns A promise that resolves to a [[SwapSuccess]] once the swap is completed, throws a [[SwapFailureReason]] if it fails
    */
   public executeSwap = async (maker: PeerOrder, taker: OwnOrder): Promise<SwapSuccess> => {
@@ -613,7 +734,6 @@ class OrderBook extends EventEmitter {
       return swapResult;
     } catch (err) {
       const failureReason: number = err;
-      this.emit('peerOrder.invalidation', maker);
       this.logger.error(`swap between orders ${maker.id} & ${taker.id} failed due to ${SwapFailureReason[failureReason]}`);
       throw failureReason;
     }
@@ -621,10 +741,20 @@ class OrderBook extends EventEmitter {
 
   /**
    * Adds an own order to the order book and broadcasts it to peers.
+   * Optionally removes/replaces an existing order.
    * @returns false if it's a duplicated order or with an invalid pair id, otherwise true
    */
-  private addOwnOrder = (order: OwnOrder): boolean => {
+  private addOwnOrder = (order: OwnOrder, replaceOrderId?: string): boolean => {
     const tp = this.getTradingPair(order.pairId);
+
+    if (replaceOrderId) {
+      this.removeOwnOrder({
+        orderId: replaceOrderId,
+        pairId: order.pairId,
+        noBroadcast: true,
+      });
+    }
+
     const result = tp.addOwnOrder(order);
     assert(result, 'own order id is duplicated');
 
@@ -632,7 +762,7 @@ class OrderBook extends EventEmitter {
 
     this.emit('ownOrder.added', order);
 
-    const outgoingOrder = OrderBook.createOutgoingOrder(order);
+    const outgoingOrder = OrderBook.createOutgoingOrder(order, replaceOrderId);
     this.pool.broadcastOrder(outgoingOrder);
     return true;
   }
@@ -671,10 +801,16 @@ class OrderBook extends EventEmitter {
   private addPeerOrder = (order: IncomingOrder): boolean => {
     if (this.thresholds.minQuantity > 0) {
       if (!this.checkThresholdCompliance(order)) {
-        this.removePeerOrder(order.id, order.pairId, order.peerPubKey, order.quantity);
         this.logger.debug('incoming peer order does not comply with configured threshold');
         return false;
       }
+    }
+
+    // TODO: penalize peers for sending ordes too small to swap?
+    if (order.quantity * order.price < TradingPair.QUANTITY_DUST_LIMIT ||
+        order.quantity < TradingPair.QUANTITY_DUST_LIMIT) {
+      this.logger.warn('incoming peer order is too small to swap');
+      return false;
     }
 
     const tp = this.tradingPairs.get(order.pairId);
@@ -728,7 +864,11 @@ class OrderBook extends EventEmitter {
 
     const removableQuantity = order.quantity - order.hold;
     if (remainingQuantityToRemove <= removableQuantity) {
-      this.removeOwnOrder(order.id, order.pairId, remainingQuantityToRemove);
+      this.removeOwnOrder({
+        orderId: order.id,
+        pairId: order.pairId,
+        quantityToRemove: remainingQuantityToRemove,
+      });
       remainingQuantityToRemove = 0;
     } else {
       // we can't immediately remove the entire quantity because of a hold on the order.
@@ -736,14 +876,25 @@ class OrderBook extends EventEmitter {
         throw errors.QUANTITY_ON_HOLD(localId, order.hold);
       }
 
-      this.removeOwnOrder(order.id, order.pairId, removableQuantity);
-      remainingQuantityToRemove -= removableQuantity;
+      if (removableQuantity > 0) {
+        // we can remove any portion of the order that's not on hold up front
+        this.removeOwnOrder({
+          orderId: order.id,
+          pairId: order.pairId,
+          quantityToRemove: removableQuantity,
+        });
+        remainingQuantityToRemove -= removableQuantity;
+      }
 
       const failedHandler = (deal: SwapDeal) => {
         if (deal.orderId === order.id) {
           // remove the portion that failed now that it's not on hold
           const quantityToRemove = Math.min(deal.quantity!, remainingQuantityToRemove);
-          this.removeOwnOrder(order.id, order.pairId, quantityToRemove);
+          this.removeOwnOrder({
+            quantityToRemove,
+            orderId: order.id,
+            pairId: order.pairId,
+          });
           cleanup(quantityToRemove);
         }
       };
@@ -772,12 +923,12 @@ class OrderBook extends EventEmitter {
     return remainingQuantityToRemove;
   }
 
-  private addOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
+  private addOrderHold = (orderId: string, pairId: string, holdAmount?: number) => {
     const tp = this.getTradingPair(pairId);
     tp.addOrderHold(orderId, holdAmount);
   }
 
-  private removeOrderHold = (orderId: string, pairId: string, holdAmount: number) => {
+  private removeOrderHold = (orderId: string, pairId: string, holdAmount?: number) => {
     const tp = this.getTradingPair(pairId);
     tp.removeOrderHold(orderId, holdAmount);
   }
@@ -788,7 +939,14 @@ class OrderBook extends EventEmitter {
    * @param takerPubKey the node pub key of the taker who filled this order, if applicable
    * @returns the removed portion of the order
    */
-  private removeOwnOrder = (orderId: string, pairId: string, quantityToRemove?: number, takerPubKey?: string) => {
+  private removeOwnOrder = ({ orderId, pairId, quantityToRemove, takerPubKey, noBroadcast }:
+    {
+      orderId: string,
+      pairId: string,
+      quantityToRemove?: number,
+      takerPubKey?: string,
+      noBroadcast?: boolean,
+    }) => {
     const tp = this.getTradingPair(pairId);
     try {
       const removeResult = tp.removeOwnOrder(orderId, quantityToRemove);
@@ -797,7 +955,9 @@ class OrderBook extends EventEmitter {
         this.localIdMap.delete(removeResult.order.localId);
       }
 
-      this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
+      if (!noBroadcast) {
+        this.pool.broadcastOrderInvalidation(removeResult.order, takerPubKey);
+      }
       return removeResult.order;
     } catch (err) {
       if (quantityToRemove !== undefined) {
@@ -863,6 +1023,11 @@ class OrderBook extends EventEmitter {
       if (peer.isPairActive(pairId)) {
         return false; // don't verify a pair that is already active
       }
+      if (!this.tradingPairs.has(pairId)) {
+        // if we don't support the trading pair locally, then we don't want to verify or activate it
+        return false;
+      }
+
       const [baseCurrency, quoteCurrency] = pairId.split('/');
       const peerCurrenciesEnabled = !peer.disabledCurrencies.has(baseCurrency)
         && !peer.disabledCurrencies.has(quoteCurrency);
@@ -919,7 +1084,9 @@ class OrderBook extends EventEmitter {
 
     // activate verified currencies
     currenciesToVerify.forEach((swappable, currency) => {
-      if (swappable || this.testing) { // always activate currencies if in debug/testing mode
+      // in strict mode, we only activate "swappable" currencies where a route to peer is possible or a sanity swap has completed
+      // in non-strict mode, we activate any currency which we also support locally
+      if (swappable || (!this.strict && this.swaps.swapClientManager.has(currency))) {
         peer.activateCurrency(currency);
       }
     });
@@ -953,19 +1120,19 @@ class OrderBook extends EventEmitter {
     await peer.sendOrders(outgoingOrders, reqId);
   }
 
-  public stampOwnOrder = (order: OwnLimitOrder): OwnOrder => {
+  public stampOwnOrder = (order: OwnLimitOrder, replaceOrderId?: string): OwnOrder => {
     const id = uuidv1();
     // verify localId isn't duplicated. use global id if blank
     if (order.localId === '') {
       order.localId = id;
-    } else if (this.localIdMap.has(order.localId)) {
+    } else if (this.localIdMap.has(order.localId) && order.localId !== replaceOrderId) {
       throw errors.DUPLICATE_ORDER(order.localId);
     }
 
     return { ...order, id, initialQuantity: order.quantity, hold: 0, createdAt: ms() };
   }
 
-  private handleOrderInvalidation = (oi: OrderPortion, peerPubKey: string) => {
+  private handleOrderInvalidation = (oi: OrderInvalidation, peerPubKey: string) => {
     try {
       const removeResult = this.removePeerOrder(oi.id, oi.pairId, peerPubKey, oi.quantity);
       this.emit('peerOrder.invalidation', removeResult.order);

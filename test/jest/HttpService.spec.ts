@@ -1,20 +1,19 @@
 import HttpService from '../../lib/http/HttpService';
 import Service from '../../lib/service/Service';
-import { RaidenResolveRequest } from '../../lib/raidenclient/types';
 
 jest.mock('../../lib/service/Service');
 const mockedService = <jest.Mock<Service>><any>Service;
 
-const token = '0x4c354c76d5f73a63a90be776897dc81fb6238772';
-const expiration = 7360;
-const chain_height = 1000;
-const secretHash = '2ea852a816e4390f1468b9b1389be14e3a965479beb2c97354a409993eb52e46';
-const resolveRequest: RaidenResolveRequest = {
-  token,
-  expiration,
-  chain_height,
-  secrethash: `0x${secretHash}`,
-  amount: 1,
+const rHash = 'd92e2eb0e9118faedc5ce533b65737b33a88c187c10e74e6d8b1be34626ae892';
+const preImage = 'd55dd2b285a815f9449d9e665ed61dd19663e08e9d4e84db621ca3e78082fabf';
+const preimageRequest: any = {
+  id: '1',
+  data: {
+    type: '',
+    transferMeta: {
+      preImage: `0x${preImage}`,
+    },
+  },
 };
 
 describe('HttpService', () => {
@@ -23,24 +22,20 @@ describe('HttpService', () => {
 
   beforeEach(() => {
     service = new mockedService();
-    service.resolveHash = jest.fn().mockReturnValue('validSecret');
+    service.providePreimage = jest.fn();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test('removes 0x from RaidenResolveRequest\'s secrethash', async () => {
+  test('provide preimage', async () => {
     httpService = new HttpService(service);
-    await httpService.resolveHashRaiden(resolveRequest);
-    expect(service.resolveHash)
+    await httpService.providePreimage(preimageRequest);
+    expect(service.providePreimage)
       .toHaveBeenCalledWith({
-        expiration,
-        chain_height,
-        amount: resolveRequest.amount,
-        rHash: secretHash,
-        tokenAddress: token,
+        rHash,
+        preimage: preImage,
       });
   });
-
 });

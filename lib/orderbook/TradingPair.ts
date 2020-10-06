@@ -1,9 +1,10 @@
 import assert from 'assert';
+import { EventEmitter } from 'events';
 import FastPriorityQueue from 'fastpriorityqueue';
 import { OrderingDirection } from '../constants/enums';
 import Logger from '../Logger';
 import errors from './errors';
-import { isOwnOrder, MatchingResult, Order, OrderMatch, OwnOrder, PeerOrder } from './types';
+import { isOwnOrder, MatchingResult, Order, OrderMatch, OrderPortion, OwnOrder, PeerOrder } from './types';
 
 /** A map between orders and their order ids. */
 type OrderMap<T extends Order> = Map<string, T>;
@@ -23,11 +24,23 @@ type OrderSidesQueues = {
   sellQueue: FastPriorityQueue<Order>,
 };
 
+interface TradingPair {
+  /** Adds a listener to be called when all or part of a remote order was removed due to not meeting dust minimum. */
+  on(event: 'peerOrder.dust', listener: (order: OrderPortion) => void): this;
+  /** Adds a listener to be called when all or part of a local order was removed due to not meeting dust minimum. */
+  on(event: 'ownOrder.dust', listener: (order: OrderPortion) => void): this;
+
+  /** Notifies listeners that a remote order was removed due to not meeting dust minimum. */
+  emit(event: 'peerOrder.dust', order: OrderPortion): boolean;
+  /** Notifies listeners that a local order was removed due to not meeting dust minimum. */
+  emit(event: 'ownOrder.dust', order: OrderPortion): boolean;
+}
+
 /**
  * Represents a single trading pair in the order book. Responsible for managing all active orders
  * and for matching orders according to their price and quantity.
  */
-class TradingPair {
+class TradingPair extends EventEmitter {
   /** A pair of priority queues for the buy and sell sides of this trading pair */
   public queues?: OrderSidesQueues;
   /** A pair of maps between active own orders ids and orders for the buy and sell sides of this trading pair. */
@@ -35,7 +48,12 @@ class TradingPair {
   /** A map between peerPubKey and a pair of maps between active peer orders ids and orders for the buy and sell sides of this trading pair. */
   public peersOrders: Map<string, OrderSidesMaps<PeerOrder>>;
 
+  /** The minimum quantity for both sides of a trade that is considered swappable and not dust. */
+  public static QUANTITY_DUST_LIMIT = 100;
+
   constructor(private logger: Logger, public pairId: string, private nomatching = false) {
+    super();
+
     if (!nomatching) {
       this.queues = {
         buyQueue: TradingPair.createPriorityQueue(OrderingDirection.Desc),
@@ -224,29 +242,36 @@ class TradingPair {
     }
 
     if (quantityToRemove && quantityToRemove < order.quantity) {
-      // if quantityToRemove is below the order quantity, reduce the order quantity
-      if (isOwnOrder(order)) {
-        assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
+      const remainingQuantity = order.quantity - quantityToRemove;
+      if (remainingQuantity < TradingPair.QUANTITY_DUST_LIMIT ||
+          (remainingQuantity * order.price) < TradingPair.QUANTITY_DUST_LIMIT) {
+        // the remaining quantity doesn't meet the dust limit, so we remove the entire order
+        this.logger.trace(`removing entire order ${orderId} because remaining quantity does not meet dust limit`);
+      } else {
+        // if quantityToRemove is below the order quantity but above dust limit, reduce the order quantity
+        if (isOwnOrder(order)) {
+          assert(quantityToRemove <= order.quantity - order.hold, 'cannot remove more than available quantity after holds');
+        }
+        order.quantity = order.quantity - quantityToRemove;
+        this.logger.trace(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
+        return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
       }
-      order.quantity = order.quantity - quantityToRemove;
-      this.logger.trace(`order quantity reduced by ${quantityToRemove}: ${orderId}`);
-      return { order: { ...order, quantity: quantityToRemove } as T, fullyRemoved: false } ;
-    } else {
-      // otherwise, remove the order entirely
-      if (isOwnOrder(order)) {
-        assert(order.hold === 0, 'cannot remove an order with a hold');
-      }
-      const map = order.isBuy ? maps.buyMap : maps.sellMap;
-      map.delete(order.id);
-
-      if (!this.nomatching) {
-        const queue = order.isBuy ? this.queues!.buyQueue : this.queues!.sellQueue;
-        queue.remove(order);
-      }
-
-      this.logger.trace(`order removed: ${orderId}`);
-      return { order: order as T, fullyRemoved: true };
     }
+
+    // otherwise, remove the order entirely
+    if (isOwnOrder(order)) {
+      assert(order.hold === 0, 'cannot remove an order with a hold');
+    }
+    const map = order.isBuy ? maps.buyMap : maps.sellMap;
+    map.delete(order.id);
+
+    if (!this.nomatching) {
+      const queue = order.isBuy ? this.queues!.buyQueue : this.queues!.sellQueue;
+      queue.remove(order);
+    }
+
+    this.logger.trace(`order removed: ${orderId}`);
+    return { order: order as T, fullyRemoved: true };
   }
 
   private getOrderMap = (order: Order): OrderMap<Order> | undefined => {
@@ -308,20 +333,43 @@ class TradingPair {
     return maps.buyMap.get(orderId) || maps.sellMap.get(orderId);
   }
 
-  public addOrderHold = (orderId: string, holdAmount: number) => {
+  public addOrderHold = (orderId: string, holdAmount?: number) => {
     const order = this.getOwnOrder(orderId);
-    assert(holdAmount > 0);
-    assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
-    order.hold += holdAmount;
-    this.logger.debug(`added hold of ${holdAmount} on order ${orderId}`);
+    if (holdAmount === undefined) {
+      if (order.hold > 0) {
+        // we can't put an entire order on hold if part of it is already on hold
+        throw errors.QUANTITY_ON_HOLD(order.localId, order.hold);
+      }
+      order.hold = order.quantity;
+      this.logger.trace(`placed entire order ${orderId} on hold`);
+    } else {
+      assert(holdAmount > 0);
+      assert(order.hold + holdAmount <= order.quantity, 'the amount of an order on hold cannot exceed the available quantity');
+      order.hold += holdAmount;
+      this.logger.trace(`added hold of ${holdAmount} on order ${orderId}`);
+    }
   }
 
-  public removeOrderHold = (orderId: string, holdAmount: number) => {
+  public removeOrderHold = (orderId: string, holdAmount?: number) => {
     const order = this.getOwnOrder(orderId);
-    assert(holdAmount > 0);
-    assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
-    order.hold -= holdAmount;
-    this.logger.debug(`removed hold of ${holdAmount} on order ${orderId}`);
+    if (holdAmount === undefined) {
+      assert(order.hold > 0);
+      order.hold = 0;
+      this.logger.trace(`removed entire hold on order ${orderId}`);
+    } else {
+      assert(holdAmount > 0);
+      assert(order.hold >= holdAmount, 'cannot remove more than is currently on hold for an order');
+      order.hold -= holdAmount;
+      this.logger.trace(`removed hold of ${holdAmount} on order ${orderId}`);
+    }
+  }
+
+  public quoteBid = () => {
+    return this.queues?.buyQueue.peek()?.price ?? 0;
+  }
+
+  public quoteAsk = () => {
+    return this.queues?.sellQueue.peek()?.price ?? Number.POSITIVE_INFINITY;
   }
 
   /**
@@ -350,8 +398,17 @@ class TradingPair {
         : makerOrder;
 
       const matchingQuantity = getMatchingQuantity(remainingOrder, makerAvailableQuantityOrder);
-      if (matchingQuantity <= 0) {
-        // there's no match with the best available maker order, so end the matching routine
+      if (matchingQuantity * makerOrder.price < TradingPair.QUANTITY_DUST_LIMIT) {
+        // there's no match with the best available maker order OR there's a match
+        // but it doesn't meet the dust minimum on both sides of the trade
+        if (isOwnOrder(makerOrder) && makerOrder.hold > 0) {
+          // part of this order is on hold, so put it aside and try to match the next order
+          assert(queue.poll() === makerOrder);
+          queueRemovedOrdersWithHold.push(makerOrder);
+        } else {
+          // there's no hold, so end the matching routine
+          break;
+        }
         break;
       } else {
         /** Whether the maker order is fully matched and should be removed from the queue. */
@@ -391,6 +448,20 @@ class TradingPair {
 
           assert(queue.poll() === makerOrder);
           queueRemovedOrdersWithHold.push(makerOrder);
+        } else {
+          // we must make sure that we don't leave an order that is too small to swap in the order book
+          const makerLeftoverAvailableQuantity = isOwnOrder(makerOrder)
+            ? makerOrder.quantity - makerOrder.hold
+            : makerOrder.quantity;
+
+          if (makerLeftoverAvailableQuantity < TradingPair.QUANTITY_DUST_LIMIT ||
+              (makerLeftoverAvailableQuantity * makerOrder.price < TradingPair.QUANTITY_DUST_LIMIT)) {
+            if (isOwnOrder(makerOrder)) {
+              this.emit('ownOrder.dust', { ...makerOrder, quantity: makerLeftoverAvailableQuantity });
+            } else {
+              this.emit('peerOrder.dust', makerOrder);
+            }
+          }
         }
       }
     }

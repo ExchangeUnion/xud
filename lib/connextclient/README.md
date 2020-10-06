@@ -32,7 +32,7 @@ Create environment variables file and point to the Etheruem and Connext node
 
 ```bash
 CONNEXT_ETH_PROVIDER_URL="http://0.0.0.0:8545"
-CONNEXT_NODE_URL="http://0.0.0.0:8080"
+CONNEXT_NODE_URL="http://0.0.0.0:8888"
 ```
 
 Then run the REST API server

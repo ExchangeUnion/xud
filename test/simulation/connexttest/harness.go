@@ -16,7 +16,7 @@ var (
 	// 172.17.0.1 is the static IP equivalent of `host.docker.internal` for accessing
 	// the `localhost` of the host machine.
 	EthProviderURL = "http://172.17.0.1:8545"
-	NodeURL        = "http://172.17.0.1:8080"
+	NodeURL        = "http://172.17.0.1:8888"
 )
 
 type NetworkHarness struct {

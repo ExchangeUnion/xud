@@ -5,6 +5,11 @@ import { getValidDeal } from '../utils';
 import { SwapRole } from '../../lib/constants/enums';
 import { ClientStatus } from '../../lib/swaps/SwapClient';
 
+const openChannelSyncResponse = {
+  hasFundingTxidStr: () => { return true; },
+  getFundingTxidStr: () => 'some_tx_id',
+};
+
 const getSendPaymentSyncResponse = () => {
   return {
     getPaymentError: () => {},
@@ -65,7 +70,7 @@ describe('LndClient', () => {
 
     test('it tries all 2 lnd uris when connectPeer to first one fails', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const connectPeerFail = () => {
         throw new Error('connectPeer failed');
       };
@@ -88,7 +93,7 @@ describe('LndClient', () => {
 
     test('it does succeed when connecting to already connected peer', async () => {
       expect.assertions(4);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       const alreadyConnected = () => {
         throw new Error('already connected');
       };
@@ -104,13 +109,13 @@ describe('LndClient', () => {
         .toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
       expect(lnd['openChannelSync'])
-        .toHaveBeenCalledWith(peerPubKey, units, 0);
+        .toHaveBeenCalledWith(peerPubKey, units, 0, 0);
     });
 
     test('it pushes satoshis to the peer when specified', async () => {
       expect.assertions(4);
       const pushUnits = 481824;
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
           return Promise.resolve();
@@ -126,12 +131,34 @@ describe('LndClient', () => {
         .toHaveBeenCalledWith(peerPubKey, externalIp1);
       expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
       expect(lnd['openChannelSync'])
-        .toHaveBeenCalledWith(peerPubKey, units, pushUnits);
+        .toHaveBeenCalledWith(peerPubKey, units, pushUnits, 0);
+    });
+
+    test('it should set fee when specified', async () => {
+      expect.assertions(4);
+      const fee = 24;
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
+      lnd['connectPeer'] = jest.fn()
+          .mockImplementationOnce(() => {
+            return Promise.resolve();
+          });
+      await lnd.openChannel({
+        units,
+        fee,
+        remoteIdentifier: peerPubKey,
+        uris: lndListeningUris,
+      });
+      expect(lnd['connectPeer']).toHaveBeenCalledTimes(1);
+      expect(lnd['connectPeer'])
+          .toHaveBeenCalledWith(peerPubKey, externalIp1);
+      expect(lnd['openChannelSync']).toHaveBeenCalledTimes(1);
+      expect(lnd['openChannelSync'])
+          .toHaveBeenCalledWith(peerPubKey, units, 0, fee);
     });
 
     test('it stops trying to connect to lnd uris when first once succeeds', async () => {
       expect.assertions(3);
-      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve());
+      lnd['openChannelSync'] = jest.fn().mockReturnValue(Promise.resolve(openChannelSyncResponse));
       lnd['connectPeer'] = jest.fn()
         .mockImplementationOnce(() => {
           return Promise.resolve();
@@ -233,14 +260,25 @@ describe('LndClient', () => {
     test('fetch and persist trading limits', async () => {
       expect.assertions(5);
 
+      lnd['pendingChannels'] = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          toObject: () => {
+            return {
+              pendingOpenChannelsList: [],
+            };
+          },
+        });
+      });
+
       lnd['listChannels'] = jest.fn().mockImplementation(() => {
         return Promise.resolve({
           toObject: () => {
             return {
               channelsList: [
-                { localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
-                { localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
-                { localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 100, localChanReserveSat: 2, remoteBalance: 200, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 80, localChanReserveSat: 2, remoteBalance: 220, remoteChanReserveSat: 5 },
+                { active: true, localBalance: 110, localChanReserveSat: 20, remoteBalance: 300, remoteChanReserveSat: 5 },
+                { active: false, localBalance: 50, localChanReserveSat: 2, remoteBalance: 50, remoteChanReserveSat: 2 },
               ],
             };
           },
@@ -253,7 +291,7 @@ describe('LndClient', () => {
 
       expect(lnd['listChannels']).toHaveBeenCalledTimes(1);
       expect(lnd.maxChannelOutboundAmount()).toEqual(98);
-      expect(lnd.maxChannelInboundAmount()).toEqual(295);
+      expect(lnd['_maxChannelInboundAmount']).toEqual(295);
     });
   });
 });

@@ -6,7 +6,6 @@ import (
 	"github.com/ExchangeUnion/xud-simulation/connexttest"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -290,17 +289,11 @@ func verifyEthProviderReachability() error {
 }
 
 func verifyConnextNodeReachability() error {
-	url := connexttest.NodeURL + "/config"
-	res, err := http.Get(url)
+	res, err := http.Get(connexttest.NodeURL)
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		data, _ := ioutil.ReadAll(res.Body)
-		return fmt.Errorf("invalid response at %v: %v", url, data)
-	}
+	_ = res.Body.Close()
 
 	return nil
 }

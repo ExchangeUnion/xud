@@ -64,6 +64,7 @@ export type ConnextConfigResponse = {
  */
 export type ConnextBalanceResponse = {
   freeBalanceOffChain: string;
+  nodeFreeBalanceOffChain: string;
   freeBalanceOnChain: string;
 };
 
@@ -76,9 +77,24 @@ export type ConnextTransferResponse = {
 };
 
 /**
+ * The response for withdraw call.
+ */
+export type ConnextWithdrawResponse = {
+  txhash: string;
+};
+
+/**
+ * The response for deposit call.
+ */
+export type ConnextDepositResponse = {
+  txhash: string;
+};
+
+/**
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferStatus = {
+  senderAppIdentityHash: string;
   receiverIdentifier: string;
   senderIdentifier: string;
   assetId: string;
@@ -100,6 +116,7 @@ export type ExpectedIncomingTransfer = {
   units: number;
   expiry: number;
   tokenAddress: string;
+  paymentId?: string;
 };
 
 export type ConnextPreimageRequest = {
@@ -150,6 +167,17 @@ export type ConnextIncomingTransferRequest = {
   };
 };
 
+export type ConnextDepositConfirmedRequest = {
+  id: string;
+  data?: {
+    amount: {
+      _hex: string;
+    };
+    assetId: string;
+    hash: string;
+  };
+};
+
 export type ProvidePreimageEvent = {
   rHash: string,
   preimage: string,
@@ -160,4 +188,9 @@ export type TransferReceivedEvent = {
   rHash: string;
   timelock: number;
   units: number;
+  paymentId: string;
+};
+
+export type OnchainTransferResponse = {
+  txhash: string;
 };

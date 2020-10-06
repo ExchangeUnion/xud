@@ -218,6 +218,9 @@ export class CloseChannelRequest extends jspb.Message {
     getAmount(): number;
     setAmount(value: number): void;
 
+    getFee(): number;
+    setFee(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CloseChannelRequest.AsObject;
@@ -236,10 +239,16 @@ export namespace CloseChannelRequest {
         force: boolean,
         destination: string,
         amount: number,
+        fee: number,
     }
 }
 
 export class CloseChannelResponse extends jspb.Message { 
+    clearTransactionIdsList(): void;
+    getTransactionIdsList(): Array<string>;
+    setTransactionIdsList(value: Array<string>): void;
+    addTransactionIds(value: string, index?: number): string;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): CloseChannelResponse.AsObject;
@@ -253,6 +262,7 @@ export class CloseChannelResponse extends jspb.Message {
 
 export namespace CloseChannelResponse {
     export type AsObject = {
+        transactionIdsList: Array<string>,
     }
 }
 
@@ -326,8 +336,8 @@ export class CreateNodeResponse extends jspb.Message {
     setInitializedLndsList(value: Array<string>): void;
     addInitializedLnds(value: string, index?: number): string;
 
-    getInitializedRaiden(): boolean;
-    setInitializedRaiden(value: boolean): void;
+    getInitializedConnext(): boolean;
+    setInitializedConnext(value: boolean): void;
 
 
     serializeBinary(): Uint8Array;
@@ -344,7 +354,7 @@ export namespace CreateNodeResponse {
     export type AsObject = {
         seedMnemonicList: Array<string>,
         initializedLndsList: Array<string>,
-        initializedRaiden: boolean,
+        initializedConnext: boolean,
     }
 }
 
@@ -382,7 +392,7 @@ export namespace Currency {
 
     export enum SwapClient {
     LND = 0,
-    RAIDEN = 1,
+    CONNEXT = 2,
     }
 
 }
@@ -593,12 +603,6 @@ export class GetInfoResponse extends jspb.Message {
     getLndMap(): jspb.Map<string, LndInfo>;
     clearLndMap(): void;
 
-
-    hasRaiden(): boolean;
-    clearRaiden(): void;
-    getRaiden(): RaidenInfo | undefined;
-    setRaiden(value?: RaidenInfo): void;
-
     getAlias(): string;
     setAlias(value: string): void;
 
@@ -637,7 +641,6 @@ export namespace GetInfoResponse {
         orders?: OrdersCount.AsObject,
 
         lndMap: Array<[string, LndInfo.AsObject]>,
-        raiden?: RaidenInfo.AsObject,
         alias: string,
         network: string,
         pendingSwapHashesList: Array<string>,
@@ -964,6 +967,9 @@ export class OpenChannelRequest extends jspb.Message {
     getPushAmount(): number;
     setPushAmount(value: number): void;
 
+    getFee(): number;
+    setFee(value: number): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OpenChannelRequest.AsObject;
@@ -981,10 +987,14 @@ export namespace OpenChannelRequest {
         currency: string,
         amount: number,
         pushAmount: number,
+        fee: number,
     }
 }
 
 export class OpenChannelResponse extends jspb.Message { 
+    getTransactionId(): string;
+    setTransactionId(value: string): void;
+
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): OpenChannelResponse.AsObject;
@@ -998,6 +1008,7 @@ export class OpenChannelResponse extends jspb.Message {
 
 export namespace OpenChannelResponse {
     export type AsObject = {
+        transactionId: string,
     }
 }
 
@@ -1220,9 +1231,6 @@ export class Peer extends jspb.Message {
     getSecondsConnected(): number;
     setSecondsConnected(value: number): void;
 
-    getRaidenAddress(): string;
-    setRaidenAddress(value: string): void;
-
     getAlias(): string;
     setAlias(value: string): void;
 
@@ -1247,7 +1255,6 @@ export namespace Peer {
         pairsList: Array<string>,
         xudVersion: string,
         secondsConnected: number,
-        raidenAddress: string,
         alias: string,
     }
 }
@@ -1398,46 +1405,6 @@ export namespace PlaceOrderEvent {
 
     }
 
-}
-
-export class RaidenInfo extends jspb.Message { 
-    getStatus(): string;
-    setStatus(value: string): void;
-
-    getAddress(): string;
-    setAddress(value: string): void;
-
-
-    hasChannels(): boolean;
-    clearChannels(): void;
-    getChannels(): Channels | undefined;
-    setChannels(value?: Channels): void;
-
-    getVersion(): string;
-    setVersion(value: string): void;
-
-    getChain(): string;
-    setChain(value: string): void;
-
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): RaidenInfo.AsObject;
-    static toObject(includeInstance: boolean, msg: RaidenInfo): RaidenInfo.AsObject;
-    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
-    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: RaidenInfo, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): RaidenInfo;
-    static deserializeBinaryFromReader(message: RaidenInfo, reader: jspb.BinaryReader): RaidenInfo;
-}
-
-export namespace RaidenInfo {
-    export type AsObject = {
-        status: string,
-        address: string,
-        channels?: Channels.AsObject,
-        version: string,
-        chain: string,
-    }
 }
 
 export class ConnextInfo extends jspb.Message { 
@@ -1608,14 +1575,6 @@ export class RestoreNodeRequest extends jspb.Message {
     getLndBackupsMap(): jspb.Map<string, Uint8Array | string>;
     clearLndBackupsMap(): void;
 
-    getRaidenDatabase(): Uint8Array | string;
-    getRaidenDatabase_asU8(): Uint8Array;
-    getRaidenDatabase_asB64(): string;
-    setRaidenDatabase(value: Uint8Array | string): void;
-
-    getRaidenDatabasePath(): string;
-    setRaidenDatabasePath(value: string): void;
-
     getXudDatabase(): Uint8Array | string;
     getXudDatabase_asU8(): Uint8Array;
     getXudDatabase_asB64(): string;
@@ -1638,8 +1597,6 @@ export namespace RestoreNodeRequest {
         password: string,
 
         lndBackupsMap: Array<[string, Uint8Array | string]>,
-        raidenDatabase: Uint8Array | string,
-        raidenDatabasePath: string,
         xudDatabase: Uint8Array | string,
     }
 }
@@ -1650,8 +1607,8 @@ export class RestoreNodeResponse extends jspb.Message {
     setRestoredLndsList(value: Array<string>): void;
     addRestoredLnds(value: string, index?: number): string;
 
-    getRestoredRaiden(): boolean;
-    setRestoredRaiden(value: boolean): void;
+    getRestoredConnext(): boolean;
+    setRestoredConnext(value: boolean): void;
 
 
     serializeBinary(): Uint8Array;
@@ -1667,7 +1624,7 @@ export class RestoreNodeResponse extends jspb.Message {
 export namespace RestoreNodeResponse {
     export type AsObject = {
         restoredLndsList: Array<string>,
-        restoredRaiden: boolean,
+        restoredConnext: boolean,
     }
 }
 
@@ -2179,9 +2136,6 @@ export class UnlockNodeResponse extends jspb.Message {
     setUnlockedLndsList(value: Array<string>): void;
     addUnlockedLnds(value: string, index?: number): string;
 
-    getUnlockedRaiden(): boolean;
-    setUnlockedRaiden(value: boolean): void;
-
     clearLockedLndsList(): void;
     getLockedLndsList(): Array<string>;
     setLockedLndsList(value: Array<string>): void;
@@ -2201,7 +2155,6 @@ export class UnlockNodeResponse extends jspb.Message {
 export namespace UnlockNodeResponse {
     export type AsObject = {
         unlockedLndsList: Array<string>,
-        unlockedRaiden: boolean,
         lockedLndsList: Array<string>,
     }
 }

@@ -142,12 +142,12 @@ describe('Swaps', () => {
     expect(inboundUnits).to.equal(0);
   });
 
-  it('should calculate inbound and outbound amounts and currencies for a raiden order', () => {
+  it('should calculate inbound and outbound amounts and currencies for a Connext order', () => {
     const { inboundCurrency, inboundAmount, outboundCurrency, outboundAmount, inboundUnits, outboundUnits } =
-      Swaps.calculateInboundOutboundAmounts(quantity, price, true, 'WETH/BTC');
-    expect(inboundCurrency).to.equal('WETH');
+      Swaps.calculateInboundOutboundAmounts(quantity, price, true, 'ETH/BTC');
+    expect(inboundCurrency).to.equal('ETH');
     expect(inboundAmount).to.equal(quantity);
-    expect(inboundUnits).to.equal(Swaps['UNITS_PER_CURRENCY']['WETH'] * quantity);
+    expect(inboundUnits).to.equal(Swaps['UNITS_PER_CURRENCY']['ETH'] * quantity);
     expect(outboundCurrency).to.equal('BTC');
     expect(outboundAmount).to.equal(quantity * price);
     expect(outboundUnits).to.equal(Swaps['UNITS_PER_CURRENCY']['BTC'] * quantity * price);

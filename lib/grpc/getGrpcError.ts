@@ -4,6 +4,7 @@ import { errorCodes as orderErrorCodes } from '../orderbook/errors';
 import { errorCodes as p2pErrorCodes } from '../p2p/errors';
 import { errorCodes as serviceErrorCodes } from '../service/errors';
 import { errorCodes as swapErrorCodes } from '../swaps/errors';
+import { errorCodes as connextErrorCodes } from '../connextclient/errors';
 
 /**
  * Convert an internal xud error type into a gRPC error.
@@ -38,6 +39,8 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.PAIR_ALREADY_EXISTS:
       code = status.ALREADY_EXISTS;
       break;
+    case connextErrorCodes.INSUFFICIENT_BALANCE:
+    case connextErrorCodes.INSUFFICIENT_COLLATERAL:
     case p2pErrorCodes.NOT_CONNECTED:
     case p2pErrorCodes.NODE_NOT_BANNED:
     case p2pErrorCodes.NODE_IS_BANNED:
@@ -47,6 +50,7 @@ const getGrpcError = (err: any) => {
     case orderErrorCodes.MARKET_ORDERS_NOT_ALLOWED:
     case serviceErrorCodes.NOMATCHING_MODE_IS_REQUIRED:
     case orderErrorCodes.INSUFFICIENT_OUTBOUND_BALANCE:
+    case orderErrorCodes.QUANTITY_ON_HOLD:
     case swapErrorCodes.SWAP_CLIENT_NOT_FOUND:
     case swapErrorCodes.SWAP_CLIENT_MISCONFIGURED:
       code = status.FAILED_PRECONDITION;

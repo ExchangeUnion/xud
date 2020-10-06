@@ -31,7 +31,6 @@ type PeerInfo = {
   xudVersion?: string,
   secondsConnected: number,
   lndPubKeys?: { [currency: string]: string | undefined },
-  raidenAddress?: string,
   connextIdentifier?: string,
 };
 
@@ -81,7 +80,7 @@ class Peer extends EventEmitter {
   /**
    * Currencies that we cannot swap because we are missing a swap client identifier or because the
    * peer's token identifier for this currency does not match ours - for example this may happen
-   * because a peer is using a different raiden token contract address for a currency than we are.
+   * because a peer is using a different token contract address for a currency than we are.
    */
   public disabledCurrencies = new Set<string>();
   /** Interval to check required responses from peer. */
@@ -121,9 +120,9 @@ class Peer extends EventEmitter {
   /** Connection retries min delay. */
   private static readonly CONNECTION_RETRIES_MIN_DELAY = 5000;
   /** Connection retries max delay. */
-  private static readonly CONNECTION_RETRIES_MAX_DELAY = 300000;
+  private static readonly CONNECTION_RETRIES_MAX_DELAY = 3600000; // 1 hour
   /** Connection retries max period. */
-  private static readonly CONNECTION_RETRIES_MAX_PERIOD = 604800000;
+  private static readonly CONNECTION_RETRIES_MAX_PERIOD = 259200000; // 3 days
 
   /** The version of xud this peer is using, or an empty string if it is still not known. */
   public get version() {
@@ -158,10 +157,6 @@ class Peer extends EventEmitter {
     return this.nodeState ? this.nodeState.addresses : undefined;
   }
 
-  public get raidenAddress(): string | undefined {
-    return this.nodeState ? this.nodeState.raidenAddress : undefined;
-  }
-
   public get connextIdentifier(): string | undefined {
     return this.nodeState ? this.nodeState.connextIdentifier : undefined;
   }
@@ -184,11 +179,10 @@ class Peer extends EventEmitter {
       alias: this.alias,
       nodePubKey: this.nodePubKey,
       inbound: this.inbound,
-      pairs: Array.from(this.activePairs),
+      pairs: this.nodeState ? this.nodeState.pairs : [],
       xudVersion: this.version,
       secondsConnected: Math.round((Date.now() - this.connectTime) / 1000),
       lndPubKeys: this.nodeState ? this.nodeState.lndPubKeys : undefined,
-      raidenAddress: this.nodeState ? this.nodeState.raidenAddress : undefined,
       connextIdentifier: this.nodeState ? this.nodeState.connextIdentifier : undefined,
     };
   }
@@ -241,7 +235,6 @@ class Peer extends EventEmitter {
     }
     switch (clientType) {
       case SwapClientType.Lnd: return this.getLndPubKey(currency);
-      case SwapClientType.Raiden: return this.raidenAddress;
       case SwapClientType.Connext: return this.connextIdentifier;
       default: return;
     }
@@ -348,6 +341,7 @@ class Peer extends EventEmitter {
         }
 
         this.socket.destroy();
+        this.socket.removeAllListeners();
       }
       delete this.socket;
     }
@@ -400,19 +394,29 @@ class Peer extends EventEmitter {
 
   public sendPacket = async (packet: Packet): Promise<void> => {
     const data = await this.framer.frame(packet, this.outEncryptionKey);
-    if (this.socket && !this.socket.destroyed) {
-      try {
-        this.socket.write(data);
-        this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+    try {
+      await new Promise((resolve, reject) => {
+        if (this.socket && !this.socket.destroyed) {
+          this.socket.write(data, (err) => {
+            if (err) {
+              this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+              reject(err);
+            } else {
+              this.logger.trace(`Sent ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
 
-        if (packet.direction === PacketDirection.Request) {
-          this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+              if (packet.direction === PacketDirection.Request) {
+                this.addResponseTimeout(packet.header.id, packet.responseType, Peer.RESPONSE_TIMEOUT);
+              }
+              resolve();
+            }
+          });
+        } else {
+          this.logger.warn(`could not send packet to ${this.label} because socket is nonexistent or destroyed`);
+          resolve();
         }
-      } catch (err) {
-        this.logger.error(`failed sending data to ${this.label}`, err);
-      }
-    } else {
-      this.logger.trace(`could not send ${PacketType[packet.type]} packet to ${this.label}: ${JSON.stringify(packet)}`);
+      });
+    } catch (err) {
+      this.logger.error(`failed sending data to ${this.label}`, err);
     }
   }
 
@@ -544,7 +548,7 @@ class Peer extends EventEmitter {
         } else {
           this.socket = net.connect(this.address.port, this.address.host);
           this.socket.once('connect', onConnect);
-          this.socket.once('error', onError);
+          this.socket.on('error', onError);
         }
       };
 
@@ -724,11 +728,11 @@ class Peer extends EventEmitter {
   private bindSocket = () => {
     assert(this.socket);
 
-    this.socket.once('error', (err) => {
+    this.socket.on('error', (err) => {
       this.logger.error(`Peer (${this.label}) error`, err);
     });
 
-    this.socket.once('close', async (hadError) => {
+    this.socket.on('close', async (hadError) => {
       // emitted once the socket is fully closed
       if (this.nodePubKey === undefined) {
         this.logger.info(`Socket closed prior to handshake with ${this.label}`);

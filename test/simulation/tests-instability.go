@@ -19,8 +19,20 @@ var instabilityTestCases = []*testCase{
 		test: testNetworkInit,
 	},
 	{
-		name: "maker crashed after send payment", // replacing Alice
-		test: testMakerCrashedAfterSend,
+		name: "maker crashed after send payment before preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendBeforePreimageResolved,
+	},
+	{
+		name: "maker crashed after send payment before preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendBeforePreimageResolvedConnextIn,
+	},
+	{
+		name: "maker crashed after send payment after preimage resolved; incoming: lnd, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendAfterPreimageResolved,
+	},
+	{
+		name: "maker crashed after send payment after preimage resolved; incoming: connext, outgoing: lnd", // replacing Alice
+		test: testMakerCrashedAfterSendAfterPreimageResolvedConnextIn,
 	},
 	{
 		name: "maker lnd crashed before order settlement", // replacing Alice
@@ -44,10 +56,26 @@ var instabilityTestCases = []*testCase{
 	},
 }
 
-// testMakerLndCrashedBeforeSettlement
-func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
+func testMakerCrashedAfterSendBeforePreimageResolved(net *xudtest.NetworkHarness, ht *harnessTest) {
+	testMakerCrashedDuringSwap(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED"})
+}
+
+func testMakerCrashedAfterSendBeforePreimageResolvedConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
+	ht.act.initConnext(net, net.Bob, true)
+	testMakerCrashedDuringSwapConnextIn(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_BEFORE_PREIMAGE_RESOLVED"})
+}
+
+func testMakerCrashedAfterSendAfterPreimageResolved(net *xudtest.NetworkHarness, ht *harnessTest) {
+	testMakerCrashedDuringSwap(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED"})
+}
+
+func testMakerCrashedAfterSendAfterPreimageResolvedConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
+	testMakerCrashedDuringSwapConnextIn(net, ht, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND_AFTER_PREIMAGE_RESOLVED"})
+}
+
+func testMakerCrashedDuringSwap(net *xudtest.NetworkHarness, ht *harnessTest, customXudMakerEnvVars []string) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, customXudMakerEnvVars)
 	ht.assert.NoError(err)
 	ht.act.init(net.Alice)
 
@@ -62,7 +90,7 @@ func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedDuringSwap",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -72,7 +100,7 @@ func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedDuringSwap",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -97,6 +125,66 @@ func testMakerCrashedAfterSend(net *xudtest.NetworkHarness, ht *harnessTest) {
 	ht.assert.Equal(alicePrevLtcBalance+ltcQuantity, aliceLtcBalance, "alice did not receive LTC")
 }
 
+func testMakerCrashedDuringSwapConnextIn(net *xudtest.NetworkHarness, ht *harnessTest, makerEnvArgs []string) {
+	var err error
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, makerEnvArgs)
+	ht.assert.NoError(err)
+	ht.act.init(net.Alice)
+	ht.act.initConnext(net, net.Alice, false)
+
+	// Connect Alice to Bob.
+	ht.act.connect(net.Alice, net.Bob)
+	ht.act.verifyConnectivity(net.Alice, net.Bob)
+
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
+	ht.assert.NoError(err)
+
+	// Save the initial balances.
+	alicePrevBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	alicePrevEthBalance := alicePrevBalance.Balances["ETH"]
+
+	// Place an order on Alice.
+	aliceOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "testMakerCrashedDuringSwapConnextIn",
+		Price:    40,
+		Quantity: 100,
+		PairId:   "BTC/ETH",
+		Side:     xudrpc.OrderSide_SELL,
+	}
+	ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, aliceOrderReq)
+
+	// Place a matching order on Bob.
+	bobOrderReq := &xudrpc.PlaceOrderRequest{
+		OrderId:  "testMakerCrashedDuringSwapConnextIn",
+		Price:    aliceOrderReq.Price,
+		Quantity: aliceOrderReq.Quantity,
+		PairId:   aliceOrderReq.PairId,
+		Side:     xudrpc.OrderSide_BUY,
+	}
+
+	_, err = net.Bob.Client.PlaceOrderSync(ht.ctx, bobOrderReq)
+	ht.assert.NoError(err)
+
+	<-net.Alice.ProcessExit
+
+	err = net.Alice.Start(nil)
+	ht.assert.NoError(err)
+
+	err = waitConnextReady(net.Alice)
+	ht.assert.NoError(err)
+
+	// Brief delay to allow for swap to be recovered consistently.
+	time.Sleep(3 * time.Second)
+
+	// Verify that Alice recovered ETH funds.
+	aliceBalance, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "ETH"})
+	ht.assert.NoError(err)
+	aliceEthBalance := aliceBalance.Balances["ETH"]
+	diff := uint64(float64(aliceOrderReq.Quantity) * aliceOrderReq.Price)
+	ht.assert.Equal(alicePrevEthBalance.ChannelBalance+diff, aliceEthBalance.ChannelBalance, "alice did not recover ETH funds")
+}
+
 func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
 	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{
@@ -118,7 +206,7 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerLndCrashedBeforeSettlement",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -128,7 +216,7 @@ func testMakerLndCrashedBeforeSettlement(net *xudtest.NetworkHarness, ht *harnes
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerLndCrashedBeforeSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -171,13 +259,13 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 	ht.act.init(net.Alice)
 
 	ht.act.initConnext(net, net.Alice, false)
-	ht.act.initConnext(net, net.Bob, true)
+	ht.assert.NoError(waitConnextReady(net.Bob))
 
 	// Connect Alice to Bob.
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Bob, 400, 0)
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -191,9 +279,9 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_SELL,
 	}
@@ -201,7 +289,7 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerConnextClientCrashedBeforeSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -243,7 +331,7 @@ func testMakerConnextClientCrashedBeforeSettlement(net *xudtest.NetworkHarness, 
 
 func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_WHILE_SENDING"})
 	ht.assert.NoError(err)
 
 	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, []string{"CUSTOM_SCENARIO=INSTABILITY::TAKER_DELAY_BEFORE_SETTLE"})
@@ -263,7 +351,7 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlement",
 		Price:    0.02,
 		Quantity: uint64(ltcQuantity),
 		PairId:   "LTC/BTC",
@@ -273,7 +361,7 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlement",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -305,7 +393,7 @@ func testMakerCrashedAfterSendDelayedSettlement(net *xudtest.NetworkHarness, ht 
 
 func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_WHILE_SENDING"})
 	ht.assert.NoError(err)
 
 	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, []string{"CUSTOM_SCENARIO=INSTABILITY::TAKER_DELAY_BEFORE_SETTLE"})
@@ -321,7 +409,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Alice, 400, 0)
+	err = openETHChannel(ht.ctx, net.Alice, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -335,9 +423,9 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextOut",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_BUY,
 	}
@@ -345,7 +433,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextOut",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,
@@ -393,7 +481,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextOut(net *xudtest.NetworkHa
 
 func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHarness, ht *harnessTest) {
 	var err error
-	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_AFTER_SEND"})
+	net.Alice, err = net.SetCustomXud(ht.ctx, ht, net.Alice, []string{"CUSTOM_SCENARIO=INSTABILITY::MAKER_CRASH_WHILE_SENDING"})
 	ht.assert.NoError(err)
 
 	net.Bob, err = net.SetCustomXud(ht.ctx, ht, net.Bob, []string{"CUSTOM_SCENARIO=INSTABILITY::TAKER_DELAY_BEFORE_SETTLE"})
@@ -409,7 +497,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 	ht.act.connect(net.Alice, net.Bob)
 	ht.act.verifyConnectivity(net.Alice, net.Bob)
 
-	err = openETHChannel(ht.ctx, net.Bob, 400, 0)
+	err = openETHChannel(ht.ctx, net.Bob, 40000, 0)
 	ht.assert.NoError(err)
 
 	// Save the initial balances.
@@ -423,9 +511,9 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	// Place an order on Alice.
 	aliceOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "maker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextIn",
 		Price:    40,
-		Quantity: 1,
+		Quantity: 100,
 		PairId:   "BTC/ETH",
 		Side:     xudrpc.OrderSide_SELL,
 	}
@@ -433,7 +521,7 @@ func testMakerCrashedAfterSendDelayedSettlementConnextIn(net *xudtest.NetworkHar
 
 	// Place a matching order on Bob.
 	bobOrderReq := &xudrpc.PlaceOrderRequest{
-		OrderId:  "taker_order_id",
+		OrderId:  "testMakerCrashedAfterSendDelayedSettlementConnextIn",
 		Price:    aliceOrderReq.Price,
 		Quantity: aliceOrderReq.Quantity,
 		PairId:   aliceOrderReq.PairId,

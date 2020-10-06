@@ -15,7 +15,7 @@ Describe your issue here.
 
 * version of `xud`:
 * which operating system (`uname -a` on *Nix):
-* version of `btcd`, `bitcoind`, `ltcd`, `litecoind`, `geth`, `parity`, `raiden`, `lnd` or other chain backend:
+* version of `lndbtc`, `lndltc`, `connext` and others:
 * any other relevant environment details:
 
 ### Steps to reproduce

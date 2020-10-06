@@ -1,8 +1,7 @@
 /** An enumeration of payment channel network clients that support token swaps. */
 export enum SwapClientType {
-  Lnd,
-  Raiden,
-  Connext,
+  Lnd = 0,
+  Connext = 2,
 }
 
 export enum OrderingDirection {
@@ -162,6 +161,8 @@ export enum SwapFailureReason {
   InvalidOrders = 15,
   /** Our payment to the peer was rejected, either deliberately or due to an error. */
   PaymentRejected = 16,
+  /** The swap failed due to insufficient balance. */
+  InsufficientBalance = 17,
 }
 
 export enum DisconnectionReason {

@@ -25,15 +25,9 @@ const formatOutput = (response: CreateNodeResponse.AsObject) => {
     let walletInitializedMessage = 'The following wallets were initialized: ';
 
     if (response.initializedLndsList.length) {
-      walletInitializedMessage += response.initializedLndsList.join(', ');
-    }
-
-    if (response.initializedRaiden) {
-      if (!walletInitializedMessage.endsWith(' ')) {
-        walletInitializedMessage += ', ';
-      }
-
-      walletInitializedMessage += 'ERC20(ETH)';
+      walletInitializedMessage += response.initializedLndsList.join(', ') + (response.initializedConnext ? ', ETH' : '');
+    } else if (response.initializedConnext) {
+      walletInitializedMessage += 'ETH';
     }
 
     console.log(walletInitializedMessage);

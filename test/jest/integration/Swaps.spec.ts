@@ -14,6 +14,8 @@ const addReputationEvent = jest.fn().mockImplementation(() => {
   return { catch: () => {} };
 });
 
+let peer: Peer;
+
 jest.mock('../../../lib/Logger');
 const mockedLogger = <jest.Mock<Logger>><any>Logger;
 jest.mock('../../../lib/db/DB');
@@ -23,6 +25,7 @@ jest.mock('../../../lib/p2p/Pool', () => {
     return {
       addReputationEvent,
       on: jest.fn(),
+      tryGetPeer: () => peer,
     };
   });
 });
@@ -80,7 +83,6 @@ describe('Swaps Integration', () => {
   let logger: Logger;
   let db: DB;
   let swapClientManager: SwapClientManager;
-  let peer: Peer;
   let lndBtc: LndClient;
   let lndLtc: LndClient;
   let makerCurrency: string;
@@ -104,7 +106,12 @@ describe('Swaps Integration', () => {
     makerCurrency = 'LTC';
     takerCurrency = 'BTC';
 
-    swaps = new Swaps(logger, db.models, pool, swapClientManager);
+    swaps = new Swaps({
+      logger,
+      pool,
+      swapClientManager,
+      models: db.models,
+    });
   });
 
   afterEach(() => {
@@ -249,7 +256,7 @@ describe('Swaps Integration', () => {
       expect(dealAccepted).toEqual(false);
     });
 
-    test('it accepts deal', async () => {
+    test('it accepts a valid deal', async () => {
       const peerLndBtcPubKey = '02d9fb6c41686b7bee95958bde0ada72c249b8fa9928987c93d839225d6883e6c0';
       lndBtc.getRoute = jest.fn().mockReturnValue({
         getTotalTimeLock: () => 1543845,
@@ -270,6 +277,7 @@ describe('Swaps Integration', () => {
         }
         return;
       });
+
       pool.addReputationEvent = jest.fn();
       peer.getIdentifier = jest.fn().mockImplementation((clientType, currency) => {
         if (clientType === SwapClientType.Lnd && currency === takerCurrency) {
@@ -277,6 +285,7 @@ describe('Swaps Integration', () => {
         }
         throw new Error(`mock peer.getIdentifier does not support ${currency}`);
       });
+
       const orderToAccept = getOrderToAccept();
       const swapRequestBody = getSwapRequestBody();
       const swapRequestPacket = new SwapRequestPacket(swapRequestBody);
@@ -305,6 +314,9 @@ describe('Swaps Integration', () => {
         quantity: swapRequestBody.proposedQuantity,
         makerCltvDelta: expectedMakerCltvDelta,
       });
+
+      // clear timeouts waiting for swap to complete
+      clearTimeout(swaps['timeouts'].get(swapRequestBody.rHash));
     });
   });
 
