@@ -36,6 +36,10 @@ const getMockSwaps = (sandbox: sinon.SinonSandbox) => {
   swaps.swapClientManager['swapClients'] = new Map<string, SwapClient>();
   swaps.swapClientManager['swapClients'].set('BTC', lndBTC);
   swaps.swapClientManager['swapClients'].set('LTC', lndLTC);
+  swaps.swapClientManager.addInboundReservedAmount = () => {};
+  swaps.swapClientManager.subtractInboundReservedAmount = () => {};
+  swaps.swapClientManager.addOutboundReservedAmount = () => {};
+  swaps.swapClientManager.subtractOutboundReservedAmount = () => {};
   swaps.swapClientManager.get = (currency: any) => {
     const client = swaps.swapClientManager['swapClients'].get(currency);
     if (!client) {
