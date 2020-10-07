@@ -326,14 +326,6 @@ class SwapClientManager extends EventEmitter {
       if (!config) {
         throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
       }
-
-      const lndClient = new LndClient({
-        config,
-        logger: this.loggers.lnd.createSubLogger(currency.id),
-        currency: currency.id,
-      });
-      this.swapClients.set(currency.id, lndClient);
-      await lndClient.init();
     }
   }
 
