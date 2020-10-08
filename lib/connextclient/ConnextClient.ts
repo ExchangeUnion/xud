@@ -20,7 +20,9 @@ import errors, { errorCodes } from './errors';
 import {
   ConnextErrorResponse,
   ConnextInitWalletResponse,
+  ConnextConfig,
   ConnextConfigResponse,
+  ConnextChannelResponse,
   ConnextBalanceResponse,
   ConnextTransferResponse,
   ConnextClientConfig,
@@ -106,8 +108,8 @@ class ConnextClient extends SwapClient {
   private outgoingTransferHashes = new Set<string>();
   private port: number;
   private host: string;
-  private webhookport: number;
-  private webhookhost: string;
+  // private webhookport: number;
+  // private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
   /** A map of currencies to promises representing balance requests. */
@@ -116,6 +118,11 @@ class ConnextClient extends SwapClient {
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
+
+  /** Public identifier for Connext */
+  private publicIdentifier: string | undefined;
+  /** Channel multisig address for Connext */
+  private channel: string | undefined;
 
   /** The minimum incremental quantity that we may use for collateral requests. */
   private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
@@ -142,8 +149,8 @@ class ConnextClient extends SwapClient {
 
     this.port = config.port;
     this.host = config.host;
-    this.webhookhost = config.webhookhost;
-    this.webhookport = config.webhookport;
+    // this.webhookhost = config.webhookhost;
+    // this.webhookport = config.webhookport;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
   }
@@ -182,14 +189,14 @@ class ConnextClient extends SwapClient {
 
     const {
       units: expectedUnits,
-      expiry: expectedTimelock,
+      // expiry: expectedTimelock,
       tokenAddress: expectedTokenAddress,
     } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
     if (
       tokenAddress === expectedTokenAddress &&
-      units === expectedUnits &&
-      timelock === expectedTimelock
+      units === expectedUnits
+      // timelock === expectedTimelock
     ) {
       expectedIncomingTransfer.paymentId = paymentId;
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
@@ -202,9 +209,11 @@ class ConnextClient extends SwapClient {
       if (units !== expectedUnits) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with value ${units} does not match expected ${expectedUnits}`);
       }
+      /*
       if (timelock !== expectedTimelock) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} does not match expected ${expectedTimelock}`);
       }
+      */
     }
   }
 
@@ -227,6 +236,7 @@ class ConnextClient extends SwapClient {
     return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
+  /*
   private subscribeDeposit = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'DEPOSIT_CONFIRMED_EVENT',
@@ -247,6 +257,7 @@ class ConnextClient extends SwapClient {
       webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
   }
+  */
 
   /**
    * Associate connext with currencies that have a token address
@@ -363,17 +374,25 @@ class ConnextClient extends SwapClient {
       if (!this.seed) {
         throw errors.MISSING_SEED;
       }
-      await this.sendRequest('/health', 'GET');
-      await this.initWallet(this.seed);
-      const config = await this.initConnextClient(this.seed);
+      // await this.initWallet(this.seed);
+      /*
       await Promise.all([
         this.subscribePreimage(),
         this.subscribeIncomingTransfer(),
         this.subscribeDeposit(),
       ]);
-      const { userIdentifier } = config;
+      */
+      // const { publicIdentifier } = (await this.getClientConfig());
+      const config = await this.getClientConfig();
+      console.log('config is', config);
+      const { publicIdentifier } = config;
+      console.log('setting publicIdentifier to', publicIdentifier);
+      this.publicIdentifier = publicIdentifier;
+      const channel = await this.getChannel();
+      this.channel = channel;
+      console.log('channel is', channel);
       this.emit('connectionVerified', {
-        newIdentifier: userIdentifier,
+        newIdentifier: publicIdentifier,
       });
       this.setStatus(ClientStatus.ConnectionVerified);
     } catch (err) {
@@ -628,16 +647,33 @@ class ConnextClient extends SwapClient {
   public getVersion = async (): Promise<string> => {
     const res = await this.sendRequest('/version', 'GET');
     const { version } = await parseResponseBody<ConnextVersion>(res);
+    console.log('response from version', version);
+
     return version;
   }
 
   /**
    * Gets the configuration of Connext client.
    */
-  public getClientConfig = async (): Promise<ConnextConfigResponse> => {
+  private getClientConfig = async (): Promise<ConnextConfig> => {
     const res = await this.sendRequest('/config', 'GET');
     const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
-    return clientConfig;
+    return clientConfig[0];
+  }
+
+  private getChannel = async (): Promise<string> => {
+    const res = await this.sendRequest('/channel', 'GET');
+    const channel = await parseResponseBody<ConnextChannelResponse>(res);
+    if (channel.length === 0) {
+      await this.sendRequest('/request-setup', 'POST', {
+        // TODO: values from config
+        aliceUrl: 'http://192.168.63.131:8007',
+        chainId: '1337',
+        timeout: '36000'
+      });
+      return (await this.getChannel());
+    }
+    return channel[0];
   }
 
   public channelBalance = async (
@@ -715,6 +751,7 @@ class ConnextClient extends SwapClient {
     // check if we already have a balance request that we are waiting a response for
     // it's not helpful to have simultaneous requests for the current balance, as they
     // should return the same info.
+    /*
     let getBalancePromise = this.getBalancePromises.get(currency);
     if (!getBalancePromise) {
       // if not make a new balance request and store the promise that's waiting for a response
@@ -727,6 +764,37 @@ class ConnextClient extends SwapClient {
       this.getBalancePromises.set(currency, getBalancePromise);
     }
 
+    return getBalancePromise;
+    */
+    let getBalancePromise = this.getBalancePromises.get(currency);
+    if (!getBalancePromise) {
+      // if not make a new balance request and store the promise that's waiting for a response
+      const tokenAddress = this.getTokenAddress(currency);
+      getBalancePromise = this.sendRequest(`/channel/${this.channel}/${this.publicIdentifier}`, 'GET').then(async (res) => {
+        const channelDetails = await parseResponseBody<any>(res);
+        const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
+        if (assetIdIndex === -1) {
+          const response = {
+            freeBalanceOffChain: 0,
+            nodeFreeBalanceOffChain: 0,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        } else {
+          const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
+          const balance = channelDetails.balances[assetIdIndex].amount[1];
+          const response = {
+            freeBalanceOffChain: balance,
+            nodeFreeBalanceOffChain: inboundBalance,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        }
+      }).finally(() => {
+        this.getBalancePromises.delete(currency); // clear the stored promise
+      });
+      this.getBalancePromises.set(currency, getBalancePromise);
+    }
     return getBalancePromise;
   }
 

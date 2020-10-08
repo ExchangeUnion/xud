@@ -46,18 +46,20 @@ export type ConnextErrorResponse = { message: string };
  */
 export type ConnextInitWalletResponse = { success: boolean };
 
+export type ConnextConfig = {
+  publicIdentifier: string;
+  signerAddress: string;
+  index: number;
+};
 /**
  * The response for /config call.
  */
-export type ConnextConfigResponse = {
-  multisigAddress: string;
-  natsClusterId: string;
-  natsToken: string;
-  nodeUrl: string;
-  signerAddress: string;
-  userPublicIdentifier: string;
-  userIdentifier: string;
-};
+export type ConnextConfigResponse = ConnextConfig[];
+
+/**
+ * The response for /channel call.
+ */
+export type ConnextChannelResponse = string[];
 
 /**
  * The response for balance call.
@@ -137,34 +139,40 @@ export type ConnextPreimageRequest = {
     transferMeta: {
       preImage: string;
     };
-  }
+  };
 };
 
 export type ConnextIncomingTransferRequest = {
-  id: string;
-  data?: {
-    amount: {
-      _hex: string;
-    };
-    appIdentityHash: string;
-    assetId: string;
-    meta: {
-      recipient: string;
-      sender: string;
-      timelock: 200
-    };
-    sender: string;
-    transferMeta: {
-      lockHash: string;
-      expiry: {
-        _hex: string;
-      };
-      timelock: string;
-    };
-    type: string;
-    paymentId: string,
-    recipient: string;
+  channelAddress: string;
+  channelBalance: {
+    to: string[];
+    amount: string[];
   };
+  transfer: {
+    channelFactoryAddress: string;
+    assetId: string; // TODO
+    chainId: number; // TODO
+    channelAddress: string;
+    balance: {
+      amount: string[]; // TODO
+      to: string[];
+    };
+    initiator: string;
+    responder: string;
+    initialStateHash: string;
+    transferDefinition: string;
+    transferEncodings: string[];
+    transferId: string;
+    transferState: {
+      lockHash: string; // TODO
+      expiry: string; // TODO
+    };
+    transferTimeout: string; // TODO
+    meta: {
+      routingId: string; // TODO
+    };
+  };
+  conditionType: string;
 };
 
 export type ConnextDepositConfirmedRequest = {
@@ -179,8 +187,8 @@ export type ConnextDepositConfirmedRequest = {
 };
 
 export type ProvidePreimageEvent = {
-  rHash: string,
-  preimage: string,
+  rHash: string;
+  preimage: string;
 };
 
 export type TransferReceivedEvent = {

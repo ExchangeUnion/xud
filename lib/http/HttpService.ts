@@ -33,19 +33,20 @@ class HttpService {
   public incomingTransfer = async (
     incomingTransferRequest: ConnextIncomingTransferRequest,
   ): Promise<object> => {
-    if (incomingTransferRequest.data) {
+    if (incomingTransferRequest.transfer) {
+      const transfer = incomingTransferRequest.transfer;
       const {
-        amount: amountHex,
+        transferState,
+        meta,
         assetId,
-        paymentId,
-      } = incomingTransferRequest.data;
-      const {
-        lockHash,
-        timelock: timelockString,
-      } = incomingTransferRequest.data.transferMeta;
+        balance,
+      } = transfer;
+      const { routingId: paymentId } = meta;
+      const { lockHash, expiry: timelockString } = transferState;
       const rHash = lockHash.slice(2);
       const timelock = parseInt(timelockString, 10);
-      const units = parseInt(amountHex._hex, 16);
+      const { amount } = balance;
+      const units = parseInt(amount[0]);
       await this.service.transferReceived({
         rHash,
         timelock,
