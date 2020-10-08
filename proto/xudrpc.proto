@@ -102,6 +102,15 @@ service Xud {
     };
   }
 
+  /* Gets an address to deposit a given currency into the channel.
+   * shell: xucli deposit <currency> */
+  rpc Deposit(DepositRequest) returns (DepositResponse) {
+    option (google.api.http) = {
+      post: "/v1/deposit"
+      body: "*"
+    };
+  }
+
   /* Discover nodes from a specific peer and apply new connections */
   rpc DiscoverNodes(DiscoverNodesRequest) returns (DiscoverNodesResponse) {
       option (google.api.http) = {
