@@ -156,7 +156,7 @@ class Swaps extends EventEmitter {
       }
     });
     if (this.swapClientManager.connextClient) {
-      this.pool.updateConnextState(this.swapClientManager.connextClient.tokenAddresses, this.swapClientManager.connextClient.userIdentifier);
+      this.pool.updateConnextState(this.swapClientManager.connextClient.tokenAddresses, this.swapClientManager.connextClient.publicIdentifier);
     }
 
     this.swapRecovery.beginTimer();

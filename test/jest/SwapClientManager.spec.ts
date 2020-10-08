@@ -103,6 +103,7 @@ describe('Swaps.SwapClientManager', () => {
       port: 4321,
       webhookhost: 'localhost',
       webhookport: 4422,
+      nodeIdentifier: 'vector123',
     };
     config.strict = true;
     db = new DB(loggers.db, config.dbpath);

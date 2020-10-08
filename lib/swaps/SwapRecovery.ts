@@ -16,7 +16,7 @@ interface SwapRecovery {
  * ensuring that we do not lose funds on a partially completed swap.
  */
 class SwapRecovery extends EventEmitter {
-  public static readonly PENDING_SWAP_RECHECK_INTERVAL = 300000;
+  public static readonly PENDING_SWAP_RECHECK_INTERVAL = 15000;
 
   /** A map of payment hashes to swaps where we have a pending outgoing payment but don't know the preimage. */
   private pendingSwaps: Map<string, SwapDealInstance> = new Map();

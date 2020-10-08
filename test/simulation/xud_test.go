@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ExchangeUnion/xud-simulation/connexttest"
-	"github.com/ethereum/go-ethereum/ethclient"
+	// "github.com/ExchangeUnion/xud-simulation/connexttest"
+	// "github.com/ethereum/go-ethereum/ethclient"
 	"github.com/stretchr/testify/require"
 	"log"
-	"net/http"
+	// "net/http"
 	"os"
 	"strings"
 	"testing"
@@ -275,6 +275,7 @@ func TestSecurityUnsettledChannels(t *testing.T) {
 	}
 }
 
+/*
 func verifyEthProviderReachability() error {
 	client, err := ethclient.Dial(connexttest.EthProviderURL)
 	if err != nil {
@@ -297,14 +298,17 @@ func verifyConnextNodeReachability() error {
 
 	return nil
 }
+*/
 
 func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
-	if err := verifyEthProviderReachability(); err != nil {
-		log.Fatalf("EthProvider reachability failure: %v", err)
-	}
-	if err := verifyConnextNodeReachability(); err != nil {
-		log.Fatalf("Connext node reachability failure: %v", err)
-	}
+	/*
+		if err := verifyEthProviderReachability(); err != nil {
+			log.Fatalf("EthProvider reachability failure: %v", err)
+		}
+		if err := verifyConnextNodeReachability(); err != nil {
+			log.Fatalf("Connext node reachability failure: %v", err)
+		}
+	*/
 
 	// Create XUD network instance without launching it.
 	log.Printf("xud: creating network")
@@ -439,34 +443,36 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		log.Fatalf("lnd-btc: unable to set up test network: %v", err)
 	}
 
-	connextNetworkHarness := connexttest.NewNetworkHarness()
-	go func() {
-		for {
-			select {
-			case err, more := <-connextNetworkHarness.ProcessErrors():
-				if !more {
-					return
-				}
-				if strings.Contains(err.Err.Error(), "signal: terminated") {
-					continue
-				}
+	/*
+		connextNetworkHarness := connexttest.NewNetworkHarness()
+		go func() {
+			for {
+				select {
+				case err, more := <-connextNetworkHarness.ProcessErrors():
+					if !more {
+						return
+					}
+					if strings.Contains(err.Err.Error(), "signal: terminated") {
+						continue
+					}
 
-				log.Printf("connext: finished with error (stderr):\n%v", err)
+					log.Printf("connext: finished with error (stderr):\n%v", err)
+				}
 			}
+		}()
+		log.Printf("connext: launching network...")
+		if err := connextNetworkHarness.SetUp(); err != nil {
+			log.Fatalf("connext: unable to set up test network: %v", err)
 		}
-	}()
-	log.Printf("connext: launching network...")
-	if err := connextNetworkHarness.SetUp(); err != nil {
-		log.Fatalf("connext: unable to set up test network: %v", err)
-	}
-	if err := connextNetworkHarness.Start(); err != nil {
-		log.Fatalf("connext: unable to start test network: %v", err)
-	}
+		if err := connextNetworkHarness.Start(); err != nil {
+			log.Fatalf("connext: unable to start test network: %v", err)
+		}
+	*/
 
 	// Launch XUD network.
 	xudHarness.SetLnd(lndBtcNetworkHarness, "BTC")
 	xudHarness.SetLnd(lndLtcNetworkHarness, "LTC")
-	xudHarness.SetConnext(connextNetworkHarness)
+	// xudHarness.SetConnext(connextNetworkHarness)
 
 	log.Printf("xud: launching network...")
 	if err := xudHarness.Start(); err != nil {
@@ -495,10 +501,12 @@ func launchNetwork(noBalanceChecks bool) (*xudtest.NetworkHarness, func()) {
 		}
 		log.Printf("ltcd: harness teared down")
 
-		if err := connextNetworkHarness.TearDownAll(); err != nil {
-			log.Printf("connext: cannot tear down network harness: %v", err)
-		}
-		log.Printf("connext: network harness teared down")
+		/*
+			if err := connextNetworkHarness.TearDownAll(); err != nil {
+				log.Printf("connext: cannot tear down network harness: %v", err)
+			}
+			log.Printf("connext: network harness teared down")
+		*/
 
 		if err := xudHarness.TearDownAll(cfg.XudKill, cfg.XudCleanup); err != nil {
 			log.Fatalf("cannot tear down xud network harness: %v", err)

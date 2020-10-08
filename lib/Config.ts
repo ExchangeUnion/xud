@@ -160,6 +160,7 @@ class Config {
       port: 5040,
       webhookhost: 'localhost',
       webhookport: 8887,
+      nodeIdentifier: '',
     };
   }
 

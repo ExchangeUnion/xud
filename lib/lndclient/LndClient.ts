@@ -551,9 +551,13 @@ class LndClient extends SwapClient {
     return this.unaryCall<lndrpc.ClosedChannelsRequest, lndrpc.ClosedChannelsResponse>('closedChannels', new lndrpc.ClosedChannelsRequest());
   }
 
-  public deposit = async () => {
+  public walletDeposit = async () => {
     const depositAddress = await this.newAddress();
     return depositAddress;
+  }
+
+  public deposit = async () => {
+    throw new Error('Depositing directly to channel is not supported. Please use a lightning service provider such as Boltz to create a channel with 1 transaction or deposit to the on-chain wallet first.');
   }
 
   public withdraw = async ({ amount, destination, all = false, fee }: WithdrawArguments) => {

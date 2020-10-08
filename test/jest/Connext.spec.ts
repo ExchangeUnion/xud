@@ -60,6 +60,7 @@ describe('ConnextClient', () => {
       port: 1337,
       webhookhost: 'http://testerson',
       webhookport: 7331,
+      nodeIdentifier: 'vector321',
     };
     const logger = new mockedLogger();
     logger.trace = jest.fn();
@@ -89,6 +90,7 @@ describe('ConnextClient', () => {
       currencyInstances,
       logger,
       unitConverter: new UnitConverter(),
+      network: 'mainnet',
     });
   });
 
@@ -227,7 +229,15 @@ describe('ConnextClient', () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest
         .fn()
-        .mockReturnValue({ status: 'PENDING' });
+        .mockReturnValue({
+          transferState: {
+            expiry: '10001',
+          },
+          transferResolver: {},
+        });
+      connext['getHeight'] = jest
+        .fn()
+        .mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Pending });
     });
@@ -236,77 +246,57 @@ describe('ConnextClient', () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest
         .fn()
-        .mockReturnValue({ status: 'COMPLETED', preImage: '0x1337' });
+        .mockReturnValue({
+          transferState: {
+            expiry: '10001',
+          },
+          transferResolver: {
+            preImage: '0x1337',
+          },
+        });
+      connext['getHeight'] = jest
+        .fn()
+        .mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Succeeded, preimage: '1337' });
     });
 
-    it('returns PaymentState.Failed when rejected app install for payment without status field', async () => {
-      expect.assertions(3);
-      const senderAppIdentityHash = '12345';
+    it('returns PaymentState.Failed when preimage is hash zero', async () => {
+      expect.assertions(1);
       connext['getHashLockStatus'] = jest
         .fn()
         .mockReturnValue({
-          senderAppIdentityHash,
+          transferState: {
+            expiry: '10001',
+          },
+          transferResolver: {
+            preImage: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          },
         });
-      connext['sendRequest'] = jest.fn().mockReturnValue(Promise.resolve());
+      connext['getHeight'] = jest
+        .fn()
+        .mockReturnValue(10000);
       const result = await connext['lookupPayment']('0x12345', 'ETH');
-      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith(
-        '/reject-install',
-        'POST',
-        expect.objectContaining({ appIdentityHash: senderAppIdentityHash }),
-      );
       expect(result).toEqual({ state: PaymentState.Failed });
     });
 
-    it('returns PaymentState.Pending when failing to reject app install for payment without status field', async () => {
-      expect.assertions(3);
-      const senderAppIdentityHash = '12345';
+    it('returns PaymentState.Failed when EXPIRED', async () => {
+      expect.assertions(1);
       connext['getHashLockStatus'] = jest
         .fn()
         .mockReturnValue({
-          senderAppIdentityHash,
+          transferState: {
+            expiry: '10001',
+          },
+          transferResolver: {},
         });
-      connext['sendRequest'] = jest.fn().mockReturnValue(Promise.reject());
-      const result = await connext['lookupPayment']('0x12345', 'ETH');
-      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith(
-        '/reject-install',
-        'POST',
-        expect.objectContaining({ appIdentityHash: senderAppIdentityHash }),
-      );
-      expect(result).toEqual({ state: PaymentState.Pending });
-    });
-
-    it('returns PaymentState.Failed when EXPIRED', async () => {
-      expect.assertions(3);
-      connext['getHashLockStatus'] = jest
+      connext['getHeight'] = jest
         .fn()
-        .mockReturnValue({ status: 'EXPIRED' });
+        .mockReturnValue(10001);
       connext['sendRequest'] = jest.fn().mockReturnValue(Promise.resolve());
       const hash = '8f28fb27a164ae992fb4808b11c137d06e8e7d9304043a6b7163323f7cf53920';
       const currency = 'ETH';
       const result = await connext['lookupPayment'](hash, currency);
-      expect(result).toEqual({ state: PaymentState.Failed });
-      expect(connext['sendRequest']).toHaveBeenCalledTimes(1);
-      expect(connext['sendRequest']).toHaveBeenCalledWith(
-        '/hashlock-resolve',
-        'POST',
-        expect.objectContaining({
-          assetId: ETH_ASSET_ID,
-          preImage: '0x',
-          paymentId: '0xb2c0648834d105f3b372c6a05d11b0f19d88a8909f6315c8535e383e59991f8e',
-        }),
-      );
-    });
-
-    it('returns PaymentState.Failed when FAILED', async () => {
-      expect.assertions(1);
-      connext['getHashLockStatus'] = jest
-        .fn()
-        .mockReturnValue({ status: 'FAILED' });
-      const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Failed });
     });
 
@@ -321,12 +311,12 @@ describe('ConnextClient', () => {
       expect(result).toEqual({ state: PaymentState.Pending });
     });
 
-    it('returns PaymentState.Failed when error is PAYMENT_NOT_FOUND', async () => {
+    it('returns PaymentState.Failed when error is NOT_FOUND', async () => {
       expect.assertions(1);
       connext['getHashLockStatus'] = jest
         .fn()
         .mockImplementation(() => {
-          throw errors.PAYMENT_NOT_FOUND;
+          throw errors.NOT_FOUND;
         });
       const result = await connext['lookupPayment']('0x12345', 'ETH');
       expect(result).toEqual({ state: PaymentState.Failed });

@@ -89,6 +89,7 @@ class SwapClientManager extends EventEmitter {
         unitConverter: this.unitConverter,
         config: this.config.connext,
         logger: this.loggers.connext,
+        network: this.config.network,
       });
     }
 
@@ -514,6 +515,16 @@ class SwapClientManager extends EventEmitter {
     if (this.connextClient && !this.connextClient.isDisabled() && !connextClosed) {
       this.connextClient.close();
     }
+  }
+
+  public walletDeposit = async (currency: string) => {
+    const swapClient = this.get(currency);
+    if (!swapClient) {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+
+    const address = await swapClient.walletDeposit();
+    return address;
   }
 
   public deposit = async (currency: string) => {
