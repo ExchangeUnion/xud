@@ -7,6 +7,8 @@ export type ConnextClientConfig = {
   port: number;
   webhookhost: string;
   webhookport: number;
+  nodeUrl: string;
+  nodeIdentifier: string;
 };
 
 /** General information about the state of this connext client. */
@@ -18,22 +20,28 @@ export type ConnextInfo = {
   version?: string;
 };
 
-/**
- * The connext version.
- */
-export type ConnextVersion = {
-  version: string;
+/** Response for eth_blockNumber call  */
+export type ConnextBlockNumberResponse = {
+  result: string;
 };
 
 /**
  * The payload for tokenPayment call.
  */
-export type TokenPaymentRequest = {
-  assetId: string;
+export type ConnextTransferRequest = {
+  type: "HashlockTransfer";
+  channelAddress: string;
   amount: string;
-  lockHash: string;
-  timelock: string;
+  assetId: string;
+  details: {
+    lockHash: string;
+    expiry: string;
+  };
   recipient: string;
+  meta: {
+    routingId: string;
+  };
+  publicIdentifier: string;
 };
 
 /**
@@ -41,23 +49,21 @@ export type TokenPaymentRequest = {
  */
 export type ConnextErrorResponse = { message: string };
 
-/**
- * The response for initWallet call.
- */
-export type ConnextInitWalletResponse = { success: boolean };
+export type ConnextConfig = {
+  publicIdentifier: string;
+  signerAddress: string;
+  index: number;
+};
 
 /**
  * The response for /config call.
  */
-export type ConnextConfigResponse = {
-  multisigAddress: string;
-  natsClusterId: string;
-  natsToken: string;
-  nodeUrl: string;
-  signerAddress: string;
-  userPublicIdentifier: string;
-  userIdentifier: string;
-};
+export type ConnextConfigResponse = ConnextConfig[];
+
+/**
+ * The response for /channel call.
+ */
+export type ConnextChannelResponse = string[];
 
 /**
  * The response for balance call.
@@ -72,8 +78,9 @@ export type ConnextBalanceResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferResponse = {
-  appId: string;
-  preImage: string;
+  channelAddress: string;
+  transferId: string;
+  routingId: string;
 };
 
 /**
@@ -90,81 +97,128 @@ export type ConnextDepositResponse = {
   txhash: string;
 };
 
-/**
- * The response for hashLockTransfer call.
- */
-export type ConnextTransferStatus = {
-  senderAppIdentityHash: string;
-  receiverIdentifier: string;
-  senderIdentifier: string;
+type ConnextRoutingPath = {
+  recipient: string;
+  recipientChainId: number;
+  recipientAssetId: string;
+};
+
+export type ConnextTransfer = {
+  channelFactoryAddress: string;
   assetId: string;
-  amount: string;
-  lockHash: string;
-  status: string;
-  meta: {
-    sender: string;
-    timelock: string;
+  chainId: number;
+  channelAddress: string;
+  balance: {
+    amount: string[];
+    to: string[];
   };
-  preImage?: string;
-  expiry: {
-    _hex: string;
+  initiator: string;
+  responder: string;
+  initialStateHash: string;
+  transferDefinition: string;
+  transferEncodings: string[];
+  transferId: string;
+  transferState: {
+    lockHash: string;
+    expiry: string;
+  };
+  transferTimeout: string;
+  meta: {
+    requireOnline: boolean;
+    routingId: string;
+    path: ConnextRoutingPath[];
+    senderIdentifier?: string;
+  };
+  transferResolver?: {
+    preImage?: string;
   };
 };
+
+export type TransfersByRoutingIdResponse = ConnextTransfer[];
 
 export type ExpectedIncomingTransfer = {
   rHash: string;
   units: number;
   expiry: number;
   tokenAddress: string;
-  paymentId?: string;
+  routingId: string;
 };
 
 export type ConnextPreimageRequest = {
-  id: string;
-  data?: {
-    type: string;
-    amount: {
-      _hex: string;
-    };
+  channelAddress: string;
+  channelBalance: {
+    to: string[];
+    amount: string[];
+  };
+  transfer: {
+    channelFactoryAddress: string;
     assetId: string;
-    paymentId: string;
-    sender: string;
-    recipient: string;
-    meta: {
-      sender: string;
-      recipient: string;
+    chainId: string;
+    channelAddress: string;
+    balance: {
+      amount: string[];
+      to: string[];
     };
-    transferMeta: {
+    initiator: string;
+    responder: string;
+    initialStateHash: string;
+    transferDefinition: string;
+    transferEncodings: string[];
+    transferId: string;
+    transferState: {
+      lockHash: string;
+      expiry: string;
+    };
+    transferTimeout: string;
+    meta: {
+      requireOnline: boolean;
+      routingId: string;
+      path: [
+        {
+          recipient: string;
+          recipientChainId: number;
+          recipientAssetId: string;
+        }
+      ];
+    };
+    transferResolver: {
       preImage: string;
     };
-  }
+  };
+  conditionType: string;
 };
 
 export type ConnextIncomingTransferRequest = {
-  id: string;
-  data?: {
-    amount: {
-      _hex: string;
-    };
-    appIdentityHash: string;
-    assetId: string;
-    meta: {
-      recipient: string;
-      sender: string;
-      timelock: 200
-    };
-    sender: string;
-    transferMeta: {
-      lockHash: string;
-      expiry: {
-        _hex: string;
-      };
-      timelock: string;
-    };
-    type: string;
-    paymentId: string,
-    recipient: string;
+  channelAddress: string;
+  channelBalance: {
+    to: string[];
+    amount: string[];
   };
+  transfer: {
+    channelFactoryAddress: string;
+    assetId: string; // TODO
+    chainId: number; // TODO
+    channelAddress: string;
+    balance: {
+      amount: string[]; // TODO
+      to: string[];
+    };
+    initiator: string;
+    responder: string;
+    initialStateHash: string;
+    transferDefinition: string;
+    transferEncodings: string[];
+    transferId: string; // TODO
+    transferState: {
+      lockHash: string; // TODO
+      expiry: string; // TODO
+    };
+    transferTimeout: string; // TODO
+    meta: {
+      routingId: string; // TODO
+    };
+  };
+  conditionType: string;
 };
 
 export type ConnextDepositConfirmedRequest = {
@@ -179,16 +233,16 @@ export type ConnextDepositConfirmedRequest = {
 };
 
 export type ProvidePreimageEvent = {
-  rHash: string,
-  preimage: string,
+  rHash: string;
+  preimage: string;
 };
 
 export type TransferReceivedEvent = {
   tokenAddress: string;
   rHash: string;
-  timelock: number;
+  expiry: number;
   units: number;
-  paymentId: string;
+  routingId: string;
 };
 
 export type OnchainTransferResponse = {

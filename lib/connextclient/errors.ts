@@ -18,6 +18,7 @@ const errorCodes = {
   EXPIRY_MISSING: codesPrefix.concat('.15'),
   MISSING_SEED: codesPrefix.concat('.16'),
   INSUFFICIENT_COLLATERAL: codesPrefix.concat('.17'),
+  NOT_FOUND: codesPrefix.concat('.17'),
 };
 
 const errors = {
@@ -52,6 +53,10 @@ const errors = {
   TOKEN_ADDRESS_NOT_FOUND: {
     message: 'connext token address not found',
     code: errorCodes.TOKEN_ADDRESS_NOT_FOUND,
+  },
+  NOT_FOUND: {
+    message: 'connext returned not found response',
+    code: errorCodes.NOT_FOUND,
   },
   PAYMENT_NOT_FOUND: {
     message: 'connext payment not found',
