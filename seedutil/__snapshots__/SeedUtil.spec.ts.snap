@@ -10,6 +10,16 @@ exports[`SeedUtil decipher it succeeds with 24 words, valid aezeed password 1`] 
 "
 `;
 
+exports[`SeedUtil derivechild it succeeds with 24 words, no aezeed password 1`] = `
+"000f4b90d9f9720bfac78aaea09a5193b34811
+"
+`;
+
+exports[`SeedUtil derivechild it succeeds with 24 words, valid aezeed password 1`] = `
+"000ecdef333ecf9054ccb4fb843a3dbbf4ac6a
+"
+`;
+
 exports[`SeedUtil encipher it succeeds with 24 words, no aezeed password 1`] = `
 "00738860374692022c462027a35aaaef3c3289aa0a057e2600000000002cad2e2b
 "

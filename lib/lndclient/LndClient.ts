@@ -11,7 +11,8 @@ import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
 import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits, WithdrawArguments } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
+import { CloseChannelParams, OpenChannelParams, SwapDeal } from '../swaps/types';
+import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
 import { Chain, ChannelCount, ClientMethods, LndClientConfig, LndInfo } from './types';
@@ -918,7 +919,11 @@ class LndClient extends SwapClient {
   public initWallet = async (walletPassword: string, seedMnemonic: string[], restore = false, backup?: Uint8Array):
     Promise<lndrpc.InitWalletResponse.AsObject> => {
     const request = new lndrpc.InitWalletRequest();
-    request.setCipherSeedMnemonicList(seedMnemonic);
+
+    // from the master seed/mnemonic we derive a child mnemonic for this specific client
+    const childMnemonic = await deriveChild(seedMnemonic, this.label);
+    request.setCipherSeedMnemonicList(childMnemonic);
+
     request.setWalletPassword(Uint8Array.from(Buffer.from(walletPassword, 'utf8')));
     if (restore) {
       request.setRecoveryWindow(2500);
