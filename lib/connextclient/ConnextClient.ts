@@ -244,18 +244,17 @@ class ConnextClient extends SwapClient {
     });
   };
 
+  private subscribePreimage = async () => {
+    await this.sendRequest("/event/subscribe", "POST", {
+      CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage`,
+    });
+  };
+
   /*
   private subscribeDeposit = async () => {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'DEPOSIT_CONFIRMED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/deposit-confirmed`,
-    });
-  }
-
-  private subscribePreimage = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
     });
   }
   */
@@ -393,6 +392,7 @@ class ConnextClient extends SwapClient {
       this.channel = channel;
       console.log('channel is', channel);
       await this.subscribeIncomingTransfer();
+      await this.subscribePreimage();
       this.emit('connectionVerified', {
         newIdentifier: publicIdentifier,
       });
