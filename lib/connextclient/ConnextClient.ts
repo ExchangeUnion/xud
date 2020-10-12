@@ -719,15 +719,23 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
+    // const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
+    const { freeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalanceOffChain),
     });
+
+    /*
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(nodeFreeBalanceOffChain),
+    });
+    */
+    const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
+      currency,
+      units: Number(1000000000000000000000),
     });
 
     this.outboundAmounts.set(currency, freeBalanceAmount);
