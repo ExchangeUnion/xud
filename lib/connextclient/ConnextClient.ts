@@ -441,7 +441,7 @@ class ConnextClient extends SwapClient {
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
-    let lockTimeout: number | undefined;
+    // let lockTimeout: number | undefined;
     const { rPreimage } = await generatePreimageAndHash();
     try {
       let secret;
@@ -477,7 +477,7 @@ class ConnextClient extends SwapClient {
         // we are the taker paying the maker
         amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-        lockTimeout = deal.makerCltvDelta!; // TODO: expiry is now absolute
+        // lockTimeout = deal.makerCltvDelta!; // TODO: expiry is now absolute
         secret = deal.rPreimage!;
         const executeTransfer = this.executeHashLockTransfer({
           type: "HashlockTransfer",
