@@ -108,8 +108,8 @@ class ConnextClient extends SwapClient {
   private outgoingTransferHashes = new Set<string>();
   private port: number;
   private host: string;
-  // private webhookport: number;
-  // private webhookhost: string;
+  private webhookport: number;
+  private webhookhost: string;
   private unitConverter: UnitConverter;
   private seed: string | undefined;
   /** A map of currencies to promises representing balance requests. */
@@ -149,8 +149,8 @@ class ConnextClient extends SwapClient {
 
     this.port = config.port;
     this.host = config.host;
-    // this.webhookhost = config.webhookhost;
-    // this.webhookport = config.webhookport;
+    this.webhookhost = config.webhookhost;
+    this.webhookport = config.webhookport;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
   }
@@ -236,6 +236,12 @@ class ConnextClient extends SwapClient {
     return await parseResponseBody<ConnextConfigResponse>(res);
   }
 
+  private subscribeIncomingTransfer = async () => {
+    await this.sendRequest("/event/subscribe", "POST", {
+      CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
+    });
+  };
+
   /*
   private subscribeDeposit = async () => {
     await this.sendRequest('/subscribe', 'POST', {
@@ -248,13 +254,6 @@ class ConnextClient extends SwapClient {
     await this.sendRequest('/subscribe', 'POST', {
       event: 'CONDITIONAL_TRANSFER_UNLOCKED_EVENT',
       webhook: `http://${this.webhookhost}:${this.webhookport}/preimage`,
-    });
-  }
-
-  private subscribeIncomingTransfer = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'CONDITIONAL_TRANSFER_CREATED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
     });
   }
   */
@@ -391,6 +390,7 @@ class ConnextClient extends SwapClient {
       const channel = await this.getChannel();
       this.channel = channel;
       console.log('channel is', channel);
+      await this.subscribeIncomingTransfer();
       this.emit('connectionVerified', {
         newIdentifier: publicIdentifier,
       });
