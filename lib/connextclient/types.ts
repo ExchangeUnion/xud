@@ -132,24 +132,47 @@ export type ExpectedIncomingTransfer = {
 };
 
 export type ConnextPreimageRequest = {
-  id: string;
-  data?: {
-    type: string;
-    amount: {
-      _hex: string;
-    };
+  channelAddress: string;
+  channelBalance: {
+    to: string[];
+    amount: string[];
+  };
+  transfer: {
+    channelFactoryAddress: string;
     assetId: string;
-    paymentId: string;
-    sender: string;
-    recipient: string;
-    meta: {
-      sender: string;
-      recipient: string;
+    chainId: string;
+    channelAddress: string;
+    balance: {
+      amount: string[];
+      to: string[];
     };
-    transferMeta: {
+    initiator: string;
+    responder: string;
+    initialStateHash: string;
+    transferDefinition: string;
+    transferEncodings: string[];
+    transferId: string;
+    transferState: {
+      lockHash: string;
+      expiry: string;
+    };
+    transferTimeout: string;
+    meta: {
+      requireOnline: boolean;
+      routingId: string;
+      path: [
+        {
+          recipient: string;
+          recipientChainId: number;
+          recipientAssetId: string;
+        }
+      ];
+    };
+    transferResolver: {
       preImage: string;
     };
   };
+  conditionType: string;
 };
 
 export type ConnextIncomingTransferRequest = {

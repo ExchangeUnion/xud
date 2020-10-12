@@ -12,9 +12,9 @@ class HttpService {
 
   public providePreimage = async (preimageRequest: ConnextPreimageRequest): Promise<object> => {
     if (
-      preimageRequest.data && preimageRequest.data.transferMeta
+      preimageRequest.transfer
     ) {
-      const { preImage: preimage } = preimageRequest.data.transferMeta;
+      const { preImage: preimage } = preimageRequest.transfer.transferResolver;
       if (!preimage) {
         throw serviceErrors.INVALID_ARGUMENT('preImage is missing');
       }
