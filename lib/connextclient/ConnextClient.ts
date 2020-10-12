@@ -904,24 +904,9 @@ class ConnextClient extends SwapClient {
     const lockHash = payload.details.lockHash;
     this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
     this.outgoingTransferHashes.add(lockHash);
-    const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
+    const res = await this.sendRequest('/hashlock-transfer/create', 'POST', payload);
     const transferResponse = await parseResponseBody<ConnextTransferResponse>(res);
     return transferResponse;
-  }
-
-  /**
-   * Deposits more of a token to an existing client.
-   * @param multisigAddress the address of the client to deposit to
-   * @param balance the amount to deposit to the client
-   */
-  public depositToChannel = async (
-    assetId: string,
-    amount: number,
-  ): Promise<void> => {
-    await this.sendRequest('/hashlock-transfer', 'POST', {
-      assetId,
-      amount: amount.toLocaleString('fullwide', { useGrouping: false }),
-    });
   }
 
   public withdraw = async ({
