@@ -36,6 +36,7 @@ class HttpService {
     if (incomingTransferRequest.transfer) {
       const transfer = incomingTransferRequest.transfer;
       const {
+        transferId,
         transferState,
         meta,
         assetId,
@@ -48,6 +49,7 @@ class HttpService {
       const { amount } = balance;
       const units = parseInt(amount[0]);
       await this.service.transferReceived({
+        transferId,
         rHash,
         timelock,
         units,

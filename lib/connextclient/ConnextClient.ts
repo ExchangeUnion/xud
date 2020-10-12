@@ -37,7 +37,7 @@ import {
   ConnextWithdrawResponse,
   OnchainTransferResponse,
 } from './types';
-import { parseResponseBody } from '../utils/utils';
+import { parseResponseBody, generatePreimageAndHash } from '../utils/utils';
 import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
 import { take, pluck, timeout, filter, catchError, mergeMapTo } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
@@ -411,22 +411,38 @@ class ConnextClient extends SwapClient {
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
 
-    const secret = await this.executeHashLockTransfer({
+    assert(this.channel, 'cannot send transfer without channel address');
+    assert(this.publicIdentifier, 'cannot send transfer with channel address');
+    const { rPreimage } = await generatePreimageAndHash();
+    await this.executeHashLockTransfer({
+      type: "HashlockTransfer",
       amount: '1',
       assetId: tokenAddress,
-      lockHash: rHash,
-      timelock: this.finalLock.toString(),
+      details: {
+        lockHash: `0x${rHash}`,
+        expiry: "0", // TODO: timelock: this.finalLock.toString()
+      },
       recipient: destination,
+      meta: {
+        // TODO: we generate a random 32 byte hex string until connext
+        // adds support to generate it from their side. Currently, it is buggy.
+        routingId: `0x${rPreimage}`,
+      },
+      channelAddress: this.channel,
+      publicIdentifier: this.publicIdentifier,
     });
-    return secret;
+    return 'sendSmallestAmount is broken';
   }
 
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
+    assert(this.channel, 'cannot send transfer without channel address');
+    assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
     let lockTimeout: number | undefined;
+    const { rPreimage } = await generatePreimageAndHash();
     try {
       let secret;
       if (deal.role === SwapRole.Maker) {
@@ -434,11 +450,21 @@ class ConnextClient extends SwapClient {
         amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
         const executeTransfer = this.executeHashLockTransfer({
+          type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
-          timelock: deal.takerCltvDelta.toString(),
-          lockHash: `0x${deal.rHash}`,
+          details: {
+            lockHash: `0x${deal.rHash}`,
+            expiry: "0", // TODO: timelock: this.finalLock.toString() - expiry is now absolute
+          },
           recipient: deal.destination,
+          meta: {
+            // TODO: we generate a random 32 byte hex string until connext
+            // adds support to generate it from their side. Currently, it is buggy.
+            routingId: `0x${rPreimage}`,
+          },
+          channelAddress: this.channel,
+          publicIdentifier: this.publicIdentifier,
         });
         // @ts-ignore
         const [executeTransferResponse, preimage] = await Promise.all([
@@ -451,14 +477,24 @@ class ConnextClient extends SwapClient {
         // we are the taker paying the maker
         amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-        lockTimeout = deal.makerCltvDelta!;
+        lockTimeout = deal.makerCltvDelta!; // TODO: expiry is now absolute
         secret = deal.rPreimage!;
         const executeTransfer = this.executeHashLockTransfer({
+          type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
-          timelock: lockTimeout.toString(),
-          lockHash: `0x${deal.rHash}`,
+          details: {
+            lockHash: `0x${deal.rHash}`,
+            expiry: "0", // TODO: lockTimeout.toString()
+          },
           recipient: deal.destination,
+          meta: {
+            // TODO: we generate a random 32 byte hex string until connext
+            // adds support to generate it from their side. Currently, it is buggy.
+            routingId: `0x${rPreimage}`,
+          },
+          channelAddress: this.channel,
+          publicIdentifier: this.publicIdentifier,
         });
         await executeTransfer;
       }
@@ -856,12 +892,13 @@ class ConnextClient extends SwapClient {
    * @param amount
    * @param lockHash
    */
-  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<string> => {
-    this.logger.debug(`sending payment of ${payload.amount} with hash ${payload.lockHash} to ${payload.recipient}`);
-    this.outgoingTransferHashes.add(payload.lockHash);
+  private executeHashLockTransfer = async (payload: TokenPaymentRequest): Promise<ConnextTransferResponse> => {
+    const lockHash = payload.details.lockHash;
+    this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
+    this.outgoingTransferHashes.add(lockHash);
     const res = await this.sendRequest('/hashlock-transfer', 'POST', payload);
-    const { appId } = await parseResponseBody<ConnextTransferResponse>(res);
-    return appId;
+    const transferResponse = await parseResponseBody<ConnextTransferResponse>(res);
+    return transferResponse;
   }
 
   /**

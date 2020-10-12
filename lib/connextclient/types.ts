@@ -29,11 +29,19 @@ export type ConnextVersion = {
  * The payload for tokenPayment call.
  */
 export type TokenPaymentRequest = {
-  assetId: string;
+  type: "HashlockTransfer";
+  channelAddress: string;
   amount: string;
-  lockHash: string;
-  timelock: string;
+  assetId: string;
+  details: {
+    lockHash: string;
+    expiry: "0";
+  };
   recipient: string;
+  meta: {
+    routingId: string;
+  };
+  publicIdentifier: string;
 };
 
 /**
@@ -74,8 +82,9 @@ export type ConnextBalanceResponse = {
  * The response for hashLockTransfer call.
  */
 export type ConnextTransferResponse = {
-  appId: string;
-  preImage: string;
+  channelAddress: string;
+  transferId: string;
+  routingId: string;
 };
 
 /**
@@ -162,7 +171,7 @@ export type ConnextIncomingTransferRequest = {
     initialStateHash: string;
     transferDefinition: string;
     transferEncodings: string[];
-    transferId: string;
+    transferId: string; // TODO
     transferState: {
       lockHash: string; // TODO
       expiry: string; // TODO
@@ -197,6 +206,7 @@ export type TransferReceivedEvent = {
   timelock: number;
   units: number;
   paymentId: string;
+  transferId: string;
 };
 
 export type OnchainTransferResponse = {
