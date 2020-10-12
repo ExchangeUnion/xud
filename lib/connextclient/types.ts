@@ -128,6 +128,7 @@ export type ExpectedIncomingTransfer = {
   expiry: number;
   tokenAddress: string;
   paymentId?: string;
+  transferId?: string;
 };
 
 export type ConnextPreimageRequest = {

@@ -174,6 +174,7 @@ class ConnextClient extends SwapClient {
       timelock,
       rHash,
       paymentId,
+      transferId,
     } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
@@ -199,8 +200,9 @@ class ConnextClient extends SwapClient {
       // timelock === expectedTimelock
     ) {
       expectedIncomingTransfer.paymentId = paymentId;
+      expectedIncomingTransfer.transferId = transferId;
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
-      this.expectedIncomingTransfers.delete(rHash);
+      // this.expectedIncomingTransfers.delete(rHash); // TODO: SAFU to not remove it here? Swaps also checks for lockHash reuse
       this.emit('htlcAccepted', rHash, units, currency);
     } else {
       if (tokenAddress !== expectedTokenAddress) {
@@ -537,10 +539,26 @@ class ConnextClient extends SwapClient {
    */
   public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
     this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
-    const assetId = this.getTokenAddress(currency);
-    await this.sendRequest('/hashlock-resolve', 'POST', {
-      assetId,
-      preImage: `0x${rPreimage}`,
+    // const assetId = this.getTokenAddress(currency);
+    const lockHash = `0x${rHash}`;
+    const incomingTransfer = this.expectedIncomingTransfers.get(rHash);
+    if (!incomingTransfer) {
+      // TODO: also attempt to manually get those from the node
+      throw new Error('could not find incoming transfer to resolve');
+    }
+    const { transferId, paymentId: routingId } = incomingTransfer;
+    await this.sendRequest('/hashlock-transfer/resolve', 'POST', {
+      transferId,
+      conditionType: "HashlockTransfer",
+      details: {
+        lockHash
+      },
+      transferResolver: {
+        preImage: `0x${rPreimage}`,
+      },
+      publicIdentifier: this.publicIdentifier,
+      channelAddress: this.channel, // TODO: rename channel -> channelAddress
+      routingId,
     });
   }
 
