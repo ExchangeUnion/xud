@@ -712,6 +712,12 @@ class ConnextClient extends SwapClient {
   private getClientConfig = async (): Promise<ConnextConfig> => {
     const res = await this.sendRequest('/config', 'GET');
     const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
+    if (clientConfig.length === 0) {
+      await this.sendRequest('/node', 'POST', {
+        index: 0
+      });
+      return (await this.getClientConfig());
+    }
     return clientConfig[0];
   }
 
