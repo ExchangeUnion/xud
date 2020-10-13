@@ -185,19 +185,19 @@ describe('Swaps.SwapClientManager', () => {
     });
 
     test('it adds outbound reserved amounts', () => {
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toBeUndefined();
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount * 2);
     });
 
     test('it subtracts outbound reserved amounts', () => {
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toBeUndefined();
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
       swapClientManager.addOutboundReservedAmount(currency, amount);
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
       swapClientManager.subtractOutboundReservedAmount(currency, amount);
-      expect(swapClientManager['outboundReservedAmounts'].get(currency)).toEqual(0);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(0);
     });
 
     test('it adds inbound reserved amounts and sets amount on swap client', () => {
