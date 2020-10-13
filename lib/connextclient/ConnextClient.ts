@@ -38,8 +38,8 @@ import {
   OnchainTransferResponse,
 } from './types';
 import { parseResponseBody, generatePreimageAndHash } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
-import { take, pluck, timeout, filter, catchError, mergeMapTo } from 'rxjs/operators';
+import { Observable, fromEvent, from, combineLatest, defer, timer, Subscription, throwError, interval } from 'rxjs';
+import { take, pluck, timeout, filter, catchError, mergeMapTo, mergeMap } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -118,6 +118,7 @@ class ConnextClient extends SwapClient {
   private requestCollateralPromises = new Map<string, Promise<any>>();
   private outboundAmounts = new Map<string, number>();
   private inboundAmounts = new Map<string, number>();
+  private _reconcileDepositSubscriber: Subscription | undefined;
 
   /** Public identifier for Connext */
   private publicIdentifier: string | undefined;
@@ -397,6 +398,7 @@ class ConnextClient extends SwapClient {
         newIdentifier: publicIdentifier,
       });
       this.setStatus(ClientStatus.ConnectionVerified);
+      this.reconcileDeposit();
     } catch (err) {
       this.logger.error(
         `could not verify connection to connext, retrying in ${ConnextClient.RECONNECT_INTERVAL} ms`,
@@ -404,6 +406,46 @@ class ConnextClient extends SwapClient {
       );
       await this.disconnect();
     }
+  }
+
+  private reconcileDeposit = () => {
+    if (this._reconcileDepositSubscriber) {
+      this._reconcileDepositSubscriber.unsubscribe();
+    }
+    // TODO: increase interval after testing to 30+ sec
+    this._reconcileDepositSubscriber = interval(5000).pipe(
+      mergeMap(() => {
+        if (this.status === ClientStatus.ConnectionVerified) {
+          return defer(() => {
+            /* TODO: reconcile deposit for all supported currencies
+            const depositRequests: Promise<any>[] = [];
+            this.tokenAddresses.forEach((tokenAddress) => {
+              const depositRequest = this.sendRequest('/deposit', 'POST', {
+                channelAddress: this.channel,
+                publicIdentifier: this.publicIdentifier,
+                assetId: tokenAddress,
+              });
+              depositRequests.push(depositRequest);
+            });
+            return from(Promise.all(depositRequests));
+            */
+            return from(this.sendRequest('/deposit', 'POST', {
+              channelAddress: this.channel,
+              publicIdentifier: this.publicIdentifier,
+              assetId: "0x0000000000000000000000000000000000000000"
+            }));
+          });
+        }
+        return throwError('stopping deposit calls because client is no longer connected');
+      }),
+    ).subscribe({
+      next: () => {
+        this.logger.trace('deposit successfully reconciled');
+      },
+      error: (e) => {
+        this.logger.trace(`stopped deposit calls because: ${e}`);
+      }
+    });
   }
 
   public sendSmallestAmount = async (
@@ -836,36 +878,41 @@ class ConnextClient extends SwapClient {
 
     return getBalancePromise;
     */
-    let getBalancePromise = this.getBalancePromises.get(currency);
-    if (!getBalancePromise) {
-      // if not make a new balance request and store the promise that's waiting for a response
-      const tokenAddress = this.getTokenAddress(currency);
-      getBalancePromise = this.sendRequest(`/channel/${this.channel}/${this.publicIdentifier}`, 'GET').then(async (res) => {
-        const channelDetails = await parseResponseBody<any>(res);
-        const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
-        if (assetIdIndex === -1) {
-          const response = {
-            freeBalanceOffChain: 0,
-            nodeFreeBalanceOffChain: 0,
-            freeBalanceOnChain: 0,
-          } as unknown as ConnextBalanceResponse;
-          return response;
-        } else {
-          const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
-          const balance = channelDetails.balances[assetIdIndex].amount[1];
-          const response = {
-            freeBalanceOffChain: balance,
-            nodeFreeBalanceOffChain: inboundBalance,
-            freeBalanceOnChain: 0,
-          } as unknown as ConnextBalanceResponse;
-          return response;
-        }
-      }).finally(() => {
-        this.getBalancePromises.delete(currency); // clear the stored promise
-      });
-      this.getBalancePromises.set(currency, getBalancePromise);
+    try {
+      let getBalancePromise = this.getBalancePromises.get(currency);
+      if (!getBalancePromise) {
+        // if not make a new balance request and store the promise that's waiting for a response
+        const tokenAddress = this.getTokenAddress(currency);
+        getBalancePromise = this.sendRequest(`/channel/${this.channel}/${this.publicIdentifier}`, 'GET').then(async (res) => {
+          const channelDetails = await parseResponseBody<any>(res);
+          const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
+          if (assetIdIndex === -1) {
+            const response = {
+              freeBalanceOffChain: 0,
+              nodeFreeBalanceOffChain: 0,
+              freeBalanceOnChain: 0,
+            } as unknown as ConnextBalanceResponse;
+            return response;
+          } else {
+            const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
+            const balance = channelDetails.balances[assetIdIndex].amount[1];
+            const response = {
+              freeBalanceOffChain: balance,
+              nodeFreeBalanceOffChain: inboundBalance,
+              freeBalanceOnChain: 0,
+            } as unknown as ConnextBalanceResponse;
+            return response;
+          }
+        }).finally(() => {
+          this.getBalancePromises.delete(currency); // clear the stored promise
+        });
+        this.getBalancePromises.set(currency, getBalancePromise);
+      }
+      return getBalancePromise;
+    } catch(e) {
+      console.log('error is', e);
+      throw new Error(e);
     }
-    return getBalancePromise;
   }
 
   public deposit = async () => {
@@ -979,6 +1026,9 @@ class ConnextClient extends SwapClient {
 
   /** Connext client specific cleanup. */
   protected disconnect = async () => {
+    if (this._reconcileDepositSubscriber) {
+      this._reconcileDepositSubscriber.unsubscribe();
+    }
     this.setStatus(ClientStatus.Disconnected);
   }
 
@@ -1049,7 +1099,7 @@ class ConnextClient extends SwapClient {
       });
 
       req.on('error', async (err: any) => {
-        if (err.code === 'ECONNREFUSED') {
+        if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET') {
           await this.disconnect();
         }
         this.logger.error(err);
