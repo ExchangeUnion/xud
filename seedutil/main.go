@@ -58,6 +58,7 @@ func main() {
 	encipherCommand := flag.NewFlagSet("encipher", flag.ExitOnError)
 	decipherCommand := flag.NewFlagSet("decipher", flag.ExitOnError)
 	generateCommand := flag.NewFlagSet("generate", flag.ExitOnError)
+	deriveChildCommand := flag.NewFlagSet("derivechild", flag.ExitOnError)
 
 	if len(os.Args) < 2 {
 		fmt.Println("subcommand is required")
@@ -132,6 +133,39 @@ func main() {
 		}
 
 		fmt.Println(hex.EncodeToString(decipheredSeed[:]))
+	case "derivechild":
+		client := deriveChildCommand.String("client", "", "client type")
+		aezeedPassphrase := deriveChildCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
+		deriveChildCommand.Parse(os.Args[2:])
+		args = deriveChildCommand.Args()
+
+		if client == nil || len(*client) == 0 {
+			fmt.Fprintf(os.Stderr, "client is required")
+			os.Exit(1)
+		}
+
+		mnemonic := parseMnemonic(args)
+		cipherSeed := mnemonicToCipherSeed(mnemonic, aezeedPassphrase)
+
+		// derive 64-byte hash from client type + cipherSeed's 16 bytes of entropy
+		hash := sha512.Sum512(append([]byte(*client), cipherSeed.Entropy[:]...))
+
+		// use the first 16 byte of the hash as the new entropy
+		var newEntropy [16]byte
+		copy(newEntropy[:], hash[:16])
+
+		childCipherSeed, err := aezeed.New(0, &newEntropy, cipherSeed.BirthdayTime())
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		childMnemonic, err := childCipherSeed.ToMnemonic([]byte(*aezeedPassphrase))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+
+		fmt.Println(strings.Join([]string(childMnemonic[:]), " "))
 	case "generate":
 		aezeedPassphrase := generateCommand.String("aezeedpass", defaultAezeedPassphrase, "aezeed passphrase")
 		generateCommand.Parse(os.Args[2:])
