@@ -35,6 +35,7 @@ import {
   ConnextDepositResponse,
   ConnextWithdrawResponse,
   OnchainTransferResponse,
+  ConnextBlockNumberResponse,
 } from './types';
 import { parseResponseBody, generatePreimageAndHash } from '../utils/utils';
 import { Observable, fromEvent, from, defer, timer, Subscription, throwError, interval } from 'rxjs';
@@ -88,6 +89,13 @@ const waitForPreimageByHash = (
   return expectedPreimageReceived$.toPromise();
 };
 
+const CHAIN_IDENTIFIERS: { [key: string]: number } = {
+  'regtest': 1337,
+  'simnet': 1337,
+  'testnet': 4,
+  'mainnet': 1,
+};
+
 /**
  * A class representing a client to interact with connext.
  */
@@ -110,6 +118,7 @@ class ConnextClient extends SwapClient {
   private webhookport: number;
   private webhookhost: string;
   private unitConverter: UnitConverter;
+  private network: string;
   private seed: string | undefined;
   /** A map of currencies to promises representing balance requests. */
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
@@ -139,11 +148,13 @@ class ConnextClient extends SwapClient {
     logger,
     unitConverter,
     currencyInstances,
+    network,
   }: {
     unitConverter: UnitConverter;
     config: ConnextClientConfig;
     currencyInstances: CurrencyInstance[],
     logger: Logger;
+    network: string;
   }) {
     super(logger, config.disable);
 
@@ -153,6 +164,7 @@ class ConnextClient extends SwapClient {
     this.webhookport = config.webhookport;
     this.unitConverter = unitConverter;
     this.setTokenAddresses(currencyInstances);
+    this.network = network;
   }
 
   public get minutesPerBlock() {
@@ -704,13 +716,19 @@ class ConnextClient extends SwapClient {
   }
 
   public getHeight = async () => {
-    return 1; // connext's API does not tell us the height
+    const res = await this.sendRequest(`/ethprovider/${CHAIN_IDENTIFIERS[this.network]}`, 'POST', {
+      method: 'eth_blockNumber',
+      params: []
+    });
+    const blockNumberResponse = await parseResponseBody<ConnextBlockNumberResponse>(res);
+    return parseInt(blockNumberResponse.result, 16);
   }
 
   public getInfo = async (): Promise<ConnextInfo> => {
     let address: string | undefined;
     let version: string | undefined;
     let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
+
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {

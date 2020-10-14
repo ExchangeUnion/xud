@@ -18,6 +18,11 @@ export type ConnextInfo = {
   version?: string;
 };
 
+/** Response for eth_blockNumber call  */
+export type ConnextBlockNumberResponse = {
+  result: string;
+};
+
 /**
  * The payload for tokenPayment call.
  */
