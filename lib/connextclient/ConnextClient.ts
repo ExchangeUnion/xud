@@ -209,10 +209,12 @@ class ConnextClient extends SwapClient {
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
     const blockHeight = await this.getHeight();
     const timelock = expiry - blockHeight;
+    // The expected timelock can be up to 10 blocks less than the agreed upon value
+    const TIMELOCK_BUFFER = 10;
     if (
       tokenAddress === expectedTokenAddress &&
       units === expectedUnits &&
-      timelock === expectedTimelock
+      timelock >= expectedTimelock - TIMELOCK_BUFFER
     ) {
       expectedIncomingTransfer.paymentId = paymentId;
       expectedIncomingTransfer.transferId = transferId;
@@ -226,8 +228,8 @@ class ConnextClient extends SwapClient {
       if (units !== expectedUnits) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with value ${units} does not match expected ${expectedUnits}`);
       }
-      if (timelock !== expectedTimelock) {
-        this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} does not match expected ${expectedTimelock}`);
+      if (timelock !>= expectedTimelock) {
+        this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} is not greater than or equal to ${expectedTimelock}`);
       }
     }
   }
