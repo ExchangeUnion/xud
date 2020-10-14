@@ -22,8 +22,8 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
     element.push(
       currency,
       satsToCoinsStr(balance.totalBalance),
-      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
       formatBalance(balance.walletBalance, balance.unconfirmedWalletBalance),
+      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
       satsToCoinsStr(balance.reservedBalance),
     );
     formatted.push(element);
