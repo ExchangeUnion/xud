@@ -199,7 +199,6 @@ class ConnextClient extends SwapClient {
       this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and paymentId ${paymentId}`);
       return;
     }
-    this.logger.warn(`received EXPECTED incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and paymentId ${paymentId}`);
 
     const {
       units: expectedUnits,
