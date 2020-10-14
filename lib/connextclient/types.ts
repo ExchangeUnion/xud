@@ -33,7 +33,7 @@ export type TokenPaymentRequest = {
   assetId: string;
   details: {
     lockHash: string;
-    expiry: "0";
+    expiry: string;
   };
   recipient: string;
   meta: {

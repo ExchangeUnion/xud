@@ -199,6 +199,7 @@ class ConnextClient extends SwapClient {
       this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
       return;
     }
+    this.logger.warn(`received EXPECTED incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
 
     const {
       units: expectedUnits,
@@ -469,13 +470,14 @@ class ConnextClient extends SwapClient {
     assert(this.channel, 'cannot send transfer without channel address');
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     const { rPreimage } = await generatePreimageAndHash();
+    const expiry = await this.getExpiry(this.finalLock)
     await this.executeHashLockTransfer({
       type: "HashlockTransfer",
       amount: '1',
       assetId: tokenAddress,
       details: {
         lockHash: `0x${rHash}`,
-        expiry: "0", // TODO: timelock: this.finalLock.toString()
+        expiry,
       },
       recipient: destination,
       meta: {
@@ -489,6 +491,11 @@ class ConnextClient extends SwapClient {
     return 'sendSmallestAmount is broken';
   }
 
+  private getExpiry = async (locktime: number): Promise<string> => {
+    const blockHeight = await this.getHeight();
+    return (blockHeight + locktime).toString();
+  }
+
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
@@ -496,7 +503,6 @@ class ConnextClient extends SwapClient {
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
-    // let lockTimeout: number | undefined;
     const { rPreimage } = await generatePreimageAndHash();
     try {
       let secret;
@@ -504,13 +510,14 @@ class ConnextClient extends SwapClient {
         // we are the maker paying the taker
         amount = deal.takerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.takerCurrency)!;
+        const expiry = await this.getExpiry(this.finalLock)
         const executeTransfer = this.executeHashLockTransfer({
           type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
           details: {
             lockHash: `0x${deal.rHash}`,
-            expiry: "0", // TODO: timelock: this.finalLock.toString() - expiry is now absolute
+            expiry,
           },
           recipient: deal.destination,
           meta: {
@@ -532,15 +539,16 @@ class ConnextClient extends SwapClient {
         // we are the taker paying the maker
         amount = deal.makerUnits.toLocaleString('fullwide', { useGrouping: false });
         tokenAddress = this.tokenAddresses.get(deal.makerCurrency)!;
-        // lockTimeout = deal.makerCltvDelta!; // TODO: expiry is now absolute
         secret = deal.rPreimage!;
+        assert(deal.makerCltvDelta, 'cannot send transfer without deal.makerCltvDelta');
+        const expiry = await this.getExpiry(deal.makerCltvDelta);
         const executeTransfer = this.executeHashLockTransfer({
           type: "HashlockTransfer",
           amount,
           assetId: tokenAddress,
           details: {
             lockHash: `0x${deal.rHash}`,
-            expiry: "0", // TODO: lockTimeout.toString()
+            expiry,
           },
           recipient: deal.destination,
           meta: {
