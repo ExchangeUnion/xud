@@ -297,8 +297,10 @@ class ConnextClient extends SwapClient {
     // first check whether we already have a pending collateral request for this currency
     // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
     const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
+      channelAddress: this.channel,
       assetId: this.tokenAddresses.get(currency),
       amount: units.toLocaleString('fullwide', { useGrouping: false }),
+      publicIdentifier: this.publicIdentifier,
     }).then(() => {
       this.requestCollateralPromises.delete(currency);
       this.logger.debug(`completed collateral request of ${units} ${currency} units`);
@@ -788,24 +790,24 @@ class ConnextClient extends SwapClient {
       return { balance: 0, pendingOpenBalance: 0, inactiveBalance: 0 };
     }
 
-    // const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
-    const { freeBalanceOffChain } = await this.getBalance(currency);
+    const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
+    // const { freeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(freeBalanceOffChain),
     });
 
-    /*
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(nodeFreeBalanceOffChain),
     });
-    */
+    /*
     const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
       units: Number(1000000000000000000000),
     });
+    */
 
     this.outboundAmounts.set(currency, freeBalanceAmount);
     if (nodeFreeBalanceAmount !== this.inboundAmounts.get(currency)) {
