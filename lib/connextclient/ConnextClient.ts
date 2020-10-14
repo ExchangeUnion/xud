@@ -27,7 +27,6 @@ import {
   ConnextTransferResponse,
   ConnextClientConfig,
   ConnextInfo,
-  ConnextVersion,
   TokenPaymentRequest,
   ConnextTransferStatus,
   ExpectedIncomingTransfer,
@@ -38,7 +37,7 @@ import {
   OnchainTransferResponse,
 } from './types';
 import { parseResponseBody, generatePreimageAndHash } from '../utils/utils';
-import { Observable, fromEvent, from, combineLatest, defer, timer, Subscription, throwError, interval } from 'rxjs';
+import { Observable, fromEvent, from, defer, timer, Subscription, throwError, interval } from 'rxjs';
 import { take, pluck, timeout, filter, catchError, mergeMapTo, mergeMap } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
@@ -715,37 +714,12 @@ class ConnextClient extends SwapClient {
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
-      try {
-        const getInfo$ = combineLatest(
-          from(this.getVersion()),
-          from(this.getClientConfig()),
-        ).pipe(
-          // error if no response within 5000 ms
-          timeout(5000),
-          // complete the stream when we receive 1 value
-          take(1),
-        );
-        const [streamVersion, clientConfig] = await getInfo$.toPromise();
-        status = 'Ready';
-        version = streamVersion;
-        address = clientConfig.signerAddress;
-      } catch (err) {
-        status = err.message;
-      }
+      status = 'Ready';
+      version = 'TODO: Not exposed, yet';
+      address = this.channel || 'Waiting for channel';
     }
 
     return { status, address, version };
-  }
-
-  /**
-   * Gets the connext version.
-   */
-  public getVersion = async (): Promise<string> => {
-    const res = await this.sendRequest('/version', 'GET');
-    const { version } = await parseResponseBody<ConnextVersion>(res);
-    console.log('response from version', version);
-
-    return version;
   }
 
   /**
@@ -1075,6 +1049,7 @@ class ConnextClient extends SwapClient {
             err = errors.INSUFFICIENT_BALANCE;
             break;
           case 404:
+            // TODO: PAYMENT_NOT_FOUND error should only apply when querying transfer status
             err = errors.PAYMENT_NOT_FOUND;
             break;
           case 408:

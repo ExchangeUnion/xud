@@ -19,13 +19,6 @@ export type ConnextInfo = {
 };
 
 /**
- * The connext version.
- */
-export type ConnextVersion = {
-  version: string;
-};
-
-/**
  * The payload for tokenPayment call.
  */
 export type TokenPaymentRequest = {
