@@ -43,15 +43,15 @@ class HttpService {
         balance,
       } = transfer;
       const { routingId: paymentId } = meta;
-      const { lockHash, expiry: timelockString } = transferState;
+      const { lockHash, expiry: expiryString } = transferState;
       const rHash = lockHash.slice(2);
-      const timelock = parseInt(timelockString, 10);
+      const expiry = parseInt(expiryString, 10);
       const { amount } = balance;
       const units = parseInt(amount[0]);
       await this.service.transferReceived({
         transferId,
         rHash,
-        timelock,
+        expiry,
         units,
         paymentId,
         tokenAddress: assetId,

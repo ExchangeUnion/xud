@@ -225,7 +225,7 @@ export type ProvidePreimageEvent = {
 export type TransferReceivedEvent = {
   tokenAddress: string;
   rHash: string;
-  timelock: number;
+  expiry: number;
   units: number;
   paymentId: string;
   transferId: string;

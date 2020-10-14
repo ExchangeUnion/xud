@@ -183,7 +183,7 @@ class ConnextClient extends SwapClient {
     const {
       tokenAddress,
       units,
-      timelock,
+      expiry,
       rHash,
       paymentId,
       transferId,
@@ -196,21 +196,22 @@ class ConnextClient extends SwapClient {
     }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
+      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and paymentId ${paymentId}`);
       return;
     }
-    this.logger.warn(`received EXPECTED incoming transfer created event with rHash ${rHash}, units: ${units}, timelock ${timelock}, token address ${tokenAddress}, and paymentId ${paymentId}`);
+    this.logger.warn(`received EXPECTED incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and paymentId ${paymentId}`);
 
     const {
       units: expectedUnits,
-      // expiry: expectedTimelock,
+      expiry: expectedTimelock,
       tokenAddress: expectedTokenAddress,
     } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
+    const timelock = 0;
     if (
       tokenAddress === expectedTokenAddress &&
-      units === expectedUnits
-      // timelock === expectedTimelock
+      units === expectedUnits &&
+      timelock === expectedTimelock
     ) {
       expectedIncomingTransfer.paymentId = paymentId;
       expectedIncomingTransfer.transferId = transferId;
@@ -224,11 +225,9 @@ class ConnextClient extends SwapClient {
       if (units !== expectedUnits) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with value ${units} does not match expected ${expectedUnits}`);
       }
-      /*
       if (timelock !== expectedTimelock) {
         this.logger.warn(`incoming transfer for rHash ${rHash} with time lock ${timelock} does not match expected ${expectedTimelock}`);
       }
-      */
     }
   }
 
