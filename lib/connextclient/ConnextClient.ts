@@ -179,7 +179,7 @@ class ConnextClient extends SwapClient {
     this.on('transferReceived', this.onTransferReceived.bind(this));
   }
 
-  private onTransferReceived = (transferReceivedRequest: TransferReceivedEvent) => {
+  private onTransferReceived = async (transferReceivedRequest: TransferReceivedEvent) => {
     const {
       tokenAddress,
       units,
@@ -207,7 +207,8 @@ class ConnextClient extends SwapClient {
       tokenAddress: expectedTokenAddress,
     } = expectedIncomingTransfer;
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
-    const timelock = 0;
+    const blockHeight = await this.getHeight();
+    const timelock = expiry - blockHeight;
     if (
       tokenAddress === expectedTokenAddress &&
       units === expectedUnits &&
