@@ -163,6 +163,14 @@ class SwapClientManager extends EventEmitter {
     }
   }
 
+  public getOutboundReservedAmount = (currency: string) => {
+    return this.outboundReservedAmounts.get(currency);
+  }
+
+  public getInboundReservedAmount = (currency: string) => {
+    return this.inboundReservedAmounts.get(currency);
+  }
+
   public addOutboundReservedAmount = (currency: string, amount: number) => {
     const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
     const newOutboundReservedAmount = (outboundReservedAmount ?? 0) + amount;
@@ -180,13 +188,13 @@ class SwapClientManager extends EventEmitter {
   public subtractOutboundReservedAmount = (currency: string, amount: number) => {
     const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
     assert(outboundReservedAmount && outboundReservedAmount >= amount);
-    this.outboundReservedAmounts.set(currency, (outboundReservedAmount ?? 0) - amount);
+    this.outboundReservedAmounts.set(currency, outboundReservedAmount - amount);
   }
 
   public subtractInboundReservedAmount = (currency: string, amount: number) => {
     const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
     assert(inboundReservedAmount && inboundReservedAmount >= amount);
-    this.inboundReservedAmounts.set(currency, (inboundReservedAmount ?? 0) - amount);
+    this.inboundReservedAmounts.set(currency, inboundReservedAmount - amount);
   }
 
   /**

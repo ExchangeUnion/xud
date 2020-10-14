@@ -53,6 +53,18 @@ async function decipher(mnemonic: string[]) {
   return Buffer.from(decipheredSeed, 'hex');
 }
 
+async function deriveChild(mnemonic: string[], clientType: string) {
+  const { stdout, stderr } = await exec(`${seedutilPath} derivechild -client ${clientType} ${mnemonic.join(' ')}`);
+
+  if (stderr) {
+    throw new Error(stderr);
+  }
+
+  const childMnenomic = stdout.trim().split(' ');
+  assert.equal(childMnenomic.length, 24, 'seedutil did not derive child mnemonic of exactly 24 words');
+  return childMnenomic;
+}
+
 async function generate() {
   const { stdout, stderr } = await exec(`${seedutilPath} generate`);
 
@@ -65,4 +77,4 @@ async function generate() {
   return mnemonic;
 }
 
-export { keystore, encipher, decipher, generate };
+export { keystore, encipher, decipher, deriveChild, generate };

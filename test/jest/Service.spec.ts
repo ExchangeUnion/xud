@@ -17,6 +17,7 @@ jest.mock('../../lib/swaps/SwapClientManager', () => {
   return jest.fn().mockImplementation(() => {
     return {
       getType: () => SwapClientType.Lnd,
+      getOutboundReservedAmount: () => 0,
     };
   });
 });
@@ -187,6 +188,61 @@ describe('Service', () => {
       expect(btcBalance.walletBalance).toEqual(10000);
       expect(btcBalance.unconfirmedWalletBalance).toEqual(0);
       expect(btcBalance.totalBalance).toEqual(289008);
+    });
+
+    test('returns balance with reserved amounts', async () => {
+      setup();
+      const reservedBalance = 10000;
+      service['swapClientManager'].getOutboundReservedAmount = jest.fn().mockReturnValue(reservedBalance);
+      const result = await service.getBalance({ currency: 'BTC' });
+      expect(result.size).toEqual(1);
+
+      const btcBalance = result.get('BTC')!;
+      expect(btcBalance).toBeTruthy();
+      expect(btcBalance.channelBalance).toEqual(70000);
+      expect(btcBalance.pendingChannelBalance).toEqual(190191);
+      expect(btcBalance.inactiveChannelBalance).toEqual(18817);
+      expect(btcBalance.walletBalance).toEqual(10000);
+      expect(btcBalance.unconfirmedWalletBalance).toEqual(0);
+      expect(btcBalance.totalBalance).toEqual(289008);
+      expect(btcBalance.reservedBalance).toEqual(reservedBalance);
+    });
+
+    test('returns balance with reserved amounts for multiple currencies', async () => {
+      setup();
+      const btcReservedBalance = 10000;
+      const ltcReservedBalance = 2345;
+      service['swapClientManager'].getOutboundReservedAmount = jest.fn().mockImplementation((currency) => {
+        if (currency === 'BTC') {
+          return btcReservedBalance;
+        }
+        if (currency === 'LTC') {
+          return ltcReservedBalance;
+        }
+        return undefined;
+      });
+      const result = await service.getBalance({ currency: '' });
+      expect(result.size).toEqual(2);
+
+      const btcBalance = result.get('BTC')!;
+      expect(btcBalance).toBeTruthy();
+      expect(btcBalance.channelBalance).toEqual(70000);
+      expect(btcBalance.pendingChannelBalance).toEqual(190191);
+      expect(btcBalance.inactiveChannelBalance).toEqual(18817);
+      expect(btcBalance.walletBalance).toEqual(10000);
+      expect(btcBalance.unconfirmedWalletBalance).toEqual(0);
+      expect(btcBalance.totalBalance).toEqual(289008);
+      expect(btcBalance.reservedBalance).toEqual(btcReservedBalance);
+
+      const ltcBalance = result.get('LTC')!;
+      expect(ltcBalance).toBeTruthy();
+      expect(ltcBalance.channelBalance).toEqual(0);
+      expect(ltcBalance.pendingChannelBalance).toEqual(0);
+      expect(ltcBalance.inactiveChannelBalance).toEqual(12345);
+      expect(ltcBalance.walletBalance).toEqual(1500);
+      expect(ltcBalance.unconfirmedWalletBalance).toEqual(500);
+      expect(ltcBalance.totalBalance).toEqual(14345);
+      expect(ltcBalance.reservedBalance).toEqual(ltcReservedBalance);
     });
 
     test('throws in case of invalid currency', async () => {

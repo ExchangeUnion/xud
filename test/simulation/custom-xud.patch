@@ -14,37 +14,6 @@ index 489a50a4..f9391527 100644
      try {
        if (!this.config.rpc.disable) {
          // start rpc server first, it will respond with UNAVAILABLE error
-diff --git a/lib/connextclient/ConnextClient.ts b/lib/connextclient/ConnextClient.ts
-index 7fe05a71..240ad137 100644
---- a/lib/connextclient/ConnextClient.ts
-+++ b/lib/connextclient/ConnextClient.ts
-@@ -309,24 +309,8 @@ class ConnextClient extends SwapClient {
-     }
-   }
- 
--  public setReservedInboundAmount = (reservedInboundAmount: number, currency: string) => {
--    const inboundCapacity = this._maxChannelInboundAmount.get(currency) || 0;
--    if (inboundCapacity < reservedInboundAmount) {
--      // we do not have enough inbound capacity to fill all open orders, so we will request more
--      this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for reserved order amount of ${reservedInboundAmount}`);
--
--      // we want to make a request for the current collateral plus the greater of any
--      // minimum request size for the currency or the capacity shortage + 3% buffer
--      const quantityToRequest = inboundCapacity + Math.max(
--        reservedInboundAmount * 1.03 - inboundCapacity,
--        ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0,
--      );
--      const unitsToRequest = this.unitConverter.amountToUnits({ currency, amount: quantityToRequest });
--
--      // we don't await this request - instead we allow for "lazy collateralization" to complete since
--      // we don't expect all orders to be filled at once, we can be patient
--      this.requestCollateralInBackground(currency, unitsToRequest);
--    }
-+  public setReservedInboundAmount = (_reservedInboundAmount: number, _currency: string) => {
-+    // we don't request collateral for custom xud simulation tests
-   }
- 
-   protected updateCapacity = async () => {
 diff --git a/lib/swaps/SwapRecovery.ts b/lib/swaps/SwapRecovery.ts
 index 3759f6a3..4089dc94 100644
 --- a/lib/swaps/SwapRecovery.ts
