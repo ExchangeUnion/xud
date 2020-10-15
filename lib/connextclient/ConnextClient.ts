@@ -37,7 +37,7 @@ import {
   OnchainTransferResponse,
   ConnextBlockNumberResponse,
 } from './types';
-import { parseResponseBody, generatePreimageAndHash } from '../utils/utils';
+import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, defer, timer, Subscription, throwError, interval } from 'rxjs';
 import { take, pluck, timeout, filter, catchError, mergeMapTo, mergeMap } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
@@ -390,15 +390,13 @@ class ConnextClient extends SwapClient {
       if (!this.seed) {
         throw errors.MISSING_SEED;
       }
-      // await this.initWallet(this.seed);
       /*
       await Promise.all([
         this.subscribePreimage(),
-        this.subscribeIncomingTransfer(),
         this.subscribeDeposit(),
       ]);
       */
-      // const { publicIdentifier } = (await this.getClientConfig());
+      await this.createNode(this.seed);
       const config = await this.getClientConfig();
       console.log('config is', config);
       const { publicIdentifier } = config;
@@ -458,7 +456,7 @@ class ConnextClient extends SwapClient {
         this.logger.trace('deposit successfully reconciled');
       },
       error: (e) => {
-        this.logger.trace(`stopped deposit calls because: ${e}`);
+        this.logger.trace(`stopped deposit calls because: ${JSON.stringify(e)}`);
       }
     });
   }
@@ -472,7 +470,6 @@ class ConnextClient extends SwapClient {
 
     assert(this.channel, 'cannot send transfer without channel address');
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
-    const { rPreimage } = await generatePreimageAndHash();
     const expiry = await this.getExpiry(this.finalLock)
     await this.executeHashLockTransfer({
       type: "HashlockTransfer",
@@ -484,9 +481,7 @@ class ConnextClient extends SwapClient {
       },
       recipient: destination,
       meta: {
-        // TODO: we generate a random 32 byte hex string until connext
-        // adds support to generate it from their side. Currently, it is buggy.
-        routingId: `0x${rPreimage}`,
+        routingId: this.deriveRoutingId(rHash, tokenAddress),
       },
       channelAddress: this.channel,
       publicIdentifier: this.publicIdentifier,
@@ -499,6 +494,10 @@ class ConnextClient extends SwapClient {
     return (blockHeight + locktime).toString();
   }
 
+  private deriveRoutingId = (lockHash: string, assetId: string): string => {
+    return sha256(['address', 'bytes32'], [assetId, `0x${lockHash}`]);
+  }
+
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
@@ -506,7 +505,6 @@ class ConnextClient extends SwapClient {
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
-    const { rPreimage } = await generatePreimageAndHash();
     try {
       let secret;
       if (deal.role === SwapRole.Maker) {
@@ -524,9 +522,7 @@ class ConnextClient extends SwapClient {
           },
           recipient: deal.destination,
           meta: {
-            // TODO: we generate a random 32 byte hex string until connext
-            // adds support to generate it from their side. Currently, it is buggy.
-            routingId: `0x${rPreimage}`,
+            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
           },
           channelAddress: this.channel,
           publicIdentifier: this.publicIdentifier,
@@ -555,9 +551,7 @@ class ConnextClient extends SwapClient {
           },
           recipient: deal.destination,
           meta: {
-            // TODO: we generate a random 32 byte hex string until connext
-            // adds support to generate it from their side. Currently, it is buggy.
-            routingId: `0x${rPreimage}`,
+            routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
           },
           channelAddress: this.channel,
           publicIdentifier: this.publicIdentifier,
@@ -752,17 +746,21 @@ class ConnextClient extends SwapClient {
   }
 
   /**
+   * Creates connext node
+   */
+  private createNode = async (mnemonic: string): Promise<void> => {
+    await this.sendRequest('/node', 'POST', {
+      mnemonic,
+      index: 0
+    });
+  }
+
+  /**
    * Gets the configuration of Connext client.
    */
   private getClientConfig = async (): Promise<ConnextConfig> => {
     const res = await this.sendRequest('/config', 'GET');
     const clientConfig = await parseResponseBody<ConnextConfigResponse>(res);
-    if (clientConfig.length === 0) {
-      await this.sendRequest('/node', 'POST', {
-        index: 0
-      });
-      return (await this.getClientConfig());
-    }
     return clientConfig[0];
   }
 
