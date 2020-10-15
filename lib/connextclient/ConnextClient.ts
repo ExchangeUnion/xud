@@ -653,7 +653,8 @@ class ConnextClient extends SwapClient {
       const currentBlockHeight = await this.getHeight();
       const expiry = parseInt(transferStatusResponse.transferState.expiry);
 
-      const getStatusFromExpiry = (currentHeight: number, expiry: number): string => {
+      const getStatusFromStatusResponse = (currentHeight: number, transferStatusResponse: ConnextTransferStatus): string => {
+        const preimage = transferStatusResponse.transferResolver?.preImage;
         if (
           expiry > 0 &&
           currentHeight >= expiry
@@ -662,7 +663,17 @@ class ConnextClient extends SwapClient {
         }
         return 'PENDING';
       };
-      const transferStatus = getStatusFromExpiry(currentBlockHeight, expiry);
+      const transferStatus = getStatusFromStatusResponse(currentBlockHeight, transferStatusResponse);
+
+      /*
+      if (preimage) {
+        // TODO: should we add protection here against resolving after expiry?
+        return {
+          state: PaymentState.Succeeded,
+          preimage: preimage.slice(2),
+        };
+      }
+      */
 
       this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatus}`);
       switch (transferStatus) {

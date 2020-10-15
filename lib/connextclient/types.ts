@@ -130,6 +130,9 @@ export type ConnextTransferStatus = {
     routingId: string;
     path: ConnextRoutingPath[];
   };
+  transferResolver?: {
+    preImage?: string;
+  };
 };
 
 export type ExpectedIncomingTransfer = {
