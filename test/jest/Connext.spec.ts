@@ -330,7 +330,7 @@ describe('ConnextClient', () => {
     });
 
     it('requests collateral plus 3% buffer when we have none', async () => {
-      connext['_maxChannelInboundAmount'].set('ETH', 0);
+      connext['inboundAmounts'].set('ETH', 0);
       connext.setReservedInboundAmount(amount, currency);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
@@ -340,7 +340,7 @@ describe('ConnextClient', () => {
     });
 
     it('requests collateral plus 3% buffer when we have some collateral already', async () => {
-      connext['_maxChannelInboundAmount'].set('ETH', amount * 0.5);
+      connext['inboundAmounts'].set('ETH', amount * 0.5);
       connext.setReservedInboundAmount(amount, currency);
       expect(connext['sendRequest']).toHaveBeenCalledWith(
         '/request-collateral',
@@ -350,7 +350,7 @@ describe('ConnextClient', () => {
     });
 
     it('does not request collateral when we have more than enough to cover the reserved inbound amount', async () => {
-      connext['_maxChannelInboundAmount'].set('ETH', amount * 2);
+      connext['inboundAmounts'].set('ETH', amount * 2);
       connext.setReservedInboundAmount(amount, currency);
       expect(connext['sendRequest']).toHaveBeenCalledTimes(0);
     });
@@ -361,7 +361,7 @@ describe('ConnextClient', () => {
     const smallQuantity = 100;
     beforeEach(() => {
       connext['sendRequest'] = jest.fn().mockResolvedValue(undefined);
-      connext['_maxChannelInboundAmount'].set('ETH', 0);
+      connext['inboundAmounts'].set('ETH', 0);
     });
 
     it('requests collateral plus 5% buffer when there is none', async () => {
@@ -384,7 +384,7 @@ describe('ConnextClient', () => {
 
     it('requests the full collateral amount even when there is some existing collateral', async () => {
       const partialCollateral = 5000;
-      connext['_maxChannelInboundAmount'].set('ETH', partialCollateral);
+      connext['inboundAmounts'].set('ETH', partialCollateral);
 
       expect(() => connext.checkInboundCapacity(quantity, 'ETH')).toThrowError('channel collateralization in progress, please try again in ~1 minute');
 
@@ -421,7 +421,7 @@ describe('ConnextClient', () => {
     });
 
     it('does not request collateral or throw when there is sufficient collateral', async () => {
-      connext['_maxChannelInboundAmount'].set('ETH', quantity);
+      connext['inboundAmounts'].set('ETH', quantity);
       connext.checkInboundCapacity(quantity, 'ETH');
 
       expect(connext['sendRequest']).toHaveBeenCalledTimes(0);

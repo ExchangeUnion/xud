@@ -10,8 +10,8 @@ import * as lndinvoices from '../proto/lndinvoices_pb';
 import { LightningClient, WalletUnlockerClient } from '../proto/lndrpc_grpc_pb';
 import * as lndrpc from '../proto/lndrpc_pb';
 import swapErrors from '../swaps/errors';
-import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, TradingLimits, WithdrawArguments } from '../swaps/SwapClient';
-import { CloseChannelParams, OpenChannelParams, SwapDeal } from '../swaps/types';
+import SwapClient, { ChannelBalance, ClientStatus, PaymentState, SwapClientInfo, WithdrawArguments } from '../swaps/SwapClient';
+import { CloseChannelParams, OpenChannelParams, SwapCapacities, SwapDeal } from '../swaps/types';
 import { deriveChild } from '../utils/seedutil';
 import { base64ToHex, hexToUint8Array } from '../utils/utils';
 import errors from './errors';
@@ -63,8 +63,9 @@ class LndClient extends SwapClient {
   private invoiceSubscriptions = new Map<string, ClientReadableStream<lndrpc.Invoice>>();
   private initRetryTimeout?: NodeJS.Timeout;
   private _totalOutboundAmount = 0;
-  private _maxChannelOutboundAmount = 0;
-  private _maxChannelInboundAmount = 0;
+  private totalInboundAmount = 0;
+  private maxChannelOutboundAmount = 0;
+  private maxChannelInboundAmount = 0;
 
   private initWalletResolve?: (value: boolean) => void;
   private watchMacaroonResolve?: (value: boolean) => void;
@@ -193,10 +194,6 @@ class LndClient extends SwapClient {
 
   public totalOutboundAmount = () => {
     return this._totalOutboundAmount;
-  }
-
-  public maxChannelOutboundAmount = () => {
-    return this._maxChannelOutboundAmount;
   }
 
   public checkInboundCapacity = (_inboundAmount: number) => {
@@ -715,6 +712,7 @@ class LndClient extends SwapClient {
     let balance = 0;
     let inactiveBalance = 0;
     let totalOutboundAmount = 0;
+    let totalInboundAmount = 0;
     channels.toObject().channelsList.forEach((channel) => {
       if (channel.active) {
         balance += channel.localBalance;
@@ -725,6 +723,7 @@ class LndClient extends SwapClient {
         }
 
         const inbound = channel.remoteBalance - channel.remoteChanReserveSat;
+        totalInboundAmount += inbound;
         if (maxInbound < inbound) {
           maxInbound = inbound;
         }
@@ -733,19 +732,24 @@ class LndClient extends SwapClient {
       }
     });
 
-    if (this._maxChannelOutboundAmount !== maxOutbound) {
-      this._maxChannelOutboundAmount = maxOutbound;
+    if (this.maxChannelOutboundAmount !== maxOutbound) {
+      this.maxChannelOutboundAmount = maxOutbound;
       this.logger.debug(`new channel maximum outbound capacity: ${maxOutbound}`);
     }
 
-    if (this._maxChannelInboundAmount !== maxInbound) {
-      this._maxChannelInboundAmount = maxInbound;
+    if (this.maxChannelInboundAmount !== maxInbound) {
+      this.maxChannelInboundAmount = maxInbound;
       this.logger.debug(`new channel inbound capacity: ${maxInbound}`);
     }
 
     if (this._totalOutboundAmount !== totalOutboundAmount) {
       this._totalOutboundAmount = totalOutboundAmount;
-      this.logger.debug(`new channel total outbound capacity: ${maxOutbound}`);
+      this.logger.debug(`new channel total outbound capacity: ${totalOutboundAmount}`);
+    }
+
+    if (this.totalInboundAmount !== totalInboundAmount) {
+      this.totalInboundAmount = totalInboundAmount;
+      this.logger.debug(`new channel total inbound capacity: ${totalInboundAmount}`);
     }
 
     const pendingOpenBalance = pendingChannels.toObject().pendingOpenChannelsList.
@@ -754,6 +758,8 @@ class LndClient extends SwapClient {
     return {
       maxOutbound,
       maxInbound,
+      totalOutboundAmount,
+      totalInboundAmount,
       balance,
       inactiveBalance,
       pendingOpenBalance,
@@ -765,11 +771,13 @@ class LndClient extends SwapClient {
     return { balance, inactiveBalance, pendingOpenBalance };
   }
 
-  public tradingLimits = async (): Promise<TradingLimits> => {
-    const { maxOutbound, maxInbound } = await this.updateChannelBalances();
+  public swapCapacities = async (): Promise<SwapCapacities> => {
+    const { maxOutbound, maxInbound, totalInboundAmount, totalOutboundAmount } = await this.updateChannelBalances(); // get fresh balances
     return {
-      maxSell: maxOutbound,
-      maxBuy: maxInbound,
+      maxOutboundChannelCapacity: maxOutbound,
+      maxInboundChannelCapacity: maxInbound,
+      totalOutboundCapacity: totalOutboundAmount,
+      totalInboundCapacity: totalInboundAmount,
     };
   }
 

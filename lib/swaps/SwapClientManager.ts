@@ -13,6 +13,7 @@ import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
 import assert from 'assert';
+import { TradingLimits } from './types';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
   return (swapClient.type === SwapClientType.Connext);
@@ -160,6 +161,26 @@ class SwapClientManager extends EventEmitter {
       await Promise.all(lndAvailablePromises);
     } catch (currency) {
       throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
+    }
+  }
+
+  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
+    const swapClient = this.get(currency);
+    if (swapClient) {
+      const swapCapacities = await swapClient.swapCapacities(currency);
+      const reservedOutbound = this.outboundReservedAmounts.get(currency) ?? 0;
+      const reservedInbound = this.inboundReservedAmounts.get(currency) ?? 0;
+      const availableOutboundCapacity = Math.max(0, swapCapacities.totalOutboundCapacity - reservedOutbound);
+      const availableInboundCapacity = Math.max(0, swapCapacities.totalInboundCapacity - reservedInbound);
+
+      return {
+        reservedOutbound,
+        reservedInbound,
+        maxSell: Math.min(swapCapacities.maxOutboundChannelCapacity, availableOutboundCapacity),
+        maxBuy: Math.min(swapCapacities.maxInboundChannelCapacity, availableInboundCapacity),
+      };
+    } else {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
     }
   }
 

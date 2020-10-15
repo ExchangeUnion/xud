@@ -8,10 +8,10 @@ import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
-import { ChannelBalance, TradingLimits } from '../swaps/SwapClient';
+import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -125,7 +125,6 @@ class Service {
           await swapClient.channelBalance(currency),
           await swapClient.walletBalance(currency),
         ]);
-        channelBalance.reservedBalance = this.swapClientManager.getOutboundReservedAmount(currency);
         channelBalances.set(currency, channelBalance);
         walletBalances.set(currency, walletBalance);
       } else {
@@ -136,7 +135,6 @@ class Service {
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
           balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
-            channelBalance.reservedBalance = this.swapClientManager.getOutboundReservedAmount(currency);
             channelBalances.set(currency, channelBalance);
           }).catch(this.logger.error));
           balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
@@ -148,8 +146,7 @@ class Service {
     }
     const balances = new Map<string, {
       channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
-      walletBalance: number, unconfirmedWalletBalance: number,
-      totalBalance: number, reservedBalance?: number,
+      walletBalance: number, unconfirmedWalletBalance: number, totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
       const walletBalance = walletBalances.get(currency);
@@ -164,7 +161,6 @@ class Service {
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
           inactiveChannelBalance: channelBalance.inactiveBalance,
-          reservedBalance: channelBalance.reservedBalance,
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
         });
@@ -181,18 +177,13 @@ class Service {
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const tradingLimits = await swapClient.tradingLimits(currency);
-        tradingLimitsMap.set(currency, tradingLimits);
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
+      const tradingLimits = await this.swapClientManager.tradingLimits(currency.toUpperCase());
+      tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
-          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+          promises.push(this.swapClientManager.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
           }).catch(this.logger.error));
         }
