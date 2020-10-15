@@ -31,13 +31,13 @@ const currencies = [
     id: 'USDT',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 6,
-    tokenAddress: '0x292Ba2F10dbFB8925A209d3AdF09C2D2b1f491d4',
+    tokenAddress: '0x6149AA6798a75450EFb0151204513ce197f626Ce',
   },
   {
     id: 'DAI',
     swapClient: SwapClientType.Connext,
     decimalPlaces: 18,
-    tokenAddress: '0x5CF98f1782117a20D8613Bf42701026c86061857',
+    tokenAddress: '0x69C3d485623bA3f382Fc0FB6756c4574d43C1618',
   },
   /*
   {
