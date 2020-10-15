@@ -38,8 +38,8 @@ import {
   ConnextBlockNumberResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, defer, timer, Subscription, throwError, interval } from 'rxjs';
-import { take, pluck, timeout, filter, catchError, mergeMapTo, mergeMap } from 'rxjs/operators';
+import { Observable, fromEvent, from, defer, Subscription, throwError, interval } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -650,17 +650,35 @@ class ConnextClient extends SwapClient {
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
+      const currentBlockHeight = await this.getHeight();
+      const expiry = parseInt(transferStatusResponse.transferState.expiry);
 
-      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatusResponse.status}`);
-      switch (transferStatusResponse.status) {
+      const getStatusFromExpiry = (currentHeight: number, expiry: number): string => {
+        if (
+          expiry > 0 &&
+          currentHeight >= expiry
+        ) {
+          return 'EXPIRED';
+        }
+        return 'PENDING';
+      };
+      const transferStatus = getStatusFromExpiry(currentBlockHeight, expiry);
+
+      this.logger.trace(`hashlock status for connext transfer with hash ${rHash} is ${transferStatus}`);
+      switch (transferStatus) {
         case 'PENDING':
           return { state: PaymentState.Pending };
         case 'COMPLETED':
+          return { state: PaymentState.Pending };
+          // TODO:
+          /*
           return {
             state: PaymentState.Succeeded,
             preimage: transferStatusResponse.preImage?.slice(2),
           };
+          */
         case 'EXPIRED':
+          /* TODO:
           const expiredTransferUnlocked$ = defer(() => from(
             // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
             // in order to unlock the funds we'll need to call /hashlock-resolve with the paymentId
@@ -683,22 +701,13 @@ class ConnextClient extends SwapClient {
               this.logger.debug(`successfully unlocked an expired connext transfer with rHash: ${rHash}`);
             },
           });
+          */
           return { state: PaymentState.Failed };
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash}: ${JSON.stringify(transferStatusResponse)} - attempting to reject app install proposal`);
-          try {
-            await this.sendRequest('/reject-install', 'POST', {
-              appIdentityHash: transferStatusResponse.senderAppIdentityHash,
-            });
-            this.logger.debug(`connext transfer proposal with hash ${rHash} successfully rejected - transfer state is now failed`);
-            return { state: PaymentState.Failed };
-          } catch (e) {
-            // in case of error we're still consider the payment as pending
-            this.logger.error('failed to reject connext app install proposal', e);
-            return { state: PaymentState.Pending };
-          }
+          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash} and assetId ${assetId}: ${JSON.stringify(transferStatusResponse)}`);
+          return { state: PaymentState.Failed };
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {

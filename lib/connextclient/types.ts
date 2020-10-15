@@ -99,24 +99,36 @@ export type ConnextDepositResponse = {
   txhash: string;
 };
 
-/**
- * The response for hashLockTransfer call.
- */
+type ConnextRoutingPath = {
+  recipient: string;
+  recipientChainId: number;
+  recipientAssetId: string;
+};
+
 export type ConnextTransferStatus = {
-  senderAppIdentityHash: string;
-  receiverIdentifier: string;
-  senderIdentifier: string;
+  channelFactoryAddress: string;
   assetId: string;
-  amount: string;
-  lockHash: string;
-  status: string;
-  meta: {
-    sender: string;
-    timelock: string;
+  chainId: number;
+  channelAddress: string;
+  balance: {
+    amount: string[];
+    to: string[];
   };
-  preImage?: string;
-  expiry: {
-    _hex: string;
+  initiator: string;
+  responder: string;
+  initialStateHash: string;
+  transferDefinition: string;
+  transferEncodings: string[];
+  transferId: string;
+  transferState: {
+    lockHash: string;
+    expiry: string;
+  };
+  transferTimeout: string;
+  meta: {
+    requireOnline: boolean;
+    routingId: string;
+    path: ConnextRoutingPath[];
   };
 };
 
