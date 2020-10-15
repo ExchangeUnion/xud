@@ -27,10 +27,3 @@ Object {
   "message": "currency must consist of 2 to 5 upper case English letters or numbers",
 }
 `;
-
-exports[`Service tradingLimits throws when swap client is not found 1`] = `
-Object {
-  "code": "7.1",
-  "message": "swapClient for currency BBB not found",
-}
-`;
