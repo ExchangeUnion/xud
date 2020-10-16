@@ -186,7 +186,6 @@ class ConnextClient extends SwapClient {
       expiry,
       rHash,
       paymentId,
-      transferId,
     } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
