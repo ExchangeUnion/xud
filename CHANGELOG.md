@@ -55,6 +55,29 @@ Most notable features of this release:
 
 # [1.0.0](https://github.com/ExchangeUnion/xud/compare/v1.0.0-beta.8...v1.0.0) (2020-09-01)
 
+This is the first major release of xud. This release contains several key fixes and features designed to improve stability and the likelihood of successful swaps when trading with peers.
+
+## Connext
+
+This version continues expanding support for Connext. Tokens can now be withdrawn from one's Connext balance to an on-chain address. Collateral is automatically requested from the Connext node upon depositing tokens to allow for incoming payments to succeed on the first try.
+
+It also handles and prevents an edge case that could have caused xud to crash if Connext receives an expected incoming transfer twice.
+
+## Order Book
+
+The decentralized order book has had some improvements to make it more robust. "Dust" orders - where at least one side of a trade may be for an amount so small that it doesn't meet minimum HTLC sizes - are automatically removed from the order book. Previously, fragments of partially filled or removed orders may have been left over and remained in the order book despite being effectively untradeable.
+
+This version also improves the logic for adding back orders that failed to swap. Orders - or portions thereof - are removed from the order book as they are matched. However, if they are not swapped successfully then xud (unless being run in "strict" mode) will add them back to the order book so that they may be traded again by a future order, perhaps after correcting temporary network or channel management issues that may have caused the first swap attempt to fail. We've fixed this logic to ensure we always add back peer orders that fail a swap. On the other hand, we've also added checks to ensure we don't add back an order that is *no longer valid* - as may be the case when an order is canceled by a peer while we were attempting to swap it.
+
+## Order Replacement
+
+Order replacement has been supported since early pre-release versions of xud and is a handy way to update existing orders in response to changing market conditions. However, on the network layer, order replacements were communicated to peers via two separate packets - one to remove the old order and one to add the new one replacing it.  This allowed for the possibility of delays or inconsistency as the two packets may arrive or be processed at different times. This version supports replacing orders in a single packet, with the aim of making order replacement as atomic as possible both locally and on the xud network.
+
+## Failed Swap Monitoring
+
+Xud has a Swap Recovery module that was originally designed to recover swaps that were in progress during an unexpected crash, with the goal of ensuring that we claim any payments we are expecting from swaps. Over time this same module was used to monitor swaps that xud would deem as "failed" but where HTLCs were still pending. If an outgoing HTLC was eventually claimed by an unscrupulous peer, xud would claim its corresponding incoming payment.
+
+This version goes back to Swap Recovery handling only swaps that were aborted due to an unexpected crash. Similar logic has been added to monitor pending HTLCs for active swaps separately. Swaps now remain "active" as long as any HTLCs exist, and the corresponding orders held in limbo until these HTLCs reach a final resolution. This ensures that orders cannot be double filled. Peers that we detect to have settled an old HTLC are immediately banned, as this is recognized as intentional malicious behavior that may exploit the [free option problem](https://lists.linuxfoundation.org/pipermail/lightning-dev/2018-December/001752.html).
 
 ### Bug Fixes
 
