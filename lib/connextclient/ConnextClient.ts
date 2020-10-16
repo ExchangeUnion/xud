@@ -610,7 +610,7 @@ class ConnextClient extends SwapClient {
       throw new Error('could not find incoming transfer to resolve');
     }
     const { transferId, paymentId: routingId } = incomingTransfer;
-    await this.sendRequest('/hashlock-transfer/resolve', 'POST', {
+    await this.sendRequest('/transfers/resolve', 'POST', {
       transferId,
       conditionType: "HashlockTransfer",
       details: {
@@ -631,7 +631,7 @@ class ConnextClient extends SwapClient {
       const { paymentId } = expectedIncomingTransfer;
       if (paymentId) {
         // resolve a hashlock with a paymentId but no preimage to cancel it
-        await this.sendRequest('/hashlock-resolve', 'POST', {
+        await this.sendRequest('/transfers', 'POST', {
           paymentId,
           assetId: expectedIncomingTransfer.tokenAddress,
         });
@@ -996,7 +996,7 @@ class ConnextClient extends SwapClient {
     const lockHash = payload.details.lockHash;
     this.logger.debug(`sending payment of ${payload.amount} with hash ${lockHash} to ${payload.recipient}`);
     this.outgoingTransferHashes.add(lockHash);
-    const res = await this.sendRequest('/hashlock-transfer/create', 'POST', payload);
+    const res = await this.sendRequest('/transfers/create', 'POST', payload);
     const transferResponse = await parseResponseBody<ConnextTransferResponse>(res);
     return transferResponse;
   }
