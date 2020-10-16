@@ -105,7 +105,7 @@ type ConnextRoutingPath = {
   recipientAssetId: string;
 };
 
-export type ConnextTransferStatus = {
+export type ConnextTransfer = {
   channelFactoryAddress: string;
   assetId: string;
   chainId: number;
@@ -129,11 +129,14 @@ export type ConnextTransferStatus = {
     requireOnline: boolean;
     routingId: string;
     path: ConnextRoutingPath[];
+    senderIdentifier?: string;
   };
   transferResolver?: {
     preImage?: string;
   };
 };
+
+export type TransfersByRoutingIdResponse = ConnextTransfer[];
 
 export type ExpectedIncomingTransfer = {
   rHash: string;

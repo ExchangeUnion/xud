@@ -28,7 +28,7 @@ import {
   ConnextClientConfig,
   ConnextInfo,
   TokenPaymentRequest,
-  ConnextTransferStatus,
+  ConnextTransfer,
   ExpectedIncomingTransfer,
   ProvidePreimageEvent,
   TransferReceivedEvent,
@@ -215,10 +215,8 @@ class ConnextClient extends SwapClient {
       units === expectedUnits &&
       timelock >= expectedTimelock - TIMELOCK_BUFFER
     ) {
-      expectedIncomingTransfer.paymentId = paymentId;
-      expectedIncomingTransfer.transferId = transferId;
       this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
-      // this.expectedIncomingTransfers.delete(rHash); // TODO: SAFU to not remove it here? Swaps also checks for lockHash reuse
+      this.expectedIncomingTransfers.delete(rHash);
       this.emit('htlcAccepted', rHash, units, currency);
     } else {
       if (tokenAddress !== expectedTokenAddress) {
@@ -597,19 +595,25 @@ class ConnextClient extends SwapClient {
     this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
   }
 
+  private getTransferByRoutingId = async (routingId: string): Promise<ConnextTransfer> => {
+    const res = await this.sendRequest(`/${this.publicIdentifier}/transfers/routing-id/${routingId}`, 'GET');
+    const transfers = await parseResponseBody<ConnextTransfer[]>(res);
+    if (transfers.length !== 1) {
+      throw new Error(`could not find transfer by routing id ${routingId}`);
+    }
+    return transfers[0];
+  };
+
   /**
    * Resolves a HashLock Transfer on the Connext network.
    */
   public settleInvoice = async (rHash: string, rPreimage: string, currency: string) => {
     this.logger.debug(`settling ${currency} invoice for ${rHash} with preimage ${rPreimage}`);
-    // const assetId = this.getTokenAddress(currency);
+    const assetId = this.getTokenAddress(currency);
+    const routingId = this.deriveRoutingId(rHash, assetId);
     const lockHash = `0x${rHash}`;
-    const incomingTransfer = this.expectedIncomingTransfers.get(rHash);
-    if (!incomingTransfer) {
-      // TODO: also attempt to manually get those from the node
-      throw new Error('could not find incoming transfer to resolve');
-    }
-    const { transferId, paymentId: routingId } = incomingTransfer;
+    const pendingTransfer = await this.getTransferByRoutingId(routingId);
+    const { transferId } = pendingTransfer;
     await this.sendRequest('/transfers/resolve', 'POST', {
       transferId,
       conditionType: "HashlockTransfer",
@@ -647,19 +651,20 @@ class ConnextClient extends SwapClient {
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
     const res = await this.sendRequest(`/${this.publicIdentifier}/channels/${this.channel}/transfers/routing-id/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
-    const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
+    const transferStatusResponse = await parseResponseBody<ConnextTransfer>(res);
     return transferStatusResponse;
   }
 
   public lookupPayment = async (rHash: string, currency: string): Promise<PaymentStatus> => {
+    this.logger.error(`lookupPayment for ${rHash}`);
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
       const currentBlockHeight = await this.getHeight();
       const expiry = parseInt(transferStatusResponse.transferState.expiry);
 
-      const getStatusFromStatusResponse = (currentHeight: number, transferStatusResponse: ConnextTransferStatus): string => {
-        const preimage = transferStatusResponse.transferResolver?.preImage;
+      const getStatusFromStatusResponse = (currentHeight: number, transfer: ConnextTransfer): string => {
+        const preimage = transfer.transferResolver?.preImage;
         if (preimage) {
           return 'COMPLETED';
         }
@@ -678,14 +683,11 @@ class ConnextClient extends SwapClient {
         case 'PENDING':
           return { state: PaymentState.Pending };
         case 'COMPLETED':
-          return { state: PaymentState.Pending };
-          // TODO:
-          /*
+          assert(transferStatusResponse.transferResolver?.preImage, 'Cannot mark payment as COMPLETED without preimage');
           return {
             state: PaymentState.Succeeded,
-            preimage: transferStatusResponse.preImage?.slice(2),
+            preimage: transferStatusResponse.transferResolver.preImage.slice(2)
           };
-          */
         case 'EXPIRED':
           /* TODO:
           const expiredTransferUnlocked$ = defer(() => from(
@@ -720,6 +722,7 @@ class ConnextClient extends SwapClient {
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
+        this.logger.trace(`hashlock status for connext transfer with hash ${rHash} not found`);
         return { state: PaymentState.Failed };
       }
       this.logger.error(`could not lookup connext transfer for ${rHash}`, err);

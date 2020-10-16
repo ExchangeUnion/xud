@@ -62,7 +62,7 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
-  private static readonly SWAP_COMPLETE_TIMEOUT = 30000;
+  private static readonly SWAP_COMPLETE_TIMEOUT = 10000;
   /**
    * Additional time that the maker will wait for a swap to be completed before considering it timed
    * out. This exists because the maker starts timing sooner and ends timing later than the taker.
@@ -1305,10 +1305,12 @@ class Swaps extends EventEmitter {
       // will cancel any incoming HTLCs rather than letting them expire and force close channels
       if (deal.phase === SwapPhase.SwapAccepted || deal.phase === SwapPhase.SendingPayment) {
         const swapClient = this.swapClientManager.get(deal.makerCurrency)!;
+        console.log('REMOVING THE INVOICE AS MAKER');
         swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
       }
     } else if (deal.phase === SwapPhase.SendingPayment) {
       const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
+      console.log('REMOVING THE INVOICE AS TAKER');
       swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
     }
 
