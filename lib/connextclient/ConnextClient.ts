@@ -254,13 +254,19 @@ class ConnextClient extends SwapClient {
 
   private subscribeIncomingTransfer = async () => {
     await this.sendRequest("/event/subscribe", "POST", {
-      CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
+      publicIdentifier: this.publicIdentifier,
+      events: {
+        CONDITIONAL_TRANSFER_CREATED: `http://${this.webhookhost}:${this.webhookport}/incoming-transfer`,
+      }
     });
   };
 
   private subscribePreimage = async () => {
     await this.sendRequest("/event/subscribe", "POST", {
-      CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage`,
+      publicIdentifier: this.publicIdentifier,
+      events: {
+        CONDITIONAL_TRANSFER_RESOLVED: `http://${this.webhookhost}:${this.webhookport}/preimage`,
+      }
     });
   };
 
@@ -392,7 +398,6 @@ class ConnextClient extends SwapClient {
       }
       /*
       await Promise.all([
-        this.subscribePreimage(),
         this.subscribeDeposit(),
       ]);
       */
@@ -641,7 +646,7 @@ class ConnextClient extends SwapClient {
   }
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
-    const res = await this.sendRequest(`/channel/${this.channel}/transfer/${this.deriveRoutingId(lockHash, assetId)}/${this.publicIdentifier}`, 'GET');
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channel/${this.channel}/transfer/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
     const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
     return transferStatusResponse;
   }
@@ -778,7 +783,7 @@ class ConnextClient extends SwapClient {
   }
 
   private getChannel = async (): Promise<string> => {
-    const res = await this.sendRequest('/channel', 'GET');
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channels`, 'GET');
     const channel = await parseResponseBody<ConnextChannelResponse>(res);
     if (channel.length === 0) {
       await this.sendRequest('/request-setup', 'POST', {
@@ -897,7 +902,7 @@ class ConnextClient extends SwapClient {
       if (!getBalancePromise) {
         // if not make a new balance request and store the promise that's waiting for a response
         const tokenAddress = this.getTokenAddress(currency);
-        getBalancePromise = this.sendRequest(`/channel/${this.channel}/${this.publicIdentifier}`, 'GET').then(async (res) => {
+        getBalancePromise = this.sendRequest(`/${this.publicIdentifier}/channels/${this.channel}`, 'GET').then(async (res) => {
           const channelDetails = await parseResponseBody<any>(res);
           const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
           if (assetIdIndex === -1) {
@@ -1089,8 +1094,8 @@ class ConnextClient extends SwapClient {
             err = errors.INSUFFICIENT_BALANCE;
             break;
           case 404:
-            // TODO: PAYMENT_NOT_FOUND error should only apply when querying transfer status
-            err = errors.PAYMENT_NOT_FOUND;
+            this.logger.error(`${endpoint} returned not found response`);
+            err = errors.NOT_FOUND;
             break;
           case 408:
             err = errors.TIMEOUT;
