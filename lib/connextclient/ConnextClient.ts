@@ -646,7 +646,7 @@ class ConnextClient extends SwapClient {
   }
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
-    const res = await this.sendRequest(`/${this.publicIdentifier}/channel/${this.channel}/transfer/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channels/${this.channel}/transfers/routing-id/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
     const transferStatusResponse = await parseResponseBody<ConnextTransferStatus>(res);
     return transferStatusResponse;
   }
