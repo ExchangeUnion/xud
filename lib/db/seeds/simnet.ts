@@ -38,7 +38,7 @@ const currencies = [
 
 const pairs = [
   // { baseCurrency: 'BTC', quoteCurrency: 'DAI' },
-   { baseCurrency: 'ETH', quoteCurrency: 'DAI' },
+   { baseCurrency: 'ETH', quoteCurrency: 'LTC' },
   // { baseCurrency: 'ETH', quoteCurrency: 'USDT' },
   // { baseCurrency: 'LTC', quoteCurrency: 'DAI' },
   // { baseCurrency: 'LTC', quoteCurrency: 'USDT' },
