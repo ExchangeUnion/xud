@@ -10,7 +10,6 @@ const HEADERS = [
   colors.blue('Total Balance'),
   colors.blue('Wallet Balance (Not Tradable)'),
   colors.blue('Channel Balance (Tradable)'),
-  colors.blue('In Orders'),
 ];
 
 const formatBalances = (balances: GetBalanceResponse.AsObject) => {
@@ -18,15 +17,14 @@ const formatBalances = (balances: GetBalanceResponse.AsObject) => {
   balances.balancesMap.forEach((balanceElement) => {
     const currency = balanceElement[0];
     const balance = balanceElement[1];
-    const element = [];
-    element.push(
+    const row = [];
+    row.push(
       currency,
       satsToCoinsStr(balance.totalBalance),
-      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
       formatBalance(balance.walletBalance, balance.unconfirmedWalletBalance),
-      satsToCoinsStr(balance.reservedBalance),
+      formatBalance(balance.channelBalance, balance.pendingChannelBalance, balance.inactiveChannelBalance),
     );
-    formatted.push(element);
+    formatted.push(row);
   });
   return formatted;
 };

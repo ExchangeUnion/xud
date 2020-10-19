@@ -2,6 +2,7 @@ import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger from '../../lib/Logger';
+import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
@@ -48,6 +49,8 @@ jest.mock('../../lib/lndclient/LndClient', () => {
   });
 });
 const tokenAddresses = new Map<string, string>();
+jest.mock('../../lib/swaps/SwapClient');
+const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 
 const logger = new Logger({});
 logger.error = jest.fn();
@@ -273,6 +276,52 @@ describe('Swaps.SwapClientManager', () => {
           uris: lndListeningUris,
         }),
       );
+    });
+  });
+
+  describe('tradingLimits', () => {
+    const setup = () => {
+      const btcClient = new mockedSwapClient();
+      btcClient.isConnected = jest.fn().mockImplementation(() => true);
+      btcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 2000,
+          maxInboundChannelCapacity: 1500,
+          totalOutboundCapacity: 2000,
+          totalInboundCapacity: 1500,
+        });
+      });
+      swapClientManager.swapClients.set('BTC', btcClient);
+
+      const ltcClient = new mockedSwapClient();
+      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
+      ltcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 7000,
+          maxInboundChannelCapacity: 5500,
+          totalOutboundCapacity: 7000,
+          totalInboundCapacity: 5500,
+        });
+      });
+      swapClientManager.swapClients.set('LTC', ltcClient);
+
+      const bchClient = new mockedSwapClient();
+      bchClient.isConnected = jest.fn().mockImplementation(() => false);
+      swapClientManager.swapClients.set('BCH', bchClient);
+    };
+
+    test('returns trading limits', async () => {
+      setup();
+      const btcTradingLimits = await swapClientManager.tradingLimits('BTC');
+
+      expect(btcTradingLimits).toBeTruthy();
+      expect(btcTradingLimits.maxSell).toEqual(2000);
+      expect(btcTradingLimits.maxBuy).toEqual(1500);
+    });
+
+    test('throws when swap client is not found', async () => {
+      setup();
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toMatchSnapshot();
     });
   });
 });

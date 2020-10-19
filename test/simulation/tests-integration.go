@@ -203,14 +203,12 @@ func testOrderBroadcastAndInvalidation(net *xudtest.NetworkHarness, ht *harnessT
 	}
 
 	order := ht.act.placeOrderAndBroadcast(net.Alice, net.Bob, req)
-	resBal, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	_, err := net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
 	ht.assert.NoError(err)
-	ht.assert.Equal(20000, int(resBal.Balances["BTC"].ReservedBalance))
 
 	ht.act.removeOrderAndInvalidate(net.Alice, net.Bob, order)
-	resBal, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
+	_, err = net.Alice.Client.GetBalance(ht.ctx, &xudrpc.GetBalanceRequest{Currency: "BTC"})
 	ht.assert.NoError(err)
-	ht.assert.Equal(0, int(resBal.Balances["BTC"].ReservedBalance))
 
 	// Cleanup.
 	ht.act.disconnect(net.Alice, net.Bob)

@@ -255,9 +255,9 @@ describe('LndClient', () => {
     });
   });
 
-  describe('tradingLimits', () => {
+  describe('swapCapacities', () => {
 
-    test('fetch and persist trading limits', async () => {
+    test('fetch and persist swap capacities', async () => {
       expect.assertions(5);
 
       lnd['pendingChannels'] = jest.fn().mockImplementation(() => {
@@ -285,13 +285,13 @@ describe('LndClient', () => {
         });
       });
 
-      const tradingLimits = await lnd.tradingLimits();
-      expect(tradingLimits.maxSell).toEqual(98);
-      expect(tradingLimits.maxBuy).toEqual(295);
+      const swapCapacities = await lnd.swapCapacities();
+      expect(swapCapacities.maxOutboundChannelCapacity).toEqual(98);
+      expect(swapCapacities.maxInboundChannelCapacity).toEqual(295);
 
       expect(lnd['listChannels']).toHaveBeenCalledTimes(1);
-      expect(lnd.maxChannelOutboundAmount()).toEqual(98);
-      expect(lnd['_maxChannelInboundAmount']).toEqual(295);
+      expect(lnd['maxChannelOutboundAmount']).toEqual(98);
+      expect(lnd['maxChannelInboundAmount']).toEqual(295);
     });
   });
 });

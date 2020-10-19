@@ -84,9 +84,6 @@ export class Balance extends jspb.Message {
     getUnconfirmedWalletBalance(): number;
     setUnconfirmedWalletBalance(value: number): void;
 
-    getReservedBalance(): number;
-    setReservedBalance(value: number): void;
-
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Balance.AsObject;
@@ -106,7 +103,6 @@ export namespace Balance {
         inactiveChannelBalance: number,
         walletBalance: number,
         unconfirmedWalletBalance: number,
-        reservedBalance: number,
     }
 }
 
@@ -2007,11 +2003,17 @@ export namespace TradeHistoryResponse {
 }
 
 export class TradingLimits extends jspb.Message { 
-    getMaxsell(): number;
-    setMaxsell(value: number): void;
+    getMaxSell(): number;
+    setMaxSell(value: number): void;
 
-    getMaxbuy(): number;
-    setMaxbuy(value: number): void;
+    getMaxBuy(): number;
+    setMaxBuy(value: number): void;
+
+    getReservedOutbound(): number;
+    setReservedOutbound(value: number): void;
+
+    getReservedInbound(): number;
+    setReservedInbound(value: number): void;
 
 
     serializeBinary(): Uint8Array;
@@ -2026,8 +2028,10 @@ export class TradingLimits extends jspb.Message {
 
 export namespace TradingLimits {
     export type AsObject = {
-        maxsell: number,
-        maxbuy: number,
+        maxSell: number,
+        maxBuy: number,
+        reservedOutbound: number,
+        reservedInbound: number,
     }
 }
 

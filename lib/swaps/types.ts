@@ -108,6 +108,28 @@ export type SanitySwap = Pick<SwapDeal, 'rHash' | 'rPreimage' | 'peerPubKey'> & 
   currency: string;
 };
 
+export type SwapCapacities = {
+  /** Max outbound capacity for a distinct channel denominated in satoshis. */
+  maxOutboundChannelCapacity: number,
+  /** Max inbound capacity for a distinct channel denominated in satoshis. */
+  maxInboundChannelCapacity: number,
+  /** The total outbound capacity. */
+  totalOutboundCapacity: number,
+  /** The total inbound capacity. */
+  totalInboundCapacity: number,
+};
+
+export type TradingLimits = {
+  /** Maximum outbound limit for an order denominated in satoshis. */
+  maxSell: number,
+  /** Maximum inbound limit for an order denominated in satoshis. */
+  maxBuy: number,
+  /**  The outbound amount reserved for open orders. */
+  reservedOutbound: number,
+  /**  The inbound amount reserved for open orders. */
+  reservedInbound: number,
+};
+
 export type ResolveRequest = {
   /** The amount of the incoming payment pending resolution, in the smallest units supported by the token. */
   amount: number,

@@ -8,10 +8,10 @@ import OrderBook from '../orderbook/OrderBook';
 import { Currency, isOwnOrder, Order, OrderPortion, OwnLimitOrder, OwnMarketOrder, OwnOrder, PeerOrder, PlaceOrderEvent } from '../orderbook/types';
 import Pool from '../p2p/Pool';
 import swapsErrors from '../swaps/errors';
-import { ChannelBalance, TradingLimits } from '../swaps/SwapClient';
+import { ChannelBalance } from '../swaps/SwapClient';
 import SwapClientManager from '../swaps/SwapClientManager';
 import Swaps from '../swaps/Swaps';
-import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess } from '../swaps/types';
+import { ResolveRequest, SwapAccepted, SwapDeal, SwapFailure, SwapSuccess, TradingLimits } from '../swaps/types';
 import { isNodePubKey } from '../utils/aliasUtils';
 import { parseUri, toUri, UriParts } from '../utils/uriUtils';
 import { checkDecimalPlaces, sortOrders, toEip55Address } from '../utils/utils';
@@ -125,7 +125,6 @@ class Service {
           await swapClient.channelBalance(currency),
           await swapClient.walletBalance(currency),
         ]);
-        channelBalance.reservedBalance = this.swapClientManager.getOutboundReservedAmount(currency);
         channelBalances.set(currency, channelBalance);
         walletBalances.set(currency, walletBalance);
       } else {
@@ -136,7 +135,6 @@ class Service {
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
           balancePromises.push(swapClient.channelBalance(currency).then((channelBalance) => {
-            channelBalance.reservedBalance = this.swapClientManager.getOutboundReservedAmount(currency);
             channelBalances.set(currency, channelBalance);
           }).catch(this.logger.error));
           balancePromises.push(swapClient.walletBalance(currency).then((walletBalance) => {
@@ -148,8 +146,7 @@ class Service {
     }
     const balances = new Map<string, {
       channelBalance: number, pendingChannelBalance: number, inactiveChannelBalance: number,
-      walletBalance: number, unconfirmedWalletBalance: number,
-      totalBalance: number, reservedBalance?: number,
+      walletBalance: number, unconfirmedWalletBalance: number, totalBalance: number,
     }>();
     channelBalances.forEach((channelBalance, currency) => {
       const walletBalance = walletBalances.get(currency);
@@ -164,7 +161,6 @@ class Service {
           channelBalance: channelBalance.balance,
           pendingChannelBalance: channelBalance.pendingOpenBalance,
           inactiveChannelBalance: channelBalance.inactiveBalance,
-          reservedBalance: channelBalance.reservedBalance,
           walletBalance: walletBalance.confirmedBalance,
           unconfirmedWalletBalance: walletBalance.unconfirmedBalance,
         });
@@ -181,18 +177,13 @@ class Service {
     if (currency) {
       argChecks.VALID_CURRENCY(args);
 
-      const swapClient = this.swapClientManager.get(currency.toUpperCase());
-      if (swapClient) {
-        const tradingLimits = await swapClient.tradingLimits(currency);
-        tradingLimitsMap.set(currency, tradingLimits);
-      } else {
-        throw swapsErrors.SWAP_CLIENT_NOT_FOUND(currency);
-      }
+      const tradingLimits = await this.swapClientManager.tradingLimits(currency.toUpperCase());
+      tradingLimitsMap.set(currency, tradingLimits);
     } else {
       const promises: Promise<any>[] = [];
       this.swapClientManager.swapClients.forEach((swapClient, currency) => {
         if (swapClient.isConnected()) {
-          promises.push(swapClient.tradingLimits(currency).then((tradingLimits) => {
+          promises.push(this.swapClientManager.tradingLimits(currency).then((tradingLimits) => {
             tradingLimitsMap.set(currency, tradingLimits);
           }).catch(this.logger.error));
         }
@@ -625,17 +616,13 @@ class Service {
     let calculatedQuantity: number;
 
     if (max) {
-      if (!price) {
-        calculatedQuantity = await this.calculateMarketOrderMaxQuantity(side, pairId);
-      } else {
-        const baseCurrency = pairId.split('/')[0];
-        const baseSwapClient = this.swapClientManager.get(baseCurrency)?.type;
+      const baseCurrency = pairId.split('/')[0];
+      const baseSwapClient = this.swapClientManager.get(baseCurrency)?.type;
 
-        const quoteCurrency = pairId.split('/')[1];
-        const quoteSwapClient = this.swapClientManager.get(quoteCurrency)?.type;
+      const quoteCurrency = pairId.split('/')[1];
+      const quoteSwapClient = this.swapClientManager.get(quoteCurrency)?.type;
 
-        calculatedQuantity = await this.calculateLimitOrderMaxQuantity(baseCurrency, quoteCurrency, side, price, baseSwapClient, quoteSwapClient);
-      }
+      calculatedQuantity = await this.calculateOrderMaxQuantity(baseCurrency, quoteCurrency, side, price, baseSwapClient, quoteSwapClient);
     } else {
       calculatedQuantity = quantity || 0;
     }
@@ -669,43 +656,61 @@ class Service {
       await this.orderBook.placeMarketOrder(placeOrderRequest);
   }
 
-  private async calculateLimitOrderMaxQuantity(baseCurrency: string, quoteCurrency: string, side: number,
-                                               price: number, baseSwapClient?: SwapClientType, quoteSwapClient?: SwapClientType) {
+  private async calculateOrderMaxQuantity(baseCurrency: string, quoteCurrency: string, side: number,
+                                          price?: number, baseSwapClient?: SwapClientType, quoteSwapClient?: SwapClientType) {
     let calculatedQuantity;
 
     const baseTradingLimits = (await this.tradingLimits({ currency: baseCurrency })).get(baseCurrency);
     const quoteTradingLimits = (await this.tradingLimits({ currency: quoteCurrency })).get(quoteCurrency);
+    const pairId = `${baseCurrency}/${quoteCurrency}`;
 
     if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Lnd) {
-      const maxGettableFromQuote = ((side === OrderSide.Sell ? quoteTradingLimits?.maxBuy : quoteTradingLimits?.maxSell) || 0) / price;
-      const maxGettableFromBase = (side === OrderSide.Sell ? baseTradingLimits?.maxSell : baseTradingLimits?.maxBuy) || 0;
+      let maxGettableFromQuote;
+      let maxGettableFromBase;
+
+      if (side === OrderSide.Sell) {
+        const quoteMaxBuy = quoteTradingLimits?.maxBuy || 0;
+        maxGettableFromQuote = price ? (quoteMaxBuy / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Sell, pairId, quoteMaxBuy);
+        maxGettableFromBase = baseTradingLimits?.maxSell || 0;
+      } else {
+        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
+        maxGettableFromQuote = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
+        maxGettableFromBase = baseTradingLimits?.maxBuy || 0;
+      }
 
       calculatedQuantity = Math.min(maxGettableFromBase, maxGettableFromQuote);
     } else if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Connext) {
+
       if (side === OrderSide.Sell) {
         calculatedQuantity = baseTradingLimits?.maxSell || 0;
       } else {
-        const maxSellableFromQuote = (quoteTradingLimits?.maxSell || 0) / price;
-        const maxBuyableFromBase = baseTradingLimits?.maxBuy || 0;
+        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
+        const maxGettableFromQuote = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
+        const maxGettableFromBase = baseTradingLimits?.maxBuy || 0;
 
-        calculatedQuantity = Math.min(maxSellableFromQuote, maxBuyableFromBase);
+        calculatedQuantity = Math.min(maxGettableFromQuote, maxGettableFromBase);
       }
 
     } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Lnd) {
-      if (side === OrderSide.Sell) {
-        const maxBuyableFromQuote = (quoteTradingLimits?.maxBuy || 0) / price;
-        const maxSellableFromBase = baseTradingLimits?.maxSell || 0;
 
-        calculatedQuantity = Math.min(maxBuyableFromQuote, maxSellableFromBase);
+      if (side === OrderSide.Sell) {
+        const quoteMaxBuy = quoteTradingLimits?.maxBuy || 0;
+        const maxGettableFromQuote = price ? (quoteMaxBuy / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Sell, pairId, quoteMaxBuy);
+        const maxGettableFromBase = baseTradingLimits?.maxSell || 0;
+
+        calculatedQuantity = Math.min(maxGettableFromQuote, maxGettableFromBase);
       } else {
-        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
+        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
+        calculatedQuantity = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
       }
 
     } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Connext) {
+
       if (side === OrderSide.Sell) {
         calculatedQuantity = baseTradingLimits?.maxSell || 0;
       } else {
-        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
+        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
+        calculatedQuantity = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
       }
 
     } else {
@@ -715,27 +720,13 @@ class Service {
     return calculatedQuantity;
   }
 
-  private async calculateMarketOrderMaxQuantity(side: number, pairId: string) {
-    let calculatedQuantity;
-
-    if (side === OrderSide.Sell) {
-      const currency = pairId.split('/')[0];
-      calculatedQuantity = (await this.tradingLimits({ currency })).get(currency)?.maxSell || 0;
-    } else {
-      const currency = pairId.split('/')[1];
-      const balance = (await this.tradingLimits({ currency })).get(currency)?.maxBuy || 0;
-      calculatedQuantity = this.calculateBuyMaxMarketQuantity(pairId, balance);
-    }
-
-    return calculatedQuantity;
-  }
-
-  private calculateBuyMaxMarketQuantity(pairId: string, balance: number) {
+  private calculateMaxGettableFromOrderBook(side: OrderSide, pairId: string, balance: number) {
     let result = 0;
     let currentBalance = balance;
 
     this.listOrders({ pairId, owner: Owner.Both, limit: 0, includeAliases: false }).forEach((orderArrays, _) => {
-      for (const order of orderArrays.sellArray) {
+      const array = side === OrderSide.Sell ? orderArrays.buyArray : orderArrays.sellArray;
+      for (const order of array) {
         if (order.quantity && order.price) {
           // market buy max calculation
           const maxBuyableFromThisPrice = currentBalance / order.price;
