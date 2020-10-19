@@ -476,6 +476,10 @@ class Pool extends EventEmitter {
     return peerInfos;
   }
 
+  public rawPeers = (): Map<string, Peer> => {
+    return this.peers;
+  }
+
   private addressIsSelf = (address: Address): boolean => {
     if (address.port === this.listenPort) {
       switch (address.host) {

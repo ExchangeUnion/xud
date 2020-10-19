@@ -304,6 +304,11 @@ class OrderBook extends EventEmitter {
     this.pairInstances.set(pairInstance.id, pairInstance);
     this.addTradingPair(pairInstance.id);
 
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
+
     this.pool.updatePairs(this.pairIds);
     return pairInstance;
   }
@@ -359,6 +364,11 @@ class OrderBook extends EventEmitter {
 
     this.pairInstances.delete(pairId);
     this.tradingPairs.delete(pairId);
+
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
 
     this.pool.updatePairs(this.pairIds);
     return pair.destroy();
