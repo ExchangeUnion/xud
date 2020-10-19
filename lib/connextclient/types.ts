@@ -1,3 +1,4 @@
+// TODO(karl): cleanup unused types
 /**
  * The configurable options for the connext client.
  */

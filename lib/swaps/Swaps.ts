@@ -1305,12 +1305,10 @@ class Swaps extends EventEmitter {
       // will cancel any incoming HTLCs rather than letting them expire and force close channels
       if (deal.phase === SwapPhase.SwapAccepted || deal.phase === SwapPhase.SendingPayment) {
         const swapClient = this.swapClientManager.get(deal.makerCurrency)!;
-        console.log('REMOVING THE INVOICE AS MAKER');
         swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
       }
     } else if (deal.phase === SwapPhase.SendingPayment) {
       const swapClient = this.swapClientManager.get(deal.takerCurrency)!;
-      console.log('REMOVING THE INVOICE AS TAKER');
       swapClient.removeInvoice(deal.rHash).catch(this.logger.error); // we don't need to await the remove invoice call
     }
 

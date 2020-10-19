@@ -131,7 +131,7 @@ class ConnextClient extends SwapClient {
   /** Public identifier for Connext */
   private publicIdentifier: string | undefined;
   /** Channel multisig address for Connext */
-  private channel: string | undefined;
+  private channelAddress: string | undefined;
 
   /** The minimum incremental quantity that we may use for collateral requests. */
   private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
@@ -207,7 +207,7 @@ class ConnextClient extends SwapClient {
     const currency = this.getCurrencyByTokenaddress(tokenAddress);
     const blockHeight = await this.getHeight();
     const timelock = expiry - blockHeight;
-    // The expected timelock can be up to 10 blocks less than the agreed upon value
+    // The timelock can be up to 10 blocks less than the agreed upon value
     const TIMELOCK_BUFFER = 10;
     if (
       tokenAddress === expectedTokenAddress &&
@@ -267,15 +267,6 @@ class ConnextClient extends SwapClient {
     });
   };
 
-  /*
-  private subscribeDeposit = async () => {
-    await this.sendRequest('/subscribe', 'POST', {
-      event: 'DEPOSIT_CONFIRMED_EVENT',
-      webhook: `http://${this.webhookhost}:${this.webhookport}/deposit-confirmed`,
-    });
-  }
-  */
-
   /**
    * Associate connext with currencies that have a token address
    */
@@ -300,7 +291,7 @@ class ConnextClient extends SwapClient {
     // first check whether we already have a pending collateral request for this currency
     // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
     const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
-      channelAddress: this.channel,
+      channelAddress: this.channelAddress,
       assetId: this.tokenAddresses.get(currency),
       amount: units.toLocaleString('fullwide', { useGrouping: false }),
       publicIdentifier: this.publicIdentifier,
@@ -393,20 +384,12 @@ class ConnextClient extends SwapClient {
       if (!this.seed) {
         throw errors.MISSING_SEED;
       }
-      /*
-      await Promise.all([
-        this.subscribeDeposit(),
-      ]);
-      */
       await this.createNode(this.seed);
       const config = await this.getClientConfig();
-      console.log('config is', config);
       const { publicIdentifier } = config;
-      console.log('setting publicIdentifier to', publicIdentifier);
       this.publicIdentifier = publicIdentifier;
       const channel = await this.getChannel();
-      this.channel = channel;
-      console.log('channel is', channel);
+      this.channelAddress = channel;
       await this.subscribeIncomingTransfer();
       await this.subscribePreimage();
       this.emit('connectionVerified', {
@@ -432,20 +415,9 @@ class ConnextClient extends SwapClient {
       mergeMap(() => {
         if (this.status === ClientStatus.ConnectionVerified) {
           return defer(() => {
-            /* TODO: reconcile deposit for all supported currencies
-            const depositRequests: Promise<any>[] = [];
-            this.tokenAddresses.forEach((tokenAddress) => {
-              const depositRequest = this.sendRequest('/deposit', 'POST', {
-                channelAddress: this.channel,
-                publicIdentifier: this.publicIdentifier,
-                assetId: tokenAddress,
-              });
-              depositRequests.push(depositRequest);
-            });
-            return from(Promise.all(depositRequests));
-            */
+            // TODO: reconcile deposit for all supported currencies
             return from(this.sendRequest('/deposit', 'POST', {
-              channelAddress: this.channel,
+              channelAddress: this.channelAddress,
               publicIdentifier: this.publicIdentifier,
               assetId: "0x0000000000000000000000000000000000000000"
             }));
@@ -470,7 +442,7 @@ class ConnextClient extends SwapClient {
   ) => {
     const tokenAddress = this.getTokenAddress(currency);
 
-    assert(this.channel, 'cannot send transfer without channel address');
+    assert(this.channelAddress, 'cannot send transfer without channel address');
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     const expiry = await this.getExpiry(this.finalLock)
     await this.executeHashLockTransfer({
@@ -485,7 +457,7 @@ class ConnextClient extends SwapClient {
       meta: {
         routingId: this.deriveRoutingId(rHash, tokenAddress),
       },
-      channelAddress: this.channel,
+      channelAddress: this.channelAddress,
       publicIdentifier: this.publicIdentifier,
     });
     return 'sendSmallestAmount is broken';
@@ -503,7 +475,7 @@ class ConnextClient extends SwapClient {
   public sendPayment = async (deal: SwapDeal): Promise<string> => {
     assert(deal.state === SwapState.Active);
     assert(deal.destination);
-    assert(this.channel, 'cannot send transfer without channel address');
+    assert(this.channelAddress, 'cannot send transfer without channel address');
     assert(this.publicIdentifier, 'cannot send transfer with channel address');
     let amount: string;
     let tokenAddress: string;
@@ -526,7 +498,7 @@ class ConnextClient extends SwapClient {
           meta: {
             routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
           },
-          channelAddress: this.channel,
+          channelAddress: this.channelAddress,
           publicIdentifier: this.publicIdentifier,
         });
         // @ts-ignore
@@ -555,7 +527,7 @@ class ConnextClient extends SwapClient {
           meta: {
             routingId: this.deriveRoutingId(deal.rHash, tokenAddress),
           },
-          channelAddress: this.channel,
+          channelAddress: this.channelAddress,
           publicIdentifier: this.publicIdentifier,
         });
         await executeTransfer;
@@ -624,7 +596,7 @@ class ConnextClient extends SwapClient {
         preImage: `0x${rPreimage}`,
       },
       publicIdentifier: this.publicIdentifier,
-      channelAddress: this.channel, // TODO: rename channel -> channelAddress
+      channelAddress: this.channelAddress,
       routingId,
     });
   }
@@ -635,6 +607,7 @@ class ConnextClient extends SwapClient {
       const { routingId } = expectedIncomingTransfer;
       if (routingId) {
         // resolve a hashlock with a routingId but no preimage to cancel it
+        // TODO(karl): P1!
         await this.sendRequest('/transfers', 'POST', {
           routingId,
           assetId: expectedIncomingTransfer.tokenAddress,
@@ -650,13 +623,12 @@ class ConnextClient extends SwapClient {
   }
 
   private async getHashLockStatus(lockHash: string, assetId: string) {
-    const res = await this.sendRequest(`/${this.publicIdentifier}/channels/${this.channel}/transfers/routing-id/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
+    const res = await this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}/transfers/routing-id/${this.deriveRoutingId(lockHash, assetId)}`, 'GET');
     const transferStatusResponse = await parseResponseBody<ConnextTransfer>(res);
     return transferStatusResponse;
   }
 
   public lookupPayment = async (rHash: string, currency: string): Promise<PaymentStatus> => {
-    this.logger.error(`lookupPayment for ${rHash}`);
     try {
       const assetId = this.getTokenAddress(currency);
       const transferStatusResponse = await this.getHashLockStatus(rHash, assetId);
@@ -752,13 +724,12 @@ class ConnextClient extends SwapClient {
     let address: string | undefined;
     let version: string | undefined;
     let status = errors.CONNEXT_CLIENT_NOT_INITIALIZED.message;
-
     if (this.isDisabled()) {
       status = errors.CONNEXT_IS_DISABLED.message;
     } else {
       status = 'Ready';
       version = 'TODO: Not exposed, yet';
-      address = this.channel || 'Waiting for channel';
+      address = this.channelAddress || 'Waiting for channel';
     }
 
     return { status, address, version };
@@ -788,7 +759,7 @@ class ConnextClient extends SwapClient {
     const channel = await parseResponseBody<ConnextChannelResponse>(res);
     if (channel.length === 0) {
       await this.sendRequest('/request-setup', 'POST', {
-        // TODO: values from config
+        // TODO(karl): P1 - values from config
         aliceUrl: 'http://192.168.63.131:8007',
         aliceIdentifier: "indra8Uz1BdpA9hV5uTm6QUv5jj1PsUyCH8m8ciA94voCzsxVmrBRor",
         chainId: '1337',
@@ -808,7 +779,6 @@ class ConnextClient extends SwapClient {
     }
 
     const { freeBalanceOffChain, nodeFreeBalanceOffChain } = await this.getBalance(currency);
-    // const { freeBalanceOffChain } = await this.getBalance(currency);
 
     const freeBalanceAmount = this.unitConverter.unitsToAmount({
       currency,
@@ -819,12 +789,6 @@ class ConnextClient extends SwapClient {
       currency,
       units: Number(nodeFreeBalanceOffChain),
     });
-    /*
-    const nodeFreeBalanceAmount = this.unitConverter.unitsToAmount({
-      currency,
-      units: Number(1000000000000000000000),
-    });
-    */
 
     this.outboundAmounts.set(currency, freeBalanceAmount);
     if (nodeFreeBalanceAmount !== this.inboundAmounts.get(currency)) {
@@ -883,56 +847,36 @@ class ConnextClient extends SwapClient {
     // check if we already have a balance request that we are waiting a response for
     // it's not helpful to have simultaneous requests for the current balance, as they
     // should return the same info.
-    /*
     let getBalancePromise = this.getBalancePromises.get(currency);
     if (!getBalancePromise) {
       // if not make a new balance request and store the promise that's waiting for a response
       const tokenAddress = this.getTokenAddress(currency);
-      getBalancePromise = this.sendRequest(`/balance/${tokenAddress}`, 'GET').then((res) => {
-        return parseResponseBody<ConnextBalanceResponse>(res);
+      getBalancePromise = this.sendRequest(`/${this.publicIdentifier}/channels/${this.channelAddress}`, 'GET').then(async (res) => {
+        const channelDetails = await parseResponseBody<any>(res);
+        const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
+        if (assetIdIndex === -1) {
+          const response = {
+            freeBalanceOffChain: 0,
+            nodeFreeBalanceOffChain: 0,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        } else {
+          const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
+          const balance = channelDetails.balances[assetIdIndex].amount[1];
+          const response = {
+            freeBalanceOffChain: balance,
+            nodeFreeBalanceOffChain: inboundBalance,
+            freeBalanceOnChain: 0,
+          } as unknown as ConnextBalanceResponse;
+          return response;
+        }
       }).finally(() => {
         this.getBalancePromises.delete(currency); // clear the stored promise
       });
       this.getBalancePromises.set(currency, getBalancePromise);
     }
-
     return getBalancePromise;
-    */
-    try {
-      let getBalancePromise = this.getBalancePromises.get(currency);
-      if (!getBalancePromise) {
-        // if not make a new balance request and store the promise that's waiting for a response
-        const tokenAddress = this.getTokenAddress(currency);
-        getBalancePromise = this.sendRequest(`/${this.publicIdentifier}/channels/${this.channel}`, 'GET').then(async (res) => {
-          const channelDetails = await parseResponseBody<any>(res);
-          const assetIdIndex = channelDetails.assetIds.indexOf(tokenAddress);
-          if (assetIdIndex === -1) {
-            const response = {
-              freeBalanceOffChain: 0,
-              nodeFreeBalanceOffChain: 0,
-              freeBalanceOnChain: 0,
-            } as unknown as ConnextBalanceResponse;
-            return response;
-          } else {
-            const inboundBalance = channelDetails.balances[assetIdIndex].amount[0];
-            const balance = channelDetails.balances[assetIdIndex].amount[1];
-            const response = {
-              freeBalanceOffChain: balance,
-              nodeFreeBalanceOffChain: inboundBalance,
-              freeBalanceOnChain: 0,
-            } as unknown as ConnextBalanceResponse;
-            return response;
-          }
-        }).finally(() => {
-          this.getBalancePromises.delete(currency); // clear the stored promise
-        });
-        this.getBalancePromises.set(currency, getBalancePromise);
-      }
-      return getBalancePromise;
-    } catch(e) {
-      console.log('error is', e);
-      throw new Error(e);
-    }
   }
 
   public deposit = async () => {
