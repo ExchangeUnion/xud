@@ -238,7 +238,9 @@ class Pool extends EventEmitter {
    * packet to currently connected peers to notify them of the change.
    */
   public updateConnextState = (tokenAddresses: Map<string, string>, pubKey?: string) => {
-    this.nodeState.connextIdentifier = pubKey || '';
+    if (pubKey) {
+      this.nodeState.connextIdentifier = pubKey;
+    }
     tokenAddresses.forEach((tokenAddress, currency) => {
       this.nodeState.tokenIdentifiers[currency] = tokenAddress;
     });

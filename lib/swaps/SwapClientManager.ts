@@ -317,7 +317,7 @@ class SwapClientManager extends EventEmitter {
         }
         this.swapClients.set(currency.id, this.connextClient);
         this.connextClient.tokenAddresses.set(currency.id, currency.tokenAddress);
-        this.emit('connextUpdate', this.connextClient.tokenAddresses, this.connextClient.address);
+        this.emit('connextUpdate', this.connextClient.tokenAddresses);
       }
     } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
