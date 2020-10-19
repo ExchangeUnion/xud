@@ -338,19 +338,21 @@ class SwapClientManager extends EventEmitter {
    * @param currency a currency that should be linked with a swap client.
    * @returns Nothing upon success, throws otherwise.
    */
-  public add = (currency: Currency): void => {
-    if (currency.swapClient === SwapClientType.Lnd) {
+  public add = async (currency: Currency) => {
+    if (currency.tokenAddress) {
+      if (currency.swapClient === SwapClientType.Connext) {
+        if (!this.connextClient) {
+          throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
+        }
+        this.swapClients.set(currency.id, this.connextClient);
+        this.connextClient.tokenAddresses.set(currency.id, currency.tokenAddress);
+        this.emit('connextUpdate', this.connextClient.tokenAddresses);
+      }
+    } else if (currency.swapClient === SwapClientType.Lnd) {
       // in case of lnd we check if the configuration includes swap client
       // for the specified currency
-      let isCurrencyConfigured = false;
-      for (const lndCurrency in this.config.lnd) {
-        if (lndCurrency === currency.id) {
-          isCurrencyConfigured = true;
-          break;
-        }
-      }
-      // adding a new lnd client at runtime is currently not supported
-      if (!isCurrencyConfigured) {
+      const config = this.config.lnd[currency.id];
+      if (!config) {
         throw errors.SWAP_CLIENT_NOT_CONFIGURED(currency.id);
       }
     }

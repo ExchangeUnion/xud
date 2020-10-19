@@ -304,6 +304,11 @@ class OrderBook extends EventEmitter {
     this.pairInstances.set(pairInstance.id, pairInstance);
     this.addTradingPair(pairInstance.id);
 
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
+
     this.pool.updatePairs(this.pairIds);
     return pairInstance;
   }
@@ -332,7 +337,7 @@ class OrderBook extends EventEmitter {
     }
     const currencyInstance = await this.repository.addCurrency({ ...currency, decimalPlaces: currency.decimalPlaces || 8 });
     this.currencyInstances.set(currencyInstance.id, currencyInstance);
-    this.swaps.swapClientManager.add(currencyInstance);
+    await this.swaps.swapClientManager.add(currencyInstance);
   }
 
   public removeCurrency = async (currencyId: string) => {
@@ -344,7 +349,6 @@ class OrderBook extends EventEmitter {
         }
       }
       this.currencyInstances.delete(currencyId);
-      this.swaps.swapClientManager.remove(currencyId);
       await currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
@@ -359,6 +363,11 @@ class OrderBook extends EventEmitter {
 
     this.pairInstances.delete(pairId);
     this.tradingPairs.delete(pairId);
+
+    this.pool.rawPeers().forEach(async (peer) => {
+      this.checkPeerCurrencies(peer);
+      await this.verifyPeerPairs(peer);
+    });
 
     this.pool.updatePairs(this.pairIds);
     return pair.destroy();
