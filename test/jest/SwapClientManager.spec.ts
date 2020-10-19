@@ -2,6 +2,7 @@ import Config from '../../lib/Config';
 import { SwapClientType } from '../../lib/constants/enums';
 import DB from '../../lib/db/DB';
 import Logger from '../../lib/Logger';
+import SwapClient from '../../lib/swaps/SwapClient';
 import SwapClientManager from '../../lib/swaps/SwapClientManager';
 import { UnitConverter } from '../../lib/utils/UnitConverter';
 
@@ -48,6 +49,8 @@ jest.mock('../../lib/lndclient/LndClient', () => {
   });
 });
 const tokenAddresses = new Map<string, string>();
+jest.mock('../../lib/swaps/SwapClient');
+const mockedSwapClient = <jest.Mock<SwapClient>><any>SwapClient;
 
 const logger = new Logger({});
 logger.error = jest.fn();
@@ -169,6 +172,57 @@ describe('Swaps.SwapClientManager', () => {
     expect(closeMock).toHaveBeenCalledTimes(2);
   });
 
+  describe('reserved amounts', () => {
+    const currency = 'BTC';
+    const amount = 10000;
+    const setReservedInboundBtcAmount = jest.fn();
+
+    beforeEach(async () => {
+      swapClientManager = new SwapClientManager(config, loggers, unitConverter);
+      await swapClientManager.init(db.models);
+      swapClientManager.swapClients.get(currency)!.setReservedInboundAmount = setReservedInboundBtcAmount;
+    });
+
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('it adds outbound reserved amounts', () => {
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount * 2);
+    });
+
+    test('it subtracts outbound reserved amounts', () => {
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toBeUndefined();
+      swapClientManager.addOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(amount);
+      swapClientManager.subtractOutboundReservedAmount(currency, amount);
+      expect(swapClientManager.getOutboundReservedAmount(currency)).toEqual(0);
+    });
+
+    test('it adds inbound reserved amounts and sets amount on swap client', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount * 2);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount * 2, currency);
+    });
+
+    test('it subtracts inbound reserved amounts', () => {
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toBeUndefined();
+      swapClientManager.addInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(amount);
+      expect(setReservedInboundBtcAmount).toHaveBeenLastCalledWith(amount, currency);
+      swapClientManager.subtractInboundReservedAmount(currency, amount);
+      expect(swapClientManager['inboundReservedAmounts'].get(currency)).toEqual(0);
+    });
+  });
+
   describe('openChannel', () => {
     let remoteIdentifier: string;
 
@@ -222,6 +276,52 @@ describe('Swaps.SwapClientManager', () => {
           uris: lndListeningUris,
         }),
       );
+    });
+  });
+
+  describe('tradingLimits', () => {
+    const setup = () => {
+      const btcClient = new mockedSwapClient();
+      btcClient.isConnected = jest.fn().mockImplementation(() => true);
+      btcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 2000,
+          maxInboundChannelCapacity: 1500,
+          totalOutboundCapacity: 2000,
+          totalInboundCapacity: 1500,
+        });
+      });
+      swapClientManager.swapClients.set('BTC', btcClient);
+
+      const ltcClient = new mockedSwapClient();
+      ltcClient.isConnected = jest.fn().mockImplementation(() => true);
+      ltcClient.swapCapacities = jest.fn().mockImplementation(() => {
+        return Promise.resolve({
+          maxOutboundChannelCapacity: 7000,
+          maxInboundChannelCapacity: 5500,
+          totalOutboundCapacity: 7000,
+          totalInboundCapacity: 5500,
+        });
+      });
+      swapClientManager.swapClients.set('LTC', ltcClient);
+
+      const bchClient = new mockedSwapClient();
+      bchClient.isConnected = jest.fn().mockImplementation(() => false);
+      swapClientManager.swapClients.set('BCH', bchClient);
+    };
+
+    test('returns trading limits', async () => {
+      setup();
+      const btcTradingLimits = await swapClientManager.tradingLimits('BTC');
+
+      expect(btcTradingLimits).toBeTruthy();
+      expect(btcTradingLimits.maxSell).toEqual(2000);
+      expect(btcTradingLimits.maxBuy).toEqual(1500);
+    });
+
+    test('throws when swap client is not found', async () => {
+      setup();
+      await expect(swapClientManager.tradingLimits('BBB')).rejects.toMatchSnapshot();
     });
   });
 });

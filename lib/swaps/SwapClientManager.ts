@@ -12,6 +12,8 @@ import Peer from '../p2p/Peer';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors from './errors';
 import SwapClient, { ClientStatus } from './SwapClient';
+import assert from 'assert';
+import { TradingLimits } from './types';
 
 export function isConnextClient(swapClient: SwapClient): swapClient is ConnextClient {
   return (swapClient.type === SwapClientType.Connext);
@@ -43,6 +45,11 @@ class SwapClientManager extends EventEmitter {
   public connextClient?: ConnextClient;
   public misconfiguredClients = new Set<SwapClient>();
   private walletPassword?: string;
+
+  /** A map of supported currency tickers to the inbound amount that is reserved by existing orders. */
+  private inboundReservedAmounts = new Map<string, number>();
+  /** A map of supported currency tickers to the outbound amount that is reserved by existing orders. */
+  private outboundReservedAmounts = new Map<string, number>();
 
   constructor(
     private config: Config,
@@ -155,6 +162,60 @@ class SwapClientManager extends EventEmitter {
     } catch (currency) {
       throw lndErrors.UNAVAILABLE(currency, ClientStatus.Disconnected);
     }
+  }
+
+  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
+    const swapClient = this.get(currency);
+    if (swapClient) {
+      const swapCapacities = await swapClient.swapCapacities(currency);
+      const reservedOutbound = this.outboundReservedAmounts.get(currency) ?? 0;
+      const reservedInbound = this.inboundReservedAmounts.get(currency) ?? 0;
+      const availableOutboundCapacity = Math.max(0, swapCapacities.totalOutboundCapacity - reservedOutbound);
+      const availableInboundCapacity = Math.max(0, swapCapacities.totalInboundCapacity - reservedInbound);
+
+      return {
+        reservedOutbound,
+        reservedInbound,
+        maxSell: Math.min(swapCapacities.maxOutboundChannelCapacity, availableOutboundCapacity),
+        maxBuy: Math.min(swapCapacities.maxInboundChannelCapacity, availableInboundCapacity),
+      };
+    } else {
+      throw errors.SWAP_CLIENT_NOT_FOUND(currency);
+    }
+  }
+
+  public getOutboundReservedAmount = (currency: string) => {
+    return this.outboundReservedAmounts.get(currency);
+  }
+
+  public getInboundReservedAmount = (currency: string) => {
+    return this.inboundReservedAmounts.get(currency);
+  }
+
+  public addOutboundReservedAmount = (currency: string, amount: number) => {
+    const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
+    const newOutboundReservedAmount = (outboundReservedAmount ?? 0) + amount;
+    this.outboundReservedAmounts.set(currency, newOutboundReservedAmount);
+  }
+
+  public addInboundReservedAmount = (currency: string, amount: number) => {
+    const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
+    const newInboundReservedAmount = (inboundReservedAmount ?? 0) + amount;
+    this.inboundReservedAmounts.set(currency, newInboundReservedAmount);
+
+    this.swapClients.get(currency)?.setReservedInboundAmount(newInboundReservedAmount, currency);
+  }
+
+  public subtractOutboundReservedAmount = (currency: string, amount: number) => {
+    const outboundReservedAmount = this.outboundReservedAmounts.get(currency);
+    assert(outboundReservedAmount && outboundReservedAmount >= amount);
+    this.outboundReservedAmounts.set(currency, outboundReservedAmount - amount);
+  }
+
+  public subtractInboundReservedAmount = (currency: string, amount: number) => {
+    const inboundReservedAmount = this.inboundReservedAmounts.get(currency);
+    assert(inboundReservedAmount && inboundReservedAmount >= amount);
+    this.inboundReservedAmounts.set(currency, inboundReservedAmount - amount);
   }
 
   /**

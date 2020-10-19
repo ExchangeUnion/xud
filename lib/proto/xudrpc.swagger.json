@@ -1878,15 +1878,25 @@
     "xudrpcTradingLimits": {
       "type": "object",
       "properties": {
-        "MaxSell": {
+        "max_sell": {
           "type": "string",
           "format": "uint64",
-          "description": "Max outbound capacity for a distinct channel denominated in satoshis."
+          "description": "Maximum outbound limit for an order denominated in satoshis."
         },
-        "MaxBuy": {
+        "max_buy": {
           "type": "string",
           "format": "uint64",
-          "description": "Max inbound capacity for a distinct channel denominated in satoshis."
+          "description": "Maximum inbound limit for an order denominated in satoshis."
+        },
+        "reserved_outbound": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The outbound amount reserved for open orders."
+        },
+        "reserved_inbound": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The inbound amount reserved for open orders."
         }
       }
     },

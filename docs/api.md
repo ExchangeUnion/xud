@@ -1288,8 +1288,10 @@
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| MaxSell | [uint64](#uint64) |  | Max outbound capacity for a distinct channel denominated in satoshis. |
-| MaxBuy | [uint64](#uint64) |  | Max inbound capacity for a distinct channel denominated in satoshis. |
+| max_sell | [uint64](#uint64) |  | Maximum outbound limit for an order denominated in satoshis. |
+| max_buy | [uint64](#uint64) |  | Maximum inbound limit for an order denominated in satoshis. |
+| reserved_outbound | [uint64](#uint64) |  | The outbound amount reserved for open orders. |
+| reserved_inbound | [uint64](#uint64) |  | The inbound amount reserved for open orders. |
 
 
 

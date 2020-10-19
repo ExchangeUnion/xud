@@ -10,12 +10,11 @@ import SwapClient, {
   ClientStatus,
   PaymentState,
   WalletBalance,
-  TradingLimits,
   SwapClientInfo,
   PaymentStatus,
   WithdrawArguments,
 } from '../swaps/SwapClient';
-import { SwapDeal, CloseChannelParams, OpenChannelParams } from '../swaps/types';
+import { SwapDeal, CloseChannelParams, OpenChannelParams, SwapCapacities } from '../swaps/types';
 import { UnitConverter } from '../utils/UnitConverter';
 import errors, { errorCodes } from './errors';
 import {
@@ -38,7 +37,7 @@ import {
 } from './types';
 import { parseResponseBody } from '../utils/utils';
 import { Observable, fromEvent, from, combineLatest, defer, timer } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
+import { take, pluck, timeout, filter, catchError, mergeMapTo } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -115,8 +114,8 @@ class ConnextClient extends SwapClient {
   private getBalancePromises = new Map<string, Promise<ConnextBalanceResponse>>();
   /** A map of currencies to promises representing collateral requests. */
   private requestCollateralPromises = new Map<string, Promise<any>>();
-  private _totalOutboundAmount = new Map<string, number>();
-  private _maxChannelInboundAmount = new Map<string, number>();
+  private outboundAmounts = new Map<string, number>();
+  private inboundAmounts = new Map<string, number>();
 
   /** The minimum incremental quantity that we may use for collateral requests. */
   private static MIN_COLLATERAL_REQUEST_SIZES: { [key: string]: number | undefined } = {
@@ -261,15 +260,33 @@ class ConnextClient extends SwapClient {
   }
 
   public totalOutboundAmount = (currency: string): number => {
-    return this._totalOutboundAmount.get(currency) || 0;
+    return this.outboundAmounts.get(currency) || 0;
   }
 
-  public maxChannelOutboundAmount = (currency: string): number => {
-    return this._totalOutboundAmount.get(currency) || 0;
+  /**
+   * Checks whether we have a pending collateral request for the currency and,
+   * if one doesn't exist, starts a new request for the specified amount. Then
+   * calls channelBalance to refresh the inbound capacity for the currency.
+   */
+  private requestCollateralInBackground = (currency: string, units: number) => {
+    // first check whether we already have a pending collateral request for this currency
+    // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
+    const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
+      assetId: this.tokenAddresses.get(currency),
+      amount: units.toLocaleString('fullwide', { useGrouping: false }),
+    }).then(() => {
+      this.requestCollateralPromises.delete(currency);
+      this.logger.debug(`completed collateral request of ${units} ${currency} units`);
+      return this.channelBalance(currency);
+    }).catch((err) => {
+      this.requestCollateralPromises.delete(currency);
+      this.logger.error(err);
+    });
+    this.requestCollateralPromises.set(currency, requestCollateralPromise);
   }
 
   public checkInboundCapacity = (inboundAmount: number, currency: string) => {
-    const inboundCapacity = this._maxChannelInboundAmount.get(currency) || 0;
+    const inboundCapacity = this.inboundAmounts.get(currency) || 0;
     if (inboundCapacity < inboundAmount) {
       // we do not have enough inbound capacity to receive the specified inbound amount so we must request collateral
       this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for order amount ${inboundAmount}`);
@@ -281,20 +298,29 @@ class ConnextClient extends SwapClient {
         ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0,
       );
       const unitsToRequest = this.unitConverter.amountToUnits({ currency, amount: quantityToRequest });
-
-      // first check whether we already have a pending collateral request for this currency
-      // if not start a new request, and when it completes call channelBalance to refresh our inbound capacity
-      const requestCollateralPromise = this.requestCollateralPromises.get(currency) ?? this.sendRequest('/request-collateral', 'POST', {
-        assetId: this.tokenAddresses.get(currency),
-        amount: unitsToRequest.toLocaleString('fullwide', { useGrouping: false }),
-      }).then(() => {
-        this.logger.debug(`completed collateral request of ${unitsToRequest} ${currency} units`);
-        this.requestCollateralPromises.delete(currency);
-        return this.channelBalance(currency);
-      }).catch(this.logger.error);
-      this.requestCollateralPromises.set(currency, requestCollateralPromise);
+      this.requestCollateralInBackground(currency, unitsToRequest);
 
       throw errors.INSUFFICIENT_COLLATERAL;
+    }
+  }
+
+  public setReservedInboundAmount = (reservedInboundAmount: number, currency: string) => {
+    const inboundCapacity = this.inboundAmounts.get(currency) || 0;
+    if (inboundCapacity < reservedInboundAmount) {
+      // we do not have enough inbound capacity to fill all open orders, so we will request more
+      this.logger.debug(`collateral of ${inboundCapacity} for ${currency} is insufficient for reserved order amount of ${reservedInboundAmount}`);
+
+      // we want to make a request for the current collateral plus the greater of any
+      // minimum request size for the currency or the capacity shortage + 3% buffer
+      const quantityToRequest = inboundCapacity + Math.max(
+        reservedInboundAmount * 1.03 - inboundCapacity,
+        ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency] ?? 0,
+      );
+      const unitsToRequest = this.unitConverter.amountToUnits({ currency, amount: quantityToRequest });
+
+      // we don't await this request - instead we allow for "lazy collateralization" to complete since
+      // we don't expect all orders to be filled at once, we can be patient
+      this.requestCollateralInBackground(currency, unitsToRequest);
     }
   }
 
@@ -340,9 +366,11 @@ class ConnextClient extends SwapClient {
       await this.sendRequest('/health', 'GET');
       await this.initWallet(this.seed);
       const config = await this.initConnextClient(this.seed);
-      await this.subscribePreimage();
-      await this.subscribeIncomingTransfer();
-      await this.subscribeDeposit();
+      await Promise.all([
+        this.subscribePreimage(),
+        this.subscribeIncomingTransfer(),
+        this.subscribeDeposit(),
+      ]);
       const { userIdentifier } = config;
       this.emit('connectionVerified', {
         newIdentifier: userIdentifier,
@@ -630,9 +658,12 @@ class ConnextClient extends SwapClient {
       units: Number(nodeFreeBalanceOffChain),
     });
 
-    this._totalOutboundAmount.set(currency, freeBalanceAmount);
-    this._maxChannelInboundAmount.set(currency, nodeFreeBalanceAmount);
-    this.logger.trace(`new inbound capacity (collateral) for ${currency} of ${nodeFreeBalanceAmount}`);
+    this.outboundAmounts.set(currency, freeBalanceAmount);
+    if (nodeFreeBalanceAmount !== this.inboundAmounts.get(currency)) {
+      this.inboundAmounts.set(currency, nodeFreeBalanceAmount);
+      this.logger.debug(`new inbound capacity (collateral) for ${currency} of ${nodeFreeBalanceAmount}`);
+    }
+
     return {
       balance: freeBalanceAmount,
       inactiveBalance: 0,
@@ -640,11 +671,15 @@ class ConnextClient extends SwapClient {
     };
   }
 
-  public tradingLimits = async (currency: string): Promise<TradingLimits> => {
-    await this.channelBalance(currency); // refreshes the max outbound balance
+  public swapCapacities = async (currency: string): Promise<SwapCapacities> => {
+    await this.channelBalance(currency); // refreshes the balances
+    const outboundAmount = this.outboundAmounts.get(currency) ?? 0;
+    const inboundAmount = this.inboundAmounts.get(currency) ?? 0;
     return {
-      maxSell: this.maxChannelOutboundAmount(currency),
-      maxBuy: this._maxChannelInboundAmount.get(currency) ?? 0,
+      maxOutboundChannelCapacity: outboundAmount,
+      maxInboundChannelCapacity: inboundAmount,
+      totalOutboundCapacity: outboundAmount,
+      totalInboundCapacity: inboundAmount,
     };
   }
 
@@ -714,28 +749,14 @@ class ConnextClient extends SwapClient {
     const minCollateralRequestQuantity = ConnextClient.MIN_COLLATERAL_REQUEST_SIZES[currency];
     if (minCollateralRequestQuantity !== undefined) {
       const minCollateralRequestUnits = this.unitConverter.amountToUnits({ currency, amount: minCollateralRequestQuantity });
-      const channelCollateralized$ = fromEvent(this, 'depositConfirmed').pipe(
+      const depositConfirmed$ = fromEvent(this, 'depositConfirmed').pipe(
         filter(hash => hash === txhash), // only proceed if the incoming hash matches our expected txhash
         take(1), // complete the stream after 1 matching event
         timeout(86400000), // clear up the listener after 1 day
-        mergeMap(() => {
-          // use defer to only create the inner observable when the outer one subscribes
-          return defer(() => {
-            return from(
-              this.sendRequest('/request-collateral', 'POST', {
-                assetId,
-                amount: (minCollateralRequestUnits.toLocaleString('fullwide', { useGrouping: false })),
-              }),
-            );
-          });
-        }),
       );
-      channelCollateralized$.subscribe({
+      depositConfirmed$.subscribe({
         complete: () => {
-          this.logger.verbose(`collateralized channel for ${currency}`);
-        },
-        error: (err) => {
-          this.logger.error(`failed requesting collateral for ${currency}`, err);
+          this.requestCollateralInBackground(currency, minCollateralRequestUnits);
         },
       });
     }

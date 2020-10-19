@@ -1,8 +1,8 @@
-import Logger from '../Logger';
 import { EventEmitter } from 'events';
-import { SwapDeal, Route, CloseChannelParams, OpenChannelParams } from './types';
 import { SwapClientType } from '../constants/enums';
+import Logger from '../Logger';
 import { setTimeoutPromise } from '../utils/utils';
+import { CloseChannelParams, OpenChannelParams, Route, SwapCapacities, SwapDeal } from './types';
 
 enum ClientStatus {
   /** The starting status before a client has initialized. */
@@ -23,6 +23,8 @@ enum ClientStatus {
   Unlocked,
   /** The client could not be initialized due to faulty configuration. */
   Misconfigured,
+  /** The server is reachable but hold invoices are not supported. */
+  NoHoldInvoiceSupport,
 }
 
 type ChannelBalance = {
@@ -41,13 +43,6 @@ type WalletBalance = {
   confirmedBalance: number,
   /** The unconfirmed balance of a wallet (with 0 confirmations). */
   unconfirmedBalance: number,
-};
-
-type TradingLimits = {
-  /** Max outbound capacity for a distinct channel denominated in satoshis. */
-  maxSell: number,
-  /** Max inbound capacity for a distinct channel denominated in satoshis. */
-  maxBuy: number,
 };
 
 export type SwapClientInfo = {
@@ -129,15 +124,15 @@ abstract class SwapClient extends EventEmitter {
    * @param currency the currency whose trading limits to query for, otherwise all/any
    * currencies supported by this client are included in the trading limits.
    */
-  public abstract tradingLimits(currency?: string): Promise<TradingLimits>;
+  public abstract swapCapacities(currency?: string): Promise<SwapCapacities>;
 
   public abstract totalOutboundAmount(currency?: string): number;
-  public abstract maxChannelOutboundAmount(currency?: string): number;
   /**
    * Checks whether there is sufficient inbound capacity to receive the specified amount
    * and throws an error if there isn't, otherwise does nothing.
    */
   public abstract checkInboundCapacity(inboundAmount: number, currency?: string): void;
+  public abstract setReservedInboundAmount(reservedInboundAmount: number, currency?: string): void;
   protected abstract updateCapacity(): Promise<void>;
 
   public verifyConnectionWithTimeout = () => {
@@ -216,6 +211,7 @@ abstract class SwapClient extends EventEmitter {
       case ClientStatus.Disconnected:
       case ClientStatus.WaitingUnlock:
       case ClientStatus.OutOfSync:
+      case ClientStatus.NoHoldInvoiceSupport:
         // these statuses can only be set on an operational, initalized client
         validStatusTransition = this.isOperational();
         break;
@@ -359,7 +355,7 @@ abstract class SwapClient extends EventEmitter {
    * Returns `true` if the client is enabled and configured properly.
    */
   public isOperational(): boolean {
-    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized();
+    return !this.isDisabled() && !this.isMisconfigured() && !this.isNotInitialized() && !this.hasNoInvoiceSupport();
   }
   public isDisconnected(): boolean {
     return this.status === ClientStatus.Disconnected;
@@ -372,6 +368,9 @@ abstract class SwapClient extends EventEmitter {
   }
   public isOutOfSync(): boolean {
     return this.status === ClientStatus.OutOfSync;
+  }
+  public hasNoInvoiceSupport(): boolean {
+    return this.status === ClientStatus.NoHoldInvoiceSupport;
   }
 
   /** Ends all connections, subscriptions, and timers for for this client. */
@@ -391,4 +390,4 @@ abstract class SwapClient extends EventEmitter {
 }
 
 export default SwapClient;
-export { ClientStatus, ChannelBalance, WalletBalance, TradingLimits };
+export { ClientStatus, ChannelBalance, WalletBalance };

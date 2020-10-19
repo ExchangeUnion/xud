@@ -29,14 +29,14 @@ interface OrderBook {
   on(event: 'peerOrder.invalidation', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a remote order was filled by an own order and removed */
   on(event: 'peerOrder.filled', listener: (order: OrderPortion) => void): this;
-  /** Adds a listener to be called when all or part of a local order was swapped and removed, after it was filled and executed remotely */
+  /** Adds a listener to be called when all or part of a local order was swapped after being filled and executed remotely */
   on(event: 'ownOrder.swapped', listener: (order: OrderPortion) => void): this;
   /** Adds a listener to be called when all or part of a local order was filled by an own order and removed */
-  on(event: 'ownOrder.filled', listener: (order: OrderPortion) => void): this;
+  on(event: 'ownOrder.filled', listener: (order: OwnOrder) => void): this;
   /** Adds a listener to be called when a local order was added */
   on(event: 'ownOrder.added', listener: (order: OwnOrder) => void): this;
   /** Adds a listener to be called when a local order was removed */
-  on(event: 'ownOrder.removed', listener: (order: OrderPortion) => void): this;
+  on(event: 'ownOrder.removed', listener: (order: OwnOrder) => void): this;
 
   /** Notifies listeners that a remote order was added */
   emit(event: 'peerOrder.incoming', order: PeerOrder): boolean;
@@ -47,11 +47,11 @@ interface OrderBook {
   /** Notifies listeners that all or part of a local order was swapped and removed, after it was filled and executed remotely */
   emit(event: 'ownOrder.swapped', order: OrderPortion): boolean;
   /** Notifies listeners that all or part of a local order was filled by an own order and removed */
-  emit(event: 'ownOrder.filled', order: OrderPortion): boolean;
+  emit(event: 'ownOrder.filled', order: OwnOrder): boolean;
   /** Notifies listeners that a local order was added */
   emit(event: 'ownOrder.added', order: OwnOrder): boolean;
   /** Notifies listeners that a local order was removed */
-  emit(event: 'ownOrder.removed', order: OrderPortion): boolean;
+  emit(event: 'ownOrder.removed', order: OwnOrder): boolean;
 }
 
 /**
@@ -118,6 +118,22 @@ class OrderBook extends EventEmitter {
     this.strict = strict;
 
     this.repository = new OrderBookRepository(models);
+
+    const onOrderRemoved = (order: OwnOrder) => {
+      const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      this.swaps.swapClientManager.subtractInboundReservedAmount(inboundCurrency, inboundAmount);
+      this.swaps.swapClientManager.subtractOutboundReservedAmount(outboundCurrency, outboundAmount);
+    };
+    this.on('ownOrder.removed', onOrderRemoved);
+    this.on('ownOrder.filled', onOrderRemoved);
+
+    this.on('ownOrder.added', (order) => {
+      const { inboundCurrency, outboundCurrency, inboundAmount, outboundAmount } =
+        Swaps.calculateInboundOutboundAmounts(order.quantity, order.price, order.isBuy, order.pairId);
+      this.swaps.swapClientManager.addInboundReservedAmount(inboundCurrency, inboundAmount);
+      this.swaps.swapClientManager.addOutboundReservedAmount(outboundCurrency, outboundAmount);
+    });
 
     this.bindPool();
     this.bindSwaps();
@@ -557,22 +573,21 @@ class OrderBook extends EventEmitter {
      */
     const handleMatch = async (maker: Order, taker: OwnOrder) => {
       onUpdate && onUpdate({ type: PlaceOrderEventType.Match, order: maker });
-      const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
       if (isOwnOrder(maker)) {
         // this is an internal match which is effectively executed immediately upon being found
         this.logger.info(`internal match executed on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
-        portion.localId = maker.localId;
         internalMatches.push(maker);
-        this.pool.broadcastOrderInvalidation(portion);
-        this.emit('ownOrder.filled', portion);
+        this.pool.broadcastOrderInvalidation(maker);
+        this.emit('ownOrder.filled', maker);
         await this.persistTrade({
-          quantity: portion.quantity,
+          quantity: maker.quantity,
           makerOrder: maker,
           takerOrder: taker,
         });
       } else {
         // this is a match with a peer order which cannot be considered executed until after a
         // successful swap, which is an asynchronous process that can fail for numerous reasons
+        const portion: OrderPortion = { id: maker.id, pairId: maker.pairId, quantity: maker.quantity };
         const alias = pubKeyToAlias(maker.peerPubKey);
         this.logger.debug(`matched with peer ${maker.peerPubKey} (${alias}), executing swap on taker ${taker.id} and maker ${maker.id} for ${maker.quantity}`);
         try {

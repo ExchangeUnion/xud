@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`displayBalances should print a table 1`] = `
+Array [
+  Array [
+    "
+Balance:",
+  ],
+  Array [
+    "┌──────────┬───────────────┬───────────────────────────────┬────────────────────────────┐
+│ Currency │ Total Balance │ Wallet Balance (Not Tradable) │ Channel Balance (Tradable) │
+├──────────┼───────────────┼───────────────────────────────┼────────────────────────────┤
+│ BTC      │ 0.005         │ 0.001                         │ 0.004                      │
+└──────────┴───────────────┴───────────────────────────────┴────────────────────────────┘",
+  ],
+]
+`;
+
+exports[`displayBalances should print a table with pending and inactive balances 1`] = `
+Array [
+  Array [
+    "
+Balance:",
+  ],
+  Array [
+    "┌──────────┬───────────────┬───────────────────────────────┬──────────────────────────────────────────┐
+│ Currency │ Total Balance │ Wallet Balance (Not Tradable) │ Channel Balance (Tradable)               │
+├──────────┼───────────────┼───────────────────────────────┼──────────────────────────────────────────┤
+│ BTC      │ 0.005         │ 0.001 (0.00025 pending)       │ 0.004 (0.00075 pending | 0.001 inactive) │
+└──────────┴───────────────┴───────────────────────────────┴──────────────────────────────────────────┘",
+  ],
+]
+`;
+
+exports[`displayBalances should print a table with pending balances 1`] = `
+Array [
+  Array [
+    "
+Balance:",
+  ],
+  Array [
+    "┌──────────┬───────────────┬───────────────────────────────┬────────────────────────────┐
+│ Currency │ Total Balance │ Wallet Balance (Not Tradable) │ Channel Balance (Tradable) │
+├──────────┼───────────────┼───────────────────────────────┼────────────────────────────┤
+│ BTC      │ 0.005         │ 0.001 (0.00025 pending)       │ 0.004 (0.00075 pending)    │
+└──────────┴───────────────┴───────────────────────────────┴────────────────────────────┘",
+  ],
+]
+`;

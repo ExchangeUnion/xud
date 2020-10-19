@@ -168,6 +168,10 @@ describe('OrderBook', () => {
       logger: loggers.swaps,
       models: db.models,
     });
+    swapClientManager.addInboundReservedAmount = jest.fn();
+    swapClientManager.subtractInboundReservedAmount = jest.fn();
+    swapClientManager.addOutboundReservedAmount = jest.fn();
+    swapClientManager.subtractOutboundReservedAmount = jest.fn();
     swaps.swapClientManager = swapClientManager;
     orderbook = new Orderbook({
       pool,
@@ -284,6 +288,8 @@ describe('OrderBook', () => {
       await orderbook.placeLimitOrder({ order });
       expect(Swaps['calculateInboundOutboundAmounts']).toHaveBeenCalledWith(quantity, price, isBuy, pairId);
       expect(inboundSwapClient.checkInboundCapacity).toHaveBeenCalledWith(inboundAmount, inboundCurrency);
+      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith('BTC', quantity * price);
+      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith('LTC', quantity);
     });
 
     test('market order checks swap client for insufficient inbound balance using best quoted price', async () => {
@@ -340,15 +346,30 @@ describe('OrderBook', () => {
 
     test('placeLimitOrder adds to order book', async () => {
       const quantity = 10000;
+      const price = 0.01;
       const order: OwnLimitOrder = {
         quantity,
         pairId,
         localId,
-        price: 0.01,
+        price,
         isBuy: false,
       };
+      const inboundCurrency = 'BTC';
+      const outboundCurrency = 'LTC';
+      const inboundAmount = quantity * price;
+      const outboundAmount = quantity;
+      Swaps['calculateInboundOutboundAmounts'] = jest.fn().mockReturnValue({
+        inboundCurrency,
+        outboundCurrency,
+        inboundAmount,
+        outboundAmount,
+        inboundUnits: inboundAmount,
+        outboundUnits: outboundAmount,
+      });
       await orderbook.placeLimitOrder({ order });
       expect(orderbook.getOwnOrderByLocalId(localId)).toHaveProperty('localId', localId);
+      expect(swaps.swapClientManager.addInboundReservedAmount).toHaveBeenCalledWith('BTC', quantity * price);
+      expect(swaps.swapClientManager.addOutboundReservedAmount).toHaveBeenCalledWith('LTC', quantity);
     });
 
     test('placeLimitOrder immediateOrCancel does not add to order book', async () => {
