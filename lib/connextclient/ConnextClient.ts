@@ -38,8 +38,8 @@ import {
   ConnextBlockNumberResponse,
 } from './types';
 import { parseResponseBody } from '../utils/utils';
-import { Observable, fromEvent, from, defer, Subscription, throwError, interval } from 'rxjs';
-import { take, pluck, timeout, filter, mergeMap } from 'rxjs/operators';
+import { Observable, fromEvent, from, defer, Subscription, throwError, interval, timer } from 'rxjs';
+import { take, pluck, timeout, filter, mergeMap, catchError, mergeMapTo } from 'rxjs/operators';
 import { sha256 } from '@ethersproject/solidity';
 
 interface ConnextClient {
@@ -693,16 +693,10 @@ class ConnextClient extends SwapClient {
             preimage: transferStatusResponse.transferResolver.preImage.slice(2)
           };
         case 'EXPIRED':
-          /* TODO:
           const expiredTransferUnlocked$ = defer(() => from(
             // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
-            // in order to unlock the funds we'll need to call /hashlock-resolve with the routingId
-            this.sendRequest('/hashlock-resolve', 'POST', {
-              assetId,
-              // providing a placeholder preImage for rest-api-client because it's a required field
-              preImage: '0x',
-              routingId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
-            }),
+            // in order to unlock the funds we'll need to settle the invoice without a preimage
+            this.settleInvoice(rHash, '', currency)
           )).pipe(
             catchError((e, caught) => {
               const RETRY_INTERVAL = 30000;
@@ -716,13 +710,13 @@ class ConnextClient extends SwapClient {
               this.logger.debug(`successfully unlocked an expired connext transfer with rHash: ${rHash}`);
             },
           });
-          */
+          // TODO: user funds can remain locked if the above code fails and xud is restarted. In that case the transfer
+          // is marked as failed and it will not attempt to unlock again.
           return { state: PaymentState.Failed };
         case 'FAILED':
           return { state: PaymentState.Failed };
         default:
-          this.logger.debug(`no hashlock status for connext transfer with hash ${rHash} and assetId ${assetId}: ${JSON.stringify(transferStatusResponse)}`);
-          return { state: PaymentState.Failed };
+          return { state: PaymentState.Pending };
       }
     } catch (err) {
       if (err.code === errorCodes.PAYMENT_NOT_FOUND) {
