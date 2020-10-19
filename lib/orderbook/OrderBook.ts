@@ -349,7 +349,6 @@ class OrderBook extends EventEmitter {
         }
       }
       this.currencyInstances.delete(currencyId);
-      this.swaps.swapClientManager.remove(currencyId);
       await currency.destroy();
     } else {
       throw errors.CURRENCY_DOES_NOT_EXIST(currencyId);
