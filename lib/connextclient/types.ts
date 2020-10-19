@@ -143,8 +143,7 @@ export type ExpectedIncomingTransfer = {
   units: number;
   expiry: number;
   tokenAddress: string;
-  paymentId?: string;
-  transferId?: string;
+  routingId: string;
 };
 
 export type ConnextPreimageRequest = {
@@ -245,8 +244,7 @@ export type TransferReceivedEvent = {
   rHash: string;
   expiry: number;
   units: number;
-  paymentId: string;
-  transferId: string;
+  routingId: string;
 };
 
 export type OnchainTransferResponse = {

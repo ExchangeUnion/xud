@@ -185,7 +185,7 @@ class ConnextClient extends SwapClient {
       units,
       expiry,
       rHash,
-      paymentId,
+      routingId,
     } = transferReceivedRequest;
 
     if (this.outgoingTransferHashes.has(rHash)) {
@@ -195,7 +195,7 @@ class ConnextClient extends SwapClient {
     }
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (!expectedIncomingTransfer) {
-      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and paymentId ${paymentId}`);
+      this.logger.warn(`received unexpected incoming transfer created event with rHash ${rHash}, units: ${units}, expiry ${expiry}, token address ${tokenAddress}, and routingId ${routingId}`);
       return;
     }
 
@@ -214,7 +214,7 @@ class ConnextClient extends SwapClient {
       units === expectedUnits &&
       timelock >= expectedTimelock - TIMELOCK_BUFFER
     ) {
-      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and paymentId ${paymentId}`);
+      this.logger.debug(`accepting incoming transfer with rHash: ${rHash}, units: ${units}, timelock ${timelock}, currency ${currency}, and routingId ${routingId}`);
       this.expectedIncomingTransfers.delete(rHash);
       this.emit('htlcAccepted', rHash, units, currency);
     } else {
@@ -590,6 +590,7 @@ class ConnextClient extends SwapClient {
       units: expectedUnits,
       expiry: expectedTimelock,
       tokenAddress: expectedTokenAddress,
+      routingId: this.deriveRoutingId(expectedHash, expectedTokenAddress),
     };
     this.expectedIncomingTransfers.set(expectedHash, expectedIncomingTransfer);
   }
@@ -631,16 +632,16 @@ class ConnextClient extends SwapClient {
   public removeInvoice = async (rHash: string) => {
     const expectedIncomingTransfer = this.expectedIncomingTransfers.get(rHash);
     if (expectedIncomingTransfer) {
-      const { paymentId } = expectedIncomingTransfer;
-      if (paymentId) {
-        // resolve a hashlock with a paymentId but no preimage to cancel it
+      const { routingId } = expectedIncomingTransfer;
+      if (routingId) {
+        // resolve a hashlock with a routingId but no preimage to cancel it
         await this.sendRequest('/transfers', 'POST', {
-          paymentId,
+          routingId,
           assetId: expectedIncomingTransfer.tokenAddress,
         });
         this.logger.debug(`canceled incoming transfer with rHash ${rHash}`);
       } else {
-        this.logger.warn(`could not find paymentId for incoming transfer with hash ${rHash}`);
+        this.logger.warn(`could not find routingId for incoming transfer with hash ${rHash}`);
       }
       this.expectedIncomingTransfers.delete(rHash);
     } else {
@@ -691,12 +692,12 @@ class ConnextClient extends SwapClient {
           /* TODO:
           const expiredTransferUnlocked$ = defer(() => from(
             // when the connext transfer (HTLC) expires the funds are not automatically returned to the channel balance
-            // in order to unlock the funds we'll need to call /hashlock-resolve with the paymentId
+            // in order to unlock the funds we'll need to call /hashlock-resolve with the routingId
             this.sendRequest('/hashlock-resolve', 'POST', {
               assetId,
               // providing a placeholder preImage for rest-api-client because it's a required field
               preImage: '0x',
-              paymentId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
+              routingId: sha256(['address', 'bytes32'], [assetId, `0x${rHash}`]),
             }),
           )).pipe(
             catchError((e, caught) => {

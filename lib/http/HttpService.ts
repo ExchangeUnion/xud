@@ -36,24 +36,22 @@ class HttpService {
     if (incomingTransferRequest.transfer) {
       const transfer = incomingTransferRequest.transfer;
       const {
-        transferId,
         transferState,
         meta,
         assetId,
         balance,
       } = transfer;
-      const { routingId: paymentId } = meta;
+      const { routingId } = meta;
       const { lockHash, expiry: expiryString } = transferState;
       const rHash = lockHash.slice(2);
       const expiry = parseInt(expiryString, 10);
       const { amount } = balance;
       const units = parseInt(amount[0]);
       await this.service.transferReceived({
-        transferId,
         rHash,
         expiry,
         units,
-        paymentId,
+        routingId,
         tokenAddress: assetId,
       });
       return {};
