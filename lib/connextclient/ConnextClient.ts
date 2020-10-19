@@ -665,6 +665,10 @@ class ConnextClient extends SwapClient {
 
       const getStatusFromStatusResponse = (currentHeight: number, transfer: ConnextTransfer): string => {
         const preimage = transfer.transferResolver?.preImage;
+        const HASH_ZERO = '0x0000000000000000000000000000000000000000000000000000000000000000';
+        if (preimage && preimage === HASH_ZERO) {
+          return 'FAILED';
+        }
         if (preimage) {
           return 'COMPLETED';
         }
