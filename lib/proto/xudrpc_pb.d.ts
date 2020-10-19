@@ -1524,6 +1524,52 @@ export namespace RemoveOrderResponse {
     }
 }
 
+export class RemoveAllOrdersRequest extends jspb.Message { 
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RemoveAllOrdersRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveAllOrdersRequest): RemoveAllOrdersRequest.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RemoveAllOrdersRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveAllOrdersRequest;
+    static deserializeBinaryFromReader(message: RemoveAllOrdersRequest, reader: jspb.BinaryReader): RemoveAllOrdersRequest;
+}
+
+export namespace RemoveAllOrdersRequest {
+    export type AsObject = {
+    }
+}
+
+export class RemoveAllOrdersResponse extends jspb.Message { 
+    clearRemovedOrderIdsList(): void;
+    getRemovedOrderIdsList(): Array<string>;
+    setRemovedOrderIdsList(value: Array<string>): void;
+    addRemovedOrderIds(value: string, index?: number): string;
+
+    clearOnHoldOrderIdsList(): void;
+    getOnHoldOrderIdsList(): Array<string>;
+    setOnHoldOrderIdsList(value: Array<string>): void;
+    addOnHoldOrderIds(value: string, index?: number): string;
+
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): RemoveAllOrdersResponse.AsObject;
+    static toObject(includeInstance: boolean, msg: RemoveAllOrdersResponse): RemoveAllOrdersResponse.AsObject;
+    static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
+    static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
+    static serializeBinaryToWriter(message: RemoveAllOrdersResponse, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): RemoveAllOrdersResponse;
+    static deserializeBinaryFromReader(message: RemoveAllOrdersResponse, reader: jspb.BinaryReader): RemoveAllOrdersResponse;
+}
+
+export namespace RemoveAllOrdersResponse {
+    export type AsObject = {
+        removedOrderIdsList: Array<string>,
+        onHoldOrderIdsList: Array<string>,
+    }
+}
+
 export class RemovePairRequest extends jspb.Message { 
     getPairId(): string;
     setPairId(value: string): void;

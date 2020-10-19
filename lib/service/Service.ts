@@ -110,6 +110,13 @@ class Service {
     return this.orderBook.removeOwnOrderByLocalId(orderId, true, quantity);
   }
 
+  /*
+   * Removes all placed orders from the orderbook.
+   */
+  public removeAllOrders = async () => {
+    return this.orderBook.removeOwnOrders();
+  }
+
   /** Gets the total balance for one or all currencies. */
   public getBalance = async (args: { currency: string }) => {
     const { currency } = args;

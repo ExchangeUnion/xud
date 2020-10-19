@@ -229,6 +229,17 @@ service Xud {
     };
   }
 
+  /* Removes all orders from the order book. Removed orders become immediately unavailable for swaps,
+   * and peers are notified that the orders are no longer valid. Any portion of the orders that is
+   * on hold due to ongoing swaps will not be removed until after the swap attempts complete.
+   * shell: xucli removeallorders */
+  rpc RemoveAllOrders(RemoveAllOrdersRequest) returns (RemoveAllOrdersResponse) {
+    option (google.api.http) = {
+      post: "/v1/removeallorders"
+      body: "*"
+    };
+  }
+
   /* Removes a trading pair from the list of currently supported trading pair. This call will
    * effectively cancel any standing orders for that trading pair. Peers are informed when a pair
    * is no longer supported so that they will know to stop sending orders for it.
@@ -737,6 +748,15 @@ message RemoveOrderResponse {
   // Any portion of the order that was on hold due to ongoing swaps at the time of the request
   // and could not be removed until after the swaps finish.
   uint64 quantity_on_hold = 1 [json_name = "hold"];
+}
+
+message RemoveAllOrdersRequest {}
+
+message RemoveAllOrdersResponse {
+  // The local order ids that were successfully removed.
+  repeated string removed_order_ids = 1 [json_name = "removed_order_ids"];
+  // The local order ids that were on hold and failed to be removed.
+  repeated string on_hold_order_ids = 2 [json_name = "on_hold_order_ids"];
 }
 
 message RemovePairRequest {

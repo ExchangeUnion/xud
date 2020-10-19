@@ -289,6 +289,26 @@ class GrpcService {
   }
 
   /**
+   * See [[Service.removeAllOrders]]
+   */
+  public removeAllOrders: grpc.handleUnaryCall<xudrpc.RemoveAllOrdersRequest, xudrpc.RemoveAllOrdersResponse> = async (_, callback) => {
+    if (!this.isReady(this.service, callback)) {
+      return;
+    }
+    try {
+      const { removedOrderLocalIds, onHoldOrderLocalIds } = await this.service.removeAllOrders();
+
+      const response = new xudrpc.RemoveAllOrdersResponse();
+      response.setRemovedOrderIdsList(removedOrderLocalIds);
+      response.setOnHoldOrderIdsList(onHoldOrderLocalIds);
+
+      callback(null, response);
+    } catch (err) {
+      callback(getGrpcError(err), null);
+    }
+  }
+
+  /**
    * See [[Service.getBalance]]
    */
   public getBalance: grpc.handleUnaryCall<xudrpc.GetBalanceRequest, xudrpc.GetBalanceResponse> = async (call, callback) => {
