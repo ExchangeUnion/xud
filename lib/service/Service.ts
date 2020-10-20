@@ -623,13 +623,17 @@ class Service {
     let calculatedQuantity: number;
 
     if (max) {
+      if (!price) {
+        throw errors.INVALID_ARGUMENT("max flag can't be used for market orders");
+      }
+
       const baseCurrency = pairId.split('/')[0];
       const baseSwapClient = this.swapClientManager.get(baseCurrency)?.type;
 
       const quoteCurrency = pairId.split('/')[1];
       const quoteSwapClient = this.swapClientManager.get(quoteCurrency)?.type;
 
-      calculatedQuantity = await this.calculateOrderMaxQuantity(baseCurrency, quoteCurrency, side, price, baseSwapClient, quoteSwapClient);
+      calculatedQuantity = await this.calculateLimitOrderMaxQuantity(baseCurrency, quoteCurrency, side, price, baseSwapClient, quoteSwapClient);
     } else {
       calculatedQuantity = quantity || 0;
     }
@@ -663,61 +667,43 @@ class Service {
       await this.orderBook.placeMarketOrder(placeOrderRequest);
   }
 
-  private async calculateOrderMaxQuantity(baseCurrency: string, quoteCurrency: string, side: number,
-                                          price?: number, baseSwapClient?: SwapClientType, quoteSwapClient?: SwapClientType) {
+  private async calculateLimitOrderMaxQuantity(baseCurrency: string, quoteCurrency: string, side: number,
+                                               price: number, baseSwapClient?: SwapClientType, quoteSwapClient?: SwapClientType) {
     let calculatedQuantity;
 
     const baseTradingLimits = (await this.tradingLimits({ currency: baseCurrency })).get(baseCurrency);
     const quoteTradingLimits = (await this.tradingLimits({ currency: quoteCurrency })).get(quoteCurrency);
-    const pairId = `${baseCurrency}/${quoteCurrency}`;
 
     if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Lnd) {
-      let maxGettableFromQuote;
-      let maxGettableFromBase;
-
-      if (side === OrderSide.Sell) {
-        const quoteMaxBuy = quoteTradingLimits?.maxBuy || 0;
-        maxGettableFromQuote = price ? (quoteMaxBuy / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Sell, pairId, quoteMaxBuy);
-        maxGettableFromBase = baseTradingLimits?.maxSell || 0;
-      } else {
-        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
-        maxGettableFromQuote = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
-        maxGettableFromBase = baseTradingLimits?.maxBuy || 0;
-      }
+      const maxGettableFromQuote = ((side === OrderSide.Sell ? quoteTradingLimits?.maxBuy : quoteTradingLimits?.maxSell) || 0) / price;
+      const maxGettableFromBase = (side === OrderSide.Sell ? baseTradingLimits?.maxSell : baseTradingLimits?.maxBuy) || 0;
 
       calculatedQuantity = Math.min(maxGettableFromBase, maxGettableFromQuote);
     } else if (baseSwapClient === SwapClientType.Lnd && quoteSwapClient === SwapClientType.Connext) {
-
       if (side === OrderSide.Sell) {
         calculatedQuantity = baseTradingLimits?.maxSell || 0;
       } else {
-        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
-        const maxGettableFromQuote = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
-        const maxGettableFromBase = baseTradingLimits?.maxBuy || 0;
+        const maxSellableFromQuote = (quoteTradingLimits?.maxSell || 0) / price;
+        const maxBuyableFromBase = baseTradingLimits?.maxBuy || 0;
 
-        calculatedQuantity = Math.min(maxGettableFromQuote, maxGettableFromBase);
+        calculatedQuantity = Math.min(maxSellableFromQuote, maxBuyableFromBase);
       }
 
     } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Lnd) {
-
       if (side === OrderSide.Sell) {
-        const quoteMaxBuy = quoteTradingLimits?.maxBuy || 0;
-        const maxGettableFromQuote = price ? (quoteMaxBuy / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Sell, pairId, quoteMaxBuy);
-        const maxGettableFromBase = baseTradingLimits?.maxSell || 0;
+        const maxBuyableFromQuote = (quoteTradingLimits?.maxBuy || 0) / price;
+        const maxSellableFromBase = baseTradingLimits?.maxSell || 0;
 
-        calculatedQuantity = Math.min(maxGettableFromQuote, maxGettableFromBase);
+        calculatedQuantity = Math.min(maxBuyableFromQuote, maxSellableFromBase);
       } else {
-        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
-        calculatedQuantity = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
+        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
       }
 
     } else if (baseSwapClient === SwapClientType.Connext && quoteSwapClient === SwapClientType.Connext) {
-
       if (side === OrderSide.Sell) {
         calculatedQuantity = baseTradingLimits?.maxSell || 0;
       } else {
-        const quoteMaxSell = quoteTradingLimits?.maxSell || 0;
-        calculatedQuantity = price ? (quoteMaxSell / price) : this.calculateMaxGettableFromOrderBook(OrderSide.Buy, pairId, quoteMaxSell);
+        calculatedQuantity = (quoteTradingLimits?.maxSell || 0) / price;
       }
 
     } else {
@@ -725,31 +711,6 @@ class Service {
     }
 
     return calculatedQuantity;
-  }
-
-  private calculateMaxGettableFromOrderBook(side: OrderSide, pairId: string, balance: number) {
-    let result = 0;
-    let currentBalance = balance;
-
-    this.listOrders({ pairId, owner: Owner.Both, limit: 0, includeAliases: false }).forEach((orderArrays, _) => {
-      const array = side === OrderSide.Sell ? orderArrays.buyArray : orderArrays.sellArray;
-      for (const order of array) {
-        if (order.quantity && order.price) {
-          // market buy max calculation
-          const maxBuyableFromThisPrice = currentBalance / order.price;
-          const calculatedQuantity = (maxBuyableFromThisPrice > order.quantity) ? order.quantity : maxBuyableFromThisPrice;
-          result += calculatedQuantity;
-          currentBalance -= order.price * calculatedQuantity;
-
-          if (currentBalance === 0) {
-             // we filled our buy quantity with this order
-            break;
-          }
-        }
-      }
-    });
-
-    return result;
   }
 
   /** Removes a currency. */

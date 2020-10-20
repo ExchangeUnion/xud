@@ -914,7 +914,7 @@ message TradingLimits {
   // The outbound amount reserved for open orders.
   uint64 reserved_outbound = 3 [json_name = "reserved_outbound"];
   // The inbound amount reserved for open orders.
-  uint64 reserved_inbound = 4 [json_name = "reserved_outbound"];
+  uint64 reserved_inbound = 4 [json_name = "reserved_inbound"];
 }
 
 message TradingLimitsRequest {
