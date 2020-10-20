@@ -62,7 +62,7 @@ class Swaps extends EventEmitter {
   /** The maximum time in milliseconds we will wait for a swap to be accepted before failing it. */
   private static readonly SWAP_ACCEPT_TIMEOUT = 10000;
   /** The maximum time in milliseconds we will wait for a swap to be completed before failing it. */
-  private static readonly SWAP_COMPLETE_TIMEOUT = 10000;
+  private static readonly SWAP_COMPLETE_TIMEOUT = 45000;
   /**
    * Additional time that the maker will wait for a swap to be completed before considering it timed
    * out. This exists because the maker starts timing sooner and ends timing later than the taker.
