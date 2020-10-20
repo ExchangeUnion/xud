@@ -760,8 +760,10 @@ class ConnextClient extends SwapClient {
     if (channel.length === 0) {
       await this.sendRequest('/request-setup', 'POST', {
         // TODO(karl): P1 - values from config
-        aliceUrl: 'http://192.168.63.131:8007',
-        aliceIdentifier: "indra8Uz1BdpA9hV5uTm6QUv5jj1PsUyCH8m8ciA94voCzsxVmrBRor",
+        aliceUrl: 'http://35.246.190.50:80',
+        aliceIdentifier: 'indra6WRA6HQQTDQD1FC3KmdbpePijdcgLTqAdi2xy2Q2HqNeGn4cBh',
+        // aliceUrl: 'http://192.168.63.131:8007',
+        // aliceIdentifier: "indra8Uz1BdpA9hV5uTm6QUv5jj1PsUyCH8m8ciA94voCzsxVmrBRor",
         chainId: '1337',
         timeout: '36000',
         bobIdentifier: this.publicIdentifier
